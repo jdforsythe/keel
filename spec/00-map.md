@@ -80,7 +80,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
-| k.sync | Concurrent writes | conformance-covered | heads |
+| k.sync | Concurrency | conformance-covered | heads |
 | k.persist | Durable storage | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | conformance-covered | peers |
