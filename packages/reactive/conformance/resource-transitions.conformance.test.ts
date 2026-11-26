@@ -32,23 +32,29 @@ const at = <T>(arr: readonly T[], i: number): T => {
 describe("k.reactive: resource transitions", () => {
   it("starts in loading synchronously", () => {
     const d = deferred<number>();
-    scope(() => {
-      const r = resource(() => d.promise);
-      expect(r.get()).toEqual({ state: "loading" });
-    });
+    scope(
+      () => {
+        const r = resource(() => d.promise);
+        expect(r.get()).toEqual({ state: "loading" });
+      },
+      { detached: true },
+    );
   });
 
   it("loading -> ready carries the value", async () => {
     const d = deferred<number>();
     const states: string[] = [];
     let get: () => { state: string; value?: number } = () => ({ state: "" });
-    scope(() => {
-      const r = resource(() => d.promise);
-      get = () => r.get();
-      effect(() => {
-        states.push(r.get().state);
-      });
-    });
+    scope(
+      () => {
+        const r = resource(() => d.promise);
+        get = () => r.get();
+        effect(() => {
+          states.push(r.get().state);
+        });
+      },
+      { detached: true },
+    );
     d.resolve(42);
     await flush();
     expect(collapse(states)).toEqual(["loading", "ready"]);
@@ -60,13 +66,16 @@ describe("k.reactive: resource transitions", () => {
     const boom = new Error("boom");
     const states: string[] = [];
     let get: () => { state: string; error?: unknown } = () => ({ state: "" });
-    scope(() => {
-      const r = resource(() => d.promise);
-      get = () => r.get();
-      effect(() => {
-        states.push(r.get().state);
-      });
-    });
+    scope(
+      () => {
+        const r = resource(() => d.promise);
+        get = () => r.get();
+        effect(() => {
+          states.push(r.get().state);
+        });
+      },
+      { detached: true },
+    );
     d.reject(boom);
     await flush();
     expect(collapse(states)).toEqual(["loading", "error"]);
@@ -78,13 +87,16 @@ describe("k.reactive: resource transitions", () => {
     let i = 0;
     const states: string[] = [];
     let refetch: () => void = () => {};
-    scope(() => {
-      const r = resource(() => at(ds, i++).promise);
-      refetch = () => r.refetch();
-      effect(() => {
-        states.push(r.get().state);
-      });
-    });
+    scope(
+      () => {
+        const r = resource(() => at(ds, i++).promise);
+        refetch = () => r.refetch();
+        effect(() => {
+          states.push(r.get().state);
+        });
+      },
+      { detached: true },
+    );
     at(ds, 0).resolve(1);
     await flush();
     refetch();
@@ -109,13 +121,16 @@ describe("k.reactive: resource transitions", () => {
   it("a settled resource stays settled with no further notifications", async () => {
     const d = deferred<number>();
     let runs = 0;
-    scope(() => {
-      const r = resource(() => d.promise);
-      effect(() => {
-        r.get();
-        runs++;
-      });
-    });
+    scope(
+      () => {
+        const r = resource(() => d.promise);
+        effect(() => {
+          r.get();
+          runs++;
+        });
+      },
+      { detached: true },
+    );
     d.resolve(1);
     await flush();
     const settled = runs;

@@ -32,11 +32,14 @@ const setup = (n: number) => {
   let i = 0;
   let get: () => { state: string; value?: string; error?: unknown } = () => ({ state: "" });
   let refetch: () => void = () => {};
-  scope(() => {
-    const r = resource(() => at(ds, i++).promise);
-    get = () => r.get();
-    refetch = () => r.refetch();
-  });
+  scope(
+    () => {
+      const r = resource(() => at(ds, i++).promise);
+      get = () => r.get();
+      refetch = () => r.refetch();
+    },
+    { detached: true },
+  );
   return { ds, get: () => get(), refetch: () => refetch() };
 };
 

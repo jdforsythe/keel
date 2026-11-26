@@ -27,9 +27,12 @@ function expectE1205(e: unknown): void {
 
 function sig(v: number): Signal<number> {
   const out: Signal<number>[] = [];
-  scope(() => {
-    out.push(signal(v));
-  });
+  scope(
+    () => {
+      out.push(signal(v));
+    },
+    { detached: true },
+  );
   const s = out[0];
   if (s === undefined) throw new Error("unreachable");
   return s;
@@ -37,9 +40,12 @@ function sig(v: number): Signal<number> {
 
 function owned(fn: () => number): { c: Computed<number>; dispose: () => void } {
   const out: Computed<number>[] = [];
-  const h = scope(() => {
-    out.push(computed(fn));
-  });
+  const h = scope(
+    () => {
+      out.push(computed(fn));
+    },
+    { detached: true },
+  );
   const c = out[0];
   if (c === undefined) throw new Error("unreachable");
   return { c, dispose: () => h.dispose() };
@@ -81,15 +87,18 @@ describe("k.reactive: reading a disposed computed", () => {
         const s = sig(v);
         const { c, dispose } = owned(() => s.get() * 2);
         const seen: number[] = [];
-        const effectScope = scope(() => {
-          effect(
-            () => {
-              s.get();
-              seen.push(c.get());
-            },
-            { writes: [] },
-          );
-        });
+        const effectScope = scope(
+          () => {
+            effect(
+              () => {
+                s.get();
+                seen.push(c.get());
+              },
+              { writes: [] },
+            );
+          },
+          { detached: true },
+        );
         expect(seen).toEqual([v * 2]);
         dispose();
         expectE1205(errorOf(() => s.set(v + 1)));

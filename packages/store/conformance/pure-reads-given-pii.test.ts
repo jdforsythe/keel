@@ -16,7 +16,7 @@ const Marked = s.object({ n: s.int(), contact: s.object({ email: s.string() }).p
 const Unmarked = s.object({ n: s.int(), contact: s.object({ email: s.string() }), note: s.string() });
 
 function isolated<T>(fn: () => T): T {
-  const sc = scope(() => {});
+  const sc = scope(() => {}, { detached: true });
   isolate(sc);
   return sc.run(fn);
 }
