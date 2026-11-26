@@ -1,5 +1,5 @@
 {
-  "commit": "13915d3f2788a2180bc078f4a22b75697bb78aa2",
+  "commit": "9970ac7bd7b9b46f5e4d7371f2903557f5bd9397",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-26T15:51:31.384Z",
+  "generatedAt": "2026-11-26T15:54:35.341Z",
   "ledger": {
     "a11y": {
       "byRung": {
