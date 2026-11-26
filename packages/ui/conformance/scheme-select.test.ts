@@ -3,6 +3,7 @@
 // Spec: k.schemes, clause "`SchemeSelect`'s server HTML has the `hidden` attribute, and after `resume` or `mount` it has none."
 // Spec: k.schemes, clause "After `fire('scheme', { type: 'change', value: 'dark' })`, `document.documentElement` has `data-k-scheme=\"dark\"` and `document.cookie` holds `keel-scheme=dark`; after `fire('scheme', { type: 'change', value: 'system' })`, it has no `data-k-scheme` and `document.cookie` holds no `keel-scheme`."
 // k.schemes, Choice: `SchemeSelect` renders as `Select` does with the options `system`, `light`, `dark` in that order, `labels`, exactly one of `label` and `labelledBy` (E1802), role class `k-control`, and `id`; picking `light` or `dark` writes `keel-scheme=<value>; Path=/; Max-Age=31536000; SameSite=Lax` (`; Secure` on https); picking `system` removes the attribute and writes `keel-scheme=; Path=/; Max-Age=0; SameSite=Lax`.
+// Spec: k.schemes, clause "It renders with `hidden` on the element it returns, the wrapper holding its label and its select, which the runtime removes at mount and at resume, so a visitor with no script sees no control and gets the system preference."
 // Seed: 1337 (fc.assert below).
 // `fire(id, { type: 'change', value })` is the @keel/testing harness call; here `value` is set on the `select` and a bubbling `change` event is dispatched, the path `fire` takes.
 // ASSUMPTIONS: happy-dom's `document.cookie` setter stores the pair and drops it at `Max-Age=0`; the full cookie string with its attributes is not readable back, so the attributes are asserted through a spy on the cookie setter. Whether the `Secure` attribute follows `https` is read through `location.protocol`; happy-dom's location is `about:blank` here, so the `Secure` half is untestable in this file and needs the end-to-end case.
@@ -251,6 +252,30 @@ describe("k.schemes: hidden until script runs", () => {
     resume(h, { SchemeIsland: select }, { ctx: createCtx({ mode: "sim", seed: 1337 }) });
     expect(h.querySelector("[hidden]"), "after resume").toBeNull();
     h.remove();
+  });
+
+  test("It renders with `hidden` on the element it returns, the wrapper holding its label and its select, which the runtime removes at mount and at resume", () => {
+    // The returned element is read as built (server HTML), before any mount clears `hidden`.
+    const seen: { hidden?: boolean; selectHidden?: boolean; isSelect?: boolean; hasSelect?: boolean; text?: string } =
+      {};
+    const { host, off } = render(() => {
+      const n = SchemeSelect({ id: "scheme", label: "Scheme", labels: LABELS });
+      if (!(n instanceof Element)) throw new Error("fixture: SchemeSelect returned no element");
+      const control = n.querySelector("select");
+      seen.hidden = n.hasAttribute("hidden");
+      seen.hasSelect = control !== null;
+      seen.isSelect = n === control;
+      seen.selectHidden = control?.hasAttribute("hidden") ?? false;
+      seen.text = n.textContent ?? "";
+      return n;
+    });
+    expect(seen.hidden, "on the element it returns").toBe(true);
+    expect(seen.hasSelect, "the wrapper holds its select").toBe(true);
+    expect(seen.isSelect, "the wrapper is not the select").toBe(false);
+    expect(seen.selectHidden, "not on the select inside").toBe(false);
+    expect(seen.text, "the wrapper holds its label").toContain("Scheme");
+    off();
+    host.remove();
   });
 
   test("whatever its labels, the server node is hidden and the mounted one is not", () => {

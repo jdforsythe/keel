@@ -3,9 +3,10 @@
 // Spec: k.looks, clause "`src/acmeTokens.ts` with `defineTokens({ ... } as const)` is one E1812 with message `acmeTokens.ts holds a type assertion; it is one defineTokens literal`."
 // Spec: k.looks, clause "With `tokens.ts`'s last import line `import { brandTokens } from \"@keel/ui/brand\"; // brand`, E1810's fix leaves that line as it is and adds the import on the line after it."
 // Spec: k.looks, clause "E1815 a listed library's `exports` entry holding `keel` other than first (Entries; fix: none)"
+// Spec: k.looks, clause "**Library contrast.** In an app, an E1804 at an element of a library file, or at a library look, is reported in `tokens.ts`: at the opening quote of the app's key for its `fg` when the app writes one, else for its `bg`, else at the spread `...<id>Tokens.color`, else line 1, column 1; once per pair and scheme; message `<fg> on <bg> is <ratio>:1 in <scheme>, needs <need>:1; override in tokens.ts`."
+// Spec: k.looks, clause "**Entries.** In each listed library's `package.json` `exports`, an entry holding `keel` holds it as its first key and nowhere deeper, else E1815 at each `deps` entry naming the library (`<name> exports \"<key>\" lists keel after another condition`, or `<name> exports \"<key>\" nests keel under another condition` when `keel` sits only deeper)."
 // Seed: 1337 (fc.assert below). The half of #12 that needs `keel check` to run (`evil.js` writes a marker file and none is written) is packages/cli/conformance/library-entries-e1815-cli.test.ts, since `check()` evaluates nothing.
 // ASSUMPTIONS: see library-looks-support.ts. "At each `deps` entry" is a position on the `'@acme/ui'` literal of `modules/<id>/module.ts`; a nested `keel` reads `@acme/ui exports "<key>" nests keel under another condition` (the spec gives the form `... nests keel under another condition` beside `<name> exports "<key>" lists keel after another condition`). A library-file E1804 in an app is judged over the tokens given as the artifact. In #13 "at the spread" is a position on the `...acmeTokens.color` text. In #14 the position is the line of the assertion. In #15 the fix is applied with `git apply`.
-// AMBIGUOUS: #13 "at the opening quote of the app's key for its `fg` or `bg` when the app writes one": the case asserts the `bg` key (`'acme.accent'`) only; which of two keys wins when the app writes both is not said.
 import { defineTokens } from "@keel/ui";
 import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
@@ -191,7 +192,7 @@ test(
 );
 
 test(
-  "with the app writing a key for the pair's `bg`, the E1804 is at that key's opening quote in `tokens.ts`, and an override that passes leaves none",
+  "with the app writing a key for the pair's `bg` and none for its `fg`, the E1804 is at that key's opening quote in `tokens.ts`, and an override that passes leaves none",
   () => {
     const keyed = PAIRS.replace("%TAIL%", ", 'acme.accent': { light: '#0B5CAD', dark: '#787878' }");
     const d = contrast(app(keyed, accentDark("#787878")), { light: "#0B5CAD", dark: "#787878" });
@@ -200,6 +201,22 @@ test(
     expect(atText(keyed, "'acme.accent'", d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
     const fixed = PAIRS.replace("%TAIL%", ", 'acme.accent': { light: '#0B5CAD', dark: '#0B5CAD' }");
     expect(contrast(app(fixed, accentDark("#787878")), { light: "#0B5CAD", dark: "#0B5CAD" })).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "with the app writing keys for both the pair's `fg` and its `bg`, the E1804 is at the `fg` key's opening quote; with a key for neither, at the spread",
+  () => {
+    const both = PAIRS.replace(
+      "%TAIL%",
+      ", 'acme.accent': { light: '#0B5CAD', dark: '#787878' }, 'acme.ink': { light: '#FFFFFF', dark: '#FFFFFF' }",
+    );
+    const d = contrast(app(both, accentDark("#787878")), { light: "#0B5CAD", dark: "#787878" });
+    expect(d).toHaveLength(1);
+    expect(d[0]?.path).toBe("tokens.ts");
+    expect(atText(both, "'acme.ink'", d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
+    expect(atText(both, "'acme.accent'", d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(false);
   },
   CHECK_CASE_BOUND,
 );
