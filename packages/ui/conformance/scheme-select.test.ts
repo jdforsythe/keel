@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
 // Spec: k.schemes, clause "`<SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} />` renders a `select` with options of values `system`, `light`, `dark` and texts `System`, `Light`, `Dark`, value `system`, with no axe violations."
+// Spec: k.schemes, clause "`SchemeSelect`'s server HTML has the `hidden` attribute, and after `resume` or `mount` it has none."
 // Spec: k.schemes, clause "After `fire('scheme', { type: 'change', value: 'dark' })`, `document.documentElement` has `data-k-scheme=\"dark\"` and `document.cookie` holds `keel-scheme=dark`; after `fire('scheme', { type: 'change', value: 'system' })`, it has no `data-k-scheme` and `document.cookie` holds no `keel-scheme`."
 // k.schemes, Choice: `SchemeSelect` renders as `Select` does with the options `system`, `light`, `dark` in that order, `labels`, exactly one of `label` and `labelledBy` (E1802), role class `k-control`, and `id`; picking `light` or `dark` writes `keel-scheme=<value>; Path=/; Max-Age=31536000; SameSite=Lax` (`; Secure` on https); picking `system` removes the attribute and writes `keel-scheme=; Path=/; Max-Age=0; SameSite=Lax`.
 // Seed: 1337 (fc.assert below).
 // `fire(id, { type: 'change', value })` is the @keel/testing harness call; here `value` is set on the `select` and a bubbling `change` event is dispatched, the path `fire` takes.
 // ASSUMPTIONS: happy-dom's `document.cookie` setter stores the pair and drops it at `Max-Age=0`; the full cookie string with its attributes is not readable back, so the attributes are asserted through a spy on the cookie setter. Whether the `Secure` attribute follows `https` is read through `location.protocol`; happy-dom's location is `about:blank` here, so the `Secure` half is untestable in this file and needs the end-to-end case.
+// ASSUMPTIONS (hidden): "server HTML" is the node `SchemeSelect` builds before any `mount` or `resume` touches it (no server renderer is in the public API; the island pattern of resume-ui-island.test.ts serializes a node the same way); `hidden` sits on the element `SchemeSelect` returns, the one the runtime clears. Which element carries it when `Select` wraps its control is not said.
 // Needs a real browser: the first paint from the cookie and the system preference are packages/server/conformance/scheme-cookie.test.ts and an end-to-end case.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
+import { resume } from "@keel/runtime-dom/ops";
 import { Box, SchemeSelect } from "@keel/ui";
 import axe from "axe-core";
 import fc from "fast-check";
@@ -209,5 +212,57 @@ describe("k.schemes: picking", () => {
     }
     expect(written).toContain("keel-scheme=light; Path=/; Max-Age=31536000; SameSite=Lax");
     expect(written).toContain("keel-scheme=; Path=/; Max-Age=0; SameSite=Lax");
+  });
+});
+
+describe("k.schemes: hidden until script runs", () => {
+  /** The node `make` builds, read as it is built (before the commit that clears `hidden`): its server HTML. */
+  const snapshot = (labels: { system: string; light: string; dark: string }): {
+    html: string;
+    hidden: boolean;
+    host: HTMLElement;
+    off: () => void;
+  } => {
+    let html = "";
+    let hidden = false;
+    const { host, off } = render(() => {
+      const n = SchemeSelect({ id: "scheme", label: "Scheme", labels });
+      if (!(n instanceof Element)) throw new Error("fixture: SchemeSelect returned no element");
+      hidden = n.hasAttribute("hidden");
+      n.setAttribute("data-k-island", "SchemeIsland");
+      html = n.outerHTML;
+      n.removeAttribute("data-k-island");
+      return n;
+    });
+    return { html, hidden, host, off };
+  };
+
+  test("`SchemeSelect`'s server HTML has the `hidden` attribute, and after `resume` or `mount` it has none", () => {
+    const first = snapshot(LABELS);
+    expect(first.hidden).toBe(true);
+    expect(first.html).toMatch(/\bhidden\b/);
+    expect(first.host.querySelector("[hidden]"), "after mount").toBeNull();
+    first.off();
+
+    const h = document.createElement("div");
+    document.body.appendChild(h);
+    h.innerHTML = `${first.html}<script type="application/json" id="k-state">${JSON.stringify({ stores: {}, islands: { SchemeIsland: {} } })}</script>`;
+    expect(h.querySelector("[hidden]")).not.toBeNull();
+    resume(h, { SchemeIsland: select }, { ctx: createCtx({ mode: "sim", seed: 1337 }) });
+    expect(h.querySelector("[hidden]"), "after resume").toBeNull();
+    h.remove();
+  });
+
+  test("whatever its labels, the server node is hidden and the mounted one is not", () => {
+    fc.assert(
+      fc.property(fc.uniqueArray(fc.stringMatching(/^[A-Za-z]{1,8}$/), { minLength: 3, maxLength: 3 }), (words) => {
+        const [system = "", light = "", dark = ""] = words;
+        const r = snapshot({ system, light, dark });
+        expect(r.hidden).toBe(true);
+        expect(r.host.querySelector("[hidden]")).toBeNull();
+        r.off();
+      }),
+      { seed: SEED, numRuns: 10 },
+    );
   });
 });

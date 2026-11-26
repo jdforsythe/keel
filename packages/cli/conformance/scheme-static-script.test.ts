@@ -1,10 +1,11 @@
-// Spec: k.schemes, clause "`keel build` of a `static` deployable, and of a `client` deployable, with both schemes whose page renders a `SchemeSelect` writes an `index.html` whose head holds a `<script src=\"/assets/keel-scheme-` before its first `<link rel=\"stylesheet\"`, naming a file of at most 300 bytes; without the `SchemeSelect`, no `keel-scheme` script."
-// Spec: k.schemes, clause "A `client` or `static` deployable whose modules render a `SchemeSelect` holds in each document's head, before its first stylesheet link, `<script src=\"/assets/keel-scheme-<hash>.js\"></script>`: a classic script of at most 300 bytes that sets the attribute from the cookie before the body is parsed."
+// Spec: k.schemes, clause "`keel build` of a `static` deployable, and of a `client` deployable, with both schemes and no `SchemeSelect` writes an `index.html` whose head holds a `<script src=\"/assets/keel-scheme-` before its first `<link rel=\"stylesheet\"`, naming a file of at most 300 bytes; with one scheme, no `keel-scheme` script."
+// Spec: k.schemes, clause "A `client` or `static` deployable in an app with both schemes holds in each document's head, before its first stylesheet link, `<script src=\"/assets/keel-scheme-<hash>.js\"></script>`: a classic script of at most 300 bytes that sets the attribute from the cookie before the body is parsed. `script-src 'self'` allows it and nothing is inline (k.security)."
+// Spec: k.schemes, clause "An app with one scheme holds no scheme script."
 // Spec: k.schemes, clause "A `client` deployable builds to `dist/<name>/` with or without `servedBy` (k.hosting Artifact), its one document `index.html`."
-// Seed: 1337 (no generated input: four spawned builds, a select and a plain fixture per adapter, shared by the cases).
-// Needs a real browser: that the script sets the attribute before the body is parsed, and that no flash shows, are end-to-end cases; here the script's text is read for the cookie name and the attribute it writes, and its bytes counted. "An app with one scheme holds no scheme script" is not asserted: a `SchemeSelect` over one scheme is E1814, which fails the check before a build (packages/check/conformance/schemes-contrast.test.ts).
-// ASSUMPTIONS: the fixture is staticTree's project (static-support.ts) whose `Page` also renders a `SchemeSelect` and whose root `tokens.ts` gives both schemes; the `client` fixture is the same project with the deployable `site` given adapter `client` (alone, no `servedBy`), its `index.html` read the same way as the `static` one's.
-import { existsSync, readFileSync, statSync } from "node:fs";
+// Seed: 1337 (no generated input: three spawned builds per adapter, shared by the cases: both schemes with no `SchemeSelect`, both schemes with one, one scheme).
+// Needs a real browser: that the script sets the attribute before the body is parsed, and that no flash shows, are end-to-end cases (RFC 0243 owed list); here the script's text is read for the cookie name and the attribute it writes, and its bytes counted. The script ships whenever the app has both schemes, whether or not a page renders a `SchemeSelect`; a `SchemeSelect` over one scheme is E1814 (packages/check/conformance/schemes-own-folder.test.ts), so the one-scheme build renders none.
+// ASSUMPTIONS: the fixture is staticTree's project (static-support.ts) whose root `tokens.ts` gives both schemes (`schemes: ["light", "dark"]`) and whose `Page` renders no `SchemeSelect`, the select fixture adding one; the one-scheme fixture's `tokens.ts` is `brandTokens`; the `client` fixture is the same project with the deployable `site` given adapter `client` (alone, no `servedBy`), its `index.html` read the same way as the `static` one's.
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { cleanup, keel, materialize, type Run, type Tree } from "./compat-support.ts";
@@ -21,11 +22,15 @@ const withSelect = (adapter: string): Tree => ({
   "modules/s/Page.tsx": SELECT_PAGE,
 });
 const withoutSelect = (adapter: string): Tree => ({ ...staticTree("none", undefined, adapter), "tokens.ts": TOKENS });
+const ONE_TOKENS = `import { brandTokens } from "@keel/ui/brand";\nexport const tokens = brandTokens;\n`;
+const oneScheme = (adapter: string): Tree => ({ ...staticTree("none", undefined, adapter), "tokens.ts": ONE_TOKENS });
 
 const selectDirs = new Map<string, string>();
 const plainDirs = new Map<string, string>();
+const oneDirs = new Map<string, string>();
 const selectDir = (adapter: string): string => selectDirs.get(adapter) ?? "";
 const plainDir = (adapter: string): string => plainDirs.get(adapter) ?? "";
+const oneDir = (adapter: string): string => oneDirs.get(adapter) ?? "";
 const runs = new Map<string, Run>();
 const built = (dir: string): Run => {
   const known = runs.get(dir);
@@ -38,10 +43,11 @@ beforeAll(() => {
   for (const a of ADAPTERS) {
     selectDirs.set(a, materialize(withSelect(a)));
     plainDirs.set(a, materialize(withoutSelect(a)));
+    oneDirs.set(a, materialize(oneScheme(a)));
   }
 }, SLOW);
 afterAll(() => {
-  for (const d of [...selectDirs.values(), ...plainDirs.values()]) cleanup(d);
+  for (const d of [...selectDirs.values(), ...plainDirs.values(), ...oneDirs.values()]) cleanup(d);
 });
 
 const site = (dir: string, rel: string): string => join(dir, "dist", "site", rel);
@@ -50,9 +56,9 @@ const SCRIPT = /<script src="(\/assets\/keel-scheme-[^"]+\.js)"><\/script>/;
 
 for (const adapter of ADAPTERS) {
   test(
-    `\`keel build\` of a \`${adapter}\` deployable with both schemes whose page renders a \`SchemeSelect\` writes an \`index.html\` whose head holds a \`<script src="/assets/keel-scheme-\` before its first \`<link rel="stylesheet"\`, naming a file of at most 300 bytes; without the \`SchemeSelect\`, no \`keel-scheme\` script`,
+    `\`keel build\` of a \`${adapter}\` deployable with both schemes and no \`SchemeSelect\` writes an \`index.html\` whose head holds a \`<script src="/assets/keel-scheme-\` before its first \`<link rel="stylesheet"\`, naming a file of at most 300 bytes; with one scheme, no \`keel-scheme\` script`,
     () => {
-      const dir = selectDir(adapter);
+      const dir = plainDir(adapter);
       expect(built(dir).status).toBe(0);
       const h = head(readFileSync(site(dir, "index.html"), "utf8"));
       const m = SCRIPT.exec(h);
@@ -65,8 +71,23 @@ for (const adapter of ADAPTERS) {
       expect(existsSync(file)).toBe(true);
       expect(statSync(file).size).toBeLessThanOrEqual(300);
 
-      expect(built(plainDir(adapter)).status).toBe(0);
-      expect(readFileSync(site(plainDir(adapter), "index.html"), "utf8")).not.toContain("keel-scheme");
+      expect(built(oneDir(adapter)).status).toBe(0);
+      const one = readFileSync(site(oneDir(adapter), "index.html"), "utf8");
+      expect(one).not.toContain("keel-scheme");
+      const assets = site(oneDir(adapter), "assets");
+      expect((existsSync(assets) ? readdirSync(assets) : []).filter((f) => f.startsWith("keel-scheme"))).toEqual([]);
+    },
+    SLOW,
+  );
+
+  test(
+    `a \`${adapter}\` deployable with both schemes whose page also renders a \`SchemeSelect\` holds the same one script, once in the head before its first stylesheet link`,
+    () => {
+      const dir = selectDir(adapter);
+      expect(built(dir).status).toBe(0);
+      const h = head(readFileSync(site(dir, "index.html"), "utf8"));
+      expect(h.split("keel-scheme-").length - 1).toBe(1);
+      expect(h.indexOf("keel-scheme-")).toBeLessThan(h.indexOf('<link rel="stylesheet"'));
     },
     SLOW,
   );
@@ -74,7 +95,7 @@ for (const adapter of ADAPTERS) {
   test(
     `each document of the \`${adapter}\` deployable holds the script, a classic one (no \`type="module"\`, no \`async\`, no \`defer\`), and no inline script holds the scheme code`,
     () => {
-      const dir = selectDir(adapter);
+      const dir = plainDir(adapter);
       built(dir);
       // A `static` deployable writes a document per route; a `client` deployable has one document, `index.html` (k.schemes First paint).
       const docs = adapter === "static" ? ["index.html", "about/index.html"] : ["index.html"];
@@ -95,7 +116,7 @@ for (const adapter of ADAPTERS) {
   test(
     `the \`${adapter}\` script reads the \`keel-scheme\` cookie and sets \`data-k-scheme\` on the document element, and the policy in \`csp.txt\` allows scripts from \`'self'\` with no inline script`,
     () => {
-      const dir = selectDir(adapter);
+      const dir = plainDir(adapter);
       built(dir);
       const m = SCRIPT.exec(head(readFileSync(site(dir, "index.html"), "utf8")));
       const src = readFileSync(site(dir, m?.[1] ?? "none"), "utf8");
