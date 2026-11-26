@@ -14,7 +14,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "96kb",
+      "max": "98kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -44,7 +44,7 @@
     "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "10.75kb",
+    "@keel/runtime-dom/ops": "11kb",
     "@keel/scaffold": {
       "max": "23.5kb",
       "platform": "node"
@@ -209,8 +209,8 @@
       "max": "8.25kb",
       "platform": "node"
     },
-    "@keel/ui": "6kb",
-    "@keel/ui/aria": "3.6kb"
+    "@keel/ui": "7kb",
+    "@keel/ui/aria": "3.75kb"
   },
   "mutate": {
     "default": 30
