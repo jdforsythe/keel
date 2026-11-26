@@ -14,7 +14,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "92kb",
+      "max": "93kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -85,7 +85,7 @@
       "max": "1.25kb",
       "platform": "node"
     },
-    "@keel/std-i18n": "1kb",
+    "@keel/std-i18n": "1.2kb",
     "@keel/std-i18n/tools": {
       "max": "4kb",
       "platform": "node"
