@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "keel build",
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs"
