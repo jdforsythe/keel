@@ -14,6 +14,7 @@ import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
 import { actsFor } from "./actsFor.ts";
 import { asMain } from "./asMain.ts";
+import { controlValue } from "./controlValue.ts";
 import { fail } from "./fail.ts";
 import { focusOrder } from "./focusOrder.ts";
 import { nameOf } from "./nameOf.ts";
@@ -122,7 +123,9 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     const name = nameOf(el, role);
     const entry = hosts.get(el);
     if (entry !== undefined) return { id: el.id, role, name, text: "", state: {}, value: entry.value() };
-    return { id: el.id, role, name, text: (el.textContent ?? "").trim(), state: stateOf(el, role) };
+    const found: Found = { id: el.id, role, name, text: (el.textContent ?? "").trim(), state: stateOf(el, role) };
+    const value = controlValue(el);
+    return value === undefined ? found : { ...found, value };
   };
 
   /** Run `act` and settle, rethrowing the first error the window reported meanwhile. */

@@ -14,7 +14,9 @@ const COMPONENT = `import { Part } from '@keel/ui/aria'
 export default function Cell() { return <Part id="c" role="gridcell" p="2">1</Part> }
 `;
 
-const diags = (path: string, source: string) => check([{ path, source }], { types: false }).diagnostics;
+const TOKENS = { space: { 2: "8px" } };
+const diags = (path: string, source: string) =>
+  check([{ path, source }], { types: false, artifacts: { tokens: TOKENS } }).diagnostics;
 
 describe("k.aria: Part is open to app code", () => {
   test("An app file importing `Part` from `@keel/ui/aria` reports no diagnostic", () => {
