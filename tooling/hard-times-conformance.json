@@ -1,1 +1,3752 @@
-[]
+[
+  {
+    "path": "packages/check/conformance/E1563-W1564.test.ts",
+    "line": 18,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/check/conformance/E1563-W1564.test.ts",
+    "line": 24,
+    "text": "2 * 14 * 30_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/check/conformance/check-cache.test.ts",
+    "line": 19,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/check/conformance/check-json-byte-identical-binary.test.ts",
+    "line": 43,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/check/conformance/check-json-byte-identical-binary.test.ts",
+    "line": 73,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/check/conformance/check-json-byte-identical-binary.test.ts",
+    "line": 84,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/check/conformance/diag-message-fit.test.ts",
+    "line": 38,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/check/conformance/diag-message-fit.test.ts",
+    "line": 47,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/check/conformance/explain-entry.test.ts",
+    "line": 126,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/E1561-retired.test.ts",
+    "line": 9,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/E1561-retired.test.ts",
+    "line": 14,
+    "text": "4 * 2 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/E1562-base-route-change.test.ts",
+    "line": 25,
+    "text": "6 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-default-artifacts.test.ts",
+    "line": 83,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-default-artifacts.test.ts",
+    "line": 136,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-default-artifacts.test.ts",
+    "line": 153,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-default-artifacts.test.ts",
+    "line": 197,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-claims.test.ts",
+    "line": 205,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-claims.test.ts",
+    "line": 234,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-e1820-0191.test.ts",
+    "line": 82,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-page-routes.test.ts",
+    "line": 115,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-page-routes.test.ts",
+    "line": 236,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-page-routes.test.ts",
+    "line": 253,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-page-routes.test.ts",
+    "line": 259,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-ledger-page-routes.test.ts",
+    "line": 269,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-codes-cli.test.ts",
+    "line": 52,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 90,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 168,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 245,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 340,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 406,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 442,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 484,
+    "text": "360_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 523,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 568,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 604,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 629,
+    "text": "360_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 636,
+    "text": "360_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/a11y-static-contrast-cli.test.ts",
+    "line": 644,
+    "text": "360_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-forged-e1005.test.ts",
+    "line": 99,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-forged-e1005.test.ts",
+    "line": 160,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-forged-e1005.test.ts",
+    "line": 171,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-forged-e1005.test.ts",
+    "line": 189,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-forged-e1005.test.ts",
+    "line": 199,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-forged-e1005.test.ts",
+    "line": 212,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-forged-e1005.test.ts",
+    "line": 221,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-routes-literals.test.ts",
+    "line": 196,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-routes-literals.test.ts",
+    "line": 212,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-routes-literals.test.ts",
+    "line": 226,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-routes-literals.test.ts",
+    "line": 235,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-routes-literals.test.ts",
+    "line": 244,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-routes-literals.test.ts",
+    "line": 249,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-routes-literals.test.ts",
+    "line": 271,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-std-health-routes.test.ts",
+    "line": 113,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-std-health-routes.test.ts",
+    "line": 124,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-std-health-routes.test.ts",
+    "line": 129,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-tamper-e1005.test.ts",
+    "line": 95,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-tamper-e1005.test.ts",
+    "line": 128,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-tamper-e1005.test.ts",
+    "line": 142,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-tamper-e1005.test.ts",
+    "line": 163,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/artifact-tamper-e1005.test.ts",
+    "line": 174,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/build-production-mode.test.ts",
+    "line": 14,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/build-target-e1574.test.ts",
+    "line": 18,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/build-trailer-files-0211.test.ts",
+    "line": 13,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-budget-injected10.test.ts",
+    "line": 54,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-budget-injected10.test.ts",
+    "line": 77,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-cache.test.ts",
+    "line": 33,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-cache.test.ts",
+    "line": 34,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-trailer-files-0211.test.ts",
+    "line": 13,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-0092.test.ts",
+    "line": 24,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-0092.test.ts",
+    "line": 38,
+    "text": "2 * 3 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-accepts-property.test.ts",
+    "line": 14,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-output-0104.test.ts",
+    "line": 22,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/data-dev-helper-reload-0194.test.ts",
+    "line": 16,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/data-dev-reload.test.ts",
+    "line": 16,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/deploy-files-build-0092.test.ts",
+    "line": 11,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/dev-port-0091.test.ts",
+    "line": 21,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/dev-uncaught.test.ts",
+    "line": 18,
+    "text": "90_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-audit.test.ts",
+    "line": 22,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-caller.test.ts",
+    "line": 10,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-deterministic.test.ts",
+    "line": 16,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-failing-run.test.ts",
+    "line": 21,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-no-key.test.ts",
+    "line": 18,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-no-pii.test.ts",
+    "line": 12,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-pii-coverage.test.ts",
+    "line": 22,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-security.test.ts",
+    "line": 18,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-shipped-rungs-0095.test.ts",
+    "line": 18,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-tamper.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-write-verify.test.ts",
+    "line": 25,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/explain-std-rule-code.test.ts",
+    "line": 65,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/format-literal-e1108-fix.test.ts",
+    "line": 18,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/format-literal-e1108-fix.test.ts",
+    "line": 36,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/format-literal-e1108-fix.test.ts",
+    "line": 44,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/host-code-css-build.test.ts",
+    "line": 42,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/host-code-css-build.test.ts",
+    "line": 55,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/hosting-peer-binding.test.ts",
+    "line": 187,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/hosting-peer-binding.test.ts",
+    "line": 200,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1706-cli.test.ts",
+    "line": 38,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1706-cli.test.ts",
+    "line": 49,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1706-cli.test.ts",
+    "line": 56,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1706-cli.test.ts",
+    "line": 70,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1706-cli.test.ts",
+    "line": 87,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1706-cli.test.ts",
+    "line": 94,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1707-cli.test.ts",
+    "line": 35,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1707-cli.test.ts",
+    "line": 52,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1707-cli.test.ts",
+    "line": 61,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1707-cli.test.ts",
+    "line": 76,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1707-cli.test.ts",
+    "line": 86,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1707-cli.test.ts",
+    "line": 94,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-diff-e1707-cli.test.ts",
+    "line": 98,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-explore-rung.test.ts",
+    "line": 64,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-explore-rung.test.ts",
+    "line": 71,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-host-elements.test.ts",
+    "line": 28,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-host-elements.test.ts",
+    "line": 42,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-host-elements.test.ts",
+    "line": 62,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-host-elements.test.ts",
+    "line": 69,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-host-elements.test.ts",
+    "line": 75,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-host-elements.test.ts",
+    "line": 82,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-host-elements.test.ts",
+    "line": 88,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-items-citation.test.ts",
+    "line": 251,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-items-citation.test.ts",
+    "line": 274,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-items-key.test.ts",
+    "line": 108,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-items-key.test.ts",
+    "line": 199,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-items-key.test.ts",
+    "line": 240,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-items-projects.test.ts",
+    "line": 223,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-items-runs.test.ts",
+    "line": 307,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-match.test.ts",
+    "line": 37,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-match.test.ts",
+    "line": 41,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-match.test.ts",
+    "line": 55,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-match.test.ts",
+    "line": 61,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-shape.test.ts",
+    "line": 30,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-shape.test.ts",
+    "line": 36,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-shape.test.ts",
+    "line": 44,
+    "text": "360_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-e1725-shape.test.ts",
+    "line": 48,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-score.test.ts",
+    "line": 45,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-justified-score.test.ts",
+    "line": 55,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-kept-claims.test.ts",
+    "line": 88,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-kept-claims.test.ts",
+    "line": 103,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-kept-claims.test.ts",
+    "line": 120,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-kept-claims.test.ts",
+    "line": 148,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-monitored.test.ts",
+    "line": 37,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-monitored.test.ts",
+    "line": 46,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-monitored.test.ts",
+    "line": 56,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-monitored.test.ts",
+    "line": 74,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-claims.test.ts",
+    "line": 64,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-claims.test.ts",
+    "line": 73,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-claims.test.ts",
+    "line": 84,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-claims.test.ts",
+    "line": 99,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-e1713.test.ts",
+    "line": 39,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-e1713.test.ts",
+    "line": 45,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-e1713.test.ts",
+    "line": 50,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-mutation-e1713.test.ts",
+    "line": 55,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 64,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 78,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 84,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 91,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 113,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 122,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 136,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 146,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 163,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 168,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-negative-types.test.ts",
+    "line": 177,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-prove-awaited.test.ts",
+    "line": 103,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-prove-awaited.test.ts",
+    "line": 109,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-prove-rung.test.ts",
+    "line": 46,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-prove-rung.test.ts",
+    "line": 56,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-range-clause.test.ts",
+    "line": 42,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-range-clause.test.ts",
+    "line": 47,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-range-clause.test.ts",
+    "line": 51,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-range-clause.test.ts",
+    "line": 55,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-range-clause.test.ts",
+    "line": 69,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-rung-promotion-cli.test.ts",
+    "line": 36,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-rung-promotion-cli.test.ts",
+    "line": 51,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-rung-promotion-cli.test.ts",
+    "line": 63,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-rungs-e1712.test.ts",
+    "line": 40,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-simulate-rung.test.ts",
+    "line": 38,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-simulate-rung.test.ts",
+    "line": 44,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-simulate-rung.test.ts",
+    "line": 48,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-simulate-rung.test.ts",
+    "line": 55,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 94,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 100,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 106,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 112,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 121,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 134,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 168,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 182,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 197,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-summary-counts.test.ts",
+    "line": 213,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-type-level-proven.test.ts",
+    "line": 29,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-type-level-proven.test.ts",
+    "line": 33,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/ledger-type-level-proven.test.ts",
+    "line": 38,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-a11y.test.ts",
+    "line": 92,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-a11y.test.ts",
+    "line": 102,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-a11y.test.ts",
+    "line": 118,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-imports.test.ts",
+    "line": 78,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-imports.test.ts",
+    "line": 87,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-imports.test.ts",
+    "line": 102,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-imports.test.ts",
+    "line": 123,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-ledger.test.ts",
+    "line": 1236,
+    "text": "100_000 * 12",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-test.test.ts",
+    "line": 52,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-test.test.ts",
+    "line": 59,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/mcp-build-0092.test.ts",
+    "line": 20,
+    "text": "2 * 2 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/mcp-input-schema-equals-json-schema.test.ts",
+    "line": 132,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/mcp-input-schema-equals-json-schema.test.ts",
+    "line": 209,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-config-createapp.test.ts",
+    "line": 108,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-config-createapp.test.ts",
+    "line": 118,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-config-createapp.test.ts",
+    "line": 135,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-deps-loaded.test.ts",
+    "line": 92,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-deps-loaded.test.ts",
+    "line": 97,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-deps-loaded.test.ts",
+    "line": 102,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-deps-loaded.test.ts",
+    "line": 120,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-tools-loaded.test.ts",
+    "line": 81,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-tools-loaded.test.ts",
+    "line": 87,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/module-std-tools-loaded.test.ts",
+    "line": 94,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/origins-dev-own-frame.test.ts",
+    "line": 20,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/origins-evidence.test.ts",
+    "line": 9,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/privacy-pii-json-schema.test.ts",
+    "line": 11,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/review-escape-codes.test.ts",
+    "line": 31,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/review-loudness.test.ts",
+    "line": 120,
+    "text": "6 * 3 * 3 * 10_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/schema-format-json-schema.test.ts",
+    "line": 12,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/security-csp-txt.test.ts",
+    "line": 11,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/shell-connect.test.ts",
+    "line": 53,
+    "text": "5 * 120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-s0014.test.ts",
+    "line": 62,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-s0014.test.ts",
+    "line": 66,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-s0014.test.ts",
+    "line": 89,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-s0014.test.ts",
+    "line": 95,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-s0014.test.ts",
+    "line": 99,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/surface-normal-sources.test.ts",
+    "line": 34,
+    "text": "21 * 2 * 40_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/surface-v2-layout.test.ts",
+    "line": 7,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-identity-read.test.ts",
+    "line": 135,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-run-load-failure-count.test.ts",
+    "line": 11,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-run-summary.test.ts",
+    "line": 13,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-run-uncaught-t0001.test.ts",
+    "line": 58,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-run-writes.test.ts",
+    "line": 18,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-sim-ctx.test.ts",
+    "line": 75,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-threadpool.test.ts",
+    "line": 64,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-dev-inspect-deployables-0190.test.ts",
+    "line": 10,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-dev-poll-0211.test.ts",
+    "line": 20,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-e1586-build.test.ts",
+    "line": 79,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-e1586-build.test.ts",
+    "line": 85,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-keel-dev-one-origin.test.ts",
+    "line": 18,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/workspace-same-diagnostics.test.ts",
+    "line": 76,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/cli/conformance/workspace-same-diagnostics.test.ts",
+    "line": 84,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/compiler/conformance/boundary-stubs.test.ts",
+    "line": 14,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
+    "line": 33,
+    "text": "30000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
+    "line": 40,
+    "text": "30000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
+    "line": 46,
+    "text": "30000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
+    "line": 53,
+    "text": "30000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/compiler/conformance/e1011-client-service-map.test.ts",
+    "line": 19,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/entry-mode.test.ts",
+    "line": 17,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/eval-require-events-0175.test.ts",
+    "line": 58,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/compiler/conformance/shell-entry-mount.test.ts",
+    "line": 26,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/shell-entry.test.ts",
+    "line": 25,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/forms/conformance/privacy-input-mask.test.ts",
+    "line": 133,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/router/conformance/action-output-0104.test.ts",
+    "line": 182,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/router/conformance/action-output-0104.test.ts",
+    "line": 188,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/agent-files-sync.test.ts",
+    "line": 47,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 39,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 44,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 59,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 62,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 69,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 72,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 75,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 83,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 110,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 117,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 120,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 135,
+    "text": "240000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 148,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 168,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/cli-service-flags.test.ts",
+    "line": 171,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/dry-run.test.ts",
+    "line": 122,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean-after-build.test.ts",
+    "line": 50,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean-after-build.test.ts",
+    "line": 53,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean-after-build.test.ts",
+    "line": 56,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean-after-build.test.ts",
+    "line": 59,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean-after-build.test.ts",
+    "line": 62,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean-after-build.test.ts",
+    "line": 67,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 107,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 110,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 113,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 116,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 119,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 122,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 125,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 128,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 131,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/generators-leave-check-clean.test.ts",
+    "line": 141,
+    "text": "60000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/place-moves-module.test.ts",
+    "line": 35,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/place-moves-module.test.ts",
+    "line": 44,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/place-moves-module.test.ts",
+    "line": 53,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/place-moves-module.test.ts",
+    "line": 66,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/place-roundtrip.test.ts",
+    "line": 38,
+    "text": "240000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/place-roundtrip.test.ts",
+    "line": 47,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/project-into-name-dir.test.ts",
+    "line": 42,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/project-into-name-dir.test.ts",
+    "line": 63,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/project-static-adapter-builds.test.ts",
+    "line": 26,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/refresh.test.ts",
+    "line": 86,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/refresh.test.ts",
+    "line": 112,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/refresh.test.ts",
+    "line": 119,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/refresh.test.ts",
+    "line": 131,
+    "text": "180000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/refresh.test.ts",
+    "line": 140,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/route-no-loader.test.ts",
+    "line": 58,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/service-base-client.test.ts",
+    "line": 57,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/service-base-node.test.ts",
+    "line": 75,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/scaffold/conformance/service-name.test.ts",
+    "line": 61,
+    "text": "120000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/build-assets.test.ts",
+    "line": 134,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/claim-in-place.property.test.ts",
+    "line": 128,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/deploy-env-keys-0092.test.ts",
+    "line": 89,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/deploy-env-keys-0092.test.ts",
+    "line": 121,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/deploy-env-keys-0092.test.ts",
+    "line": 143,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/deploy-frames-source-map.test.ts",
+    "line": 116,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/deploy-frames-source-map.test.ts",
+    "line": 181,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/deploy-frames-source-map.test.ts",
+    "line": 220,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/document-islands.test.ts",
+    "line": 211,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/e1560-deploy-env.test.ts",
+    "line": 13,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/e1560-deploy-env.test.ts",
+    "line": 34,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/hosting-0087.test.ts",
+    "line": 269,
+    "text": "180_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/hosting-0087.test.ts",
+    "line": 293,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/hosting-0087.test.ts",
+    "line": 367,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/hosting-0087.test.ts",
+    "line": 438,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/hosting-0087.test.ts",
+    "line": 451,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/hosting-0087.test.ts",
+    "line": 466,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/leave-module-stores.test.ts",
+    "line": 138,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/leave-process.test.ts",
+    "line": 27,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/leave-process.test.ts",
+    "line": 42,
+    "text": "20_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/leave-snapshots.test.ts",
+    "line": 200,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/live-loader-event-cap.test.ts",
+    "line": 84,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/live-loader-event-cap.test.ts",
+    "line": 92,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/live-loader-event-cap.test.ts",
+    "line": 105,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/live-loader-event-cap.test.ts",
+    "line": 113,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-bounds.test.ts",
+    "line": 142,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-bounds.test.ts",
+    "line": 150,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-bounds.test.ts",
+    "line": 156,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-bounds.test.ts",
+    "line": 166,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-bounds.test.ts",
+    "line": 173,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-bounds.test.ts",
+    "line": 189,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-cut-scrub.property.test.ts",
+    "line": 89,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-escape.test.ts",
+    "line": 73,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-escape.test.ts",
+    "line": 82,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/log-record-escape.test.ts",
+    "line": 104,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/module-std-config-client.test.ts",
+    "line": 215,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/mount-placement.test.ts",
+    "line": 76,
+    "text": "RUNS * 1_500",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-diag-frames-0095.test.ts",
+    "line": 67,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-diag-scrub.test.ts",
+    "line": 106,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-scrub-cap.test.ts",
+    "line": 195,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-scrub-cap.test.ts",
+    "line": 201,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-scrub-cap.test.ts",
+    "line": 206,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 321,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 462,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 550,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 607,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 619,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 689,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 700,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 723,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/privacy-secret-reach.test.ts",
+    "line": 734,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/render-route-document-fields-0180.test.ts",
+    "line": 19,
+    "text": "RUNS * 500 + 3_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/resume-entry.test.ts",
+    "line": 131,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/resume-island-order.test.ts",
+    "line": 81,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/resume-module-store-e1256.test.ts",
+    "line": 375,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/resume-replay-order.property.test.ts",
+    "line": 62,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/resume-served-document.property.test.ts",
+    "line": 138,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/runner-rejection-diag-0092.test.ts",
+    "line": 56,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/sim-route-load.test.ts",
+    "line": 51,
+    "text": "RUNS * 2_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/start-database-url.test.ts",
+    "line": 99,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/start-database-url.test.ts",
+    "line": 127,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/store-view-store-resume-0181.test.ts",
+    "line": 24,
+    "text": "RUNS * 1_000 + 2_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/stream-cap-0092.test.ts",
+    "line": 117,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/topology-server-mjs.test.ts",
+    "line": 15,
+    "text": "90_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/server/conformance/topology-server-mjs.test.ts",
+    "line": 66,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1651-check.test.ts",
+    "line": 26,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1651-check.test.ts",
+    "line": 31,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1652-check.test.ts",
+    "line": 45,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1652-check.test.ts",
+    "line": 49,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1652-check.test.ts",
+    "line": 53,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1653-check.test.ts",
+    "line": 26,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1653-check.test.ts",
+    "line": 30,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/services/conformance/E1653-check.test.ts",
+    "line": 34,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-brands/conformance/brands.test.ts",
+    "line": 69,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-brands/conformance/brands.test.ts",
+    "line": 81,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-brands/conformance/brands.test.ts",
+    "line": 98,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-brands/conformance/brands.test.ts",
+    "line": 115,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-brands/conformance/brands.test.ts",
+    "line": 130,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-brands/conformance/brands.test.ts",
+    "line": 142,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/android-cleartext.test.ts",
+    "line": 28,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/build-tools.test.ts",
+    "line": 29,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/ci-workflow.test.ts",
+    "line": 15,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/no-origin-allow.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/return-scheme.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/shell-app-packages.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/shell-files.test.ts",
+    "line": 13,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/shell-plugins.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/contract-entries.test.ts",
+    "line": 259,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/contract-entries.test.ts",
+    "line": 275,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/contract-entries.test.ts",
+    "line": 296,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 102,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 168,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 284,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 319,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 352,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 400,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 523,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/limits-anonymous.test.ts",
+    "line": 581,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/rules-e2601-e2602.test.ts",
+    "line": 87,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-channels/conformance/rules-e2601-e2602.test.ts",
+    "line": 103,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-conflicts/conformance/find-races.test.ts",
+    "line": 40,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-conflicts/conformance/find-races.test.ts",
+    "line": 57,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-conflicts/conformance/find-races.test.ts",
+    "line": 66,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-db/conformance/check-deps-dropped-rule.test.ts",
+    "line": 14,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-health/conformance/app-import.test.ts",
+    "line": 23,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-health/conformance/app-import.test.ts",
+    "line": 31,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-i18n/conformance/e2301.test.ts",
+    "line": 36,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-i18n/conformance/e2301.test.ts",
+    "line": 53,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2501.test.ts",
+    "line": 70,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2501.test.ts",
+    "line": 75,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2501.test.ts",
+    "line": 91,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2502.test.ts",
+    "line": 77,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2502.test.ts",
+    "line": 86,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2503.test.ts",
+    "line": 80,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2503.test.ts",
+    "line": 90,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2503.test.ts",
+    "line": 121,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2503.test.ts",
+    "line": 137,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2504.test.ts",
+    "line": 66,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2504.test.ts",
+    "line": 76,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2504.test.ts",
+    "line": 85,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 57,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 67,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 74,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 86,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 96,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 104,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 114,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-jobs/conformance/e2506.test.ts",
+    "line": 119,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-messages/conformance/client-chunks.test.ts",
+    "line": 152,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/e2651.test.ts",
+    "line": 94,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/owner-message.test.ts",
+    "line": 73,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/storage-faults.test.ts",
+    "line": 252,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/storage-faults.test.ts",
+    "line": 274,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/storage-faults.test.ts",
+    "line": 295,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/storage-faults.test.ts",
+    "line": 329,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/storage-faults.test.ts",
+    "line": 347,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/storage-faults.test.ts",
+    "line": 368,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-offline/conformance/storage-faults.test.ts",
+    "line": 397,
+    "text": "10_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-postgres/conformance/sim-held.test.ts",
+    "line": 238,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-postgres/conformance/unreachable-0175.test.ts",
+    "line": 46,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-report/conformance/module-deps-loads-tools.test.ts",
+    "line": 90,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2551.test.ts",
+    "line": 91,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2551.test.ts",
+    "line": 96,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2551.test.ts",
+    "line": 103,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2551.test.ts",
+    "line": 123,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2552.test.ts",
+    "line": 84,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2552.test.ts",
+    "line": 89,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2552.test.ts",
+    "line": 105,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2553.test.ts",
+    "line": 80,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/e2553.test.ts",
+    "line": 89,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-schedules/conformance/next-fire-matches-cron.test.ts",
+    "line": 151,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2001-redact-path.test.ts",
+    "line": 14,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2001-redact-path.test.ts",
+    "line": 17,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2001-redact-path.test.ts",
+    "line": 20,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2001-redact-path.test.ts",
+    "line": 23,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2002-session-file-schema.test.ts",
+    "line": 18,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2002-session-file-schema.test.ts",
+    "line": 25,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2003-replay-input.test.ts",
+    "line": 27,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2003-replay-input.test.ts",
+    "line": 34,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2003-replay-input.test.ts",
+    "line": 40,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2003-replay-input.test.ts",
+    "line": 56,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2003-replay-input.test.ts",
+    "line": 62,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2004-not-reproduced.test.ts",
+    "line": 29,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2004-not-reproduced.test.ts",
+    "line": 37,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2004-not-reproduced.test.ts",
+    "line": 43,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 22,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 25,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 28,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 47,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 54,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 61,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 65,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 72,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/E2005-adapter-not-node.test.ts",
+    "line": 75,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/capture-nothing-to-save.test.ts",
+    "line": 68,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/capture-nothing-to-save.test.ts",
+    "line": 80,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/capture-nothing-to-save.test.ts",
+    "line": 92,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/capture-nothing-to-save.test.ts",
+    "line": 101,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/capture-nothing-to-save.test.ts",
+    "line": 119,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2007-e2008.test.ts",
+    "line": 31,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2007-e2008.test.ts",
+    "line": 50,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2007-e2008.test.ts",
+    "line": 55,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2007-e2008.test.ts",
+    "line": 62,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2007-e2008.test.ts",
+    "line": 68,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2007-e2008.test.ts",
+    "line": 73,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2009.test.ts",
+    "line": 249,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2009.test.ts",
+    "line": 255,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2009.test.ts",
+    "line": 259,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2009.test.ts",
+    "line": 281,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2009.test.ts",
+    "line": 294,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2009.test.ts",
+    "line": 310,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/e2009.test.ts",
+    "line": 322,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/group-user-id.test.ts",
+    "line": 77,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/group-user-id.test.ts",
+    "line": 81,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/group-user-id.test.ts",
+    "line": 92,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/ingest-recomputed.test.ts",
+    "line": 112,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/ingest-recomputed.test.ts",
+    "line": 132,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/minimize.test.ts",
+    "line": 28,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/minimize.test.ts",
+    "line": 34,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/minimize.test.ts",
+    "line": 44,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/minimize.test.ts",
+    "line": 50,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/minimize.test.ts",
+    "line": 67,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/monitor-command.test.ts",
+    "line": 282,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/monitor-command.test.ts",
+    "line": 297,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/monitor-command.test.ts",
+    "line": 321,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/monitor-command.test.ts",
+    "line": 332,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/monitor-command.test.ts",
+    "line": 345,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/monitor-privacy.test.ts",
+    "line": 280,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/net-event.test.ts",
+    "line": 64,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-mount.test.ts",
+    "line": 50,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-mount.test.ts",
+    "line": 67,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-mount.test.ts",
+    "line": 74,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-mount.test.ts",
+    "line": 91,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-mount.test.ts",
+    "line": 100,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-mount.test.ts",
+    "line": 108,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served-user.test.ts",
+    "line": 26,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served-user.test.ts",
+    "line": 33,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served-user.test.ts",
+    "line": 48,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served-user.test.ts",
+    "line": 62,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served-user.test.ts",
+    "line": 72,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served-user.test.ts",
+    "line": 91,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served.test.ts",
+    "line": 33,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served.test.ts",
+    "line": 50,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served.test.ts",
+    "line": 62,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served.test.ts",
+    "line": 77,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/replay-served.test.ts",
+    "line": 93,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/rfc0169-replay-e2003-recorded.test.ts",
+    "line": 30,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/session-id-rule.test.ts",
+    "line": 116,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/session-id-rule.test.ts",
+    "line": 122,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/session-id-rule.test.ts",
+    "line": 129,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/session-id-rule.test.ts",
+    "line": 139,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-identity-mount.test.ts",
+    "line": 66,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-identity-mount.test.ts",
+    "line": 84,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-identity-mount.test.ts",
+    "line": 99,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-identity-mount.test.ts",
+    "line": 110,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-redaction.test.ts",
+    "line": 34,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-redaction.test.ts",
+    "line": 41,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-redaction.test.ts",
+    "line": 103,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 108,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 160,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 184,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 190,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 197,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 211,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 226,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 237,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 249,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 283,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 290,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 304,
+    "text": "300_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 310,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 330,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test-served.test.ts",
+    "line": 352,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test.test.ts",
+    "line": 31,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test.test.ts",
+    "line": 49,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test.test.ts",
+    "line": 54,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-sessions/conformance/to-test.test.ts",
+    "line": 60,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
+    "line": 100,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
+    "line": 143,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
+    "line": 165,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
+    "line": 182,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
+    "line": 193,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
+    "line": 204,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/build-target-e1575.test.ts",
+    "line": 16,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/build-tools.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/ci-workflow.test.ts",
+    "line": 12,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/no-origin-http-capability.test.ts",
+    "line": 25,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/return-scheme.test.ts",
+    "line": 11,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/shell-app-packages.test.ts",
+    "line": 26,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/shell-files.test.ts",
+    "line": 13,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/shell-scope.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/tauri-conf.test.ts",
+    "line": 13,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-temporal/conformance/check-deps-dropped.test.ts",
+    "line": 13,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 123,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 129,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 145,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 170,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 217,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 222,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 228,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 239,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 270,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/rules.test.ts",
+    "line": 292,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/self-entry.test.ts",
+    "line": 109,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/std-workflows/conformance/self-entry.test.ts",
+    "line": 132,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/store/conformance/payload-type-compile-error.test.ts",
+    "line": 103,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/compiler-keel-dir-tamper.test.ts",
+    "line": 70,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/compiler-keel-dir-tamper.test.ts",
+    "line": 97,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/property-test-timeout-0194.test.ts",
+    "line": 117,
+    "text": "240_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-counter.test.ts",
+    "line": 15,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-deterministic.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1715.test.ts",
+    "line": 14,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1716.test.ts",
+    "line": 13,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1717.test.ts",
+    "line": 12,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1718.test.ts",
+    "line": 7,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1721.test.ts",
+    "line": 17,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-initial.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-not-inductive.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-obligations.test.ts",
+    "line": 12,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-options.test.ts",
+    "line": 15,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-result.test.ts",
+    "line": 12,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-unique-ids.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/resource-keel-result-0068.test.ts",
+    "line": 239,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/rule-E1701.test.ts",
+    "line": 56,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/rule-E1701.test.ts",
+    "line": 62,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/sim-law.property.test.ts",
+    "line": 237,
+    "text": "120_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/sim-law.property.test.ts",
+    "line": 267,
+    "text": "60_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/sim-tracked.test.ts",
+    "line": 44,
+    "text": "300",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
+    "line": 45,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
+    "line": 49,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
+    "line": 64,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
+    "line": 68,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
+    "line": 20,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
+    "line": 29,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
+    "line": 36,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
+    "line": 45,
+    "text": "30_000",
+    "needs": "testTime"
+  },
+  {
+    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
+    "line": 63,
+    "text": "30_000",
+    "needs": "testTime"
+  }
+]

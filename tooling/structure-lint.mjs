@@ -2,17 +2,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
+import { parseSync } from "oxc-parser";
 import { check } from "../packages/check/src/index.ts";
 import { LIBRARY_LIFTED_CODES } from "../packages/check/src/internal/LIBRARY_LIFTED_CODES.ts";
 import { LIFTED_CODES } from "../packages/check/src/internal/LIFTED_CODES.ts";
 import { liftedRanges } from "../packages/check/src/internal/liftedRanges.ts";
 import { parseFile } from "../packages/check/src/internal/parseFile.ts";
 import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
-import { parseArgs, run } from "./output.ts";
-import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
-import { parseSync } from "oxc-parser";
 import { hardTimes } from "./hard-times.mjs";
+import { parseArgs, run } from "./output.ts";
 import { untimedPropertyTests } from "./property-times.ts";
+import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 import { stdEntryDiags } from "./std-entries.mjs";
 import { unseededProperties } from "./unseeded-properties.mjs";
 
@@ -127,7 +127,8 @@ for (const file of [...files, ...appTests()]) {
 }
 
 // S0016: a hard-coded time in test code (hard-times.mjs): package tests and conformance, tooling's tests and smokes,
-// and every app's and example's test files. A conformance file's times are listed in hard-times-conformance.json
+// and every app's and example's test files (a library's tests run under its own vitest config, which scales nothing).
+// A conformance file's times are listed in hard-times-conformance.json
 // (path and text) until the conformance-writer moves each through testTime or fixedTime; a listed time no longer in
 // its file is an S0016 too, so the list only shrinks.
 const TEST_CODE = /^(?:packages\/[^/]+\/(?:test|conformance)|tooling\/(?:test|smoke)|(?:apps|examples)\/.+\/test)\//;
@@ -141,7 +142,13 @@ for (const e of listed) {
 const appCode = ["apps", "examples"].flatMap((top) =>
   walk(path.join(root, top)).filter((f) => CODE_EXT.test(f) && TEST_CODE.test(rel(root, f))),
 );
-for (const file of [...new Set([...files.filter((f) => TEST_CODE.test(rel(root, f))), ...appTests(), ...appCode])]) {
+for (const file of [
+  ...new Set([
+    ...files.filter((f) => TEST_CODE.test(rel(root, f))),
+    ...appTests().filter((f) => !rel(root, f).startsWith("libraries/")),
+    ...appCode,
+  ]),
+]) {
   const r = rel(root, file);
   const src = fs.readFileSync(file, "utf8");
   for (const d of hardTimes(src, file)) {
