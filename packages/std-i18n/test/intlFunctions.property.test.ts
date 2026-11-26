@@ -63,3 +63,20 @@ test("formatUnit, formatList, formatDateTime and pluralCategories are the Intl c
   expect(pluralCategories("en-US")).toEqual(["one", "other"]);
   expect(pluralCategories("ja-JP")).toEqual(["other"]);
 });
+
+test("numberParts takes every plain decimal string and refuses one with anything appended or prepended", () => {
+  const decimal = fc.stringMatching(/^-?(?:0|[1-9][0-9]{0,30})(?:\.[0-9]{1,20})?$/);
+  const junk = fc.constantFrom("e", "e5", " ", "_", "x", "+", ".", "0x");
+  fc.assert(
+    fc.property(decimal, junk, fc.boolean(), (d, j, before) => {
+      expect(
+        numberParts(d, "en-US")
+          .map((p) => p.value)
+          .join(""),
+      ).not.toBe("NaN");
+      const bad = before ? `${j}${d}` : `${d}${j}`;
+      expect(() => Reflect.apply(numberParts, undefined, [bad, "en-US"])).toThrow(RangeError);
+    }),
+    { seed: 1337, numRuns: 200 },
+  );
+});
