@@ -68,3 +68,23 @@ it("a spread after the literal id, and an element in a helper file the page impo
     `${LIB}/src/part.ts`,
   ]);
 });
+
+it("a route component another library file imports, re-exports or loads keeps the props-id rule", () => {
+  const files = { "src/StatusView.ts": page("status.page"), "src/routes.ts": ROUTES };
+  const at = [`${LIB}/src/StatusView.ts`];
+  expect(e1161({ ...files, "src/index.ts": "export { default as Status } from './StatusView.ts'\n" })).toEqual(at);
+  expect(e1161({ ...files, "src/all.ts": "export * from './StatusView'\n" })).toEqual(at);
+  const twice =
+    "import { Box } from '@keel/ui'\nimport StatusView from './StatusView.ts'\nexport function Both(props: { id: string }): Node {\n  return Box({ id: `${props.id}.both`, children: [StatusView(), StatusView()] })\n}\n";
+  expect(e1161({ ...files, "src/Both.ts": twice })).toEqual(at);
+  const lazy = "export const load = () => import('./StatusView.ts')\n";
+  expect(e1161({ ...files, "src/lazy.ts": lazy })).toEqual(at);
+});
+
+it("a route table file that uses the bound name elsewhere binds no page", () => {
+  const files = { "src/StatusView.ts": page("status.page") };
+  const exported = `${ROUTES}export { StatusView }\n`;
+  expect(e1161({ ...files, "src/routes.ts": exported })).toEqual([`${LIB}/src/StatusView.ts`]);
+  const rendered = `${ROUTES}export const twice = () => [StatusView(), StatusView()]\n`;
+  expect(e1161({ ...files, "src/routes.ts": rendered })).toEqual([`${LIB}/src/StatusView.ts`]);
+});
