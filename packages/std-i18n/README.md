@@ -15,4 +15,4 @@ Uses the **schema type registry** (k.schema `s.register`) and the **check rule r
 
 ## Unsafe
 
-count: 1. `unsafe/decimalParts.ts`: `formatToParts` over a plain decimal string, which `Intl.NumberFormat` formats exactly while the ES2022 lib types it over `number` and `bigint` only.
+count: 1. `unsafe/refuse.ts`: the `RangeError` std.i18n specifies for an input its functions refuse, a throw in a library's code.

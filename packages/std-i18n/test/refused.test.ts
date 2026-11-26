@@ -48,3 +48,23 @@ test("formatDateTime refuses a missing time zone at run time, so the host's is n
   refused("formatDateTime", () => Reflect.apply(formatDateTime, undefined, [0, "en-US", undefined]));
   expect(formatDateTime(0, "en-US", { timeZone: "UTC", month: "2-digit", day: "2-digit" })).toBe("01/01");
 });
+
+test("numberParts formats a decimal string exactly where Intl.NumberFormat has formatRange, and refuses it elsewhere", () => {
+  // Past 2^53 a float would round the last digits: the exact string shows the string reached Intl as a decimal.
+  expect(joined("9007199254740993.25")).toBe("9,007,199,254,740,993.25");
+  const proto = Intl.NumberFormat.prototype;
+  const range = Object.getOwnPropertyDescriptor(proto, "formatRange");
+  expect(range).toBeDefined();
+  Reflect.deleteProperty(proto, "formatRange");
+  try {
+    refused("numberParts", () => numberParts("-0.05", "en-US", "EUR"));
+    expect(joined(1800)).toBe("1,800");
+  } finally {
+    if (range !== undefined) Object.defineProperty(proto, "formatRange", range);
+  }
+  expect(
+    numberParts("-0.05", "en-US", "EUR")
+      .map((p) => p.value)
+      .join(""),
+  ).toBe("-€0.05");
+});
