@@ -31,7 +31,11 @@ export default function HomePage() {
         </Box>
       </Card>
       <Box id="app.appearance" direction="column" gap="2" media="screen">
-        <SchemeSelect id="app.scheme" label="Color scheme" labels={{ system: "System", light: "Light", dark: "Dark" }} />
+        <SchemeSelect
+          id="app.scheme"
+          label="Color scheme"
+          labels={{ system: "System", light: "Light", dark: "Dark" }}
+        />
         <ThemeSelect id="app.theme" label="Theme" labels={{ default: "Keel", slate: "Slate" }} />
       </Box>
       <Text id="app.printed" as="p" media="print" breakBefore="avoid">

@@ -1,6 +1,6 @@
 # RFC 0249: themes, print, every opaque color form, and design tokens in
 
-Status: accepted by the orchestrator on 2026-11-26 (ADR-0284), to be confirmed by the operator. Builds on RFC 0243 (`lane-r-look`, in build). Amends k.schemes, k.values, k.a11y-static, k.aria, k.ui, k.looks, k.cli, the map and the glossary. From the plan's D200 (checkpoints 170 and 174).
+Status: implemented (ADR-0284), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Builds on RFC 0243 (`lane-r-look`, in build). Amends k.schemes, k.values, k.a11y-static, k.aria, k.ui, k.looks, k.cli, the map and the glossary. From the plan's D200 (checkpoints 170 and 174).
 
 Personas: A5 the designer first; A2 the product engineer; A1 with a static site; L1 and L2, whose shipped tokens meet an app's themes; A6, who answers for a11y per theme. App kinds K1 (a content site that prints), K2 (a storefront with a seasonal brand theme), K6 (a dashboard with a dark sidebar and overlays).
 
