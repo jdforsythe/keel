@@ -147,9 +147,6 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     for (const f of all)
       if (isCodePath(f.path) && !members.has(f.path) && dirs.find((d) => f.path.startsWith(d)) === dir)
         members.set(f.path, f);
-    // A library's root `module.ts` at its view path, so a rule finding a file's module by path prefix finds its manifest.
-    for (const m of libs.manifests)
-      if (!members.has(m.path) && dirs.find((d) => m.path.startsWith(d)) === dir) members.set(m.path, m);
     const project = Object.freeze([...members.values()]);
     projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
