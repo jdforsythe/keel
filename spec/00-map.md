@@ -92,8 +92,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | implemented | surface |
 | k.library | Libraries | proposed | packages |
-| k.library-pack | Library publishing | implemented | pack |
-| k.library-pages | Library route components | implemented | pages |
+| k.library-pack | Publishing | implemented | pack |
+| k.library-pages | Library pages | implemented | pages |
 | k.server-deps | Server dependencies | implemented | env |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.a11y-static | Static contrast | implemented | E1804 |

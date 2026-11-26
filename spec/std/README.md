@@ -24,15 +24,15 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.sessions-redact | Error text in a recording | conformance-covered | std-sessions: the errors and forms a recorder scrubs |
 | std.i18n | Locales | implemented | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals, collation, dates, units, lists |
 | std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format and parse for a locale |
-| std.temporal | Dates, instants and durations | conformance-covered | schema type registry: instants, dates, zones, durations; format |
+| std.temporal | Dates and times | conformance-covered | schema type registry: instants, dates, zones, durations; format |
 | std.text | Text | conformance-covered | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
 | std.messages | Message sets | conformance-covered | check rule registry: message sets, one file per locale |
 | std.copy | Literal copy | conformance-covered | `@keel/std-messages`: where E2406 reads copy and the shapes it follows |
 | std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
 | std.geo | Geolocation | conformance-covered | capability registry: `geo.position`, seeded sim |
-| std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
+| std.health | Health | conformance-covered | module manifest: route and public export via `deps` |
 | std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
-| std.report | Tally report | conformance-covered | formatter registry: `report.tally`; `keel report` |
+| std.report | Report | conformance-covered | formatter registry: `report.tally`; `keel report` |
 | std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2506 |
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
 | std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, stores and followed app data, E2601-E2602 |
@@ -57,4 +57,4 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
 | std.capacitor | Capacitor shell target | conformance-covered | shell target: Android and iOS files, tools, build, CI jobs |
 | std.tauri | Tauri shell target | conformance-covered | shell target: desktop files, tools, build, CI job |
-| std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2203 |
+| std.tokens | Tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2203 |
