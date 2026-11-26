@@ -354,54 +354,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/services/conformance/E1651-check.test.ts",
-    "line": 26,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/services/conformance/E1651-check.test.ts",
-    "line": 31,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/services/conformance/E1652-check.test.ts",
-    "line": 45,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/services/conformance/E1652-check.test.ts",
-    "line": 49,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/services/conformance/E1652-check.test.ts",
-    "line": 53,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/services/conformance/E1653-check.test.ts",
-    "line": 26,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/services/conformance/E1653-check.test.ts",
-    "line": 30,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/services/conformance/E1653-check.test.ts",
-    "line": 34,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-brands/conformance/brands.test.ts",
     "line": 69,
     "text": "30_000",
