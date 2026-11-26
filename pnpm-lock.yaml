@@ -1512,6 +1512,9 @@ importers:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
 
   packages/reactive:
     devDependencies:
