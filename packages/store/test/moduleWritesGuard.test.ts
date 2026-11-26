@@ -16,9 +16,12 @@ function make(id: string) {
 }
 const shared = (id: string): ReturnType<typeof make> => {
   const out: { made?: ReturnType<typeof make> } = {};
-  scope(() => {
-    out.made = make(id);
-  });
+  scope(
+    () => {
+      out.made = make(id);
+    },
+    { detached: true },
+  );
   if (out.made === undefined) throw new Error("fixture: store scope did not run");
   return out.made;
 };

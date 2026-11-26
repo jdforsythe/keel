@@ -1,9 +1,9 @@
 import type { Expression } from "oxc-parser";
+import type { Narrowing } from "./Narrowing.ts";
 
 /** What a condition's value says of a `Result` (R1013): `whenTrue`, that one is not ok when it is true; `whenFalse`, when it is false. */
-export type OkFacts = { readonly whenTrue: boolean; readonly whenFalse: boolean };
 
-const NONE: OkFacts = { whenTrue: false, whenFalse: false };
+const NONE: Narrowing = { whenTrue: false, whenFalse: false };
 
 /** An expression with its parentheses, `!` assertions and optional chain taken off. */
 function bare(e: Expression): Expression {
@@ -32,7 +32,7 @@ function booleanOf(e: Expression): boolean | null {
  * against a boolean (either side), `&&` (true when either side's truth says so) and `||` (false when either side's
  * falsity says so).
  */
-export function okFacts(e: Expression): OkFacts {
+export function okFacts(e: Expression): Narrowing {
   const c = bare(e);
   if (isOk(c)) return { whenTrue: false, whenFalse: true };
   if (c.type === "UnaryExpression" && c.operator === "!") {

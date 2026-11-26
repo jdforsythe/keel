@@ -31,9 +31,12 @@ export const Labels = Object.assign(
 /** Store owned by a never-disposed scope, as module-level stores must be (E1203). */
 const own = <T>(make: () => T): T => {
   let made: { readonly value: T } | undefined;
-  scope(() => {
-    made = { value: make() };
-  });
+  scope(
+    () => {
+      made = { value: make() };
+    },
+    { detached: true },
+  );
   if (made === undefined) throw new Error("test support: scope did not run");
   return made.value;
 };

@@ -21,12 +21,15 @@ const declared = <T extends object, P>(
 ): Transaction<T, P> => {
   seq += 1;
   let out: { value: Transaction<T, P> } | undefined;
-  scope(() => {
-    const st = store(schema, initial, { id: `pr${seq}` });
-    if (!isCheck<T>(check) || !isStep<T, P>(step)) throw new Error("fixture: not a function");
-    invariant(st, check);
-    out = { value: transaction(st, `pr${seq}.t`, pay, step) };
-  });
+  scope(
+    () => {
+      const st = store(schema, initial, { id: `pr${seq}` });
+      if (!isCheck<T>(check) || !isStep<T, P>(step)) throw new Error("fixture: not a function");
+      invariant(st, check);
+      out = { value: transaction(st, `pr${seq}.t`, pay, step) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out.value;
 };

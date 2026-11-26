@@ -7,9 +7,12 @@ export const SEED = 1337;
 /** A signal owned by a root scope that is never disposed (tests write it from outside any scope). */
 export function rootSignal<T>(initial: T): Signal<T> {
   const box: { s: Signal<T> | null } = { s: null };
-  scope(() => {
-    box.s = signal(initial);
-  });
+  scope(
+    () => {
+      box.s = signal(initial);
+    },
+    { detached: true },
+  );
   if (box.s === null) throw new Error("rootSignal: scope did not run");
   return box.s;
 }

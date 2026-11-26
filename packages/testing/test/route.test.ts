@@ -13,9 +13,12 @@ let made: { readonly value: ReturnType<typeof makeStore> } | undefined;
 function makeStore() {
   return store(s.object({ titles: s.array(s.string()) }), { titles: [] }, { id: "test.notesList" });
 }
-scope(() => {
-  made = { value: makeStore() };
-});
+scope(
+  () => {
+    made = { value: makeStore() };
+  },
+  { detached: true },
+);
 const list = made?.value;
 if (list === undefined) throw new Error("test: scope did not run");
 const add = transaction(list, "test.addNote", s.object({ title: s.string() }), (st, { title }) => ({

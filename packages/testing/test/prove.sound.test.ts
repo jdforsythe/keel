@@ -22,11 +22,14 @@ const one = <T extends object, P>(
 ): Transaction<T, P> => {
   seq += 1;
   let out: { value: Transaction<T, P> } | undefined;
-  scope(() => {
-    const st = store(schema, initial, { id: `ps${seq}` });
-    invariant(st, inv);
-    out = { value: transaction(st, `ps${seq}.t`, pay, fn) };
-  });
+  scope(
+    () => {
+      const st = store(schema, initial, { id: `ps${seq}` });
+      invariant(st, inv);
+      out = { value: transaction(st, `ps${seq}.t`, pay, fn) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out.value;
 };

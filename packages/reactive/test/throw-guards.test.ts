@@ -27,18 +27,21 @@ describe("a throwing equals", () => {
         throw new TypeError("no id");
       },
     };
-    const sc = scope(() => {
-      const s = signal<Item>({ id: 1 });
-      set = (v) => s.set(v);
-      const c = computed(() => s.get(), { equals: (a, b) => a.id === b.id });
-      effect(() => {
-        try {
-          seen.push(`v${String(c.get().id)}`);
-        } catch (e) {
-          seen.push(e instanceof Error ? e.message : "other");
-        }
-      });
-    });
+    const sc = scope(
+      () => {
+        const s = signal<Item>({ id: 1 });
+        set = (v) => s.set(v);
+        const c = computed(() => s.get(), { equals: (a, b) => a.id === b.id });
+        effect(() => {
+          try {
+            seen.push(`v${String(c.get().id)}`);
+          } catch (e) {
+            seen.push(e instanceof Error ? e.message : "other");
+          }
+        });
+      },
+      { detached: true },
+    );
     set(broken);
     expect(seen).toEqual(["v1", "no id"]);
     set({ id: 2 });
@@ -50,23 +53,26 @@ describe("a throwing equals", () => {
   it("a throw from equals reaches the reader's catch, and the next change reruns the reader", () => {
     const seen: string[] = [];
     let set: (v: Item | null) => void = () => {};
-    const sc = scope(() => {
-      const s = signal<Item | null>({ id: 1 });
-      set = (v) => s.set(v);
-      const c = computed(() => s.get(), {
-        equals: (a, b) => {
-          if (a === null || b === null) throw new Error("equals on null");
-          return a.id === b.id;
-        },
-      });
-      effect(() => {
-        try {
-          seen.push(`v${String(c.get()?.id)}`);
-        } catch (e) {
-          seen.push(e instanceof Error ? e.message : "other");
-        }
-      });
-    });
+    const sc = scope(
+      () => {
+        const s = signal<Item | null>({ id: 1 });
+        set = (v) => s.set(v);
+        const c = computed(() => s.get(), {
+          equals: (a, b) => {
+            if (a === null || b === null) throw new Error("equals on null");
+            return a.id === b.id;
+          },
+        });
+        effect(() => {
+          try {
+            seen.push(`v${String(c.get()?.id)}`);
+          } catch (e) {
+            seen.push(e instanceof Error ? e.message : "other");
+          }
+        });
+      },
+      { detached: true },
+    );
     set(null);
     expect(seen).toEqual(["v1", "equals on null"]);
     set({ id: 2 });
@@ -79,24 +85,27 @@ describe("a throwing equals", () => {
   it("a throw from equals in a computed pulled through another computed reaches the effect, which reruns later", () => {
     const seen: string[] = [];
     let set: (v: Item | null) => void = () => {};
-    const sc = scope(() => {
-      const s = signal<Item | null>({ id: 1 });
-      set = (v) => s.set(v);
-      const a = computed(() => s.get(), {
-        equals: (x, y) => {
-          if (x === null || y === null) throw new Error("equals on null");
-          return x.id === y.id;
-        },
-      });
-      const b = computed(() => a.get()?.id ?? -1);
-      effect(() => {
-        try {
-          seen.push(`v${String(b.get())}`);
-        } catch (e) {
-          seen.push(e instanceof Error ? e.message : "other");
-        }
-      });
-    });
+    const sc = scope(
+      () => {
+        const s = signal<Item | null>({ id: 1 });
+        set = (v) => s.set(v);
+        const a = computed(() => s.get(), {
+          equals: (x, y) => {
+            if (x === null || y === null) throw new Error("equals on null");
+            return x.id === y.id;
+          },
+        });
+        const b = computed(() => a.get()?.id ?? -1);
+        effect(() => {
+          try {
+            seen.push(`v${String(b.get())}`);
+          } catch (e) {
+            seen.push(e instanceof Error ? e.message : "other");
+          }
+        });
+      },
+      { detached: true },
+    );
     set(null);
     expect(seen).toEqual(["v1", "equals on null"]);
     set({ id: 2 });
@@ -111,25 +120,28 @@ describe("a throw while bringing a source up to date", () => {
     const seen: number[] = [];
     let set: (v: number) => void = () => {};
     let hooked = false;
-    const sc = scope(() => {
-      const s = signal(0);
-      set = (v) => s.set(v);
-      // Its first run creates a scope whose dispose hook throws once; the rerun disposes it.
-      const c = computed(() => {
-        const v = s.get();
-        if (!hooked) {
-          hooked = true;
-          scope(() => {}).onDispose(() => {
-            throw new Error("hook");
-          });
-        }
-        return v;
-      });
-      const d = computed(() => c.get() * 10);
-      effect(() => {
-        seen.push(d.get());
-      });
-    });
+    const sc = scope(
+      () => {
+        const s = signal(0);
+        set = (v) => s.set(v);
+        // Its first run creates a scope whose dispose hook throws once; the rerun disposes it.
+        const c = computed(() => {
+          const v = s.get();
+          if (!hooked) {
+            hooked = true;
+            scope(() => {}).onDispose(() => {
+              throw new Error("hook");
+            });
+          }
+          return v;
+        });
+        const d = computed(() => c.get() * 10);
+        effect(() => {
+          seen.push(d.get());
+        });
+      },
+      { detached: true },
+    );
     expect(seen).toEqual([0]);
     expect(messageOf(() => set(1))).toBe("hook");
     set(2);
@@ -143,23 +155,26 @@ describe("a throw while bringing a source up to date", () => {
     const seen: number[] = [];
     let set: (v: number) => void = () => {};
     let hooked = false;
-    const sc = scope(() => {
-      const s = signal(0);
-      set = (v) => s.set(v);
-      const c = computed(() => {
-        const v = s.get();
-        if (!hooked) {
-          hooked = true;
-          scope(() => {}).onDispose(() => {
-            throw new Error("hook");
-          });
-        }
-        return v;
-      });
-      effect(() => {
-        seen.push(c.get());
-      });
-    });
+    const sc = scope(
+      () => {
+        const s = signal(0);
+        set = (v) => s.set(v);
+        const c = computed(() => {
+          const v = s.get();
+          if (!hooked) {
+            hooked = true;
+            scope(() => {}).onDispose(() => {
+              throw new Error("hook");
+            });
+          }
+          return v;
+        });
+        effect(() => {
+          seen.push(c.get());
+        });
+      },
+      { detached: true },
+    );
     expect(messageOf(() => batch(() => set(1)))).toBe("hook");
     set(2);
     expect(seen.at(-1)).toBe(2);
@@ -190,19 +205,22 @@ describe("dispose", () => {
     const made = (): { held: Computed<object>[]; refs: WeakRef<object>[]; sc: { dispose(): void } } => {
       const held: Computed<object>[] = [];
       const refs: WeakRef<object>[] = [];
-      const sc = scope(() => {
-        const failing = computed((): object => {
-          throw new Error("kept");
-        });
-        const ok = computed(() => ({ big: "value" }));
-        try {
-          failing.get();
-        } catch (e) {
-          if (e instanceof Error) refs.push(new WeakRef(e));
-        }
-        refs.push(new WeakRef(ok.get()));
-        held.push(failing, ok);
-      });
+      const sc = scope(
+        () => {
+          const failing = computed((): object => {
+            throw new Error("kept");
+          });
+          const ok = computed(() => ({ big: "value" }));
+          try {
+            failing.get();
+          } catch (e) {
+            if (e instanceof Error) refs.push(new WeakRef(e));
+          }
+          refs.push(new WeakRef(ok.get()));
+          held.push(failing, ok);
+        },
+        { detached: true },
+      );
       return { held, refs, sc };
     };
     const { held, refs, sc } = made();

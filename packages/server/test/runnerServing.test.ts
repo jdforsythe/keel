@@ -17,9 +17,12 @@ function make() {
   return { counter, bump: transaction(counter, "runnerServing.bump", Count, (_state, payload) => payload) };
 }
 const made: { fixture?: ReturnType<typeof make> } = {};
-scope(() => {
-  made.fixture = make();
-});
+scope(
+  () => {
+    made.fixture = make();
+  },
+  { detached: true },
+);
 const fixtureOf = (): ReturnType<typeof make> => {
   if (made.fixture === undefined) throw new Error("fixture: store scope did not run");
   return made.fixture;

@@ -1,4 +1,4 @@
-import { scope, signal } from "@keel/reactive";
+import { signal } from "@keel/reactive";
 import { servedForm } from "@keel/runtime-dom/internal";
 import { cond, element, on } from "@keel/runtime-dom/ops";
 import type { KeelError } from "@keel/schema";
@@ -7,6 +7,7 @@ import { findRouter } from "./internal/findRouter.ts";
 import { formHandle } from "./internal/formHandle.ts";
 import { formSeams } from "./internal/formSeams.ts";
 import { isHref } from "./internal/isHref.ts";
+import { onOwnerDispose } from "./internal/onOwnerDispose.ts";
 import { renderChildren } from "./internal/renderChildren.ts";
 import type { FormProps } from "./types/FormProps.ts";
 import type { Href } from "./types/Href.ts";
@@ -94,7 +95,7 @@ export function Form(
       });
     }
     // A server render has no window; the page listener is added at a submit, which only a browser makes.
-    scope(() => {}).onDispose(() => {
+    onOwnerDispose(() => {
       el.removeEventListener("submit", files);
       globalThis.removeEventListener?.("pageshow", onShow);
     });
@@ -122,6 +123,6 @@ export function Form(
     void run();
   };
   el.addEventListener("submit", onSubmit);
-  scope(() => {}).onDispose(() => el.removeEventListener("submit", onSubmit));
+  onOwnerDispose(() => el.removeEventListener("submit", onSubmit));
   return el;
 }

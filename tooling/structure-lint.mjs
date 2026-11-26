@@ -1,17 +1,19 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0018 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.unsafe) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
+import { parseSync } from "oxc-parser";
 import { check } from "../packages/check/src/index.ts";
 import { LIFTED_CODES } from "../packages/check/src/internal/LIFTED_CODES.ts";
+import { finallyExits } from "../packages/check/src/internal/finallyExits.ts";
 import { liftedRanges } from "../packages/check/src/internal/liftedRanges.ts";
+import { packagePredicates } from "../packages/check/src/internal/packagePredicates.ts";
 import { parseFile } from "../packages/check/src/internal/parseFile.ts";
 import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
-import { parseArgs, run } from "./output.ts";
-import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
-import { parseSync } from "oxc-parser";
 import { hardTimes } from "./hard-times.mjs";
+import { parseArgs, run } from "./output.ts";
 import { untimedPropertyTests } from "./property-times.ts";
+import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 import { stdEntryDiags } from "./std-entries.mjs";
 import { unseededProperties } from "./unseeded-properties.mjs";
 
@@ -247,6 +249,54 @@ const PASS = new Set(["E1756", "E1760", "E1761"]);
 const SRC = /^packages\/[^/]+\/src\//;
 const sources = files.map((f) => ({ path: rel(root, f), source: fs.readFileSync(f, "utf8") }));
 for (const f of sources) if (f.path.startsWith("packages/")) s0014(f);
+
+/** The 1-based line and column of offset `at` in `source`. */
+function lineColOf(source, at) {
+  const before = source.slice(0, at).split("\n");
+  return { line: before.length, col: (before.at(-1)?.length ?? 0) + 1 };
+}
+
+// S0018 (k.errors Rules E1452): a `return`, `break` or `continue` whose target lies outside the `finally` block
+// holding it, in every package's `src/` and `unsafe/`.
+const OWN = /^packages\/[^/]+\/(?:src|unsafe)\//;
+for (const f of sources) {
+  if (!OWN.test(f.path)) continue;
+  const parsed = parseFile(f);
+  if (!parsed.ok) continue;
+  for (const at of finallyExits(parsed.program)) {
+    const { line, col } = lineColOf(f.source, at);
+    add("S0018", path.join(root, f.path), line, col, "control leaves finally and drops its throw");
+  }
+}
+
+// S0019 (k.unsafe Rules E1762): a type predicate or assertion function whose claimed type no body can prove, in every
+// package's `src/`, read through the package's own tsconfig; a finding inside a lifted `unsafe(` range is not one.
+const TS_EXT = /\.(?:ts|tsx|mts|cts)$/;
+const SRC_FILE = /^packages\/([^/]+)\/src\//;
+const byPackage = new Map();
+for (const f of sources) {
+  const m = SRC_FILE.exec(f.path);
+  if (!m?.[1] || !TS_EXT.test(f.path)) continue;
+  byPackage.set(m[1], [...(byPackage.get(m[1]) ?? []), f]);
+}
+for (const [pkg, own] of byPackage) {
+  const tsconfig = path.join(root, "packages", pkg, "tsconfig.json");
+  if (!fs.existsSync(tsconfig)) continue;
+  const lifted = new Map(own.map((f) => [path.join(root, f.path), { file: f, ranges: liftedRanges(f) }]));
+  for (const d of packagePredicates(
+    tsconfig,
+    own.map((f) => path.join(root, f.path)),
+  )) {
+    const hit = lifted.get(d.file);
+    if (hit !== undefined && hit.ranges.length > 0) {
+      const starts = [0];
+      for (let i = 0; i < hit.file.source.length; i++) if (hit.file.source[i] === "\n") starts.push(i + 1);
+      const at = (starts[d.line - 1] ?? 0) + d.col - 1;
+      if (hit.ranges.some(([a, b]) => at >= a && at < b)) continue;
+    }
+    add("S0019", d.file, d.line, d.col, d.message);
+  }
+}
 const result = check(sources, { types: false, root });
 for (const d of result.diagnostics) {
   const { fix: _fix, see: _see, ...rest } = d;

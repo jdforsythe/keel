@@ -38,19 +38,22 @@ describe("throw guards", () => {
       fc.property(writesArb, fc.boolean(), (writes, chained) => {
         const seen: Outcome[] = [];
         let set: (v: Item) => void = () => {};
-        const sc = scope(() => {
-          const s = signal(itemOf(0));
-          set = (v) => s.set(v);
-          const c = computed(() => s.get(), { equals: (a, b) => a.id === b.id });
-          const id = computed(() => c.get().id);
-          effect(() => {
-            try {
-              seen.push({ err: false, id: chained ? id.get() : c.get().id });
-            } catch {
-              seen.push({ err: true });
-            }
-          });
-        });
+        const sc = scope(
+          () => {
+            const s = signal(itemOf(0));
+            set = (v) => s.set(v);
+            const c = computed(() => s.get(), { equals: (a, b) => a.id === b.id });
+            const id = computed(() => c.get().id);
+            effect(() => {
+              try {
+                seen.push({ err: false, id: chained ? id.get() : c.get().id });
+              } catch {
+                seen.push({ err: true });
+              }
+            });
+          },
+          { detached: true },
+        );
         // Model: `c` keeps its last value and whether it threw; `equals` runs only between two values.
         let kept: Item = itemOf(0);
         let threw = false;
@@ -90,24 +93,27 @@ describe("throw guards", () => {
           const seen: number[] = [];
           let arm = false;
           let set: (v: number) => void = () => {};
-          const sc = scope(() => {
-            const s = signal(0);
-            set = (v) => s.set(v);
-            const c = computed(() => {
-              const v = s.get();
-              if (arm) {
-                arm = false;
-                scope(() => {}).onDispose(() => {
-                  throw new Error("hook");
-                });
-              }
-              return v;
-            });
-            const top = deep ? computed(() => c.get() + 100) : computed(() => c.get());
-            effect(() => {
-              seen.push(top.get());
-            });
-          });
+          const sc = scope(
+            () => {
+              const s = signal(0);
+              set = (v) => s.set(v);
+              const c = computed(() => {
+                const v = s.get();
+                if (arm) {
+                  arm = false;
+                  scope(() => {}).onDispose(() => {
+                    throw new Error("hook");
+                  });
+                }
+                return v;
+              });
+              const top = deep ? computed(() => c.get() + 100) : computed(() => c.get());
+              effect(() => {
+                seen.push(top.get());
+              });
+            },
+            { detached: true },
+          );
           const offset = deep ? 100 : 0;
           let current = 0;
           let armed = false;

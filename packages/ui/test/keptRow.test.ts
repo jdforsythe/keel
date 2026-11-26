@@ -98,9 +98,12 @@ function Row(todo: () => Todo): Node {
 
 const rootSignal = <T>(initial: T): Signal<T> => {
   const box: { s: Signal<T> | null } = { s: null };
-  scope(() => {
-    box.s = signal(initial);
-  });
+  scope(
+    () => {
+      box.s = signal(initial);
+    },
+    { detached: true },
+  );
   if (box.s === null) throw new Error("no signal");
   return box.s;
 };
@@ -229,7 +232,7 @@ describe("Select options rebuilt", () => {
     const dispose = mount(
       () => {
         const box: { node?: Node } = {};
-        scope(() => {}).run(() => {
+        scope(() => {}, { detached: true }).run(() => {
           box.node = make();
         });
         if (box.node === undefined) throw new Error("no node");

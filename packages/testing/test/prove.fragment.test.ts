@@ -10,9 +10,12 @@ let seq = 0;
 const inScope = <R>(mk: (id: string) => R): R => {
   seq += 1;
   let out: { value: R } | undefined;
-  scope(() => {
-    out = { value: mk(`pf${seq}`) };
-  });
+  scope(
+    () => {
+      out = { value: mk(`pf${seq}`) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out.value;
 };

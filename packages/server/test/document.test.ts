@@ -117,13 +117,16 @@ describe("document", () => {
 
   it("module-level stores are process-wide and never reach #k-state (RFC 0044)", async () => {
     const Counter = s.object({ n: s.int() });
-    const sc = scope(() => {
-      const counter = store(Counter, { n: 0 }, { id: "app.logged" });
-      tx(
-        transaction(counter, "app.bump", s.object({}), (st) => ({ n: st.n + 1 })),
-        {},
-      );
-    });
+    const sc = scope(
+      () => {
+        const counter = store(Counter, { n: 0 }, { id: "app.logged" });
+        tx(
+          transaction(counter, "app.bump", s.object({}), (st) => ({ n: st.n + 1 })),
+          {},
+        );
+      },
+      { detached: true },
+    );
     const html = await (await (await build()).fetch(get("/"))).text();
     expect(state(html)).toMatchObject({ stores: {} });
     expect(html).not.toContain("app.bump");

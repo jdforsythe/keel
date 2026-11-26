@@ -16,26 +16,29 @@ const flush = async (): Promise<void> => {
 const fakeField = (path: string) => {
   const bound: Element[] = [];
   const holder: { set?: (v: string | undefined) => void; field?: Field<unknown> } = {};
-  const sc = scope(() => {
-    const err = signal<string | undefined>(undefined);
-    holder.set = (v) => err.set(v);
-    holder.field = {
-      name: path,
-      id: `f:${path}`,
-      errorId: `f:${path}:error`,
-      value: () => undefined,
-      error: () => err.get(),
-      touched: () => false,
-      set: () => {},
-      blur: () => {},
-      bind: (el) => {
-        el.name = path;
-        if (el.id === "") el.id = `f:${path}`;
-        bound.push(el);
-        return () => {};
-      },
-    };
-  });
+  const sc = scope(
+    () => {
+      const err = signal<string | undefined>(undefined);
+      holder.set = (v) => err.set(v);
+      holder.field = {
+        name: path,
+        id: `f:${path}`,
+        errorId: `f:${path}:error`,
+        value: () => undefined,
+        error: () => err.get(),
+        touched: () => false,
+        set: () => {},
+        blur: () => {},
+        bind: (el) => {
+          el.name = path;
+          if (el.id === "") el.id = `f:${path}`;
+          bound.push(el);
+          return () => {};
+        },
+      };
+    },
+    { detached: true },
+  );
   const { field, set } = holder;
   if (field === undefined || set === undefined) throw new Error("fakeField");
   return { field, setError: set, bound, dispose: () => sc.dispose() };

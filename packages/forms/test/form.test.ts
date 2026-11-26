@@ -58,18 +58,21 @@ function rig(order: readonly Name[] = NAMES, initial: Partial<s.infer<typeof Not
   const sent: unknown[] = [];
   const reply: Rig["reply"] = { current: () => ok(null) };
   const holder: { f?: Rig["f"]; root?: HTMLFormElement } = {};
-  const sc = scope(() => {
-    const f = form(Note, { initial });
-    holder.f = f;
-    holder.root = standInForm(
-      f,
-      (v) => {
-        sent.push(v);
-        return reply.current();
-      },
-      [...order.map((n) => plain(f.field(n))), plain(f.field("done"), "checkbox")],
-    );
-  });
+  const sc = scope(
+    () => {
+      const f = form(Note, { initial });
+      holder.f = f;
+      holder.root = standInForm(
+        f,
+        (v) => {
+          sent.push(v);
+          return reply.current();
+        },
+        [...order.map((n) => plain(f.field(n))), plain(f.field("done"), "checkbox")],
+      );
+    },
+    { detached: true },
+  );
   const f = holder.f;
   const root = holder.root;
   if (f === undefined || root === undefined) throw new Error("rig");
@@ -176,37 +179,43 @@ describe("submit", () => {
   });
 
   it("every schema issue is reported; issues no field() covers are summarised under ''", () => {
-    scope(() => {
-      const f = form(s.object({ a: s.string({ min: 1 }), b: s.int(), c: s.object({ d: s.string() }) }));
-      const a = f.field("a");
-      const el = document.createElement("input");
-      document.body.append(el);
-      a.bind(el);
-      const r = f[formHandle].validate();
-      expect(r.ok).toBe(false);
-      expect(f.errors()).toEqual({
-        a: "Required",
-        b: "Required",
-        c: "Required",
-        "": "b: Required (+1 more)",
-      });
-      expect(document.activeElement).toBe(el);
-      el.remove();
-    }).dispose();
+    scope(
+      () => {
+        const f = form(s.object({ a: s.string({ min: 1 }), b: s.int(), c: s.object({ d: s.string() }) }));
+        const a = f.field("a");
+        const el = document.createElement("input");
+        document.body.append(el);
+        a.bind(el);
+        const r = f[formHandle].validate();
+        expect(r.ok).toBe(false);
+        expect(f.errors()).toEqual({
+          a: "Required",
+          b: "Required",
+          c: "Required",
+          "": "b: Required (+1 more)",
+        });
+        expect(document.activeElement).toBe(el);
+        el.remove();
+      },
+      { detached: true },
+    ).dispose();
   });
 
   it("focus skips disconnected bound elements", () => {
-    scope(() => {
-      const f = form(s.object({ a: s.string({ min: 1 }), b: s.string({ min: 1 }) }));
-      const gone = document.createElement("input");
-      const here = document.createElement("input");
-      document.body.append(here);
-      f.field("a").bind(gone);
-      f.field("b").bind(here);
-      f[formHandle].validate();
-      expect(document.activeElement).toBe(here);
-      here.remove();
-    }).dispose();
+    scope(
+      () => {
+        const f = form(s.object({ a: s.string({ min: 1 }), b: s.string({ min: 1 }) }));
+        const gone = document.createElement("input");
+        const here = document.createElement("input");
+        document.body.append(here);
+        f.field("a").bind(gone);
+        f.field("b").bind(here);
+        f[formHandle].validate();
+        expect(document.activeElement).toBe(here);
+        here.remove();
+      },
+      { detached: true },
+    ).dispose();
   });
 });
 
@@ -276,11 +285,14 @@ describe("binding lifecycle", () => {
     const r = rig();
     const el = document.createElement("input");
     const title = r.f.field("title");
-    const unbind = scope(() => {}).dispose;
+    const unbind = scope(() => {}, { detached: true }).dispose;
     unbind();
-    const sc = scope(() => {
-      title.bind(el);
-    });
+    const sc = scope(
+      () => {
+        title.bind(el);
+      },
+      { detached: true },
+    );
     expect(el.name).toBe("title");
     expect(el.id).toBe(title.id);
     el.value = "typed";
@@ -299,10 +311,13 @@ describe("binding lifecycle", () => {
     const title = r.f.field("title");
     const bare = document.createElement("input");
     const email = r.f.field("email");
-    const sc = scope(() => {
-      title.bind(el);
-      email.bind(bare);
-    });
+    const sc = scope(
+      () => {
+        title.bind(el);
+        email.bind(bare);
+      },
+      { detached: true },
+    );
     expect(el.id).toBe("my-title");
     expect(title.id).toBe("my-title");
     expect(title.errorId).toBe("my-title:error");
@@ -316,9 +331,12 @@ describe("binding lifecycle", () => {
     const el = document.createElement("input");
     const title = r.f.field("title");
     let unbind: () => void = () => {};
-    scope(() => {
-      unbind = title.bind(el);
-    });
+    scope(
+      () => {
+        unbind = title.bind(el);
+      },
+      { detached: true },
+    );
     unbind();
     el.value = "x";
     el.dispatchEvent(new Event("input"));

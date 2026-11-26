@@ -31,11 +31,14 @@ function read(st: ReturnType<typeof store<{ n: number }>>, how: Read): void {
 describe("storeReads", () => {
   it("notes a store at creation, and nothing with no tap set", () => {
     const seen: string[] = [];
-    scope(() => {
-      store(Count, { n: 0 }, { id: "t.before" });
-      storeReads.note = (id) => seen.push(id);
-      store(Count, { n: 0 }, { id: "t.made" });
-    });
+    scope(
+      () => {
+        store(Count, { n: 0 }, { id: "t.before" });
+        storeReads.note = (id) => seen.push(id);
+        store(Count, { n: 0 }, { id: "t.made" });
+      },
+      { detached: true },
+    );
     expect(seen).toEqual(["t.made"]);
   });
 
@@ -43,20 +46,23 @@ describe("storeReads", () => {
     fc.assert(
       fc.property(fc.constantFrom(...READS), fc.boolean(), (how, lookup) => {
         const k = ++runs;
-        scope(() => {
-          const a = store(Count, { n: 1 }, { id: `t.a${k}` });
-          const b = store(Count, { n: 2 }, { id: `t.b${k}` });
-          const set = transaction(b, `t.set${k}`, Count, (_st, p) => p);
-          const seen = new Set<string>();
-          storeReads.note = (id) => seen.add(id);
-          tx(set, { n: 3 });
-          expect(seen.size).toBe(0);
-          if (lookup) expect(stores().get(`t.a${k}`)).toBe(a);
-          else read(a, how);
-          expect([...seen]).toEqual([`t.a${k}`]);
-          storeReads.note = null;
-          expect(stores().get(`t.b${k}`)).toBe(b);
-        });
+        scope(
+          () => {
+            const a = store(Count, { n: 1 }, { id: `t.a${k}` });
+            const b = store(Count, { n: 2 }, { id: `t.b${k}` });
+            const set = transaction(b, `t.set${k}`, Count, (_st, p) => p);
+            const seen = new Set<string>();
+            storeReads.note = (id) => seen.add(id);
+            tx(set, { n: 3 });
+            expect(seen.size).toBe(0);
+            if (lookup) expect(stores().get(`t.a${k}`)).toBe(a);
+            else read(a, how);
+            expect([...seen]).toEqual([`t.a${k}`]);
+            storeReads.note = null;
+            expect(stores().get(`t.b${k}`)).toBe(b);
+          },
+          { detached: true },
+        );
       }),
       { seed: 1337, numRuns: 20 },
     );

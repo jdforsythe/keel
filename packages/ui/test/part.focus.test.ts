@@ -10,7 +10,7 @@ import { testCtx } from "./testCtx.ts";
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
 };
-const owner = scope(() => undefined);
+const owner = scope(() => undefined, { detached: true });
 
 test("a focus move whose focus and blur handlers write state reports no error", async () => {
   const errors: unknown[] = [];

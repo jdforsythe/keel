@@ -24,9 +24,12 @@ function limited(limit: number) {
       reset: transaction(c, "counter.reset", s.object({}), () => ({ n: 0, tags: [] })),
     };
   };
-  scope(() => {
-    box.kit = build();
-  });
+  scope(
+    () => {
+      box.kit = build();
+    },
+    { detached: true },
+  );
   if (box.kit === undefined) throw new Error("scope body did not run");
   return box.kit;
 }

@@ -287,7 +287,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
         serving.run({ route: matched?.id ?? "-", pii, secrets }, async () => {
           // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
           const rq = {
-            scope: scope(() => undefined),
+            scope: scope(() => undefined, { detached: true }),
             caller: callerOf(raw, sv),
             user: "",
             bearer: matched?.def.kind === "api" ? bearerOf(raw) : undefined,
