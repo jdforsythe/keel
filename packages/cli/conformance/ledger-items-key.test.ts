@@ -8,6 +8,7 @@
 // white space runs one space, ends trimmed, lower case, one final period dropped); the key literals below are computed apart from it.
 // The spec says `--diff` compares and reports its diagnostics (k.ledger File), and that `keel ledger` emits the clause records (k.ledger Ledger); it does not say `--diff` prints them, so the records are read from a plain `keel ledger` run over the same tree.
 // ASSUMED: `--diff` reads the committed ledger at `.keel/ledger.json` as ledger-diff-e1706-cli.test.ts does; "one addition" is read as one E1707 for the new item and no E1706.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createHash } from "node:crypto";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -74,38 +75,42 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it("for any bullets and any position, a bullet added there changes no other clause's item, and each `n` is its 1-based position (property)", () => {
-    const bullet = fc.stringMatching(/^[A-Z][a-z]{2,7}( [a-z]{2,7}){1,4}\.$/);
-    fc.assert(
-      fc.property(
-        fc.uniqueArray(bullet, { minLength: 2, maxLength: 7, selector: normalForm }),
-        bullet,
-        fc.nat(),
-        (list, extra, at) => {
-          fc.pre(!list.some((b) => normalForm(b) === normalForm(extra)));
-          const pos = at % (list.length + 1);
-          const grown = [...list.slice(0, pos), extra, ...list.slice(pos)];
-          inProject(
-            "items-key-insert",
-            files({ "k.a": { bullets: list }, "k.b": { bullets: grown, cited: list } }),
-            (dir) => {
-              const run = keel(dir, ["ledger"]);
-              list.forEach((b, i) => {
-                expect(clauseRecord(run, itemOf("k.a", b))).toMatchObject({ n: i + 1, rung: "example" });
-                expect(clauseRecord(run, itemOf("k.b", b))).toMatchObject({
-                  n: i < pos ? i + 1 : i + 2,
-                  rung: "example",
+  it(
+    "for any bullets and any position, a bullet added there changes no other clause's item, and each `n` is its 1-based position (property)",
+    () => {
+      const bullet = fc.stringMatching(/^[A-Z][a-z]{2,7}( [a-z]{2,7}){1,4}\.$/);
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(bullet, { minLength: 2, maxLength: 7, selector: normalForm }),
+          bullet,
+          fc.nat(),
+          (list, extra, at) => {
+            fc.pre(!list.some((b) => normalForm(b) === normalForm(extra)));
+            const pos = at % (list.length + 1);
+            const grown = [...list.slice(0, pos), extra, ...list.slice(pos)];
+            inProject(
+              "items-key-insert",
+              files({ "k.a": { bullets: list }, "k.b": { bullets: grown, cited: list } }),
+              (dir) => {
+                const run = keel(dir, ["ledger"]);
+                list.forEach((b, i) => {
+                  expect(clauseRecord(run, itemOf("k.a", b))).toMatchObject({ n: i + 1, rung: "example" });
+                  expect(clauseRecord(run, itemOf("k.b", b))).toMatchObject({
+                    n: i < pos ? i + 1 : i + 2,
+                    rung: "example",
+                  });
                 });
-              });
-              expect(clausesOf(run, "k.b")).toHaveLength(list.length + 1);
-              expect(clauseRecord(run, itemOf("k.b", extra))).toMatchObject({ n: pos + 1, rung: "none" });
-            },
-          );
-        },
-      ),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
+                expect(clausesOf(run, "k.b")).toHaveLength(list.length + 1);
+                expect(clauseRecord(run, itemOf("k.b", extra))).toMatchObject({ n: pos + 1, rung: "none" });
+              },
+            );
+          },
+        ),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
 
   it(
     "Over a committed ledger holding `k.x`'s clause `A is one.` at `example`, rewording it to `A is two.` makes `keel ledger --diff` report no E1706, and, with `k.x` `conformance-covered` and no file citing `A is two.`, E1707 at that bullet's line naming `k.x#1`",
@@ -170,33 +175,39 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it("two texts with one normal form have one key, and a one-character change of substance has another (property over backticks, quote style, spacing, case and the final period)", () => {
-    const word = fc.stringMatching(/^[a-z]{3,8}$/);
-    const base = fc.tuple(word, word, word, word);
-    const quoteStyle = fc.constantFrom("straight", "typographic", "escaped");
-    fc.assert(
-      fc.property(base, quoteStyle, fc.boolean(), fc.boolean(), ([a, b, c, d], style, tick, shout) => {
-        const quote = (w: string): string =>
-          style === "escaped" ? `\\"${w}\\"` : style === "straight" ? `"${w}"` : `“${w}”`;
-        const plain = `${a} ${quote(b)} ${c} ${d}.`;
-        const variant = `${tick ? `\`${a}\`` : a}  ${quote(b)}\t${c} ${shout ? d.toUpperCase() : d}${tick ? "" : "."}`;
-        const swapped = plain.replace(/[a-z]/, (ch) => (ch === "z" ? "y" : String.fromCharCode(ch.charCodeAt(0) + 1)));
-        expect(normalForm(variant)).toBe(normalForm(plain));
-        expect(normalForm(swapped)).not.toBe(normalForm(plain));
-        inProject(
-          "items-key-property",
-          files({ "k.p": { bullets: [plain] }, "k.q": { bullets: [variant] }, "k.r": { bullets: [swapped] } }),
-          (dir) => {
-            const run = keel(dir, ["ledger"]);
-            expect(keyIn(run, "k.p")).toBe(keyIn(run, "k.q"));
-            expect(keyIn(run, "k.p")).toBe(keyOf(plain));
-            expect(keyIn(run, "k.r")).not.toBe(keyIn(run, "k.p"));
-          },
-        );
-      }),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
+  it(
+    "two texts with one normal form have one key, and a one-character change of substance has another (property over backticks, quote style, spacing, case and the final period)",
+    () => {
+      const word = fc.stringMatching(/^[a-z]{3,8}$/);
+      const base = fc.tuple(word, word, word, word);
+      const quoteStyle = fc.constantFrom("straight", "typographic", "escaped");
+      fc.assert(
+        fc.property(base, quoteStyle, fc.boolean(), fc.boolean(), ([a, b, c, d], style, tick, shout) => {
+          const quote = (w: string): string =>
+            style === "escaped" ? `\\"${w}\\"` : style === "straight" ? `"${w}"` : `“${w}”`;
+          const plain = `${a} ${quote(b)} ${c} ${d}.`;
+          const variant = `${tick ? `\`${a}\`` : a}  ${quote(b)}\t${c} ${shout ? d.toUpperCase() : d}${tick ? "" : "."}`;
+          const swapped = plain.replace(/[a-z]/, (ch) =>
+            ch === "z" ? "y" : String.fromCharCode(ch.charCodeAt(0) + 1),
+          );
+          expect(normalForm(variant)).toBe(normalForm(plain));
+          expect(normalForm(swapped)).not.toBe(normalForm(plain));
+          inProject(
+            "items-key-property",
+            files({ "k.p": { bullets: [plain] }, "k.q": { bullets: [variant] }, "k.r": { bullets: [swapped] } }),
+            (dir) => {
+              const run = keel(dir, ["ledger"]);
+              expect(keyIn(run, "k.p")).toBe(keyIn(run, "k.q"));
+              expect(keyIn(run, "k.p")).toBe(keyOf(plain));
+              expect(keyIn(run, "k.r")).not.toBe(keyIn(run, "k.p"));
+            },
+          );
+        }),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
 
   it(
     "Bullets `A is one.` and `a is one` in one section are one E1733 at the second's line, and the ledger holds one item for them",
@@ -212,30 +223,34 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it("for any bullet and a variant of it with one normal form in one section, there is one E1733 at the variant's line and one item (property)", () => {
-    const word = fc.stringMatching(/^[a-z]{3,8}$/);
-    fc.assert(
-      fc.property(
-        fc.uniqueArray(fc.tuple(word, word), { minLength: 1, maxLength: 3, selector: ([a, b]) => `${a} ${b}` }),
-        (pairs) => {
-          const tree: Record<string, string> = {};
-          pairs.forEach(([a, b], i) => {
-            tree[specPath(`k.d${i}`)] = specText(`k.d${i}`, [`${a} is ${b}.`, `\`${a.toUpperCase()}\`  IS ${b}`]);
-          });
-          inProject("items-key-dup", tree, (dir) => {
-            const run = keel(dir, ["ledger"]);
-            const found = diagsOf(run, "E1733");
-            expect(found).toHaveLength(pairs.length);
-            pairs.forEach((_, i) => {
-              expect(found).toContainEqual(
-                expect.objectContaining({ code: "E1733", path: specPath(`k.d${i}`), line: bulletLine(2) }),
-              );
-              expect(clausesOf(run, `k.d${i}`)).toHaveLength(1);
+  it(
+    "for any bullet and a variant of it with one normal form in one section, there is one E1733 at the variant's line and one item (property)",
+    () => {
+      const word = fc.stringMatching(/^[a-z]{3,8}$/);
+      fc.assert(
+        fc.property(
+          fc.uniqueArray(fc.tuple(word, word), { minLength: 1, maxLength: 3, selector: ([a, b]) => `${a} ${b}` }),
+          (pairs) => {
+            const tree: Record<string, string> = {};
+            pairs.forEach(([a, b], i) => {
+              tree[specPath(`k.d${i}`)] = specText(`k.d${i}`, [`${a} is ${b}.`, `\`${a.toUpperCase()}\`  IS ${b}`]);
             });
-          });
-        },
-      ),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
+            inProject("items-key-dup", tree, (dir) => {
+              const run = keel(dir, ["ledger"]);
+              const found = diagsOf(run, "E1733");
+              expect(found).toHaveLength(pairs.length);
+              pairs.forEach((_, i) => {
+                expect(found).toContainEqual(
+                  expect.objectContaining({ code: "E1733", path: specPath(`k.d${i}`), line: bulletLine(2) }),
+                );
+                expect(clausesOf(run, `k.d${i}`)).toHaveLength(1);
+              });
+            });
+          },
+        ),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
 });

@@ -1,6 +1,7 @@
 // Spec: k.cli, clause "`keel check apps/a` at a workspace root and `keel check` in `apps/a` report the same diagnostics."
 // Temp workspace: root topology is node `api` for "todos"; apps/a is client-only for "todos" and imports a *.server.ts from a module (E1004 only under the root's topology).
 // No fast-check: fixed fixture; no seed.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -66,20 +67,28 @@ afterAll(() => {
 });
 
 describe("k.cli: workspace check", () => {
-  it("`keel check apps/a` at a workspace root and `keel check` in `apps/a` report the same diagnostics", () => {
-    const fromRoot = run(ws, ["check", "apps/a", "--format=json"]);
-    const inApp = run(path.join(ws, "apps/a"), ["check", "--format=json"]);
-    expect(fromRoot.records.length).toBeGreaterThan(0);
-    expect(diagSet(fromRoot.records)).toEqual(diagSet(inApp.records));
-    expect(filesCount(fromRoot.records)).toBeDefined();
-    expect(filesCount(fromRoot.records)).toEqual(filesCount(inApp.records));
-  }, 120_000);
+  it(
+    "`keel check apps/a` at a workspace root and `keel check` in `apps/a` report the same diagnostics",
+    () => {
+      const fromRoot = run(ws, ["check", "apps/a", "--format=json"]);
+      const inApp = run(path.join(ws, "apps/a"), ["check", "--format=json"]);
+      expect(fromRoot.records.length).toBeGreaterThan(0);
+      expect(diagSet(fromRoot.records)).toEqual(diagSet(inApp.records));
+      expect(filesCount(fromRoot.records)).toBeDefined();
+      expect(filesCount(fromRoot.records)).toEqual(filesCount(inApp.records));
+    },
+    fixedTime(120_000),
+  );
 
-  it("neither run reports E1004, since the app's topology is client-only", () => {
-    const fromRoot = run(ws, ["check", "apps/a", "--format=json"]);
-    const inApp = run(path.join(ws, "apps/a"), ["check", "--format=json"]);
-    for (const r of [fromRoot, inApp]) {
-      expect(r.records.filter((x) => x.kind === "diag" && x.code === "E1004")).toEqual([]);
-    }
-  }, 120_000);
+  it(
+    "neither run reports E1004, since the app's topology is client-only",
+    () => {
+      const fromRoot = run(ws, ["check", "apps/a", "--format=json"]);
+      const inApp = run(path.join(ws, "apps/a"), ["check", "--format=json"]);
+      for (const r of [fromRoot, inApp]) {
+        expect(r.records.filter((x) => x.kind === "diag" && x.code === "E1004")).toEqual([]);
+      }
+    },
+    fixedTime(120_000),
+  );
 });

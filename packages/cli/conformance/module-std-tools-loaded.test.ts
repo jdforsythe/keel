@@ -1,5 +1,6 @@
 // Spec: k.module, clause "`keel check` imports a `deps` package's `./tools` export: a rule it registers reports, and a throw is E1159." (rfc:0070)
 // Seed 1337. The real binary runs in a subprocess so the check-rule registry starts empty.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -74,22 +75,34 @@ const codes = (cwd: string): { code: string; message: string }[] => {
 };
 
 describe("k.module: keel check loads a deps package's ./tools export", () => {
-  it("a rule the ./tools export registers reports", () => {
-    const got = codes(project(RULE)).map((d) => d.code);
-    expect(got).toContain("E2981");
-    expect(got).not.toContain("E1159");
-  }, 120_000);
+  it(
+    "a rule the ./tools export registers reports",
+    () => {
+      const got = codes(project(RULE)).map((d) => d.code);
+      expect(got).toContain("E2981");
+      expect(got).not.toContain("E1159");
+    },
+    fixedTime(120_000),
+  );
 
-  it("without a ./tools export the rule is absent and nothing fails", () => {
-    const got = codes(project(null)).map((d) => d.code);
-    expect(got).not.toContain("E2981");
-    expect(got).not.toContain("E1159");
-  }, 120_000);
+  it(
+    "without a ./tools export the rule is absent and nothing fails",
+    () => {
+      const got = codes(project(null)).map((d) => d.code);
+      expect(got).not.toContain("E2981");
+      expect(got).not.toContain("E1159");
+    },
+    fixedTime(120_000),
+  );
 
-  it("a ./tools export that throws is E1159 naming the package", () => {
-    const hits = codes(project("throw new Error('boom');\n")).filter((d) => d.code === "E1159");
-    expect(hits.length).toBe(1);
-    expect(hits[0]?.message).toContain("@keel/std-toolsfx");
-    expect(hits[0]?.message).toContain("tools");
-  }, 120_000);
+  it(
+    "a ./tools export that throws is E1159 naming the package",
+    () => {
+      const hits = codes(project("throw new Error('boom');\n")).filter((d) => d.code === "E1159");
+      expect(hits.length).toBe(1);
+      expect(hits[0]?.message).toContain("@keel/std-toolsfx");
+      expect(hits[0]?.message).toContain("tools");
+    },
+    fixedTime(120_000),
+  );
 });

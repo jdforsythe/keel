@@ -1,6 +1,7 @@
 // Spec: k.compiler, clause "Changing any byte of a file under `.keel/` makes `keel check` report E1005 on that file."
 // Drives the real binary (packages/cli/src/bin.ts) over a temp project holding real `.keel/` artifacts built by @keel/compiler/vite.
 // Seed: 1337 (fc.assert seed below). Each spawn costs about a second, so numRuns is small.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -92,7 +93,7 @@ beforeAll(async () => {
   for (const name of fs.readdirSync(path.join(proj, ".keel")).sort()) {
     if (name.endsWith(".json")) originals.set(name, fs.readFileSync(path.join(proj, ".keel", name), "utf8"));
   }
-}, 120_000);
+}, fixedTime(120_000));
 
 afterAll(() => {
   fs.rmSync(proj, { recursive: true, force: true });
@@ -121,55 +122,71 @@ const flip = (text: string, at: number, shift: number): string => {
 };
 
 describe("k.compiler: keel check on .keel/ artifacts (real binary)", () => {
-  it("a clean build makes keel check report no E1005", () => {
-    expect(originals.size).toBeGreaterThan(0);
-    const r = runCheck(proj, []);
-    expect(e1005(r.records)).toEqual([]);
-  }, 120_000);
-
-  it("Changing any byte of .keel/ids.json makes keel check report E1005 on that file (exit 1)", () => {
-    const text = original("ids.json");
-    const at = text.indexOf('"', 2) + 1;
-    try {
-      write("ids.json", flip(text, at, 1));
+  it(
+    "a clean build makes keel check report no E1005",
+    () => {
+      expect(originals.size).toBeGreaterThan(0);
       const r = runCheck(proj, []);
-      expect(e1005(r.records)).toEqual([".keel/ids.json"]);
-      expect(r.status).toBe(1);
-      expect(r.records.at(-1)?.kind).toBe("summary");
-    } finally {
-      restore();
-    }
-  }, 120_000);
+      expect(e1005(r.records)).toEqual([]);
+    },
+    fixedTime(120_000),
+  );
 
-  it("Changing any byte of a file under .keel/ makes keel check report E1005 on that file", () => {
-    const names = [...originals.keys()];
-    // seed 1337
-    fc.assert(
-      fc.property(fc.nat(names.length - 1), fc.nat(), fc.integer({ min: 1, max: 90 }), (fi, bi, shift) => {
-        const name = names[fi];
-        if (name === undefined) throw new Error("no file");
-        const text = original(name);
-        const tampered = flip(text, bi % text.length, shift);
-        expect(tampered).not.toBe(text);
-        try {
-          write(name, tampered);
-          expect(e1005(runCheck(proj, []).records)).toEqual([`.keel/${name}`]);
-        } finally {
-          restore();
-        }
-      }),
-      { seed: 1337, numRuns: 6 },
-    );
-  }, 120_000);
+  it(
+    "Changing any byte of .keel/ids.json makes keel check report E1005 on that file (exit 1)",
+    () => {
+      const text = original("ids.json");
+      const at = text.indexOf('"', 2) + 1;
+      try {
+        write("ids.json", flip(text, at, 1));
+        const r = runCheck(proj, []);
+        expect(e1005(r.records)).toEqual([".keel/ids.json"]);
+        expect(r.status).toBe(1);
+        expect(r.records.at(-1)?.kind).toBe("summary");
+      } finally {
+        restore();
+      }
+    },
+    fixedTime(120_000),
+  );
 
-  it("keel check restricted to paths: `src` does not read tampered .keel/, `.keel` does", () => {
-    const text = original("routes.json");
-    try {
-      write("routes.json", flip(text, text.indexOf('"', 2) + 1, 1));
-      expect(e1005(runCheck(proj, ["src"]).records)).toEqual([]);
-      expect(e1005(runCheck(proj, [".keel"]).records)).toEqual([".keel/routes.json"]);
-    } finally {
-      restore();
-    }
-  }, 120_000);
+  it(
+    "Changing any byte of a file under .keel/ makes keel check report E1005 on that file",
+    () => {
+      const names = [...originals.keys()];
+      // seed 1337
+      fc.assert(
+        fc.property(fc.nat(names.length - 1), fc.nat(), fc.integer({ min: 1, max: 90 }), (fi, bi, shift) => {
+          const name = names[fi];
+          if (name === undefined) throw new Error("no file");
+          const text = original(name);
+          const tampered = flip(text, bi % text.length, shift);
+          expect(tampered).not.toBe(text);
+          try {
+            write(name, tampered);
+            expect(e1005(runCheck(proj, []).records)).toEqual([`.keel/${name}`]);
+          } finally {
+            restore();
+          }
+        }),
+        { seed: 1337, numRuns: 6 },
+      );
+    },
+    fixedTime(120_000),
+  );
+
+  it(
+    "keel check restricted to paths: `src` does not read tampered .keel/, `.keel` does",
+    () => {
+      const text = original("routes.json");
+      try {
+        write("routes.json", flip(text, text.indexOf('"', 2) + 1, 1));
+        expect(e1005(runCheck(proj, ["src"]).records)).toEqual([]);
+        expect(e1005(runCheck(proj, [".keel"]).records)).toEqual([".keel/routes.json"]);
+      } finally {
+        restore();
+      }
+    },
+    fixedTime(120_000),
+  );
 });

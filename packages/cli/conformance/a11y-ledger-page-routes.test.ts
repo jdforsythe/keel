@@ -6,6 +6,7 @@
 // `routes.json` entries have the k.compiler Artifacts shape `{ path, params, search, actions, layout, guard, module }`, an API entry adding `api: true` and `method`; `layout` is a layout's id else `null`, `module` the id's module prefix.
 // W1731 is a `diag` record at `.keel/routes.json` naming the layout's id (k.ledger Rules). A page route is defined by `path` and `api` alone (k.a11y Claims): the property gives pages `actions` and `guard`.
 // "a file under `modules/s/`" is a file of the module folder `modules/s/`; the page's chain is `m.p` (module `m`) then `s.l` (module `s`): `modules/o/` is a module no entry of the chain names.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { a11yItems, buildAndTest, itemRecord, keelProject, testHead } from "./a11y-project-support.ts";
@@ -112,7 +113,7 @@ describe("k.a11y: items exist per page route only", () => {
       files[`prop/c${pad(i)}/.keel/routes.json`] = routesJson(dataOf(s).data);
     });
     grouped = keel(track(keelProject("a11y-pages-grouped", files)), ["ledger"]);
-  }, 180_000);
+  }, fixedTime(180_000));
 
   it("`keel ledger` emits items whose route is `m.p` and none whose route is `m.l`, `m.x` or `m.api`", () => {
     expect([...new Set(a11yItems(mixed).map(routeOf))]).toEqual(["m.p"]);
@@ -233,7 +234,7 @@ describe("k.a11y: a static code in a module of the page's chain counts against t
     );
     expect(buildAndTest(dir).status).toBe(0);
     clean = keel(dir, ["ledger"]);
-  }, 180_000);
+  }, fixedTime(180_000));
 
   const withFile = (path: string, source: string, restore?: string): { run: Run; checked: boolean } => {
     writeFiles(dir, { [path]: source });
@@ -246,27 +247,39 @@ describe("k.a11y: a static code in a module of the page's chain counts against t
     }
   };
 
-  it("an E1802 in a file under `modules/s/`, the module of layout `s.l`, makes `a11y:.:m.p#1.1.1` rung `none` after a passing `renderRoute` test of `m.p`", () => {
-    const { run, checked } = withFile("modules/s/Shell.ts", LAYOUT(" "), LAYOUT("Name"));
-    expect(checked).toBe(true);
-    expect(itemRecord(run, "a11y:.:m.p#1.1.1")).toMatchObject({ rung: "none" });
-  }, 120_000);
+  it(
+    "an E1802 in a file under `modules/s/`, the module of layout `s.l`, makes `a11y:.:m.p#1.1.1` rung `none` after a passing `renderRoute` test of `m.p`",
+    () => {
+      const { run, checked } = withFile("modules/s/Shell.ts", LAYOUT(" "), LAYOUT("Name"));
+      expect(checked).toBe(true);
+      expect(itemRecord(run, "a11y:.:m.p#1.1.1")).toMatchObject({ rung: "none" });
+    },
+    fixedTime(120_000),
+  );
 
-  it("an E1802 in a file under `modules/m/`, the module of page `m.p`, makes `a11y:.:m.p#1.1.1` rung `none`", () => {
-    const { run, checked } = withFile("modules/m/Elsewhere.ts", ELSEWHERE);
-    expect(checked).toBe(true);
-    expect(itemRecord(run, "a11y:.:m.p#1.1.1")).toMatchObject({ rung: "none" });
-  }, 120_000);
+  it(
+    "an E1802 in a file under `modules/m/`, the module of page `m.p`, makes `a11y:.:m.p#1.1.1` rung `none`",
+    () => {
+      const { run, checked } = withFile("modules/m/Elsewhere.ts", ELSEWHERE);
+      expect(checked).toBe(true);
+      expect(itemRecord(run, "a11y:.:m.p#1.1.1")).toMatchObject({ rung: "none" });
+    },
+    fixedTime(120_000),
+  );
 
   it("without that E1802 the rung of `a11y:.:m.p#1.1.1` is `example`", () => {
     expect(itemRecord(clean, "a11y:.:m.p#1.1.1")).toMatchObject({ rung: "example" });
   });
 
-  it("an E1802 under a module no entry of `m.p`'s chain names, `modules/o/`, does not change the rung of `a11y:.:m.p#1.1.1`", () => {
-    const { run, checked } = withFile("modules/o/Elsewhere.ts", ELSEWHERE);
-    expect(checked).toBe(true);
-    expect(itemRecord(run, "a11y:.:m.p#1.1.1")).toMatchObject({ rung: "example" });
-  }, 120_000);
+  it(
+    "an E1802 under a module no entry of `m.p`'s chain names, `modules/o/`, does not change the rung of `a11y:.:m.p#1.1.1`",
+    () => {
+      const { run, checked } = withFile("modules/o/Elsewhere.ts", ELSEWHERE);
+      expect(checked).toBe(true);
+      expect(itemRecord(run, "a11y:.:m.p#1.1.1")).toMatchObject({ rung: "example" });
+    },
+    fixedTime(120_000),
+  );
 
   it("the layout `s.l` has no item of its own", () => {
     expect(new Set(a11yItems(clean).map(routeOf))).toEqual(new Set(["m.p"]));

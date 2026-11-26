@@ -10,6 +10,7 @@
 // `#4.1.2` is earned by E1702 plus the axe rules tagged 4.1.2, all of which run when `.keel/a11y.json` is given.
 // 4.4:1 is `#787878` on `#ffffff` (4.41:1); `#111111` is far above 4.5:1; `#8a8a8a` is below it.
 // Under `keel test` the expected E1807 inputs (a `tokens.ts` that throws, exports no `tokens`, or fails `TokenSchema`) are not built first: `keel build` gives E1807 for them too (k.a11y Artifacts).
+import { fixedTime } from "@keel/tooling/test-time";
 import { realpathSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -80,7 +81,7 @@ it("opted out with an empty artifacts", async () => {
     );
     expect(buildAndTest(noTokensDir).status).toBe(0);
     noTokensLedger = keel(noTokensDir, ["ledger"]);
-  }, 240_000);
+  }, fixedTime(240_000));
 
   it("with `.keel/a11y.json` and a `tokens.ts` whose text is 4.4:1, a `renderRoute` given no `artifacts` fails with E1804 and its run's `rules` hold E1702 and E1804; given `artifacts: {}` it passes and its run's `rules` hold none of E1702, E1804 and E1820", () => {
     const runs = runsOf(onDir);
@@ -130,27 +131,35 @@ it("throws E1807 naming tokens.ts", async () => {
       );
     });
     for (const [what, source] of broken) {
-      it(`a \`render\` given no \`artifacts\` throws E1807 naming \`tokens.ts\` when \`tokens.ts\` ${what}`, () => {
-        writeFiles(dir, { "tokens.ts": source });
-        expect(keel(dir, ["test"]).status).toBe(0);
-      }, 120_000);
+      it(
+        `a \`render\` given no \`artifacts\` throws E1807 naming \`tokens.ts\` when \`tokens.ts\` ${what}`,
+        () => {
+          writeFiles(dir, { "tokens.ts": source });
+          expect(keel(dir, ["test"]).status).toBe(0);
+        },
+        fixedTime(120_000),
+      );
     }
   });
 
-  it("run by vitest without `KEEL_TEST`, a `renderRoute` given no `artifacts` of a page whose text is 4.4:1 passes; under `keel test` the same test is refused with E1804", () => {
-    const dir = track(
-      keelProject("a11y-default-plain", {
-        ...moduleFiles(["r"], true),
-        "tokens.ts": tokensSource("#787878"),
-        // plain vitest takes the `keel()` plugin from a config; `keel test` needs none
-        "vitest.config.ts": `import keel from "@keel/compiler/vite"\nimport { defineConfig } from "vitest/config"\nexport default defineConfig({ plugins: [keel()] })\n`,
-        "modules/m/test/r.test.ts": `${testHead(false)}${renders("")}`,
-      }),
-    );
-    expect(plainVitest(realpathSync(dir)).status).toBe(0);
-    // non-vacuity: the defaults are there for `keel test`, which fails the same test
-    expect(buildAndTest(dir).status).not.toBe(0);
-  }, 240_000);
+  it(
+    "run by vitest without `KEEL_TEST`, a `renderRoute` given no `artifacts` of a page whose text is 4.4:1 passes; under `keel test` the same test is refused with E1804",
+    () => {
+      const dir = track(
+        keelProject("a11y-default-plain", {
+          ...moduleFiles(["r"], true),
+          "tokens.ts": tokensSource("#787878"),
+          // plain vitest takes the `keel()` plugin from a config; `keel test` needs none
+          "vitest.config.ts": `import keel from "@keel/compiler/vite"\nimport { defineConfig } from "vitest/config"\nexport default defineConfig({ plugins: [keel()] })\n`,
+          "modules/m/test/r.test.ts": `${testHead(false)}${renders("")}`,
+        }),
+      );
+      expect(plainVitest(realpathSync(dir)).status).toBe(0);
+      // non-vacuity: the defaults are there for `keel test`, which fails the same test
+      expect(buildAndTest(dir).status).not.toBe(0);
+    },
+    fixedTime(240_000),
+  );
 });
 
 describe("k.a11y: a criterion counts when every mapped rule ran in some passing run and none was violated", () => {
@@ -194,7 +203,7 @@ it("refuses text below 4.5:1", async () => {
     );
     expect(buildAndTest(dir).status).toBe(0);
     ledger = keel(dir, ["ledger"]);
-  }, 300_000);
+  }, fixedTime(300_000));
 
   it("a test given `artifacts: {}` earns none of 1.3.2, 1.4.3, 2.4.3 and 4.1.2, which the same test given no `artifacts` earns", () => {
     for (const criterion of CRITERIA) {
