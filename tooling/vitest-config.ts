@@ -2,6 +2,8 @@
 // reporter, the hard watchdog setup file (watchdog.ts) first among setup files, and the timeouts the watchdog reads.
 // Under happy-dom the fetch classes are Node's (node-fetch.mjs preloaded into each worker, node-fetch-setup.ts after
 // the environment; k.mount Testing).
+// Every run gets a temp folder of its own through `TMPDIR` (test-tmp-global.ts) and a test makes its folders with
+// `tempDir` (test-tmp.ts), which removes them when the file ends.
 // With `KEEL_COVERAGE=1` (tooling/coverage.mjs) it also measures coverage (coverage-config.ts); without it, nothing
 // about coverage is set. With `KEEL_FILE_TIMES=1` (CI's tooling/ci-shards.mjs) each test file prints one
 // `file <path> <s>s` line as it ends, so a shard's log says how far a run got and what each file cost. With
@@ -24,14 +26,16 @@ import type { TestModule } from "vitest/node";
 import type { Reporter } from "vitest/reporters";
 import { coverageOptions } from "./coverage-config.ts";
 import { propertyTimesPlugin } from "./property-times.ts";
+import { testSlots } from "./test-slots.mjs";
 import { fixedTime, testTimeScale } from "./test-time.ts";
 import { testTimesPlugin } from "./test-times.ts";
-import { testSlots } from "./test-slots.mjs";
 import { KeelReporter } from "./vitest-reporter.ts";
 
 const WATCHDOG = fileURLToPath(new URL("./watchdog.ts", import.meta.url));
 const NODE_FETCH = new URL("./node-fetch.mjs", import.meta.url).href;
 const NODE_FETCH_SETUP = fileURLToPath(new URL("./node-fetch-setup.ts", import.meta.url));
+const TEST_TMP_SETUP = fileURLToPath(new URL("./test-tmp-setup.ts", import.meta.url));
+const TEST_TMP_GLOBAL = fileURLToPath(new URL("./test-tmp-global.ts", import.meta.url));
 
 /** One line per finished test file: its path and its seconds (setup, import and tests). */
 const fileTimes: Reporter = {
@@ -90,7 +94,18 @@ export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
       ...(workers === undefined ? {} : { maxWorkers: workers }),
       // Each test's location line, which the run report records (k.test-run Run report).
       includeTaskLocation: true,
-      setupFiles: [WATCHDOG, NODE_FETCH_SETUP, ...(typeof own === "string" ? [own] : own), ...keelTest.setup],
+      // The run's own temp folder, removed at its end, failing the run if a test left anything in it (test-tmp-global.ts).
+      globalSetup: [
+        TEST_TMP_GLOBAL,
+        ...(typeof test.globalSetup === "string" ? [test.globalSetup] : (test.globalSetup ?? [])),
+      ],
+      setupFiles: [
+        WATCHDOG,
+        NODE_FETCH_SETUP,
+        TEST_TMP_SETUP,
+        ...(typeof own === "string" ? [own] : own),
+        ...keelTest.setup,
+      ],
       env: { ...keelTest.env, ...test.env },
       execArgv: ["--import", NODE_FETCH, ...(test.execArgv ?? [])],
       reporters: process.env.KEEL_FILE_TIMES === "1" ? [new KeelReporter(), fileTimes] : [new KeelReporter()],
