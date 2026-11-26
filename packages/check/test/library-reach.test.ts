@@ -71,7 +71,7 @@ it("E1004: a server-only file a page reaches through a library is reported at th
   expect(d[0]?.message).toContain("server-only");
 });
 
-it("the artifacts the compile hands rules hold a library's styles: E1804 with tokens reports a library's pair", () => {
+it("the artifacts the compile hands rules hold a library's styles: E1804 with tokens reports a library's pair, in the app (k.looks Library contrast)", () => {
   const tokens = { color: { mid: "#949494", white: "#ffffff" }, fontSize: { sm: "14px" } };
   const files = [
     {
@@ -82,7 +82,9 @@ it("the artifacts the compile hands rules hold a library's styles: E1804 with to
       ),
     },
   ];
-  expect(at("E1804", files, { artifacts: { tokens } })).toEqual([`${LIB}/src/Badge.tsx`]);
+  const found = at("E1804", files, { artifacts: { tokens } });
+  expect(found).toHaveLength(1);
+  expect(found.some((p) => p.startsWith("node_modules/"))).toBe(false);
 });
 
 // The type pass with the kernel installed: a contract type error (E1510) in a library file is the app twin's.

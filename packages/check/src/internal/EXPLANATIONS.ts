@@ -1495,7 +1495,7 @@ const ROWS: readonly Row[] = [
   [
     "E1815",
     "a listed library's exports entry holds keel other than as its first condition",
-    "keel check reads the keel target as the library's source, and the compiler and tokens.ts's evaluation resolve the first condition that matches, so keel goes first, at the top level, or they could load another file. Nothing of the library is evaluated while one stands.",
+    "check reads the keel target as source; the compiler and tokens.ts's evaluation take the first condition that matches, so keel goes first and at the top level. Nothing is evaluated while one stands.",
     '"./tokens": { "default": "./x.js", "keel": "./src/acmeTokens.ts" } -> { "keel": "./src/acmeTokens.ts", "default": "./x.js" }',
     "k.looks",
   ],

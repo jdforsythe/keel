@@ -278,7 +278,8 @@ export const lowContrast: RuleDef = {
     const page = base.page;
     const pageFg = setToken(page, "fg") ?? UA_FG;
     const pageBg = setToken(page, "bg") ?? UA_BG;
-    const host = project.find((f) => /(?:^|\/)tokens\.ts$/.test(f.path));
+    // Where the project's token findings land: its `tokens.ts`, else its first file (as `tokenSetAt`).
+    const host = project.find((f) => /(?:^|\/)tokens\.ts$/.test(f.path)) ?? project[0];
     // A listed library's pair, in an app: one finding per pair and scheme, in `tokens.ts`.
     const pairs = new Map<string, { bad: Readonly<Record<string, string>>; id: string }>();
     const libraryPair = (bad: Readonly<Record<string, string>>, id: string): void => {
