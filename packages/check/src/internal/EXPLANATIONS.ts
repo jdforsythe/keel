@@ -425,7 +425,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1170",
-    'an app\'s folder (one holding topology.ts or modules/) whose package.json says "keel": "library"',
+    'an app\'s folder (topology.ts or a modules/<id>/module.ts) whose package.json says "keel": "library"',
     "A library's own folder is read as an app holds the library installed; an app read that way would check none of its files.",
     'drop "keel": "library" from the app\'s package.json; keep a library in its own folder',
     "k.module",
