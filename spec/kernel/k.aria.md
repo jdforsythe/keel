@@ -1,5 +1,5 @@
 # k.aria: Widget parts
-status: conformance-covered
+status: implemented
 
 **Part.** `@keel/ui/aria` exports `Part`, the element stdlib widgets build on. A base element in every k.ui sense (it resumes in place); takes `id` (required), `role`, `lang`, `hidden`, the style props and a `children` thunk; it is bound (`data-k`) when it has an event prop, a `focus` or `open`, or a signal or computed. App code imports it as the stdlib does; the roles for app widgets (`grid`, `tree`, `slider`, `radiogroup`): k.roles.
 
@@ -34,7 +34,18 @@ status: conformance-covered
 - When `activeDescendant` changes, the element it names gets `data-k-highlighted` (the previous one loses it) and is scrolled into view (`block: 'nearest'`).
 - `dialog`, `alertdialog`: `open` true calls `showModal()` after the commit and focuses the first descendant that is a `button`, `input`, `select`, `textarea`, `a[href]` or `tabindex="0"`, else the dialog (`tabindex="-1"`). `open` false, or removal while open, closes it and focuses the element `returnFocus` names, else the one focused at open, else `main`. A close request (`cancel`) is prevented and calls `onDismiss`; a platform `close` while `open` is true calls it too.
 
-**Part styles.** `styles` on any component is `{ <part>: { <style props> } }`: the compiler collects each part's style props from that literal as a base element's (k.ui), and the component passes them to the part's `Part` or base element. Any other value, part or spread is E1823, except `props.styles` or its members, collected where written. There and on `Part`, `states` also takes `selected` (`[aria-selected="true"]`), `checked` (`[aria-checked="true"]`, `:checked`), `expanded` (`[aria-expanded="true"]`) and `highlighted` (`[data-k-highlighted]`).
+**Part styles.** `styles` on any component is `{ <part>: { <style props> } }`: the compiler collects each part's style props from that literal as a base element's (k.ui), and the component passes them to the part's `Part` or base element. Any other value, part or spread is E1823, except `props.styles` or its members, collected where written. There, on `Part` and in a `look` or `base` set, `states` takes every state below; on a base element, the first four. Each state's rule matches any of its selectors:
+
+| state | selectors |
+| --- | --- |
+| `hover`, `focusVisible`, `active` | `:hover`; `:focus-visible`; `:active` |
+| `disabled` | `:disabled`, `[aria-disabled="true"]` |
+| `selected` | `[aria-selected="true"]` |
+| `checked` | `[aria-checked="true"]`, `:checked` (a `checkbox`, `radio`, `switch`, `menuitemcheckbox`, `menuitemradio`) |
+| `pressed` | `[aria-pressed="true"]` (a `button` with `pressed`) |
+| `expanded` | `[aria-expanded="true"]` |
+| `current` | `[aria-current]:not([aria-current="false"])` |
+| `highlighted` | `[data-k-highlighted]` |
 
 **Rules.** E1823 unreadable `styles` (no fix).
 
@@ -49,3 +60,6 @@ status: conformance-covered
 - `styles={{ option: { p: '2', states: { highlighted: { bg: 'accent' } } } }}` on a stdlib component puts the `2` rule and an `accent` rule under `[data-k-highlighted]` into the CSS file, once each.
 - Each role with its required props, parent and children (a `listbox` with one `option`, a `table` with one `row` of one `cell`) has no axe violations.
 - An app file importing `Part` from `@keel/ui/aria` reports no diagnostic, and its `styles` are collected as a stdlib component's.
+- With `brandTokens`, a `button` `Part` with `pressed` from a signal and `states={{ pressed: { bg: 'accent' } }}` has the `accent` rule under `[aria-pressed="true"]` in the CSS file, and setting the signal true changes only its `aria-pressed` attribute.
+- With `brandTokens`, `states={{ disabled: { fg: 'textSecondary' } }}` puts its rule under both `:disabled` and `[aria-disabled="true"]`, so a `menuitemradio` with `disabled` true matches it; `states={{ current: { weight: 'bold' } }}` matches a `gridcell` with `current: 'date'` and not one with `current` false.
+- `states={{ pressed: { bg: 'accent' } }}` on a base element `Button` is a type error.

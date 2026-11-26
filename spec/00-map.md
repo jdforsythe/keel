@@ -49,6 +49,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ui | Tokens, styling | implemented | CSS |
 | k.looks | Looks | proposed | names |
 | k.schemes | Schemes | proposed | dark |
+| k.values | Values | proposed | forms |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
@@ -61,7 +62,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
-| k.testing | Harness, properties | implemented | fire |
+| k.testing | Test harness | implemented | fire |
 | k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
 | k.model | Store exploration | conformance-covered | traces |
@@ -72,7 +73,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ledger | Ledger, evidence | implemented | rungs |
 | k.ledger-items | Ledger items, runs | implemented | keys |
 | k.server | Thin server | conformance-covered | loads |
-| k.leave | What a request leaves | implemented | state |
+| k.leave | Request leaves | implemented | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |
@@ -81,7 +82,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrency | conformance-covered | heads |
-| k.persist | Durable storage | conformance-covered | drivers |
+| k.persist | Storage | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Deploy files | conformance-covered | entry |
@@ -106,7 +107,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.origins | Declared origins | conformance-covered | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
-| k.privacy-reads | Static privacy reads | conformance-covered | readers |
+| k.privacy-reads | Privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
 | k.review | Review of escapes | conformance-covered | ranges |

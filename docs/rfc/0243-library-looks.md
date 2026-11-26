@@ -14,7 +14,13 @@ Personas: L1 the component library author, L2 the visual library author, A5 the 
 - D7: schemes are `light` and `dark`. `tokens.ts` gains `schemes`. With no `schemes`, an app has both only when one of its own colors is a pair, so a library's pairs never turn an app half dark. Both schemes give the preference media query, an explicit choice through `data-k-scheme` on `<html>`, and `color-scheme`.
 - D8: `SchemeSelect` (`@keel/ui`) is the one control for the choice; it writes the `keel-scheme` cookie. A `node` document renders the choice on first paint; a `client` or `static` document loads a 300-byte classic script before its stylesheet. An app that renders no `SchemeSelect` carries no scheme bytes.
 - D9: this RFC adds the Part roles `switch`, `toolbar`, `menubar`, `menuitemradio`, `meter`, `progressbar`, `region`, `pressed` and `describedBy` on `button`, and `hasPopup` and `expanded` on `menuitem`. Tooltip, treegrid, feed, window splitter, carousel and a breadcrumb's current link go to one follow-on RFC (Deferred).
-- Codes: E1810 to E1814. ADR-0265.
+- D10 (review): a token value is admitted only in its group's positive form (k.values). Colors are `#rgb` or `#rrggbb`, the forms contrast can judge. `url(...)`, a `var(...)` of anything but a held color token, `!important`, backslashes and stray quotes are refused. The same `TokenSchema` judges the app's tokens (E1807) and a library's shipped object (E1812). The invariant: Chromium keeps every emitted rule.
+- D11 (review): an `exports` entry holding `keel` holds it first and at the top level, judged at the app (E1815) for every entry, before `tokens.ts` is evaluated. So the file check reads as source is the file the bundler resolves. `keel pack`'s E1164 cases stay; the app no longer depends on them.
+- D12 (review): a library's own folder judges every scheme its shipped colors are written for. In an app, contrast found in a library's files or looks is reported in `tokens.ts`, where the app can override, once per pair and scheme.
+- D13 (review): one `states` list, with selectors, in k.aria. `pressed` and `current` are new; `disabled` also matches `[aria-disabled="true"]`; `checked` covers `switch` and `menuitemradio`.
+- D14 (review): every `client` and `static` deployable in an app with both schemes gets the scheme script (152 bytes as built), since a text match cannot see every `SchemeSelect`. E1814 judges by the type pass, in app and library files. With no script, `SchemeSelect` stays `hidden` and the system preference applies.
+- D15 (review): the shipped literal takes no `as const` or `satisfies` (E1812 `a type assertion`); `defineTokens` already keeps the literal types. E1810's fix moves no comment.
+- Codes: E1810 to E1815. ADR-0265.
 
 ## Problem
 - A library cannot ship a look. The keel-library skill says "a library names no token": it draws in `currentColor` and takes a `styles` prop the app fills. In the L1 run a library wrote `radius="full"`. Its own check, test and pack passed, and so did the app's check. The app's `keel build` then failed with an E1801 that named no file. RFC 0241 moves E1801 into `keel check` for app code and reads a library's files against the app's tokens. That still leaves the library with no way to say which names it needs, or to give them default values.
@@ -247,6 +253,7 @@ ARIA's authoring practices, pattern by pattern, against k.aria and k.roles:
 Applied in this commit.
 - k.looks (new, `proposed`): Names, Shipped tokens, Needs, In an app, Fix, Own folder, Rules (E1810 to E1813), Conformance #1 to #11.
 - k.schemes (new, `proposed`): Schemes, CSS, Choice, First paint, Checks, Rules (E1814), Conformance #1 to #10.
+- From the review: k.values (new, `proposed`) holds Forms, Stylesheet and Conformance #1 to #5. k.looks: Shipped tokens refuses `as` and `satisfies`; Entries (E1815) and Library contrast are new; Fix keeps comments; Rules gains E1815 and E1812's `a type assertion`; Conformance #12 to #15. k.schemes: own-folder schemes come from the shipped pairs; First paint ships the script with both schemes; `SchemeSelect` is `hidden` until script; E1814 is judged by symbol; #9 is re-worded (the script with both schemes, none with one); Conformance #11 to #13. k.aria (to `implemented`): Part styles holds the one `states` table; Conformance #11 to #13. Map: a k.values row, and four shorter titles (`Privacy reads`, `Test harness`, `Storage`, `Request leaves`) that point at the same sections, so the `keel docs` map stays within 1,690.
 - Settled for the conformance-writer: E1810 to E1814 judge the evaluated tokens and read `tokens.ts`'s text only for positions and the fix; no tokens, no judgement. E1813 sits at the opening quote. A shipped `base` or `schemes` key gets its own E1812 message. The fix's layout is the formatter's (`biome format`). Clipping at 20 units keeps 17 units and `...`. k.looks #11 names the border's own property. The server reads `schemes.json` from its artifacts folder, beside `routes.json` and `std.json`. k.schemes #9 covers `client` deployables too. k.check's list of fixtures that carry a fix gains E1810; the code block's comment padding is trimmed so k.check stays within 3,100.
 - Settled by the builder: a project with `tokens.ts` and no tokens still has E1811 and E1812 judged, since they read the library's own files and no tokens (k.looks In an app). A `client` deployable builds to `dist/<name>/` with or without `servedBy`, its one document `index.html` (k.schemes First paint).
 - k.roles (to `implemented`): Roles gains seven rows and the `button` and `menuitem` props; Attributes gains their rows; Keys is new; Conformance gains #9 to #14. No existing clause changes.
@@ -258,6 +265,7 @@ Applied in this commit.
 
 ## Conformance diff
 By the `conformance-writer`, from the spec text.
+- From the review: `packages/ui/conformance/token-values.test.ts` covers k.values #1 to #4, with #5 in Chromium as `packages/ui/conformance/token-values.browser.test.ts` beside the k.ui Chromium cases. `packages/check/conformance/library-entries-e1815.test.ts` covers k.looks #12 (with an `evil.js` that writes a marker file) and #13 to #15. `packages/ui/conformance/part-states.test.ts` covers k.aria #11 to #13. `packages/check/conformance/schemes-own-folder.test.ts` covers k.schemes #11 and #12. `packages/ui/conformance/scheme-select.test.ts` gains #13, and `scheme-static-script.test.ts` is re-quoted for #9. `fixtures-by-code.ts` gains E1815.
 - `packages/check/conformance/library-looks-e1810.test.ts`: k.looks #1 to #6 (E1810 message, fix and its applied text, override CSS, E1813, the spread message, no `tokens.ts`), over the k.library fixture's file maps.
 - `packages/check/conformance/library-looks-own-folder.test.ts`: k.looks #7 to #10 (E1811, E1812, E1804 at the shipped key, E1813 in the fixture and `keel pack`'s E1164); the pack half may sit in `packages/cli/conformance/`.
 - `packages/ui/conformance/library-token-vars.test.ts`: k.looks #11.
@@ -271,6 +279,9 @@ By the `conformance-writer`, from the spec text.
   - `data-k-scheme="light"` under an emulated dark preference keeps the light values.
   - On https, the cookie that `SchemeSelect` writes carries `Secure`.
   - Real Space and Enter on a focused `switch` and on a `button` with `pressed` each call `onClick` once.
+  - With a real keyboard, each new role's keys as k.roles Keys gives them (`toolbar` and `menubar` arrows, Home and End, submenu open and close, `menuitemradio` checking), under `dir="rtl"` as well, where ArrowLeft and ArrowRight swap, and in a toolbar nested in a toolbar.
+  - A `static` host serving `csp.txt` as its `Content-Security-Policy` header runs the scheme script and no other script.
+  - The wrong-scheme flash, measured on a live `node` server and on a real static host: no frame in the scheme the cookie does not name.
 
 ## Migration
 None. No in-tree app, example or library writes a color pair or a dotted name, and no library writes a token literal in `src/` (`libraries/charts` uses `styles`). The scaffolds are unchanged.
@@ -289,6 +300,11 @@ None. No in-tree app, example or library writes a color pair or a dotted name, a
 - `@keel/compiler` `projectTokens`: carry `schemes` and the build's "renders `SchemeSelect`" flag to the server and the head.
 - Docs: the keel-library skill's Colour paragraph (a library ships `<id>Tokens`; a card, a badge and a switch as above), the keel-client skill's Base and looks paragraph (`schemes`, `SchemeSelect`), `docs/BRAND.md` section 6 (`brandTokens` names are the app's own), `@keel/ui` and `@keel/check` READMEs, a changeset.
 - A proof: a minimal library under `examples/` or `libraries/` shipping `<id>Tokens`, installed into one example app with two overrides (personas L1, A5).
+
+## Build plan from the review
+- `@keel/ui`: a form parser per group in `TokenSchema` (`internal/valueForms.ts`), replacing `compileStyles`' deny-list `value` check, which then only asserts. `PartState` and `states.ts` gain `pressed` and `current`, and `disabled` gains `[aria-disabled="true"]`. `SchemeSelect` renders `hidden`, and runtime-dom clears it at mount and resume. One group order: `GROUP_ORDER` in `@keel/check` is replaced by `tokenGroups` from `@keel/ui`.
+- `@keel/check`: E1815 over every listed library's `exports`, run before `checkTokens` evaluates `tokens.ts` (`@keel/cli` skips evaluation while one stands); library-file and library-look E1804 moved into `tokens.ts` with the new message, deduplicated; own-folder schemes from the shipped pairs; E1814 by symbol through the type pass, in library files too; E1812 `a type assertion`; E1810's fix inserts after the last import's line end.
+- `@keel/cli`: the scheme script for every `client` and `static` deployable with both schemes; no `SchemeSelect` scan.
 
 ## Deferred
 - One follow-on RFC, "Part roles II", before P1 ends: `tooltip` (needs `onPointerEnter`/`onPointerLeave` on `Part` and WCAG 1.4.13: dismissable, hoverable, persistent), `treegrid` (rows with `expanded` and `level` inside a grid), `feed` and `article` (`setSize`, `posInSet`, `busy`), a focusable `separator` for the window splitter (`valueNow`, `min`, `max`), carousel's `aria-roledescription`, and `current` on `Link` for a breadcrumb. Each needs focus or event rules this RFC does not settle.
