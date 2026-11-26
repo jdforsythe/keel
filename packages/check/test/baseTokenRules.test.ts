@@ -25,15 +25,13 @@ describe("E1801 looks and token sets", () => {
     expect(codes(`<Box styles={{ field: { look: 'nope' } }} />`, "E1801", tokens)).toHaveLength(1);
     expect(codes(`<Box styles={{ field: { look: 'primary' } }} />`, "E1801", tokens)).toEqual([]);
   });
-  it("a computed look, or no tokens artifact, is not read", () => {
+  it("a computed look is not read; with no tokens artifact a tokens.ts judges none, and no tokens.ts judges each", () => {
     expect(codes("<Button look={props.l}>a</Button>", "E1801", tokens)).toEqual([]);
-    const none = check(
-      [{ path: "src/C.tsx", source: `export default function C() { return <Button look="x" /> }\n` }],
-      {
-        types: false,
-      },
-    ).diagnostics;
-    expect(none.filter((d) => d.code === "E1801")).toEqual([]);
+    const page = { path: "src/C.tsx", source: `export default function C() { return <Button look="x" /> }\n` };
+    const broken = check([page, { path: "tokens.ts", source: "throw new Error('x')\n" }], { types: false });
+    expect(broken.diagnostics.filter((d) => d.code === "E1801")).toEqual([]);
+    const none = check([page], { types: false }).diagnostics.filter((d) => d.code === "E1801");
+    expect(none.map((d) => d.message)).toEqual(['look="x" is not a look token: the project has no tokens.ts']);
   });
   it("a set naming a missing token or breakpoint is reported once, at tokens.ts", () => {
     const bad = {

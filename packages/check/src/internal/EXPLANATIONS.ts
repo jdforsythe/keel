@@ -1406,7 +1406,13 @@ const ROWS: readonly Row[] = [
     "modules/m/a.test-d.ts -> modules/m/test/a.test-d.ts; drop the import or the unsafe() wrapper",
     "k.unsafe",
   ],
-  ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],
+  [
+    "E1801",
+    "raw value where a token is required, or a token name the project's tokens lack",
+    "keel check judges each literal token prop, responsive key and look against tokens.ts; with no tokens.ts each is reported.",
+    'p="12px" -> p="3" (nearest token)',
+    "k.ui",
+  ],
   [
     "E1802",
     "missing or blank a11y-required prop",

@@ -14,7 +14,7 @@ import { identityMountElsewhere } from "../rules/identityMountElsewhere.ts";
 import { identityMountMissing } from "../rules/identityMountMissing.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
-import { missingLook } from "../rules/missingLook.ts";
+import { unknownToken } from "../rules/unknownToken.ts";
 import { negativeTypeTestHome } from "../rules/negativeTypeTestHome.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noAmbientLocale } from "../rules/noAmbientLocale.ts";
@@ -107,7 +107,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   foreignUrlFetch,
   reversedFocusOrder,
   gapWithoutDirection,
-  missingLook,
+  unknownToken,
   blankLabel,
   hostCodeImport,
   stylesheetImport,
