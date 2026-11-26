@@ -376,6 +376,7 @@ const NO_FIX = [
   "E1163", // k.library Rules: no fix; a diagnostic in a library file carries none (k.library In an app)
   "E1166", // k.library Rules: no fix stated; which of the two ids to rename is the author's choice
   "E1167", // k.server-deps Rules: no fix stated; the name an `env` entry should hold is the author's
+  "E1171", // k.module Rules: fix none; whether the file is a stray or a module of its own is the author's
   "E1204", // the Case per resource state is the author's
   "E1207", // whether to drop the detached scope or own it differently is a design change
   "E1251", // the JSX that replaces an op is the author's
