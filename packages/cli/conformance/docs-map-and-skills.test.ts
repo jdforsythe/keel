@@ -1,5 +1,6 @@
 // Spec: k.docs, clause "`keel docs` emits a `docs.area` per `map.json` area in map order, then a `docs.entry` per skill, and no section's `docs.entry`; `keel docs keel-client` prints `skills/keel-client/SKILL.md` byte for byte."
 // Spec: k.docs, clause "A skill whose `description` is `Build pages; E1401, E19xx` is listed with `title` `Build pages`."
+// Spec: k.docs, sentence "an entry whose `holds` is `\"\"` prints no `: `."
 // Seed 1337 (map order property). Red: `docs` is absent (E1051).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -79,5 +80,16 @@ describe("k.docs map and skills", () => {
     const s = await jsonRecords(["docs", "keel-pages"], files);
     expect(s.recs.find((x) => x.kind === "docs.skill")?.text).toBe(skillText(pages));
     expect(s.out).toContain("Build pages; E1401, E19xx");
+  });
+
+  it('an entry whose holds is "" prints no `: `', async () => {
+    const skills = [{ name: "keel-pages", description: "Build pages", body: "# pages\n" }];
+    const files = [...project(["cli"]), ...cliPkg([], skills)];
+    const r = await jsonRecords(["docs"], files);
+    expect(r.recs.find((x) => x.kind === "docs.entry" && x.id === "keel-pages")).toMatchObject({ holds: "" });
+    const c = await run(["docs", "--format=compact"], { files });
+    const line = c.stdout.split("\n").find((l) => l.startsWith("keel-pages "));
+    expect(line).toBe("keel-pages Build pages @keel/cli");
+    expect(line).not.toContain(": ");
   });
 });
