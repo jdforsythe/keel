@@ -150,6 +150,14 @@ export const operations: readonly Operation[] = [
     scope: "tree",
   },
   {
+    name: "tokens",
+    description: "Design tokens into tokens.design.ts, or one value into tokens.ts (k.cli Tokens).",
+    input: s.object({ op: s.string().optional(), args: s.array(s.string()).optional(), ...diagnostic }),
+    output: outputOf(),
+    positional: ["op", "args"],
+    scope: "none",
+  },
+  {
     name: "ledger",
     description: "Emit the ledger, --write it, or diff it against the committed one.",
     input: s.object({

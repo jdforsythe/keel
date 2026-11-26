@@ -249,6 +249,20 @@ const ROWS: readonly Row[] = [
     "k.review",
   ],
   [
+    "E1071",
+    "keel tokens refused: not a design tokens file, not a token path, or a value that fails TokenSchema",
+    "tokens.design.ts and tokens.ts change only when the input is whole; nothing is written otherwise.",
+    "give a Design Tokens Community Group file, a path like color/accent/dark, and a value in k.values' form",
+    "k.cli",
+  ],
+  [
+    "W1072",
+    "a design token skipped, or a field dropped, by keel tokens import",
+    "A token with no Keel group (a gradient, an opacity) is never guessed; the rest is imported.",
+    "declare it in tokens.ts, or rename its group in the design file to one Keel has",
+    "k.cli",
+  ],
+  [
     "E1104",
     "schema declared outside a *.schema.ts file",
     "One declaration per data shape, at one address.",
