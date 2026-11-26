@@ -1,6 +1,6 @@
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
-import type { LibraryContract } from "./LibraryView.ts";
+import type { LibraryContract } from "./LibraryContract.ts";
 import { bindingCalls } from "./bindingCalls.ts";
 import { contractCalls } from "./contractCalls.ts";
 import { contractEscapes } from "./contractEscapes.ts";

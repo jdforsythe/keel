@@ -1,6 +1,7 @@
 import { libraryKind } from "@keel/compiler/std/libraryKind";
 import type { SourceFile } from "../types/SourceFile.ts";
-import type { LibraryContract, LibraryView } from "./LibraryView.ts";
+import type { LibraryContract } from "./LibraryContract.ts";
+import type { LibraryView } from "./LibraryView.ts";
 import { readManifest } from "./modules/readManifest.ts";
 import { parseFile } from "./parseFile.ts";
 

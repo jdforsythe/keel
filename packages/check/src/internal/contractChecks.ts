@@ -3,7 +3,7 @@ import type { Topology } from "@keel/compiler";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
-import type { LibraryContract } from "./LibraryView.ts";
+import type { LibraryContract } from "./LibraryContract.ts";
 import { contractFields } from "./contractFields.ts";
 import { contractImports } from "./contractImports.ts";
 import { contractPlacement } from "./contractPlacement.ts";

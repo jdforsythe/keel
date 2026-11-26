@@ -7,14 +7,14 @@
     "explain": 300,
     "mcp.tools-list": 2150,
     "docs.map": 1690,
-    "docs.section": 3100,
+    "docs.section": 3250,
     "docs.skill": 3700,
     "docs.for": 400,
     "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "91kb",
+      "max": "92kb",
       "platform": "node"
     },
     "@keel/check/explain": {

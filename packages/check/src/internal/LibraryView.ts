@@ -1,7 +1,5 @@
 import type { SourceFile } from "../types/SourceFile.ts";
-
-/** A library's `./contract` entry (`LibraryView` `contracts`). */
-export type LibraryContract = { readonly target: string | undefined; readonly file: string | undefined };
+import type { LibraryContract } from "./LibraryContract.ts";
 
 /**
  * How `check()` reads the library files it is given (k.library In an app). A library file is a file under `src/` or
