@@ -136,7 +136,7 @@ describe("k.test-run: a test run writes under `reports/` only", () => {
     SLOW * 2,
   );
 
-  it.skip(
+  it(
     "In a git checkout of a project whose `.keel/` files `keel build` wrote, with `reports/` ignored, `git status --porcelain` prints nothing after `keel test`",
     () => {
       const tree = {
