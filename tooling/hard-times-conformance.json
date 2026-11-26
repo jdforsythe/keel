@@ -408,66 +408,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-schedules/conformance/e2551.test.ts",
-    "line": 91,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2551.test.ts",
-    "line": 96,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2551.test.ts",
-    "line": 103,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2551.test.ts",
-    "line": 123,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2552.test.ts",
-    "line": 84,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2552.test.ts",
-    "line": 89,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2552.test.ts",
-    "line": 105,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2553.test.ts",
-    "line": 80,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/e2553.test.ts",
-    "line": 89,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-schedules/conformance/next-fire-matches-cron.test.ts",
-    "line": 151,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-sessions/conformance/E2001-redact-path.test.ts",
     "line": 14,
     "text": "30_000",
