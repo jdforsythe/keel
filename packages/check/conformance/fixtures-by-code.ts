@@ -9,6 +9,7 @@ import { brandTokens } from "@keel/ui/brand";
 import { BASE, sharedRoot } from "./E1013-support.ts";
 import {
   BRAND_ONLY,
+  PACKAGE_JSON as ACME_PACKAGE_JSON,
   ROOT as ACME_ROOT,
   SHIPPED as ACME_SHIPPED,
   app as acmeApp,
@@ -16,6 +17,7 @@ import {
   composed,
   fixedTokens,
   optsFor,
+  packageJson,
   shippedSource,
 } from "./library-looks-support.ts";
 import type { Files } from "./support.ts";
@@ -1683,6 +1685,14 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     cleanOpts: optsFor(composed({ "acme.accent": "#b8420d" })),
     bad: acmeApp(fixedTokens(", 'zed.x': '#000000'")),
     clean: acmeApp(fixedTokens(", 'acme.accent': '#b8420d'")),
+  },
+  // E1815 (rfc:0243): the `@acme/ui` the app lists writes `default` before `keel` in its `./tokens` entry; the clean counterpart holds `keel` first.
+  E1815: {
+    opts: optsFor(composed()),
+    bad: acmeApp(fixedTokens(), [
+      f(ACME_PACKAGE_JSON, packageJson({ default: "./evil.js", keel: "./src/acmeTokens.ts" })),
+    ]),
+    clean: acmeApp(fixedTokens()),
   },
   // E1814 (rfc:0243): a `SchemeSelect` where the tokens have light only; the clean counterpart's tokens hold a color pair of their own.
   E1814: {
