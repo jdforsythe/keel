@@ -19,6 +19,10 @@
     "./setup": {
       "types": "./src/projectArtifactsSetup.ts",
       "default": "./src/projectArtifactsSetup.ts"
+    },
+    "./e2e": {
+      "types": "./src/e2e/index.ts",
+      "default": "./src/e2e/index.ts"
     }
   },
   "publishConfig": {
@@ -38,10 +42,17 @@
       "./setup": {
         "types": "./dist/src/projectArtifactsSetup.d.ts",
         "default": "./dist/src/projectArtifactsSetup.js"
+      },
+      "./e2e": {
+        "types": "./dist/src/e2e/index.d.ts",
+        "default": "./dist/src/e2e/index.js"
       }
     }
   },
-  "files": ["dist", "docs"],
+  "files": [
+    "dist",
+    "docs"
+  ],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
@@ -61,6 +72,7 @@
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*",
     "axe-core": "4.14.0",
+    "esbuild": "^0.28.2",
     "fast-check": "^3",
     "oxc-parser": "^0.157.0"
   },
@@ -68,17 +80,22 @@
     "@keel/forms": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
+    "playwright-core": "1.65.0",
     "z3-solver": "5.3.3"
   },
   "peerDependencies": {
     "z3-solver": "5.3.3",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "playwright-core": "1.65.0"
   },
   "peerDependenciesMeta": {
     "z3-solver": {
       "optional": true
     },
     "vitest": {
+      "optional": true
+    },
+    "playwright-core": {
       "optional": true
     }
   }

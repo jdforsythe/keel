@@ -1,0 +1,97 @@
+import { type IncomingMessage, type ServerResponse, createServer, request } from "node:http";
+import { connect } from "node:net";
+import { TLSSocket } from "node:tls";
+import type { AnswerEntry } from "./AnswerEntry.ts";
+import { LOOPBACK_CERT } from "./LOOPBACK_CERT.ts";
+import type { ProxyServer } from "./ProxyServer.ts";
+import { sendResponse } from "./sendResponse.ts";
+import { webRequest } from "./webRequest.ts";
+
+const PEER = /^([a-z0-9-]+)\.peer\.keel\.test$/;
+
+/**
+ * A serve's proxy on 127.0.0.1: a request for a mapped origin goes to its `answer` (`https` ended with the shipped
+ * loopback certificate), one for `<name>.peer.keel.test` to that deployable's port (`peers`), and every other request
+ * on, unchanged. Loopback requests never reach it: a browser sends them direct.
+ */
+export async function startProxy(
+  origins: ReadonlyMap<string, AnswerEntry>,
+  peers: (name: string) => number | undefined,
+): Promise<ProxyServer> {
+  const toAnswer = async (entry: AnswerEntry, req: IncomingMessage, res: ServerResponse, url: string) =>
+    sendResponse(res, await entry.respond(await webRequest(req, url)));
+
+  const pass = (req: IncomingMessage, res: ServerResponse, host: string, port: number, path: string): void => {
+    const out = request({ host, port, path, method: req.method, headers: req.headers }, (r) => {
+      res.writeHead(r.statusCode ?? 502, r.headers);
+      r.pipe(res);
+    });
+    out.on("error", () => {
+      if (!res.headersSent) res.writeHead(502);
+      res.end();
+    });
+    req.pipe(out);
+  };
+
+  // The https side of a mapped origin: requests arrive here once the tunnel's TLS is ended.
+  const inner = createServer((req, res) => {
+    const host = req.headers.host ?? "";
+    const origin = `https://${host.replace(/:443$/, "")}`;
+    const entry = origins.get(origin);
+    if (entry === undefined) res.writeHead(502).end();
+    else void toAnswer(entry, req, res, `${origin}${req.url ?? "/"}`);
+  });
+
+  const server = createServer((req, res) => {
+    let url: URL;
+    try {
+      url = new URL(req.url ?? "");
+    } catch {
+      res.writeHead(400).end();
+      return;
+    }
+    const peer = PEER.exec(url.hostname)?.[1];
+    const port = peer === undefined ? undefined : peers(peer);
+    if (port !== undefined) return pass(req, res, "127.0.0.1", port, `${url.pathname}${url.search}`);
+    const entry = origins.get(url.origin);
+    if (entry !== undefined) return void toAnswer(entry, req, res, url.href);
+    pass(req, res, url.hostname, Number(url.port || 80), `${url.pathname}${url.search}`);
+  });
+  server.on("connect", (req: IncomingMessage, socket, head: Buffer) => {
+    const [host = "", portText = "443"] = (req.url ?? "").split(":");
+    const port = Number(portText);
+    const origin = port === 443 ? `https://${host}` : `https://${host}:${port}`;
+    if (origins.has(origin)) {
+      socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      const tls = new TLSSocket(socket, { isServer: true, cert: LOOPBACK_CERT.cert, key: LOOPBACK_CERT.key });
+      if (head.length > 0) socket.unshift(head);
+      inner.emit("connection", tls);
+      return;
+    }
+    const upstream = connect(port, host, () => {
+      socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      if (head.length > 0) upstream.write(head);
+      upstream.pipe(socket);
+      socket.pipe(upstream);
+    });
+    upstream.on("error", () => socket.destroy());
+    socket.on("error", () => upstream.destroy());
+  });
+
+  const port = await new Promise<number>((done, failed) => {
+    server.once("error", failed);
+    server.listen(0, "127.0.0.1", () => {
+      const a = server.address();
+      done(typeof a === "object" && a !== null ? a.port : 0);
+    });
+  });
+  return {
+    server: `http://127.0.0.1:${port}`,
+    close: () =>
+      new Promise<void>((done) => {
+        server.closeAllConnections();
+        inner.closeAllConnections();
+        server.close(() => done());
+      }),
+  };
+}

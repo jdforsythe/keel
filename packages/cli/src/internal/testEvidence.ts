@@ -3,9 +3,9 @@ import type { Evidence } from "@keel/testing";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { FileFacts } from "./FileFacts.ts";
 import type { NumRef } from "./NumRef.ts";
-import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
 import type { Use } from "./Use.ts";
+import { isTestFile } from "./isTestFile.ts";
 import { testFacts } from "./testFacts.ts";
 
 const EXTS = ["", ".ts", ".tsx", ".mts", ".js", "/index.ts"];
@@ -47,7 +47,7 @@ export function testEvidence(
   };
   const out: TestRef[] = [];
   for (const [path, f] of facts) {
-    if (!TEST_FILE.test(path)) continue;
+    if (!isTestFile(path)) continue;
     for (const test of f.tests) {
       const names = new Set<string>();
       const pinned = new Set<string>();

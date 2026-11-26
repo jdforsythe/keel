@@ -1,0 +1,21 @@
+// re-exports only (one export per file lives in src/e2e/<Export>.ts): `@keel/testing/e2e` (k.e2e, k.e2e-page)
+export { answer } from "./answer.ts";
+export { build } from "./build.ts";
+export { serve } from "./serve.ts";
+export type { A11yNode } from "../types/A11yNode.ts";
+export type { Answered } from "../types/Answered.ts";
+export type { CookieInfo } from "../types/CookieInfo.ts";
+export type { Found } from "../types/Found.ts";
+export type { Layout } from "../types/Layout.ts";
+export type { LoadedDocument } from "../types/LoadedDocument.ts";
+export type { LogRecord } from "../types/LogRecord.ts";
+export type { Match } from "../types/Match.ts";
+export type { OpenOptions } from "../types/OpenOptions.ts";
+export type { Page } from "../types/Page.ts";
+export type { Problem } from "../types/Problem.ts";
+export type { SentRequest } from "../types/SentRequest.ts";
+export type { Served } from "../types/Served.ts";
+export type { ServeOptions } from "../types/ServeOptions.ts";
+export type { StyleName } from "../types/StyleName.ts";
+export type { TestEvent } from "../types/TestEvent.ts";
+export type { Wait } from "../types/Wait.ts";

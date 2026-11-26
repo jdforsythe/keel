@@ -60,8 +60,13 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "test",
-    description: "Run the test harness under a sim ctx (k.testing).",
-    input: s.object({ paths, ...diagnostic }),
+    description: "Run the test harness under a sim ctx (k.testing); --e2e the built app in a browser (k.e2e).",
+    input: s.object({
+      paths,
+      e2e: s.boolean().optional(),
+      engine: s.enum(["chromium", "firefox", "webkit"]).optional(),
+      ...diagnostic,
+    }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",

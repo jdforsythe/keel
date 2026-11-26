@@ -10,4 +10,6 @@ export type TestDiag = {
   readonly col?: number;
   readonly message: string;
   readonly fix?: string;
+  /** Lines printed below the head: an e2e test's `server:`, `screenshot:` and `trace:` lines (k.e2e-page Failure output). */
+  readonly detail?: string;
 };

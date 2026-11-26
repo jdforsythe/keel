@@ -53,4 +53,6 @@ export type Input = {
   readonly accept?: string;
   readonly reason?: string;
   readonly check?: boolean;
+  readonly e2e?: boolean;
+  readonly engine?: "chromium" | "firefox" | "webkit";
 };
