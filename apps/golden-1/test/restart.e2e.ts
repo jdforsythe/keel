@@ -3,7 +3,7 @@
 // answers the same board, and the next write is applied to the restored board.
 import { scope } from "@keel/reactive";
 import { store } from "@keel/store";
-import { type Served, serve } from "@keel/testing/e2e";
+import { type Served, type StoreLog, serve } from "@keel/testing/e2e";
 import { expect, it } from "vitest";
 import { Board } from "../modules/api/Board.schema.ts";
 
@@ -22,6 +22,9 @@ async function view(app: Served): Promise<unknown> {
 function field(value: unknown, ...keys: string[]): unknown {
   return keys.reduce<unknown>((o, k) => (typeof o === "object" && o !== null ? Reflect.get(o, k) : undefined), value);
 }
+
+/** The ids of a store's log entries. */
+const ids = (log: StoreLog): number[] => log.entries.map((e) => e.id);
 
 it("the board stored before a SIGKILL is the board after the restart, and the next write applies", async () => {
   const app = await serve();
@@ -46,6 +49,10 @@ it("the board stored before a SIGKILL is the board after the restart, and the ne
   expect(before.lists.map((l) => l.name)).toEqual(["Home"]);
   expect(before.todos.map((t) => t.title)).toEqual(["Milk", "Oat milk"]);
   const shown = JSON.stringify(await view(app));
+  const was = await app.log(board);
+  expect(was.entries.length).toBeGreaterThan(0);
+  expect(ids(was).every((id, i) => i === 0 || id === (ids(was)[i - 1] ?? 0) + 1)).toBe(true);
+  expect(ids(was).at(-1)).toBe(was.head);
 
   await app.stop();
   await expect(app.fetch("/api/lists")).rejects.toThrow();
@@ -53,6 +60,7 @@ it("the board stored before a SIGKILL is the board after the restart, and the ne
 
   // restart: the stored board equals the one before, and the api answers the same board.
   expect(await app.state(board)).toEqual(before);
+  expect(await app.log(board)).toEqual(was);
   expect(JSON.stringify(await view(app))).toBe(shown);
 
   // next write: a toggle after the restart is applied to the restored board (done flips back).
@@ -61,4 +69,8 @@ it("the board stored before a SIGKILL is the board after the restart, and the ne
   const after = await app.state(board);
   expect(after.todos.find((t) => t.id === todo)?.done).toBe(done === undefined ? undefined : !done);
   expect(after.todos).toHaveLength(2);
+  // The log gained one entry, and its id is the head before the restart plus one.
+  const next = await app.log(board);
+  expect(ids(next).filter((id) => !ids(was).includes(id))).toEqual([was.head + 1]);
+  expect(next.head).toBe(was.head + 1);
 });

@@ -62,7 +62,7 @@ async function plantedCopy(onPostgres: boolean): Promise<string> {
   await edit(
     join(dir, "modules", "api", "restore.server.ts"),
     "if (id === undefined) return ok({});",
-    'if (id === undefined) return ok({});\n  console.log("restore-step-ran");\n  await ctx.clock.after(2000);',
+    "if (id === undefined) return ok({});\n  await ctx.clock.after(2000);",
   );
   await edit(
     join(dir, "modules", "api", "removal.server.ts"),
@@ -89,8 +89,9 @@ async function crashInsideStep(app: Served): Promise<void> {
   // The step is mid-wait (2,000 ms): the process dies inside it.
   await app.stop();
   const mid = Object.values((await app.state(removal)).instances);
-  expect(mid.length).toBeGreaterThan(0);
+  expect(mid).toHaveLength(1);
   expect(mid.every((i) => i.state === "restoring")).toBe(true);
+  expect((await app.log(removal)).entries.map((e) => e.name)).not.toContain("api.removal.restored");
 
   await app.start();
   // The resumed step waits its own 2,000 ms: an input of the app, not a bound the test chose.
@@ -102,17 +103,23 @@ async function crashInsideStep(app: Served): Promise<void> {
     },
     { fixed: fixedTime(5_000), within: 30_000 },
   );
-  // The resumed step ran (the planted line is in the log of the restarted process); the killed run may have died before
-  // its line, so one or two lines are carried here, and the store log's two attempts are owed to k.persist.
-  const ran = app.serverLog("api").filter((r) => r.kind === "other" && r.text.includes("restore-step-ran"));
-  expect(ran.length).toBeGreaterThanOrEqual(1);
-  expect(ran.length).toBeLessThanOrEqual(2);
+  // The step ran twice (the killed run and the resumed one) and its restore is recorded once.
+  const names = (await app.log(removal)).entries.map((e) => e.name);
+  expect(names.filter((n) => n === "api.removal.attempt")).toHaveLength(2);
+  expect(names.filter((n) => n === "api.removal.restored")).toHaveLength(1);
   const shown = field(await view(app), "lists");
   expect(
     Array.isArray(shown) ? shown.filter((l) => field(l, "id") === listId && field(l, "hidden") !== true) : [],
   ).toHaveLength(1);
   const stored = await app.state(board);
   expect(stored.lists.filter((l) => l.id === listId && l.hidden !== true)).toHaveLength(1);
+  // The step's effect is one `api.showList` commit on the board, however many times the step ran, and the board's log
+  // rises by one up to its head.
+  const log = await app.log(board);
+  expect(log.entries.filter((e) => e.name === "api.showList")).toHaveLength(1);
+  const ids = log.entries.map((e) => e.id);
+  expect(ids.every((id, i) => i === 0 || id === (ids[i - 1] ?? 0) + 1)).toBe(true);
+  expect(ids.at(-1)).toBe(log.head);
 }
 
 // The build of a copy and two server starts are the machine's own work, not a bound the test chose.
