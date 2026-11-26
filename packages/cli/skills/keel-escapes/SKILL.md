@@ -1,6 +1,6 @@
 ---
 name: keel-escapes
-description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1013, R1014, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151, R2451"
+description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1013, R1014, R1015, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151, R2451"
 ---
 
 # Reading keel review
@@ -29,8 +29,8 @@ Range codes (R1060, R1061, R1100, R1103 to R1105, R1107, R1108) describe the cha
 Read the code at `path:line` and the diff around it. Then answer four questions, one line each.
 
 1. Is there a Keel seam for this? The table below names it.
-2. Does the reason name the guarantee given up and why this use is safe? A reason that restates the code ("needed for the build") does not.
-3. Was a test, assertion, fixture or configuration changed to make something pass? Read R1059, R1060, R1061, R1103 and R1108 with the code they sit beside.
+2. Does the reason name the guarantee given up and why this use is safe? A reason that restates the code does not.
+3. Was a test, assertion, fixture or configuration changed to pass? Read R1059, R1060, R1061, R1103 and R1108 with the code they sit beside.
 4. Is this the Keel way: every effect through `ctx`, every failure a `Result`, every escape named?
 
 | code | what it is | the seam or the fix |
@@ -39,16 +39,17 @@ Read the code at `path:line` and the diff around it. Then answer four questions,
 | R1010 | a declared origin | drop an origin no page loads from; `connect` and `frame` reach user data |
 | R1011 | `createApp({ allow })`, `KEEL_ALLOW_ORIGINS` | list only origins the team runs (`keel docs k.hosting`) |
 | R1012 | `reveal` | pass the `Secret` on and reveal at the sink (`keel docs k.reveal`) |
-| R1013 | a `defect` where a `Result` is `err` | a failure a caller handles stays an `err`; a defect is a bug |
+| R1013 | a `defect` on an `err` path | a failure a caller handles stays an `err` |
+| R1015 | a type predicate | does its body check each property its type names? |
 | R1014 | an identity `handle` | an auth library mounted there; no credential code of the app's own (`keel docs k.user`) |
 | R1050, R1051 | a cast, `any`, `!`, a suppression or lint-off comment | a type guard, `unknown`, a check; fix what the lint reported |
 | R1052 | a directive assembled from strings | delete it and fix what it was hiding |
-| R1053 | a computed `import()`, `require`, `new Worker` | a literal import, or a map from a key to literal imports |
+| R1053 | a computed `import()`, `require`, `new Worker` | a literal import, or a map of literal imports |
 | R1055 | a Keel package's `src`, `dist` or `unsafe` files | the package's public entry (`keel docs k.security`) |
 | R1056 | a global by a computed key, an indirect `eval` | the `ctx` capability: `ctx.net`, `ctx.clock`, `ctx.storage` (`keel docs k.ctx`) |
 | R1057 | `process.env`, `fs`, `net`, `http`, `child_process` | `DeployEnv` and `ctx`; a `service` client for the network (`keel docs k.services`) |
 | R1058 | a file under `unsafe/` with no `unsafe(` call | move it out, or wrap the one line that needs it in `unsafe(reason, () => ...)`; the file's other lines are checked as app code |
-| R1059, R1060 | a skipped or focused test, fewer assertions | restore the test; change the code under test instead |
+| R1059, R1060 | a skipped or focused test, fewer assertions | restore the test; change the code instead |
 | R1061 | a conformance file changed | the conformance suite changes in its own reviewed change |
 | R1100 | framework source changed with the app | land the framework change on its own |
 | R1101, R1102 | an override, a patch, a non-registry source, an install script | a published version from the registry; no install script |
