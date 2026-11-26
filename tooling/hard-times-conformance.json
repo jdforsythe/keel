@@ -408,12 +408,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-report/conformance/module-deps-loads-tools.test.ts",
-    "line": 90,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-schedules/conformance/e2551.test.ts",
     "line": 91,
     "text": "30_000",
