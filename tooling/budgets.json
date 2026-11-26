@@ -16,7 +16,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "90kb",
+      "max": "91kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -204,7 +204,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "21.75kb",
+      "max": "22kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

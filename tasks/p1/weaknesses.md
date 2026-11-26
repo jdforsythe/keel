@@ -167,13 +167,13 @@ Rules:
 
 ### Lane 33 found-by-household · schema, testing · no RFC unless k.testing must name the value · S
 - [x] 1106 a generated `s.id` has no shape a server mints; `properties` breaks on it
-- [ ] 1107 `find().text` of an input is always empty
+- [x] 1107 `find().text` of an input is always empty
 - [x] 1109 `renderRoute` with `app` records any string as a document, never E1501
 - [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
 - [ ] 1111 `keel check` runs out of heap at 100,000 host elements
-- [ ] 1114 colour tokens used with no `tokens.ts` are an error nowhere
+- [x] 1114 colour tokens used with no `tokens.ts` are an error nowhere
 - [ ] 1116 an app author's unseeded property passes `keel check` (RFC, E1731)
-- [ ] 1118 a bundled file above its reader's folder is refused (PGlite contrib)
+- [x] 1118 a bundled file above its reader's folder is refused (PGlite contrib)
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)

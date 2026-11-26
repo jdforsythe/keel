@@ -10,7 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { REPO, deployEnv } from "./topology-build-fixture.ts";
+import { REPO, childOutput, deployEnv } from "./topology-build-fixture.ts";
 
 const COUNTER = `import { signal } from "@keel/reactive";
 import { Box, Button, Text } from "@keel/ui";
@@ -97,7 +97,7 @@ function buildFixture(): string {
     encoding: "utf8",
     env: { ...process.env, KEEL_AGENT: "1" },
   });
-  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)})\n${r.stdout}\n${r.stderr}`);
+  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   return fixture;
 }
 

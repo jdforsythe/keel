@@ -30,6 +30,6 @@ What a subagent in a lane is told, so a fresh orchestrator can brief one without
 ## Merging a lane
 
 1. In the lane: merge the main line; generated files in conflict (`tooling/ledger/ledger.json`, evidence, `tasks/COVERAGE.md`, `.keel/surface.json`) take either side; `tooling/budgets.json` keeps the larger value; hand-written files keep both sides' intent.
-2. Root `pnpm check --quiet` clean but for `ledger-fresh`; the lane's package suites; every app's and example's `keel test`; `pnpm build`; the smokes the lane touches.
+2. Root `pnpm check --quiet` clean but for `ledger-fresh`; every package's suite (the whole `pnpm test`, or each package folder in turn: a chosen list once missed the one suite a merge broke); every app's and example's `keel test`; `pnpm build`; the smokes the lane touches.
 3. On the main line: `git merge --no-ff`, with the lane's `rfc:NNNN` tags in the message when it carries conformance changes. Then regenerate the ledger as Method's D100 says and commit it.
 4. The gate, in `.worktrees/verify`, before a push (Method, D97; `docs/HANDOFF.md` lists its steps).

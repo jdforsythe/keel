@@ -1,6 +1,7 @@
 import { scope } from "@keel/reactive";
 import { drain, send } from "@keel/std-offline";
 import { simulate } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, describe, expect, it } from "vitest";
 import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
@@ -36,48 +37,54 @@ const settled = (p: Promise<unknown>): Promise<boolean> =>
   );
 
 describe("boardOutbox under generated schedules", () => {
-  it("a write whose entry left the outbox was applied once; the rest wait as queued, conflict or failed", async () => {
-    if (!T1.ok || !T2.ok) throw new Error("todo ids do not parse");
-    const t1 = T1.value;
-    const t2 = T2.value;
-    await simulate(
-      async ({ ctx, run }) => {
-        // A fresh api per run: the server keeps the board it served between requests.
-        resetApi();
-        await apiCtx().storage.set(BOARD_KEY, JSON.stringify({ state: fixture, log: [], initial: fixture, head: 2 }));
-        const app = await apiApp();
-        ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
-        const page = scope(() => undefined);
-        page.run(() => void drain(ctx, boardOutbox, { owner: "" }));
-        // The user marks Bread done on the board at head 2, then edits Milk on the board after that write (head 3).
-        const toggled = settled(send(ctx, boardOutbox, "toggleTodo", { params: t2, body: {} }, { base: 2, owner: "" }));
-        const edited = settled(
-          send(
-            ctx,
-            boardOutbox,
-            "editTodo",
-            { params: t1, body: { title: "Oat milk", priority: "high" } },
-            { base: 3, owner: "" },
-          ),
-        );
-        await run();
-        await Promise.all([toggled, edited]);
-        page.dispose();
-        const left = boardOutbox.get("entries");
-        const endpoints = left.map((e) => e.endpoint);
-        for (const e of left) expect(["queued", "conflict", "failed"]).toContain(e.state);
-        const board = await readBoard();
+  it(
+    "a write whose entry left the outbox was applied once; the rest wait as queued, conflict or failed",
+    async () => {
+      if (!T1.ok || !T2.ok) throw new Error("todo ids do not parse");
+      const t1 = T1.value;
+      const t2 = T2.value;
+      await simulate(
+        async ({ ctx, run }) => {
+          // A fresh api per run: the server keeps the board it served between requests.
+          resetApi();
+          await apiCtx().storage.set(BOARD_KEY, JSON.stringify({ state: fixture, log: [], initial: fixture, head: 2 }));
+          const app = await apiApp();
+          ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
+          const page = scope(() => undefined);
+          page.run(() => void drain(ctx, boardOutbox, { owner: "" }));
+          // The user marks Bread done on the board at head 2, then edits Milk on the board after that write (head 3).
+          const toggled = settled(
+            send(ctx, boardOutbox, "toggleTodo", { params: t2, body: {} }, { base: 2, owner: "" }),
+          );
+          const edited = settled(
+            send(
+              ctx,
+              boardOutbox,
+              "editTodo",
+              { params: t1, body: { title: "Oat milk", priority: "high" } },
+              { base: 3, owner: "" },
+            ),
+          );
+          await run();
+          await Promise.all([toggled, edited]);
+          page.dispose();
+          const left = boardOutbox.get("entries");
+          const endpoints = left.map((e) => e.endpoint);
+          for (const e of left) expect(["queued", "conflict", "failed"]).toContain(e.state);
+          const board = await readBoard();
 
-        if (!endpoints.includes("toggleTodo")) {
-          expect(await commits("api.toggleTodo")).toBe(1);
-          expect(board.todos.find((t) => t.id === "t2")?.done).toBe(true);
-        }
-        if (!endpoints.includes("editTodo")) {
-          expect(await commits("api.editTodo")).toBe(1);
-          expect(board.todos.find((t) => t.id === "t1")).toMatchObject({ title: "Oat milk", priority: "high" });
-        }
-      },
-      { runs: 100, seed: 11 },
-    );
-  }, 120_000);
+          if (!endpoints.includes("toggleTodo")) {
+            expect(await commits("api.toggleTodo")).toBe(1);
+            expect(board.todos.find((t) => t.id === "t2")?.done).toBe(true);
+          }
+          if (!endpoints.includes("editTodo")) {
+            expect(await commits("api.editTodo")).toBe(1);
+            expect(board.todos.find((t) => t.id === "t1")).toMatchObject({ title: "Oat milk", priority: "high" });
+          }
+        },
+        { runs: 100, seed: 11 },
+      );
+    },
+    fixedTime(120_000),
+  );
 });

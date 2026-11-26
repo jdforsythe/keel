@@ -4,6 +4,18 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   JOBS,
+  SLOW,
+  SLOW_JOB,
+  bindMounts,
+  dockerProblem,
+  slowContainer,
+  slowEnv,
+  slowExecArgs,
+  slowParallel,
+  slowRunArgs,
+  slowSetupScript,
+  slowShards,
+  slowSteps,
   applyRewrites,
   badWith,
   downloadPatterns,
@@ -327,5 +339,102 @@ describe("verdict, stepName and resultPath", () => {
     ]);
     const real = fs.readFileSync(path.join(import.meta.dirname, "..", "..", "pnpm-workspace.yaml"), "utf8");
     expect(workspaceGlobs(real)).toContain("packages/*");
+  });
+});
+
+const realSource = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "../ci.source.json"), "utf8"));
+
+describe("the slow-machine job", () => {
+  it("is ordered after every fast job, and is not planned unless asked for", () => {
+    const names = planJobs(realSource, { slow: { skip: false } }).jobs.map((j) => j.name);
+    expect(names.at(-1)).toBe(SLOW_JOB);
+    expect(names.indexOf(SLOW_JOB)).toBe(names.length - 1);
+    expect(planJobs(realSource).jobs.map((j) => j.name)).not.toContain(SLOW_JOB);
+    const slow = planJobs(realSource, { slow: { skip: false } }).jobs.at(-1);
+    expect(slow?.decision).toBe("run");
+    expect(slow?.rule?.requires).toBe("docker");
+  });
+
+  it("records an explicit skip, and --only another job skips it without calling it explicit", () => {
+    const skipped = planJobs(realSource, { slow: { skip: true } }).jobs.at(-1);
+    expect(skipped).toMatchObject({ decision: "skip", explicit: true });
+    const other = planJobs(realSource, { slow: { skip: false }, only: new Set(["check"]) }).jobs.at(-1);
+    expect(other?.decision).toBe("skip");
+    expect(other?.explicit).toBeUndefined();
+    expect(planJobs(realSource, { slow: { skip: false }, only: new Set([SLOW_JOB]) }).jobs.at(-1)?.decision).toBe(
+      "run",
+    );
+  });
+
+  it("names its container keel-gate- and mounts only a named volume, never a host path", () => {
+    const name = slowContainer("0123456789ab");
+    expect(name).toBe("keel-gate-slow-0123456789ab");
+    const args = slowRunArgs({ name, image: "node:22" });
+    expect(args.slice(args.indexOf("--name"), args.indexOf("--name") + 2)).toEqual(["--name", name]);
+    expect(args).toContain("--cpus");
+    expect(args[args.indexOf("--cpus") + 1]).toBe(String(SLOW.cpus));
+    expect(args[args.indexOf("--memory") + 1]).toBe(SLOW.memory);
+    expect(args).toContain(`${SLOW.volume}:/pnpm-store`);
+    expect(bindMounts(args)).toEqual([]);
+    expect(args.some((a) => a.startsWith("--mount"))).toBe(false);
+  });
+
+  it("runs as a non-root user under an init, as a hosted runner does", () => {
+    const args = slowRunArgs({ name: "keel-gate-slow-x", image: "node:22" });
+    expect(args).toContain("--init");
+    expect(args[args.indexOf("--user") + 1]).toBe(SLOW.user);
+    expect(SLOW.user).not.toBe("root");
+    expect(slowSetupScript).toContain("lsof");
+    expect(slowSetupScript).toContain("corepack enable");
+    expect(slowSetupScript).toContain(`chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`);
+  });
+
+  it("names a shard's container after the commit and the shard", () => {
+    expect(slowContainer("0123456789ab", 3)).toBe("keel-gate-slow-0123456789ab-3");
+  });
+
+  it("runs as many shards at once as the docker machine holds, no more than asked", () => {
+    const gb = 1024 ** 3;
+    const machine = { machineCpus: 10, machineMemory: 25 * gb, cpus: 2, memory: "7700m" };
+    expect(slowParallel(machine)).toBe(3);
+    expect(slowParallel({ ...machine, want: 2 })).toBe(2);
+    expect(slowParallel({ ...machine, machineMemory: 12 * gb })).toBe(1);
+    expect(slowParallel({ ...machine, machineCpus: 4 })).toBe(2);
+    expect(slowParallel({ ...machine, machineCpus: 1 })).toBe(1);
+    expect(slowParallel({ ...machine, cpus: 1, machineMemory: 100 * gb, want: 6 })).toBe(6);
+  });
+
+  it("finds a bind mount in any spelling", () => {
+    expect(bindMounts(["run", "-v", "/srv/repo:/work"])).toEqual(["/srv/repo"]);
+    expect(bindMounts(["run", "--volume=./here:/work"])).toEqual(["./here"]);
+    expect(bindMounts(["run", "--mount", "type=bind,src=/a,dst=/b"])).toHaveLength(1);
+    expect(bindMounts(["run", "-v", "named:/work"])).toEqual([]);
+  });
+
+  it("runs the source's shard commands at time scale 1 with CI's environment", () => {
+    expect(slowShards(realSource)).toEqual([1, 2, 3, 4, 5, 6]);
+    const { install, steps } = slowSteps(realSource, 4);
+    expect(install.map((s) => s.run)).toEqual(["pnpm install --frozen-lockfile"]);
+    expect(steps.map((s) => s.run)).toContain("node tooling/ci-shards.mjs 4");
+    expect(steps.map((s) => s.name)).toContain("node tooling/ci-shards.mjs 4");
+    const env = slowEnv(realSource);
+    expect(env).toMatchObject({ CI: "true", GITHUB_ACTIONS: "true", KEEL_TEST_TIME_SCALE: "1", KEEL_AGENT: "1" });
+    const exec = slowExecArgs("keel-gate-slow-x", { CI: "true" }, "node tooling/ci-shards.mjs 1");
+    expect(exec.slice(0, 3)).toEqual(["exec", "-e", "CI=true"]);
+    expect(exec.at(-1)).toBe("node tooling/ci-shards.mjs 1");
+  });
+
+  it("reports a hung or failed docker command by name", () => {
+    const cp = ["cp", "/tmp/tree/.", "keel-gate-slow-x:/work"];
+    expect(dockerProblem(cp, { status: 0 }, 1000)).toBeUndefined();
+    const hung = dockerProblem(
+      cp,
+      { status: null, signal: "SIGKILL", error: { code: "ETIMEDOUT", message: "x" } },
+      900_000,
+    );
+    expect(hung).toBe("docker cp /tmp/tree/. hung: no answer in 900s");
+    expect(dockerProblem(["pull", "node:22"], { status: 1, stderr: "denied\n" }, 1000)).toBe(
+      "docker pull node:22 failed (exit 1): denied",
+    );
   });
 });

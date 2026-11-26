@@ -204,7 +204,7 @@ describe("bundleVerify", () => {
       expect(diags(verify(b)), why).toEqual([
         {
           code: "E1063",
-          message: `signature does not verify with key ${b.id}`,
+          message: `manifest.json or manifest.sig changed (key ${b.id})`,
           path: "out/manifest.sig",
           see: "k.evidence",
         },

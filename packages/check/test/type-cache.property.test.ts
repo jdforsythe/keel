@@ -8,6 +8,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, utimesSync, 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, expect, it, vi } from "vitest";
 import { check } from "../src/index.ts";
@@ -117,26 +118,30 @@ async function fresh(root: string, list: readonly { path: string; source: string
   return m.check;
 }
 
-it("a warm check reports what a cold one does, after every edit of a generated sequence", async () => {
-  await fc.assert(
-    fc.asyncProperty(fc.array(edit, { minLength: 1, maxLength: 3 }), async (edits) => {
-      const p = project();
-      const folder = join(p.root, "node_modules/.cache/keel");
-      let type = "number";
-      let deps = true;
-      check(files(type, deps), { root: p.root, typeCache: folder });
-      for (const e of edits) {
-        apply(p, e);
-        if (e.k === "a") type = e.type;
-        if (e.k === "deps") deps = e.on;
-        const warm = check(files(type, deps), { root: p.root, typeCache: folder }).diagnostics;
-        const now = files(type, deps);
-        const fromDisk = (await fresh(p.root, now))(now, { root: p.root, typeCache: folder }).diagnostics;
-        const cold = (await fresh(p.root, now))(now, { root: p.root }).diagnostics;
-        expect(warm).toEqual(cold);
-        expect(fromDisk).toEqual(cold);
-      }
-    }),
-    { seed: SEED, numRuns: 6 },
-  );
-}, 240_000);
+it(
+  "a warm check reports what a cold one does, after every edit of a generated sequence",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.array(edit, { minLength: 1, maxLength: 3 }), async (edits) => {
+        const p = project();
+        const folder = join(p.root, "node_modules/.cache/keel");
+        let type = "number";
+        let deps = true;
+        check(files(type, deps), { root: p.root, typeCache: folder });
+        for (const e of edits) {
+          apply(p, e);
+          if (e.k === "a") type = e.type;
+          if (e.k === "deps") deps = e.on;
+          const warm = check(files(type, deps), { root: p.root, typeCache: folder }).diagnostics;
+          const now = files(type, deps);
+          const fromDisk = (await fresh(p.root, now))(now, { root: p.root, typeCache: folder }).diagnostics;
+          const cold = (await fresh(p.root, now))(now, { root: p.root }).diagnostics;
+          expect(warm).toEqual(cold);
+          expect(fromDisk).toEqual(cold);
+        }
+      }),
+      { seed: SEED, numRuns: 6 },
+    );
+  },
+  fixedTime(240_000),
+);

@@ -223,6 +223,8 @@ it("refuses a profile with no name or a phone over 30 characters, and saves noth
   await page.fire("members.profileForm:phone", { type: "input", value: "9".repeat(31) });
   await page.fire("members.save", { type: "click" });
   expect(page.find("members.profileForm:phone").state).toMatchObject({ invalid: true });
+  expect(page.find("members.profileForm:phone").value).toBe("9".repeat(31));
+  expect(page.find("members.profileForm:name").value).toBe("Ada");
   expect(idsOf(page.a11y())).not.toContain("members.saved");
   page.dispose();
 });

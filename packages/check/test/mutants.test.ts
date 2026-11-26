@@ -1,5 +1,6 @@
 import { canonicalJson, hashOf, references } from "@keel/compiler/internal";
 import { clipMessage } from "@keel/schema/internal";
+import { fixedTime } from "@keel/tooling/test-time";
 // Targeted examples pinning exact diagnostics (code, location, message, fix diff), helper edge cases, and
 // formatting. Rule output is pinned with inline snapshots of reviewed fixtures. Property parts use seed 1337.
 import fc from "fast-check";
@@ -3167,7 +3168,7 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       .join("\n");
   const ui = "import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, TextArea, Text } from '@keel/ui'\n";
   // Each block runs `check` with the type checker over a component file: about 4 s for the lot here, so 120 s.
-  it("pins each mapped code with location and message", { timeout: 120_000 }, () => {
+  it("pins each mapped code with location and message", { timeout: fixedTime(120_000) }, () => {
     const out = [
       block("button missing", T("src/A.tsx", `${ui}export default function A() { return <Button id="b" /> }\n`)),
       block(

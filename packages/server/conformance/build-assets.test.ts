@@ -17,6 +17,7 @@ import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { childOutput } from "./topology-build-fixture.ts";
 
 type Component = (props: RouteProps, ctx: Ctx) => Node;
 type Fetcher = { fetch(req: Request): Promise<Response> };
@@ -109,6 +110,11 @@ beforeAll(() => {
   write(fixture, "modules/app/Counter.tsx", BUILT_COUNTER);
   write(
     fixture,
+    "tokens.ts",
+    'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n',
+  );
+  write(
+    fixture,
     "modules/app/routes.ts",
     'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest(app, { "app.home": { component: Counter } });\n',
   );
@@ -123,7 +129,7 @@ beforeAll(() => {
     env: { ...process.env, KEEL_AGENT: "1" },
   });
   if (r.status !== 0) {
-    throw new Error(`keel build failed (status ${String(r.status)})\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   }
 }, 90_000);
 

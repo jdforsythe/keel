@@ -2,6 +2,7 @@
 import { scope } from "@keel/reactive";
 import { isolate } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, it } from "vitest";
 import { addList } from "../modules/api/addList.ts";
 import { addTodo } from "../modules/api/addTodo.ts";
@@ -18,12 +19,16 @@ isolate(sc);
 afterAll(() => sc.dispose());
 
 describe("api.board proofs", () => {
-  it("the six board transactions keep the invariant from every state it allows", async () => {
-    const b = sc.run(board);
-    const r = await prove([addList(b), addTodo(b), toggleTodo(b), editTodo(b), hideList(b), showList(b)]);
-    expect([...r.proven].sort()).toEqual(
-      ["api.addList", "api.addTodo", "api.editTodo", "api.hideList", "api.showList", "api.toggleTodo"].sort(),
-    );
-    expect(r.z3).toMatch(/^\d+\.\d+\.\d+$/);
-  }, 60_000);
+  it(
+    "the six board transactions keep the invariant from every state it allows",
+    async () => {
+      const b = sc.run(board);
+      const r = await prove([addList(b), addTodo(b), toggleTodo(b), editTodo(b), hideList(b), showList(b)]);
+      expect([...r.proven].sort()).toEqual(
+        ["api.addList", "api.addTodo", "api.editTodo", "api.hideList", "api.showList", "api.toggleTodo"].sort(),
+      );
+      expect(r.z3).toMatch(/^\d+\.\d+\.\d+$/);
+    },
+    fixedTime(60_000),
+  );
 });

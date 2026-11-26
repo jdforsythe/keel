@@ -29,7 +29,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { fixedTime, testTime } from "../test-time.ts";
+import { fixedTime } from "../test-time.ts";
 import { buildIn, copyApp, field, freePort, get, keepOutput, recorder, root, stop, wait } from "./built.mjs";
 
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
@@ -77,7 +77,7 @@ function serveDeployable(dir, name, port, file, peers) {
 }
 
 /** Poll `url` for a 200, at most `ms`. */
-async function up(url, accept, ms = testTime(20_000)) {
+async function up(url, accept, ms = fixedTime(20_000)) {
   for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
     const ok = await fetch(url, { headers: { accept } }).then(
       (r) => r.status === 200,
@@ -362,14 +362,14 @@ async function liveForm(browser, step, run, h) {
   // std.live: `status()` is `connecting` before the first read commits and `live` after it.
   step(
     `${label} says Live once its first read commits (std.live)`,
-    await says("Live", testTime(10_000)),
+    await says("Live", fixedTime(10_000)),
     await textOf(page, live),
   );
 
   // std.live: a write by A is in B's hydrated store after B's next read, with no input from B.
   const before = `${await textOf(page, last)} ${await textOf(page, started)}`;
   const asked = await runNow(h.base, h.cookie);
-  const shown = await textUntil(page, started, (t) => !before.endsWith(` ${t}`) && t !== "", testTime(10_000));
+  const shown = await textUntil(page, started, (t) => !before.endsWith(` ${t}`) && t !== "", fixedTime(10_000));
   const now = await textOf(page, last);
   step(
     `${label} shows a run a second client starts, with no input (std.live)`,
@@ -384,7 +384,7 @@ async function liveForm(browser, step, run, h) {
   );
   step(
     `${label} says Live through the update (std.live)`,
-    await says("Live", testTime(5_000)),
+    await says("Live", fixedTime(5_000)),
     await textOf(page, live),
   );
   step(`${label} console`, logged.length === 0, logged.slice(0, 3).join(" | "));
@@ -397,13 +397,13 @@ async function liveForm(browser, step, run, h) {
   await page.click('[id="setup.save"]');
   const done = await page
     .locator('[id="setup.done"]')
-    .waitFor({ timeout: testTime(10_000) })
+    .waitFor({ timeout: fixedTime(10_000) })
     .then(
       () => true,
       () => false,
     );
   let saved = null;
-  for (const end = Date.now() + testTime(5_000); Date.now() < end && saved !== typed; await wait(100)) {
+  for (const end = Date.now() + fixedTime(5_000); Date.now() < end && saved !== typed; await wait(100)) {
     saved = field(
       await fetch(`${h.base}/api/household`, { headers: { accept: "application/json", cookie: h.cookie } }).then(
         (r) => r.json(),
@@ -422,7 +422,7 @@ async function liveForm(browser, step, run, h) {
   );
   step(
     `${label} says Live after the submit (std.live)`,
-    await says("Live", testTime(10_000)),
+    await says("Live", fixedTime(10_000)),
     await textOf(page, live),
   );
   await page.evaluate(() => Object.assign(window, { smokeMark: "kept" }));
@@ -431,19 +431,19 @@ async function liveForm(browser, step, run, h) {
   await h.kill();
   step(
     `${label} says Connecting once the server is gone (std.live)`,
-    await says("Connecting", testTime(15_000)),
+    await says("Connecting", fixedTime(15_000)),
     await textOf(page, live),
   );
   const up = await h.start();
   step(
     `${label} says Live again after the restart (std.live)`,
-    up && (await says("Live", testTime(45_000))),
+    up && (await says("Live", fixedTime(45_000))),
     await textOf(page, live),
   );
   // The run's own time is an input, no bound: a step the killed server held runs again after its 10 s timeout and a
   // second (11 s), and four 2 s waits lie between the five staples (8 s); 60 s is the allowance on top.
-  const ended = await runUntil(h.base, h.cookie, (r) => r.state !== "running", fixedTime(19_000) + testTime(60_000));
-  const caught = await textUntil(page, last, (t) => t.startsWith("Done: 5 of 5"), testTime(10_000));
+  const ended = await runUntil(h.base, h.cookie, (r) => r.state !== "running", fixedTime(19_000) + fixedTime(60_000));
+  const caught = await textUntil(page, last, (t) => t.startsWith("Done: 5 of 5"), fixedTime(10_000));
   step(
     `${label} shows the run done after the restart (std.live)`,
     ended?.state === "done" && caught,
@@ -453,9 +453,9 @@ async function liveForm(browser, step, run, h) {
   // std.live: `offline` while the net is offline and no read runs; back online the stream reopens and one read runs.
   const stale = `${await textOf(page, last)} ${await textOf(page, started)}`;
   await context.setOffline(true);
-  const off = await says("Offline", testTime(10_000));
+  const off = await says("Offline", fixedTime(10_000));
   const again = await runNow(h.base, h.cookie);
-  const going = await runUntil(h.base, h.cookie, (r) => r.state === "running" && r.handled >= 1, testTime(15_000));
+  const going = await runUntil(h.base, h.cookie, (r) => r.state === "running" && r.handled >= 1, fixedTime(15_000));
   const held = `${await textOf(page, last)} ${await textOf(page, started)}`;
   step(
     `${label} says Offline and holds what it had while a second client starts a run (std.live)`,
@@ -463,8 +463,8 @@ async function liveForm(browser, step, run, h) {
     `${await textOf(page, live)}, POST ${again}, "${held}"`,
   );
   await context.setOffline(false);
-  const on = await says("Live", testTime(45_000));
-  const fresh = await textUntil(page, started, (t) => t !== "" && !stale.endsWith(` ${t}`), testTime(10_000));
+  const on = await says("Live", fixedTime(45_000));
+  const fresh = await textUntil(page, started, (t) => t !== "" && !stale.endsWith(` ${t}`), fixedTime(10_000));
   const marked = await page.evaluate(() => Reflect.get(window, "smokeMark") === "kept");
   step(
     `${label} says Live and shows that run once back online, no reload (std.live)`,
@@ -473,7 +473,7 @@ async function liveForm(browser, step, run, h) {
   );
   step(`${label} console through the restart`, logged.length === 0, logged.slice(0, 3).join(" | "));
   // The next run of this page starts a run of its own: this one ends first.
-  await runUntil(h.base, h.cookie, (r) => r.state !== "running", testTime(60_000));
+  await runUntil(h.base, h.cookie, (r) => r.state !== "running", fixedTime(60_000));
   await context.close();
 }
 
@@ -569,7 +569,7 @@ try {
     );
     const href = await page.locator('[id^="recipes.link."]').first().getAttribute("href");
     await page.locator('[id^="recipes.link."]').first().click();
-    await page.waitForURL((u) => u.pathname === href, { timeout: testTime(5000) }).catch(() => undefined);
+    await page.waitForURL((u) => u.pathname === href, { timeout: fixedTime(5000) }).catch(() => undefined);
     step(`run ${run} index link`, href !== null && new URL(page.url()).pathname === href, `${href} -> ${page.url()}`);
 
     // The show page: its favorite toggle works after resume.
@@ -586,7 +586,7 @@ try {
     await page.locator('[id="recipes.toggleFavorite"]').click();
     await page
       .waitForFunction((b) => (document.getElementById("recipes.favorite")?.textContent ?? "") !== b, before, {
-        timeout: testTime(5000),
+        timeout: fixedTime(5000),
       })
       .catch(() => undefined);
     const after = await label();
@@ -613,7 +613,7 @@ try {
           return ids.some((id) => (document.getElementById(id)?.textContent ?? "").trim() !== "");
         },
         title,
-        { timeout: testTime(5000) },
+        { timeout: fixedTime(5000) },
       )
       .catch(() => undefined);
     const titleError = await fieldError(page, title);
@@ -630,7 +630,7 @@ try {
         (w) => document.getElementById("recipes.catalogFilters.button")?.getAttribute("aria-expanded") !== w,
         was,
         {
-          timeout: testTime(5000),
+          timeout: fixedTime(5000),
         },
       )
       .catch(() => undefined);
@@ -642,7 +642,7 @@ try {
     for (const locale of ["en-US", "de-DE"]) {
       const narrow = await browser.newPage({ viewport: { width: 390, height: 800 } });
       await narrow.goto(`${webBase}/${locale}/catalog`);
-      await narrow.locator('[id="recipes.table.scroll"]').waitFor({ timeout: testTime(15_000) });
+      await narrow.locator('[id="recipes.table.scroll"]').waitFor({ timeout: fixedTime(15_000) });
       const sizes = await narrow.evaluate(() => {
         const region = document.getElementById("recipes.table.scroll");
         return {
@@ -674,7 +674,7 @@ try {
           return ids.some((id) => (document.getElementById(id)?.textContent ?? "").trim() !== "");
         },
         email,
-        { timeout: testTime(5000) },
+        { timeout: fixedTime(5000) },
       )
       .catch(() => undefined);
     const emailError = await fieldError(page, email);
@@ -726,7 +726,9 @@ try {
     await account.fill(email, who);
     await account.fill('input[name="password"]', "smoke password");
     await Promise.all([
-      account.waitForURL((u) => u.pathname === "/account/signin", { timeout: testTime(10_000) }).catch(() => undefined),
+      account
+        .waitForURL((u) => u.pathname === "/account/signin", { timeout: fixedTime(10_000) })
+        .catch(() => undefined),
       account.click('[id="accounts.signupSubmit"]'),
     ]);
     step(
@@ -740,7 +742,7 @@ try {
     await Promise.all([
       account
         .waitForResponse((r) => r.request().method() === "GET" && new URL(r.url()).pathname === "/account/signin", {
-          timeout: testTime(10_000),
+          timeout: fixedTime(10_000),
         })
         .catch(() => undefined),
       account.click('[id="accounts.signinSubmit"]'),
@@ -748,7 +750,7 @@ try {
     await account.waitForLoadState("load");
     const named = await account
       .locator('[id="accounts.signedIn"]')
-      .textContent({ timeout: testTime(5000) })
+      .textContent({ timeout: fixedTime(5000) })
       .catch(() => "");
     step(
       `run ${run} sign-in posts once and names the account`,
