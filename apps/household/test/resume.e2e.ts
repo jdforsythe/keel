@@ -1,12 +1,15 @@
-import { type Page, type Served, serve } from "@keel/testing/e2e";
+import type { Page, Served } from "@keel/testing/e2e";
 // The built household's setup page in a real browser, served as it is built (its `web` is a `node` deployable) on a
 // free port with its data in the run's temporary folder. A member's setup page holds a form and the weekly staples
-// panel (a `live` island with a status line). It says Live once its first read commits. A run a second client starts through the API shows on it with the typed name and
-// focus as they were and no new document; the form saves the typed name with one POST; the run ends on the
-// page; the browser goes offline, a second
-// client starts another run the page does not show, and back online the page says Live and shows it.
+// panel (a `live` island with a status line). It opens held in a signed-in context with the name typed and the caret
+// after its second character before its scripts run, says Connecting, resumes, and says Live once its first read
+// commits. A run a second client starts through the API shows on it with the typed name, caret and focus as they were
+// and no new document; the form saves the typed name with one POST; the server is killed (Connecting) and started
+// again (Live, the run done); the browser goes offline, a second client starts another run the page does not show,
+// and back online the page says Live and shows it.
 import { fixedTime } from "@keel/tooling/test-time";
 import { expect, it } from "vitest";
+import { household } from "./householdApp.ts";
 
 const live = "shopping.restock.live";
 const last = "shopping.restock.last";
@@ -47,19 +50,22 @@ function unexpected(page: Page): string[] {
 
 it(
   "the setup page follows a second client's run, saves the name once, and rejoins after an offline window",
-  { timeout: fixedTime(300_000) }, // a run's own time: five staples two seconds apart, twice
+  { timeout: fixedTime(400_000) }, // a run's own time: five staples two seconds apart, twice, and one after a restart
   async () => {
-    const served = await serve({
-      env: (data) => ({
-        BETTER_AUTH_SECRET: "household-e2e-auth-secret-of-32-characters",
-        KEEL_POSTGRES_URL: `pglite:${data}/postgres`,
-      }),
-    });
+    const { served } = await household();
     const who = `member-${process.pid}@example.com`;
     const typed = "Elm Street";
     const input = "setup.form:name";
-    const page = await signedIn(served, who, "/setup");
+    const signed = await signedIn(served, who, "/signin");
+    const page = await signed.open("/setup", { hold: true });
     await page.fire(input, { type: "input", value: typed });
+    await page.fire(input, { type: "focus" });
+    await page.press("Home");
+    await page.press("ArrowRight");
+    await page.press("ArrowRight");
+    // The served document has no stream yet.
+    expect((await page.find(live)).text).toMatch(/^Connecting/);
+    await page.resume();
     expect((await page.find(input)).value).toBe(typed);
     // std.live: `status()` is `connecting` before the first read commits and `live` after it.
     await page.until(live, { text: /^Live/ });
@@ -76,6 +82,10 @@ it(
     const field = await page.find(input);
     expect(field.value).toBe(typed);
     expect(field.state.focused).toBe(true);
+    // The caret is where it was: the next key lands after the second character.
+    await page.press("x");
+    expect((await page.find(input)).value).toBe("Elxm Street");
+    await page.fire(input, { type: "input", value: typed });
     expect((await page.documents()).length).toBe(documents);
     await page.until(live, { text: /^Live/ });
     expect(unexpected(page)).toEqual([]);
@@ -87,14 +97,20 @@ it(
     const sent = page.requests().filter((r) => r.method === "POST");
     expect(sent.length - posts).toBe(1);
     expect(new URL(sent.at(-1)?.url ?? "http://x/").pathname).toBe("/setup");
-    const household: unknown = await (await page.fetch("/api/household", { headers: json })).json();
-    expect(JSON.stringify(household)).toContain(`"name":"${typed}"`);
+    const named: unknown = await (await page.fetch("/api/household", { headers: json })).json();
+    expect(JSON.stringify(named)).toContain(`"name":"${typed}"`);
     await page.until(live, { text: /^Live/ });
     // The submit loaded documents; what follows loads none.
     const afterSubmit = (await page.documents()).length;
 
-    // The run ends: five staples, one every two seconds.
-    await page.until(last, { text: /^Done: 5 of 5/ }, { fixed: 30_000 });
+    // std.live: `connecting` once the server is gone; started again the stream reopens and a read runs. A step the
+    // killed server held runs again after its 10 s timeout and a second; four 2 s waits lie between the staples.
+    await served.stop();
+    await page.until(live, { text: /^Connecting/ }, { fixed: 15_000 });
+    await served.start();
+    await page.until(live, { text: /^Live/ }, { fixed: 45_000 });
+    await page.until(last, { text: /^Done: 5 of 5/ }, { fixed: 79_000 });
+    expect(unexpected(page)).toEqual([]);
 
     // std.live: `offline` while the net is offline and no read runs; back online the stream reopens and one read runs.
     const stale = `${(await page.find(last)).text} ${(await page.find(started)).text}`;
@@ -111,5 +127,8 @@ it(
     expect(unexpected(page)).toEqual([]);
     // The next run of this page ends first.
     await observer.until(last, { text: /^Done/ }, { fixed: 60_000 });
+    // The observer and the sign-in tab lost their requests with the killed server and read nothing else.
+    expect(unexpected(observer)).toEqual([]);
+    expect(unexpected(signed)).toEqual([]);
   },
 );

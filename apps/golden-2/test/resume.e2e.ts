@@ -139,6 +139,14 @@ async function errorOf(page: Page, field: string): Promise<string> {
   return (await page.find(`${field}:error`)).text;
 }
 
+/** Focus the input `id` and put its caret after the second character, as a person does. */
+async function caretAt2(page: Page, id: string): Promise<void> {
+  await page.fire(id, { type: "focus" });
+  await page.press("Home");
+  await page.press("ArrowRight");
+  await page.press("ArrowRight");
+}
+
 /** The value `find` reports for the input `id`. */
 async function typedIn(page: Page, id: string): Promise<unknown> {
   return (await page.find(id)).value;
@@ -164,6 +172,7 @@ it("the recipe index resumes keeping its rows and its scroll, and a row's link o
   expect(rows).toHaveLength(2);
   await page.scroll(200);
   await page.resume();
+  expect(page.problems()).toEqual([]);
   expect(await page.findAll("recipes.item")).toHaveLength(2);
   const link = (await page.findAll("recipes.link"))[0];
   expect(link).toBeDefined();
@@ -182,6 +191,7 @@ it("the show page resumes and its favorite toggle works", async () => {
   const page = await served.open(`/recipes/${encodeURIComponent(soup)}`, { deployable: "web", hold: true });
   await page.scroll(200);
   await page.resume();
+  expect(page.problems()).toEqual([]);
   const wasStored = (await recipes(served)).find((r) => r.id === soup)?.favorite === true;
   const before = (await page.find("recipes.favorite")).text;
   await page.fire("recipes.toggleFavorite", { type: "click" });
@@ -200,8 +210,14 @@ it("the new-recipe page keeps the title typed before resume, and clearing it sho
   const title = "recipes.draft:title";
   const page = await served.open("/recipes/new", { deployable: "web", hold: true });
   await page.fire(title, { type: "input", value: "Soup" });
+  await caretAt2(page, title);
   await page.resume();
+  expect(page.problems()).toEqual([]);
   expect(await typedIn(page, title)).toBe("Soup");
+  // The caret survived the resume: the next key lands after the second character.
+  await page.press("x");
+  expect(await typedIn(page, title)).toBe("Soxup");
+  await page.fire(title, { type: "input", value: "Soup" });
   await page.fire(title, { type: "input", value: "" });
   await page.fire(title, { type: "blur" });
   expect(await errorOf(page, title)).not.toBe("");
@@ -214,6 +230,7 @@ it("the catalog resumes keeping its scroll, and its filters disclosure opens", a
   const page = await served.open("/catalog", { deployable: "web", hold: true });
   await page.scroll(200);
   await page.resume();
+  expect(page.problems()).toEqual([]);
   const toggle = "recipes.catalogFilters.button";
   expect((await page.find(toggle)).state.expanded).toBe(false);
   await page.fire(toggle, { type: "click" });
@@ -239,8 +256,14 @@ it("the sign-in page keeps the email typed before resume, and a bad address show
   const email = "accounts.signinForm:email";
   const page = await served.open("/account/signin", { deployable: "api", hold: true });
   await page.fire(email, { type: "input", value: "cook@example.com" });
+  await caretAt2(page, email);
   await page.resume();
+  expect(page.problems()).toEqual([]);
   expect(await typedIn(page, email)).toBe("cook@example.com");
+  // The caret survived the resume: the next key lands after the second character.
+  await page.press("x");
+  expect(await typedIn(page, email)).toBe("coxok@example.com");
+  await page.fire(email, { type: "input", value: "cook@example.com" });
   await page.fire(email, { type: "input", value: "x" });
   await page.fire(email, { type: "blur" });
   expect(await errorOf(page, email)).not.toBe("");
@@ -275,6 +298,7 @@ it("a sign-up and a sign-in through the forms each post once and follow a 303, a
   await page.fire("accounts.signinForm:password", { type: "input", value: "smoke password" });
   await page.fire("accounts.signinSubmit", { type: "click" });
   expect(posts()).toEqual(["/api/auth/sign-up/email", "/api/auth/sign-in/email"]);
+  expect(page.problems()).toEqual([]);
   const docs = await page.documents();
   expect(docs.filter((d) => d.status === 303).map((d) => new URL(d.url).pathname)).toEqual([
     "/api/auth/sign-up/email",

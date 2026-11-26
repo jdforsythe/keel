@@ -38,6 +38,7 @@ async function shown(page: Page) {
 it("the start page links its stylesheet, the guard sends the list to sign-in, and sign-up and sign-in go on to the list", async () => {
   const { served } = await household();
   const page = await served.open("/");
+  expect(await page.title()).toBe("Household");
   // The stylesheet the document requests is served as css.
   const sheets = page.requests().filter((r) => new URL(r.url).pathname.endsWith(".css"));
   expect(sheets.length).toBeGreaterThan(0);
@@ -82,12 +83,16 @@ it("the setup action writes the name, the frame sets the brand serif, and the li
 
   await page.navigate("/receipts");
   expect((await page.style("frame", ["font-family"]))["font-family"] ?? "").toMatch(/^"?Source Serif 4"?/);
+  // A styled element has a non-default computed style.
+  const padding = await page.style("frame.main", ["padding-top", "padding-right", "padding-bottom", "padding-left"]);
+  expect(Object.values(padding).some((v) => /^[1-9]\d*(\.\d+)?px$/.test(v))).toBe(true);
   // The face the frame names is requested and served.
   const faces = page.requests().filter((r) => new URL(r.url).pathname.endsWith(".woff2"));
   expect(faces.length).toBeGreaterThan(0);
   for (const face of faces) expect((await served.fetch(new URL(face.url).pathname)).status).toBe(200);
 
   await page.navigate("/list");
+  expect(await page.title()).toBe("Shopping list");
   await page.until("shopping.live", { text: /^Live/ });
   await addStaple(page, "milk");
   await addStaple(page, "milk");

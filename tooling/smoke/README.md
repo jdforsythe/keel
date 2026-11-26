@@ -1,8 +1,8 @@
 # Built apps in a browser
 
-The browser and built-server proofs of the apps and examples are end-to-end tests in the projects they test (`test/*.e2e.ts`, k.e2e), run by `keel test --e2e` in each: golden-1 (persistence, restart, the removal workflow on SQLite and Postgres, monitor, the document policies), golden-2 (resume in place, `keel dev` sign-in, the personal-data canaries), household and the examples. CI's `built-smokes` job runs them. Three scripts stay here: the shell smokes below, `monitor.mjs` and `inspector.mjs`.
+The browser and built-server proofs of the apps and examples are end-to-end tests in the projects they test (`test/*.e2e.ts`, k.e2e), run by `keel test --e2e` in each: golden-1 (persistence, restart, the removal workflow on SQLite and Postgres, monitor, the document policies), golden-2 (resume in place, `keel dev` sign-in, the personal-data canaries), household, the inspector, the examples and the proof libraries. CI's `built-smokes` job runs them. The scripts that stay here are the shell smokes below, with `built.mjs`, `shellReplay.mjs` and `webdriver.mjs` as their helpers, and `resume.mjs`.
 
-`monitor.mjs` serves a built golden-1 and drives two browsers through an offline conflict, then waits for the production tally of `sessions.tally`, a storage key that no store holds, and reads it with `keel session monitor`; `golden-1/test/monitor.e2e.ts` checks the browsers' part. Shared helpers: `built.mjs`.
+`resume.mjs [runs]` resumes golden-2's served pages and household's setup page in Chromium and judges each claim by counting every served element it removes and every element added under an island root (household's event list aside), and checks each page's served markup; the e2e tests carry the rest of what it asserts. CI runs it three times.
 
 # Shell replay
 

@@ -308,6 +308,10 @@
           "run": "node ../../packages/cli/src/bin.ts test --e2e"
         },
         {
+          "name": "resume in place as the smoke judges it: no served element removed and none added under an island root, and each page's served markup, for golden-2's pages and household's setup page, three runs",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
+        },
+        {
           "name": "examples: check, test and build in each, then its end-to-end files where it has them",
           "run": "set -e\nfor d in examples/*/; do\n  (cd \"$d\" && node ../../packages/cli/src/bin.ts check && node ../../packages/cli/src/bin.ts test && if grep -q '\"keel\": \"library\"' package.json; then node ../../packages/cli/src/bin.ts pack --check; else node ../../packages/cli/src/bin.ts build; fi && if ls test/*.e2e.ts >/dev/null 2>&1; then node ../../packages/cli/src/bin.ts test --e2e; fi)\ndone"
         },
