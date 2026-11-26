@@ -468,12 +468,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/store/conformance/payload-type-compile-error.test.ts",
-    "line": 103,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/testing/conformance/compiler-keel-dir-tamper.test.ts",
     "line": 70,
     "text": "30_000",
