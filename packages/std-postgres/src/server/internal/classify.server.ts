@@ -1,5 +1,6 @@
 import type { Conflict } from "../../Conflict.ts";
 import type { ConstraintError } from "../../ConstraintError.ts";
+import type { DatabaseError } from "../../DatabaseError.ts";
 import type { Unreachable } from "../../Unreachable.ts";
 import { errors } from "./errors.server.ts";
 import { field } from "./field.server.ts";
@@ -12,14 +13,16 @@ const KINDS: Readonly<Record<string, ConstraintError["data"]["kind"]>> = {
   "23502": "notNull",
 };
 const LOST = new Set(["57P01", "57P02", "57P03", "53300"]);
+const ACTIONABLE = /^(22|40|53|54|55|57|P0)/;
 const NET = new Set(["ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "ETIMEDOUT", "EPIPE", "EHOSTUNREACH", "EAI_AGAIN"]);
 
 /**
  * A driver error as std.postgres answers it (Errors): a unique, foreign key, check or not-null violation is
  * `postgres.constraint`; a serialization failure or deadlock `keel.conflict`; a refused or lost connection
- * `keel.unreachable`; anything else `null`, for `unexpected` to throw.
+ * `keel.unreachable`; a database error of class `22`, `40`, `53`, `54`, `55`, `57` or `P0` `postgres.database` holding
+ * its SQLSTATE only; anything else `null`, for `unexpected` to throw.
  */
-export function classify(e: unknown): ConstraintError | Unreachable | Conflict | null {
+export function classify(e: unknown): ConstraintError | DatabaseError | Unreachable | Conflict | null {
   const code = field(e, "code");
   const kind = KINDS[code];
   if (kind !== undefined) {
@@ -36,5 +39,7 @@ export function classify(e: unknown): ConstraintError | Unreachable | Conflict |
     )
   )
     return errors.unreachable;
+  if (field(e, "severity") !== "" && code.length === 5 && ACTIONABLE.test(code))
+    return { code: "postgres.database", message: "The database refused the statement", data: { sqlstate: code } };
   return null;
 }

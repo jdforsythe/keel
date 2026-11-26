@@ -1,6 +1,7 @@
 import type { Result } from "@keel/schema";
 import type { Conflict } from "../Conflict.ts";
 import type { ConstraintError } from "../ConstraintError.ts";
+import type { DatabaseError } from "../DatabaseError.ts";
 import type { NoRows } from "../NoRows.schema.ts";
 import type { NotFound } from "../NotFound.ts";
 import type { Query } from "../Query.ts";
@@ -34,7 +35,7 @@ export interface Database {
   transaction<R extends Result<unknown, unknown>>(
     fn: (tx: Tx) => Promise<R>,
     opts?: TransactionOptions,
-  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | Unreachable | Conflict>>;
+  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | DatabaseError | Unreachable | Conflict>>;
   changed<P>(channel: ChangedChannel<P>, params: P): Promise<Result<null, StatementError>>;
   follow(channel: { readonly name: string }, key: string, on: (e: FollowEvent) => void): Promise<() => void>;
 }

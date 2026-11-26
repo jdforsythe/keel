@@ -135,14 +135,13 @@ test("a database error that is not expected throws its SQLSTATE and no value", a
   const { cap, name, table } = fresh();
   const db = notesOf(cap, name);
   const ctx = sim(cap);
-  const err = await db(ctx)
-    .query(sql(Row)`select id, name from ${table} where id = ${"not-a-number-zzq"}::int`)
-    .then(
-      () => undefined,
-      (e: unknown) => e,
-    );
-  expect(String(err)).toContain("SQLSTATE 22P02");
-  expect(String(err)).not.toContain("zzq");
+  const r = await db(ctx).query(sql(Row)`select id, name from ${table} where id = ${"not-a-number-zzq"}::int`);
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.error.code).toBe("postgres.database");
+  expect(r.error).toMatchObject({ data: { sqlstate: "22P02" } });
+  expect(r.error.data).toEqual({ sqlstate: "22P02" });
+  expect(JSON.stringify(r.error)).not.toContain("zzq");
 });
 
 const CHILD = join(import.meta.dirname, "migrate-files-child.server.ts");

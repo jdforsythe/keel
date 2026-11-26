@@ -3,6 +3,7 @@ import { attempt, defect, err, ok } from "@keel/schema";
 import type { Result } from "@keel/schema";
 import type { Conflict } from "../../Conflict.ts";
 import type { ConstraintError } from "../../ConstraintError.ts";
+import type { DatabaseError } from "../../DatabaseError.ts";
 import { NoRows } from "../../NoRows.schema.ts";
 import type { NotFound } from "../../NotFound.ts";
 import type { Query } from "../../Query.ts";
@@ -172,7 +173,7 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
   function transaction<R extends Result<unknown, unknown>>(
     fn: (tx: Tx) => Promise<R>,
     opts?: TransactionOptions,
-  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | Unreachable | Conflict>>;
+  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | DatabaseError | Unreachable | Conflict>>;
   async function transaction(
     fn: (tx: Tx) => Promise<Result<unknown, unknown>>,
     opts?: TransactionOptions,
@@ -184,7 +185,7 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
   function runs<R extends Result<unknown, unknown>>(
     level: Level,
     fn: (run: Run) => Promise<R>,
-  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | Unreachable | Conflict>>;
+  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | DatabaseError | Unreachable | Conflict>>;
   async function runs(
     level: Level,
     fn: (run: Run) => Promise<Result<unknown, unknown>>,
