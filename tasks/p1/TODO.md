@@ -89,6 +89,20 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `next` W15: the two worked component examples pass `keel check` and the a11y checks with no rule off and no `unsafe/`
 - [x] `done` a third-party style library built in the format: `libraries/charts`, used by household, packed and installed from its tarball
 
+### W17 The end user's seat (the personas, hands-on from the kit)
+`tasks/p1/personas.md` holds who Keel is for; `tasks/p1/end-user-review.md` holds each review's findings. Two reviews are in (a component library author; a product engineer with a third-party library): both "yes, with pain". In this order:
+- [ ] `next` the install path: `pnpm create keel` (a `create-keel` package), a kit README with the `overrides` recipe until npm; the clean-runner job of W12 uses it
+- [ ] `next` the library trust holes, as RFC 0240's next part: a library's `./tools` (code that runs at check and build) and its `unsafe/` are capabilities an app grants; a library's ledger rungs are verified from its shipped run report or shown as claimed; the scaffolded CI runs `keel ledger --diff`
+- [ ] `next` `@keel/server` answers 500 and keeps running when server-render code rejects (E1577)
+- [ ] `running` token names at `keel check` (RFC 0241, app code); then a library's own folder and a listed library's `src/`, and E1801 with file and line at build
+- [ ] `next` an RFC for a library's look: the tokens it needs, declared and checked against the app's, with defaults the app overrides; `Part` roles a component library needs (switch, slider, radio and the rest of the authoring practices)
+- [ ] `next` testing as an app or library developer finds it: `fire` submit with `app`; `simulate` over `createApp` (E1729 with its two entries); `properties(Component)` with an id-shaped id; a probe's property credits its component; `console.log` visible; an own-folder a11y report, evidence and a mutation command for a library
+- [ ] `next` an RFC for end-to-end tests: `keel test --e2e` over the built app in a real browser, from `@keel/testing`; the repo's smokes move onto it
+- [ ] `next` a library's publish story: a Publish paragraph in k.library-pack and keel-library, a scaffolded CI workflow with provenance; `keel scaffold library` writes the agent files and `.gitignore`
+- [ ] `next` the paper cuts of both reviews (the leftover `app` module and E1552, E1005 after each edit, generated form ids, E1052's message, `keel review` on a fresh app, `keel docs` for installed libraries, a no-server app importing `@keel/server`, E1751's cut message, slot and `Part` examples in keel-library)
+- [ ] `next` the remaining reviews, each a role and a kind: a static content site (A1, K1); a designer re-theming an app and a library (A5); a compliance owner reading `keel evidence` (A6); a tester (A7); a service library such as maps with a script from another origin (L3); a plain npm package inside an app (L6); a storefront (K2); a SaaS over services (K4); each also run by Codex as the agent form
+- [ ] `human` another product ships a global `keel` binary: the bin name before npm
+
 ### W12 Release
 - [x] `done` release hygiene (backlog 0941, 0943, 0944, 0946): `LICENSE`, `UNLICENSED`, every package private, `SECURITY.md`, `CONTRIBUTING.md`, each held by a hygiene check; `hygiene --launch` fails on the security address placeholder until it is set
 - [ ] `blocked` (W6, W7, W9 stable) the docs sweep and reset: final ADRs distilled and checked against the code, numbered RFC, ADR and backlog references gone, a check that fails on one
