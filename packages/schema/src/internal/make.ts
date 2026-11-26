@@ -13,6 +13,7 @@ import { hasSecret } from "./hasSecret.ts";
 import { invalid } from "./invalid.ts";
 import { issueText } from "./issueText.ts";
 import { mark } from "./mark.ts";
+import { marked } from "./marked.ts";
 import { seal } from "./seal.ts";
 import { toJson } from "./toJson.ts";
 
@@ -71,5 +72,5 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       );
     },
   };
-  return Object.freeze(schema);
+  return marked(schema);
 }

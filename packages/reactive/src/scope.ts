@@ -14,13 +14,19 @@ import type { Scope } from "./types/Scope.ts";
  * its descendants (unless a nearer scope declares one); the throwing effect does not run again.
  * `run(fn)` re-enters the scope later (see `Scope.run`). A `detached` scope is a root: no owner disposes it or lends
  * it an `onError`, its `parent` is undefined, and `fn` runs untracked (writes are still checked), so only its own
- * `dispose()` ends it.
+ * `dispose()` ends it. With no owner running and no `detached`, `scope` raises the E1208 defect: outside kernel and
+ * test code a root exists only where the compiler makes a module root (`moduleRoot`).
  */
 export function scope(
   fn: () => void,
   options?: { readonly onError?: (error: unknown) => void; readonly detached?: boolean },
 ): Scope {
   const detached = options?.detached === true;
+  if (!detached && rt.owner === null)
+    throw fail(
+      "E1208",
+      "scope() with no owner outside a module root; nest it, run it in a captured scope, or in a test pass detached: true",
+    );
   const outer = { owner: rt.owner, reaction: rt.reaction };
   if (detached) rt.owner = null;
   const n = createNode("scope", undefined, []);

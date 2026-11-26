@@ -18,6 +18,7 @@ export { attempt } from "./attempt.ts";
 export { defect } from "./defect.ts";
 export { err } from "./err.ts";
 export { isDefect } from "./isDefect.ts";
+export { isSchema } from "./isSchema.ts";
 export { formatLiteral } from "./formatLiteral.ts";
 export { ok } from "./ok.ts";
 export { s } from "./s.ts";

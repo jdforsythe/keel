@@ -1,6 +1,6 @@
 import type { DefectCode } from "./DefectCode.ts";
+import { DEFECT_KEY } from "./internal/DEFECT_KEY.ts";
 import { DefectError } from "./internal/DefectError.ts";
-import { defects } from "./internal/defects.ts";
 
 /**
  * Throw a defect (k.errors Defects): a failure no caller is meant to handle, a bug in the calling code or a broken
@@ -9,7 +9,7 @@ import { defects } from "./internal/defects.ts";
  */
 export function defect(message: string, code?: DefectCode): never {
   const e = new DefectError(code === undefined ? message : `${code} ${message}`);
-  if (code !== undefined) Object.defineProperty(e, "code", { value: code, enumerable: false });
-  defects.add(e);
+  if (code !== undefined) Object.defineProperty(e, "code", { value: code });
+  Object.defineProperty(e, DEFECT_KEY, { value: true });
   throw e;
 }

@@ -800,36 +800,68 @@ function importedAs(a: Analysis, source: string, imported: string): Set<string> 
   return out;
 }
 
+/** Whether `node` holds a call that runs when it is evaluated: one not inside a nested function or class body. */
+function callsWhenEvaluated(node: unknown): boolean {
+  if (typeof node !== "object" || node === null) return false;
+  if (Array.isArray(node)) return node.some(callsWhenEvaluated);
+  const type = "type" in node ? node.type : undefined;
+  if (type === "CallExpression" || type === "TaggedTemplateExpression") return true;
+  if (
+    type === "ArrowFunctionExpression" ||
+    type === "FunctionExpression" ||
+    type === "FunctionDeclaration" ||
+    type === "ClassExpression" ||
+    type === "ClassDeclaration"
+  )
+    return false;
+  return Object.values(node).some((v) => typeof v === "object" && v !== null && callsWhenEvaluated(v));
+}
+
+/** Whether `node` holds an `await` outside every nested function (a top-level await), which no arrow can wrap. */
+function awaitsWhenEvaluated(node: unknown): boolean {
+  if (typeof node !== "object" || node === null) return false;
+  if (Array.isArray(node)) return node.some(awaitsWhenEvaluated);
+  const type = "type" in node ? node.type : undefined;
+  if (type === "AwaitExpression" || (type === "ForOfStatement" && "await" in node && node.await === true)) return true;
+  if (type === "ArrowFunctionExpression" || type === "FunctionExpression" || type === "FunctionDeclaration")
+    return false;
+  return Object.values(node).some((v) => typeof v === "object" && v !== null && awaitsWhenEvaluated(v));
+}
+
 /**
- * Module-level reactive state (D30): a top-level `const x = store(...)` (k.store) or `signal`/`computed`/
- * `resource` (k.reactive) is created inside a root scope that lives as long as the module, since the runtime
- * rejects primitives outside any scope (E1203). An exported store under `modules/<id>/` without an explicit
- * id gets `{ id: "<id>.<export>" }` (k.store Ids: the compiler fills it from the export name).
+ * Module roots (k.reactive Module roots): each top-level `const`, `let` or `var` declarator whose initializer holds a
+ * call, and each top-level expression statement holding one, runs inside a root of its own that `moduleRoot`
+ * (`@keel/reactive/internal`) makes, so a maker called there (`store`, `chart`, `outbox`) finds that root as `owner()`.
+ * A statement holding a top-level `await` is left as written. An exported store under `modules/<id>/` without an
+ * explicit id gets `{ id: "<id>.<export>" }` (k.store Ids: the compiler fills it from the export name).
  */
 function moduleScope(a: Analysis, ns: string, edits: Edit[], headerImports: string[]): void {
   const stores = importedAs(a, "@keel/store", "store");
-  const reactive = new Set<string>();
-  for (const k of ["signal", "computed", "resource"])
-    for (const n of importedAs(a, REACTIVE_MODULE, k)) reactive.add(n);
-  if (stores.size === 0 && reactive.size === 0) return;
   const segs = a.path.replace(/\\/g, "/").split("/");
   const at = segs.indexOf("modules");
   const mod = at >= 0 && at < segs.length - 2 ? segs[at + 1] : undefined;
   let used = false;
+  const wrap = (start: number, end: number): void => {
+    used = true;
+    edits.push({ start, end: start, text: `${ns}moduleRoot(() => (` });
+    edits.push({ start: end, end, text: "))" });
+  };
   for (const st of a.program.body) {
+    if (st.type === "ExpressionStatement") {
+      if (callsWhenEvaluated(st.expression) && !awaitsWhenEvaluated(st.expression))
+        wrap(st.expression.start, st.expression.end);
+      continue;
+    }
     const exported = st.type === "ExportNamedDeclaration";
     const d = st.type === "ExportNamedDeclaration" ? st.declaration : st;
     if (d === null || d.type !== "VariableDeclaration") continue;
     for (const v of d.declarations) {
       const init = v.init;
-      if (init === null || init.type !== "CallExpression" || init.callee.type !== "Identifier") continue;
-      const callee = init.callee.name;
-      const isStore = stores.has(callee);
-      if (!isStore && !reactive.has(callee)) continue;
-      used = true;
-      edits.push({ start: init.start, end: init.start, text: `${ns}scoped(() => ` });
-      edits.push({ start: init.end, end: init.end, text: ")" });
-      if (!isStore || !exported || mod === undefined || v.id.type !== "Identifier") continue;
+      if (init === null || !callsWhenEvaluated(init) || awaitsWhenEvaluated(init)) continue;
+      wrap(init.start, init.end);
+      if (init.type !== "CallExpression" || init.callee.type !== "Identifier" || !stores.has(init.callee.name))
+        continue;
+      if (!exported || mod === undefined || v.id.type !== "Identifier") continue;
       const id = JSON.stringify(`${mod}.${v.id.name}`);
       const args = init.arguments;
       const second = args[1];
@@ -845,5 +877,5 @@ function moduleScope(a: Analysis, ns: string, edits: Edit[], headerImports: stri
     }
   }
   if (!used) return;
-  headerImports.push(...scopedHelper(ns));
+  headerImports.push(`import { moduleRoot as ${ns}moduleRoot } from ${JSON.stringify(`${REACTIVE_MODULE}/internal`)};`);
 }

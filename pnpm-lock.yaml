@@ -1464,6 +1464,9 @@ importers:
 
   packages/reactive:
     devDependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

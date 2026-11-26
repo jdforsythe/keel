@@ -17,6 +17,7 @@ import { fromStrings } from "./internal/fromStrings.ts";
 import { invalid } from "./internal/invalid.ts";
 import { make } from "./internal/make.ts";
 import { mark } from "./internal/mark.ts";
+import { marked } from "./internal/marked.ts";
 import { protoPaths } from "./internal/protoPaths.ts";
 import { registry } from "./internal/registry.ts";
 import { stringEntries } from "./internal/stringEntries.ts";
@@ -75,7 +76,7 @@ function objectOf<T>(node: Node): ObjectSchema<T> {
     },
     pii: (cls) => objectOf<T>(mark(node, cls)),
   };
-  return Object.freeze(schema);
+  return marked(schema);
 }
 
 type NumberBounds = { readonly min?: number; readonly max?: number };
@@ -157,7 +158,7 @@ export const s = Object.freeze({
       },
     };
     const make_ = (value: Infer<D>, message: string = code): KeelError<C, Infer<D>> => ({ code, message, data: value });
-    return Object.freeze({ ...make<KeelError<C, Infer<D>>, false>(node, false), make: make_ });
+    return marked({ ...make<KeelError<C, Infer<D>>, false>(node, false), make: make_ });
   },
   result: <T extends Schema<unknown>, E extends Schema<unknown>>(
     value: T,

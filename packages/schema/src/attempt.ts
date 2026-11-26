@@ -3,7 +3,7 @@ import type { Result } from "./Result.ts";
 import { err } from "./err.ts";
 import type { UnexpectedError } from "./internal/UnexpectedError.ts";
 import { toUnexpected } from "./internal/toUnexpected.ts";
-import { isDefect } from "./isDefect.ts";
+import { wrapsDefect } from "./internal/wrapsDefect.ts";
 import { ok } from "./ok.ts";
 
 type Settled<T, E> = [T] extends [never]
@@ -19,7 +19,8 @@ const isThenable = (x: unknown): x is PromiseLike<unknown> =>
  * The only sanctioned catch (k.errors). Runs `fn`; a sync fn gives a Result, an async fn a Promise of one.
  * Without `expect`, a throw or rejection becomes `err` with code `keel.unexpected`, and the call never throws.
  * With `expect`, a thrown or rejected value that is no defect goes to `expect`: the KeelError it returns is the
- * `err`; for `undefined` the very value is thrown or rejected on. A defect never reaches `expect`.
+ * `err`; for `undefined` the very value is thrown or rejected on. A defect, or a value wrapping one through `cause` and
+ * `errors` in at most 8 steps, never reaches `expect`.
  */
 export function attempt<T>(fn: () => T): Settled<T, UnexpectedError>;
 export function attempt<T, E extends KeelError<string, unknown>>(
@@ -32,7 +33,7 @@ export function attempt(
 ): Result<unknown, KeelError<string, unknown>> | Promise<Result<unknown, KeelError<string, unknown>>> {
   const settle = (thrown: unknown): Result<never, KeelError<string, unknown>> => {
     if (expect === undefined) return err(toUnexpected(thrown));
-    if (isDefect(thrown)) throw thrown;
+    if (wrapsDefect(thrown)) throw thrown;
     const e = expect(thrown);
     if (e === undefined) throw thrown;
     return err(e);

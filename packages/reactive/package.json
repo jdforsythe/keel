@@ -35,6 +35,7 @@
     "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "devDependencies": {
+    "@keel/schema": "workspace:*",
     "@keel/tooling": "workspace:*"
   }
 }
