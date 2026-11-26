@@ -50,6 +50,33 @@ async function within(ms: number, done: () => boolean): Promise<boolean> {
   return done();
 }
 
+/** How a child run ended. */
+type End = { code: number | null; signal: NodeJS.Signals | null };
+
+/** The child's exit, once its output is read to the end or 2 s after it exits (a grandchild may hold the pipes). */
+async function ended(child: ChildProcess): Promise<End> {
+  let closed = false;
+  child.once("close", () => {
+    closed = true;
+  });
+  const end = await new Promise<End>((resolve) => child.once("exit", (code, signal) => resolve({ code, signal })));
+  await within(testTime(2000), () => closed);
+  return end;
+}
+
+/**
+ * An assertion's message: how the child ended and its output, its lines joined on one line (the reporter prints a
+ * message's first line, up to 512 characters), the last 440 characters of it.
+ */
+function said(end: End, out: string): string {
+  const flat = out
+    .split("\n")
+    .filter((l) => l.trim() !== "")
+    .join(" | ");
+  const tail = flat.length > 440 ? `...${flat.slice(-440)}` : flat;
+  return `child exit ${end.code} signal ${end.signal}: ${tail}`;
+}
+
 function run(file: string, extra: Record<string, string> = {}): ChildProcess {
   return spawn(process.execPath, [vitest, "run", file], {
     cwd: fixtures,
@@ -71,12 +98,12 @@ describe("watchdog", () => {
       out += String(b);
     });
     try {
-      const code = await new Promise<number | null>((resolve) => child.once("exit", (c) => resolve(c)));
-      expect(code).not.toBe(0);
-      expect(performance.now() - t0).toBeLessThan(fixedTime(1_700) + testTime(23_000));
+      const end = await ended(child);
+      expect(end.code, said(end, out)).not.toBe(0);
+      expect(performance.now() - t0, said(end, out)).toBeLessThan(fixedTime(1_700) + testTime(23_000));
       const lines = out.split("\n").filter((l) => l.includes("watchdog"));
-      expect(lines).toHaveLength(1);
-      expect(lines[0]).toMatch(
+      expect(lines, said(end, out)).toHaveLength(1);
+      expect(lines[0], said(end, out)).toMatch(
         /^T0001 spin\.fixture\.ts:1:1 watchdog killed "spins without yielding" after \d+\.\ds \(bound 1\.7s\)$/,
       );
       expect(await within(testTime(10_000), () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
@@ -95,9 +122,11 @@ describe("watchdog", () => {
       out += String(b);
     });
     try {
-      const code = await new Promise<number | null>((resolve) => child.once("exit", (c) => resolve(c)));
-      expect(code).not.toBe(0);
-      expect(out).toMatch(/T0001 hang-import\.fixture\.ts:1:1 watchdog killed after \d+\.\ds \(bound 1\.1s\)/);
+      const end = await ended(child);
+      expect(end.code, said(end, out)).not.toBe(0);
+      expect(out, said(end, out)).toMatch(
+        /T0001 hang-import\.fixture\.ts:1:1 watchdog killed after \d+\.\ds \(bound 1\.1s\)/,
+      );
       expect(await within(testTime(10_000), () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
     } finally {
       killGroup(child.pid);
@@ -115,9 +144,9 @@ describe("watchdog", () => {
       out += String(b);
     });
     try {
-      const code = await new Promise<number | null>((resolve) => child.once("exit", (c) => resolve(c)));
-      expect(out).not.toContain("watchdog killed");
-      expect(code).toBe(0);
+      const end = await ended(child);
+      expect(out, said(end, out)).not.toContain("watchdog killed");
+      expect(end.code, said(end, out)).toBe(0);
     } finally {
       killGroup(child.pid);
     }

@@ -10,7 +10,9 @@ import { parseFile } from "../packages/check/src/internal/parseFile.ts";
 import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
 import { parseArgs, run } from "./output.ts";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
+import { parseSync } from "oxc-parser";
 import { hardTimes } from "./hard-times.mjs";
+import { untimedPropertyTests } from "./property-times.ts";
 import { stdEntryDiags } from "./std-entries.mjs";
 import { unseededProperties } from "./unseeded-properties.mjs";
 
@@ -157,6 +159,39 @@ for (const e of [...unseen.values()].flat())
     1,
     `${e.text} is listed in hard-times-conformance.json and no longer in the file`,
   );
+
+// S0017: a property case vitest's flat 5 s default bounds. keelConfig gives each test that runs `properties`,
+// `simulate` or fast-check's `assert` and declares no options a timeout from its runs (property-times.ts); an app's,
+// example's or library's folder whose vitest config is not keelConfig (a library on the library format, a stranger's
+// app) has no such transform, so each such test there states its own bound.
+const VITEST_CONFIG = /^vitest\.config\.[cm]?[jt]s$/;
+/** Whether the project folder `top/name` of a repository path runs its tests under keelConfig. */
+const keelConfigured = new Map();
+function underKeelConfig(dir) {
+  if (!keelConfigured.has(dir)) {
+    const configs = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => VITEST_CONFIG.test(n)) : [];
+    keelConfigured.set(
+      dir,
+      configs.some((n) => fs.readFileSync(path.join(dir, n), "utf8").includes("keelConfig")),
+    );
+  }
+  return keelConfigured.get(dir);
+}
+for (const file of appTests()) {
+  const project = /^(?:apps|examples|libraries)\/[^/]+/.exec(rel(root, file))?.[0];
+  if (project === undefined || underKeelConfig(path.join(root, project))) continue;
+  const src = fs.readFileSync(file, "utf8");
+  for (const t of untimedPropertyTests(src, (c) => parseSync(file, c).program)) {
+    const before = src.slice(0, t.at).split("\n");
+    add(
+      "S0017",
+      file,
+      before.length,
+      (before.at(-1)?.length ?? 0) + 1,
+      `a test of ${t.runs} property runs declares no timeout and ${project}'s vitest config is not keelConfig, so vitest's 5 s default bounds it; state { timeout } from its runs (300 ms a run)`,
+    );
+  }
+}
 
 /** Whether `packages/<name>/` of a repository path is a library (`"keel": "library"` in its `package.json`, k.library). */
 function inLibrary(p) {

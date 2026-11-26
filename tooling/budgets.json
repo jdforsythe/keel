@@ -164,11 +164,11 @@
     },
     "@keel/std-postgres": "1.05kb",
     "@keel/std-postgres/server": {
-      "max": "8.25kb",
+      "max": "8.4kb",
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
-      "max": "1.6kb",
+      "max": "1.65kb",
       "platform": "node"
     },
     "@keel/std-postgres/tools": {

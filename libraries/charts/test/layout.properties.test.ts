@@ -10,6 +10,7 @@ const SEED = 20261125;
 const frame: Frame = { width: 320, height: 180, left: 8, right: 8, top: 18, bottom: 22 };
 // Finite numbers of every size: empty lists, one value, negatives, and values near Number.MAX_VALUE.
 const values = fc.array(fc.double({ noNaN: true, noDefaultInfinity: true }), { maxLength: 40 });
+// A case's bound is 300 ms for each of its runs (a few microseconds of layout here): 200 runs are 60 s.
 const inside = (x: number, y: number) =>
   Number.isFinite(x) &&
   Number.isFinite(y) &&
@@ -18,7 +19,7 @@ const inside = (x: number, y: number) =>
   y >= frame.top &&
   y <= frame.height - frame.bottom;
 
-it("every bar lies inside the plot area and rises from the zero line", () => {
+it("every bar lies inside the plot area and rises from the zero line", { timeout: 60_000 }, () => {
   fc.assert(
     fc.property(values, (vs) => {
       const { base, bars } = barLayout(vs, frame);
@@ -36,7 +37,7 @@ it("every bar lies inside the plot area and rises from the zero line", () => {
   );
 });
 
-it("every line point lies inside the plot area, left to right in order", () => {
+it("every line point lies inside the plot area, left to right in order", { timeout: 60_000 }, () => {
   fc.assert(
     fc.property(values, (vs) => {
       const at = lineLayout(vs, frame);
@@ -51,7 +52,7 @@ it("every line point lies inside the plot area, left to right in order", () => {
   );
 });
 
-it("a higher value is never drawn lower", () => {
+it("a higher value is never drawn lower", { timeout: 30_000 }, () => {
   fc.assert(
     fc.property(values, (vs) => {
       const at = lineLayout(vs, frame);
@@ -67,7 +68,7 @@ it("a higher value is never drawn lower", () => {
   );
 });
 
-it("fraction stays in [0, 1] and extent holds every value", () => {
+it("fraction stays in [0, 1] and extent holds every value", { timeout: 60_000 }, () => {
   fc.assert(
     fc.property(values, fc.boolean(), (vs, withZero) => {
       const { lo, hi } = extent(vs, withZero);

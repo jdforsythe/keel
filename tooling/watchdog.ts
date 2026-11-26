@@ -3,9 +3,10 @@
 // one watchdog thread per process (watchdog-thread.mjs) and writes a heartbeat into shared memory at each phase:
 // collecting a file, its hooks, each test. The thread kills the process when a phase runs past
 // `allowed * 2 + grace` (grace 30 s), or when the worker's parent is gone. A test's `allowed` is its own stated
-// bound, which `KEEL_TEST_TIME_SCALE` scales; the grace and the collection allowance are the machine's own work
-// (worker start, importing a file, its hooks between tests) and are fixed time the scale never shrinks. Real clocks
-// are used on purpose: this is the one place in the test setup that must bound wall-clock time. A worker also kills
+// bound, which `KEEL_TEST_TIME_SCALE` scales; the grace, the collection allowance and the bound on this file's own
+// hooks are the machine's own work (worker start, importing a file, its hooks between tests) and are fixed time the
+// scale never shrinks. Real clocks are used on purpose: this is the one place in the test setup that must bound
+// wall-clock time. A worker also kills
 // its own descendants on every way it can end (exit, SIGTERM, SIGINT, SIGHUP; a parent that vanishes closes the
 // worker's channel, which ends it through exit), so a child a test started never outlives the worker.
 import { execFileSync } from "node:child_process";
@@ -44,6 +45,12 @@ const envMs = (name: string, fallback: number): number => {
  */
 const COLLECT_MS = envMs("KEEL_WATCHDOG_COLLECT_MS", fixedTime(60_000));
 const GRACE_MS = envMs("KEEL_WATCHDOG_GRACE_MS", fixedTime(30_000));
+/**
+ * The bound on each of this file's own hooks. They only write the heartbeat: the machine's own work, so fixed time.
+ * Under the run's `hookTimeout` a scale of 0.01 would leave them 2 ms, which a preempted thread on a busy machine
+ * overruns, and vitest fails the file with "Hook timed out".
+ */
+const OWN_HOOK_MS = fixedTime(5_000);
 
 // A path, not a URL: under a DOM test environment the global `URL` is the DOM's, which `Worker` refuses.
 const THREAD = path.join(path.dirname(fileURLToPath(import.meta.url)), "watchdog-thread.mjs");
@@ -178,13 +185,13 @@ mark("", Math.max(timeouts.hookTimeout, COLLECT_MS));
 beforeAll(({}, suite) => {
   between = Math.max(between, declaredHooks(suite));
   mark("", between);
-});
+}, OWN_HOOK_MS);
 // The bracket holds the test and its own beforeEach and afterEach hooks: setup hooks run first and, in the
 // default stack order, their afterEach runs last.
 // A test without a timeout (0) still gets the configured one: the watchdog bounds every test.
 beforeEach((ctx) => {
   const own = ctx.task.timeout > 0 && ctx.task.timeout < 2 ** 28 ? ctx.task.timeout : timeouts.testTimeout;
   mark(ctx.task.fullTestName, own + 2 * timeouts.hookTimeout);
-});
-afterEach(() => mark("", between));
-afterAll(() => Atomics.store(beat.slots, PHASE, 0));
+}, OWN_HOOK_MS);
+afterEach(() => mark("", between), OWN_HOOK_MS);
+afterAll(() => Atomics.store(beat.slots, PHASE, 0), OWN_HOOK_MS);

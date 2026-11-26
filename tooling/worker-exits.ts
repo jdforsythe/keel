@@ -1,8 +1,10 @@
 // What ended a vitest fork worker that died mid-run. Vitest reports such a death as "[vitest-pool]: Worker forks
 // emitted error." and drops the exit code, the signal and anything the worker wrote last. Installed once in the
 // vitest process (the Keel reporter's onInit), this records, for every fork worker that exits while vitest still
-// listens for its unexpected exit, its exit code or signal, the test files vitest last sent it and the last line it
-// wrote to stderr; a worker vitest stops on purpose has its listener removed first and is not recorded.
+// listens for its unexpected exit or that vitest did not ask to stop, its exit code or signal, the test files vitest
+// last sent it and the last line it wrote to stderr. A worker vitest stops on purpose is sent a `stop` request first
+// and is not recorded. A worker whose channel fails as it dies is force-stopped by vitest, which removes the exit
+// listener before the exit arrives and sends no `stop` request: it is recorded.
 import { ChildProcess } from "node:child_process";
 
 export type WorkerExit = {
@@ -18,6 +20,8 @@ const TAIL = 60;
 const exits: (Omit<WorkerExit, "said"> & { readonly child: ChildProcess })[] = [];
 const tails = new WeakMap<ChildProcess, string[]>();
 const sent = new WeakMap<ChildProcess, readonly string[]>();
+/** Fork workers vitest has sent a `stop` request: their exit is one vitest asked for. */
+const stopped = new WeakSet<ChildProcess>();
 let installed = false;
 
 /** True for the process vitest forks to run test files (`vitest/dist/workers/forks.js`). */
@@ -69,6 +73,7 @@ export function watchWorkerExits(): void {
         value: (...args: unknown[]): boolean => {
           const files = requestFiles(args[0]);
           if (files !== undefined) sent.set(this, files);
+          if (isRec(args[0]) && args[0].type === "stop") stopped.add(this);
           return Reflect.apply(send, this, args);
         },
       });
@@ -82,7 +87,7 @@ export function watchWorkerExits(): void {
         if (tail.length > TAIL) tail.splice(0, tail.length - TAIL);
       });
     }
-    if (event === "exit" && isForkWorker(this) && unexpected(this)) {
+    if (event === "exit" && isForkWorker(this) && (unexpected(this) || !stopped.has(this))) {
       const [code, signal] = args;
       exits.push({
         child: this,

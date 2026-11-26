@@ -124,18 +124,17 @@ function runsOf(program: Node, call: Node, key = "runs"): number {
 }
 
 /**
- * `code` with `{ timeout }` declared on each test that runs `properties`, `simulate` or fast-check's `assert` and
- * declares no options, or
- * undefined when no test needs one. `parse` gives an ESTree program with UTF-16 `start` and `end` offsets.
+ * Each test in `code` that runs `properties`, `simulate` or fast-check's `assert` and declares no options: the offset
+ * of its callback and the runs its calls name. `parse` gives an ESTree program with UTF-16 `start` and `end` offsets.
  */
-export function propertyTimes(code: string, parse: (code: string) => unknown, testTimeout: number): string | undefined {
-  if (!code.includes("@keel/testing") && !code.includes("fast-check")) return undefined;
+export function untimedPropertyTests(code: string, parse: (code: string) => unknown): { at: number; runs: number }[] {
+  if (!code.includes("@keel/testing") && !code.includes("fast-check")) return [];
   const program = parse(code);
-  if (!isNode(program)) return undefined;
+  if (!isNode(program)) return [];
   const timed = timedNames(program);
   const fc = fastCheckNames(program);
-  if (timed.size === 0 && fc.objects.size === 0 && fc.asserts.size === 0) return undefined;
-  const inserts: { at: number; text: string }[] = [];
+  if (timed.size === 0 && fc.objects.size === 0 && fc.asserts.size === 0) return [];
+  const found: { at: number; runs: number }[] = [];
   walk(program, (n) => {
     if (n.type !== "CallExpression" || !isTestCallee(n.callee) || !Array.isArray(n.arguments)) return;
     if (n.arguments.length !== 2) return;
@@ -149,9 +148,20 @@ export function propertyTimes(code: string, parse: (code: string) => unknown, te
       if (timed.has(name(c.callee) ?? "")) runs += runsOf(program, c);
       else if (isFastCheckAssert(c.callee, fc)) runs += runsOf(program, c, "numRuns");
     });
-    if (runs === 0) return;
-    inserts.push({ at: at.start, text: `{ timeout: ${Math.max(testTimeout, runs * PER_RUN_MS)} }, ` });
+    if (runs > 0) found.push({ at: at.start, runs });
   });
+  return found;
+}
+
+/**
+ * `code` with `{ timeout }` declared on each test that runs `properties`, `simulate` or fast-check's `assert` and
+ * declares no options (`untimedPropertyTests`), or undefined when no test needs one.
+ */
+export function propertyTimes(code: string, parse: (code: string) => unknown, testTimeout: number): string | undefined {
+  const inserts = untimedPropertyTests(code, parse).map((t) => ({
+    at: t.at,
+    text: `{ timeout: ${Math.max(testTimeout, t.runs * PER_RUN_MS)} }, `,
+  }));
   if (inserts.length === 0) return undefined;
   let out = code;
   for (const i of inserts.sort((a, b) => b.at - a.at)) out = out.slice(0, i.at) + i.text + out.slice(i.at);

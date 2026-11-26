@@ -85,3 +85,35 @@ describe("taskFailures", () => {
     );
   });
 });
+
+describe("taskFailures over turbo's GitHub Actions groups", () => {
+  // Under GitHub Actions with no `--log-prefix`, turbo writes each task's lines unprefixed inside a group.
+  const log = [
+    "::group::@keel/cli:build",
+    "$ tsc -p tsconfig.build.json",
+    "::endgroup::",
+    "::group::@keel-libs/charts:check",
+    "$ keel check && keel pack --check",
+    "ok check 34 files, 0 errors, 0 warnings",
+    "T0001 test/charts.properties.test.ts:10:1 a bar chart renders: Test timed out in 5000ms.",
+    "  fix: Test timed out in 5000ms.",
+    "E1164 test: 1 of 17 tests failed; nothing packed",
+    "fail pack --check",
+    "::endgroup::",
+    "@keel-libs/charts#check:  ERROR  command (/r/libraries/charts) pnpm run check exited (1)",
+  ].join("\n");
+  const dirs = { "@keel-libs/charts": "libraries/charts" };
+  const v = turboVerdict(1, `${log}\n${summary(105, 106, "@keel-libs/charts#check")}`);
+  const f = taskFailures(v.failed, log, dirs);
+
+  it("reads a failed task's diagnostics from its group", () => {
+    expect(f[0]?.diags).toEqual([
+      "T0001 libraries/charts/test/charts.properties.test.ts:10:1 a bar chart renders: Test timed out in 5000ms.",
+      "E1164 test: 1 of 17 tests failed; nothing packed",
+    ]);
+    expect(f[0]?.exit).toBe(1);
+    expect(failVerdict("check", v, f)).toContain(
+      "turbo check failed: @keel-libs/charts#check libraries/charts/test/charts.properties.test.ts:10",
+    );
+  });
+});
