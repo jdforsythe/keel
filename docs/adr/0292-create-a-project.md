@@ -1,6 +1,6 @@
 # ADR-0292: start a Keel project from an empty folder with one command (RFC 0247)
 
-**Status:** proposed.
+**Status:** accepted (orchestrator, 2026-11-26).
 
 **Context.** A person or an agent with an empty folder has no way in: `keel scaffold project` needs an installed `@keel/cli`, a global `keel` collides with another product's binary, and the kit's tarballs do not install from a registry. What `scaffold project` writes has no route and no test, pins `^0.0.0` ranges, and `scaffold library` writes no agent files. An agent cannot answer a prompt and runs whatever command the output names.
 
@@ -20,4 +20,4 @@
 - `@keel/create-library`: a second registry package for one flag.
 - Running the install: create would start the package manager and its scripts.
 
-**Consequences.** Three commands reach a page in a browser. The CI template gains an install per package manager. Every `scaffold project` tree gains two files and exact versions. A pnpm workspace whose root does not list `@keel/cli` hides a sibling's Keel version from E1363. The `docs.map` budget is over by one entry until `lane-r-map`'s two-level map merges. The e2e test and the grants clause wait on RFC 0244 and RFC 0251.
+**Consequences.** Three commands reach a page in a browser. The CI template gains an install per package manager. Every `scaffold project` tree gains two files and exact versions. A pnpm workspace whose root does not list `@keel/cli` hides a sibling's Keel version from E1363. The e2e test and the grants clause wait on RFC 0244 and RFC 0251.

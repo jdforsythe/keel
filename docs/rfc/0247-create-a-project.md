@@ -1,6 +1,6 @@
 # RFC 0247: start a Keel project from an empty folder with one command
 
-Status: draft (ADR-0292). New section k.create; amends k.scaffold (the `project` generator, Conformance), k.explain (Agent files), the map. From W17, "The end user's seat" in `tasks/p1/TODO.md`: two hands-on reviews found that starting from an empty folder is the weakest five minutes.
+Status: accepted by the orchestrator on 2026-11-26 with For the operator 1 to 4 as recommended (ADR-0292). New section k.create; amends k.scaffold (the `project` generator, Conformance), k.explain (Agent files), the map. From W17, "The end user's seat" in `tasks/p1/TODO.md`: two hands-on reviews found that starting from an empty folder is the weakest five minutes.
 
 ## Decisions
 - D1: the command is `pnpm create @keel/app [folder] [flags]`, which runs the package `@keel/create-app`. npm, yarn and bun run the same package: `npm create @keel/app [folder] -- [flags]`, `yarn create @keel/app`, `bun create @keel/app`. The binary `keel` is run through the project (`pnpm keel ...`); the docs recommend against a global install.
@@ -145,7 +145,7 @@ Applied in this commit.
 - New `spec/kernel/k.create.md`, status `proposed`: the package, flags, files, versions, package manager, workspace, folder, names, what it does not do, next records, Rules (E1360 to E1363, W1364, E1365) and 22 Conformance clauses.
 - k.scaffold: the `project` bullet gains the home route, its page and test, the exact version and k.create's Versions, Package manager and Workspace rules; one Conformance clause (the home route and its passing test).
 - k.explain Agent files: the library block and `keel scaffold library`'s agent files.
-- `spec/00-map.md`: the row `k.create | Create a project | proposed | create`, and `k.create` among the owners of E135x. `lane-r-map` makes the map two-level; at its merge the row goes to `spec/areas/tools.md` as `| k.create | `pnpm create @keel/app`: flags, files per kind, package manager, workspace, E1360 to E1365 |`, and the E135x owner line to that branch's code lookup.
+- `spec/areas/tools.md`: the row `| k.create | `pnpm create @keel/app`: flags, files per kind, package manager, workspace, E1360 to E1365 |`; `pnpm spec --for E1360` finds the section by its Rules.
 - `tooling/docs-owners.json`: `k.create` owned by `@keel/scaffold`, which holds `createPlan` and packs the section, so `keel docs k.create` works in every project.
 
 ## Conformance diff
@@ -160,7 +160,7 @@ The conformance-writer writes from k.create, k.scaffold and k.explain's text alo
 None. No migration notes for unreleased changes. Projects and apps in the repo that `keel scaffold project` made keep their files; the evals' fresh projects gain the home route.
 
 ## Token impact
-k.create about 2,750 of 3,100 tokens. k.scaffold 2,638 to about 2,735; k.explain 730 to about 780. `spec.map` 1,643 to 1,659 of 1,660. `docs.map` (the compact `keel docs`) goes from at most 1,690 to 1,699 with one more section entry: over its limit, which is not raised. `lane-r-map` replaces that listing with areas (`docs.map` 900 there), and every lane that adds a section waits on that merge for this budget (the plan's D196). New output: a default create prints about 40 lines, about 300 tokens.
+k.create about 2,750 of 3,100 tokens. k.scaffold 2,638 to about 2,735; k.explain 730 to about 780. The area row adds one line to `pnpm spec tools` and one entry to `keel docs tools`; `spec.map` and `docs.map` are unchanged and within their limits. New output: a default create prints about 40 lines, about 300 tokens.
 
 ## Build plan
 1. `@keel/scaffold`: `project` gains `version`, the home route and page through `route`, `engines`, `packageManager` and the workspace input; `library` gains `.gitignore`; the CI workflow's install per manager; the `./create` entry with `createPlan`. `@keel/cli`: `keel scaffold project` passes its version, user agent and workspace reading; `keel scaffold library` adds the agent files; the library block. The explain rows for E1360 to E1365.
@@ -178,7 +178,6 @@ Each within its target (docs-check's skill targets, `docs.section`): the root RE
 - Output: `create.default` 400 tokens, the compact output of `create-app shop` in an empty folder.
 
 ## Dependencies on other lanes
-- `lane-r-map` (RFC 0246): the map row's place and the `docs.map` budget.
 - `lane-r-e2e` (RFC 0244): the e2e test of slice 4.
 - `lane-r-boundary` (RFC 0251): the Node floor and the grants clause of slice 4.
 - W17's paper cuts line: `topology` from a package with no server in its name, after which A1's clause names `@keel/server` too.

@@ -95,7 +95,8 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 
 ### W17 The end user's seat (the personas, hands-on from the kit)
 `tasks/p1/personas.md` holds who Keel is for; `tasks/p1/end-user-review.md` holds each review's findings. Two reviews are in (a component library author; a product engineer with a third-party library): both "yes, with pain". In this order:
-- [ ] `next` the install path: `pnpm create keel` (a `create-keel` package), a kit README with the `overrides` recipe until npm; the clean-runner job of W12 uses it
+- [ ] `next` the install path: `pnpm create @keel/app` (RFC 0247, `@keel/create-app` over `@keel/scaffold/create`), a kit README with the `overrides` recipe until npm; the clean-runner job of W12 uses it
+- [ ] `next` `topology` from a package with no server in its name, before 1.0, so a `client` project lists no server package; then k.create's no-server clause names `@keel/server` too (RFC 0247 depends on it)
 - [ ] `next` the library trust holes, as RFC 0240's next part: a library's `./tools` (code that runs at check and build) and its `unsafe/` are capabilities an app grants; a library's ledger rungs are verified from its shipped run report or shown as claimed; the scaffolded CI runs `keel ledger --diff`
 - [ ] `next` `@keel/server` answers 500 and keeps running when server-render code rejects (E1577)
 - [ ] `running` token names at `keel check` (RFC 0241, app code); then a library's own folder and a listed library's `src/`, and E1801 with file and line at build
