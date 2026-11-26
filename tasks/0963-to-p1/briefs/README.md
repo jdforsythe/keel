@@ -33,3 +33,7 @@ What a subagent in a lane is told, so a fresh orchestrator can brief one without
 2. Root `pnpm check --quiet` clean but for `ledger-fresh`; every package's suite (the whole `pnpm test`, or each package folder in turn: a chosen list once missed the one suite a merge broke); every app's and example's `keel test`; `pnpm build`; the smokes the lane touches.
 3. On the main line: `git merge --no-ff`, with the lane's `rfc:NNNN` tags in the message when it carries conformance changes. Then regenerate the ledger as Method's D100 says and commit it.
 4. The gate, in `.worktrees/verify`, before a push (Method, D97; `docs/HANDOFF.md` lists its steps).
+
+## Waiting and teardown
+
+Wait on something you own: a file your command writes at its end, or its exit code. Never wait with `pgrep -f <text>` when the waiting command's own line holds that text: it matches itself and never ends. Give every wait loop an upper bound. Before you report, stop every loop, server and container you started and remove the temp folders you made; say in the report what, if anything, is left.

@@ -1,5 +1,5 @@
 {
-  "commit": "1089b1d8f18d307dbb7efbc38aa882df22384135",
+  "commit": "971ad83918ea9359821f8bf2659f3b0757934452",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-26T20:45:09.433Z",
+  "generatedAt": "2026-11-26T20:14:09.474Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1676,7 +1676,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 13,
           "verified": 13
         },
@@ -4178,17 +4178,17 @@
         "unitFiles": 91
       },
       "packages/cli": {
-        "conformanceCases": 1041,
-        "conformanceFiles": 232,
+        "conformanceCases": 1029,
+        "conformanceFiles": 230,
         "exploreFiles": 1,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 214,
+        "propertyCalls": 212,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 865,
+        "unitCases": 862,
         "unitFiles": 123
       },
       "packages/compiler": {
@@ -4310,12 +4310,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 306,
+        "propertyCalls": 307,
         "proveFiles": 0,
-        "simulateFiles": 1,
+        "simulateFiles": 2,
         "skipTodo": 0,
-        "unitCases": 634,
-        "unitFiles": 119
+        "unitCases": 638,
+        "unitFiles": 121
       },
       "packages/services": {
         "conformanceCases": 137,
@@ -4716,12 +4716,12 @@
         "fails": 1,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 262,
+        "propertyCalls": 266,
         "proveFiles": 22,
         "simulateFiles": 20,
         "skipTodo": 2,
-        "unitCases": 324,
-        "unitFiles": 60
+        "unitCases": 330,
+        "unitFiles": 62
       },
       "packages/ui": {
         "conformanceCases": 230,
@@ -4739,18 +4739,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 6942,
-      "conformanceFiles": 1521,
+      "conformanceCases": 6930,
+      "conformanceFiles": 1519,
       "exploreFiles": 21,
       "fails": 3,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 3053,
+      "propertyCalls": 3056,
       "proveFiles": 24,
-      "simulateFiles": 31,
+      "simulateFiles": 32,
       "skipTodo": 5,
-      "unitCases": 7103,
-      "unitFiles": 1163
+      "unitCases": 7110,
+      "unitFiles": 1167
     }
   },
   "tool": {
