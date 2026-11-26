@@ -6,6 +6,18 @@ export default module({
   deps: [],
   capabilities: [],
   public: {
-    exports: ["formatNumber", "Locale", "localeName", "plural", "PluralForms"],
+    exports: [
+      "collate",
+      "formatDateTime",
+      "formatList",
+      "formatNumber",
+      "formatUnit",
+      "Locale",
+      "localeName",
+      "numberParts",
+      "plural",
+      "pluralCategories",
+      "PluralForms",
+    ],
   },
 });
