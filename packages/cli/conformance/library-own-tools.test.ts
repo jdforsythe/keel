@@ -1,10 +1,21 @@
-// Spec: k.library-pack, clause "In the own folder of `@keel/std-ownfix` (`id: 'ownfix'`), its `./tools` importing `src/Code.schema.ts`, which registers `s.format('ownfix.Code', s.string(), { check: (v) => v.startsWith('c'), gen })`, by `s.register('ownfix.Code', Code)`, `keel check` reports one E1108 for `formatLiteral(Code, 'dog')` in `src/B.ts` (`does not parse as ownfix.Code (format)`) and none for `formatLiteral(Code, 'cat')` in `src/A.ts`; with no `./tools`, each is E1108 `is not one registered format`; a rule `E2999` its `./tools` registers reports there; `\"./tools\": \"./dist/tools.js\"`, no such file, is one E1159 at `package.json`."
-// Seed: 1337 (no generated input). Binary runs: 4 `keel check` runs over four folders (with `./tools`, without, with a rule, with a missing target), each run once and shared by its cases.
+// Spec: k.library-pack, clause "In the own folder of `@keel/std-ownfix` (`id: 'ownfix'`), its `./tools` importing `src/Code.schema.ts`, which registers `s.format('ownfix.Code', s.string(), { check: (v) => v.startsWith('c'), gen })`, by `s.register('ownfix.Code', Code)`, `keel check` reports one E1108 for `formatLiteral(Code, 'dog')` in `src/B.ts` (`does not parse as ownfix.Code (format)`) and none for `formatLiteral(Code, 'cat')` in `src/A.ts`; with no `./tools`, each is E1108 `is not one registered format`; a rule `E2999` its `./tools` registers reports nothing there, in a file importing `@keel/std-ownfix` or `../src/A.ts`, and reports in an app listing it; `"./tools": "./dist/tools.js"`, no such file, is one E1159 at `package.json`."
+// Seed: 1337 (no generated input). Binary runs: 6 `keel check` runs (with `./tools`, without, with a rule, with a rule and importing files, with a missing target, an app listing the library), each run once and shared by its cases.
 // ASSUMPTIONS (spec silent): `./tools` is `"./tools": "./tools.ts"`, a root file that imports `./src/Code.schema.ts` (Node strips the types); `gen` is `{ from: s.string(), map: (v) => `c${v}` }`;
 // a diagnostic's `path` is package-relative in an own folder ("each diagnostic at the folder's own path"); E1159 is judged by its code, path `package.json` and the message naming `./tools` and its target
 // (`<name> ./tools <target> does not import; build it`, k.library-pack Package), and its line is the line of the `"./tools"` key when `package.json` is written with `JSON.stringify(value, null, 2)`.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { SLOW, cleanup, diags, keel, manifestOf, materialize, toolsRule, type Tree } from "./library-support.ts";
+import {
+  SLOW,
+  cleanup,
+  diags,
+  keel,
+  library,
+  manifestOf,
+  materialize,
+  project,
+  toolsRule,
+  type Tree,
+} from "./library-support.ts";
 
 const NAME = "@keel/std-ownfix";
 const CODE_SCHEMA =
@@ -15,8 +26,8 @@ const B_SRC =
   "import { formatLiteral } from '@keel/schema'\nimport { Code } from './Code.schema.ts'\nexport const b = formatLiteral(Code, 'dog')\n";
 const TOOLS = "import './src/Code.schema.ts'\n";
 
-type Shape = { readonly tools: string | null; readonly target?: string };
-function folder({ tools, target = "./tools.ts" }: Shape): { tree: Tree; json: string } {
+type Shape = { readonly tools: string | null; readonly target?: string; readonly extra?: Tree };
+function folder({ tools, target = "./tools.ts", extra = {} }: Shape): { tree: Tree; json: string } {
   const json = JSON.stringify(
     {
       name: NAME,
@@ -39,6 +50,7 @@ function folder({ tools, target = "./tools.ts" }: Shape): { tree: Tree; json: st
     "src/Code.schema.ts": CODE_SCHEMA,
     "src/A.ts": A_SRC,
     "src/B.ts": B_SRC,
+    ...extra,
     ...(tools === null || target !== "./tools.ts" ? {} : { "tools.ts": tools }),
   };
   return { tree, json };
@@ -51,13 +63,39 @@ const run = (s: Shape): { json: string; records: ReturnType<typeof keel>["record
   made.push(dir);
   return { json, records: keel(dir, ["check"]).records };
 };
-type Runs = Record<"withTools" | "noTools" | "rule" | "missing", ReturnType<typeof run>>;
+const runApp = (): ReturnType<typeof run> => {
+  const dir = materialize(
+    project({
+      deps: [NAME],
+      page: false,
+      libraries: [
+        library({
+          name: NAME,
+          id: "ownfix",
+          exports: { "./tools": "./tools.js" },
+          files: { "tools.js": toolsRule("E2999") },
+        }),
+      ],
+    }),
+  );
+  made.push(dir);
+  return { json: "", records: keel(dir, ["check"]).records };
+};
+type Runs = Record<"withTools" | "noTools" | "rule" | "importing" | "app" | "missing", ReturnType<typeof run>>;
 let runs: Runs | undefined;
 beforeAll(() => {
   runs = {
     withTools: run({ tools: TOOLS }),
     noTools: run({ tools: null }),
     rule: run({ tools: `${TOOLS}${toolsRule("E2999")}` }),
+    importing: run({
+      tools: `${TOOLS}${toolsRule("E2999")}`,
+      extra: {
+        "src/ByName.ts": `import "${NAME}"\nexport const byName = 1\n`,
+        "test/ByPath.test.ts": "import { a } from ../src/A.ts\nexport const byPath = a\n",
+      },
+    }),
+    app: runApp(),
     missing: run({ tools: TOOLS, target: "./dist/tools.js" }),
   };
 }, SLOW);
@@ -106,8 +144,21 @@ describe("an own folder imports its own ./tools", () => {
     expect(paths("noTools", "E1108").sort()).toEqual(["src/A.ts", "src/B.ts"]);
   });
 
-  it("a rule `E2999` its `./tools` registers reports there", () => {
-    expect(paths("rule", "E2999").length).toBeGreaterThan(0);
+  it("a rule `E2999` its `./tools` registers reports nothing there", () => {
+    expect(paths("rule", "E2999")).toEqual([]);
+  });
+
+  it("a rule `E2999` its `./tools` registers reports nothing in a file importing `@keel/std-ownfix`", () => {
+    expect(paths("importing", "E2999")).not.toContain("src/ByName.ts");
+    expect(paths("importing", "E2999")).toEqual([]);
+  });
+
+  it("a rule `E2999` its `./tools` registers reports nothing in a file importing `../src/A.ts`", () => {
+    expect(paths("importing", "E2999")).not.toContain("test/ByPath.test.ts");
+  });
+
+  it("a rule `E2999` its `./tools` registers reports in an app listing it", () => {
+    expect(paths("app", "E2999")).toContain("modules/shop/module.ts");
   });
 
   it("with no rule registered, no E2999 reports", () => {
