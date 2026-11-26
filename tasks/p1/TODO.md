@@ -108,6 +108,7 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `next` a second colour scheme (dark mode): decided inside the look RFC, since it is a question about tokens; no line held it before
 - [ ] `next` measured claims for the pitch: an agent builds the same app in Keel and in the comparison frameworks (W16), and a runtime and bundle size comparison produced by CI (none is planned elsewhere); until both exist the site claims neither
 - [ ] `next` the repository's own numbers agree: the README says 603 clauses and 35 packages against the ledger's 1,479 and 41; the handoff says 78 of 79 kernel sections conformance-covered where the spec status lines read 73 of 83; the `unsafe` count is 33 in the ledger; whether golden-2 already runs on the Postgres battery (its README says so, W14 says next); the two database variables (`KEEL_DATABASE_URL`, `KEEL_POSTGRES_URL`) explained in one place. Counts are generated, not typed, wherever a doc states one
+- [ ] `next` colour forms a designer expects: k.values allows `#rgb` and `#rrggbb` only; widen to every opaque form contrast can judge exactly (`rgb()`, `hsl()`, `oklch()`), and decide what a colour with alpha is (an overlay token whose backdrop is stated, so contrast is still judged)
 - [ ] `human` another product ships a global `keel` binary: the bin name before npm
 
 ### W12 Release
