@@ -1,7 +1,6 @@
 import path from "node:path";
 
-/** A library the app reads (k.library In an app): its package name and the real path of its folder. */
-export type HeldLibrary = { readonly name: string; readonly dir: string };
+import type { HeldLibrary } from "./HeldLibrary.ts";
 
 /** The library among `libraries` whose real folder holds `file`, or undefined. */
 export function libraryOf(libraries: readonly HeldLibrary[], file: string): HeldLibrary | undefined {

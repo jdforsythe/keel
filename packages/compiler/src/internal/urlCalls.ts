@@ -1,12 +1,6 @@
 import type { Expression, NewExpression } from "oxc-parser";
 import { Visitor, parseSync } from "oxc-parser";
-
-/** One `new URL(<first>, import.meta.url)` call: its first argument, the literal text it holds, and its offsets. */
-export type UrlCall = {
-  readonly first: Expression | undefined;
-  /** The text of a string literal or of a template literal without an expression; undefined for any other form. */
-  readonly name: string | undefined;
-};
+import type { UrlCall } from "./UrlCall.ts";
 
 /** Whether `e` is `import.meta.url`. */
 function isMetaUrl(e: Expression | undefined): boolean {

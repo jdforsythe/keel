@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { HeldLibrary } from "./libraryOf.ts";
+import type { HeldLibrary } from "./HeldLibrary.ts";
 
 /**
  * The folder of the package a bundled package file belongs to (k.server-deps): a library's real folder, else the

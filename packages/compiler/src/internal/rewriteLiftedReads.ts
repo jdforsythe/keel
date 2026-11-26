@@ -1,5 +1,6 @@
 import path from "node:path";
-import { type HeldLibrary, libraryOf } from "./libraryOf.ts";
+import type { HeldLibrary } from "./HeldLibrary.ts";
+import { libraryOf } from "./libraryOf.ts";
 import { liftedRead } from "./liftedRead.ts";
 import { packageFolder } from "./packageFolder.ts";
 import { urlCalls } from "./urlCalls.ts";
