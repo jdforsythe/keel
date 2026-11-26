@@ -274,7 +274,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
   it(
     "an export of `apps/a/modules/m/f.ts` referenced only by `test/shop.e2e.ts` is `example` with `e2e.json` holding the file at its `sha` and `passed`, `none` with no `e2e.json` and one W1733 at `apps/a/reports/tests/`",
     () => {
-      // ASSUMED: an app's export item is `<path from the folder>#<name>` as a package's is, and its `modules/` files are read.
+      // An app's export item is `<folder name>:<path under modules/>#<name>` (`a:m/f.ts#f`), and its `modules/` files are read.
       const test = [
         'import { expect, it } from "vitest";',
         'import { f } from "../modules/m/f.ts";',
@@ -289,7 +289,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
         "apps/a/modules/m/f.ts": src,
         "apps/a/test/shop.e2e.ts": test,
       };
-      const rung = (run: Run): unknown => run.records.find((r) => r.item === "apps/a/modules/m/f.ts#f")?.rung;
+      const rung = (run: Run): unknown => run.records.find((r) => r.item === "a:m/f.ts#f")?.rung;
       const withReport = ledgerAsIs(
         project("items-run-e2e", {
           ...base,

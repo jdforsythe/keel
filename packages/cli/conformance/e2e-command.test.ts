@@ -3,7 +3,7 @@
 // Spec: k.e2e, clause "`keel test --e2e` in a project with no e2e file prints `ok test 0 tests` and leaves `dist/` as it was."
 // Spec: k.e2e, clause "A test calling `renderRoute` in `test/b.e2e.ts` fails with E1736, and `serve()` in `test/a.test.ts` under `keel test` rejects E1736."
 // Spec: k.e2e, clause "`keel test --e2e` writes `reports/tests/e2e.json` and leaves `reports/tests/run.json`; a later `keel test` writes `run.json` and leaves `e2e.json`."
-// Spec: k.e2e, clause "An `it` calling `serve` and declaring no timeout has 60 s, and 6 s with `KEEL_TEST_TIME_SCALE=0.1`."
+// Spec: k.e2e, clause "An `it` calling `serve` and declaring no timeout has 60 s, and 60 s with `KEEL_TEST_TIME_SCALE=0.1`."
 // k.e2e Rules E1734 (the browser is missing), E1736 (a harness call in an e2e file: `render`, `renderRoute`, `resumeDocument`, `simulate`; `@keel/testing/e2e` called when `KEEL_E2E` is not `1`) and E1701 holding in an e2e file
 // (k.e2e Files) are asserted by the cases after the clauses. E1737 and the `page` form of E1736 are asserted in packages/testing/conformance/e2e-serve.test.ts.
 // Seed: n/a (no generated input: the numbers are the clauses' own). Method: the real `keel` binary over temp projects (static-support.ts's `staticTree`, `@keel/*` linked as compat-support.ts does) in compact or json format.
@@ -13,7 +13,16 @@
 import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
@@ -36,12 +45,30 @@ function playwrightCore(): string | undefined {
   return found === undefined ? undefined : join(store, found, "node_modules", "playwright-core");
 }
 
+/** The workspace's `@types/node` (under pnpm's store): a fixture project links it, as its build (E1751) resolves Node's types from it. */
+function typesNode(): string | undefined {
+  const hoisted = join(REPO, "node_modules", "@types", "node");
+  if (existsSync(hoisted)) return hoisted;
+  const store = join(REPO, "node_modules", ".pnpm");
+  const found = existsSync(store)
+    ? readdirSync(store)
+        .filter((n) => n.startsWith("@types+node@"))
+        .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0]
+    : undefined;
+  return found === undefined ? undefined : join(store, found, "node_modules", "@types", "node");
+}
+
 /** A built-app fixture project (`staticTree`) plus `files`, `playwright-core` linked unless `playwright` is false. */
 function project(files: Record<string, string>, playwright = true): string {
   const dir = materialize({ ...staticTree(), ...files });
   made.push(dir);
   const pw = playwrightCore();
   if (playwright && pw !== undefined) symlinkSync(pw, join(dir, "node_modules", "playwright-core"));
+  const types = typesNode();
+  if (types !== undefined) {
+    mkdirSync(join(dir, "node_modules", "@types"), { recursive: true });
+    symlinkSync(types, join(dir, "node_modules", "@types", "node"));
+  }
   return dir;
 }
 
@@ -223,15 +250,15 @@ describe("k.e2e: the command", () => {
   );
 
   it(
-    "An `it` calling `serve` and declaring no timeout has 60 s, and 6 s with `KEEL_TEST_TIME_SCALE=0.1`",
+    "An `it` calling `serve` and declaring no timeout has 60 s, and 60 s with `KEEL_TEST_TIME_SCALE=0.1`",
     () => {
       const body =
         'import { writeFileSync } from "node:fs";\nimport { it } from "vitest";\nimport { serve } from "@keel/testing/e2e";\nit("serves", async ({ task }) => {\n  await serve();\n  writeFileSync("timeout.txt", String(task.timeout));\n});\n';
       const dir = project({ "test/t.e2e.ts": body });
-      // the clause's numbers are at scale 1 and 0.1 whatever scale this run has: each child sets its own
+      // the clause's numbers are at scale 1 and 0.1 whatever scale this run has: each child sets its own; a default is fixed time, so 60 s at both
       for (const [scale, ms] of [
         ["1", "60000"],
-        ["0.1", "6000"],
+        ["0.1", "60000"],
       ] as const) {
         rmSync(join(dir, "timeout.txt"), { force: true });
         const out = run(dir, ["test", "--e2e"], "json", { KEEL_TEST_TIME_SCALE: scale });
