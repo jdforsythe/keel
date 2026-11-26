@@ -1,5 +1,6 @@
 import type { BaseRole } from "./BaseRole.ts";
 import type { ColorValue } from "./ColorValue.ts";
+import type { Scheme } from "./Scheme.ts";
 import type { StyleSet } from "./StyleSet.ts";
 
 type Scale = Readonly<Record<string, string>>;
@@ -22,4 +23,6 @@ export type Tokens = {
   readonly base?: { readonly [R in BaseRole]?: StyleSet } & { readonly focus?: string };
   /** Named style sets an element takes as `look="<name>"`. */
   readonly look?: Readonly<Record<string, StyleSet>>;
+  /** The app's color schemes (k.schemes): `["light"]`, `["dark"]` or `["light", "dark"]`. */
+  readonly schemes?: readonly Scheme[];
 };

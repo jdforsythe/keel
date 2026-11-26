@@ -15,7 +15,22 @@ import { renderChildren } from "../internal/renderChildren.ts";
 import type { PartProps } from "./PartProps.ts";
 import type { PartRole } from "./PartRole.ts";
 
-type Tag = "ul" | "li" | "input" | "button" | "div" | "dialog" | "nav" | "table" | "tbody" | "tr" | "th" | "td";
+type Tag =
+  | "ul"
+  | "li"
+  | "input"
+  | "button"
+  | "div"
+  | "dialog"
+  | "nav"
+  | "table"
+  | "tbody"
+  | "tr"
+  | "th"
+  | "td"
+  | "meter"
+  | "progress"
+  | "section";
 
 const TAGS: Readonly<Record<PartRole, Tag>> = {
   listbox: "ul",
@@ -49,6 +64,13 @@ const TAGS: Readonly<Record<PartRole, Tag>> = {
   slider: "input",
   radiogroup: "div",
   radio: "input",
+  switch: "button",
+  toolbar: "div",
+  menubar: "ul",
+  menuitemradio: "li",
+  meter: "meter",
+  progressbar: "progress",
+  region: "section",
 };
 /** The `type` of each role rendered as an `input`. */
 const INPUT_TYPES: Readonly<Partial<Record<PartRole, string>>> = {
@@ -59,16 +81,18 @@ const INPUT_TYPES: Readonly<Partial<Record<PartRole, string>>> = {
 };
 /** Roles their tag already has, so no `role` attribute is written. */
 const IMPLICIT =
-  "button checkbox dialog generic navigation table rowgroup row columnheader rowheader cell slider radio".split(" ");
+  "button checkbox dialog generic navigation table rowgroup row columnheader rowheader cell slider radio meter progressbar region".split(
+    " ",
+  );
 /** Props written as `aria-<lower-cased name>`. */
 const ARIA =
-  "label labelledBy describedBy controls activeDescendant orientation multiselectable selected expanded hasPopup rowCount colCount rowIndex sort readOnly current level setSize posInSet valueText required".split(
+  "label labelledBy describedBy controls activeDescendant orientation multiselectable selected expanded hasPopup rowCount colCount rowIndex sort readOnly current level setSize posInSet valueText required pressed".split(
     " ",
   );
 /** Props of the native controls and of `columnheader` written as the HTML attribute of the same lower-cased name. */
-const HTML = "min max step name abbr".split(" ");
+const HTML = "min max step name abbr low high optimum".split(" ");
 /** Roles that keep focus where it is on `mousedown`. */
-const KEEP_FOCUS = "option menuitem menuitemcheckbox".split(" ");
+const KEEP_FOCUS = "option menuitem menuitemcheckbox menuitemradio".split(" ");
 const FOCUSABLE = 'button,input,select,textarea,a[href],[tabindex="0"]';
 
 const read = (v: unknown): unknown => (isReadable(v) ? v.get() : v);
@@ -125,6 +149,7 @@ export function Part(props: PartProps): Node {
       if (role === "checkbox") prop(el, "indeterminate", () => read(c) === "mixed");
     } else put(el, p, "checked", "aria-checked", ariaText);
     if (role === "slider" || role === "radio") controlValue(el, p);
+    if (role === "meter" || role === "progressbar") put(el, p, "value", "value", plain);
     if (role === "slider") {
       const input = props.onInput;
       listen(el, "input", input && (() => input(Number(Reflect.get(el, "value")))));
