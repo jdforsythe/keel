@@ -110,9 +110,10 @@ const needsOf = (job) => (job.needs === undefined ? [] : Array.isArray(job.needs
 
 /**
  * The gate's plan: every job of the source in an order that keeps `needs` (source order among equals), each with
- * `run` or `skip` and why. `unknown` lists jobs the table does not name.
+ * `run` or `skip` and why. `unknown` lists jobs the table does not name. With `opts.slow` the slow-machine job
+ * follows them all: `{ skip: true }` is the operator's explicit skip, recorded as `explicit`.
  * @param {{ jobs: Record<string, { needs?: string | string[] }> }} source
- * @param {{ with?: Set<string>, only?: Set<string>, table?: Record<string, object> }} opts
+ * @param {{ with?: Set<string>, only?: Set<string>, table?: Record<string, object>, slow?: { skip: boolean } }} opts
  */
 export function planJobs(source, opts = {}) {
   const table = opts.table ?? JOBS;
@@ -138,7 +139,136 @@ export function planJobs(source, opts = {}) {
       return { name, decision: "skip", reason: "not in --only", rule };
     return { name, decision: "run", rule };
   });
+  if (opts.slow !== undefined) jobs.push(slowDecision(opts.slow.skip, opts.only));
   return { jobs, unknown };
+}
+
+/** The slow-machine job: the test shards in a Linux container with constrained CPUs, after every fast job. */
+export const SLOW_JOB = "slow-shards";
+
+/** Defaults of the slow-machine job: CI's hosted runner has 2 cores and 7.7 GB (4 cores, 16 GB for a public repository). */
+export const SLOW = {
+  cpus: 2,
+  memory: "7700m",
+  volume: "keel-gate-pnpm-store",
+  workdir: "/work",
+  /** Milliseconds each docker command may take before the job fails naming it. */
+  limits: { short: 120_000, pull: 600_000, copy: 900_000 },
+};
+
+function slowDecision(skip, only) {
+  const rule = { slow: true, requires: "docker" };
+  if (skip) return { name: SLOW_JOB, decision: "skip", explicit: true, reason: "skipped by --skip-slow", rule };
+  if (only !== undefined && !only.has(SLOW_JOB))
+    return { name: SLOW_JOB, decision: "skip", reason: "not in --only", rule };
+  return { name: SLOW_JOB, decision: "run", rule };
+}
+
+/** The container's name: `keel-gate-slow-<sha>`. */
+export const slowContainer = (short) => `keel-gate-slow-${short}`;
+
+/**
+ * `docker run` arguments for the long-lived container the shards run in. The tree goes in with `docker cp`; the only
+ * mount is the named volume that caches pnpm's store.
+ */
+export function slowRunArgs({ name, image, cpus = SLOW.cpus, memory = SLOW.memory, volume = SLOW.volume }) {
+  return [
+    "run",
+    "-d",
+    "--name",
+    name,
+    "--cpus",
+    String(cpus),
+    "--memory",
+    memory,
+    "--memory-swap",
+    memory,
+    "-v",
+    `${volume}:/pnpm-store`,
+    "-w",
+    SLOW.workdir,
+    image,
+    "sleep",
+    "infinity",
+  ];
+}
+
+/** Host paths a `docker run` argument list mounts: `-v`/`--volume`/`--mount` with a source that is not a named volume. */
+export function bindMounts(args) {
+  const out = [];
+  for (const [i, a] of args.entries()) {
+    const v = a.startsWith("--volume=") || a.startsWith("--mount=") ? a.split("=").slice(1).join("=") : args[i + 1];
+    if (a === "-v" || a === "--volume" || a.startsWith("--volume=")) {
+      const src = String(v).split(":")[0];
+      if (/^[/.~]/.test(src)) out.push(src);
+    } else if (a === "--mount" || a.startsWith("--mount=")) {
+      if (/type=bind/.test(String(v))) out.push(String(v));
+    }
+  }
+  return out;
+}
+
+/**
+ * What the container runs, from the CI source's `test-shard` job: `prepare` is the install (once) and `steps` the
+ * other `run` steps of a shard (the shard command and the report archive), each with its `${{ }}` answered.
+ * The actions of the job (checkout, setup, cache, artifacts) are the container's own setup.
+ */
+export function slowSteps(source, shard) {
+  const runs = expandSteps(source, "test-shard").filter((s) => typeof s === "object" && s.run !== undefined);
+  const ctx = { matrix: { shard }, workspace: SLOW.workdir, runnerOs: "Linux", runnerArch: "X64" };
+  const answer = (s) => ({ name: stepName(s), run: expr(s.run, ctx), env: exprEnv(s.env, ctx) });
+  const install = runs.filter((s) => /^pnpm install\b/.test(s.run));
+  return { install: install.map(answer), steps: runs.filter((s) => !install.includes(s)).map(answer) };
+}
+
+/** The shard numbers of the source's `test-shard` matrix. */
+export const slowShards = (source) => (source.jobs["test-shard"].strategy?.matrix?.shard ?? []).map(Number);
+
+/** The environment of every command in the container: CI's, the source's and the job's, no time scale but 1. */
+export function slowEnv(source, store = "/pnpm-store") {
+  return {
+    CI: "true",
+    GITHUB_ACTIONS: "true",
+    KEEL_TEST_TIME_SCALE: "1",
+    npm_config_store_dir: store,
+    COREPACK_HOME: `${store}/corepack`,
+    COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
+    RUNNER_TEMP: "/tmp/runner-temp",
+    ...exprEnv(source.env, {}),
+    ...exprEnv(source.jobs["test-shard"].env, {}),
+  };
+}
+
+/** `docker exec` arguments running `script` with bash as a runner does, with `env`. */
+export function slowExecArgs(name, env, script) {
+  return [
+    "exec",
+    ...Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]),
+    name,
+    "bash",
+    "--noprofile",
+    "--norc",
+    "-eo",
+    "pipefail",
+    "-c",
+    script,
+  ];
+}
+
+/** What a bounded docker command failed with, naming the command, or undefined when it succeeded. */
+export function dockerProblem(args, result, ms) {
+  const named = `docker ${args
+    .filter((a) => !a.startsWith("-"))
+    .slice(0, 2)
+    .join(" ")}`;
+  if (result.error?.code === "ETIMEDOUT" || (result.status === null && result.signal !== null))
+    return `${named} hung: no answer in ${Math.round(ms / 1000)}s`;
+  if (result.error !== undefined) return `${named} did not start: ${result.error.message}`;
+  if (result.status !== 0)
+    return `${named} failed (exit ${result.status}): ${String(result.stderr ?? "")
+      .trim()
+      .slice(-300)}`;
+  return undefined;
 }
 
 /** The `--with` names that are not a flag-runnable job of the table. */

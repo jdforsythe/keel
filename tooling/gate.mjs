@@ -4,6 +4,7 @@
 // tooling/gate-plan.mjs; docs/GATE.md says what runs, what is skipped and why.
 // Usage: node tooling/gate.mjs [<rev>] [--scale <n>] [--with <job,...>] [--allow-skip <job,...>] [--only <job,...>]
 //          [--fail-fast] [--quiet] [--max-load <n>] [--load-wait <minutes>] [--worktree <path>]
+//          [--skip-slow] [--slow-cpus <n>] [--slow-memory <size>]
 //        node tooling/gate.mjs --status [<rev>]
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -25,8 +26,18 @@ import {
   keepNodeModules,
   matchesPattern,
   planJobs,
+  SLOW,
+  SLOW_JOB,
+  bindMounts,
+  dockerProblem,
   resultPath,
   runsAfterFailure,
+  slowContainer,
+  slowEnv,
+  slowExecArgs,
+  slowRunArgs,
+  slowShards,
+  slowSteps,
   stepName,
   verdict,
   versionCheck,
@@ -41,7 +52,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- arguments ----
 const argv = process.argv.slice(2);
-const VALUE = new Set(["scale", "with", "allow-skip", "only", "max-load", "load-wait", "worktree", "format"]);
+const VALUE = new Set([
+  "scale",
+  "with",
+  "allow-skip",
+  "only",
+  "max-load",
+  "load-wait",
+  "worktree",
+  "format",
+  "slow-cpus",
+  "slow-memory",
+]);
 const flags = new Set();
 const values = new Map();
 const positional = [];
@@ -52,7 +74,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (VALUE.has(a.slice(2)) && argv[i + 1] !== undefined) values.set(a.slice(2), argv[++i]);
   else flags.add(a.slice(2));
 }
-const FLAGS = new Set(["status", "fail-fast", "quiet"]);
+const FLAGS = new Set(["status", "fail-fast", "quiet", "skip-slow"]);
 const unknownFlags = [...flags].filter((f) => !FLAGS.has(f)).concat([...values.keys()].filter((k) => !VALUE.has(k)));
 if (unknownFlags.length > 0) {
   fs.writeSync(1, `fail gate unknown flag --${unknownFlags.join(", --")}\n`);
@@ -90,6 +112,10 @@ if (flags.has("status")) {
   const r = JSON.parse(fs.readFileSync(file, "utf8"));
   if (r.partial === true) fail(`fail gate-status ${short} partial gate (${r.partialReason}): ${r.line}`);
   if (r.ok !== true) fail(`fail gate-status ${short} gated and failed: ${r.line}`);
+  if (r.slowSkipped === true)
+    fail(`fail gate-status ${short} not a whole pass: ${SLOW_JOB} skipped (--skip-slow): ${r.line}`);
+  if (!(r.jobs ?? []).some((j) => j.name === SLOW_JOB && j.status === "ok"))
+    fail(`fail gate-status ${short} not a whole pass: ${SLOW_JOB} did not run: ${r.line}`);
   say(`ok gate-status ${short} gated ${r.finished}: ${r.line}`);
   process.exit(0);
 }
@@ -100,6 +126,10 @@ const only = values.has("only") ? list("only") : undefined;
 const scale = values.get("scale") ?? "0.1";
 const maxLoad = Number(values.get("max-load") ?? 30);
 const loadWaitMs = Number(values.get("load-wait") ?? 20) * 60_000;
+const slowCpus = Number(values.get("slow-cpus") ?? SLOW.cpus);
+const slowMemory = values.get("slow-memory") ?? SLOW.memory;
+if (!(slowCpus > 0)) fail(`fail gate --slow-cpus ${values.get("slow-cpus")} is not a positive number`);
+if (!/^\d+[bkmg]$/i.test(slowMemory)) fail(`fail gate --slow-memory ${slowMemory} is not a size such as 7700m`);
 if (!(Number(scale) > 0)) fail(`fail gate --scale ${scale} is not a positive number`);
 const bad = badWith(withJobs);
 if (bad.length > 0) fail(`fail gate --with ${bad.join(",")}: not a job the gate runs behind a flag`);
@@ -487,6 +517,136 @@ async function runStep(step, { env, ctx, log, deadline }) {
   throw new Error(`unknown action ${step.uses}: decide in tooling/gate-plan.mjs`);
 }
 
+// ---- the slow-machine job: the test shards in a Linux container with constrained CPUs ----
+const shq = (a) => `'${a.replaceAll("'", "'\\''")}'`;
+
+/** A docker command bounded by `ms`; a failure or a hang throws a message that names the command. */
+function dockerBounded(args, ms) {
+  const r = docker(args, { timeout: ms, killSignal: "SIGKILL", maxBuffer: 64 * 2 ** 20 });
+  const problem = dockerProblem(args, r, ms);
+  if (problem !== undefined) throw new Error(problem);
+  return r.stdout;
+}
+
+/** Runs every shard of the source's `test-shard` job in one `node:<major>` container from a clean clone of the commit. */
+async function runSlow() {
+  const major = nodeMajor(source) ?? "22";
+  const image = `node:${major}`;
+  const name = slowContainer(short);
+  const note = `${slowCpus} cpus, ${slowMemory}`;
+  const dir = path.join(out, "slow-shards");
+  fs.mkdirSync(dir, { recursive: true });
+  const clone = path.join(dir, "tree");
+  const env = slowEnv(source);
+  const shards = slowShards(source);
+  const make = (label, extra = {}) => ({
+    label,
+    name: SLOW_JOB,
+    status: "ok",
+    steps: [],
+    seconds: 0,
+    load: 0,
+    note,
+    ...extra,
+  });
+  const prep = make(SLOW_JOB);
+  const results = [];
+  const t = performance.now();
+  const exec = async (record, label, script, stepEnv, deadline, index) => {
+    const log = path.join(dir, `${String(index).padStart(2, "0")}-${slug(label)}.log`);
+    const s0 = performance.now();
+    const load = await waitForLoad();
+    const args = slowExecArgs(name, { ...env, ...stepEnv }, script);
+    const r = await runScript(`exec docker ${args.map(shq).join(" ")}`, {
+      cwd: rootDir,
+      env: baseEnv(),
+      log,
+      deadline,
+    });
+    const lines = r.code === 0 && fs.existsSync(log) ? failLines(fs.readFileSync(log, "utf8")) : [];
+    const status = r.code === 0 && !r.timedOut && lines.length === 0 ? "ok" : "fail";
+    const entry = { name: label, status, seconds: (performance.now() - s0) / 1000, log, load, exit: r.code };
+    if (r.timedOut) entry.timedOut = true;
+    if (status === "fail" && fs.existsSync(log)) entry.failLines = failLines(fs.readFileSync(log, "utf8"));
+    record.steps.push(entry);
+    record.load = Math.max(record.load, load);
+    if (status === "fail") record.status = "fail";
+    return status === "ok";
+  };
+  try {
+    const have =
+      spawnSync("docker", ["image", "inspect", image], { stdio: "ignore", timeout: SLOW.limits.short }).status === 0;
+    if (!have) dockerBounded(["pull", "-q", image], SLOW.limits.pull);
+    // The tree: a clean clone under the gate's own folder, copied in; nothing under the checkouts is mounted.
+    fs.rmSync(clone, { recursive: true, force: true });
+    for (const args of [
+      ["clone", "-q", "--no-local", common, clone],
+      ["-C", clone, "checkout", "-q", "--detach", sha],
+    ]) {
+      const r = spawnSync("git", args, { encoding: "utf8", timeout: 600_000 });
+      if (r.status !== 0)
+        throw new Error(
+          `git ${args.includes("checkout") ? "checkout" : "clone"} of the clean clone failed: ${r.stderr.trim()}`,
+        );
+    }
+    containers.add(name);
+    docker(["rm", "-f", "-v", name]);
+    const runArgs = slowRunArgs({ name, image, cpus: slowCpus, memory: slowMemory });
+    const mounts = bindMounts(runArgs);
+    if (mounts.length > 0) throw new Error(`the slow container would bind-mount ${mounts.join(", ")}`);
+    dockerBounded(runArgs, SLOW.limits.short);
+    dockerBounded(["exec", name, "mkdir", "-p", SLOW.workdir], SLOW.limits.short);
+    dockerBounded(["cp", `${clone}${path.sep}.`, `${name}:${SLOW.workdir}`], SLOW.limits.copy);
+    fs.rmSync(clone, { recursive: true, force: true });
+    const deadline = Date.now() + (source.jobs["test-shard"]["timeout-minutes"] ?? 35) * 60_000;
+    const first = slowSteps(source, shards[0] ?? 1);
+    let i = 1;
+    let ok = await exec(prep, "corepack", "corepack enable && pnpm --version", {}, Date.now() + 600_000, i++);
+    for (const step of first.install)
+      ok = ok && (await exec(prep, step.name, step.run, step.env, Date.now() + 1_800_000, i++));
+    // The builds CI's check job leaves in the turbo cache, outside the shards' times.
+    ok = ok && (await exec(prep, "pnpm build", "pnpm build", {}, Date.now() + 3_600_000, i++));
+    prep.seconds = (performance.now() - t) / 1000;
+    results.push(prep);
+    for (const shard of shards) {
+      const rec = make(`${SLOW_JOB} ${shard}`);
+      if (!ok) {
+        rec.status = "not-run";
+        rec.reason = "the container's setup failed";
+        results.push(rec);
+        continue;
+      }
+      const s0 = performance.now();
+      const { steps } = slowSteps(source, shard);
+      let good = true;
+      for (const step of steps) {
+        if (!good) break;
+        good = await exec(rec, step.name, step.run, step.env, Date.now() + (deadline - Date.now()), i++);
+      }
+      rec.seconds = (performance.now() - s0) / 1000;
+      results.push(rec);
+      if (!good) {
+        // A step cut off at its time may still run in the container; later shards would share its CPUs.
+        const rest = shards.slice(shards.indexOf(shard) + 1);
+        if (rec.steps.some((st) => st.timedOut)) {
+          for (const n of rest)
+            results.push(make(`${SLOW_JOB} ${n}`, { status: "not-run", reason: "after a shard timed out" }));
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    prep.status = "fail";
+    prep.reason = e instanceof Error ? e.message : String(e);
+    prep.seconds = (performance.now() - t) / 1000;
+    if (!results.includes(prep)) results.unshift(prep);
+  } finally {
+    docker(["rm", "-f", "-v", name]);
+    fs.rmSync(clone, { recursive: true, force: true });
+  }
+  return results;
+}
+
 // ---- the run ----
 let interrupted = false;
 const records = [];
@@ -501,10 +661,12 @@ async function finish(extra = []) {
   const scaleText = scaled ? `scale ${scale}` : "no time scale on this commit";
   const tools = records.tools ?? "";
   const first = v.first ?? problems[0] ?? (interrupted ? "interrupted" : "");
+  const slowSkipped = records.some((r) => r.name === SLOW_JOB && r.explicit === true);
+  const slowText = slowSkipped ? `, ${SLOW_JOB} skipped (--skip-slow)` : "";
   const partial = only !== undefined ? `, partial (--only ${[...only].join(",")})` : "";
   const counts = ok
-    ? `${ran} jobs, ${skipped} skipped, ${scaleText}${tools}${partial}`
-    : `${v.failed} failed of ${ran + records.filter((r) => r.status === "not-run").length}, ${skipped} skipped, ${scaleText}${tools}${partial} first: ${first}`;
+    ? `${ran} jobs, ${skipped} skipped, ${scaleText}${tools}${partial}${slowText}`
+    : `${v.failed} failed of ${ran + records.filter((r) => r.status === "not-run").length}, ${skipped} skipped, ${scaleText}${tools}${partial}${slowText} first: ${first}`;
   const line = `${ok ? "ok" : "fail"} gate ${short} ${counts} (${secs(performance.now() - t0)})`;
   for (const p of problems) say(`fail gate ${p}`);
   say(line);
@@ -512,6 +674,7 @@ async function finish(extra = []) {
     sha,
     ok,
     line,
+    slowSkipped,
     partial: only !== undefined,
     partialReason: only !== undefined ? `--only ${[...only].join(",")}` : undefined,
     scale: scaled ? Number(scale) : null,
@@ -535,7 +698,7 @@ function jobLine(r) {
   if (r.status === "skip") return `skip ${r.label}: ${r.reason}`;
   if (r.status === "not-run")
     return `not-run ${r.label}: ${r.reason}${allowSkip.has(r.name) ? " (allowed)" : ` (--allow-skip ${r.name})`}`;
-  const load = r.load > 0 ? `, load ${r.load}` : "";
+  const load = `${r.note === undefined ? "" : `, ${r.note}`}${r.load > 0 ? `, load ${r.load}` : ""}`;
   if (r.status === "ok") return `ok ${r.label} ${r.seconds.toFixed(1)}s${load}`;
   const step = r.steps.find((s) => s.status === "fail");
   const lines = [`fail ${r.label} ${r.seconds.toFixed(1)}s${load}: ${step?.name ?? r.reason ?? "failed"}`];
@@ -555,7 +718,7 @@ for (const signal of ["SIGINT", "SIGTERM"])
   });
 
 try {
-  const plan = planJobs(source, { with: withJobs, only });
+  const plan = planJobs(source, { with: withJobs, only, slow: { skip: flags.has("skip-slow") } });
   if (plan.unknown.length > 0) {
     for (const u of plan.unknown) say(`E0013 tooling/ci.source.json unknown job: decide (${u})`);
     await finish([`unknown job ${plan.unknown.join(", ")}: name it in the JOBS table of tooling/gate-plan.mjs`]);
@@ -587,7 +750,13 @@ try {
   for (const p of plan.jobs) {
     const job = source.jobs[p.name];
     if (p.decision === "skip") {
-      const r = { label: p.name, name: p.name, status: "skip", reason: p.reason };
+      const r = {
+        label: p.name,
+        name: p.name,
+        status: "skip",
+        reason: p.reason,
+        ...(p.explicit === true ? { explicit: true } : {}),
+      };
       records.push(r);
       needs[p.name] = "skipped";
       sayJob(r);
@@ -607,6 +776,13 @@ try {
       records.push(r);
       needs[p.name] = "skipped";
       sayJob(r);
+      continue;
+    }
+    if (p.name === SLOW_JOB) {
+      for (const r of await runSlow()) {
+        records.push(r);
+        sayJob(r);
+      }
       continue;
     }
     let all = true;
