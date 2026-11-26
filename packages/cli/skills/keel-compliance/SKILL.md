@@ -5,7 +5,7 @@ description: "Keel personal data and compliance: .pii(class), clientPii, s.secre
 
 # Personal data, secrets, policy, evidence
 
-Exact rules: `keel docs k.privacy`, `k.reveal`, `k.leave`, `k.security`, `k.evidence`, `k.user`, `std.sessions`, `std.tokens`. `keel explain <code>` explains a code.
+Exact rules: `keel docs security` lists them: `keel docs k.privacy`, `k.reveal`, `k.leave`, `k.security`, `k.evidence`, `k.user`, `std.sessions`, `std.tokens`. `keel explain <code>` explains a code.
 
 ## Mark data
 

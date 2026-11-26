@@ -8,7 +8,7 @@ What a subagent in a lane is told, so a fresh orchestrator can brief one without
 
 - Work only in the lane's worktree. Do not push. Do not merge into the main line unless the brief is an integrator's.
 - Never edit `packages/*/conformance/**`, except removing a skip marker in a commit prefixed `rfc:NNNN`. A case that disagrees with the spec is reported with file:line and the spec sentence; the `conformance-writer` subagent corrects it. A builder cannot spawn one: the orchestrator does.
-- The order for an RFC: spec text applied to `spec/` (so `pnpm spec <topic>` prints the clauses), then conformance by the `conformance-writer` from the spec text only, then the build.
+- The order for an RFC: spec text applied to `spec/` (so `pnpm spec <id>` prints the clauses), then conformance by the `conformance-writer` from the spec text only, then the build.
 - No `any`, casts, non-null assertions or `@ts-ignore` outside `unsafe/`. Docs, spec text and comments say what exists now. Person-facing text follows `docs/BRAND.md`.
 - One test command at a time, each bounded by a timeout; while `uptime` load is above 30, wait with a bounded polling loop. Stop every server, browser and container the lane starts; a docker container carries the lane's name. Never ports 8080, 5173, 5214. Port 5432 is taken on this machine. A container never bind-mounts a path under the main checkout or the home folders macOS guards (a mount there has hung Docker at `Created`): copy a clone in with `docker cp`, from a folder under `$TMPDIR`; bound every docker command with a timeout.
 - A package's suite is run from its own folder (`pnpm test`). An app's a11y evidence comes from `node ../../packages/cli/src/bin.ts test` in the app.

@@ -5,7 +5,7 @@ description: "Test and check Keel code: @keel/testing render, renderRoute (store
 
 # Testing and correctness
 
-Exact signatures: `keel docs k.testing`, `k.model`, `k.sim`, `k.prove`, `k.ledger`, `std.statecharts`; a code: `keel docs --for E1704`. Run with `keel test`.
+Exact signatures: `keel docs testing` lists them: `keel docs k.testing`, `k.model`, `k.sim`, `k.prove`, `k.ledger`, `std.statecharts`; a code: `keel docs --for E1704`. Run with `keel test`.
 
 ## Components and routes
 

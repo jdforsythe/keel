@@ -5,7 +5,7 @@ description: "Read first in a Keel app: app shape, one export per file, the rule
 
 # Building a Keel app
 
-**Reading path.** `keel docs <id>` prints a spec section (`keel docs k.router`); `keel docs --for <code>` a code's section; `keel explain <code>` its meaning and fix. A std section opens once its package is in `package.json` and installed (E1065). An API no section describes: stop, report `blocked: <what is missing>`. TS2688 or TS2875 in an E1751 means the kit's types did not resolve: report `blocked: kit types`; never edit `node_modules`.
+**Reading path.** `keel docs` lists areas, `keel docs <area>` an area's sections, `keel docs <id>` one (`k.router`), `keel docs --for <code, name or term>` finds them; `keel explain <code>` its fix. A std section opens once its package is installed (E1065). An API no section describes: stop, report `blocked: <what is missing>`. TS2688 or TS2875 in an E1751 means kit types did not resolve: report `blocked: kit types`; do not edit `node_modules`.
 
 **Shape.** App code lives in modules, `modules/<id>/`; `keel scaffold project` starts with module `app`, to build on or delete with its `topology.ts` entry. Each file has one export and is named after it (E1752); a component file may also export `Props` and `uses`.
 - `module.ts`: `export default module({ id, deps, capabilities, public: { exports } })` (`@keel/compiler`). Route ids, store ids, transaction names and error codes start with the module id (E1155).

@@ -4,11 +4,11 @@ Keel is pre-release. External contributions open at the public launch; until the
 
 ## How the repo is worked
 
-The repo is the memory. Read `docs/HANDOFF.md`, `docs/PRINCIPLES.md`, `docs/GLOSSARY.md` and `docs/ARCHITECTURE.md`, in that order. Retrieve spec and ADR sections with `pnpm spec <topic>` rather than reading `spec/` or `docs/adr/` whole. `docs/WORKFLOW.md` describes the loop: one task from `tasks/BACKLOG.md`, a spec section, conformance tests written from that section, then the implementation.
+The repo is the memory. Read `docs/HANDOFF.md`, `docs/PRINCIPLES.md`, `docs/GLOSSARY.md` and `docs/ARCHITECTURE.md`, in that order. Retrieve spec sections with `pnpm spec` (the areas), `pnpm spec <area>`, `pnpm spec <id>` and `pnpm spec --for <code, name or term>` rather than reading `spec/` or `docs/adr/` whole. `docs/WORKFLOW.md` describes the loop: one task from `tasks/BACKLOG.md`, a spec section, conformance tests written from that section, then the implementation.
 
 ## Commands
 
-`pnpm install` once, then `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec <topic>`. Each prints compact structured output (`docs/OUTPUT.md`); pass `--format=pretty` on a terminal. Run one test file at a time on a shared machine.
+`pnpm install` once, then `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec`. Each prints compact structured output (`docs/OUTPUT.md`); pass `--format=pretty` on a terminal. Run one test file at a time on a shared machine.
 
 ## Kernel changes go through an RFC
 
