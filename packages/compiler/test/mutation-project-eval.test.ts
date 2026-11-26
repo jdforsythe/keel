@@ -92,7 +92,7 @@ describe("evaluateProject (mutation)", () => {
       looks: {},
       schemes: ["light"],
       routes: {},
-      problems: ["E1807 token color.fg has a value that breaks out of CSS"],
+      problems: ["E1807 token color.fg is not in its group's form"],
     });
   });
 
