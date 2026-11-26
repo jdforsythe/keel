@@ -15,4 +15,4 @@ Uses the **schema type registry** (k.schema `s.register`). It registers four for
 
 ## Unsafe
 
-count: 0
+count: 1. `unsafe/notDuration.ts`: the `RangeError` std.temporal specifies for `durationOf` over a count that is no integer within 1e15, a throw in a library's code.

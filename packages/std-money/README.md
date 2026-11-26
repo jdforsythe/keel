@@ -15,4 +15,4 @@ Uses the **schema type registry** (k.schema `s.register`). It registers named co
 
 ## Unsafe
 
-count: 0
+count: 1. `unsafe/noDecimalForm.ts`: the throw for an `amount` with no exact decimal form (not a safe integer, or past 1e15), which only code that skipped the `Money` codec passes; a throw in a library's code.
