@@ -1,4 +1,4 @@
-// Spec: k.schemes, clause "With color tokens `fg` `{ light: '#111111', dark: '#eeeeee' }` and `bg` `{ light: '#ffffff', dark: '#111111' }` and no `schemes`, the CSS's `:root` block declares `color-scheme:light dark` and `--k-color-fg:#111111`, a `@media (prefers-color-scheme: dark)` block holds `:root:not([data-k-scheme=\"light\"])` declaring `--k-color-fg:#eeeeee`, and a `:root[data-k-scheme=\"dark\"]` rule declares `color-scheme:dark` and `--k-color-fg:#eeeeee`."
+// Spec: k.schemes, clause "With color tokens `fg` `{ light: '#111111', dark: '#eeeeee' }` and `bg` `{ light: '#ffffff', dark: '#111111' }` and no `schemes`, the CSS's `:root` block declares `color-scheme:light dark` and `--k-color-fg:#111111`, a `@media screen and (prefers-color-scheme: dark)` block holds `:root:not([data-k-scheme=\"light\"])` declaring `--k-color-fg:#eeeeee`, and a `@media screen` block holds a `:root[data-k-scheme=\"dark\"]` rule declaring `color-scheme:dark` and `--k-color-fg:#eeeeee`."
 // Spec: k.schemes, clause "With those tokens and `schemes: ['light']`, the CSS's `:root` declares `color-scheme:light` and `--k-color-fg:#111111` and the CSS holds no `prefers-color-scheme` and no `data-k-scheme`; with `schemes: ['dark']`, `:root` declares `color-scheme:dark` and `--k-color-fg:#eeeeee`."
 // Spec: k.schemes, clause "`schemes: ['light', 'light']`, `schemes: ['sepia']` and `schemes: []` are each one E1807."
 // Spec: k.schemes, clause "With `brandTokens` composing a library's color `acme.x` `{ light: '#111111', dark: '#eeeeee' }` (k.looks) and no `schemes`, the CSS holds no `prefers-color-scheme`."
@@ -25,24 +25,29 @@ describe("k.schemes: the compiled CSS opens with the scheme custom properties", 
     expect(root).toContain("color-scheme:light dark");
     expect(root).toContain("--k-color-fg:#111111");
     expect(root).not.toContain("#eeeeee");
-    const media = mediaBlocks(out, "prefers-color-scheme:dark");
+    const media = mediaBlocks(out, "screen and(prefers-color-scheme:dark)");
     expect(media).toHaveLength(1);
+    expect(norm(out)).toContain("@media screen and(prefers-color-scheme:dark){");
     const inMedia = ruleBody(media[0] ?? "", ':root:not([data-k-scheme="light"])') ?? "";
     expect(inMedia).toContain("--k-color-fg:#eeeeee");
-    const dark = ruleBody(withoutMedia(out), ':root[data-k-scheme="dark"]') ?? "";
+    const screen = mediaBlocks(out, "screen").filter((b) => b.includes(':root[data-k-scheme="dark"]'));
+    expect(screen.length).toBeGreaterThan(0);
+    const dark = ruleBody(screen.join(""), ':root[data-k-scheme="dark"]') ?? "";
     expect(dark).toContain("color-scheme:dark");
     expect(dark).toContain("--k-color-fg:#eeeeee");
+    expect(ruleBody(withoutMedia(out), ':root[data-k-scheme="dark"]')).toBeNull();
   });
 
-  test('both schemes: the media block is `@media (prefers-color-scheme: dark)` and `:root[data-k-scheme="light"]` declares `color-scheme:light` in a rule of its own, after the dark ones', () => {
+  test('both schemes: the media block is `@media screen and (prefers-color-scheme: dark)`, the attribute rule sits under `@media screen`, and `:root[data-k-scheme="light"]` declares `color-scheme:light` in a rule of its own, after the dark ones', () => {
     const out = norm(css({}));
     const light = ruleBody(withoutMedia(out), ':root[data-k-scheme="light"]') ?? "";
     expect(light).toContain("color-scheme:light");
     expect(light).not.toContain("--k-color");
-    expect(out.indexOf("@media(prefers-color-scheme:dark)")).toBeGreaterThanOrEqual(0);
+    expect(out.indexOf("@media screen and(prefers-color-scheme:dark)")).toBeGreaterThanOrEqual(0);
     expect(out.indexOf(':root[data-k-scheme="dark"]')).toBeGreaterThan(
-      out.indexOf("@media(prefers-color-scheme:dark)"),
+      out.indexOf("@media screen and(prefers-color-scheme:dark)"),
     );
+    expect(out.indexOf("@media screen{")).toBeLessThan(out.indexOf(':root[data-k-scheme="dark"]'));
   });
 
   test("whatever the two values of each pair, both schemes put every light value in `:root` and every dark value in the media block and in the dark attribute rule", () => {
@@ -55,7 +60,7 @@ describe("k.schemes: the compiled CSS opens with the scheme custom properties", 
         expect(root).toContain(`--k-color-fg:${a}`);
         expect(root).toContain(`--k-color-bg:${c}`);
         const media = mediaBlocks(out, "prefers-color-scheme:dark").join("");
-        const attr = ruleBody(withoutMedia(out), ':root[data-k-scheme="dark"]') ?? "";
+        const attr = ruleBody(mediaBlocks(out, "screen").join(""), ':root[data-k-scheme="dark"]') ?? "";
         for (const body of [media, attr]) {
           expect(body).toContain(`--k-color-fg:${b}`);
           expect(body).toContain(`--k-color-bg:${d}`);

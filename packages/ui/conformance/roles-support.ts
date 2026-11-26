@@ -34,3 +34,21 @@ const owner = scope(() => undefined);
 export const owned = <T>(make: () => T): T => owner.run(make);
 export const signal = <T>(v: T) => owned(() => reactive.signal(v));
 export const computed = <T>(fn: () => T) => owned(() => reactive.computed(fn));
+
+/** Records each string written to `document.cookie` and forwards it: happy-dom keeps a `Max-Age=0` cookie within the same millisecond, so an expired cookie is shown by what the product writes. */
+export function logCookieWrites(): { writes: string[]; stop: () => void } {
+  let owner: object | null = Object.getPrototypeOf(document);
+  while (owner !== null && Object.getOwnPropertyDescriptor(owner, "cookie") === undefined)
+    owner = Object.getPrototypeOf(owner);
+  const descriptor = owner === null ? undefined : Object.getOwnPropertyDescriptor(owner, "cookie");
+  const writes: string[] = [];
+  Object.defineProperty(document, "cookie", {
+    configurable: true,
+    get: () => descriptor?.get?.call(document) ?? "",
+    set: (v: string) => {
+      writes.push(v);
+      descriptor?.set?.call(document, v);
+    },
+  });
+  return { writes, stop: () => void Reflect.deleteProperty(document, "cookie") };
+}
