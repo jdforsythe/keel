@@ -9,7 +9,6 @@ import type { StyleName } from "../../types/StyleName.ts";
 import type { TestEvent } from "../../types/TestEvent.ts";
 import type { Wait } from "../../types/Wait.ts";
 import { fail } from "../fail.ts";
-import { isSelector } from "../isSelector.ts";
 import { violationError } from "../violationError.ts";
 import type { PageMatch } from "./PageApi.ts";
 import type { PageDeps } from "./PageDeps.ts";
@@ -205,7 +204,6 @@ export function makePage(state: TabState, deps: PageDeps, openTab: (path: string
       }),
     find: (id) => verb(() => shownNow("find", knownId(project, id), () => found(id), boundMs())),
     findAll: async (prefix) => {
-      if (isSelector(prefix)) knownId(project, prefix);
       await ensureScript(tab);
       return tab.evaluate((p) => globalThis.__keelE2e?.findAll(p) ?? [], prefix);
     },

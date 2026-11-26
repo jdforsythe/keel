@@ -103,7 +103,7 @@ function ruleIds(): string[] {
 }
 
 type Snapshot = {
-  readonly elements: readonly Element[];
+  readonly elements: readonly (readonly [Element, string])[];
   readonly focus: Element | null;
   readonly values: readonly (readonly [Element, string, number | null, number | null])[];
   readonly scroll: readonly [number, number];
@@ -189,7 +189,9 @@ const api: PageApi = {
   hold: () => {
     const controls = [...document.querySelectorAll("input, textarea, select")];
     snapshot = {
-      elements: [...document.querySelectorAll("[id]")],
+      elements: [...document.querySelectorAll("[id]")]
+        .filter(shown)
+        .map((el): readonly [Element, string] => [el, el.id]),
       focus: document.activeElement,
       values: controls.map((el): readonly [Element, string, number | null, number | null] => {
         const value = controlValue(el) ?? "";
@@ -210,8 +212,13 @@ const api: PageApi = {
   held: (): HeldCheck => {
     const s = snapshot;
     if (s === undefined) return { ok: false, why: "the page was not held" };
-    const replaced = s.elements.find((el) => !el.isConnected);
-    if (replaced !== undefined) return { ok: false, why: `the claim replaced ${where(replaced)} the server sent` };
+    // A served element the claim removed, hid behind the client's own nodes, or gave another id, was replaced.
+    const replaced = s.elements.find(([el, id]) => !shown(el) || el.id !== id);
+    if (replaced !== undefined)
+      return {
+        ok: false,
+        why: `the claim replaced <${replaced[0].tagName.toLowerCase()} id="${replaced[1]}"> the server sent`,
+      };
     if (document.activeElement !== s.focus)
       return { ok: false, why: `the claim moved focus off ${s.focus === null ? "the page" : where(s.focus)}` };
     for (const [el, value, start, end] of s.values) {

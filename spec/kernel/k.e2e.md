@@ -20,7 +20,7 @@ From `@keel/testing/e2e`: a test of the built app in a real browser against its 
 
 **Control.** A built app runs on a real ctx (k.ctx). A test controls the browser's network (`offline`, k.e2e-page), each deployable's life (`stop`, `start`), the answers of mapped origins, the data a `serve` starts from (empty), and when a held page's scripts run. The sim clock, `ctx.random`'s seed, a net schedule's delays and faults, storage faults, `simulate` and `replay` (k.sim) do not reach a built app, and nothing stands in for them: a test of a timer waits the real time (Time).
 
-**Time.** Each bound here and in k.e2e-page is a time the test sets: it is multiplied by `KEEL_TEST_TIME_SCALE` (a positive number, default 1; docs/TESTING.md Time scale). A `fixed` time an option takes is an input to the app (a lease, a workflow's step) and is added unscaled. An e2e test that declares no timeout has 60 s.
+**Time.** A `within` time a wait takes is a time the test chose: it is multiplied by `KEEL_TEST_TIME_SCALE` (a positive number, default 1; docs/TESTING.md Time scale). A `fixed` time is an input to the app (a lease, a workflow's step) and is added unscaled. The defaults bound the machine's own work and are fixed time too: 10 s per wait, 20 s for a deployable to answer, and 60 s for an e2e test that declares no timeout.
 
 **Ledger.** An e2e file is a test file the ledger reads (k.ledger-items Run evidence): a passing e2e test gives `example` evidence to each item it references, as any test does, and adds no rung and no item kind. `keel test --e2e` writes its run report to `reports/tests/e2e.json` and changes no other file there; `keel test` writes `run.json` and leaves `e2e.json`.
 
@@ -40,4 +40,4 @@ From `@keel/testing/e2e`: a test of the built app in a real browser against its 
 - A page of a `serve` whose `origins` map `https://api.example.com` to an `answer` returning `Response.json({ ok: true })` receives that answer for a request the page's code makes there while the policy's `connect-src` lists the origin, and the request is refused, with the `answer`'s `requests()` empty, when it does not.
 - After a test that made a `serve` ends, passed or failed, none of its processes runs and its data folder is gone.
 - `keel test --e2e` writes `reports/tests/e2e.json` and leaves `reports/tests/run.json`; a later `keel test` writes `run.json` and leaves `e2e.json`.
-- An `it` calling `serve` and declaring no timeout has 60 s, and 6 s with `KEEL_TEST_TIME_SCALE=0.1`.
+- An `it` calling `serve` and declaring no timeout has 60 s, and 60 s with `KEEL_TEST_TIME_SCALE=0.1`.
