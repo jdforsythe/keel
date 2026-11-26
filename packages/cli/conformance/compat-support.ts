@@ -54,7 +54,7 @@ function isRec(v: unknown): v is Rec {
 export function keel(dir: string, args: string[]): Run {
   const env: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST") continue;
+    if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST" || k === "CI" || k === "KEEL_FROZEN") continue;
     env[k] = v;
   }
   const r = spawnSync(process.execPath, [join(root, "packages/cli/src/bin.ts"), ...args, "--format=json"], {

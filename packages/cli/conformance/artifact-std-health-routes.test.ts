@@ -1,13 +1,13 @@
-// Spec: k.compiler, clause "With `@keel/std-health` placed, `keel check` over its `routes.json` gives no E1005 or W1005; a binding spread is W1005."
-// Drives the real binary (packages/cli/src/bin.ts) over temp projects placing the real `@keel/std-health` beside an app module `m`; `.keel/` is built by @keel/compiler/vite.
-// Examples only: fixed projects. No random inputs (a fast-check seed would be 1337).
-import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import keel from "@keel/compiler/vite";
+// Spec: k.compiler, clause "With `@keel/std-health` placed, `keel check --frozen` over its `routes.json`, its binding written whole or spread, gives no E1005."
+// Drives the real binary (packages/cli/src/bin.ts) over temp projects placing the real `@keel/std-health` beside an app module `m`; `.keel/` is built by @keel/compiler/vite.
+// Examples only: fixed projects. No random inputs (a fast-check seed would be 1337).
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -58,8 +58,9 @@ const isRec = (v: unknown): v is Rec =>
 
 function runCheck(cwd: string): Rec[] {
   const env: Record<string, string | undefined> = { ...process.env };
-  for (const k of Object.keys(env)) if (k.startsWith("VITEST") || k === "NODE_OPTIONS") delete env[k];
-  const r = spawnSync(process.execPath, [BIN, "check", "--format=json"], { cwd, encoding: "utf8", env });
+  for (const k of Object.keys(env))
+    if (k.startsWith("VITEST") || k.startsWith("KEEL_") || k === "NODE_OPTIONS" || k === "CI") delete env[k];
+  const r = spawnSync(process.execPath, [BIN, "check", "--frozen", "--format=json"], { cwd, encoding: "utf8", env });
   const out: Rec[] = [];
   for (const line of r.stdout.split("\n")) {
     try {
@@ -118,7 +119,7 @@ afterAll(() => {
 
 describe("k.compiler: routes.json with @keel/std-health placed", () => {
   it(
-    "keel check over a project with `@keel/std-health` placed gives no E1005 or W1005 on its `routes.json`",
+    "keel check --frozen over a project with `@keel/std-health` placed, its binding written whole, gives no E1005 on its `routes.json`",
     () => {
       expect(fs.readFileSync(path.join(plain, ".keel/routes.json"), "utf8")).toContain("health.status");
       const records = runCheck(plain);
@@ -129,10 +130,11 @@ describe("k.compiler: routes.json with @keel/std-health placed", () => {
   );
 
   it(
-    "a binding spread (`...health.routes`) is W1005",
+    "keel check --frozen over the same binding spread (`...health.routes`) gives no E1005 and no W1005",
     () => {
       const records = runCheck(spread);
-      expect(diags(records, "W1005").length).toBeGreaterThan(0);
+      expect(diags(records, "E1005")).toEqual([]);
+      expect(diags(records, "W1005")).toEqual([]);
     },
     fixedTime(120_000),
   );

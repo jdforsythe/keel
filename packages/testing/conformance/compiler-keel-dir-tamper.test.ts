@@ -1,12 +1,13 @@
-// Spec: k.compiler, clause "Changing any byte of a file under .keel/ makes keel check report E1005 on that file."
-// The test drives the k.check pipeline (check()) over the files `keel check` reads; the cli is later in deps order than testing.
-// Seed: 1337.
-import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { check } from "@keel/check";
 import keel from "@keel/compiler/vite";
+// Spec: k.compiler, clause "Changing any byte of a file under `.keel/` makes `keel check --frozen` report E1005 on that file."
+// ASSUMED (the spec states no frozen switch for the in-process `check(files)`): with no disk to write, a view in `files` that differs from the compile is compared as under `keel check --frozen`.
+// The test drives the k.check pipeline (check()) over the files `keel check` reads; the cli is later in deps order than testing.
+// Seed: 1337.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 

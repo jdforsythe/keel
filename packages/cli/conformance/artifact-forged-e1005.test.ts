@@ -1,8 +1,3 @@
-// Spec: k.compiler, clause "A compared `.keel/` artifact with changed `data` and recomputed `hash`, or older than its sources, is E1005."
-// Drives the real binary (packages/cli/src/bin.ts) over a temp project holding real `.keel/` artifacts built by @keel/compiler/vite.
-// Forged artifacts are self-consistent: data and hash come from a public `compile` of other sources.
-// Seed: 1337 (fc.assert seed below). Each spawn costs about a second; total spawns stay <= 8.
-import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -12,6 +7,11 @@ import { check } from "@keel/check";
 import { compile } from "@keel/compiler";
 import type { RouteEntry, SourceFile } from "@keel/compiler";
 import keel from "@keel/compiler/vite";
+// Spec: k.compiler, clause "Under `keel check --frozen`, a `.keel/` artifact with changed `data` and recomputed `hash`, or older than its sources, is E1005."
+// Drives the real binary (packages/cli/src/bin.ts) over a temp project holding real `.keel/` artifacts built by @keel/compiler/vite.
+// Forged artifacts are self-consistent: data and hash come from a public `compile` of other sources.
+// Seed: 1337 (fc.assert seed below). Each spawn costs about a second; total spawns stay <= 8.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -57,7 +57,11 @@ function runCheck(cwd: string, args: string[]): { status: number | null; records
     if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST") continue;
     env[k] = v;
   }
-  const r = spawnSync(process.execPath, [BIN, "check", ...args, "--format=json"], { cwd, encoding: "utf8", env });
+  const r = spawnSync(process.execPath, [BIN, "check", "--frozen", ...args, "--format=json"], {
+    cwd,
+    encoding: "utf8",
+    env,
+  });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {
     if (line.trim() === "") continue;

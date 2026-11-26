@@ -28,7 +28,7 @@ const changed = (before: Files, after: Files) =>
   [...new Set([...before.keys(), ...after.keys()])].filter((p) => before.get(p) !== after.get(p)).sort();
 
 describe("k.deploy: deploy files", () => {
-  test("With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow.", async () => {
+  test("With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 under `keel check --frozen`, whose fix restores it, and is rewritten by `keel check`; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow.", async () => {
     const files = topologyFiles();
     expect(dockerfiles(files)).toEqual(["deploy/x/Dockerfile", "deploy/y/Dockerfile"]);
     expect(files.has("deploy/compose.yaml")).toBe(true);
@@ -50,7 +50,9 @@ describe("k.deploy: deploy files", () => {
           expect(clean.records.filter((r) => r["code"] === "E1005")).toEqual([]);
           const flipped = `${original.slice(0, at)}${original[at] === "#" ? "!" : "#"}${original.slice(at + 1)}`;
           fs.writeFileSync(path.join(dir, target), flipped);
-          const e1005 = keel(dir, ["check"]).records.filter((r) => r["code"] === "E1005" && r["path"] === target);
+          const e1005 = keel(dir, ["check", "--frozen"]).records.filter(
+            (r) => r["code"] === "E1005" && r["path"] === target,
+          );
           expect(e1005).toHaveLength(1);
           expect(typeof e1005[0]?.["fix"]).toBe("string");
         } finally {

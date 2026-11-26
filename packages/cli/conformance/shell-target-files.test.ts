@@ -1,4 +1,4 @@
-// Spec: k.shell, clause "`keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 whose fix restores it; removing `tauri` removes it; a file `files` does not give stays."
+// Spec: k.shell, clause "`keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 under `keel check --frozen`, whose fix restores it; removing `tauri` removes it; a file `files` does not give stays."
 // Seed: 1337 (the byte position and the replacement byte of the tamper are generated).
 // Over a stub `@keel/std-tauri` whose target gives `a.json` (`shell-stub.ts`); the real binary: `keel build` writes it, `keel check` reads E1005 and its fix (a unified diff of the changed file).
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -19,7 +19,7 @@ const OWN = "deploy/web/tauri/own.txt";
 
 describe("k.shell: shell files over a stub package", () => {
   test(
-    "`keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 whose fix restores it; removing `tauri` removes it; a file `files` does not give stays.",
+    "`keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 under `keel check --frozen`, whose fix restores it; removing `tauri` removes it; a file `files` does not give stays.",
     () => {
       mkdirSync(join(dir, "deploy/web/tauri"), { recursive: true });
       writeFileSync(join(dir, OWN), "mine\n");
@@ -35,7 +35,7 @@ describe("k.shell: shell files over a stub package", () => {
           try {
             chmodSync(join(dir, A), 0o644);
             writeFileSync(join(dir, A), tampered);
-            const found = withCode(run(dir, ["check"]), "E1005").filter((r) => r.path === A);
+            const found = withCode(run(dir, ["check", "--frozen"]), "E1005").filter((r) => r.path === A);
             expect(found).toHaveLength(1);
             const fix = found[0]?.fix;
             expect(typeof fix).toBe("string");

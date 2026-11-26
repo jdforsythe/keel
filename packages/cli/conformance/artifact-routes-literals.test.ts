@@ -1,7 +1,3 @@
-// Spec: k.compiler, clause "Beside a literal `routes.ts`, `keel check` passes a genuine `routes.json`, is E1005 with a route added, W1005 with a computed `path`; `vite build` and a `node`-only `keel build` rewrite a differing one with W1005."
-// Drives the real binary (packages/cli/src/bin.ts) over temp projects with modules/m/routes.ts; genuine `.keel/` is built by @keel/compiler/vite (or by `keel build` in the node-only case).
-// Forged files are self-consistent: data and hash come from a public `compile` with other routes. No fast-check: fixed fixtures; no seed.
-import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -10,6 +6,10 @@ import { fileURLToPath } from "node:url";
 import { compile } from "@keel/compiler";
 import type { RouteEntry, SourceFile } from "@keel/compiler";
 import keel from "@keel/compiler/vite";
+// Spec: k.compiler, clause "Beside a `routes.ts`, literal or with a computed `path`, `keel check --frozen` passes a genuine `routes.json` and is E1005 with a route added; `keel check`, `vite build` and a `node`-only `keel build` rewrite a differing one, reporting nothing for it."
+// Drives the real binary (packages/cli/src/bin.ts) over temp projects with modules/m/routes.ts; genuine `.keel/` is built by @keel/compiler/vite (or by `keel build` in the node-only case).
+// Forged files are self-consistent: data and hash come from a public `compile` with other routes. No fast-check: fixed fixtures; no seed.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -76,14 +76,14 @@ function isRec(v: unknown): v is Rec {
 function scrubbedEnv(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST") continue;
+    if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST" || k === "CI" || k.startsWith("KEEL_")) continue;
     env[k] = v;
   }
   return env;
 }
 
-function runCheck(cwd: string): { status: number | null; records: Rec[] } {
-  const r = spawnSync(process.execPath, [BIN, "check", "--format=json"], {
+function runCheck(cwd: string, args: string[] = []): { status: number | null; records: Rec[] } {
+  const r = spawnSync(process.execPath, [BIN, "check", ...args, "--format=json"], {
     cwd,
     encoding: "utf8",
     env: scrubbedEnv(),
@@ -200,15 +200,15 @@ afterAll(() => {
   for (const d of created) fs.rmSync(d, { recursive: true, force: true });
 });
 
-describe("k.compiler: routes.json beside a literal routes.ts", () => {
+describe("k.compiler: routes.json beside a routes.ts", () => {
   it(
-    "keel check passes a genuine routes.json (no W1005, no E1005)",
+    "keel check --frozen passes a genuine routes.json (no E1005, no W1005)",
     () => {
       expect(genuine).toContain("/home");
       // sanity: the public compile reproduces the genuine bytes, so the forged fixture differs only by the added route
       const g = compile(sources, { routes: { "m.home": HOME } });
       expect(artifactText(g.artifacts["routes.json"], g.hashes["routes.json"])).toBe(genuine);
-      const r = runCheck(proj);
+      const r = runCheck(proj, ["--frozen"]);
       expect(diags(r.records, "W1005")).toEqual([]);
       expect(diags(r.records, "E1005")).toEqual([]);
       expect(keelErrors(r.records)).toEqual([]);
@@ -217,16 +217,17 @@ describe("k.compiler: routes.json beside a literal routes.ts", () => {
   );
 
   it(
-    "keel check is E1005 at .keel/routes.json for a self-consistent routes.json with a route added (exit 1)",
+    "keel check --frozen is E1005 at .keel/routes.json for a self-consistent routes.json with a route added (exit 1), and leaves it as it was",
     () => {
       const text = forgedText();
       expect(text).not.toBe(genuine);
       try {
         writeRoutes(proj, text);
-        const r = runCheck(proj);
+        const r = runCheck(proj, ["--frozen"]);
         expect(paths(diags(r.records, "E1005"))).toEqual([".keel/routes.json"]);
         expect(diags(r.records, "W1005")).toEqual([]);
         expect(r.status).toBe(1);
+        expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(text);
       } finally {
         writeRoutes(proj, genuine);
       }
@@ -235,42 +236,50 @@ describe("k.compiler: routes.json beside a literal routes.ts", () => {
   );
 
   it(
-    "keel check is W1005 at .keel/routes.json naming the route for a computed path, and not E1005",
+    "keel check over a forged routes.json rewrites the genuine one and reports nothing for it",
     () => {
-      const r = runCheck(computedProj);
-      const w = diags(r.records, "W1005");
-      expect(paths(w)).toEqual([".keel/routes.json"]);
-      expect(String(w[0]?.message)).toContain("m.home");
-      expect(diags(r.records, "E1005")).toEqual([]);
-      expect(keelErrors(r.records)).toEqual([]);
+      writeRoutes(proj, forgedText());
+      const r = runCheck(proj);
+      expect(paths(diags(r.records, "E1005"))).toEqual([]);
+      expect(diags(r.records, "W1005")).toEqual([]);
+      expect(r.records.filter((x) => x.kind === "diag" && String(x.path).endsWith("routes.json"))).toEqual([]);
+      expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(genuine);
     },
     fixedTime(120_000),
   );
 
   it(
-    "vite build over a forged routes.json warns one W1005 naming .keel/routes.json and rewrites the genuine content",
+    "with a computed `path` in the contract, keel check --frozen passes a genuine routes.json and keel check rewrites a differing one, with no W1005 and no E1005",
+    () => {
+      const genuineComputed = fs.readFileSync(routesFileOf(computedProj), "utf8");
+      expect(diags(runCheck(computedProj, ["--frozen"]).records, "E1005")).toEqual([]);
+      expect(diags(runCheck(computedProj, ["--frozen"]).records, "W1005")).toEqual([]);
+      try {
+        writeRoutes(computedProj, forgedText());
+        const r = runCheck(computedProj);
+        expect(diags(r.records, "W1005")).toEqual([]);
+        expect(diags(r.records, "E1005")).toEqual([]);
+        expect(fs.readFileSync(routesFileOf(computedProj), "utf8")).toBe(genuineComputed);
+      } finally {
+        writeRoutes(computedProj, genuineComputed);
+      }
+    },
+    fixedTime(120_000),
+  );
+
+  it(
+    "vite build over a forged routes.json rewrites the genuine content and warns of nothing for it",
     async () => {
       writeRoutes(proj, forgedText());
       const warnings = await viteBuild(proj);
-      const hit = warnings.filter((m) => m.includes("W1005"));
-      expect(hit).toHaveLength(1);
-      expect(hit[0]).toContain(".keel/routes.json");
+      expect(warnings.filter((m) => m.includes("W1005") || m.includes("routes.json"))).toEqual([]);
       expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(genuine);
     },
     fixedTime(120_000),
   );
 
   it(
-    "vite build over the genuine routes.json emits no W1005",
-    async () => {
-      expect((await viteBuild(proj)).filter((m) => m.includes("W1005"))).toEqual([]);
-      expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(genuine);
-    },
-    fixedTime(120_000),
-  );
-
-  it(
-    "a node-only keel build writes routes.json, rewrites a differing one with W1005, and a further build is silent",
+    "a node-only keel build writes routes.json and rewrites a differing one, reporting nothing for it",
     () => {
       const first = runBuild(nodeProj);
       expect(first.status).toBe(0);
@@ -283,14 +292,9 @@ describe("k.compiler: routes.json beside a literal routes.ts", () => {
       expect(fs.readFileSync(file, "utf8")).not.toBe(built);
       const second = runBuild(nodeProj);
       expect(second.status).toBe(0);
-      const hit = second.stderr.split("\n").filter((l) => l.includes("W1005") && l.includes(".keel/routes.json"));
-      expect(hit.length).toBeGreaterThan(0);
+      expect(second.stderr).not.toContain("W1005");
+      expect(second.stdout).not.toContain("W1005");
       expect(fs.readFileSync(file, "utf8")).toBe(built);
-
-      const third = runBuild(nodeProj);
-      expect(third.status).toBe(0);
-      expect(third.stderr).not.toContain("W1005");
-      expect(third.stdout).not.toContain("W1005");
     },
     fixedTime(240_000),
   );

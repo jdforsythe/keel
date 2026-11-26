@@ -1,7 +1,7 @@
 // Spec: k.compat, clause "An open `{ a?: string }` does not accept an open `{}` and accepts a closed `{}`."
 // Spec: k.compat, clause "`keel check --base` naming a missing file, or one that is not JSON, is one W1568 and exits 0; with `topology.ts` unreadable, a base entry the current one refuses is E1562."
 // Spec: k.compat, clause "`service({ base: origin, schema })` with an endpoint that an API entry of app module `b` serves is one E1567 naming `b`; with `base: 'https://api.example.com'` none."
-// Spec: k.compat, clause "A contract file that throws is one E1006 from `keel build`, which exits 1."
+// Spec: k.compat, clause "A contract file that throws is one E1006 from `keel check` and from `keel build`, each of which exits 1."
 // Seed 1337. Real binary over a temp project (see compat-support.ts). Module `y` plays `b`; its contract entry `y.add` has the `body` the caller sends.
 // "A accepts B" is observed through E1562: the base entry's body is `B`, the current entry's is `A`, the caller `a` in another deployable;
 // no E1562 means the current `body` accepts the base `body` (k.compat Base).
@@ -145,7 +145,7 @@ test(
 );
 
 test(
-  "A contract file that throws is one E1006 from `keel build`, which exits 1.",
+  "A contract file that throws is one E1006 from `keel check` and from `keel build`, each of which exits 1.",
   () => {
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z]{4,10}$/), (word) => {
@@ -162,6 +162,12 @@ test(
         expect(found).toHaveLength(1);
         expect(found[0]?.path).toBe("modules/y/y.contract.ts");
         expect(String(found[0]?.message)).toContain(`contract-${word}`);
+        const checked = keel(dir, ["check"]);
+        expect(checked.status).toBe(1);
+        const atCheck = diags(checked, "E1006");
+        expect(atCheck).toHaveLength(1);
+        expect(atCheck[0]?.path).toBe("modules/y/y.contract.ts");
+        expect(String(atCheck[0]?.message)).toContain(`contract-${word}`);
       }),
       { seed: SEED, numRuns: 3 },
     );

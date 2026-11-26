@@ -1,10 +1,11 @@
-// k.compat, Surface "Its layout, keys sorted, `callers` sorted, an absent `params`, `query` or `body` `null`, no `errors` `{}`, `sources` each file the build evaluated with the hash of its normal form (Sources):"
+// k.compat, Surface "the file holds `version: 3`. Its layout, keys sorted, `callers` sorted, an absent `params`, `query` or `body` `null`, no `errors` `{}`:" (the example has no `sources`)
 // Spec: k.compat, clause "`keel build` with `a` importing `y`'s contract writes `data.contracts.y` `{ module, callers: [\"a\"], entries }`, `params` `null` on an entry without one."
 // Seed: none (a fixed project). Real binary over a temp project (compat-support.ts).
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, expect, test } from "vitest";
 import { cleanup, keel, materialize, project, readText } from "./compat-support.ts";
 
-const SLOW = 180_000;
+const SLOW = fixedTime(180_000);
 const dirs: string[] = [];
 afterAll(() => {
   for (const d of dirs) cleanup(d);
@@ -23,15 +24,15 @@ function surface() {
 }
 
 test(
-  "`.keel/surface.json` holds `data` with `version` 2, `contracts`, `stores` and `sources`, and a `hash`, every object's keys sorted",
+  "`.keel/surface.json` holds `data` with `version` 3, `contracts` and `stores` and no `sources`, and a `hash`, every object's keys sorted",
   () => {
     const file = surface();
     expect(Object.keys(file).sort()).toEqual(["data", "hash"]);
     expect(String(file.hash)).toMatch(/^fnv1a:[0-9a-f]{8}$/);
     const data = rec(file.data);
-    expect(Object.keys(data)).toEqual(["contracts", "sources", "stores", "version"]);
-    expect(data.version).toBe(2);
-    for (const o of [data, rec(data.contracts), rec(data.stores), rec(data.sources)]) expect(sorted(o)).toBe(true);
+    expect(Object.keys(data)).toEqual(["contracts", "stores", "version"]);
+    expect(data.version).toBe(3);
+    for (const o of [data, rec(data.contracts), rec(data.stores)]) expect(sorted(o)).toBe(true);
   },
   SLOW,
 );
@@ -65,11 +66,10 @@ test(
 );
 
 test(
-  "`data.sources` maps each contract file the build evaluated to an `fnv1a:` content hash; a module with no API entry has no `contracts` key",
+  "`data` has no `sources`; a module with no API entry has no `contracts` key",
   () => {
     const data = rec(surface().data);
-    const src = rec(data.sources);
-    expect(String(src["modules/y/y.contract.ts"])).toMatch(/^fnv1a:[0-9a-f]{8}$/);
+    expect("sources" in data).toBe(false);
     expect(Object.keys(rec(data.contracts))).toEqual(["y"]);
   },
   SLOW,

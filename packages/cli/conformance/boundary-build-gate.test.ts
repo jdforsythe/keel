@@ -62,8 +62,9 @@ describe("k.boundary: `keel build` runs `keel check` first and stops on any erro
 });
 
 describe("k.boundary: a warning does not stop `keel build`", () => {
-  test("the fixture's `keel check` reports a warning and no error", () => {
-    expect(linesWith(warnedCheck.out, '"W1005"').length).toBeGreaterThan(0);
+  // ASSUMED: W1005 is reserved (k.compiler Rules), so the spread no longer gives a warning; the fixture's check reports no error, no W1005 and exits 0.
+  test("the fixture's `keel check` reports no error and no W1005", () => {
+    expect(linesWith(warnedCheck.out, '"W1005"')).toEqual([]);
     expect(linesWith(warnedCheck.out, '"code":"E')).toEqual([]);
     expect(warnedCheck.status, warnedCheck.out).toBe(0);
   });
