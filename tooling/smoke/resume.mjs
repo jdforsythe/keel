@@ -726,7 +726,9 @@ try {
     await account.fill(email, who);
     await account.fill('input[name="password"]', "smoke password");
     await Promise.all([
-      account.waitForURL((u) => u.pathname === "/account/signin", { timeout: fixedTime(10_000) }).catch(() => undefined),
+      account
+        .waitForURL((u) => u.pathname === "/account/signin", { timeout: fixedTime(10_000) })
+        .catch(() => undefined),
       account.click('[id="accounts.signupSubmit"]'),
     ]);
     step(
