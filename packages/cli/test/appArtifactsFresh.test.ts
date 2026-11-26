@@ -46,7 +46,13 @@ describe.each(APPS)("apps/%s .keel artifacts", (name) => {
   it("`keel test` leaves the committed `.keel/` files as they are", () => {
     const before = artifacts(app);
     const r = spawnSync(process.execPath, [BIN, "test"], { cwd: app, encoding: "utf8" });
-    expect(r.status).toBe(0);
+    // A failed child says how it ended and its last lines, on one line (the reporter prints a message's first line).
+    const out = `${r.stdout}\n${r.stderr}`
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .join(" | ");
+    const end = `child exit ${r.status} signal ${r.signal}: ${out.length > 440 ? `...${out.slice(-440)}` : out}`;
+    expect(r.status, end).toBe(0);
     expect(artifacts(app)).toEqual(before);
   }, 480_000);
 });
