@@ -1,0 +1,20 @@
+# ADR-0284: themes, print, every opaque color form, and design tokens in (RFC 0249)
+
+**Status:** accepted (orchestrator, 2026-11-26), to be confirmed by the operator.
+
+**Context.** Tokens compile to custom properties and each style prop to one class that reads one, so a second set of values under another selector restyles a page with no class change and no render. RFC 0243 used that for a light and a dark scheme only. Keel had no named theme, no high-contrast theme, nothing for print, colors as hex only, no color with alpha, and no way in from a design tool. The operator's D200 makes themes, print and the path from a design tool first class.
+
+**Decision.**
+- A theme is a named, partial set of token values in `tokens.ts`'s `themes`, with `when`: `choice` (the visitor's pick), `contrast` (`prefers-contrast: more`) or `print`. It holds only names its top-level groups hold, in `color`, `overlay`, `space`, `size`, `radius`, `font`, `fontSize`, `weight`, `shadow` and `border`; a theme's colors may be `{ light, dark }` pairs.
+- `schemes` stays: light and dark are an axis across every theme. At most 8 `choice` themes, one `contrast`, one `print`: at most 54 combinations, each judged; with the `contrast` theme on, text needs 7:1.
+- The CSS orders layers `keel.tokens`, `keel.theme`, `keel.contrast`, `keel.print`; dark blocks sit under `@media screen`, so print takes the light values. An app with no `themes` gets RFC 0243's CSS plus `screen`.
+- `data-k-theme`, the `keel-theme` cookie, `ThemeSelect` and the existing head script, beside RFC 0243's scheme pieces; `appearance(ctx)` is the one way app code reads and sets the pick, and both controls use it. `Box scheme` fixes a subtree's scheme; a subtree theme is refused.
+- Print: a `print` theme with `print-color-adjust:exact`, a `print` key on responsive style props, `media="screen"` and `media="print"`, and `breakBefore`, `breakAfter`, `breakInside`.
+- Colors: hex, `rgb()`, `hsl()`, `oklab()`, `oklch()`, `color(display-p3 ...)`, space syntax only, each with an exact luminance; a color outside sRGB is judged at the lower of as-given and gamut-mapped. Alpha only in `shadow` and in an `overlay` token that names its backdrops, judged composited (E1817).
+- A library ships `themes.contrast` and `themes.print` only; E1810 asks the app to spread them. A `choice` theme takes a library's top-level values, and the app re-values them there.
+- `keel tokens import` reads DTCG files, one per mode, writes `tokens.design.ts` whole, and adds its spreads to `tokens.ts` once; `keel tokens set` writes one value into `tokens.ts` keeping everything else. E1071 and W1072.
+- No new section: both maps are full. The text sits in k.schemes, k.values, k.a11y-static, k.aria, k.ui, k.looks and k.cli.
+
+**Alternatives.** Values per token keyed by theme; light and dark as two themes; flattened theme names; a specificity ladder; a pickable contrast theme; a subtree theme; `forced-colors` as a condition; judging print without a `print` theme; leaving `print-color-adjust` to the browser; named colors, commas, or no alpha at all; a link-URL print prop; an importer that writes into `tokens.ts`; the DTCG resolver module; `keel tokens export` before v1.
+
+**Consequences.** New codes E1816, E1817, E1071, W1072; E1814 also covers `scheme`. RFC 0243's k.schemes #1 and #9 are re-worded and its builder replaces each loop over two schemes with `combinations(tokens)`. k.cli reads `implemented` until its new clauses are covered. RFC 0252 admits `motion` into a theme's groups; RFC 0253's design mode overrides one custom property live, judges with `combinations(tokens)`, and patches through `keel tokens set`. At the next map trim, the theme text can be gathered into one section.
