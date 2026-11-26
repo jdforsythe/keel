@@ -2,6 +2,7 @@ import { attempt } from "@keel/schema";
 import type { Engine } from "./Engine.ts";
 import { pgEngine } from "./pgEngine.server.ts";
 import { pgliteEngine } from "./pgliteEngine.server.ts";
+import { pgliteModules } from "./pgliteModules.server.ts";
 import { schemeOf } from "./schemeOf.server.ts";
 
 /** At most this many `pglite:` folders stay open in a process; the one used least recently and idle closes first. */
@@ -71,7 +72,7 @@ export function engineFor(value: string | undefined): Promise<Engine> {
   const made: Promise<Engine> =
     scheme === "pglite"
       ? import("@electric-sql/pglite").then(async ({ PGlite }) => {
-          const db = await PGlite.create({ dataDir: url.slice("pglite:".length) });
+          const db = await PGlite.create({ dataDir: url.slice("pglite:".length), ...(await pgliteModules()) });
           closer = () => db.close();
           return pgliteEngine(db);
         })
