@@ -37,7 +37,7 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
     case "json":
       return fc.jsonValue();
     case "id":
-      return fc.string({ minLength: 1 });
+      return fc.uuid({ version: 4 });
     case "nullable":
       return fc.option(arbitrary(node.inner), { nil: null });
     case "optional":
