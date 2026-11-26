@@ -57,7 +57,9 @@ function resolve(tokens: Tokens, prop: keyof typeof vocabulary, token: string): 
   for (const group of entry.groups) {
     const names = Object.keys(tokens[group] ?? {});
     const i = names.indexOf(token);
-    if (i >= 0) return { body: `${entry.lead}${entry.property}:var(${varName(group, token)})`, index: i };
+    // A `space` token holding `auto` is in no group of padding and `gap`, which ignore it (k.values).
+    const ignored = group === "space" && ["p", "px", "py", "gap"].includes(prop) && tokens.space?.[token] === "auto";
+    if (i >= 0 && !ignored) return { body: `${entry.lead}${entry.property}:var(${varName(group, token)})`, index: i };
   }
   const want = entry.groups.length > 0 ? `a ${entry.groups.join(" or ")} token` : `one of ${kw.join(" ")}`;
   throw fail("E1801", `${prop}=${JSON.stringify(token).slice(0, 40)} is not ${want}`);

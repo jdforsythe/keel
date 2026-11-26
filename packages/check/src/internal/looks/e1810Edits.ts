@@ -37,9 +37,19 @@ export function e1810Edits(
   if (found === undefined || lib.shipped === null) return null;
   const imports = importsOf(program);
   const { from } = imports;
-  // After the last import's line, so a comment that ends it stays on it.
-  const lineEnd = source.indexOf("\n", imports.lastEnd);
-  const lastEnd = imports.lastEnd === 0 ? 0 : lineEnd < 0 ? source.length : lineEnd;
+  // After the line the last import statement ends on, or, when a block comment begins on that line and ends on a
+  // later one, after the line that comment ends on: no comment moves.
+  const lineEndAt = (at: number): number => {
+    const i = source.indexOf("\n", at);
+    return i < 0 ? source.length : i;
+  };
+  let lineEnd = lineEndAt(imports.lastEnd);
+  const opener = source.slice(imports.lastEnd, lineEnd).indexOf("/*");
+  if (opener >= 0) {
+    const close = source.indexOf("*/", imports.lastEnd + opener + 2);
+    if (close > lineEnd) lineEnd = lineEndAt(close);
+  }
+  const lastEnd = imports.lastEnd === 0 ? 0 : lineEnd;
   const local = `${lib.id}Tokens`;
   const groups = [...lib.shipped.names.keys()];
   /** The groups the tokens a spread `...S` names hold: `brandTokens`'s, a library's shipped ones, else every group. */

@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import type { TokensResult } from "./TokensResult.ts";
+import { shippedTokensPlugin } from "./shippedTokensPlugin.ts";
 
 // Resolved from the project root, which a project with `tokens.ts` depends on (its `defineTokens` or `brandTokens`).
 const UI_CSS = "@keel/ui/css";
@@ -51,6 +52,7 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
       target: "node20",
       logLevel: "silent",
       loader: { ".css": "empty" },
+      plugins: [shippedTokensPlugin(root)],
     });
     text = out.outputFiles[0]?.text ?? "";
   } catch (e) {

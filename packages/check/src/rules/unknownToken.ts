@@ -14,6 +14,8 @@ import type { SourceFile } from "../types/SourceFile.ts";
 type Rec = Readonly<Record<string, unknown>>;
 const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null;
 const NO_TOKENS = ": the project has no tokens.ts";
+/** The props that ignore a `space` token holding `auto` (k.values). */
+const AUTO_IGNORED = ["p", "px", "py", "gap"];
 
 /**
  * Whether the project of `file` has a `tokens.ts` at its root: a `tokens.ts` among the project's files in a folder
@@ -68,7 +70,10 @@ export const unknownToken: RuleDef = {
     for (const t of tokenLiterals(ast)) {
       if (t.kind === "prop") {
         const groups = tokenGroups[t.prop] ?? [];
-        if (!groups.some((g) => has(g, t.value)))
+        // A `space` token holding `auto` is in no group of padding and `gap`, which ignore it (k.values).
+        const ignored = (g: string): boolean =>
+          g === "space" && AUTO_IGNORED.includes(t.prop) && Reflect.get(Object(tokens?.space), t.value) === "auto";
+        if (!groups.some((g) => has(g, t.value) && !ignored(g)))
           out.push(
             findingAt(file, t.at, { kind: "prop", prop: t.prop, value: t.value, groups: groups.join(" or "), ...none }),
           );

@@ -125,12 +125,24 @@ function colorIn(tokens: unknown, name: string, scheme: "light" | "dark"): strin
   return typeof hex === "string" && HEX.test(hex) ? hex : undefined;
 }
 
-/** A `fontSize` token's pixel size, or 0 when unknown. */
+/** A length in `px`, `pt`, `rem` or `em` (16px to the `rem` and `em`) as pixels, or 0 for any other value. */
+function lengthPixels(v: string): number {
+  const m = /^(\d+(?:\.\d+)?)(px|pt|rem|em)$/.exec(v);
+  if (m?.[1] === undefined) return 0;
+  const n = Number(m[1]);
+  return m[2] === "px" ? n : m[2] === "pt" ? (n * 4) / 3 : n * 16;
+}
+
+/**
+ * A `fontSize` token's pixel size at its smallest (k.values What check judges): a length as written, a `clamp()` at
+ * its first argument when that is such a length; 0, normal text, for any other value or an unknown name.
+ */
 function pixels(tokens: unknown, name: string | undefined): number {
   const sizes = isRec(tokens) ? tokens.fontSize : undefined;
   const v = name !== undefined && isRec(sizes) ? sizes[name] : undefined;
-  const m = typeof v === "string" ? /^(\d+(?:\.\d+)?)px$/.exec(v) : null;
-  return m?.[1] === undefined ? 0 : Number(m[1]);
+  if (typeof v !== "string") return 0;
+  const clamp = /^clamp\(([^,()]+), /.exec(v);
+  return lengthPixels(clamp?.[1] ?? v);
 }
 
 /** A `weight` token's numeric weight, or 0 when unknown. */
