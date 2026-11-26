@@ -598,7 +598,8 @@ async function runSlow() {
     dockerBounded(["exec", name, "mkdir", "-p", SLOW.workdir], SLOW.limits.short);
     dockerBounded(["cp", `${clone}${path.sep}.`, `${name}:${SLOW.workdir}`], SLOW.limits.copy);
     fs.rmSync(clone, { recursive: true, force: true });
-    const deadline = Date.now() + (source.jobs["test-shard"]["timeout-minutes"] ?? 35) * 60_000;
+    // Each shard has the job's `timeout-minutes` to itself, as on a runner of its own.
+    const shardMs = (source.jobs["test-shard"]["timeout-minutes"] ?? 35) * 60_000;
     const first = slowSteps(source, shards[0] ?? 1);
     let i = 1;
     let ok = await exec(prep, "corepack", "corepack enable && pnpm --version", {}, Date.now() + 600_000, i++);
@@ -621,7 +622,7 @@ async function runSlow() {
       let good = true;
       for (const step of steps) {
         if (!good) break;
-        good = await exec(rec, step.name, step.run, step.env, Date.now() + (deadline - Date.now()), i++);
+        good = await exec(rec, step.name, step.run, step.env, Date.now() + shardMs, i++);
       }
       rec.seconds = (performance.now() - s0) / 1000;
       results.push(rec);

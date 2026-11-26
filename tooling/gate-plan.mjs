@@ -216,7 +216,11 @@ export function bindMounts(args) {
 export function slowSteps(source, shard) {
   const runs = expandSteps(source, "test-shard").filter((s) => typeof s === "object" && s.run !== undefined);
   const ctx = { matrix: { shard }, workspace: SLOW.workdir, runnerOs: "Linux", runnerArch: "X64" };
-  const answer = (s) => ({ name: stepName(s), run: expr(s.run, ctx), env: exprEnv(s.env, ctx) });
+  const answer = (s) => ({
+    name: stepName({ ...s, run: expr(s.run, ctx) }),
+    run: expr(s.run, ctx),
+    env: exprEnv(s.env, ctx),
+  });
   const install = runs.filter((s) => /^pnpm install\b/.test(s.run));
   return { install: install.map(answer), steps: runs.filter((s) => !install.includes(s)).map(answer) };
 }

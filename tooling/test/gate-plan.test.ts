@@ -389,6 +389,7 @@ describe("the slow-machine job", () => {
     const { install, steps } = slowSteps(realSource, 4);
     expect(install.map((s) => s.run)).toEqual(["pnpm install --frozen-lockfile"]);
     expect(steps.map((s) => s.run)).toContain("node tooling/ci-shards.mjs 4");
+    expect(steps.map((s) => s.name)).toContain("node tooling/ci-shards.mjs 4");
     const env = slowEnv(realSource);
     expect(env).toMatchObject({ CI: "true", GITHUB_ACTIONS: "true", KEEL_TEST_TIME_SCALE: "1", KEEL_AGENT: "1" });
     const exec = slowExecArgs("keel-gate-slow-x", { CI: "true" }, "node tooling/ci-shards.mjs 1");
