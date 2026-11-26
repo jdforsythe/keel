@@ -24,6 +24,22 @@ Every persona comes in two forms. The human reads docs, skims errors and asks a 
 | A7 Tester | Owns the tests and the release gate | Playwright, Cypress, Jest | Unit, page, property, simulation and end to end tests from one command; stable under load | Can they test this at every rung without building a harness, and does a red test name its cause? |
 | A8 Operator | Deploys and runs it | Docker, a PaaS | One artifact, a short list of environment values, health, logs without pii | What do they have to know that the build did not tell them? |
 
+## App kinds
+
+The app authors above are roles. Each works on some kind of app, and the kind decides which parts of Keel carry the weight. A review or an eval names a role and a kind.
+
+| Kind | Example | What it leans on | The question |
+| --- | --- | --- | --- |
+| K1 Content site | A blog, docs, a marketing site | Static pages, content from files or a CMS, SEO, images, almost no client state | Is a page of prose cheap to write and fast to load, with no app machinery in the way? |
+| K2 Storefront | E-commerce: catalogue, cart, checkout | Server rendering, money and locale formats, a payment service library, pii, stock under concurrent writes | Does a cart survive a reload, a second tab and a failed payment, and where is card data kept out? |
+| K3 Line-of-business app | An admin console, a back office | Forms, data tables, roles and guards, audit | Is the twentieth form as cheap as the first, and is every action guarded? |
+| K4 SaaS over services | A multi-tenant product whose back end is many services | Several deployables, service clients, API routes, tenant isolation, an imported OpenAPI | Can a module talk to a service it does not own with a typed, checked contract, and can one tenant read another's data? |
+| K5 Realtime and collaborative app | Chat, a shared board, live dashboards | Channels, live queries, conflicts, presence | What happens to two writers at once, and to one who was offline? |
+| K6 Dashboard and reporting app | Analytics, a KPI wall | Charts, large tables, exports, scheduled reports | Does a large result stay usable, accessible and within budget? |
+| K7 Workflow app | Approvals, onboarding, long-running jobs | Workflows, schedules, jobs, statecharts, resumption after a restart | Does a process that takes days survive a deploy? |
+| K8 Mobile-first app | A field app in a native shell | The shells, device capabilities, the outbox, small screens | Does it work with no signal, and does it sync without losing a write? |
+| K9 Embedded piece | A widget or a few pages inside an existing site or beside another framework | A small bundle, no ownership of the page, coexisting with other code | Can Keel be adopted for one corner of a product without taking the whole of it? |
+
 ## Library authors
 
 | Persona | Who | Example | Needs | The question |
