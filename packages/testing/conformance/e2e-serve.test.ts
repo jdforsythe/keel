@@ -62,7 +62,11 @@ expect(app.serverLog('api').some((r) => r.kind === 'req' && r.path === '/')).toB
 );
 
 const stat = suite(
-  ["import { readFileSync } from 'node:fs'", "import { serve } from '@keel/testing/e2e'", "import { alive } from './support.ts'"],
+  [
+    "import { readFileSync } from 'node:fs'",
+    "import { serve } from '@keel/testing/e2e'",
+    "import { alive } from './support.ts'",
+  ],
   [
     {
       title: "static starts no process, a missing path is 404.html with csp.txt",
@@ -253,15 +257,30 @@ const title = (t: string): number | undefined => main.lines[t];
 
 describe("k.e2e serve", () => {
   it("`serve()` of a project with `node` deployables `api` and `web` starts both, each with its own free port, one `KEEL_SECRET`, and `KEEL_PEER_API` set in `web` to `api`'s origin, and `serverLog('api')` holds a `req` record for a `fetch('/')` of `api`", () => {
-    passed(twoDir, "test/two.e2e.ts", two.lines["starts api and web, one secret, peer wired, serverLog holds the req"], "two");
+    passed(
+      twoDir,
+      "test/two.e2e.ts",
+      two.lines["starts api and web, one secret, peer wired, serverLog holds the req"],
+      "two",
+    );
   });
 
   it("`serve()` of a project whose only deployable is `static` starts no process, and a `fetch` of a path that is no file answers 404 with `404.html` and the `content-security-policy` header equal to `dist/<name>/csp.txt`", () => {
-    passed(statDir, "test/static.e2e.ts", stat.lines["static starts no process, a missing path is 404.html with csp.txt"], "static");
+    passed(
+      statDir,
+      "test/static.e2e.ts",
+      stat.lines["static starts no process, a missing path is 404.html with csp.txt"],
+      "static",
+    );
   });
 
   it("`serve()` of a deployable whose served module's manifest names `env` `PAYMENTS_URL`, given no such `env`, rejects E1737 naming the deployable and `PAYMENTS_URL`, and leaves no process running", () => {
-    passed(envDir, "test/env.e2e.ts", envFile.lines["E1737 names the deployable and PAYMENTS_URL and leaves no process"], "env");
+    passed(
+      envDir,
+      "test/env.e2e.ts",
+      envFile.lines["E1737 names the deployable and PAYMENTS_URL and leaves no process"],
+      "env",
+    );
   });
 
   it("Two `serve()` calls of one project in one test have different ports, data folders and `KEEL_SECRET`s, and a store saved through one is not in `state` of the other", () => {
@@ -269,7 +288,12 @@ describe("k.e2e serve", () => {
   });
 
   it("`until(board, (b) => b.lists.length === 1)` resolves once a page's add is committed, and rejects E1735 naming the store's id when no commit makes it true within the bound", () => {
-    passed(okDir, MAIN_FILE, title("until resolves once the add is committed and rejects E1735 naming the store"), "ok");
+    passed(
+      okDir,
+      MAIN_FILE,
+      title("until resolves once the add is committed and rejects E1735 naming the store"),
+      "ok",
+    );
   });
 
   it("After `stop()` a `fetch` of the deployable's origin rejects; after `start()` it answers, and `state(store)` holds what was saved before `stop()`", () => {

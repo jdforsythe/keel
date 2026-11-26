@@ -85,7 +85,11 @@ export const PAGES = {
 } as const satisfies Record<string, Page>;
 
 /** The files of module `id`: its contract, an `a.env`-style entry `<id>.env`, the pages, and (with `home`) the store, the loader and the action. */
-export function moduleFiles(id: string, pages: readonly Page[], opts: { home?: boolean; env?: readonly string[] } = {}): Tree {
+export function moduleFiles(
+  id: string,
+  pages: readonly Page[],
+  opts: { home?: boolean; env?: readonly string[] } = {},
+): Tree {
   const m = `modules/${id}`;
   const entries = [
     ...(opts.home === true ? [`'${id}.home': { path: '/' }`] : []),
@@ -93,11 +97,18 @@ export function moduleFiles(id: string, pages: readonly Page[], opts: { home?: b
   ].join(",\n  ");
   const routes = [
     ...(opts.home === true ? [`'${id}.home': { component: Home, loader: home, POST: add }`] : []),
-    ...pages.map((p) => `'${id}.${p.name}': { component: ${p.name === "contrast" ? "Contrast" : cap(p.name)}${p.name === "contrast" ? ", loader: lowText" : ""} }`),
+    ...pages.map(
+      (p) =>
+        `'${id}.${p.name}': { component: ${p.name === "contrast" ? "Contrast" : cap(p.name)}${p.name === "contrast" ? ", loader: lowText" : ""} }`,
+    ),
   ].join(",\n  ");
   const imports = [
     ...(opts.home === true
-      ? [`import Home from './Home.tsx'`, `import { home } from './home.server.ts'`, `import { add } from './add.server.ts'`]
+      ? [
+          `import Home from './Home.tsx'`,
+          `import { home } from './home.server.ts'`,
+          `import { add } from './add.server.ts'`,
+        ]
       : []),
     ...pages.map((p) => `import ${p.name === "contrast" ? "Contrast" : cap(p.name)} from './${cap(p.name)}.tsx'`),
     ...(pages.some((p) => p.name === "contrast") ? [`import { lowText } from './lowText.server.ts'`] : []),
@@ -108,12 +119,9 @@ export function moduleFiles(id: string, pages: readonly Page[], opts: { home?: b
   const tick = pages.some((p) => p.name === "stream");
   const tree: Tree = {
     [`${m}/module.ts`]: manifest(id, opts.env),
-    [`${m}/${id}.contract.ts`]:
-      `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nexport const ${id} = contract('${id}', {\n  ${entries === "" ? "" : `${entries},\n  `}'${id}.env': { method: 'GET', path: '/api/${id}/env', output: s.object({ secret: s.string(), peerApi: s.string(), peerWeb: s.string(), origin: s.string(), data: s.string() }) },\n${tick ? `  '${id}.ticks': { method: 'GET', path: '/api/${id}/ticks', output: s.number(), events: true },\n` : ""}})\n`,
-    [`${m}/env.server.ts`]:
-      `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { ${id} } from './${id}.contract.ts'\nconst Out = s.object({ secret: s.string(), peerApi: s.string(), peerWeb: s.string(), origin: s.string(), data: s.string() })\nexport const env = loader(${id}, '${id}.env', { output: Out }, async () => ok({ secret: process.env.KEEL_SECRET ?? '', peerApi: process.env.KEEL_PEER_API ?? '', peerWeb: process.env.KEEL_PEER_WEB ?? '', origin: process.env.KEEL_ORIGIN ?? '', data: process.env.KEEL_DATABASE_URL ?? '' }))\n`,
-    [`${m}/routes.ts`]:
-      `import { manifest } from '@keel/router'\n${imports.join("\n")}\nexport const routes = manifest(${id}, {\n  ${routes === "" ? "" : `${routes},\n  `}'${id}.env': { loader: env },\n${tick ? `  '${id}.ticks': { loader: ticks },\n` : ""}})\n`,
+    [`${m}/${id}.contract.ts`]: `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nexport const ${id} = contract('${id}', {\n  ${entries === "" ? "" : `${entries},\n  `}'${id}.env': { method: 'GET', path: '/api/${id}/env', output: s.object({ secret: s.string(), peerApi: s.string(), peerWeb: s.string(), origin: s.string(), data: s.string() }) },\n${tick ? `  '${id}.ticks': { method: 'GET', path: '/api/${id}/ticks', output: s.number(), events: true },\n` : ""}})\n`,
+    [`${m}/env.server.ts`]: `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { ${id} } from './${id}.contract.ts'\nconst Out = s.object({ secret: s.string(), peerApi: s.string(), peerWeb: s.string(), origin: s.string(), data: s.string() })\nexport const env = loader(${id}, '${id}.env', { output: Out }, async () => ok({ secret: process.env.KEEL_SECRET ?? '', peerApi: process.env.KEEL_PEER_API ?? '', peerWeb: process.env.KEEL_PEER_WEB ?? '', origin: process.env.KEEL_ORIGIN ?? '', data: process.env.KEEL_DATABASE_URL ?? '' }))\n`,
+    [`${m}/routes.ts`]: `import { manifest } from '@keel/router'\n${imports.join("\n")}\nexport const routes = manifest(${id}, {\n  ${routes === "" ? "" : `${routes},\n  `}'${id}.env': { loader: env },\n${tick ? `  '${id}.ticks': { loader: ticks },\n` : ""}})\n`,
   };
   for (const p of pages) tree[`${m}/${cap(p.name)}.tsx`] = p.source;
   if (tick)
@@ -132,15 +140,12 @@ const cap = (s: string): string => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`
 function homeFiles(id: string): Tree {
   const m = `modules/${id}`;
   return {
-    [`${m}/Board.schema.ts`]: "import { s } from '@keel/schema'\nexport const Board = s.object({ lists: s.array(s.string()) })\n",
-    [`${m}/boards.ts`]:
-      `import { store, transaction } from '@keel/store'\nimport { s } from '@keel/schema'\nimport { Board } from './Board.schema.ts'\nexport const boards = () => {\n  const board = store(Board, { lists: [] }, { id: '${id}.board' })\n  const addList = transaction(board, '${id}.addList', s.object({ name: s.string() }), (st, p) => ({ lists: [...st.lists, p.name] }))\n  return { board, addList }\n}\n`,
-    [`${m}/home.server.ts`]:
-      `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { ${id} } from './${id}.contract.ts'\nimport { boards } from './boards.ts'\nexport const home = loader(${id}, '${id}.home', { output: s.object({ count: s.int() }), stores: boards }, async ({ stores }) => ok({ count: stores.board.get('lists').length }))\n`,
-    [`${m}/add.server.ts`]:
-      `import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { tx } from '@keel/store'\nimport { ${id} } from './${id}.contract.ts'\nimport { boards } from './boards.ts'\nexport const add = action(${id}, '${id}.home', { input: s.object({}), stores: boards }, async (_input, { stores }) => {\n  tx(stores.addList, { name: 'list' })\n  return ok(null)\n})\n`,
-    [`${m}/Home.tsx`]:
-      `import { Form } from '@keel/router'\nimport { Box, Button, Text } from '@keel/ui'\nimport { ${id} } from './${id}.contract.ts'\nexport default function Home(props: { data: { count: number } }) {\n  return (\n    <Box as="main">\n      <Text id="a.count">{String(props.data.count)}</Text>\n      <Form method="POST" action={${id}.href('${id}.home')}>\n        <Button id="a.add">Add</Button>\n      </Form>\n    </Box>\n  )\n}\n`,
+    [`${m}/Board.schema.ts`]:
+      "import { s } from '@keel/schema'\nexport const Board = s.object({ lists: s.array(s.string()) })\n",
+    [`${m}/boards.ts`]: `import { store, transaction } from '@keel/store'\nimport { s } from '@keel/schema'\nimport { Board } from './Board.schema.ts'\nexport const boards = () => {\n  const board = store(Board, { lists: [] }, { id: '${id}.board' })\n  const addList = transaction(board, '${id}.addList', s.object({ name: s.string() }), (st, p) => ({ lists: [...st.lists, p.name] }))\n  return { board, addList }\n}\n`,
+    [`${m}/home.server.ts`]: `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { ${id} } from './${id}.contract.ts'\nimport { boards } from './boards.ts'\nexport const home = loader(${id}, '${id}.home', { output: s.object({ count: s.int() }), stores: boards }, async ({ stores }) => ok({ count: stores.board.get('lists').length }))\n`,
+    [`${m}/add.server.ts`]: `import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { tx } from '@keel/store'\nimport { ${id} } from './${id}.contract.ts'\nimport { boards } from './boards.ts'\nexport const add = action(${id}, '${id}.home', { input: s.object({}), stores: boards }, async (_input, { stores }) => {\n  tx(stores.addList, { name: 'list' })\n  return ok(null)\n})\n`,
+    [`${m}/Home.tsx`]: `import { Form } from '@keel/router'\nimport { Box, Button, Text } from '@keel/ui'\nimport { ${id} } from './${id}.contract.ts'\nexport default function Home(props: { data: { count: number } }) {\n  return (\n    <Box as="main">\n      <Text id="a.count">{String(props.data.count)}</Text>\n      <Form method="POST" action={${id}.href('${id}.home')}>\n        <Button id="a.add">Add</Button>\n      </Form>\n    </Box>\n  )\n}\n`,
   };
 }
 

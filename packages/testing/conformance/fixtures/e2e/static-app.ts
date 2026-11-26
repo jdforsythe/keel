@@ -11,7 +11,7 @@ export const staticApp = (): Tree => ({
     "import { contract } from '@keel/router/contract'\nexport const s = contract('s', { 's.home': { path: '/' } })\n",
   "modules/s/home.server.ts": `import { loader } from '@keel/router'\nimport { ok, s as sc } from '@keel/schema'\nimport { s } from './s.contract.ts'\nexport const home = loader(s, 's.home', { output: sc.object({ text: sc.string() }) }, async () => ok({ text: '${SITE_TEXT}' }))\n`,
   "modules/s/Page.tsx":
-    "import { Box, Button, Text } from '@keel/ui'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n    <Box as=\"main\">\n      <Text id=\"s.page.text\">{props.data.text}</Text>\n      <Button id=\"s.page.more\" onClick={() => undefined}>More</Button>\n    </Box>\n  )\n}\n",
+    'import { Box, Button, Text } from \'@keel/ui\'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n    <Box as="main">\n      <Text id="s.page.text">{props.data.text}</Text>\n      <Button id="s.page.more" onClick={() => undefined}>More</Button>\n    </Box>\n  )\n}\n',
   "modules/s/routes.ts":
     "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { home } from './home.server.ts'\nimport { s } from './s.contract.ts'\nexport const routes = manifest(s, { 's.home': { component: Page, loader: home } })\n",
 });

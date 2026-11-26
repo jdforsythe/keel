@@ -21,56 +21,71 @@ const FAILURE = `const failure = async (p: Promise<unknown>): Promise<{ code: un
 }`;
 const SERVE = "import { serve } from '@keel/testing/e2e'";
 
-const boom = suite([SERVE], [
-  {
-    title: "a boom the test never reads",
-    body: `const app = await serve()
+const boom = suite(
+  [SERVE],
+  [
+    {
+      title: "a boom the test never reads",
+      body: `const app = await serve()
 const page = await app.open('/boom')
 await page.fire('a.boom.go', { type: 'click' })`,
-  },
-]);
-const read = suite([SERVE], [
-  {
-    title: "a boom the test reads",
-    body: `const app = await serve()
+    },
+  ],
+);
+const read = suite(
+  [SERVE],
+  [
+    {
+      title: "a boom the test reads",
+      body: `const app = await serve()
 const page = await app.open('/boom')
 await page.fire('a.boom.go', { type: 'click' })
 const problems = page.problems()
 expect(problems.some((p) => p.text.includes('boom'))).toBe(true)
 expect(page.problems()).toEqual([])`,
-  },
-]);
+    },
+  ],
+);
 // The same test fails by default and passes with `E2E_PASS=1`: the until waits for Connecting then.
-const until = suite([SERVE], [
-  {
-    title: "an until that runs out",
-    body: `const app = await serve()
+const until = suite(
+  [SERVE],
+  [
+    {
+      title: "an until that runs out",
+      body: `const app = await serve()
 const page = await app.open('/status')
 const waiting = page.until('a.status', { text: process.env.E2E_PASS === '1' ? 'Connecting' : 'Live' }, { within: 1000 })
 const pending = app.fetch('/api/a/env', { headers: { accept: 'application/json' } })
 await pending
 await waiting`,
-  },
-]);
-const tabs = suite([SERVE], [
-  {
-    title: "an until that runs out with two tabs",
-    body: `const app = await serve()
+    },
+  ],
+);
+const tabs = suite(
+  [SERVE],
+  [
+    {
+      title: "an until that runs out with two tabs",
+      body: `const app = await serve()
 const first = await app.open('/status')
 await first.open('/status')
 await first.until('a.status', { text: 'Live' }, { within: 1000 })`,
-  },
-]);
-const contrast = suite([SERVE, FAILURE], [
-  {
-    title: "a11y of low contrast text",
-    body: `const app = await serve()
+    },
+  ],
+);
+const contrast = suite(
+  [SERVE, FAILURE],
+  [
+    {
+      title: "a11y of low contrast text",
+      body: `const app = await serve()
 const page = await app.open('/contrast')
 const e = await failure(page.a11y())
 expect(e.code).toBe('E1703')
 expect(e.message).toContain('color-contrast')`,
-  },
-]);
+    },
+  ],
+);
 
 const F = {
   boom: "test/boom.e2e.ts",
@@ -145,7 +160,9 @@ describe("k.e2e-page rules and failure output", () => {
   it("E1735 a wait of a page that ran out: the T0001 message is the code and `<verb> <id>: <what was seen> after <s>s`", () => {
     const b = block(F.until, lineOf(until, "an until that runs out"));
     const first = b.text.split("\n")[0] ?? "";
-    expect(first).toMatch(/^T0001 test\/until\.e2e\.ts:\d+:\d+ E1735 until a\.status: text was "Connecting", not "Live" after 1\.0s$/);
+    expect(first).toMatch(
+      /^T0001 test\/until\.e2e\.ts:\d+:\d+ E1735 until a\.status: text was "Connecting", not "Live" after 1\.0s$/,
+    );
   });
 
   it("a failed e2e test prints at most 10 `server:` lines, then `screenshot:` per open tab and `trace:` per context, under `reports/e2e/`", () => {
@@ -161,7 +178,10 @@ describe("k.e2e-page rules and failure output", () => {
     ]);
     // two tabs of one context: two screenshots, one trace
     const two = block(F.tabs, lineOf(tabs, "an until that runs out with two tabs"));
-    const tail2 = two.text.split("\n").slice(1).filter((r) => !r.startsWith("  server: "));
+    const tail2 = two.text
+      .split("\n")
+      .slice(1)
+      .filter((r) => !r.startsWith("  server: "));
     expect(tail2.filter((r) => r.startsWith("  screenshot: "))).toHaveLength(2);
     expect(tail2.filter((r) => r.startsWith("  trace: "))).toHaveLength(1);
   });

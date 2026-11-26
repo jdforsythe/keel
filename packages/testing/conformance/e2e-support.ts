@@ -9,7 +9,16 @@
 // `pnpm exec playwright install --with-deps chromium`).
 import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -127,7 +136,10 @@ export type Inner = { readonly title: string; readonly body: string; readonly op
  * The source of one e2e file holding `tests` (each an `it` of one line `it('<title>', async () => {`), its imports from `imports`
  * (a line each), and the 1-based line of each title, so a case finds its test in the report and its T0001 by line.
  */
-export function suite(imports: readonly string[], tests: readonly Inner[]): { source: string; lines: Record<string, number> } {
+export function suite(
+  imports: readonly string[],
+  tests: readonly Inner[],
+): { source: string; lines: Record<string, number> } {
   const lines: Record<string, number> = {};
   const out = [INNER_HEAD.trimEnd(), ...imports, ""];
   for (const t of tests) {
