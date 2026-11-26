@@ -1,5 +1,5 @@
+import { defect } from "@keel/schema";
 import type { Snapshot } from "@keel/store";
-import { raise } from "../unsafe/raise.ts";
 import type { RaceReport } from "./RaceReport.ts";
 import type { StoresFactory } from "./StoresFactory.ts";
 import { checkStore } from "./internal/checkStore.ts";
@@ -19,7 +19,7 @@ export function races(snapshot: Snapshot<unknown>, stores: StoresFactory): RaceR
     const st = made.stores.find(
       (x) => x.schema.parse(snapshot.state).ok && snapshot.log.every((e) => x.payloads.has(e.name)),
     );
-    if (st === undefined) return raise("std.conflicts: no store of the factory holds this snapshot");
+    if (st === undefined) return defect("std.conflicts: no store of the factory holds this snapshot");
     return checkStore(st, made.txs, snapshot);
   });
 }

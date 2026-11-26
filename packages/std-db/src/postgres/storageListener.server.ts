@@ -1,8 +1,6 @@
 import type { StorageReport } from "@keel/ctx";
 import { attempt } from "@keel/schema";
 import pg from "pg";
-import { raise } from "../../unsafe/raise.ts";
-import { settle } from "../../unsafe/settle.ts";
 import type { StorageListening } from "./StorageListening.ts";
 import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
@@ -57,15 +55,17 @@ export function storageListener(url: URL, token: string): StorageListening {
       // A watcher's throw never reaches the connection.
       for (const on of [...watchers]) void attempt(() => on({ kind: "committed", keys }));
     });
-    const listening = await settle(async () => {
+    let listening = false;
+    try {
       await client.connect();
       await client.query("listen keel_storage");
-    });
-    if (listening.threw) {
-      client.removeAllListeners();
-      client.on("error", () => undefined);
-      void (await attempt(() => client.end()));
-      return raise(listening.error);
+      listening = true;
+    } finally {
+      if (!listening) {
+        client.removeAllListeners();
+        client.on("error", () => undefined);
+        void (await attempt(() => client.end()));
+      }
     }
     live = client;
     return client;
@@ -88,11 +88,15 @@ export function storageListener(url: URL, token: string): StorageListening {
       watchers.add(mine);
       opening ??= open();
       const pending = opening;
-      const opened = await settle(() => pending);
-      if (opened.threw) {
-        watchers.delete(mine);
-        if (opening === pending) opening = undefined;
-        return raise(opened.error);
+      let opened = false;
+      try {
+        await pending;
+        opened = true;
+      } finally {
+        if (!opened) {
+          watchers.delete(mine);
+          if (opening === pending) opening = undefined;
+        }
       }
       return () => {
         if (watchers.delete(mine)) void stopIfIdle();

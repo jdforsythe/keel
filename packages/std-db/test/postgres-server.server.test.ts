@@ -290,7 +290,7 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
       (x: unknown) => x,
     );
     const text = String(e);
-    expect(text).toMatch(/^Error: E2153 KEEL_DATABASE_URL/);
+    expect(text).toMatch(/^Defect: E2153 KEEL_DATABASE_URL/);
     for (const part of ["wrongsecretword", u.username, u.port, u.pathname.slice(1)]) expect(text).not.toContain(part);
   });
 });
@@ -350,7 +350,7 @@ test(
         () => null,
         (x: unknown) => x,
       );
-      expect(String(e)).toMatch(/^Error: E2153 KEEL_DATABASE_URL/);
+      expect(String(e)).toMatch(/^Defect: E2153 KEEL_DATABASE_URL/);
     } finally {
       for (const s of sockets) s.destroy();
       await new Promise<void>((resolve) => silent.close(() => resolve()));

@@ -1,8 +1,6 @@
 import type { Clock } from "@keel/ctx";
-import { err, ok } from "@keel/schema";
+import { attempt, defect, err, ok } from "@keel/schema";
 import type { Result } from "@keel/schema";
-import { raise } from "../../../unsafe/raise.ts";
-import { settle } from "../../../unsafe/settle.ts";
 import type { Conflict } from "../../Conflict.ts";
 import type { ConstraintError } from "../../ConstraintError.ts";
 import { NoRows } from "../../NoRows.schema.ts";
@@ -24,14 +22,13 @@ import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
 import type { Step } from "./Step.schema.ts";
 import type { ValueOf } from "./ValueOf.ts";
+import { answered } from "./answered.server.ts";
 import { changeText } from "./changeText.server.ts";
 import { classify } from "./classify.server.ts";
 import { errors } from "./errors.server.ts";
-import { isSerial } from "./isSerial.server.ts";
 import { payloadOf } from "./payloadOf.server.ts";
 import { rowsOf } from "./rowsOf.server.ts";
 import { toText } from "./toText.server.ts";
-import { unexpected } from "./unexpected.server.ts";
 
 /** The level each `allow` runs at. */
 const LEVELS: ReadonlyMap<string, Level> = new Map([
@@ -56,9 +53,9 @@ type Run = Tx & { notify(text: string): Promise<Result<null, StatementError>> };
 function levelOf(opts: TransactionOptions | undefined): Level {
   if (opts?.allow === undefined) return "serializable";
   const level = LEVELS.get(opts.allow);
-  if (level === undefined) return raise(new Error("std.postgres: transaction allow is not one it takes"));
+  if (level === undefined) return defect("std.postgres: transaction allow is not one it takes");
   if (typeof opts.reason !== "string" || opts.reason.trim() === "")
-    return raise(new Error("std.postgres: transaction allow needs a reason"));
+    return defect("std.postgres: transaction allow needs a reason");
   return level;
 }
 
@@ -89,22 +86,16 @@ const unwanted = (raw: Raw): ResultError => ({
   },
 });
 
-/** A driver error as a statement's answer; one that is not expected throws. */
-const answer = (e: unknown): StatementError => {
-  const c = classify(e);
-  if (c === null) return raise(unexpected(e));
-  return c;
-};
-
 /**
  * The engine, made ready by `backend.ensure()`: a refused or lost connection, opening the store or in the migration
  * pass, is `keel.unreachable`; any other failure throws as it is.
  */
 async function ready(backend: Backend): Promise<Engine | Unreachable> {
-  const s = await settle(() => backend.ensure());
-  if (!s.threw) return s.value;
-  if (classify(s.error) === errors.unreachable) return errors.unreachable;
-  return raise(s.error);
+  const s = await attempt(
+    () => backend.ensure(),
+    (e) => (classify(e) === errors.unreachable ? errors.unreachable : undefined),
+  );
+  return s.ok ? s.value : s.error;
 }
 
 /** Reads `pg_type` again on `c` when `raw` holds a type the cache has not seen (one a migration made). */
@@ -146,7 +137,7 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
       const engine = await ready(backend);
       if (!("tx" in engine)) return engine;
       const forced = stop !== null;
-      const s = await settle(async () => {
+      const s = await attempt(async () => {
         const raw =
           backend.pooled && !forced
             ? await engine.statement(q.text, paramsOf(q))
@@ -158,9 +149,9 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
               });
         if (!forced) await known(raw, engine, null);
         return raw;
-      });
-      if (s.threw) {
-        if (!isSerial(s.error)) return answer(s.error);
+      }, answered);
+      if (!s.ok) {
+        if (s.error.code !== "keel.conflict") return s.error;
       } else if (!forced) return { raw: s.value, engine };
       if (n >= RUNS) return errors.conflict;
     }
@@ -206,22 +197,20 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
       // A plan step `conflict` lets the run's statements run, then fails it as a serialization failure at its commit.
       const forced = stop !== null;
       const state: RunState = { serial: false, lost: false, changes: new Set() };
-      const s = await settle(() =>
-        engine.tx(level, async (c) => {
-          await backend.prelude(c);
-          const r = await fn(txOf(name, c, engine, state));
-          return { value: r, commit: r.ok && !forced && !state.serial && !state.lost };
-        }),
+      const s = await attempt(
+        () =>
+          engine.tx(level, async (c) => {
+            await backend.prelude(c);
+            const r = await fn(txOf(name, c, engine, state));
+            return { value: r, commit: r.ok && !forced && !state.serial && !state.lost };
+          }),
+        answered,
       );
-      const outcome: Result<unknown, unknown> | undefined = s.threw ? undefined : s.value;
-      if (s.threw) {
-        if (isSerial(s.error)) state.serial = true;
-        else {
-          const a = answer(s.error);
-          if (a === errors.unreachable) state.lost = true;
-          else if (a.code === "postgres.constraint") return err(a);
-          else return raise(unexpected(s.error));
-        }
+      const outcome: Result<unknown, unknown> | undefined = s.ok ? s.value : undefined;
+      if (!s.ok) {
+        if (s.error.code === "keel.conflict") state.serial = true;
+        else if (s.error.code === "keel.unreachable") state.lost = true;
+        else return err(s.error);
       }
       if (state.lost) return err(errors.unreachable);
       if ((forced && outcome?.ok === true) || state.serial || outcome === undefined) {
@@ -249,7 +238,7 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
 /** `one`'s answer from `query`'s: the one row, none `keel.notFound`; more than one throws. */
 function onlyRow<T>(r: Result<T[], StatementError>): Result<T, StatementError | NotFound> {
   if (!r.ok) return r;
-  if (r.value.length > 1) return raise(new Error(`std.postgres: one() got ${r.value.length} rows`));
+  if (r.value.length > 1) return defect(`std.postgres: one() got ${r.value.length} rows`);
   for (const row of r.value) return ok(row);
   return err(errors.notFound);
 }
@@ -264,14 +253,14 @@ function txOf(name: string, c: Conn, engine: Engine, state: RunState): Run {
     if (state.lost) return errors.unreachable;
     if (state.serial) return errors.conflict;
     await c.exec("savepoint keel_statement");
-    const s = await settle(async () => {
+    const s = await attempt(async () => {
       const raw = await c.query(q.text, paramsOf(q));
       await c.exec("release savepoint keel_statement");
       await known(raw, engine, c);
       return raw;
-    });
-    if (!s.threw) return s.value;
-    const a = answer(s.error);
+    }, answered);
+    if (s.ok) return s.value;
+    const a = s.error;
     if (a === errors.unreachable) {
       state.lost = true;
       return a;

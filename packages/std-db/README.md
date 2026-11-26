@@ -27,6 +27,4 @@ Uses the **storage drivers** (k.persist: `createCtx({ mode: 'real', drivers: { s
 
 ## Unsafe
 
-count: 3
-- `unsafe/raise.ts`: the rejections std.db specifies (E1606, E2152, E2153, text it cannot store, a call after `close()`, a failed call naming its driver and operation) and a caught driver error passed on unchanged.
-- `unsafe/settle.ts`, `unsafe/settleNow.ts`: the catches that read the driver's error object (pg's `code`, node:sqlite's `errcode`, std.db's own E2152 and E2153), for promises and for node:sqlite's synchronous calls.
+count: 0

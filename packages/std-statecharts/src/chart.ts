@@ -1,10 +1,8 @@
-import { owner } from "@keel/reactive";
-import { type Schema, s } from "@keel/schema";
+import { owner, scope } from "@keel/reactive";
+import { type Schema, defect, s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 import { asEvents } from "../unsafe/asEvents.ts";
-import { detached } from "../unsafe/detached.ts";
 import { loosen } from "../unsafe/loosen.ts";
-import { refuse } from "../unsafe/refuse.ts";
 import type { Chart } from "./Chart.type.ts";
 import type { ChartInstance } from "./ChartInstance.ts";
 import type { ChartSpec } from "./ChartSpec.ts";
@@ -32,11 +30,16 @@ export function chart<
 >(id: string, spec: ChartSpec<D, Ev, S, G, A>): Chart<D, Ev, S, G, A> {
   const declared: Readonly<Record<string, LooseState>> = spec.states;
   const problem = analyze(shapeOf({ ...spec, states: declared }))[0];
-  if (problem !== undefined) refuse(`${problem.code} chart ${id}: ${problem.message}`);
+  if (problem !== undefined) {
+    const text = `chart ${id}: ${problem.message}`;
+    if (problem.code === "E2751") defect(text, "E2751");
+    if (problem.code === "E2753") defect(text, "E2753");
+    defect(text, "E2754");
+  }
   const names: S[] = [];
   for (const name in spec.states) names.push(name);
   const [first, ...rest] = names;
-  if (first === undefined) refuse(`E2751 chart ${id}: no states`);
+  if (first === undefined) defect(`chart ${id}: no states`, "E2751");
   const guards = loosen<D, boolean>(spec.guards);
   const actions = loosen<D, D>(spec.actions);
   const pick = (cur: ChartState<string, D>, event: string, payload: unknown) => {
@@ -90,6 +93,6 @@ export function chart<
     return { store: st, events: asEvents(table), enabled };
   };
   // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const own = owner() === undefined ? detached(compile, id) : compile(id);
+  const own = owner() === undefined ? scope(() => undefined).run(() => compile(id)) : compile(id);
   return { ...own, data: spec.data, states: spec.states, initial: spec.initial, next, taken, [compileKey]: compile };
 }

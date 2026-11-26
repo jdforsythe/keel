@@ -1,5 +1,4 @@
-import type { Schema } from "@keel/schema";
-import { refuse } from "../unsafe/refuse.ts";
+import { type Schema, defect } from "@keel/schema";
 import type { Chart } from "./Chart.type.ts";
 import type { ChartInstance } from "./ChartInstance.ts";
 import { compileKey } from "./internal/compileKey.ts";
@@ -16,6 +15,6 @@ export function instance<
   G extends string,
   A extends string,
 >(chart: Chart<D, Ev, S, G, A>, key: string): ChartInstance<D, Ev, S> {
-  if (!/^[\w.-]{1,64}$/.test(key)) refuse(`instance ${chart.store.id}: key is not [\\w.-]{1,64}`);
+  if (!/^[\w.-]{1,64}$/.test(key)) defect(`instance ${chart.store.id}: key is not [\\w.-]{1,64}`);
   return chart[compileKey](`${chart.store.id}:${key}`);
 }

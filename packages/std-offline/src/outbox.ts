@@ -1,10 +1,8 @@
-import { owner } from "@keel/reactive";
+import { owner, scope } from "@keel/reactive";
 import type { Contract } from "@keel/router/contract";
-import { s, secretPath } from "@keel/schema";
+import { defect, s, secretPath } from "@keel/schema";
 import { type Endpoint, service } from "@keel/services";
 import { store, transaction } from "@keel/store";
-import { detached } from "../unsafe/detached.ts";
-import { raise } from "../unsafe/raise.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import { OutboxEntry } from "./OutboxEntry.schema.ts";
 import { Resolution } from "./Resolution.schema.ts";
@@ -36,8 +34,7 @@ export function outbox<const C extends Contract>(
     const name = entry.slice(contract.module.length + 1);
     const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
-      const message = `E2651 outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`;
-      return raise(message, "E2651");
+      return defect(`outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`, "E2651");
     }
     api[name] = e;
   }
@@ -86,8 +83,9 @@ export function outbox<const C extends Contract>(
     if (c) c.live = false;
   });
   if (sc) make();
-  // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const cfg = (): Config => c ?? detached(make);
+  // Declared outside a scope (module level): the root lives as long as the module, and the store made on first use is its.
+  const root = sc === undefined ? scope(() => undefined) : undefined;
+  const cfg = (): Config => c ?? (root === undefined ? make() : root.run(make));
   const st = () => cfg().store;
   const o: Outbox<Writes<C>> = {
     id,

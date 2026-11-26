@@ -1,6 +1,5 @@
+import { defect } from "@keel/schema";
 import type { JsonValue } from "@keel/schema";
-import { raise } from "../../unsafe/raise.ts";
-import { codeError } from "./codeError.ts";
 
 const isPlain = (v: object): boolean => {
   const proto: unknown = Object.getPrototypeOf(v);
@@ -24,7 +23,7 @@ function kind(v: unknown): string {
 export function toParam(v: unknown, position: number): JsonValue {
   const seen = new Set<object>();
   const fail = (bad: unknown, why?: string): never => {
-    return raise(codeError("E2457", `parameter $${position} is not a JSON value: ${why ?? kind(bad)}`));
+    return defect(`parameter $${position} is not a JSON value: ${why ?? kind(bad)}`, "E2457");
   };
   const walk = (x: unknown): JsonValue => {
     if (x === null || typeof x === "string" || typeof x === "boolean") return x;

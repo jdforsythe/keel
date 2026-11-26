@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
-import { raise } from "../../../unsafe/raise.ts";
-import { codeError } from "../../internal/codeError.ts";
+import { defect } from "@keel/schema";
 import type { Migration } from "./Migration.ts";
 
 const KEY = /^(?:.*\/)?migrations\/(\d{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.sql$/;
@@ -14,18 +13,16 @@ export function migrationFiles(name: string, migrations: Readonly<Record<string,
   for (const [key, text] of Object.entries(migrations)) {
     const m = KEY.exec(key);
     if (m === null || typeof text !== "string")
-      return raise(codeError("E2453", `${name}: ${JSON.stringify(key)} is not ./migrations/NNNN-<kebab>.sql`));
+      return defect(`${name}: ${JSON.stringify(key)} is not ./migrations/NNNN-<kebab>.sql`, "E2453");
     const digest = createHash("sha256").update(text).digest("hex");
     out.push({ id: Number(m[1]), name: `${m[1]}-${m[2]}`, text, digest });
   }
   out.sort((a, b) => a.id - b.id);
   for (const [i, f] of out.entries())
     if (f.id !== i + 1)
-      return raise(
-        codeError(
-          "E2453",
-          `${name}: migration ${String(i + 1).padStart(4, "0")} is missing or repeated (found ${f.name})`,
-        ),
+      return defect(
+        `${name}: migration ${String(i + 1).padStart(4, "0")} is missing or repeated (found ${f.name})`,
+        "E2453",
       );
   return out;
 }

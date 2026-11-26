@@ -292,13 +292,15 @@ test("a follow waiting for the connection gets no event, and fails once the conn
   notify("keel_changes", "A");
   fakes.state.clients[0]?.emit("error", new Error("gone"));
   open();
-  await expect(p).rejects.toThrow(new Error("std.postgres: the listening connection closed"));
+  await expect(p).rejects.toThrow(
+    expect.objectContaining({ name: "Defect", message: "std.postgres: the listening connection closed" }),
+  );
   expect(waiting.events).toEqual([]);
   fakes.state.connect = () => Promise.reject(Object.assign(new Error("refused"), { code: "ECONNREFUSED" }));
   const refused = listenChanges(url());
   for (let n = 1; n <= 2; n++) {
     await expect(refused.follow("A", () => undefined)).rejects.toThrow(
-      new Error("std.postgres: the listening connection did not open"),
+      expect.objectContaining({ name: "Defect", message: "std.postgres: the listening connection did not open" }),
     );
     expect(fakes.state.clients.length).toBe(1 + n);
   }

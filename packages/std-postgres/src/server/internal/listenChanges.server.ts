@@ -1,7 +1,6 @@
 import { pid } from "node:process";
-import { attempt } from "@keel/schema";
+import { attempt, defect } from "@keel/schema";
 import pg from "pg";
-import { raise } from "../../../unsafe/raise.ts";
 import type { FollowEvent } from "../FollowEvent.ts";
 import type { Changes } from "./Changes.ts";
 import { verifiedSslmode } from "./verifiedSslmode.server.ts";
@@ -102,9 +101,9 @@ export function listenChanges(url: string): Changes {
       const opened = await attempt(() => at.ready);
       if (!opened.ok) {
         stop();
-        return raise(new Error("std.postgres: the listening connection did not open"));
+        return defect("std.postgres: the listening connection did not open");
       }
-      if (at.done) return raise(new Error("std.postgres: the listening connection closed"));
+      if (at.done) return defect("std.postgres: the listening connection closed");
       f.listening = true;
       return stop;
     },

@@ -141,7 +141,7 @@ test("a database error that is not expected throws its SQLSTATE and no value", a
       () => undefined,
       (e: unknown) => e,
     );
-  expect(Reflect.get(Object(err), "code")).toBe("22P02");
+  expect(String(err)).toContain("SQLSTATE 22P02");
   expect(String(err)).not.toContain("zzq");
 });
 

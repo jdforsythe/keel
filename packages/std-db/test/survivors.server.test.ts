@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { check } from "@keel/check";
+import { defect } from "@keel/schema";
 import "@keel/std-db/tools";
 import type { PgClient } from "@keel/std-db/postgres";
 import type { PgPool } from "@keel/std-db/postgres";
@@ -12,7 +13,6 @@ import { postgres } from "@keel/std-db/postgres";
 import { sqlite } from "@keel/std-db/sqlite";
 import { afterEach, describe, expect, test } from "vitest";
 import { checkLayout } from "../src/internal/checkLayout.ts";
-import { dbError } from "../src/internal/dbError.ts";
 import { distinctKeys } from "../src/internal/distinctKeys.ts";
 import { opFailed } from "../src/internal/opFailed.ts";
 import { removeDir, tempDir } from "./support.server.ts";
@@ -95,11 +95,16 @@ describe("checkLayout", () => {
 });
 
 describe("dbError and distinctKeys", () => {
-  test("dbError's message starts with the code, and code is readable but not enumerable", () => {
-    const e = dbError("E2153", "text");
-    expect(e.message).toBe("E2153 text");
-    expect(e.code).toBe("E2153");
-    expect(Object.keys(e)).toEqual([]);
+  test("a coded defect's message starts with the code, and code is readable but not enumerable", () => {
+    let e: unknown;
+    try {
+      defect("text", "E2153");
+    } catch (thrown) {
+      e = thrown;
+    }
+    expect(messageOf(e)).toBe("E2153 text");
+    expect(codeOf(e)).toBe("E2153");
+    expect(Object.keys(Object(e))).toEqual([]);
     expect(Object.getOwnPropertyDescriptor(e, "code")?.enumerable).toBe(false);
   });
 

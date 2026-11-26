@@ -1,8 +1,6 @@
 import { AsyncResource } from "node:async_hooks";
 import type { PGlite } from "@electric-sql/pglite";
 import { attempt } from "@keel/schema";
-import { raise } from "../../../unsafe/raise.ts";
-import { settle } from "../../../unsafe/settle.ts";
 import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
 import type { Held } from "./Held.ts";
@@ -60,7 +58,8 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
   ): Promise<T> =>
     exclusive(async () => {
       await held(() => apart(() => db.exec(`begin isolation level ${level}`)));
-      const s = await settle(async () => {
+      let done = false;
+      try {
         const out = await fn({
           query: (text, params) => held(() => run(db, text, params)),
           exec: async (text) => {
@@ -68,11 +67,11 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
           },
         });
         await held(() => apart(() => db.exec(out.commit ? "commit" : "rollback")));
+        done = true;
         return out.value;
-      });
-      if (!s.threw) return s.value;
-      void (await attempt(() => held(() => apart(() => db.exec("rollback")))));
-      return raise(s.error);
+      } finally {
+        if (!done) void (await attempt(() => held(() => apart(() => db.exec("rollback")))));
+      }
     });
   return {
     types,

@@ -1,4 +1,4 @@
-import { raise } from "../../../unsafe/raise.ts";
+import { defect } from "@keel/schema";
 import type { ArrayItem } from "./ArrayItem.ts";
 
 /**
@@ -9,11 +9,11 @@ export function parseArray(src: string, delim = ","): ArrayItem[] {
   let i = src.startsWith("[") ? src.indexOf("=") + 1 : 0;
   const at = (): string => {
     const ch = src[i];
-    if (ch === undefined) return raise(new Error("std.postgres: an array value ended early"));
+    if (ch === undefined) return defect("std.postgres: an array value ended early");
     return ch;
   };
   const level = (): ArrayItem[] => {
-    if (at() !== "{") return raise(new Error("std.postgres: an array value does not start with {"));
+    if (at() !== "{") return defect("std.postgres: an array value does not start with {");
     i++;
     const out: ArrayItem[] = [];
     if (at() === "}") {
@@ -41,7 +41,7 @@ export function parseArray(src: string, delim = ","): ArrayItem[] {
       const end = at();
       i++;
       if (end === "}") return out;
-      if (end !== delim) return raise(new Error("std.postgres: an array value has text after an element"));
+      if (end !== delim) return defect("std.postgres: an array value has text after an element");
     }
   };
   return level();

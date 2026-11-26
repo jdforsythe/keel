@@ -1,5 +1,4 @@
-import { raise } from "../../../unsafe/raise.ts";
-import { codeError } from "../../internal/codeError.ts";
+import { defect } from "@keel/schema";
 import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
 import type { Migration } from "./Migration.ts";
@@ -39,12 +38,9 @@ export async function migrate(
       for (const [id, file, digest] of rows) {
         const n = Number(id);
         const now = files[n - 1];
-        if (now === undefined)
-          return raise(codeError("E2454", `${name}: the applied migration ${file} is gone from migrations`));
+        if (now === undefined) return defect(`${name}: the applied migration ${file} is gone from migrations`, "E2454");
         if (now.digest !== digest)
-          return raise(
-            codeError("E2454", `${name}: the applied migration ${file} changed since it ran (its SHA-256 differs)`),
-          );
+          return defect(`${name}: the applied migration ${file} changed since it ran (its SHA-256 differs)`, "E2454");
         done.add(n);
       }
       const next = files.find((f) => !done.has(f.id));
