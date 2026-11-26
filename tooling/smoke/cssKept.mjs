@@ -1,14 +1,33 @@
 // The k.values Stylesheet invariant in Chromium: the CSS `compileStyles` emits, from `brandTokens` and from tokens
 // holding one value of each group's form used by every style prop, parses through `CSSStyleSheet.replaceSync` with
 // every emitted rule kept and each rule holding every declaration it was emitted with; and each attack value a review
-// found is refused (E1807) before any CSS is emitted. Called by brand.mjs with its page.
+// found is refused (E1807) before any CSS is emitted; and the grammar's edge cases (`valueEdges`): each refused one is
+// refused, each accepted one takes effect by its computed value. Called by brand.mjs with its page.
 import { brandTokens } from "../../packages/ui/src/brand/brandTokens.ts";
+import { TokenSchema } from "../../packages/ui/src/TokenSchema.ts";
 import { compileStyles } from "../../packages/ui/src/css/compileStyles.ts";
+import { valueEdges } from "../../packages/ui/src/internal/valueEdges.ts";
+
+/** The CSS property each group's style props write, read back to judge a value's effect. */
+const PROPERTY = {
+  color: "background-color",
+  space: "padding-top",
+  size: "width",
+  radius: "border-top-left-radius",
+  font: "font-family",
+  fontSize: "font-size",
+  weight: "font-weight",
+  shadow: "box-shadow",
+  border: "border-top",
+  motion: "transition-duration",
+};
+/** Values written as the property's initial one, whose computed value is that one (k.values Stylesheet). */
+const AS_INITIAL = new Set(["0", "normal", "auto", "none"]);
 
 /** One value of each form k.values' table defines, every group used by a style prop. */
 const FORMS = {
   color: { fg: "#1A191E", bg: { light: "#FFFFFF", dark: "#111" }, ink: "#0B5CAD" },
-  space: { 1: "4px", n: "-2rem", a: "auto" },
+  space: { 1: "4px", n: "clamp(4px, 2vw + 4px, 24px)", a: "auto", e: "env(safe-area-inset-top, 4px)" },
   size: { w: "50%", fit: "fit-content", min: "min-content" },
   radius: { r: "0.25rem" },
   font: { f: "'Inter var', \"Helvetica Neue\", sans-serif" },
@@ -21,7 +40,7 @@ const FORMS = {
   schemes: ["light", "dark"],
 };
 const FORM_USAGES = [
-  { props: { fg: "fg", bg: "bg", p: "1", m: "n", gap: "a", direction: "column" } },
+  { props: { fg: "fg", bg: "bg", p: "1", m: "n", mx: "a", gap: "e", direction: "column" } },
   { props: { w: "w", h: "fit", radius: "r", font: "f", fontSize: "s", weight: "w" } },
   { props: { shadow: "s", border: "b" }, breakpoint: "md" },
   { props: { border: "h", weight: "b", shadow: "n" }, state: "hover" },
@@ -104,6 +123,49 @@ export async function cssKept(page, step) {
       `${got.length}/${want.length} rules, ${lost.length} short of a declaration`,
     );
   }
+  // The grammar's edge cases: each refused case is refused; each accepted one, set through its group's property,
+  // reads back non-empty and computes to a value other than the initial one unless written as it.
+  const { accepted, refused } = valueEdges();
+  const tokensOf = (group, value) => ({ color: { text: "#111111" }, [group]: { a: value } });
+  const wrongly = refused.filter(([group, value]) => TokenSchema.parse(tokensOf(group, value)).ok);
+  step(
+    "each refused edge case of the grammar is refused (form feed, null, quotes, backslash, surrogates among them)",
+    wrongly.length === 0 && refused.some(([, v]) => v.includes("\f")),
+    `${refused.length} cases, ${wrongly.length} accepted${wrongly.length > 0 ? `: ${JSON.stringify(wrongly[0])}` : ""}`,
+  );
+  const outOfForm = accepted.filter(([group, value]) => !TokenSchema.parse(tokensOf(group, value)).ok);
+  const cases = accepted.filter(([group]) => group !== "breakpoint");
+  const effects = await page.evaluate(
+    ({ cases, property }) =>
+      cases.map(([group, value]) => {
+        const prop = property[group];
+        const probe = document.createElement("div");
+        const plain = document.createElement("div");
+        document.body.append(probe, plain);
+        probe.style.setProperty(prop, value);
+        if (group === "border") plain.style.setProperty("border-top-style", "none");
+        const written = probe.style.getPropertyValue(prop);
+        const read = prop === "border-top" ? "border-top-style" : prop;
+        const got = getComputedStyle(probe).getPropertyValue(read);
+        const initial = getComputedStyle(plain).getPropertyValue(read);
+        probe.remove();
+        plain.remove();
+        return { group, value, written, changed: got !== initial };
+      }),
+    { cases, property: PROPERTY },
+  );
+  const media = await page.evaluate(
+    (values) => values.map((v) => window.matchMedia(`(min-width: ${v})`).media !== "not all"),
+    accepted.filter(([g]) => g === "breakpoint").map(([, v]) => v),
+  );
+  const noEffect = effects.filter(
+    (e) => e.written === "" || (!e.changed && !AS_INITIAL.has(e.value) && !e.value.includes("env(")),
+  );
+  step(
+    "each accepted edge case of the grammar takes effect in Chromium (read back from style, computed off the initial value)",
+    outOfForm.length === 0 && noEffect.length === 0 && media.every(Boolean),
+    `${accepted.length} cases, ${outOfForm.length} out of form, ${noEffect.length} with no effect${noEffect.length > 0 ? `: ${JSON.stringify(noEffect[0])}` : ""}`,
+  );
   const passed = ATTACKS.filter((tokens) => {
     try {
       compileStyles({ tokens, usages: [] });
