@@ -3,7 +3,7 @@
 import { createCtx } from "@keel/ctx";
 import { properties, render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
-import { Fragile, Labels } from "./support/components.ts";
+import { Field, Fragile, Labels } from "./support/components.ts";
 
 const sim = () => createCtx({ mode: "sim", seed: 1337 });
 
@@ -32,5 +32,9 @@ describe("properties(component)", () => {
 
   it("passes for a component whose generated renders are accessible and deterministic", async () => {
     expect(await properties(Labels, { runs: 30, seed: 1337 })).toEqual({ seed: 1337, runs: 30 });
+  });
+
+  it("passes for a component whose `id` prop is a plain string: the generated id is id-shaped", async () => {
+    expect(await properties(Field, { runs: 60, seed: 1337 })).toEqual({ seed: 1337, runs: 60 });
   });
 });
