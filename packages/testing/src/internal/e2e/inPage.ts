@@ -15,7 +15,9 @@ import { nodeOf } from "../nodeOf.ts";
 import { roleOf } from "../roleOf.ts";
 import { stateOf } from "../stateOf.ts";
 import { treeOf } from "../treeOf.ts";
-import type { HeldCheck, PageApi, PageMatch } from "./PageApi.ts";
+import type { HeldCheck } from "./HeldCheck.ts";
+import type { PageApi } from "./PageApi.ts";
+import type { PageMatch } from "./PageMatch.ts";
 
 const shown = (el: Element): boolean =>
   el.isConnected && el.checkVisibility({ visibilityProperty: true, contentVisibilityAuto: true });

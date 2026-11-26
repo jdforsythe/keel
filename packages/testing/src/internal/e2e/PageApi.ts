@@ -2,19 +2,8 @@ import type { A11yNode } from "../../types/A11yNode.ts";
 import type { Found } from "../../types/Found.ts";
 import type { Layout } from "../../types/Layout.ts";
 import type { Violation } from "../Violation.ts";
-
-/** A `Match` as it crosses into the page: a `RegExp` as its source and flags. */
-export type PageMatch = {
-  readonly text?: string;
-  readonly pattern?: { readonly source: string; readonly flags: string };
-  readonly name?: string;
-  readonly role?: string;
-  readonly state?: Readonly<Record<string, unknown>>;
-  readonly gone?: true;
-};
-
-/** What a held page looked like before its scripts ran, as `resume` compares it. */
-export type HeldCheck = { readonly ok: true } | { readonly ok: false; readonly why: string };
+import type { HeldCheck } from "./HeldCheck.ts";
+import type { PageMatch } from "./PageMatch.ts";
 
 /**
  * The functions the page script (`inPage.ts`, bundled and evaluated in each document) leaves on `globalThis`, which the

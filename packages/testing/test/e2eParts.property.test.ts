@@ -11,25 +11,30 @@ import { idHeads } from "../src/internal/e2e/idHeads.ts";
 import { parseLogLine } from "../src/internal/e2e/parseLogLine.ts";
 
 const SEED = { seed: 1337, numRuns: 200 };
-const ms = fc.integer({ min: 0, max: 600_000 });
+const amount = fc.integer({ min: 0, max: 600_000 });
 const scale = fc.double({ min: 0.05, max: 20, noNaN: true });
 
 describe("boundMs", () => {
   it("is 10 s whatever the scale with neither part, within times the scale plus fixed otherwise", () => {
     fc.assert(
-      fc.property(fc.option(ms, { nil: undefined }), fc.option(ms, { nil: undefined }), scale, (within, fixed, k) => {
-        const wait = { ...(within === undefined ? {} : { within }), ...(fixed === undefined ? {} : { fixed }) };
-        const got = boundMs(wait, k);
-        if (within === undefined && fixed === undefined) expect(got).toBe(10_000);
-        else expect(got).toBe(Math.max(1, Math.round((within ?? 0) * k + (fixed ?? 0))));
-      }),
+      fc.property(
+        fc.option(amount, { nil: undefined }),
+        fc.option(amount, { nil: undefined }),
+        scale,
+        (within, fixed, k) => {
+          const wait = { ...(within === undefined ? {} : { within }), ...(fixed === undefined ? {} : { fixed }) };
+          const got = boundMs(wait, k);
+          if (within === undefined && fixed === undefined) expect(got).toBe(10_000);
+          else expect(got).toBe(Math.max(1, Math.round((within ?? 0) * k + (fixed ?? 0))));
+        },
+      ),
       SEED,
     );
   });
 
   it("does not scale fixed time", () => {
     fc.assert(
-      fc.property(ms, scale, (fixed, k) => {
+      fc.property(amount, scale, (fixed, k) => {
         expect(boundMs({ fixed }, k)).toBe(Math.max(1, fixed));
       }),
       SEED,

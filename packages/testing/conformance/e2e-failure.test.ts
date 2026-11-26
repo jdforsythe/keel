@@ -1,3 +1,5 @@
+import { rmSync } from "node:fs";
+import { join } from "node:path";
 // @vitest-environment node
 // Spec: k.e2e-page, clause "A test whose page throws `new Error('boom')` in a click handler, and that never calls `problems()`, fails with E1738 holding `boom`; calling `problems()` after the click returns it, and the test passes."
 // Spec: k.e2e-page, clause "A test that fails at `until` writes one `.png` and one `.zip` under `reports/e2e/` named after its file and line, and its T0001 output lists the `server:` records of the requests made during that `until`; the same test passing writes nothing under `reports/e2e/`."
@@ -12,8 +14,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Run, cleanup, failureOf, keelE2e, listing, outcome, project, suite } from "./e2e-support.ts";
 import { PAGES, nodeApp } from "./fixtures/e2e/node-app.ts";
-import { rmSync } from "node:fs";
-import { join } from "node:path";
 
 const FAILURE = `const failure = async (p: Promise<unknown>): Promise<{ code: unknown; message: string }> => {
   const e: unknown = await p.then(() => undefined, (x: unknown) => x)

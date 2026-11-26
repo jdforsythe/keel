@@ -8,7 +8,9 @@ export default function ReplacePage() {
       <If when={driven} fallback={() => <Input id="a.first" label="Name" />}>
         <Input id="a.again" label="Name again" />
       </If>
-      <Button id="a.replace.go" onClick={() => undefined}>Go</Button>
+      <Button id="a.replace.go" onClick={() => undefined}>
+        Go
+      </Button>
     </Box>
   );
 }

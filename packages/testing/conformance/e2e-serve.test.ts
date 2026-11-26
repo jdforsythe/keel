@@ -14,10 +14,10 @@
 // to hand to `state` and `until`. A form POST to `/` with `accept` html is the page's add (303); `GET /api/a/env` answers `{ results: { 'a.env': { value } } }` as app-data-support.ts reads an API entry.
 // The `static` clause's header is read as `csp.txt`'s text with its ends trimmed; `ps` names a process by its command line, which holds the project's path.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { type Run, cleanup, keelE2e, outcome, project, suite } from "./e2e-support.ts";
 import { PAGES, nodeApp } from "./fixtures/e2e/node-app.ts";
 import { staticApp } from "./fixtures/e2e/static-app.ts";
 import { twoNodeApp } from "./fixtures/e2e/two-node.ts";
-import { type Run, cleanup, keelE2e, outcome, project, suite } from "./e2e-support.ts";
 
 const CONNECT = ", origins: { connect: { 'https://api.example.com': 'payments' } }";
 

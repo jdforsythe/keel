@@ -1,13 +1,3 @@
-// Support for the k.e2e and k.e2e-page conformance files (not a test file): a built-app fixture project in the OS tmpdir with `@keel/*`
-// linked, the real `keel test --e2e` binary over it as a child process, and its reports read back. Seed 1337 for every property.
-// How the browser cases run: they have no skip guard. Each file runs `keel test --e2e` once over a fixture project whose e2e files hold
-// the clause's test, then reads the run's output and `reports/tests/e2e.json`. Where `playwright-core` or the browser is absent the
-// product's own E1734 fails the run and so every case of the file: nothing here skips (k.e2e Browser). A builder must provide:
-// Node 22.13 or later (`'sqlite'`), `playwright-core` resolvable from the repo's `node_modules` (a `devDependency` of the repo root or
-// of `@keel/testing`), and Chromium installed by `playwright-core install chromium`; CI's `test-shard` jobs for `@keel/testing` and
-// `@keel/cli` run these files, so each installs Chromium first (tooling/ci.source.json's `built-smokes` job does it with
-// `pnpm exec playwright install --with-deps chromium`).
-import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
@@ -22,6 +12,16 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+// Support for the k.e2e and k.e2e-page conformance files (not a test file): a built-app fixture project in the OS tmpdir with `@keel/*`
+// linked, the real `keel test --e2e` binary over it as a child process, and its reports read back. Seed 1337 for every property.
+// How the browser cases run: they have no skip guard. Each file runs `keel test --e2e` once over a fixture project whose e2e files hold
+// the clause's test, then reads the run's output and `reports/tests/e2e.json`. Where `playwright-core` or the browser is absent the
+// product's own E1734 fails the run and so every case of the file: nothing here skips (k.e2e Browser). A builder must provide:
+// Node 22.13 or later (`'sqlite'`), `playwright-core` resolvable from the repo's `node_modules` (a `devDependency` of the repo root or
+// of `@keel/testing`), and Chromium installed by `playwright-core install chromium`; CI's `test-shard` jobs for `@keel/testing` and
+// `@keel/cli` run these files, so each installs Chromium first (tooling/ci.source.json's `built-smokes` job does it with
+// `pnpm exec playwright install --with-deps chromium`).
+import { fixedTime } from "@keel/tooling/test-time";
 import type { Tree } from "./fixtures/e2e/node-app.ts";
 
 export const SEED = 1337;

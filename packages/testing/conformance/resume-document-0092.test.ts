@@ -6,15 +6,15 @@
 // gives a server document: `data-k-island="<route id>"` on the island root, one `#k-state` script with `islands`; the island root
 // is a real compiled component rendered by `mount`, as in runtime-resume-state-fire.test.ts.
 import type { Ctx } from "@keel/ctx";
-import { mount } from "@keel/runtime-dom";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
+import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { resumeDocument } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { compiled } from "./component-support.ts";
-import { codeOf, SEED, simCtx, thrown } from "./fixtures.ts";
+import { SEED, codeOf, simCtx, thrown } from "./fixtures.ts";
 
 const ROUTE = "rd.page";
 const SOURCE = `

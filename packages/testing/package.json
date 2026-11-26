@@ -49,10 +49,7 @@
       }
     }
   },
-  "files": [
-    "dist",
-    "docs"
-  ],
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",

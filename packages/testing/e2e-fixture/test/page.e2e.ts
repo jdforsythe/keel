@@ -7,7 +7,10 @@ import { Board } from "../modules/a/Board.schema.ts";
 
 const board = scope(() => undefined).run(() => store(Board, { lists: [] }, { id: "a.board" }));
 const failure = async (p: Promise<unknown>): Promise<{ code: unknown; message: string }> => {
-  const e: unknown = await p.then(() => undefined, (x: unknown) => x);
+  const e: unknown = await p.then(
+    () => undefined,
+    (x: unknown) => x,
+  );
   return { code: Reflect.get(Object(e), "code"), message: String(Reflect.get(Object(e), "message")) };
 };
 
@@ -18,7 +21,10 @@ it("fire resolves after the answer reached the page", async () => {
   await page.fire("a.add", { type: "click" });
   expect((await page.find("a.count")).text).toBe("1");
   expect((await app.state(board)).lists).toHaveLength(1);
-  expect((await page.cookies()).find((c) => c.name === "keel-caller")).toMatchObject({ httpOnly: true, sameSite: "Lax" });
+  expect((await page.cookies()).find((c) => c.name === "keel-caller")).toMatchObject({
+    httpOnly: true,
+    sameSite: "Lax",
+  });
   expect(Object.keys((await page.cookies())[0] ?? {})).not.toContain("value");
 });
 
@@ -68,7 +74,11 @@ it("stop and start keep the data; two serves share nothing", async () => {
   const app = await serve();
   const other = await serve();
   expect(app.origin()).not.toBe(other.origin());
-  const post = { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "text/html" }, body: "" };
+  const post = {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded", accept: "text/html" },
+    body: "",
+  };
   expect((await app.fetch("/", post)).status).toBe(303);
   const before = await app.state(board);
   expect(before.lists).toHaveLength(1);

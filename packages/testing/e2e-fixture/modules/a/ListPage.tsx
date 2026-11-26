@@ -3,7 +3,9 @@ export default function ListPage() {
   return (
     <Box as="main">
       <Input id="a.name" label="Name" />
-      <Button id="a.list.go" onClick={() => undefined}>Go</Button>
+      <Button id="a.list.go" onClick={() => undefined}>
+        Go
+      </Button>
     </Box>
   );
 }
