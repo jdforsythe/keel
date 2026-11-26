@@ -248,6 +248,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -354,6 +357,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -460,6 +466,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -626,6 +635,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -675,6 +687,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -724,6 +739,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -773,6 +791,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -825,6 +846,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -858,6 +882,9 @@ importers:
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       typescript:
         specifier: ^5.6
         version: 5.9.3
@@ -913,6 +940,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -983,6 +1013,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1038,6 +1071,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1090,6 +1126,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1145,6 +1184,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1194,6 +1236,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1243,6 +1288,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
