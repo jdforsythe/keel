@@ -2,10 +2,10 @@
 // 'skip' none." Run: "The key makes a fire time enqueue at most one job". Across downtimes no fire key repeats. Seed 4242
 import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
-import { job, queue } from "@keel/std-jobs";
 import fc from "fast-check";
 import { expect, test, vi } from "vitest";
 import { schedule } from "../src/index.ts";
+import { jobs as orders } from "./modules/orders/jobs.server.ts";
 
 const MIN = 60_000;
 const DAY = 24 * 60 * MIN;
@@ -17,7 +17,7 @@ const settle = async () => {
 
 function fixture(cron: string, missed: "once" | "skip") {
   const ctx = createCtx({ mode: "sim", seed: 4242 });
-  const jobs = queue({ "orders.digest": job({ input: s.object({}) }, async () => ok(null)) });
+  const jobs = { ...orders };
   const keys: string[] = [];
   const orig = jobs.enqueue.bind(jobs);
   vi.spyOn(jobs, "enqueue").mockImplementation((c, id, input, opts) => {

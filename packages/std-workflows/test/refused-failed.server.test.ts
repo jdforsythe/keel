@@ -5,12 +5,13 @@
 import { type KeelError, type Result, err, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { commitStores } from "@keel/server";
-import { queue } from "@keel/std-jobs";
 import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { flows, workflow } from "../src/index.server.ts";
+import { workflow } from "../src/index.server.ts";
+import { jobsOf } from "./modules/api/jobs.server.ts";
+import { runnersOf } from "./modules/api/runners.server.ts";
 import { type Data, close, nextId, pass, settle, sim } from "./support.server.ts";
 
 const Codes = ["api.nope", "workflows.attempts", "schema.invalid"] as const;
@@ -46,7 +47,7 @@ function flow(allowed: readonly [Code, ...Code[]], run: () => Promise<Out>) {
     chart: c,
     steps: { purging: { run, done: "purged", failed: "stuck", attempts: 3 } },
   });
-  return { id, wf, jobs: queue({ ...wf.jobs }) };
+  return { id, wf, jobs: jobsOf(wf) };
 }
 
 /** Starts one instance holding a sentinel in `data`, runs 120 s of sim clock, returns its row and `/__keel/inspect`. */
@@ -56,7 +57,7 @@ async function runOne(f: ReturnType<typeof flow>) {
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),
     ctx,
     mode: "dev",
-    runners: { api: [f.jobs, flows(f.jobs, [f.wf])] },
+    runners: { api: runnersOf(f.jobs, f.wf) },
   });
   const id = ctx.random.id("Flow");
   const data: Data = { n: 1, freed: 0, code: "needle-4711" };

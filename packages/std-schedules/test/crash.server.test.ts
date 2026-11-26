@@ -2,9 +2,9 @@
 // two steps." Each fire time's job runs once. Seed 1337
 import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
-import { job, queue } from "@keel/std-jobs";
 import { expect, test, vi } from "vitest";
 import { schedule } from "../src/index.ts";
+import { recording } from "./modules/orders/jobs.server.ts";
 
 const settle = async () => {
   for (let i = 0; i < 200; i++) await Promise.resolve();
@@ -15,12 +15,7 @@ const T10 = Date.parse("2026-11-10T10:00:00.000Z");
 test("A crash after the enqueue and before the mark gives one job run per fire time", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const ran: string[] = [];
-  const jobs = queue({
-    "orders.digest": job({ input: s.object({ at: s.string() }) }, async (input) => {
-      ran.push(input.at);
-      return ok(null);
-    }),
-  });
+  const jobs = recording(ran);
   const table = {
     "orders.hourly": { cron: "0 * * * *", zone: "UTC", job: "orders.digest", input: { at: "x" } },
   } as const;

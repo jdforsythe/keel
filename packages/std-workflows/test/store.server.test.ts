@@ -2,10 +2,11 @@
 // by its forget job `keepMs` after the runner saw it, and `forget` leaves an instance that is not final. Seed 1337.
 import { ok } from "@keel/schema";
 import { commitStores, createApp, topology } from "@keel/server";
-import { queue } from "@keel/std-jobs";
 import { tx } from "@keel/store";
 import { expect, test } from "vitest";
-import { flows, workflow } from "../src/index.server.ts";
+import { workflow } from "../src/index.server.ts";
+import { jobsOf } from "./modules/api/jobs.server.ts";
+import { runnersOf } from "./modules/api/runners.server.ts";
 import { close, nextId, pass, removalChart, settle, sim } from "./support.server.ts";
 
 const data = { n: 0, freed: 0, code: "" };
@@ -29,12 +30,12 @@ test("`start` past `limit` instances not final fails `store.invariant`", async (
 test("A final instance is forgotten `keepMs` after the runner saw it; `forget` leaves one that is not final", async () => {
   const ctx = sim();
   const wf = workflow(nextId("kept"), { chart: removalChart(), keepMs: 10_000 });
-  const jobs = queue({ ...wf.jobs });
+  const jobs = jobsOf(wf);
   const app = await createApp({
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),
     ctx,
     mode: "dev",
-    runners: { api: [jobs, flows(jobs, [wf])] },
+    runners: { api: runnersOf(jobs, wf) },
   });
   const rows = async () => {
     const r = await commitStores(ctx, wf.stores, (S) => ok(Object.keys(S.store.get("instances"))));

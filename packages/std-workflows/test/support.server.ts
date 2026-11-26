@@ -7,12 +7,13 @@ import { type SimCtx, createCtx } from "@keel/ctx";
 import { type KeelError, type Result, s } from "@keel/schema";
 import { ok } from "@keel/schema";
 import { commitStores, createApp, topology } from "@keel/server";
-import { queue } from "@keel/std-jobs";
 import { chart } from "@keel/std-statecharts";
 import { flows, workflow } from "@keel/std-workflows";
 import { tx } from "@keel/store";
 import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
+import { jobsOf } from "./modules/api/jobs.server.ts";
+import { runnersOf } from "./modules/api/runners.server.ts";
 
 export const settle = async () => {
   for (let i = 0; i < 200; i++) await Promise.resolve();
@@ -98,7 +99,7 @@ export function makeFlow(o: FlowOptions) {
     },
     waits: { hidden: { ms, event: "expired" } },
   });
-  const jobs = queue({ ...wf.jobs });
+  const jobs = jobsOf(wf);
   return { id, chart: c, wf, jobs, ms };
 }
 export type Flow = ReturnType<typeof makeFlow>;
@@ -109,7 +110,7 @@ export const boot = (ctx: Sim, f: Flow) =>
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),
     ctx,
     mode: "dev",
-    runners: { api: [f.jobs, flows(f.jobs, [f.wf])] },
+    runners: { api: runnersOf(f.jobs, f.wf) },
   });
 
 /** Runs `fn` against the workflow's stores through one `commitStores`, saving what it changed. */

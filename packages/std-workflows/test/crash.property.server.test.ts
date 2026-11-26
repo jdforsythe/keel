@@ -5,12 +5,13 @@
 // number of times before it leaves, so each self-transition is a new entry with a new key. Seed 1337.
 import { ok, s } from "@keel/schema";
 import { commitStores, createApp, topology } from "@keel/server";
-import { queue } from "@keel/std-jobs";
 import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { flows, workflow } from "../src/index.server.ts";
+import { workflow } from "../src/index.server.ts";
+import { jobsOf } from "./modules/api/jobs.server.ts";
+import { runnersOf } from "./modules/api/runners.server.ts";
 import { type Sim, close, nextId, pass, settle, sim } from "./support.server.ts";
 
 const turns = async (n: number) => {
@@ -77,13 +78,13 @@ test("Crashes at generated points of a looping step record each entry's effect o
             },
           },
         });
-        const jobs = queue({ ...wf.jobs });
+        const jobs = jobsOf(wf);
         const boot = () =>
           createApp({
             topology: topology({ web: { modules: ["api"], adapter: "node" } }),
             ctx,
             mode: "dev",
-            runners: { api: [jobs, flows(jobs, [wf])] },
+            runners: { api: runnersOf(jobs, wf) },
           });
         const id = ctx.random.id("Flow");
         let app = await boot();

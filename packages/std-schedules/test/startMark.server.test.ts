@@ -1,9 +1,9 @@
 // std.schedules Restart: an entry without a mark stores the start time as its mark before it waits. Seed 1337
 import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
-import { job, queue } from "@keel/std-jobs";
 import { expect, test, vi } from "vitest";
 import { schedule } from "../src/index.ts";
+import { jobs as orders } from "./modules/orders/jobs.server.ts";
 
 const settle = async () => {
   for (let i = 0; i < 200; i++) await Promise.resolve();
@@ -12,7 +12,7 @@ const START = Date.parse("2026-11-10T02:59:00.000Z");
 
 test("A start without marks writes the start time for every entry", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
-  const jobs = queue({ "orders.digest": job({ input: s.object({}) }, async () => ok(null)) });
+  const jobs = { ...orders };
   const table = {
     "orders.a": { cron: "0 3 * * *", zone: "UTC", job: "orders.digest", input: {} },
     "orders.b": { cron: "5 3 * * *", zone: "UTC", job: "orders.digest", input: {} },
@@ -28,7 +28,7 @@ test("A start without marks writes the start time for every entry", async () => 
 });
 
 const table = { "orders.a": { cron: "0 3 * * *", zone: "UTC", job: "orders.digest", input: {} } } as const;
-const jobs = () => queue({ "orders.digest": job({ input: s.object({}) }, async () => ok(null)) });
+const jobs = () => ({ ...orders });
 
 test("An entry that already has a mark causes no start write", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
