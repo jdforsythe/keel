@@ -1,9 +1,10 @@
-// Spec: k.reactive, clause "In a module the compiler compiled, `export const r = owner()` at its top level is a scope whose `parent` is undefined; a store that `r.run(() => store(S, { n: 0 }, { id: 'm.a' }))` makes inside `c.run(...)`, `c` a `detached` scope, is listed by `stores()` outside every scope after `c.dispose()`, and after `r.dispose()` it is not."
+// Spec: k.reactive, clause "Inside `moduleRoot(() => ...)` (`@keel/reactive/internal`, which compiled code wraps each top-level statement in), `const r = owner()` is a scope whose `parent` is undefined; a store that `r.run(() => store(S, { n: 0 }, { id: 'm.a' }))` makes inside `c.run(...)`, `c` a `detached` scope, is listed by `stores()` outside every scope after `c.dispose()`, and after `r.dispose()` it is not."
 // Spec: k.reactive, clause "Outside every scope and module root, `scope(() => undefined)` throws a value `isDefect(v, 'E1208')` accepts and `store(S, { n: 0 })` one `isDefect(v, 'E1203')` accepts; `scope(() => undefined, { detached: true })` returns a scope with no `parent`; after `await Promise.resolve()` inside `c.run(async () => ...)`, `scope(() => undefined)` throws the E1208 defect."
 // The store half of these clauses lives here: @keel/reactive's conformance may not import @keel/store (dependency order).
 // Seed 1337.
-// Assumption: this file is the "module the compiler compiled": the package's `keelConfig` runs each top-level statement holding a call in a module root, so each `export const r... = owner()` below is a root of its own.
+// A test file's top level has no module root (`keelConfig` compiles no test file): each test makes its root with `moduleRoot`, as compiled code does for one top-level statement.
 import { type Scope, owner, scope } from "@keel/reactive";
+import { moduleRoot } from "@keel/reactive/internal";
 import { isDefect, s } from "@keel/schema";
 import { store, stores } from "@keel/store";
 import fc from "fast-check";
@@ -13,11 +14,10 @@ const SEED = 1337;
 const S = s.object({ n: s.number() });
 const ident = fc.stringMatching(/^[a-z]{3,8}$/);
 
-export const rOne = owner();
-export const rProp = owner();
-
-const need = (r: Scope | undefined): Scope => {
-  if (r === undefined) throw new Error("owner() at a compiled module's top level is undefined: no module root ran it");
+/** `const r = owner()` inside `moduleRoot(() => ...)`, the root one compiled top-level statement runs in. */
+const rootOf = (): Scope => {
+  const r = moduleRoot(() => owner());
+  if (r === undefined) throw new Error("owner() inside moduleRoot is undefined: no module root ran it");
   return r;
 };
 const thrown = (fn: () => unknown): unknown => {
@@ -32,7 +32,7 @@ const running = (): Scope => scope(() => undefined, { detached: true });
 
 describe("k.reactive: module roots own the stores they make", () => {
   it("a store that `r.run(() => store(S, { n: 0 }, { id: 'm.a' }))` makes inside `c.run(...)` is listed by `stores()` outside every scope after `c.dispose()`, and after `r.dispose()` it is not", () => {
-    const r = need(rOne);
+    const r = rootOf();
     expect(r.parent).toBeUndefined();
     const c = running();
     try {
@@ -48,7 +48,7 @@ describe("k.reactive: module roots own the stores they make", () => {
   });
 
   it("property: for any module and store id, a store made in a scope nested in the module root outlives the running scope and ends with its own scope", () => {
-    const r = need(rProp);
+    const r = rootOf();
     fc.assert(
       fc.property(ident, ident, (mod, name) => {
         const id = `${mod}.${name}`;
