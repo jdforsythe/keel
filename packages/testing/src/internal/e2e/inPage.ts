@@ -27,6 +27,8 @@ const byId = (id: string): Element | null => {
 
 const foundOf = (el: Element): Found => {
   const role = roleOf(el);
+  // A host element's node is outside code's, and its value lives in the runtime, which a page does not expose.
+  if (el.hasAttribute("data-k-host")) return { id: el.id, role, name: nameOf(el, role), text: "", state: {} };
   const found: Found = {
     id: el.id,
     role,
