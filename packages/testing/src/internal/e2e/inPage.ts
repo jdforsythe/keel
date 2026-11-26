@@ -193,12 +193,15 @@ const api: PageApi = {
     new Promise((done) => {
       const end = performance.now() + ms;
       let seen = changes;
+      let still = 0;
+      // Two frames running with no change: a frame the page requested in the first has run too.
       const frame = (): void => {
-        if (changes === seen || performance.now() > end) {
-          done(changes === seen);
+        still = changes === seen ? still + 1 : 0;
+        seen = changes;
+        if (still >= 2 || performance.now() > end) {
+          done(still >= 2);
           return;
         }
-        seen = changes;
         requestAnimationFrame(frame);
       };
       requestAnimationFrame(frame);
@@ -253,6 +256,9 @@ const api: PageApi = {
     }
     if (scrollX !== s.scroll[0] || scrollY !== s.scroll[1])
       return { ok: false, why: "the claim moved the scroll position" };
+    const now = islands();
+    if (now !== s.islands)
+      return { ok: false, why: `the page's islands are ${now || "none"}, not the served ${s.islands || "none"}` };
     return { ok: true };
   },
 };

@@ -1,10 +1,13 @@
-import { createCtx } from "@keel/ctx";
+import { type Ctx, createCtx } from "@keel/ctx";
+import { routeTable } from "@keel/router";
+import { createApp } from "@keel/server";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { InspectDoc } from "../modules/inspector/InspectDoc.schema.ts";
 import { Inspection } from "../modules/inspector/Inspection.schema.ts";
 import { loadInspect } from "../modules/inspector/loadInspect.server.ts";
 import { routes } from "../modules/inspector/routes.ts";
+import topology from "../topology.ts";
 
 const TARGET = "http://localhost:4180";
 /** What a golden-1 dev build serves at `/__keel/inspect` after one `todos.addList`. */
@@ -51,6 +54,8 @@ const simWith = (url: string, res: () => Response) => {
   ctx.net.route(url, res);
   return ctx;
 };
+/** The `web` deployable over `ctx`, as `renderRoute`'s `app`: the page's loader runs on its server. */
+const appOn = (ctx: Ctx) => createApp({ topology, routes: routeTable(routes), ctx, deployable: "web" });
 const json =
   (body: unknown, status = 200) =>
   () =>
@@ -59,7 +64,8 @@ const json =
 describe("inspector.index", () => {
   it("renders the graph, stores and ids of the url's inspect document", async () => {
     const ctx = simWith(`${TARGET}/__keel/inspect`, json(DOC));
-    const r = await renderRoute("inspector.index", { routes, search: { url: `${TARGET}/` }, ctx });
+    const app = await appOn(ctx);
+    const r = await renderRoute("inspector.index", { routes, search: { url: `${TARGET}/` }, ctx, app });
     expect(r.find("inspector.title").text).toBe(`Inspector: ${TARGET}`);
     // One main landmark, a level-1 heading naming the target and a level-2 heading per panel; nothing takes focus.
     expect(r.find("inspector.page").role).toBe("main");
@@ -87,7 +93,7 @@ describe("inspector.index", () => {
   it("without url it inspects its own origin; a page that never reported is not live", async () => {
     const doc = { ...DOC, live: false, graph: { nodes: [], edges: [] }, stores: {} };
     const ctx = simWith(new URL("/__keel/inspect", location.href).href, json(doc));
-    const r = await renderRoute("inspector.index", { routes, ctx });
+    const r = await renderRoute("inspector.index", { routes, ctx, app: await appOn(ctx) });
     expect(r.find("inspector.title").text).toBe(`Inspector: ${location.origin}`);
     expect(r.find("inspector.live").text).toBe("Not live: open the app in a dev build for graph and stores");
     expect(r.find("inspector.graph.counts").text).toBe("0 nodes, 0 edges");
@@ -95,18 +101,22 @@ describe("inspector.index", () => {
   });
 
   it("a non-2xx answer or a body that is not an inspect document renders InspectError", async () => {
+    const downCtx = simWith(`${TARGET}/__keel/inspect`, json({}, 500));
     const down = await renderRoute("inspector.index", {
       routes,
       search: { url: TARGET },
-      ctx: simWith(`${TARGET}/__keel/inspect`, json({}, 500)),
+      ctx: downCtx,
+      app: await appOn(downCtx),
     });
     expect(down.find("inspector.error.message").text).toBe(`${TARGET} answered 500`);
     expect(down.a11y("inspector.error.title").role).toBe("heading");
     down.dispose();
+    const badCtx = simWith(`${TARGET}/__keel/inspect`, json({ live: true }));
     const bad = await renderRoute("inspector.index", {
       routes,
       search: { url: TARGET },
-      ctx: simWith(`${TARGET}/__keel/inspect`, json({ live: true })),
+      ctx: badCtx,
+      app: await appOn(badCtx),
     });
     expect(bad.find("inspector.error.message").text).toBe(`${TARGET} did not return an inspect document`);
     bad.dispose();
@@ -114,11 +124,11 @@ describe("inspector.index", () => {
 });
 
 describe("loadInspect", () => {
-  const HERE = "http://inspector.test:5555/?from=1";
+  const HERE = "http://127.0.0.1:5555/?from=1";
   it("without search.url inspects the origin of the request url, not location (RFC 0027)", async () => {
-    const ctx = simWith("http://inspector.test:5555/__keel/inspect", json(DOC));
+    const ctx = simWith("http://127.0.0.1:5555/__keel/inspect", json(DOC));
     const r = await loadInspect.run({ params: {}, search: {}, url: HERE, caller: "", stores: undefined }, ctx);
-    expect(r.ok ? r.value.url : r.error).toBe("http://inspector.test:5555");
+    expect(r.ok ? r.value.url : r.error).toBe("http://127.0.0.1:5555");
   });
   it("returns an Inspection with each store's state as JSON text; network failure is inspector.unreachable", async () => {
     expect(InspectDoc.parse(DOC).ok).toBe(true);
@@ -145,5 +155,50 @@ describe("loadInspect", () => {
       failing,
     );
     expect(e.ok ? "" : e.error).toMatchObject({ code: "inspector.unreachable", message: `${TARGET} is unreachable` });
+  });
+  it("fetches only a loopback target: any other answers inspector.unreachable and is never fetched", async () => {
+    const run = (url: string, ctx: Ctx) =>
+      loadInspect.run({ params: {}, search: { url }, url: HERE, caller: "", stores: undefined }, ctx);
+    for (const url of ["http://localhost:4180", "https://127.0.0.1", "http://[::1]:9"]) {
+      const ctx = simWith(`${url}/__keel/inspect`, json(DOC));
+      const r = await run(url, ctx);
+      expect(r.ok ? r.value.url : r.error).toBe(url);
+    }
+    const refused = [
+      "http://127.0.0.1.evil.example:4180",
+      "http://localhost.evil.example",
+      "http://evil.example/127.0.0.1",
+      "http://user@127.0.0.1:4180",
+      "http://user:pw@localhost",
+      "ftp://127.0.0.1",
+      "file:///etc/passwd",
+      "http://10.0.0.1",
+      "http://[::2]",
+      "localhost:4180",
+      "not a url",
+    ];
+    for (const url of refused) {
+      // Each refused target is also routed: a fetch would answer the document instead of the refusal.
+      const ctx = createCtx({ mode: "sim", seed: 1 });
+      const parsed = URL.canParse(url) ? new URL(url) : undefined;
+      if (parsed !== undefined && /^https?:$/.test(parsed.protocol)) ctx.net.route(`${url}/__keel/inspect`, json(DOC));
+      const r = await run(url, ctx);
+      expect(r.ok ? "" : r.error).toMatchObject({
+        code: "inspector.unreachable",
+        message: `${url} is not on this machine`,
+      });
+    }
+  });
+
+  it("follows no redirect: a 3xx from the target answers its status", async () => {
+    const ctx = simWith(
+      `${TARGET}/__keel/inspect`,
+      () => new Response(null, { status: 302, headers: { location: "http://evil.example/__keel/inspect" } }),
+    );
+    const r = await loadInspect.run(
+      { params: {}, search: { url: TARGET }, url: HERE, caller: "", stores: undefined },
+      ctx,
+    );
+    expect(r.ok ? "" : r.error).toMatchObject({ code: "inspector.unreachable", message: `${TARGET} answered 302` });
   });
 });

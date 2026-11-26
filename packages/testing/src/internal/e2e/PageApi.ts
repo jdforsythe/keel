@@ -21,7 +21,7 @@ export type PageApi = {
   readonly until: (id: string, match: PageMatch, ms: number) => Promise<boolean>;
   /** What `id` shows now, for a wait's message: `text was "…"`, `not shown`, `still shown`. */
   readonly seen: (id: string, match: PageMatch) => string;
-  /** Resolves once an animation frame passes with no DOM change; `false` after `ms`. */
+  /** Resolves once two animation frames pass with no DOM change; `false` after `ms`. */
   readonly calm: (ms: number) => Promise<boolean>;
   readonly hold: () => void;
   readonly held: () => HeldCheck;

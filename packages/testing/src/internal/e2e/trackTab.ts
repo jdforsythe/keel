@@ -31,7 +31,8 @@ export function trackTab(tab: Tab, holding: boolean): TabState {
   });
   tab.on("response", (res) => {
     const r = res.request();
-    state.inflight.delete(r);
+    // An event stream is answered by its headers; any other request once its body has arrived (requestfinished).
+    if ((res.headers()["content-type"] ?? "").includes("text/event-stream")) state.inflight.delete(r);
     if (main(r)) state.documents.push({ method: r.method(), url: r.url(), status: res.status() });
     wake();
   });

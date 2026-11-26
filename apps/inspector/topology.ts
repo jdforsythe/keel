@@ -1,3 +1,3 @@
 import { topology } from "@keel/server";
 
-export default topology({ web: { modules: ["inspector"], adapter: "client", styles: ["@keel/ui/fonts"] } });
+export default topology({ web: { modules: ["inspector"], adapter: "node", styles: ["@keel/ui/fonts"] } });
