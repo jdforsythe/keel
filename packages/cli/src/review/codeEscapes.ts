@@ -1,10 +1,22 @@
-import { type Expression, type ObjectExpression, type Program, type PropertyKey, Visitor, parseSync } from "oxc-parser";
+import {
+  type ArrowFunctionExpression,
+  type Expression,
+  type Function as FunctionNode,
+  type ObjectExpression,
+  type Program,
+  type PropertyKey,
+  type Statement,
+  Visitor,
+  parseSync,
+} from "oxc-parser";
 import { isExpectation } from "../internal/isExpectation.ts";
 import { isNegativeTypeTest } from "../internal/isNegativeTypeTest.ts";
 import type { Danger } from "./Danger.ts";
 import type { FileKind } from "./FileKind.ts";
 import type { Raw } from "./Raw.ts";
+import { alwaysExits } from "./alwaysExits.ts";
 import { foldString } from "./foldString.ts";
+import { okFacts } from "./okFacts.ts";
 
 /** A TypeScript suppression comment, as E1757 reads one. */
 /** A ts-suppression comment: a line of its text starts with a directive, leading white space, `/` and `*` aside. */
@@ -94,23 +106,6 @@ const isProcessEnv = (e: Expression): boolean =>
     ? e.property.type === "Literal" && e.property.value === "env"
     : e.property.type === "Identifier" && e.property.name === "env");
 
-/** `x.ok`, `x` a name or member (R1013). */
-const isOk = (e: Expression): boolean =>
-  e.type === "MemberExpression" &&
-  !e.computed &&
-  e.property.type === "Identifier" &&
-  e.property.name === "ok" &&
-  (e.object.type === "Identifier" || e.object.type === "MemberExpression");
-
-/** `!x.ok` or `x.ok === false` (R1013). */
-const isNotOk = (e: Expression): boolean =>
-  (e.type === "UnaryExpression" && e.operator === "!" && isOk(e.argument)) ||
-  (e.type === "BinaryExpression" &&
-    e.operator === "===" &&
-    isOk(e.left) &&
-    e.right.type === "Literal" &&
-    e.right.value === false);
-
 /** The names a file calls `defect` of `@keel/schema` by: imported names, and namespaces whose `.defect` it is. */
 function defectNames(program: Program): { names: Set<string>; spaces: Set<string> } {
   const names = new Set<string>();
@@ -163,8 +158,32 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
   const envs = new Set<number>();
   let unsafeCalls = 0;
   const defects = defectNames(parsed.program);
-  /** Spans where a `Result` is err (R1013): an `if`'s branch or a conditional's operand. */
+  /**
+   * Spans reachable only where a `Result` is not ok (R1013), as TypeScript narrows `ok`: an `if`'s branch, a
+   * conditional's operand, the right of `&&` or `||`, and the statements after an `if` whose other branch always exits.
+   */
   const errSpans: { start: number; end: number }[] = [];
+  const errIf = (cond: boolean, start: number, end: number): void => {
+    if (cond) errSpans.push({ start, end });
+  };
+  const statements = (list: readonly Statement[]): void => {
+    const last = list.at(-1);
+    if (last === undefined) return;
+    for (const st of list) {
+      if (st.type !== "IfStatement") continue;
+      const f = okFacts(st.test);
+      const exitsOk = alwaysExits(st.consequent);
+      const exitsErr = st.alternate !== null && alwaysExits(st.alternate);
+      errIf((exitsOk && f.whenFalse) || (exitsErr && f.whenTrue), st.end, last.end);
+    }
+  };
+  /** The spans of `unsafe(` calls (R1015). */
+  const unsafeSpans: { start: number; end: number }[] = [];
+  const predicate = (n: FunctionNode | ArrowFunctionExpression): void => {
+    if (n.body === null || n.returnType?.typeAnnotation.type !== "TSTypePredicate") return;
+    if (unsafeSpans.some((s) => n.start >= s.start && n.end <= s.end)) return;
+    add("R1015", n.start, n.end);
+  };
   const isDefectCall = (c: Expression): boolean =>
     c.type === "Identifier"
       ? defects.names.has(c.name)
@@ -209,13 +228,28 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
     TemplateLiteral: (n) => fold(n),
     BinaryExpression: (n) => fold(n),
     TaggedTemplateExpression: (n) => fold(n),
+    Program: (n) => statements(n.body),
+    BlockStatement: (n) => statements(n.body),
+    StaticBlock: (n) => statements(n.body),
+    SwitchCase: (n) => statements(n.consequent),
     IfStatement: (n) => {
-      if (isNotOk(n.test)) errSpans.push(n.consequent);
-      else if (isOk(n.test) && n.alternate !== null) errSpans.push(n.alternate);
+      const f = okFacts(n.test);
+      errIf(f.whenTrue, n.consequent.start, n.consequent.end);
+      if (n.alternate !== null) errIf(f.whenFalse, n.alternate.start, n.alternate.end);
     },
     ConditionalExpression: (n) => {
-      if (isOk(n.test)) errSpans.push(n.alternate);
+      const f = okFacts(n.test);
+      errIf(f.whenTrue, n.consequent.start, n.consequent.end);
+      errIf(f.whenFalse, n.alternate.start, n.alternate.end);
     },
+    LogicalExpression: (n) => {
+      const f = okFacts(n.left);
+      if (n.operator === "&&") errIf(f.whenTrue, n.right.start, n.right.end);
+      if (n.operator === "||") errIf(f.whenFalse, n.right.start, n.right.end);
+    },
+    FunctionDeclaration: predicate,
+    FunctionExpression: predicate,
+    ArrowFunctionExpression: predicate,
     CallExpression: (n) => {
       fold(n);
       const c = n.callee;
@@ -226,6 +260,7 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
       if (c.type === "Identifier") {
         if (c.name === "unsafe") {
           unsafeCalls++;
+          unsafeSpans.push({ start: n.start, end: n.end });
           const reason = arg === undefined ? null : foldString(arg);
           add("R1001", n.start, n.end, reason === null ? {} : { reason });
         } else if (c.name === "reveal") add("R1012", n.start, n.end);

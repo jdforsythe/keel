@@ -15,6 +15,7 @@ export const ESCAPES: ReadonlyMap<string, Escape> = new Map([
   ["R1011", row("high", true, "k.hosting", "cross-origin API access allowed")],
   ["R1012", row("high", true, "k.reveal", "a secret revealed")],
   ["R1013", row("medium", false, "k.errors", "a defect raised where a Result is err")],
+  ["R1015", row("low", false, "k.unsafe", "a type predicate or assertion whose claim no check proves")],
   ["R1014", row("high", true, "k.user", "an identity handle answers raw requests")],
   ["R1050", row("medium", false, "k.check", "unsafe syntax where keel check does not read")],
   ["R1051", row("medium", false, "k.check", "a lint suppression comment")],
