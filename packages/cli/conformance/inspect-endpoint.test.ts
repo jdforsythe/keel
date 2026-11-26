@@ -51,18 +51,21 @@ describe("k.cli GET /__keel/inspect", () => {
         async (names, bys) => {
           const ids = names.map((n) => `app.${n}`);
           const applied: Record<string, { name: string; payload: { by: number } }[]> = {};
-          const sc = scope(() => {
-            for (const id of ids) {
-              const st = store(Counter, { n: 0 }, { id });
-              const add = transaction(st, `${id}.add`, By, (state, { by }) => ({ n: state.n + by }));
-              applied[id] = [];
-              for (const by of bys) {
-                const r = tx(add, { by });
-                expect(r.ok).toBe(true);
-                applied[id]?.push({ name: `${id}.add`, payload: { by } });
+          const sc = scope(
+            () => {
+              for (const id of ids) {
+                const st = store(Counter, { n: 0 }, { id });
+                const add = transaction(st, `${id}.add`, By, (state, { by }) => ({ n: state.n + by }));
+                applied[id] = [];
+                for (const by of bys) {
+                  const r = tx(add, { by });
+                  expect(r.ok).toBe(true);
+                  applied[id]?.push({ name: `${id}.add`, payload: { by } });
+                }
               }
-            }
-          });
+            },
+            { detached: true },
+          );
           try {
             const before = parts(JSON.parse(JSON.stringify(inspect())));
             const res = await app.fetch(new Request(`${BASE}/__keel/inspect`));

@@ -12,12 +12,15 @@ const codeOf = (e: unknown): string | undefined => (isRecord(e) && typeof e.code
 
 const run = async (): Promise<unknown> => {
   const txs: Tx[] = [];
-  scope(() => {
-    const st = store(s.object({ n: s.int({ min: 0, max: 9 }) }), { n: 0 }, { id: "wk.count" });
-    invariant(st, (state) => state.n >= 0);
-    txs.push(transaction(st, "wk.inc", s.object({}), (state) => ({ n: state.n < 9 ? state.n + 1 : state.n })));
-    txs.push(transaction(st, "wk.dec", s.object({}), (state) => ({ n: state.n > 0 ? state.n - 1 : state.n })));
-  });
+  scope(
+    () => {
+      const st = store(s.object({ n: s.int({ min: 0, max: 9 }) }), { n: 0 }, { id: "wk.count" });
+      invariant(st, (state) => state.n >= 0);
+      txs.push(transaction(st, "wk.inc", s.object({}), (state) => ({ n: state.n < 9 ? state.n + 1 : state.n })));
+      txs.push(transaction(st, "wk.dec", s.object({}), (state) => ({ n: state.n > 0 ? state.n - 1 : state.n })));
+    },
+    { detached: true },
+  );
   try {
     await prove(txs);
     return { ok: true };

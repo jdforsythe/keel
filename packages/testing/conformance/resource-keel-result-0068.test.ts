@@ -29,10 +29,13 @@ interface Settled {
 /** Runs a resource over `fetcher` in a scope, flushes microtasks, returns the settled state. */
 async function settle(fetcher: () => Promise<unknown>): Promise<Settled> {
   let get: () => Settled = () => ({ state: "unset" });
-  scope(() => {
-    const r = resource(fetcher);
-    get = () => r.get();
-  });
+  scope(
+    () => {
+      const r = resource(fetcher);
+      get = () => r.get();
+    },
+    { detached: true },
+  );
   await flush();
   return get();
 }
