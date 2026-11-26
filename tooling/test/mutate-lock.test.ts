@@ -7,6 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { stallCheck } from "../mutate.mjs";
 import { acquire, ancestors, busyDiag, heldBy, holderAlive, lockedDiag } from "../mutateLock.mjs";
+import { fixedTime } from "../test-time.ts";
 
 const fixtures = path.join(import.meta.dirname, "..", "fixtures", "mutate");
 const mutateBin = path.join(import.meta.dirname, "..", "mutate.mjs");
@@ -170,37 +171,49 @@ describe("pnpm mutate (mutate.mjs) with a fixture Stryker", () => {
     expect(r.pid).toBeUndefined();
   });
 
-  it("ends a run with no finished mutant for the stall limit with E0011, exit 1, and no process left", async () => {
-    const dir = temp();
-    const r = await runMutate(dir, path.join(dir, "keel-mutate.lock"), ["run"], { KEEL_MUTATE_STALL_MS: "1500" });
-    expect(r.code).toBe(1);
-    expect(r.out).toContain("E0011 mutation run stalled at 3/8 mutants");
-    expect(r.out).toContain("no process left");
-    expect(r.pid).toBeDefined();
-    expect(r.left).toBe(false);
-    expect(fs.existsSync(path.join(dir, "keel-mutate.lock"))).toBe(false);
-  }, 30000);
+  it(
+    "ends a run with no finished mutant for the stall limit with E0011, exit 1, and no process left",
+    async () => {
+      const dir = temp();
+      const r = await runMutate(dir, path.join(dir, "keel-mutate.lock"), ["run"], { KEEL_MUTATE_STALL_MS: "1500" });
+      expect(r.code).toBe(1);
+      expect(r.out).toContain("E0011 mutation run stalled at 3/8 mutants");
+      expect(r.out).toContain("no process left");
+      expect(r.pid).toBeDefined();
+      expect(r.left).toBe(false);
+      expect(fs.existsSync(path.join(dir, "keel-mutate.lock"))).toBe(false);
+    },
+    fixedTime(30000),
+  );
 
-  it("leaves a run that keeps finishing mutants alone", async () => {
-    const dir = temp();
-    const r = await runMutate(dir, path.join(dir, "keel-mutate.lock"), ["run", "--advance"], {
-      KEEL_MUTATE_STALL_MS: "1000",
-    });
-    expect(r.code).toBe(0);
-    expect(r.out).not.toContain("E0011");
-  }, 30000);
+  it(
+    "leaves a run that keeps finishing mutants alone",
+    async () => {
+      const dir = temp();
+      const r = await runMutate(dir, path.join(dir, "keel-mutate.lock"), ["run", "--advance"], {
+        KEEL_MUTATE_STALL_MS: "1000",
+      });
+      expect(r.code).toBe(0);
+      expect(r.out).not.toContain("E0011");
+    },
+    fixedTime(30000),
+  );
 
-  it("writes E0011 as a diag record under --format=json", async () => {
-    const dir = temp();
-    const r = await runMutate(dir, path.join(dir, "keel-mutate.lock"), ["run"], {
-      KEEL_MUTATE_STALL_MS: "1000",
-      KEEL_FORMAT: "json",
-    });
-    const records = r.out
-      .trim()
-      .split("\n")
-      .map((l) => JSON.parse(l));
-    expect(records[0]).toMatchObject({ kind: "diag", code: "E0011", message: "mutation run stalled at 3/8 mutants" });
-    expect(records[1]).toMatchObject({ kind: "summary", ok: false });
-  }, 30000);
+  it(
+    "writes E0011 as a diag record under --format=json",
+    async () => {
+      const dir = temp();
+      const r = await runMutate(dir, path.join(dir, "keel-mutate.lock"), ["run"], {
+        KEEL_MUTATE_STALL_MS: "1000",
+        KEEL_FORMAT: "json",
+      });
+      const records = r.out
+        .trim()
+        .split("\n")
+        .map((l) => JSON.parse(l));
+      expect(records[0]).toMatchObject({ kind: "diag", code: "E0011", message: "mutation run stalled at 3/8 mutants" });
+      expect(records[1]).toMatchObject({ kind: "summary", ok: false });
+    },
+    fixedTime(30000),
+  );
 });

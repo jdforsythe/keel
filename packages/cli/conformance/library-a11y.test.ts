@@ -7,6 +7,7 @@
 // in `keel check`, E1703 rule `label` in a render) and a `Host` with no `label` (an unlabelled host element: E1802, E1703 rule `role-img-alt`); a render of an app component rendering the library's gets the app's tokens as
 // `artifacts: { tokens }` (a11y-ledger-claims.test.ts); "exactly as in an app module" is: the library's report at the library's path matches the app twin's at its own, and each failing render reports the code
 // and the message of the app twin's, the wrapper's id and the test's name aside. A failure prints as a `keel test` record whose message holds the element's id; the wrapper of the library's component renders it as `shop.lib`, the app twin's as `shop.app`, and the messages are compared with those aside.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { LIB, NAME, type Rec, type Tree, cleanup, keel, library, materialize, siteTree } from "./library-support.ts";
 
@@ -89,17 +90,21 @@ beforeAll(() => {
   dir = materialize({ ...siteTree([libraryWith()]), "tokens.ts": TOKENS, ...appFiles, "test/a11y.test.ts": TEST });
   checked = keel(dir, ["check"]).records.filter((x) => x.kind === "diag");
   tested = keel(dir, ["test"]).records.filter((x) => x.kind === "diag");
-}, 600_000);
+}, fixedTime(600_000));
 afterAll(() => cleanup(dir));
 
 for (const k of KINDS) {
-  test(`${k.what} in a library component is reported ${k.staticCode} by \`keel check\` at the library's path with no fix, as the same element in an app module is at its own`, () => {
-    const inLib = checked.filter((x) => x.code === k.staticCode && x.path === `${LIB}/src/${k.name}.tsx`);
-    const inApp = checked.filter((x) => x.code === k.staticCode && x.path === `modules/shop/${k.name}.tsx`);
-    expect(inLib.length).toBeGreaterThanOrEqual(1);
-    expect(inLib.length).toBe(inApp.length);
-    for (const d of inLib) expect(d.fix).toBeUndefined();
-  }, 600_000);
+  test(
+    `${k.what} in a library component is reported ${k.staticCode} by \`keel check\` at the library's path with no fix, as the same element in an app module is at its own`,
+    () => {
+      const inLib = checked.filter((x) => x.code === k.staticCode && x.path === `${LIB}/src/${k.name}.tsx`);
+      const inApp = checked.filter((x) => x.code === k.staticCode && x.path === `modules/shop/${k.name}.tsx`);
+      expect(inLib.length).toBeGreaterThanOrEqual(1);
+      expect(inLib.length).toBe(inApp.length);
+      for (const d of inLib) expect(d.fix).toBeUndefined();
+    },
+    fixedTime(600_000),
+  );
 
   const text = (prefix: "lib" | "app"): string =>
     tested
@@ -110,10 +115,14 @@ for (const k of KINDS) {
       )
       .join("\n");
 
-  test(`${k.what} in a library component fails its render under \`keel test\` with ${k.renderCode} naming its element id, as the same element in an app module does`, () => {
-    const inApp = text("app");
-    expect(inApp, "the app twin fails with the code").not.toBe("");
-    expect(inApp).toContain(`shop.<wrap>.${k.sub}`);
-    expect(text("lib")).toBe(inApp);
-  }, 600_000);
+  test(
+    `${k.what} in a library component fails its render under \`keel test\` with ${k.renderCode} naming its element id, as the same element in an app module does`,
+    () => {
+      const inApp = text("app");
+      expect(inApp, "the app twin fails with the code").not.toBe("");
+      expect(inApp).toContain(`shop.<wrap>.${k.sub}`);
+      expect(text("lib")).toBe(inApp);
+    },
+    fixedTime(600_000),
+  );
 }

@@ -118,7 +118,7 @@ it(
       expect(caught.kept).toBe(1);
       await second.close();
     }),
-  120_000,
+  fixedTime(120_000),
 );
 
 it(
@@ -133,5 +133,5 @@ it(
       expect((await runsOn(ctx)).kept).toBe(1);
       await app.close();
     }),
-  60_000,
+  fixedTime(60_000),
 );

@@ -2,6 +2,7 @@
 // Spec: k.reactive, clause "A fetcher typed `Promise<Result<T, E>>` gives `Resource<T>`, and one typed `Promise<{ ok: boolean; value?: T }>` compiles and gives a `Resource` of that type."
 // Seed 1337 for the property tests (fast-check). Clause B has no random inputs: the TypeScript compiler is the oracle,
 // as in packages/store/conformance/payload-type-compile-error.test.ts (in-memory probe, package tsconfig, no suppressions).
+import { fixedTime } from "@keel/tooling/test-time";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resource, scope } from "@keel/reactive";
@@ -236,7 +237,7 @@ describe(`k.reactive: ${CLAUSE_B}`, () => {
 
   beforeAll(() => {
     errors = typeErrors(source);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   it("the probe's imports resolve and its prelude type-checks (every error is on a case line)", () => {
     expect(errors.filter((e) => e.code === 2307)).toEqual([]);

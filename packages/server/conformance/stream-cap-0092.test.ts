@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.server, clause "With `maxStreams: 2`, a third open event-stream GET is 503 `keel.busy` and runs no loader; once one closes, the next is served."
 // Seed 1337 (fc.assert below). No wall time. `maxStreams` is not in `AppOptions` yet, so the app is built through createAppLoose.
+import { fixedTime } from "@keel/tooling/test-time";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
@@ -102,17 +103,21 @@ describe("k.server: stream cap", () => {
     expect(started).toBe(3);
   });
 
-  test("the default cap is 1,000 open event streams per app: stream 1,001 is 503 `keel.busy` with `data: { limit: 1000 }`", async () => {
-    const { app, started } = await build(undefined);
-    for (let i = 0; i < 1000; i++) {
-      const res = await app.fetch(new Request("http://localhost/api/live", { headers: sse }));
-      expect(res.status).toBe(200);
-      await readChunks(res, 1);
-    }
-    const busy = await app.fetch(new Request("http://localhost/api/live", { headers: sse }));
-    expect(busy.status).toBe(503);
-    expect(await busy.text()).toContain('"limit":1000');
-    expect(started()).toBe(1000);
-    await app.close?.();
-  }, 60_000);
+  test(
+    "the default cap is 1,000 open event streams per app: stream 1,001 is 503 `keel.busy` with `data: { limit: 1000 }`",
+    async () => {
+      const { app, started } = await build(undefined);
+      for (let i = 0; i < 1000; i++) {
+        const res = await app.fetch(new Request("http://localhost/api/live", { headers: sse }));
+        expect(res.status).toBe(200);
+        await readChunks(res, 1);
+      }
+      const busy = await app.fetch(new Request("http://localhost/api/live", { headers: sse }));
+      expect(busy.status).toBe(503);
+      expect(await busy.text()).toContain('"limit":1000');
+      expect(started()).toBe(1000);
+      await app.close?.();
+    },
+    fixedTime(60_000),
+  );
 });

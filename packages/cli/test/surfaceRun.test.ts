@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, wri
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sourceHash } from "@keel/compiler/internal";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { hashOf } from "../src/internal/hashOf.ts";
@@ -24,7 +25,7 @@ const project = (files: Record<string, string>): string => {
   }
   return dir;
 };
-const SLOW = 120_000;
+const SLOW = fixedTime(120_000);
 const contractTs = (path: string): string =>
   `import { contract } from "@keel/router/contract";\nimport { s } from "@keel/schema";\nexport const m = contract("m", {\n  "m.home": { path: "/home" },\n  "m.feed": { method: "GET", path: ${JSON.stringify(path)}, output: s.json() },\n});\n`;
 const ROUTES = `import { loader, manifest } from "@keel/router";

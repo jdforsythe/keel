@@ -1,6 +1,7 @@
 // Spec: std.report, clause "In a project whose module lists `@keel/std-report` in `deps`, `keel report` loads the tools entry itself and prints the tallies."
 // Seed 1337
 // Runs the real binary in a subprocess so the command slot starts empty; an http server in this process answers the inspect document.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
@@ -61,30 +62,34 @@ const keel = (cwd: string, args: string[]): Promise<{ code: number | null; stdou
     child.on("close", (code) => resolve({ code, stdout }));
   });
 
-test("In a project whose module lists `@keel/std-report` in `deps`, `keel report` loads the tools entry itself and prints the tallies.", async () => {
-  const a = tallyOf("orders.status", ["paid", "open", "paid", "paid"]);
-  const b = tallyOf("orders.region", ["eu", "us", "eu"]);
-  const server = await serve({
-    live: true,
-    graph: { nodes: [], edges: [] },
-    stores: {},
-    ids: {},
-    a11y: {},
-    routes: {},
-    sections: { [a.id]: { doc: "t", value: a }, [b.id]: { doc: "t", value: b } },
-  });
-  try {
-    const addr = server.address();
-    if (addr === null || typeof addr === "string") throw new Error("no port");
-    const { port } = addr;
-    const r = await keel(project(["@keel/std-report"]), ["report", `http://127.0.0.1:${port}`, "--format=compact"]);
-    expect(r.code, r.stdout).toBe(0);
-    expect(r.stdout.split("\n").filter((l) => l !== "")).toEqual([
-      "orders.region eu=2 us=1",
-      "orders.status paid=3 open=1",
-      "ok report 2 tallies",
-    ]);
-  } finally {
-    server.close();
-  }
-}, 120_000);
+test(
+  "In a project whose module lists `@keel/std-report` in `deps`, `keel report` loads the tools entry itself and prints the tallies.",
+  async () => {
+    const a = tallyOf("orders.status", ["paid", "open", "paid", "paid"]);
+    const b = tallyOf("orders.region", ["eu", "us", "eu"]);
+    const server = await serve({
+      live: true,
+      graph: { nodes: [], edges: [] },
+      stores: {},
+      ids: {},
+      a11y: {},
+      routes: {},
+      sections: { [a.id]: { doc: "t", value: a }, [b.id]: { doc: "t", value: b } },
+    });
+    try {
+      const addr = server.address();
+      if (addr === null || typeof addr === "string") throw new Error("no port");
+      const { port } = addr;
+      const r = await keel(project(["@keel/std-report"]), ["report", `http://127.0.0.1:${port}`, "--format=compact"]);
+      expect(r.code, r.stdout).toBe(0);
+      expect(r.stdout.split("\n").filter((l) => l !== "")).toEqual([
+        "orders.region eu=2 us=1",
+        "orders.status paid=3 open=1",
+        "ok report 2 tallies",
+      ]);
+    } finally {
+      server.close();
+    }
+  },
+  fixedTime(120_000),
+);

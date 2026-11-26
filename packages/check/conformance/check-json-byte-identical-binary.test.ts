@@ -1,6 +1,7 @@
 // Spec: k.check, clause "The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits."
 // Drives the real binary (packages/cli/src/bin.ts) over a temp project; the in-process format(check()) test is only a proxy.
 // Seed: 1337 (fc.assert seed below). Each spawn costs about a second, so numRuns is small.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -40,7 +41,7 @@ beforeAll(() => {
   for (const name of ["vitest", "vite", "typescript"]) {
     fs.symlinkSync(path.join(repo, "node_modules", name), path.join(proj, "node_modules", name));
   }
-}, 60_000);
+}, fixedTime(60_000));
 
 afterAll(() => {
   fs.rmSync(proj, { recursive: true, force: true });
@@ -57,28 +58,36 @@ function runBinary(source: string): string[] {
   return r.stdout.split("\n").filter((l) => l !== "");
 }
 
-test("The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits (real binary)", () => {
-  fc.assert(
-    fc.property(fc.constantFrom(...compilerFixtures), (fx) => {
-      const compiled = compile([{ path: REL, source: fx.bad }]).diagnostics;
+test(
+  "The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits (real binary)",
+  () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...compilerFixtures), (fx) => {
+        const compiled = compile([{ path: REL, source: fx.bad }]).diagnostics;
+        expect(compiled.length).toBeGreaterThan(0);
+        const emitted = runBinary(fx.bad);
+        for (const d of compiled) {
+          const wanted = JSON.stringify({ kind: "diag", ...d });
+          expect(emitted.filter((l) => l === wanted)).toEqual([wanted]);
+        }
+      }),
+      { seed: SEED, numRuns: 5 },
+    );
+  },
+  fixedTime(180_000),
+);
+
+test(
+  "every compiler fixture, run once each through the real binary, has its compiler diagnostics as verbatim stdout lines",
+  () => {
+    for (const fx of compilerFixtures) {
+      const compiled = compile([{ path: REL, source: fx.bad }]).diagnostics.filter((d) => d.code === fx.code);
       expect(compiled.length).toBeGreaterThan(0);
       const emitted = runBinary(fx.bad);
       for (const d of compiled) {
-        const wanted = JSON.stringify({ kind: "diag", ...d });
-        expect(emitted.filter((l) => l === wanted)).toEqual([wanted]);
+        expect(emitted).toContain(JSON.stringify({ kind: "diag", ...d }));
       }
-    }),
-    { seed: SEED, numRuns: 5 },
-  );
-}, 180_000);
-
-test("every compiler fixture, run once each through the real binary, has its compiler diagnostics as verbatim stdout lines", () => {
-  for (const fx of compilerFixtures) {
-    const compiled = compile([{ path: REL, source: fx.bad }]).diagnostics.filter((d) => d.code === fx.code);
-    expect(compiled.length).toBeGreaterThan(0);
-    const emitted = runBinary(fx.bad);
-    for (const d of compiled) {
-      expect(emitted).toContain(JSON.stringify({ kind: "diag", ...d }));
     }
-  }
-}, 180_000);
+  },
+  fixedTime(180_000),
+);

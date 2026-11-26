@@ -3,6 +3,7 @@
 // The real `keel` binary runs `keel test` over a temp project (OS tmpdir), and vitest runs in the same project (plainVitest); both runs see both test files. No module file imports `identity.ts`. A third file, with no `mount`, records the `/__keel/user` count of two routers to a file and the same count is read after each run: none under either runner, so nothing was loaded before the file.
 // Seed: no generated inputs, n/a.
 // ASSUMPTIONS: the project needs `module.ts`, a contract and routes for the one page; topology `web` is a `client` deployable `servedBy` an `api` node (E1589 otherwise); `keel test` needs no `vitest.config.ts`, the plain run does, and it holds the `keel()` plugin (`@keel/compiler/vite`).
+import { fixedTime } from "@keel/tooling/test-time";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -132,7 +133,7 @@ beforeAll(() => {
   rmSync(join(dir, "test", "counts.json"), { force: true });
   plain = plainVitest(dir);
   plainCounts = counts(dir);
-}, 300_000);
+}, fixedTime(300_000));
 
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 

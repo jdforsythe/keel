@@ -3,6 +3,7 @@
 // only closed objects add it); the schema and parse then agree on {"undeclared-extra-key":null}.
 // Seed: 1337 (every fc.assert below). Drives the real binary (packages/cli/src/bin.ts) with `keel mcp`, one tools/list request.
 // Equality is semantic: a small JSON Schema validator (below) throws on any keyword it does not implement, so no keyword is ignored.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -129,7 +130,7 @@ beforeAll(() => {
   tools = Array.isArray(list)
     ? list.map((t) => ({ name: field(t, "name"), inputSchema: field(t, "inputSchema") }))
     : [];
-}, 60_000);
+}, fixedTime(60_000));
 
 // Commands reserved for std packages (k.cli): present only when the repository fills them.
 const STD_RESERVED: string[] = ["session", "report"];
@@ -154,57 +155,61 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
     for (const t of tools) expect(() => validate(t.inputSchema, {}), String(t.name)).not.toThrow();
   });
 
-  it("Each MCP tool's input schema equals the JSON Schema of its operation's input: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate", () => {
-    expect(tools.filter((t) => !STD_RESERVED.includes(String(t.name))).length).toBe(operations.length);
-    for (const op of operations) {
-      const tool = tools.find((t) => t.name === op.name);
-      const schema = tool?.inputSchema;
-      expect(schema, op.name).toBeDefined();
-      const valid = gen(op.input);
-      const agree = (v: unknown): void => {
-        const parsed = op.input.parse(v).ok;
-        const validated = validate(schema, v);
-        if (parsed !== validated) {
-          throw new Error(
-            `${op.name}: validate=${validated} parse=${parsed} value=${JSON.stringify(v)} inputSchema=${JSON.stringify(schema)}`,
-          );
-        }
-      };
-      const entries = (v: unknown): [string, unknown][] => (isDict(v) ? Object.entries(v) : []);
-      const opts = { seed: 1337, numRuns: 100 };
-      fc.assert(
-        fc.property(valid, (v) => {
-          expect(op.input.parse(v).ok, `${op.name}: generated value must parse`).toBe(true);
-          agree(v);
-        }),
-        opts,
-      );
-      fc.assert(
-        fc.property(valid, fc.nat(), (v, i) => {
-          const e = entries(v);
-          const drop = e.length === 0 ? undefined : e[i % e.length]?.[0];
-          agree(Object.fromEntries(e.filter(([k]) => k !== drop)));
-        }),
-        opts,
-      );
-      fc.assert(
-        fc.property(valid, fc.nat(), fc.constantFrom(...OTHERS), (v, i, other) => {
-          const e = entries(v);
-          const at = e.length === 0 ? undefined : e[i % e.length]?.[0];
-          agree(Object.fromEntries(e.map(([k, x]) => [k, k === at ? other : x])));
-        }),
-        opts,
-      );
-      fc.assert(
-        fc.property(valid, fc.constantFrom(...OTHERS), (v, other) => {
-          agree({ ...Object.fromEntries(entries(v)), "undeclared-extra-key": other });
-        }),
-        opts,
-      );
-      fc.assert(
-        fc.property(fc.jsonValue(), (v) => agree(v)),
-        opts,
-      );
-    }
-  }, 120_000);
+  it(
+    "Each MCP tool's input schema equals the JSON Schema of its operation's input: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate",
+    () => {
+      expect(tools.filter((t) => !STD_RESERVED.includes(String(t.name))).length).toBe(operations.length);
+      for (const op of operations) {
+        const tool = tools.find((t) => t.name === op.name);
+        const schema = tool?.inputSchema;
+        expect(schema, op.name).toBeDefined();
+        const valid = gen(op.input);
+        const agree = (v: unknown): void => {
+          const parsed = op.input.parse(v).ok;
+          const validated = validate(schema, v);
+          if (parsed !== validated) {
+            throw new Error(
+              `${op.name}: validate=${validated} parse=${parsed} value=${JSON.stringify(v)} inputSchema=${JSON.stringify(schema)}`,
+            );
+          }
+        };
+        const entries = (v: unknown): [string, unknown][] => (isDict(v) ? Object.entries(v) : []);
+        const opts = { seed: 1337, numRuns: 100 };
+        fc.assert(
+          fc.property(valid, (v) => {
+            expect(op.input.parse(v).ok, `${op.name}: generated value must parse`).toBe(true);
+            agree(v);
+          }),
+          opts,
+        );
+        fc.assert(
+          fc.property(valid, fc.nat(), (v, i) => {
+            const e = entries(v);
+            const drop = e.length === 0 ? undefined : e[i % e.length]?.[0];
+            agree(Object.fromEntries(e.filter(([k]) => k !== drop)));
+          }),
+          opts,
+        );
+        fc.assert(
+          fc.property(valid, fc.nat(), fc.constantFrom(...OTHERS), (v, i, other) => {
+            const e = entries(v);
+            const at = e.length === 0 ? undefined : e[i % e.length]?.[0];
+            agree(Object.fromEntries(e.map(([k, x]) => [k, k === at ? other : x])));
+          }),
+          opts,
+        );
+        fc.assert(
+          fc.property(valid, fc.constantFrom(...OTHERS), (v, other) => {
+            agree({ ...Object.fromEntries(entries(v)), "undeclared-extra-key": other });
+          }),
+          opts,
+        );
+        fc.assert(
+          fc.property(fc.jsonValue(), (v) => agree(v)),
+          opts,
+        );
+      }
+    },
+    fixedTime(120_000),
+  );
 });

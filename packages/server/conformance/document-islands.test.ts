@@ -2,6 +2,7 @@
 // Spec: k.runtime, clause "A page with no islands loads no runtime JS: its document has no `<script type=\"module\">`, `data-k`, or `data-k-island`; a page with an event handler has all three, and `resume` attaches the handler to server nodes."
 // k.server, "Document" (route levels are the island roots, keyed by route id; RFC 0037).
 // Seed: 1337 (fc.assert seed below). Real compiled TSX (compile + evaluate), real createApp, real resume.
+import { fixedTime } from "@keel/tooling/test-time";
 import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
@@ -177,36 +178,40 @@ describe("k.runtime: document islands (k.server documents)", () => {
     expect(span.textContent).toBe("1");
   });
 
-  it("property: static trees carry no module script and no markers; the same trees plus one onClick carry both", async () => {
-    type Tree = { tag: string; kids: (string | Tree)[] };
-    const leaf = fc.constantFrom("text", "{props.data.title}");
-    const tree: fc.Arbitrary<Tree> = fc.letrec<{ tree: Tree }>((tie) => ({
-      tree: fc.record({
-        tag: fc.constantFrom("section", "div", "p", "span"),
-        kids: fc.array(fc.oneof({ depthSize: "small" }, leaf, tie("tree")), { minLength: 1, maxLength: 3 }),
-      }),
-    })).tree;
-    const render = (t: Tree): string =>
-      `<${t.tag}>${t.kids.map((k) => (typeof k === "string" ? k : render(k))).join("")}</${t.tag}>`;
-    const source = (jsx: string): string => `export default function Gen(props) { return ${jsx} }\n`;
-    // seed 1337
-    await fc.assert(
-      fc.asyncProperty(tree, async (t) => {
-        const plain = render(t);
-        const staticApp = await appFor(compileComponent("Gen", source(plain)));
-        const sdoc = await html(staticApp, "/gen");
-        expect(sdoc).not.toMatch(MODULE_SCRIPT);
-        expect(sdoc).not.toMatch(DATA_K);
-        expect(sdoc).not.toMatch(DATA_K_ISLAND);
+  it(
+    "property: static trees carry no module script and no markers; the same trees plus one onClick carry both",
+    async () => {
+      type Tree = { tag: string; kids: (string | Tree)[] };
+      const leaf = fc.constantFrom("text", "{props.data.title}");
+      const tree: fc.Arbitrary<Tree> = fc.letrec<{ tree: Tree }>((tie) => ({
+        tree: fc.record({
+          tag: fc.constantFrom("section", "div", "p", "span"),
+          kids: fc.array(fc.oneof({ depthSize: "small" }, leaf, tie("tree")), { minLength: 1, maxLength: 3 }),
+        }),
+      })).tree;
+      const render = (t: Tree): string =>
+        `<${t.tag}>${t.kids.map((k) => (typeof k === "string" ? k : render(k))).join("")}</${t.tag}>`;
+      const source = (jsx: string): string => `export default function Gen(props) { return ${jsx} }\n`;
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(tree, async (t) => {
+          const plain = render(t);
+          const staticApp = await appFor(compileComponent("Gen", source(plain)));
+          const sdoc = await html(staticApp, "/gen");
+          expect(sdoc).not.toMatch(MODULE_SCRIPT);
+          expect(sdoc).not.toMatch(DATA_K);
+          expect(sdoc).not.toMatch(DATA_K_ISLAND);
 
-        const withHandler = `<div>${plain}<button id="g.btn" onClick={() => {}}>go</button></div>`;
-        const islandApp = await appFor(compileComponent("Gen", source(withHandler)));
-        const idoc = await html(islandApp, "/gen");
-        expect(idoc.match(/<script[^>]*type=["']module["']/g)).toHaveLength(1);
-        expect(idoc).toMatch(/data-k-island=["']gen\.page["']/);
-        expect(idoc).toMatch(/\sdata-k=["']g\.btn["']/);
-      }),
-      { seed: 1337, numRuns: 8 },
-    );
-  }, 120_000);
+          const withHandler = `<div>${plain}<button id="g.btn" onClick={() => {}}>go</button></div>`;
+          const islandApp = await appFor(compileComponent("Gen", source(withHandler)));
+          const idoc = await html(islandApp, "/gen");
+          expect(idoc.match(/<script[^>]*type=["']module["']/g)).toHaveLength(1);
+          expect(idoc).toMatch(/data-k-island=["']gen\.page["']/);
+          expect(idoc).toMatch(/\sdata-k=["']g\.btn["']/);
+        }),
+        { seed: 1337, numRuns: 8 },
+      );
+    },
+    fixedTime(120_000),
+  );
 });

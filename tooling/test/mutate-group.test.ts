@@ -4,6 +4,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { endGroup, listGroup, signalGroup } from "../mutate.mjs";
+import { fixedTime } from "../test-time.ts";
 
 const stubborn = path.join(import.meta.dirname, "..", "fixtures", "group", "stubborn.mjs");
 
@@ -21,31 +22,39 @@ function start(): Promise<{ proc: ChildProcess; pids: number[] }> {
 }
 
 describe("endGroup", () => {
-  it("SIGKILLs a group that ignores its SIGINT past the grace period and leaves no process of it", async () => {
-    const { proc, pids } = await start();
-    const pgid = pids[0] ?? 0;
-    try {
-      expect(listGroup(pgid).sort()).toEqual([...pids].sort());
-      expect(signalGroup(pgid, "SIGINT")).toBe(true);
-      const end = await endGroup(pgid, { graceMs: 300, pollMs: 50 });
-      expect(end).toEqual({ killed: true, left: [] });
-      expect(listGroup(pgid)).toEqual([]);
-      expect(signalGroup(pgid, "SIGINT")).toBe(false);
-    } finally {
-      signalGroup(pgid, "SIGKILL");
-      proc.unref();
-    }
-  }, 15_000);
+  it(
+    "SIGKILLs a group that ignores its SIGINT past the grace period and leaves no process of it",
+    async () => {
+      const { proc, pids } = await start();
+      const pgid = pids[0] ?? 0;
+      try {
+        expect(listGroup(pgid).sort()).toEqual([...pids].sort());
+        expect(signalGroup(pgid, "SIGINT")).toBe(true);
+        const end = await endGroup(pgid, { graceMs: 300, pollMs: 50 });
+        expect(end).toEqual({ killed: true, left: [] });
+        expect(listGroup(pgid)).toEqual([]);
+        expect(signalGroup(pgid, "SIGINT")).toBe(false);
+      } finally {
+        signalGroup(pgid, "SIGKILL");
+        proc.unref();
+      }
+    },
+    fixedTime(15_000),
+  );
 
-  it("returns without a kill when the group is already empty", async () => {
-    const { proc, pids } = await start();
-    const pgid = pids[0] ?? 0;
-    try {
-      signalGroup(pgid, "SIGKILL");
-      expect(await endGroup(pgid, { graceMs: 2000, pollMs: 50 })).toEqual({ killed: false, left: [] });
-    } finally {
-      signalGroup(pgid, "SIGKILL");
-      proc.unref();
-    }
-  }, 15_000);
+  it(
+    "returns without a kill when the group is already empty",
+    async () => {
+      const { proc, pids } = await start();
+      const pgid = pids[0] ?? 0;
+      try {
+        signalGroup(pgid, "SIGKILL");
+        expect(await endGroup(pgid, { graceMs: 2000, pollMs: 50 })).toEqual({ killed: false, left: [] });
+      } finally {
+        signalGroup(pgid, "SIGKILL");
+        proc.unref();
+      }
+    },
+    fixedTime(15_000),
+  );
 });

@@ -3,6 +3,7 @@
 // The real `keel` binary runs `keel test` over a temp project (OS tmpdir); the control is plain vitest over the same project. Both children get `UV_THREADPOOL_SIZE=4` from this process's environment (the support's clean env keeps it). No generated inputs; seed n/a.
 // ASSUMPTION: a test file runs in a forked process when `process.send` is a function (a fork has an IPC channel to its parent; a worker thread has none).
 // ASSUMPTION: the property "whatever its environment holds" is exercised with the clause's `4` and with `128`, each a `keel test` run; the order is read from the record the test writes.
+import { fixedTime } from "@keel/tooling/test-time";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -61,7 +62,7 @@ beforeAll(() => {
   removeFile(dir, "test/observed.json");
   plainVitest(dir);
   controlSaw = read();
-}, 240_000);
+}, fixedTime(240_000));
 
 afterAll(() => {
   if (before === undefined) Reflect.deleteProperty(process.env, "UV_THREADPOOL_SIZE");

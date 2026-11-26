@@ -3,6 +3,7 @@
 // Seed 1337
 // Assumption: as for std.jobs E2501, `check()` imports nothing, so the rules register by importing `@keel/std-channels/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { check } from "@keel/check";
 import { s } from "@keel/schema";
 import type { Schema } from "@keel/schema";
@@ -76,28 +77,36 @@ test("`channel` without a `message` schema does not throw.", () => {
   expect(codeOf(() => channel("chan.board", { path: "/api/board/events", params: s.object({}) }))).toBeNull();
 });
 
-test("E2601 `channelRoute` outside a `*.server.ts` file fires on a fixture and not on its clean twin.", () => {
-  const withRoute = (path: string): Files => [
-    ...base,
-    channelFile("s.object({ text: s.string() })"),
-    { path, source: routeSource },
-  ];
-  expect(found(withRoute("modules/chan/boardEvents.ts"), "E2601").length).toBe(1);
-  expect(found(withRoute("modules/chan/boardEvents.server.ts"), "E2601").length).toBe(0);
-}, 30_000);
+test(
+  "E2601 `channelRoute` outside a `*.server.ts` file fires on a fixture and not on its clean twin.",
+  () => {
+    const withRoute = (path: string): Files => [
+      ...base,
+      channelFile("s.object({ text: s.string() })"),
+      { path, source: routeSource },
+    ];
+    expect(found(withRoute("modules/chan/boardEvents.ts"), "E2601").length).toBe(1);
+    expect(found(withRoute("modules/chan/boardEvents.server.ts"), "E2601").length).toBe(0);
+  },
+  fixedTime(30_000),
+);
 
-test("E2602 a channel `message` schema holding an `s.secret` fires on a fixture and not on its clean twin.", () => {
-  fc.assert(
-    fc.property(
-      fc.integer({ min: 0, max: 3 }),
-      fc.constantFrom<"object" | "array">("object", "array"),
-      (depth, kind) => {
-        const bad = `s.object({ token: ${wrap("s.secret(s.string())", depth, kind)} })`;
-        const clean = `s.object({ token: ${wrap("s.string()", depth, kind)} })`;
-        expect(found([...base, channelFile(bad)], "E2602").length).toBe(1);
-        expect(found([...base, channelFile(clean)], "E2602").length).toBe(0);
-      },
-    ),
-    { seed: 1337, numRuns: 12 },
-  );
-}, 30_000);
+test(
+  "E2602 a channel `message` schema holding an `s.secret` fires on a fixture and not on its clean twin.",
+  () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 3 }),
+        fc.constantFrom<"object" | "array">("object", "array"),
+        (depth, kind) => {
+          const bad = `s.object({ token: ${wrap("s.secret(s.string())", depth, kind)} })`;
+          const clean = `s.object({ token: ${wrap("s.string()", depth, kind)} })`;
+          expect(found([...base, channelFile(bad)], "E2602").length).toBe(1);
+          expect(found([...base, channelFile(clean)], "E2602").length).toBe(0);
+        },
+      ),
+      { seed: 1337, numRuns: 12 },
+    );
+  },
+  fixedTime(30_000),
+);

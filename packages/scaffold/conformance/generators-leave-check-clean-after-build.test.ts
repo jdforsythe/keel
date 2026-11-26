@@ -2,6 +2,7 @@
 // Real: each case materializes a project, runs the real `keel build` once (so `.keel/` and the generated build files exist), confirms `keel check` is clean,
 // runs the real `keel scaffold <generator>` and asserts the generator exits 0, `keel check` is clean again, and no record anywhere carries E1005.
 // No random input: one fixed project per generator.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, it } from "vitest";
 import { type Files, ORDERS_OPENAPI, apply, fresh, withStoreCart } from "./fixtures.ts";
 import { type CliRecord, cleanup, keel, materialize } from "./keel-cli.ts";
@@ -45,24 +46,48 @@ function generate(tree: Files, args: string[]): void {
 }
 
 describe("in a built project, each generator leaves `keel check` clean with no E1005", () => {
-  it("keel scaffold module billing", () => {
-    generate(fresh(), ["module", "billing"]);
-  }, 180000);
-  it("keel scaffold route orders.show --path /orders/:id", () => {
-    generate(fresh(), ["route", "orders.show", "--path", "/orders/:id"]);
-  }, 180000);
-  it("keel scaffold component orders/OrderCard", () => {
-    generate(fresh(), ["component", "orders/OrderCard"]);
-  }, 180000);
-  it("keel scaffold store orders.cart", () => {
-    generate(fresh(), ["store", "orders.cart"]);
-  }, 180000);
-  it("keel scaffold transaction orders.cart.addItem", () => {
-    generate(withStoreCart(), ["transaction", "orders.cart.addItem"]);
-  }, 180000);
-  it("keel scaffold service orders --openapi openapi.json", () => {
-    const tree = freshNode();
-    tree.set("openapi.json", `${ORDERS_OPENAPI}\n`);
-    generate(tree, ["service", "orders", "--openapi", "openapi.json"]);
-  }, 180000);
+  it(
+    "keel scaffold module billing",
+    () => {
+      generate(fresh(), ["module", "billing"]);
+    },
+    fixedTime(180000),
+  );
+  it(
+    "keel scaffold route orders.show --path /orders/:id",
+    () => {
+      generate(fresh(), ["route", "orders.show", "--path", "/orders/:id"]);
+    },
+    fixedTime(180000),
+  );
+  it(
+    "keel scaffold component orders/OrderCard",
+    () => {
+      generate(fresh(), ["component", "orders/OrderCard"]);
+    },
+    fixedTime(180000),
+  );
+  it(
+    "keel scaffold store orders.cart",
+    () => {
+      generate(fresh(), ["store", "orders.cart"]);
+    },
+    fixedTime(180000),
+  );
+  it(
+    "keel scaffold transaction orders.cart.addItem",
+    () => {
+      generate(withStoreCart(), ["transaction", "orders.cart.addItem"]);
+    },
+    fixedTime(180000),
+  );
+  it(
+    "keel scaffold service orders --openapi openapi.json",
+    () => {
+      const tree = freshNode();
+      tree.set("openapi.json", `${ORDERS_OPENAPI}\n`);
+      generate(tree, ["service", "orders", "--openapi", "openapi.json"]);
+    },
+    fixedTime(180000),
+  );
 });

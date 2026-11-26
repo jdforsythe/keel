@@ -1,4 +1,5 @@
 import { renderRoute } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { expect, it } from "vitest";
 import { copyOf, household, listPage } from "./household.ts";
 import { alone, listOn, restocksOn, runsOn } from "./restock.ts";
@@ -31,7 +32,7 @@ it(
       const second = await (await fetch(asJson("POST", "/api/restock"))).json();
       expect(second.value.kept).toBe(2);
     }),
-  60_000,
+  fixedTime(60_000),
 );
 
 it(
@@ -49,7 +50,7 @@ it(
       expect((await runsOn(ctx)).last).toMatchObject({ state: "done", handled: 5, putBack: 4 });
       expect(await listOn(ctx)).toEqual(["Milk × 2", "Eggs × 1", "Bread × 1", "Rice × 1", "Apples × 1"]);
     }),
-  60_000,
+  fixedTime(60_000),
 );
 
 it("refuses Run now and the runs to a visitor", async () => {
@@ -79,7 +80,7 @@ it(
       expect(copyOf(grace).items.map((i) => `${i.name} × ${i.qty}`)).toEqual(STAPLES);
       grace.dispose();
     }),
-  60_000,
+  fixedTime(60_000),
 );
 
 it(
@@ -107,5 +108,5 @@ it(
       expect(page.find("shopping.restock.refused").text).toBe("");
       page.dispose();
     }),
-  60_000,
+  fixedTime(60_000),
 );

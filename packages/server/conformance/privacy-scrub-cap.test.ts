@@ -5,6 +5,7 @@
 // Seed: 1337.
 // The cap counts the UTF-8 bytes of a scope's distinct values, secret and `.pii()` together. Each case runs in dev and production, in json log format; the log is read through its parsed `message` and `path`.
 // A secret too large to post, one with a lone surrogate and one of more than 1,000,000 values are made inside the action, as the neighbouring secret-reach cases do.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -190,18 +191,30 @@ describe("k.privacy Cost: once one `Secret` has more than 1,000,000 values to re
       mint: () => reveal(made(s.secret(s.array(s.array(s.string()))).parse([same(n)])))[0]?.[0] ?? "",
     });
 
-  it("A `Secret` of 1,000,000 values (the array and 999,999 strings, one distinct string) is read: the message ends `bad [secret]`.", async () => {
-    expect((await run(999_999)).log.messages[0]?.endsWith("bad [secret]")).toBe(true);
-  }, 60_000);
+  it(
+    "A `Secret` of 1,000,000 values (the array and 999,999 strings, one distinct string) is read: the message ends `bad [secret]`.",
+    async () => {
+      expect((await run(999_999)).log.messages[0]?.endsWith("bad [secret]")).toBe(true);
+    },
+    fixedTime(60_000),
+  );
 
-  it("A `Secret` of 1,000,001 values (the array and 1,000,000 strings, one distinct string) is past the cap: `action <id> threw: [secret]` and the `req` path `[secret]`.", async () => {
-    const out = await run(1_000_000);
-    expect(out.log.messages).toEqual([PAST]);
-    expect(out.log.path).toBe("[secret]");
-  }, 60_000);
+  it(
+    "A `Secret` of 1,000,001 values (the array and 1,000,000 strings, one distinct string) is past the cap: `action <id> threw: [secret]` and the `req` path `[secret]`.",
+    async () => {
+      const out = await run(1_000_000);
+      expect(out.log.messages).toEqual([PAST]);
+      expect(out.log.path).toBe("[secret]");
+    },
+    fixedTime(60_000),
+  );
 
-  it("A `Secret` counts each array inside it: an array of an array of 999,998 strings (1,000,000 values) is read, and of 999,999 (1,000,001) is past the cap.", async () => {
-    expect((await nested(999_998)).log.messages[0]?.endsWith("bad [secret]")).toBe(true);
-    expect((await nested(999_999)).log.messages).toEqual([PAST]);
-  }, 60_000);
+  it(
+    "A `Secret` counts each array inside it: an array of an array of 999,998 strings (1,000,000 values) is read, and of 999,999 (1,000,001) is past the cap.",
+    async () => {
+      expect((await nested(999_998)).log.messages[0]?.endsWith("bad [secret]")).toBe(true);
+      expect((await nested(999_999)).log.messages).toEqual([PAST]);
+    },
+    fixedTime(60_000),
+  );
 });

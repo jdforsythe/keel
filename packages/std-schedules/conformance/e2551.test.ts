@@ -2,6 +2,7 @@
 // std.schedules, rule E2551: a `cron` or `zone` literal that does not parse, naming the field (no fix; `schedule` also throws it).
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -81,26 +82,38 @@ const mkJobs = () => queue({ "orders.digest": job({ input: s.object({}) }, async
 const table = (cron: string, zone = "UTC") =>
   ({ "orders.x": { cron, zone, job: "orders.digest", input: {} } }) as const;
 
-test("`60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON` are each one E2551, and a clean twin is none.", () => {
-  for (const cron of BAD) {
-    const d = found(project({ cron }), "E2551");
-    expect(d.length).toBe(1);
-    expect(d[0]?.fix).toBeUndefined();
-  }
-  expect(found(project({ cron: "0 0 * * 1" }), "E2551").length).toBe(0);
-}, 30_000);
+test(
+  "`60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON` are each one E2551, and a clean twin is none.",
+  () => {
+    for (const cron of BAD) {
+      const d = found(project({ cron }), "E2551");
+      expect(d.length).toBe(1);
+      expect(d[0]?.fix).toBeUndefined();
+    }
+    expect(found(project({ cron: "0 0 * * 1" }), "E2551").length).toBe(0);
+  },
+  fixedTime(30_000),
+);
 
-test("E2551 names the field: `60 * * * *` names the minute field.", () => {
-  const d = found(project({ cron: "60 * * * *" }), "E2551");
-  expect(d[0]?.message.toLowerCase()).toContain("minute");
-}, 30_000);
+test(
+  "E2551 names the field: `60 * * * *` names the minute field.",
+  () => {
+    const d = found(project({ cron: "60 * * * *" }), "E2551");
+    expect(d[0]?.message.toLowerCase()).toContain("minute");
+  },
+  fixedTime(30_000),
+);
 
-test("A `zone` literal that is not a `TimeZone` is one E2551, and a clean twin is none.", () => {
-  expect(found(project({ zone: "Mars/Olympus" }), "E2551").length).toBe(1);
-  expect(found(project({ zone: "utc" }), "E2551").length).toBe(1);
-  expect(found(project({ zone: "Europe/Berlin" }), "E2551").length).toBe(0);
-  expect(found(project({ zone: "UTC" }), "E2551").length).toBe(0);
-}, 30_000);
+test(
+  "A `zone` literal that is not a `TimeZone` is one E2551, and a clean twin is none.",
+  () => {
+    expect(found(project({ zone: "Mars/Olympus" }), "E2551").length).toBe(1);
+    expect(found(project({ zone: "utc" }), "E2551").length).toBe(1);
+    expect(found(project({ zone: "Europe/Berlin" }), "E2551").length).toBe(0);
+    expect(found(project({ zone: "UTC" }), "E2551").length).toBe(0);
+  },
+  fixedTime(30_000),
+);
 
 test("`schedule` throws E2551 for `60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON`, and for a `zone` that does not parse, and not for a valid entry.", () => {
   for (const cron of BAD) expect(() => schedule(mkJobs(), table(cron))).toThrow(/E2551/);
@@ -108,16 +121,20 @@ test("`schedule` throws E2551 for `60 * * * *`, `* * * *`, `@daily` and `0 0 * *
   expect(() => schedule(mkJobs(), table("0 3 * * *", "Europe/Berlin"))).not.toThrow();
 });
 
-test("For generated out-of-range numbers in each of the five fields, `schedule` throws E2551 and `check` reports one E2551.", () => {
-  const limits = [60, 24, 32, 13, 7] as const;
-  fc.assert(
-    fc.property(fc.integer({ min: 0, max: 4 }), fc.integer({ min: 0, max: 50 }), (i, extra) => {
-      const parts = ["*", "*", "*", "*", "*"];
-      parts[i] = String((limits[i] ?? 0) + extra);
-      const cron = parts.join(" ");
-      expect(() => schedule(mkJobs(), table(cron))).toThrow(/E2551/);
-      expect(found(project({ cron }), "E2551").length).toBe(1);
-    }),
-    { seed: 1337, numRuns: 40 },
-  );
-}, 30_000);
+test(
+  "For generated out-of-range numbers in each of the five fields, `schedule` throws E2551 and `check` reports one E2551.",
+  () => {
+    const limits = [60, 24, 32, 13, 7] as const;
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 4 }), fc.integer({ min: 0, max: 50 }), (i, extra) => {
+        const parts = ["*", "*", "*", "*", "*"];
+        parts[i] = String((limits[i] ?? 0) + extra);
+        const cron = parts.join(" ");
+        expect(() => schedule(mkJobs(), table(cron))).toThrow(/E2551/);
+        expect(found(project({ cron }), "E2551").length).toBe(1);
+      }),
+      { seed: 1337, numRuns: 40 },
+    );
+  },
+  fixedTime(30_000),
+);

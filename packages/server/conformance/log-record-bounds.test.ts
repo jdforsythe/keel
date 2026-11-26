@@ -4,6 +4,7 @@
 // Spec: k.serverlog, clause "An action that reveals a secret and throws 2,000,001 characters logs `action <id> threw: [secret]`; with no secret or `.pii()` value it logs the first 2,048 characters then `…+<n>`."
 // Spec: k.serverlog, clause "For a thrown message of 1,000,000 `\"`, U+20AC or U+0001, every logged line is at most 8,192 characters and 12,288 bytes of UTF-8."
 // Seed 1337 (no random input: every case is a fixed large text, built once per file).
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -133,59 +134,83 @@ describe("k.serverlog bounds", () => {
   for (const mode of modes)
     for (const format of formats) {
       const where = `in ${mode}, ${format}`;
-      it(`An action throwing an Error whose message is 1,000,000 a logs a diag whose message is its first 2,048 characters then the marker and the count left out, ${where}.`, async () => {
-        const lines = await throwFromAction(mode, format, false, () => new Error(A_MILLION));
-        const message = cutMessage(format, lines);
-        expect(message.startsWith("action orders.show threw: ")).toBe(true);
-        expectCutOfAs(message, 1_000_000);
-        if (format === "json") for (const line of lines) JSON.parse(line);
-      }, 30_000);
+      it(
+        `An action throwing an Error whose message is 1,000,000 a logs a diag whose message is its first 2,048 characters then the marker and the count left out, ${where}.`,
+        async () => {
+          const lines = await throwFromAction(mode, format, false, () => new Error(A_MILLION));
+          const message = cutMessage(format, lines);
+          expect(message.startsWith("action orders.show threw: ")).toBe(true);
+          expectCutOfAs(message, 1_000_000);
+          if (format === "json") for (const line of lines) JSON.parse(line);
+        },
+        fixedTime(30_000),
+      );
 
-      it(`A runner rejecting with an Error whose message is 1,000,000 a logs a diag whose message is its first 2,048 characters then the marker and the count left out, ${where}.`, async () => {
-        const lines = await rejectFromRunner(mode, format, new Error(A_MILLION));
-        const message = cutMessage(format, lines);
-        expect(message.startsWith("runner rejected, rerun in 1000 ms: ")).toBe(true);
-        expectCutOfAs(message, 1_000_000);
-        if (format === "json") for (const line of lines) JSON.parse(line);
-      }, 30_000);
+      it(
+        `A runner rejecting with an Error whose message is 1,000,000 a logs a diag whose message is its first 2,048 characters then the marker and the count left out, ${where}.`,
+        async () => {
+          const lines = await rejectFromRunner(mode, format, new Error(A_MILLION));
+          const message = cutMessage(format, lines);
+          expect(message.startsWith("runner rejected, rerun in 1000 ms: ")).toBe(true);
+          expectCutOfAs(message, 1_000_000);
+          if (format === "json") for (const line of lines) JSON.parse(line);
+        },
+        fixedTime(30_000),
+      );
 
-      it(`A request for a 5,000-character path logs a req path of its first 2,048 characters then the marker and 2952, ${where}.`, async () => {
-        expect(LONG_PATH).toHaveLength(5_000);
-        const lines = await requestPath(mode, format, LONG_PATH);
-        expect(reqPaths(format, lines)).toEqual([`${LONG_PATH.slice(0, 2_048)}${MARK}+2952`]);
-      }, 30_000);
+      it(
+        `A request for a 5,000-character path logs a req path of its first 2,048 characters then the marker and 2952, ${where}.`,
+        async () => {
+          expect(LONG_PATH).toHaveLength(5_000);
+          const lines = await requestPath(mode, format, LONG_PATH);
+          expect(reqPaths(format, lines)).toEqual([`${LONG_PATH.slice(0, 2_048)}${MARK}+2952`]);
+        },
+        fixedTime(30_000),
+      );
 
-      it(`An action that reveals a secret and throws 2,000,001 characters logs action <id> threw: [secret], ${where}.`, async () => {
-        const lines = await throwFromAction(mode, format, true, (secret) => {
-          secret();
-          return OVER_CAP;
-        });
-        const diag = messages(format, lines);
-        expect(diag.some((m) => /^action [^ ]+ threw: \[secret\]$/.test(m))).toBe(true);
-        for (const line of lines) expect(line).not.toContain("aaaaaaaa");
-      }, 30_000);
+      it(
+        `An action that reveals a secret and throws 2,000,001 characters logs action <id> threw: [secret], ${where}.`,
+        async () => {
+          const lines = await throwFromAction(mode, format, true, (secret) => {
+            secret();
+            return OVER_CAP;
+          });
+          const diag = messages(format, lines);
+          expect(diag.some((m) => /^action [^ ]+ threw: \[secret\]$/.test(m))).toBe(true);
+          for (const line of lines) expect(line).not.toContain("aaaaaaaa");
+        },
+        fixedTime(30_000),
+      );
 
-      it(`An action with no secret or pii value that throws 2,000,001 characters logs the first 2,048 characters then the marker and the count left out, ${where}.`, async () => {
-        const lines = await throwFromAction(mode, format, false, () => OVER_CAP);
-        const message = cutMessage(format, lines);
-        expect(message.startsWith("action orders.show threw: ")).toBe(true);
-        expectCutOfAs(message, 2_000_001);
-      }, 30_000);
+      it(
+        `An action with no secret or pii value that throws 2,000,001 characters logs the first 2,048 characters then the marker and the count left out, ${where}.`,
+        async () => {
+          const lines = await throwFromAction(mode, format, false, () => OVER_CAP);
+          const message = cutMessage(format, lines);
+          expect(message.startsWith("action orders.show threw: ")).toBe(true);
+          expectCutOfAs(message, 2_000_001);
+        },
+        fixedTime(30_000),
+      );
 
-      it(`A thrown message of 1,000,000 double quotes, euro signs or U+0001 gives lines of at most 8,192 characters and 12,288 bytes of UTF-8, from an action and from a runner, ${where}.`, async () => {
-        for (const ch of ['"', "€", "\u0001"]) {
-          const text = ch.repeat(1_000_000);
-          const fromAction = await throwFromAction(mode, format, false, () => new Error(text));
-          const fromRunner = await rejectFromRunner(mode, format, new Error(text));
-          for (const lines of [fromAction, fromRunner]) {
-            expect(lines.length).toBeGreaterThan(0);
-            for (const line of lines) {
-              expect(line.length).toBeLessThanOrEqual(8_192);
-              expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(12_288);
-              if (format === "json") JSON.parse(line);
+      it(
+        `A thrown message of 1,000,000 double quotes, euro signs or U+0001 gives lines of at most 8,192 characters and 12,288 bytes of UTF-8, from an action and from a runner, ${where}.`,
+        async () => {
+          for (const ch of ['"', "€", "\u0001"]) {
+            const text = ch.repeat(1_000_000);
+            const fromAction = await throwFromAction(mode, format, false, () => new Error(text));
+            const fromRunner = await rejectFromRunner(mode, format, new Error(text));
+            for (const lines of [fromAction, fromRunner]) {
+              expect(lines.length).toBeGreaterThan(0);
+              for (const line of lines) {
+                expect(line.length).toBeLessThanOrEqual(8_192);
+                expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(12_288);
+                if (format === "json") JSON.parse(line);
+              }
             }
           }
-        }
-      }, 60_000);
+        },
+        fixedTime(60_000),
+      );
     }
 });

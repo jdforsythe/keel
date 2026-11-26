@@ -124,7 +124,7 @@ it("loads a complete message set for each locale", async () => {
 
 const BOOK_RUNS = 100;
 /** One run renders the book and checks its page: 22 ms on a quiet machine, times 8.5 for the CI runner, times 3 for the other workers on its cores. It is the machine's own work, so the bound is fixed time. */
-const BOOK_RUN_MS = 600;
+const BOOK_RUN_MS = fixedTime(600);
 
 it(
   "renders any book the schemas allow",

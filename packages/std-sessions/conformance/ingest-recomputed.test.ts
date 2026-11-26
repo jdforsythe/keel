@@ -1,6 +1,7 @@
 // Spec: std.sessions, clause "A POST naming another session's `fingerprint` is filed under its own recomputed one; 20 flood POSTs totalling less than 4 MiB leave an earlier real session in place."
 // @vitest-environment node
 // Seed 1337
+import { fixedTime } from "@keel/tooling/test-time";
 import { createHash } from "node:crypto";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
@@ -91,43 +92,51 @@ async function listed(app: Fetcher, ctx: ReturnType<typeof createCtx>, cookie: s
 const codeArb = fc.stringMatching(/^[A-Z][A-Z0-9_]{2,10}$/);
 
 describe("std.sessions: ingest recomputes the fingerprint", () => {
-  test("20 flood POSTs totalling less than 4 MiB leave an earlier real session in place", async () => {
-    // One real POST, then 20 cookieless POSTs (a fresh caller each) with distinct codes, under 4 MiB in all.
-    const flood = fc.record({ size: fc.integer({ min: 100_000, max: 190_000 }), code: codeArb });
-    await fc.assert(
-      fc.asyncProperty(flood, async ({ size, code }) => {
-        const { app, ctx } = await boot();
-        const real = await send(app, make("real", code, ""));
-        expect(real.status).toBe(200);
-        const reader = callerValue(real);
-        for (let i = 0; i < 20; i++)
-          expect((await send(app, make(`f${i}`, `FLOOD${i}`, "", "a".repeat(size)))).status).toBe(200);
-        const archive = await listed(app, ctx, reader);
-        const codes = Object.values(archive).flatMap((e) => e.codes);
-        expect(codes).toContain(code);
-        expect(codes.filter((c) => c.startsWith("FLOOD"))).toHaveLength(20);
-      }),
-      { seed: 1337, numRuns: 3 },
-    );
-  }, 120_000);
+  test(
+    "20 flood POSTs totalling less than 4 MiB leave an earlier real session in place",
+    async () => {
+      // One real POST, then 20 cookieless POSTs (a fresh caller each) with distinct codes, under 4 MiB in all.
+      const flood = fc.record({ size: fc.integer({ min: 100_000, max: 190_000 }), code: codeArb });
+      await fc.assert(
+        fc.asyncProperty(flood, async ({ size, code }) => {
+          const { app, ctx } = await boot();
+          const real = await send(app, make("real", code, ""));
+          expect(real.status).toBe(200);
+          const reader = callerValue(real);
+          for (let i = 0; i < 20; i++)
+            expect((await send(app, make(`f${i}`, `FLOOD${i}`, "", "a".repeat(size)))).status).toBe(200);
+          const archive = await listed(app, ctx, reader);
+          const codes = Object.values(archive).flatMap((e) => e.codes);
+          expect(codes).toContain(code);
+          expect(codes.filter((c) => c.startsWith("FLOOD"))).toHaveLength(20);
+        }),
+        { seed: 1337, numRuns: 3 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
-  test("A POST naming another session's `fingerprint` is filed under its own recomputed one; the other's count is unchanged", async () => {
-    await fc.assert(
-      fc.asyncProperty(codeArb, async (code) => {
-        const { app, ctx } = await boot();
-        const caller = callerValue(await send(app, make("victim", code, "")));
-        const before = await listed(app, ctx, caller);
-        const [victim] = Object.keys(before);
-        if (victim === undefined) throw new Error("victim not filed");
-        for (const id of ["spoof-1", "spoof-2"])
-          expect((await send(app, make(id, `${code}X`, victim, "", true), caller)).status).toBe(200);
-        const after = await listed(app, ctx, caller);
-        expect(after[victim]).toEqual({ count: 1, codes: [code] });
-        const own = Object.keys(after).filter((k) => k !== victim);
-        expect(own).toHaveLength(1);
-        expect(after[own[0] ?? ""]).toEqual({ count: 2, codes: [`${code}X`, `${code}X`] });
-      }),
-      { seed: 1337, numRuns: 100 },
-    );
-  }, 60_000);
+  test(
+    "A POST naming another session's `fingerprint` is filed under its own recomputed one; the other's count is unchanged",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(codeArb, async (code) => {
+          const { app, ctx } = await boot();
+          const caller = callerValue(await send(app, make("victim", code, "")));
+          const before = await listed(app, ctx, caller);
+          const [victim] = Object.keys(before);
+          if (victim === undefined) throw new Error("victim not filed");
+          for (const id of ["spoof-1", "spoof-2"])
+            expect((await send(app, make(id, `${code}X`, victim, "", true), caller)).status).toBe(200);
+          const after = await listed(app, ctx, caller);
+          expect(after[victim]).toEqual({ count: 1, codes: [code] });
+          const own = Object.keys(after).filter((k) => k !== victim);
+          expect(own).toHaveLength(1);
+          expect(after[own[0] ?? ""]).toEqual({ count: 2, codes: [`${code}X`, `${code}X`] });
+        }),
+        { seed: 1337, numRuns: 100 },
+      );
+    },
+    fixedTime(60_000),
+  );
 });

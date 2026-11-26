@@ -11,6 +11,7 @@ import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Box } from "../modules/kitchen/Box.schema.ts";
@@ -63,7 +64,7 @@ const realServer = (url: string) => (): Ctx => {
  * migrates: about 0.7 s on a quiet machine, where a property run after it takes about 5 ms, and over 5 s on a
  * starved CI runner. std-postgres bounds its own PGlite tests the same.
  */
-const OPEN_MS = 60_000;
+const OPEN_MS = fixedTime(60_000);
 
 const MODES: { name: string; server: () => Ctx; opens: boolean }[] = [
   { name: "sim", server: () => simServer(), opens: false },
