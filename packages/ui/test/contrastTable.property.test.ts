@@ -46,9 +46,8 @@ describe("contrastTable properties", () => {
   });
 
   it("leaves out a pair whose color in that scheme is not a hex color", () => {
-    const rows = contrastTable(
-      defineTokens({ color: { a: "#000", b: "#fff", c: { light: "#777", dark: "transparent" } } }),
-    );
+    // Tokens `TokenSchema` refuses (k.values): `contrastTable` still reads what it is given.
+    const rows = contrastTable({ color: { a: "#000", b: "#fff", c: { light: "#777", dark: "transparent" } } });
     // `c` is the app's own pair, so the app has both schemes (k.schemes).
     expect(rows.filter((r) => r.scheme === "light")).toHaveLength(6);
     expect(rows.filter((r) => r.scheme === "dark")).toHaveLength(2);
