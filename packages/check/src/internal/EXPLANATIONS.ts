@@ -424,6 +424,13 @@ const ROWS: readonly Row[] = [
     "k.server-deps",
   ],
   [
+    "E1170",
+    'an app\'s folder (one holding topology.ts or modules/) whose package.json says "keel": "library"',
+    "A library's own folder is read as an app holds the library installed; an app read that way would check none of its files.",
+    'drop "keel": "library" from the app\'s package.json; keep a library in its own folder',
+    "k.module",
+  ],
+  [
     "E1171",
     "a module.ts that is no manifest: deeper than modules/<id>/module.ts in an app, under src/ or unsafe/ in a library",
     "Rules find a file's module by the module.ts whose folder holds it; a second one would stand in for the real manifest.",

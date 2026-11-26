@@ -4,6 +4,7 @@ import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { agentDrift } from "./agentDrift.ts";
+import { appMarkedLibrary } from "./appMarkedLibrary.ts";
 import { asInstalled } from "./asInstalled.ts";
 import { baseInput } from "./baseInput.ts";
 import { codeFiles } from "./codeFiles.ts";
@@ -29,6 +30,7 @@ import { summary } from "./summary.ts";
  * and each plugin it names that `package.json` lacks is one E1572, once per plugin (k.shell Plugins).
  * W1356 for a stale agent file, where `AGENTS.md` holds the Keel block.
  * Run over every code file, it checks the files of the app's libraries too (`runCheck`, k.library In an app).
+ * In an app's folder whose `package.json` says `"keel": "library"` it reports E1170 there and checks the app (k.module).
  * In a library's own folder (`ownLibrary`) it reads the folder as an app holds the library installed (`asInstalled`):
  * every k.library rule holds and E1162 does not; the libraries its manifest lists are read and imported as an app's
  * are, its own `./tools` is imported as an app that lists it imports it (its formats hold, its rules do not run), and each diagnostic is located at the folder's
@@ -61,7 +63,10 @@ export async function checkCommand(input: Input, given: Io): Promise<OutRecord[]
       ? []
       : [...pathCollisions(project, topology, io.cwd), ...serverOnlyCalls(project, topology)]),
   ].map((d) => makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see }));
+  // An app's folder marked a library is checked as the app it is (k.module E1170).
+  const marked = appMarkedLibrary(given.cwd);
   const diags = [
+    ...(marked === undefined ? [] : [marked]),
     ...(base.warn === undefined ? [] : [base.warn]),
     ...checked,
     ...paths,
