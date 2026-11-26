@@ -1,5 +1,6 @@
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { Toolbar } from "../src/index.ts";
@@ -32,7 +33,7 @@ it("is a named toolbar whose disabled item reads as disabled, stays in the order
 
 it(
   "after any run of arrow keys the one tab stop is the item the arrows reach, a disabled one included",
-  { timeout: 30_000 },
+  { timeout: fixedTime(30_000) },
   async () => {
     await fc.assert(
       fc.asyncProperty(

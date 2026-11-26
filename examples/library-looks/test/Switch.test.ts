@@ -1,6 +1,7 @@
 import { signal } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { Switch } from "../src/index.ts";
@@ -47,7 +48,7 @@ it("reports aria-checked from on", () => {
   view.dispose();
 });
 
-it("after any run of clicks, aria-checked equals the parity", { timeout: 30_000 }, async () => {
+it("after any run of clicks, aria-checked equals the parity", { timeout: fixedTime(30_000) }, async () => {
   await fc.assert(
     fc.asyncProperty(fc.boolean(), fc.nat({ max: 8 }), async (start, clicks) => {
       const view = mount(start);

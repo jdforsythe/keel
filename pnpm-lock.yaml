@@ -891,6 +891,9 @@ importers:
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
       '@keel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
