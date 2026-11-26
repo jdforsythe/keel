@@ -1,9 +1,8 @@
-import type { Schema } from "@keel/schema";
+import { type Schema, defect } from "@keel/schema";
 import type { Job } from "@keel/std-jobs";
 import type { StateSpec } from "@keel/std-statecharts";
 import { asEvents } from "../unsafe/asEvents.ts";
 import { looseChart } from "../unsafe/looseChart.ts";
-import { refuse } from "../unsafe/refuse.ts";
 import type { StepSpec } from "./StepSpec.ts";
 import type { WaitSpec } from "./WaitSpec.ts";
 import type { Workflow } from "./Workflow.type.ts";
@@ -40,7 +39,7 @@ export function workflow<
     const on = states[state]?.on;
     for (const e of events)
       if (on === undefined || finals.has(state) || !Object.hasOwn(on, e))
-        refuse(`E2352 workflow ${id}: ${part} ${state} needs a non-final state whose on has ${e}`);
+        defect(`workflow ${id}: ${part} ${state} needs a non-final state whose on has ${e}`, "E2352");
   };
   const steps = new Map<string, StepSpec<D, Readonly<Record<string, Schema<unknown>>>>>();
   const waits = new Map<string, WaitSpec<string>>();
@@ -57,10 +56,10 @@ export function workflow<
       own("wait", state, [wait.event]);
       waits.set(state, wait);
     }
-  if (first === undefined) refuse(`E2352 workflow ${id}: the chart has no states`);
+  if (first === undefined) defect(`workflow ${id}: the chart has no states`, "E2352");
   for (const e of Object.keys(chart.events))
     if (e === "start" || e === "attempt" || e === "forget")
-      refuse(`E2355 workflow ${id}: chart event ${e} takes the name of a workflow transaction; rename it`);
+      defect(`workflow ${id}: chart event ${e} takes the name of a workflow transaction; rename it`, "E2355");
   const events = new Map<string, Schema<unknown>>();
   for (const [e, t] of Object.entries(chart.events)) events.set(e, t.schema);
   const open = compileStores(

@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { refuse } from "../../unsafe/refuse.ts";
+import { defect } from "@keel/schema";
 import { State } from "./State.schema.ts";
 import { chanOf } from "./chanOf.ts";
 import { snapshot } from "./snapshot.ts";
@@ -18,7 +18,7 @@ export function transact<T>(ctx: Ctx, module: string, fn: (st: State) => T): Pro
     for (;;) {
       const [raw = null] = await ctx.storage.read([key]);
       const r = State.parse(raw === null ? { q: [], done: [], failed: [] } : JSON.parse(raw));
-      if (!r.ok) refuse(`std.jobs: ${key} does not hold a queue`);
+      if (!r.ok) defect(`std.jobs: ${key} does not hold a queue`);
       const out = fn(r.value);
       const text = JSON.stringify(r.value);
       if (text === raw || (await ctx.storage.commit([{ key, expect: raw, value: text }]))) {

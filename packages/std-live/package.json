@@ -20,9 +20,9 @@
       }
     }
   },
-  "files": ["module.ts", "src", "unsafe", "dist", ".keel/ledger.json", "docs", "README.md"],
+  "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src unsafe test module.ts && keel check",
+    "check": "tsc --noEmit && biome check src test module.ts && keel check",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",

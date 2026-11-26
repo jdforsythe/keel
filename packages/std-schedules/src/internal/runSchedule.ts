@@ -1,7 +1,6 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
+import { attempt, defect } from "@keel/schema";
 import type { JobTable, Queue } from "@keel/std-jobs";
-import { refuse } from "../../unsafe/refuse.ts";
 import { Marks } from "./Marks.schema.ts";
 import type { Planned } from "./Planned.ts";
 import { seek } from "./seek.ts";
@@ -23,11 +22,11 @@ export async function runSchedule(
   const key = `std.schedules.${module}`;
   const raw = await ctx.storage.get(key);
   const read = Marks.parse(raw === null ? {} : JSON.parse(raw));
-  if (!read.ok) refuse(`std.schedules: ${key} does not hold schedule marks`);
+  if (!read.ok) defect(`std.schedules: ${key} does not hold schedule marks`);
   const marks = read.value;
   const fire = async (p: Planned, t: number): Promise<void> => {
     const r = await queue.enqueue(ctx, p.job, p.input, { key: `${p.id}@${t}` });
-    if (!r.ok) refuse(`std.schedules: enqueue ${p.job} failed: ${r.error.code}`);
+    if (!r.ok) defect(`std.schedules: enqueue ${p.job} failed: ${r.error.code}`);
     marks[p.id] = t;
     await ctx.storage.set(key, JSON.stringify(marks));
   };

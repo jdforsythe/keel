@@ -2,8 +2,7 @@ import { stdConfig } from "@keel/compiler/std/stdConfig";
 import type { Ctx } from "@keel/ctx";
 import { action, loader } from "@keel/router";
 import type { Contract } from "@keel/router/contract";
-import { type KeelError, attempt, err, ok } from "@keel/schema";
-import { fault } from "../../unsafe/fault.ts";
+import { type KeelError, attempt, defect, err, ok } from "@keel/schema";
 import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
 import type { ChannelEvent } from "../ChannelEvent.ts";
@@ -77,7 +76,7 @@ function holding<E extends object>(
 ): Contract<string, Readonly<Record<string, E>>> {
   if (holds<E>(c, id, want, nothing)) return c;
   const members = differing(c, id, want, nothing).join(", ");
-  return fault("E1515", `E1515 channelRoute: ${c.module} entry ${id} is not its channel's, at ${members}`);
+  return defect(`channelRoute: ${c.module} entry ${id} is not its channel's, at ${members}`, "E1515");
 }
 
 /** A channel without `message`: the stream entry's loader only; `publish` does not compile. */
@@ -125,9 +124,9 @@ export function channelRoute<P, M, S>(
   const { module } = contract;
   const { path, params: query, events: output, body, message } = channel;
   if (publish !== undefined && (message === undefined || body === undefined)) {
-    return fault(
+    return defect(
+      `channelRoute: channel ${channel.name} declares no message, so ${publish} has nothing to publish`,
       "E1510",
-      `E1510 channelRoute: channel ${channel.name} declares no message, so ${publish} has nothing to publish`,
     );
   }
   const streams = holding<StreamEntry<P, M>>(contract, id, { method: "GET", path, query, events: true, output });
