@@ -42,10 +42,11 @@ describe.each(APPS)("apps/%s .keel artifacts", (name) => {
     expect(r.stdout.split("\n").filter((l) => l.includes('"E1005"'))).toEqual([]);
   });
 
+  // A whole `keel test` of a golden app takes about 17 s alone: 480 s is 48 s at scale 0.1, under three times that.
   it("`keel test` leaves the committed `.keel/` files as they are", () => {
     const before = artifacts(app);
     const r = spawnSync(process.execPath, [BIN, "test"], { cwd: app, encoding: "utf8" });
     expect(r.status).toBe(0);
     expect(artifacts(app)).toEqual(before);
-  }, 240_000);
+  }, 480_000);
 });
