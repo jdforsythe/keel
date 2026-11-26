@@ -84,7 +84,7 @@ export const unknownToken: RuleDef = {
     /** A token prop's value: a literal, or a responsive object of literals keyed by breakpoints. */
     const value = (name: string, e: Expression): void => {
       const lit = literalOf(e);
-      if (lit !== undefined) return prop(name, lit.text, lit.start);
+      if (lit !== undefined) prop(name, lit.text, lit.start);
       if (e.type !== "ObjectExpression") return;
       for (const p of e.properties) {
         if (p.type !== "Property") continue;
@@ -119,7 +119,8 @@ export const unknownToken: RuleDef = {
         if (a.type !== "JSXAttribute" || a.name.type !== "JSXIdentifier") continue;
         const name = a.name.name;
         const v = a.value;
-        const e = v?.type === "JSXExpressionContainer" && v.expression.type !== "JSXEmptyExpression" ? v.expression : undefined;
+        const e =
+          v?.type === "JSXExpressionContainer" && v.expression.type !== "JSXEmptyExpression" ? v.expression : undefined;
         if (name === "styles") {
           if (e?.type === "ObjectExpression")
             for (const p of e.properties)
@@ -127,7 +128,8 @@ export const unknownToken: RuleDef = {
           continue;
         }
         if (!base) continue;
-        const lit = v?.type === "Literal" && typeof v.value === "string" ? { text: v.value, start: v.start } : undefined;
+        const lit =
+          v?.type === "Literal" && typeof v.value === "string" ? { text: v.value, start: v.start } : undefined;
         if (name === "look") {
           const l = lit ?? (e === undefined ? undefined : literalOf(e));
           if (l !== undefined) look(l.text, l.start);

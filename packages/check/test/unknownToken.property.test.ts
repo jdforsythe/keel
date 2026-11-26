@@ -32,26 +32,34 @@ const e1801 = (files: { path: string; source: string }[], withTokens: boolean) =
 describe("unknownToken", () => {
   it("property: with tokens, one E1801 per literal its groups lack, per key no breakpoint names and per missing look", () => {
     fc.assert(
-      fc.property(fc.uniqueArray(use, { selector: (u) => u.prop, maxLength: 6 }), fc.constantFrom(...NAMES), (uses, look) => {
-        const expected =
-          uses.filter((u) => u.name !== "a" && u.name !== "b").length +
-          uses.filter((u) => !u.direct && u.at === "xl").length +
-          (look === "a" ? 0 : 1);
-        expect(e1801([{ path: "C.tsx", source: source(uses, look) }], true)).toHaveLength(expected);
-      }),
+      fc.property(
+        fc.uniqueArray(use, { selector: (u) => u.prop, maxLength: 6 }),
+        fc.constantFrom(...NAMES),
+        (uses, look) => {
+          const expected =
+            uses.filter((u) => u.name !== "a" && u.name !== "b").length +
+            uses.filter((u) => !u.direct && u.at === "xl").length +
+            (look === "a" ? 0 : 1);
+          expect(e1801([{ path: "C.tsx", source: source(uses, look) }], true)).toHaveLength(expected);
+        },
+      ),
       { seed: 1337, numRuns: 100 },
     );
   });
 
   it("property: with no tokens.ts every literal, key but base and look is one E1801 ending with the suffix", () => {
     fc.assert(
-      fc.property(fc.uniqueArray(use, { selector: (u) => u.prop, maxLength: 6 }), fc.constantFrom(...NAMES), (uses, look) => {
-        const files = [{ path: "C.tsx", source: source(uses, look) }];
-        const d = e1801(files, false);
-        expect(d).toHaveLength(uses.length + uses.filter((u) => !u.direct && u.at !== "base").length + 1);
-        for (const x of d) expect(x.message.endsWith(": the project has no tokens.ts")).toBe(true);
-        expect(e1801([...files, { path: "tokens.ts", source: "throw new Error('x')\n" }], false)).toEqual([]);
-      }),
+      fc.property(
+        fc.uniqueArray(use, { selector: (u) => u.prop, maxLength: 6 }),
+        fc.constantFrom(...NAMES),
+        (uses, look) => {
+          const files = [{ path: "C.tsx", source: source(uses, look) }];
+          const d = e1801(files, false);
+          expect(d).toHaveLength(uses.length + uses.filter((u) => !u.direct && u.at !== "base").length + 1);
+          for (const x of d) expect(x.message.endsWith(": the project has no tokens.ts")).toBe(true);
+          expect(e1801([...files, { path: "tokens.ts", source: "throw new Error('x')\n" }], false)).toEqual([]);
+        },
+      ),
       { seed: 1337, numRuns: 100 },
     );
   });

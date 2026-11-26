@@ -28,18 +28,22 @@ describe("controlValue", () => {
 
   it("property: a select gives its first selected option's value", () => {
     fc.assert(
-      fc.property(fc.uniqueArray(fc.string({ minLength: 1, maxLength: 8 }), { minLength: 1, maxLength: 5 }), fc.nat(), (values, n) => {
-        const select = document.createElement("select");
-        for (const v of values) {
-          const o = document.createElement("option");
-          o.value = v;
-          o.textContent = v;
-          select.append(o);
-        }
-        const pick = values[n % values.length] ?? "";
-        select.value = pick;
-        expect(controlValue(select)).toBe(pick);
-      }),
+      fc.property(
+        fc.uniqueArray(fc.string({ minLength: 1, maxLength: 8 }), { minLength: 1, maxLength: 5 }),
+        fc.nat(),
+        (values, n) => {
+          const select = document.createElement("select");
+          for (const v of values) {
+            const o = document.createElement("option");
+            o.value = v;
+            o.textContent = v;
+            select.append(o);
+          }
+          const pick = values[n % values.length] ?? "";
+          select.value = pick;
+          expect(controlValue(select)).toBe(pick);
+        },
+      ),
       { seed: 1337, numRuns: 100 },
     );
   });
