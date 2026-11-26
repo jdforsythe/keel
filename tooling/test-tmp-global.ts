@@ -6,16 +6,19 @@
 // name. The folders conformance files make with no teardown (the conformance-writer's to fix) are named in
 // `leftByConformance` below by what the package's conformance files make, so they are removed with the run's folder
 // and never fail it.
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { type Dirent, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const MKDTEMP_PREFIX = /mkdtemp(?:Sync)?\([^"'`\n]*["'`]([^"'`/]+)["'`]/g;
 
+/** Node's own code cache, which it makes in the temp folder of a process that enables it: not a test's folder. */
+const NODE_COMPILE_CACHE = "node-compile-cache";
+
 /** `.ts`, `.mjs` and `.tsx` files under `dir`, without descending into `node_modules`. */
 function sources(dir: string): string[] {
   const out: string[] = [];
-  let entries;
+  let entries: Dirent[];
   try {
     entries = readdirSync(dir, { withFileTypes: true });
   } catch {
@@ -47,13 +50,14 @@ export default function setup(): () => void {
   const before = process.env.TMPDIR;
   process.env.TMPDIR = root;
   return () => {
-    if (before === undefined) delete process.env.TMPDIR;
+    if (before === undefined) Reflect.deleteProperty(process.env, "TMPDIR");
     else process.env.TMPDIR = before;
     const left = readdirSync(root);
     const allowed = leftByConformance(process.cwd());
     rmSync(root, { recursive: true, force: true });
     const named = new Map<string, number>();
     for (const name of left) {
+      if (name === NODE_COMPILE_CACHE) continue;
       const prefix = prefixOf(name);
       if (allowed.has(prefix)) continue;
       named.set(prefix, (named.get(prefix) ?? 0) + 1);
