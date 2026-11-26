@@ -3,6 +3,7 @@
 // Seed 1337
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -60,27 +61,35 @@ const project = (exports: string[]): Files => [
   { path: "topology.ts", source: topo("node") },
 ];
 
-test("E2502 fires on `jobs` in `public.exports` and not on its clean twin.", () => {
-  fc.assert(
-    fc.property(
-      fc.array(
-        word.filter((w) => w !== "jobs"),
-        { maxLength: 3 },
+test(
+  "E2502 fires on `jobs` in `public.exports` and not on its clean twin.",
+  () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          word.filter((w) => w !== "jobs"),
+          { maxLength: 3 },
+        ),
+        (others) => {
+          expect(found(project([...others, "jobs"]), "E2502").length).toBe(1);
+          expect(found(project(others), "E2502").length).toBe(0);
+        },
       ),
-      (others) => {
-        expect(found(project([...others, "jobs"]), "E2502").length).toBe(1);
-        expect(found(project(others), "E2502").length).toBe(0);
-      },
-    ),
-    { seed: 1337, numRuns: 30 },
-  );
-}, 30_000);
+      { seed: 1337, numRuns: 30 },
+    );
+  },
+  fixedTime(30_000),
+);
 
-test("E2502's fix removes `jobs` from `public.exports`, and re-checking the patched file reports no E2502.", () => {
-  const files = project(["sendReceipt", "jobs"]);
-  const d = found(files, "E2502");
-  expect(d.length).toBe(1);
-  const patched = applyFix(files, d[0]?.fix ?? "");
-  expect(found(patched, "E2502").length).toBe(0);
-  expect(patched.find((f) => f.path === "modules/orders/module.ts")?.source).toContain("sendReceipt");
-}, 30_000);
+test(
+  "E2502's fix removes `jobs` from `public.exports`, and re-checking the patched file reports no E2502.",
+  () => {
+    const files = project(["sendReceipt", "jobs"]);
+    const d = found(files, "E2502");
+    expect(d.length).toBe(1);
+    const patched = applyFix(files, d[0]?.fix ?? "");
+    expect(found(patched, "E2502").length).toBe(0);
+    expect(patched.find((f) => f.path === "modules/orders/module.ts")?.source).toContain("sendReceipt");
+  },
+  fixedTime(30_000),
+);

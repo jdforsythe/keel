@@ -3,6 +3,7 @@
 // Seed 1337
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -60,26 +61,38 @@ const project = (runners: string, adapter = "node"): Files => [
   { path: "topology.ts", source: topo(adapter) },
 ];
 
-test("E2504 fires on a `runners` export lacking `jobs` and not on its clean twin.", () => {
-  expect(found(project("[]"), "E2504").length).toBe(1);
-  expect(found(project("[jobs]"), "E2504").length).toBe(0);
-}, 30_000);
+test(
+  "E2504 fires on a `runners` export lacking `jobs` and not on its clean twin.",
+  () => {
+    expect(found(project("[]"), "E2504").length).toBe(1);
+    expect(found(project("[jobs]"), "E2504").length).toBe(0);
+  },
+  fixedTime(30_000),
+);
 
-test("E2504 fires on a module with jobs placed in a non-`node` deployable and not in a `node` one.", () => {
-  fc.assert(
-    fc.property(fc.constantFrom("static", "client"), (adapter) => {
-      expect(found(project("[jobs]", adapter), "E2504").length).toBe(1);
-      expect(found(project("[jobs]", "node"), "E2504").length).toBe(0);
-    }),
-    { seed: 1337, numRuns: 10 },
-  );
-}, 30_000);
+test(
+  "E2504 fires on a module with jobs placed in a non-`node` deployable and not in a `node` one.",
+  () => {
+    fc.assert(
+      fc.property(fc.constantFrom("static", "client"), (adapter) => {
+        expect(found(project("[jobs]", adapter), "E2504").length).toBe(1);
+        expect(found(project("[jobs]", "node"), "E2504").length).toBe(0);
+      }),
+      { seed: 1337, numRuns: 10 },
+    );
+  },
+  fixedTime(30_000),
+);
 
-test("E2504's fix adds `jobs` to `runners`, and re-checking the patched file reports no E2504.", () => {
-  const files = project("[]");
-  const d = found(files, "E2504");
-  expect(d.length).toBe(1);
-  const patched = applyFix(files, d[0]?.fix ?? "");
-  expect(patched.find((f) => f.path === "modules/orders/runners.server.ts")?.source).toContain("jobs]");
-  expect(found(patched, "E2504").length).toBe(0);
-}, 30_000);
+test(
+  "E2504's fix adds `jobs` to `runners`, and re-checking the patched file reports no E2504.",
+  () => {
+    const files = project("[]");
+    const d = found(files, "E2504");
+    expect(d.length).toBe(1);
+    const patched = applyFix(files, d[0]?.fix ?? "");
+    expect(patched.find((f) => f.path === "modules/orders/runners.server.ts")?.source).toContain("jobs]");
+    expect(found(patched, "E2504").length).toBe(0);
+  },
+  fixedTime(30_000),
+);
