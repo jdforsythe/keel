@@ -1,6 +1,7 @@
 // k.library Rules E1162 and k.library-pack Ledger file: `readLibraryLedger`, `ledgerCount` and E1162 over `check()`
 // files. Seed 1337.
 import { LedgerFileSchema, check, ledgerCount, readLibraryLedger } from "@keel/check";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
@@ -124,21 +125,25 @@ test("readLibraryLedger reads at most 262,144 UTF-8 bytes, and takes the last of
   expect(readLibraryLedger(JSON.stringify({ ...GOOD, unsafe: 1_234_567, hostElements: 1_000_000 })).ok).toBe(true);
 });
 
-test("E1162 over the byte bound is its own message, and the counts message reaches 87 units at six-digit counts", () => {
-  const name = "@acme-charts-widgets/chart-library-xyz";
-  const at = (files: File[]): string[] =>
-    e1162(
-      files.map((f) => ({
-        ...f,
-        path: f.path.replace("@acme/charts", name),
-        source: f.source.replace("'@acme/charts'", `'${name}'`).replace('"@acme/charts"', `"${name}"`),
-      })),
-    );
-  const big = at(project(" ".repeat(262_145)));
-  expect(big).toEqual([`${name} .keel/ledger.json is over 262144 bytes`]);
-  expect(big[0]?.length).toBe(77);
-  const hosts = `import { Host } from '@keel/ui'\n${"Host({});".repeat(100_000)}\n`;
-  const counts = at(project(JSON.stringify({ ...GOOD, hostElements: 999_999 }), { "src/h.ts": hosts }));
-  expect(counts).toEqual([`${name} ships hostElements 999999, its files hold 100000`]);
-  expect(counts[0]?.length).toBe(87);
-}, 120_000);
+test(
+  "E1162 over the byte bound is its own message, and the counts message reaches 87 units at six-digit counts",
+  () => {
+    const name = "@acme-charts-widgets/chart-library-xyz";
+    const at = (files: File[]): string[] =>
+      e1162(
+        files.map((f) => ({
+          ...f,
+          path: f.path.replace("@acme/charts", name),
+          source: f.source.replace("'@acme/charts'", `'${name}'`).replace('"@acme/charts"', `"${name}"`),
+        })),
+      );
+    const big = at(project(" ".repeat(262_145)));
+    expect(big).toEqual([`${name} .keel/ledger.json is over 262144 bytes`]);
+    expect(big[0]?.length).toBe(77);
+    const hosts = `import { Host } from '@keel/ui'\n${"Host({});".repeat(100_000)}\n`;
+    const counts = at(project(JSON.stringify({ ...GOOD, hostElements: 999_999 }), { "src/h.ts": hosts }));
+    expect(counts).toEqual([`${name} ships hostElements 999999, its files hold 100000`]);
+    expect(counts[0]?.length).toBe(87);
+  },
+  fixedTime(120_000),
+);

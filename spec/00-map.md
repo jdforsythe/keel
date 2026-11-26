@@ -98,7 +98,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.library-pack | Library publishing | implemented | pack |
 | k.server-deps | Server deps | implemented | env |
 | k.a11y | Accessibility | conformance-covered | WCAG |
-| k.a11y-static | Static contrast | implemented | E1804 |
+| k.a11y-static | Static contrast | conformance-covered | E1804 |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | implemented | grid |
 | k.host-element | Host elements | conformance-covered | charts |

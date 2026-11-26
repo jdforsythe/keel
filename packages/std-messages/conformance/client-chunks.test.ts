@@ -147,8 +147,7 @@ export const routes = manifest(app, {
     encoding: "utf8",
     env: { ...process.env, KEEL_AGENT: "1" },
   });
-  if (r.status !== 0)
-    throw new Error(`keel build failed (status ${String(r.status)})\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
+  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   dist = path.join(fx, "dist");
 }, 120_000);
 
@@ -166,3 +165,14 @@ test("A `client` build of a fixture route whose loader loads a set holds each lo
   expect(de).toHaveLength(1);
   expect(en[0]).not.toBe(de[0]);
 });
+
+/** A failed child's diagnostics on one line: the non-empty lines of stdout and of stderr, each joined with ` | ` and cut to its last 440 characters, the two joined with ` | `. */
+function childOutput(r: { stdout: string; stderr: string }): string {
+  const tail = (s: string): string =>
+    s
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .join(" | ")
+      .slice(-440);
+  return `${tail(r.stdout)} | ${tail(r.stderr)}`;
+}

@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { fixedTime } from "@keel/tooling/test-time";
 import { expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { runEngine } from "../src/internal/runEngine.ts";
@@ -41,22 +42,26 @@ const step = async (args: string[], cwd: string, files: Files): Promise<Files> =
   return [...m].map(([path, source]) => ({ path, source }));
 };
 
-it("the test scaffold route --api generates passes in a scaffolded project", async () => {
-  let files = await step(["scaffold", "project", "shop"], "/work", []);
-  files = await step(["scaffold", "module", "orders"], "/work/shop", files);
-  files = await step(["scaffold", "route", "orders.list", "--path", "/api/orders", "--api"], "/work/shop", files);
-  expect(files.map((f) => f.path)).toContain("modules/orders/list.route.test.ts");
-  const cwd = realpathSync(mkdtempSync(join(tmpdir(), "keel-api-route-")));
-  try {
-    for (const f of files) {
-      mkdirSync(dirname(join(cwd, f.path)), { recursive: true });
-      writeFileSync(join(cwd, f.path), f.source);
+it(
+  "the test scaffold route --api generates passes in a scaffolded project",
+  async () => {
+    let files = await step(["scaffold", "project", "shop"], "/work", []);
+    files = await step(["scaffold", "module", "orders"], "/work/shop", files);
+    files = await step(["scaffold", "route", "orders.list", "--path", "/api/orders", "--api"], "/work/shop", files);
+    expect(files.map((f) => f.path)).toContain("modules/orders/list.route.test.ts");
+    const cwd = realpathSync(mkdtempSync(join(tmpdir(), "keel-api-route-")));
+    try {
+      for (const f of files) {
+        mkdirSync(dirname(join(cwd, f.path)), { recursive: true });
+        writeFileSync(join(cwd, f.path), f.source);
+      }
+      link(cwd, files.find((f) => f.path === "package.json")?.source ?? "{}");
+      const r = await run(["test", "modules/orders/list.route.test.ts"], { cwd, files });
+      expect(r.stdout.split("\n").filter((l) => l !== "")).toEqual(["ok test 1 tests, 0 failed, 0 skipped"]);
+      expect(r.code).toBe(0);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
     }
-    link(cwd, files.find((f) => f.path === "package.json")?.source ?? "{}");
-    const r = await run(["test", "modules/orders/list.route.test.ts"], { cwd, files });
-    expect(r.stdout.split("\n").filter((l) => l !== "")).toEqual(["ok test 1 tests, 0 failed, 0 skipped"]);
-    expect(r.code).toBe(0);
-  } finally {
-    rmSync(cwd, { recursive: true, force: true });
-  }
-}, 60_000);
+  },
+  fixedTime(60_000),
+);

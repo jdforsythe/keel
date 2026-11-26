@@ -32,7 +32,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.scaffold | 20 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
-| k.testing | 27 | **conformance-covered** | none |
+| k.testing | 28 | **conformance-covered** | none |
 | k.test-run | 11 | implemented | not yet covered by conformance |
 | k.requests | 4 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
@@ -130,8 +130,8 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.ledger-items | 14 | implemented | not yet covered by conformance |
 | k.library | 18 | proposed | not yet covered by conformance |
 | k.library-pack | 5 | implemented | not yet covered by conformance |
-| k.server-deps | 10 | implemented | not yet covered by conformance |
-| **total** | **1469** | 115 of 122 covered | |
+| k.server-deps | 11 | implemented | not yet covered by conformance |
+| **total** | **1474** | 115 of 122 covered | |
 
 ## 2. One-way audit (principle 1)
 

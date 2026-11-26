@@ -1,13 +1,13 @@
 // Generated `set` and `commit` sequences against a model map: the driver's stored values, its `read` and each
 // `commit` result agree with the model run serially, whether the calls are awaited one by one or issued at once.
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import type { Cell } from "../src/internal/Cell.ts";
 import { cellStorage } from "../src/internal/cellStorage.ts";
 
 const run = { seed: 1337, numRuns: 200 };
-/** One run is at most 12 calls that each yield to the event loop once or twice: a few ms alone. Each gets 500 ms, so a runner ten times slower (scale 0.1) still has 50 ms a run. The property-time transform cannot read `numRuns` from `run`, so each test states its time. */
+/** One run is at most 12 calls that each yield to the event loop once or twice: a few ms alone. Each gets 500 ms, the machine's own work with a wide margin, so fixed time. The property-time transform cannot read `numRuns` from `run`, so each test states its time. */
 const RUN_MS = 500;
 const key = fc.constantFrom("a", "b", "c", "d");
 const val = fc.option(fc.constantFrom("1", "2", "3"), { nil: null });
@@ -85,7 +85,7 @@ describe("cellStorage against a model map", () => {
         run,
       );
     },
-    run.numRuns * testTime(RUN_MS),
+    run.numRuns * fixedTime(RUN_MS),
   );
 
   test(
@@ -106,7 +106,7 @@ describe("cellStorage against a model map", () => {
         run,
       );
     },
-    run.numRuns * testTime(RUN_MS),
+    run.numRuns * fixedTime(RUN_MS),
   );
 
   test(
@@ -133,6 +133,6 @@ describe("cellStorage against a model map", () => {
         run,
       );
     },
-    run.numRuns * testTime(RUN_MS),
+    run.numRuns * fixedTime(RUN_MS),
   );
 });

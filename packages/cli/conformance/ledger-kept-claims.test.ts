@@ -20,6 +20,7 @@ import {
   root,
   summaryOf,
   writeFiles,
+  childOutput,
 } from "./test-sim-project.ts";
 
 const COMMITTED = "tooling/ledger/ledger.json";
@@ -53,7 +54,8 @@ const countsOf = (r: Run): Record<string, unknown> => {
 /** Writes the ledger over the bare project, then sets its `a11y` list to `items`. */
 function commit(dir: string, items: readonly { item: string; rung: string }[]): void {
   const first = keel(dir, ["ledger", "--write", COMMITTED]);
-  if (first.status !== 0) throw new Error(`keel ledger --write failed: ${first.stdout}`);
+  if (first.status !== 0)
+    throw new Error(`keel ledger --write failed (status ${String(first.status)}): ${childOutput(first)}`);
   const led = readLedger(dir);
   if (typeof led !== "object" || led === null) throw new Error("ledger is not an object");
   writeFiles(dir, { [COMMITTED]: `${JSON.stringify({ ...led, a11y: items }, null, 2)}\n` });

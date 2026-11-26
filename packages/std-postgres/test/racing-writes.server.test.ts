@@ -18,6 +18,7 @@ import { NoRows, fragment, sql } from "@keel/std-postgres";
 import type { TransactionOptions } from "@keel/std-postgres/server";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
@@ -30,7 +31,7 @@ let counter = 0;
 // hook states 60 s, the bound the apps give a PGlite folder's first open.
 beforeAll(async () => {
   await ready();
-}, 60_000);
+}, fixedTime(60_000));
 
 const tpl = (parts: string[]): TemplateStringsArray => Object.assign([...parts], { raw: [...parts] });
 const name = (text: string) => fragment(tpl([text]));

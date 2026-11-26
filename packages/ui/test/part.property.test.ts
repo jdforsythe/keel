@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Property: `Part` renders every role, given generated required props inside its required parent, with no axe violation.
 import { mount } from "@keel/runtime-dom";
+import { fixedTime } from "@keel/tooling/test-time";
 import { Part } from "@keel/ui/aria";
 import type { PartRole } from "@keel/ui/aria";
 import axe from "axe-core";
@@ -251,4 +252,4 @@ test("every role with generated required props has no axe violations", async () 
     }),
     { seed: SEED, numRuns: 120 },
   );
-}, 60_000);
+}, fixedTime(60_000));
