@@ -1,5 +1,5 @@
 # k.a11y-static: Static contrast
-status: implemented
+status: conformance-covered
 E1804 in `keel check` (k.a11y Contrast): the tokens it reads, the text it judges and what it leaves to the render check; and the token names E1801 judges (k.ui).
 
 **Tokens.** Every command that runs the k.check pipeline over a project (`keel check`, the check `keel build` runs, `keel ledger`, `keel evidence`, `keel mcp`, `keel lsp`) gives each project the `tokens` export of its `tokens.ts`, the source `keel test` gives a render (k.a11y Artifacts). It is evaluated on every run, with the files it imports, and never cached: the next check judges a changed token. A `tokens.ts` that throws, exports no `tokens` or whose `tokens` fail `TokenSchema` is E1807 (k.ui) at `tokens.ts` line 1, column 1, and that project gets no tokens. Without tokens no contrast is judged statically, no render runs E1804 (k.a11y Artifacts), and the project's 1.4.3 items stay `none`; with no `tokens.ts` each token a use names is E1801 (Token names), so styled text never goes unjudged with `keel check` clean.

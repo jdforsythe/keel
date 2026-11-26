@@ -15,7 +15,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.compiler | 22 | **conformance-covered** | none |
 | k.component | 17 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
-| k.ui | 27 | **conformance-covered** | none |
+| k.ui | 28 | **conformance-covered** | none |
 | k.router | 20 | **conformance-covered** | none |
 | k.prefix | 8 | **conformance-covered** | none |
 | k.head | 11 | **conformance-covered** | none |
@@ -32,7 +32,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.scaffold | 20 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
-| k.testing | 27 | **conformance-covered** | none |
+| k.testing | 28 | **conformance-covered** | none |
 | k.test-run | 11 | implemented | not yet covered by conformance |
 | k.requests | 4 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
@@ -121,14 +121,14 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | k.unsafe | 9 | **conformance-covered** | none |
-| k.a11y-static | 8 | **conformance-covered** | none |
+| k.a11y-static | 10 | **conformance-covered** | none |
 | std.channels-limits | 4 | **conformance-covered** | none |
 | std.sessions-redact | 1 | **conformance-covered** | none |
 | k.ledger-items | 14 | implemented | not yet covered by conformance |
 | k.library | 18 | proposed | not yet covered by conformance |
 | k.library-pack | 5 | implemented | not yet covered by conformance |
-| k.server-deps | 10 | implemented | not yet covered by conformance |
-| **total** | **1469** | 115 of 122 covered | |
+| k.server-deps | 11 | implemented | not yet covered by conformance |
+| **total** | **1474** | 115 of 122 covered | |
 
 ## 2. One-way audit (principle 1)
 
