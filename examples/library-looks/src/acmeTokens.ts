@@ -42,6 +42,15 @@ export const acmeTokens = defineTokens({
       fg: "acme.knob",
       states: { checked: { bg: "acme.accent", justify: "end" } },
     },
+    "acme.toggle": {
+      px: "acme.3",
+      py: "acme.2",
+      radius: "acme.card",
+      bg: "acme.surface",
+      fg: "acme.text",
+      border: "acme.card",
+      states: { pressed: { bg: "acme.accent", fg: "acme.onAccent" } },
+    },
     "acme.knob": { w: "acme.knob", h: "acme.knob", radius: "acme.round", bg: "acme.knob", fg: "acme.text" },
   },
 });

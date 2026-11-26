@@ -4,7 +4,7 @@
   "hostElements": 0,
   "negativeTypes": 0,
   "rungs": {
-    "example": 3,
+    "example": 4,
     "probabilistic": 1,
     "exhaustive": 0,
     "proven": 0,
@@ -28,6 +28,12 @@
       "name": "Switch",
       "file": "src/Switch.tsx",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "acme",
+      "name": "Toggle",
+      "file": "src/Toggle.tsx",
+      "rung": "example"
     },
     {
       "pkg": "acme",

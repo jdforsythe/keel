@@ -24,6 +24,7 @@
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
+    "@keel/check": "workspace:*",
     "@keel/cli": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",

@@ -813,6 +813,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../../packages/check
       '@keel/cli':
         specifier: workspace:*
         version: link:../../packages/cli
