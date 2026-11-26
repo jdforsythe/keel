@@ -36,6 +36,7 @@ Canonical names. Changing one requires an RFC.
 - **escape**: a place where code opts out of a protection by its sanctioned name (an opt-in: `unsafe`, a declared origin, `reveal`) or goes around one (a workaround); one finding of `keel review` (k.review, k.escapes).
 - **user**: the id `identify` answers for a request, `""` for no one; distinct from the anonymous `caller`, which grants nothing (k.user).
 - **request log**: the list `requests()` returns of the requests a harness sent while open: `{ method, url, headers }`, header names only (k.requests).
+- **end-to-end test**: a test file `*.e2e.ts` that `keel test --e2e` runs against the app's built deployables in a real browser, through `serve` from `@keel/testing/e2e` (k.e2e).
 - **replica**: `replica(ctx)` of a sim ctx, a sim ctx standing for another process on the same storage, as two replicas of a `node` deployable are (k.sim, k.persist).
 - **watch**: the one optional part of a storage's contract, `watch(on)`, reporting the saves other processes commit to the same data (k.persist).
 - **lifted range**: the function written as the second argument of a justified `unsafe(` call in an `unsafe/` file, where a listed set of kernel codes is not reported (k.check).

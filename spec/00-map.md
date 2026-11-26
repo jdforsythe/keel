@@ -13,7 +13,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
-| E170x | k.testing, k.model, k.prove, k.ledger, k.ledger-items | E175x | k.check, k.host, k.unsafe |
+| E170x | k.testing, k.model, k.prove, k.ledger, k.ledger-items, k.e2e | E175x | k.check, k.host, k.unsafe |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
 | E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
 | E215x | std.db | E230x | std.i18n |
@@ -62,8 +62,10 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
-| k.model | Store exploration | conformance-covered | traces |
-| k.prove | Proving invariants | conformance-covered | Z3 |
+| k.e2e | E2e tests | proposed | serve |
+| k.e2e-page | E2e pages | proposed | page |
+| k.model | Exploration | conformance-covered | traces |
+| k.prove | Proofs | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
 | k.drive | Sim clock drive | conformance-covered | idle |
 | k.drive-law | Replays agree | conformance-covered | replays |
@@ -84,7 +86,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
 | k.shell | Native shells | conformance-covered | target |
-| k.compat | Surface compatibility | conformance-covered | accepts |
+| k.compat | Surface compat | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | conformance-covered | servedBy |
 | k.head | Document head | conformance-covered | title |
@@ -92,9 +94,9 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | implemented | surface |
 | k.library | Libraries | proposed | packages |
-| k.library-pack | Library publishing | implemented | pack |
-| k.server-deps | Server dependencies | implemented | env |
-| k.a11y | Accessibility | conformance-covered | WCAG |
+| k.library-pack | Library pack | implemented | pack |
+| k.server-deps | Server deps | implemented | env |
+| k.a11y | A11y | conformance-covered | WCAG |
 | k.a11y-static | Static contrast | conformance-covered | E1804 |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | conformance-covered | grid |
@@ -102,12 +104,12 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.host-code | Host code | conformance-covered | d3 |
 | k.security | Headers, CSP | conformance-covered | CSP |
 | k.origins | Declared origins | conformance-covered | CSP |
-| k.privacy | Secrets, personal data | conformance-covered | secrets |
+| k.privacy | Secrets, pii | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.privacy-reads | Static privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
-| k.review | Review of escapes | conformance-covered | ranges |
+| k.review | Escape review | conformance-covered | ranges |
 | k.escapes | Escape codes | conformance-covered | R codes |
 | k.unsafe | Unsafe, type tests | conformance-covered | count |
 

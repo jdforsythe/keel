@@ -6,7 +6,7 @@ status: conformance-covered
 | command | does |
 | --- | --- |
 | `check [paths]` | k.check over code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
-| `test [paths]` | harness under sim ctx |
+| `test [paths] [--e2e]` | harness under sim ctx; `--e2e`, the built app in a browser (k.e2e) |
 | `build` | production build per deployable |
 | `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
 | `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
