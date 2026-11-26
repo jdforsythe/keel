@@ -83,6 +83,9 @@ await run(task ?? "turbo", () => {
       "run",
       task,
       "--output-logs=errors-only",
+      // Every line of a task's log carries its `<pkg>:<task>: ` prefix, under GitHub Actions too (turbo's default
+      // there groups a task's lines unprefixed), so taskFailures finds a failed task's own diagnostics.
+      "--log-prefix=task",
       "--ui=stream",
       "--no-color",
       ...limit,

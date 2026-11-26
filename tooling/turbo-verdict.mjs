@@ -25,6 +25,25 @@ const ERROR_LINE = /\b\w*Error\b|FATAL|Startup Error|failed to load|Unhandled/;
 const CONT = /^ {2}(fix|see): |^ {7}\S/;
 
 /**
+ * A task's own log lines in turbo's output: each line with its `<pkg>:<task>: ` prefix, and each line of its
+ * `::group::<pkg>:<task>` block, the form turbo writes under GitHub Actions when no `--log-prefix` is given.
+ * @param {string} output
+ * @param {string} prefix `@keel/cli:test: `
+ */
+function ownLines(output, prefix) {
+  const group = `::group::${prefix.trimEnd().slice(0, -1)}`;
+  const own = [];
+  let inGroup = false;
+  for (const l of output.split("\n")) {
+    if (inGroup && l.startsWith("::endgroup::")) inGroup = false;
+    else if (inGroup) own.push(l);
+    else if (l.trimEnd() === group) inGroup = true;
+    else if (l.startsWith(prefix)) own.push(l.slice(prefix.length));
+  }
+  return own;
+}
+
+/**
  * What each failed task said, from turbo's prefixed log (`@keel/cli:test: T0001 ...`): its diagnostic lines (each
  * with the `fix:` lines under it), the paths made relative to the repository with `dirs` (package name to its
  * directory), its `fail ...` trailer, the exit status turbo reports, and, for a task that printed no diagnostic, the
@@ -40,10 +59,7 @@ export function taskFailures(failed, output, dirs) {
     const pkg = task.slice(0, hash);
     const prefix = `${pkg}:${task.slice(hash + 1)}: `;
     const dir = dirs[pkg];
-    const own = output
-      .split("\n")
-      .filter((l) => l.startsWith(prefix))
-      .map((l) => l.slice(prefix.length));
+    const own = ownLines(output, prefix);
     const exit = output
       .split("\n")
       .filter((l) => l.startsWith(`${task}: `))
