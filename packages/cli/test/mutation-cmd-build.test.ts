@@ -35,7 +35,7 @@ describe("build", () => {
     expect(o.records.at(-1)).toMatchObject({
       kind: "summary",
       name: "build",
-      counts: { files: 3, artifacts: 5, errors: expect.any(Number) },
+      counts: { files: 3, artifacts: 6, errors: expect.any(Number) },
     });
   });
 
@@ -59,7 +59,7 @@ describe("build", () => {
       { path: "vite.config.tsx", source: 'export const x = <p id="cfg.p">c</p>\n' },
     ];
     const built = await buildCommand({ cwd: CWD, files });
-    expect(built.writes.length).toBe(5);
+    expect(built.writes.length).toBe(6);
     const artifacts = built.writes.map((w) => ({ path: w.path, source: w.content ?? "" }));
     const ids = artifacts.find((a) => a.path === ".keel/ids.json")?.source ?? "";
     expect(ids).toContain("home.title");
@@ -80,7 +80,7 @@ describe("build", () => {
       kind: "summary",
       ok: true,
       name: "build",
-      counts: { files: 0, artifacts: 5, errors: 0 },
+      counts: { files: 0, artifacts: 6, errors: 0 },
     });
   });
 
@@ -92,6 +92,7 @@ describe("build", () => {
       ".keel/ids.json",
       ".keel/styles.json",
       ".keel/std.json",
+      ".keel/schemes.json",
     ]);
     for (const w of o.writes) {
       expect(w.readonly).toBe(true);

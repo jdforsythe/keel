@@ -28,7 +28,20 @@ export type LibraryShape = {
   readonly files?: Tree;
   readonly keel?: string | null;
   readonly ledger?: boolean;
+  /** The second Conformance clause's form: the library ships `chartsTokens` from `./tokens` and the Badge's `Box` takes `p="charts.2"`. */
+  readonly tokens?: boolean;
 };
+
+/** `src/chartsTokens.ts` of the second Conformance clause of k.library. */
+export const CHARTS_TOKENS =
+  "import { defineTokens } from '@keel/ui'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n";
+
+/** The `./tokens` entry of the second Conformance clause of k.library. */
+export const TOKENS_EXPORT = { "./tokens": { keel: "./src/chartsTokens.ts", default: "./index.js" } };
+
+/** The Badge of the first Conformance clause (no token name), or of the second (`p="charts.2"`). */
+export const badgeSrc = (p?: string): string =>
+  `import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={\`\${props.id}.box\`}${p === undefined ? "" : ` p="${p}"`} />\n}\n`;
 
 /** An installed library: `package.json`, `index.js`, `module.ts`, `src/index.ts`, `src/Badge.tsx` and `.keel/ledger.json`. */
 export function library(sh: LibraryShape = {}): Tree {
@@ -39,15 +52,19 @@ export function library(sh: LibraryShape = {}): Tree {
     version: "1.0.0",
     type: "module",
     ...(sh.keel === null ? {} : { keel: sh.keel ?? "library" }),
-    exports: { ".": { keel: "./src/index.ts", default: "./index.js" }, ...sh.exports },
+    exports: {
+      ".": { keel: "./src/index.ts", default: "./index.js" },
+      ...(sh.tokens === true ? TOKENS_EXPORT : {}),
+      ...sh.exports,
+    },
   };
   const out: Tree = {
     [`${root}/package.json`]: JSON.stringify(pkg),
     [`${root}/index.js`]: "export {}\n",
     [`${root}/module.ts`]: manifestOf(sh.id ?? "charts", sh.deps ?? [], ["Badge"]),
     [`${root}/src/index.ts`]: "export { default as Badge } from './Badge.tsx'\n",
-    [`${root}/src/Badge.tsx`]:
-      "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`} p=\"2\" />\n}\n",
+    [`${root}/src/Badge.tsx`]: badgeSrc(sh.tokens === true ? "charts.2" : undefined),
+    ...(sh.tokens === true ? { [`${root}/src/chartsTokens.ts`]: CHARTS_TOKENS } : {}),
   };
   if (sh.ledger !== false) out[`${root}/.keel/ledger.json`] = LEDGER;
   for (const [rel, text] of Object.entries(sh.files ?? {})) out[`${root}/${rel}`] = text;
@@ -204,7 +221,7 @@ export function linkInside(dir: string, rel: string, name = NAME): void {
   symlinkSync(real, join(dir, "node_modules", name));
 }
 
-/** The app's `tokens.ts` of the `site` project: a color pair and the space scale `p="2"` reads. */
+/** The app's `tokens.ts` of the `site` project: a color pair and a space scale. The fixture's library names no token. */
 export const TOKENS =
   'import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" }, space: { 1: "4px", 2: "8px", 3: "16px" } });\n';
 
@@ -212,6 +229,16 @@ export const TOKENS =
 export const siteTree = (libraries?: Tree[]): Tree => ({
   ...project({ adapter: "static", home: true, ...(libraries === undefined ? {} : { libraries }) }),
   "tokens.ts": TOKENS,
+});
+
+/** The app's `tokens.ts` as E1810's fix writes it over `brandTokens` for the library of the second Conformance clause. */
+export const CHARTS_APP_TOKENS =
+  'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { chartsTokens } from "@acme/charts/tokens";\n\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } });\n';
+
+/** The `site` project of the second Conformance clause of k.library: the library ships `chartsTokens` and its Badge's `Box` takes `p="charts.2"`; `badge` replaces the Badge's source (the build without it). */
+export const chartsSiteTree = (badge?: string): Tree => ({
+  ...siteTree([library({ tokens: true, ...(badge === undefined ? {} : { files: { "src/Badge.tsx": badge } }) })]),
+  "tokens.ts": CHARTS_APP_TOKENS,
 });
 
 /** The library's `src/Badge.tsx` in a project tree. */

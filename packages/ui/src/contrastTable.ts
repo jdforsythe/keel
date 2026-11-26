@@ -1,19 +1,19 @@
 import { contrast } from "./css/contrast.ts";
+import { schemesOf } from "./css/schemesOf.ts";
 import type { ContrastRow } from "./types/ContrastRow.ts";
 import type { Tokens } from "./types/Tokens.ts";
 
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const SCHEMES = ["light", "dark"] as const;
 
 /**
- * Every ordered pair of distinct color tokens per scheme with its WCAG contrast ratio rounded to two decimals
+ * Every ordered pair of distinct color tokens in each of the app's schemes (k.schemes) with its WCAG contrast ratio rounded to two decimals
  * (k.a11y): light rows first, then dark, each in token order (`fg` outer, `bg` inner). A single-value color counts in
  * both schemes; a pair whose value in that scheme is not `#rgb` or `#rrggbb` has no ratio and is left out.
  */
 export function contrastTable(tokens: Tokens): ContrastRow[] {
   const colors = Object.entries(tokens.color ?? {});
   const rows: ContrastRow[] = [];
-  for (const scheme of SCHEMES)
+  for (const scheme of schemesOf(tokens))
     for (const [fg, f] of colors)
       for (const [bg, b] of colors) {
         const a = typeof f === "string" ? f : f[scheme];

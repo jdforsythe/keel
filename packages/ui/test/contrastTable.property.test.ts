@@ -23,10 +23,11 @@ describe("contrastTable properties", () => {
     );
   });
 
-  it("is 21 on black and white in both schemes, either order and spelling", () => {
+  it("is 21 on black and white in each declared scheme, either order and spelling", () => {
     fc.assert(
       fc.property(fc.constantFrom("#000", "#000000"), fc.constantFrom("#fff", "#FFFFFF"), (k, w) => {
-        const rows = contrastTable(defineTokens({ color: { k, w } }));
+        expect(contrastTable(defineTokens({ color: { k, w } }))).toHaveLength(2);
+        const rows = contrastTable(defineTokens({ color: { k, w }, schemes: ["light", "dark"] }));
         expect(rows).toHaveLength(4);
         for (const r of rows) expect(r.ratio).toBe(21);
       }),
@@ -34,10 +35,20 @@ describe("contrastTable properties", () => {
     );
   });
 
-  it("leaves out a pair whose color in that scheme is not a hex color", () => {
-    const rows = contrastTable(
-      defineTokens({ color: { a: "#000", b: "#fff", c: { light: "#777", dark: "transparent" } } }),
+  it("judges only the schemes the app has: one scheme gives no rows of the other", () => {
+    fc.assert(
+      fc.property(fc.constantFrom<readonly ("light" | "dark")[]>(["light"], ["dark"], ["light", "dark"]), (schemes) => {
+        const rows = contrastTable(defineTokens({ color: { a: { light: "#000", dark: "#fff" }, b: "#777" }, schemes }));
+        expect(new Set(rows.map((r) => r.scheme))).toEqual(new Set(schemes));
+      }),
+      { seed: SEED, numRuns: 6 },
     );
+  });
+
+  it("leaves out a pair whose color in that scheme is not a hex color", () => {
+    // Tokens `TokenSchema` refuses (k.values): `contrastTable` still reads what it is given.
+    const rows = contrastTable({ color: { a: "#000", b: "#fff", c: { light: "#777", dark: "transparent" } } });
+    // `c` is the app's own pair, so the app has both schemes (k.schemes).
     expect(rows.filter((r) => r.scheme === "light")).toHaveLength(6);
     expect(rows.filter((r) => r.scheme === "dark")).toHaveLength(2);
   });
