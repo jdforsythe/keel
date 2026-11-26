@@ -1,7 +1,7 @@
+import { attempt } from "@keel/schema";
 import { decimalParts } from "../unsafe/decimalParts.ts";
 import { refuse } from "../unsafe/refuse.ts";
 import type { Locale } from "./Locale.schema.ts";
-import { refusing } from "./internal/refusing.ts";
 
 /** A plain decimal string: an optional `-`, digits with no leading zero, and a point only between digits. */
 const DECIMAL = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
@@ -20,11 +20,12 @@ export function numberParts(
 ): Intl.NumberFormatPart[] {
   if (typeof n === "string" && !DECIMAL.test(n))
     refuse("numberParts", `${JSON.stringify(n.slice(0, 40))} is no plain decimal`);
-  return refusing("numberParts", () => {
+  const r = attempt((): Intl.NumberFormatPart[] => {
     const nf =
       currency === undefined
         ? new Intl.NumberFormat(locale)
         : new Intl.NumberFormat(locale, { style: "currency", currency, currencyDisplay: display });
     return typeof n === "number" ? nf.formatToParts(n) : decimalParts(nf, n);
   });
+  return r.ok ? r.value : refuse("numberParts", r.error.data.cause);
 }

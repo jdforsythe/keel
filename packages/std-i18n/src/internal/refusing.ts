@@ -1,10 +1,8 @@
+import { attempt } from "@keel/schema";
 import { refuse } from "../../unsafe/refuse.ts";
 
-/** `run()`, or the `RangeError` `refuse` throws for `fn` with the message of whatever `run` throws (an input `Intl` refuses). */
-export function refusing<T>(fn: string, run: () => T): T {
-  try {
-    return run();
-  } catch (e) {
-    return refuse(fn, e instanceof Error ? e.message : String(e));
-  }
+/** The text `run()` writes, or the `RangeError` `refuse` throws for `fn` naming what `run` threw (an input `Intl` refuses). */
+export function refusing(fn: string, run: () => string): string {
+  const r = attempt(run);
+  return r.ok ? r.value : refuse(fn, r.error.data.cause);
 }
