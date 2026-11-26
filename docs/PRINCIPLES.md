@@ -9,11 +9,11 @@ Each principle names its consequence. Reviews cite these by number.
 5. **The checker says how to fix it.** Every diagnostic has a stable code, a location, one line of message, and a fix diff when one exists.
 6. **The runtime is queryable.** State, dependency graph, render tree, a11y tree, and transaction log are tool endpoints.
 7. **Structure is an operation.** Scaffold and codemod are first-class; multi-file consistency is never a hand edit.
-8. **Small, frozen, spec'd surface.** The kernel spec never changes semantics once frozen. No task needs more than 4k tokens of spec in context.
+8. **Small, frozen, spec'd surface.** The kernel spec never changes semantics once frozen. No task needs more than 4k tokens of spec in context. The map, one area and one section fit in it.
 9. **In-distribution where free.** TypeScript, JSX, familiar names. Novelty is spent only where it buys predictability and is taught through the checker.
 10. **Pure core, effects at the edges, serializable state.** Every effect comes through `ctx`. Every test is "given state, do events, expect".
 11. **Claims lag machinery.** The ledger reports only rungs that exist. Marketing follows the ledger.
 12. **Tokens are a budget.** Docs, spec, and every tool output are measured in tokens and gated in CI.
 
 subject: docs/adr/ spec/00-map.md
-verified: 488afdab204c634ea817fdf52a3196f591559bc1
+verified: e9fc92e26772816eb68ea6f538a771381efc460d

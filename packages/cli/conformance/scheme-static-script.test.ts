@@ -1,15 +1,15 @@
 // Spec: k.schemes, clause "`keel build` of a `static` deployable, and of a `client` deployable, with both schemes and no `SchemeSelect` writes an `index.html` whose head holds a `<script src=\"/assets/keel-scheme-` before its first `<link rel=\"stylesheet\"`, naming a file of at most 300 bytes; with one scheme and no theme to choose, no `keel-scheme` script."
 // Spec: k.schemes, clause "A `createApp` whose `schemes.json` is `{ \"schemes\": [\"light\"], \"themes\": [\"slate\"] }` answers `Cookie: keel-theme=slate` with `<html` carrying `data-k-theme=\"slate\"`, and `keel-theme=nope` with none; a `static` build with one scheme and a `choice` theme has the `keel-scheme` script, and with only a `print` theme none."
-// Spec: k.schemes, clause "A `client` or `static` deployable in an app with both schemes or a `choice` theme holds in each document's head, before its first stylesheet link, `<script src=\"/assets/keel-scheme-<hash>.js\"></script>`: a classic script of at most 300 bytes that sets the attributes from the cookies before the body is parsed, `data-k-theme` only to a theme name's form. `script-src 'self'` allows it and nothing is inline (k.security)."
-// Spec: k.schemes, clause "An app with neither holds no scheme script."
-// Spec: k.schemes, clause "A `client` deployable builds to `dist/<name>/` with or without `servedBy` (k.hosting Artifact), its one document `index.html`."
+// Spec text (k.schemes): "A `client` or `static` deployable in an app with both schemes or a `choice` theme holds in each document's head, before its first stylesheet link, `<script src=\"/assets/keel-scheme-<hash>.js\"></script>`: a classic script of at most 300 bytes that sets the attributes from the cookies before the body is parsed, `data-k-theme` only to a theme name's form. `script-src 'self'` allows it and nothing is inline (k.security)."
+// Spec text (k.schemes): "An app with neither holds no scheme script."
+// Spec text (k.schemes): "A `client` deployable builds to `dist/<name>/` with or without `servedBy` (k.hosting Artifact), its one document `index.html`."
 // Seed: 1337 (no generated input: five spawned builds per adapter (the two theme builds are the second clause's: `static` and `client` alike), shared by the cases: both schemes with no `SchemeSelect`, both schemes with one, one scheme).
 // Needs a real browser: that the script sets the attribute before the body is parsed, and that no flash shows, are end-to-end cases (RFC 0243 owed list); here the script's text is read for the cookie name and the attribute it writes, and its bytes counted. The script ships whenever the app has both schemes, whether or not a page renders a `SchemeSelect`; a `SchemeSelect` over one scheme is E1814 (packages/check/conformance/schemes-own-folder.test.ts), so the one-scheme build renders none.
 // ASSUMPTIONS: the fixture is staticTree's project (static-support.ts) whose root `tokens.ts` gives both schemes (`schemes: ["light", "dark"]`) and whose `Page` renders no `SchemeSelect`, the select fixture adding one; the one-scheme fixture's `tokens.ts` is `brandTokens`; the `client` fixture is the same project with the deployable `site` given adapter `client` (alone, no `servedBy`), its `index.html` read the same way as the `static` one's.
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, expect, test } from "vitest";
-import { cleanup, keel, materialize, type Run, type Tree } from "./compat-support.ts";
+import { type Run, type Tree, cleanup, keel, materialize } from "./compat-support.ts";
 import { SLOW, staticTree } from "./static-support.ts";
 
 const TOKENS = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, schemes: ["light", "dark"] });\n`;

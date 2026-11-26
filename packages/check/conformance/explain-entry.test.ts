@@ -3,6 +3,7 @@
 // Spec: k.explain, clause "A rule registered with `defineRule` imported from `@keel/check` is explained by `explain` from `@keel/check/explain`: its message, its `explain` text and its `see`."
 // Spec: k.explain, clause "The `@keel/check` entry bundled alone (esbuild, minified esm, dependencies external) contains no reason line and no fix example of any kernel code's explanation; the `@keel/check/explain` entry bundled alone contains every one."
 // Spec: k.explain, clause "`tooling/budgets.json` has a size line for `@keel/check` and one for `@keel/check/explain`."
+import { fixedTime } from "@keel/tooling/test-time";
 import { readFileSync } from "node:fs";
 import { defineRule, reportedCodes } from "@keel/check";
 import * as main from "@keel/check";
@@ -102,28 +103,32 @@ const exportTarget = (key: string): string => {
   return new URL(file, PKG).pathname;
 };
 
-test("the @keel/check entry bundled alone has no reason line and no fix example of any kernel code; the @keel/check/explain entry bundled alone has every one", async () => {
-  const mainBundle = await bundle(exportTarget("."));
-  const explainBundle = await bundle(exportTarget("./explain"));
-  const kernel = reportedCodes().filter((c) => /^[EWI]1\d{3}$/.test(c));
-  expect(kernel.length).toBeGreaterThan(0);
-  let checked = 0;
-  for (const code of kernel) {
-    const lines = explain(code).split("\n").slice(1);
-    for (const raw of lines) {
-      if (raw.startsWith("see:")) continue;
-      const line = raw.startsWith("fix: ") ? raw.slice("fix: ".length) : raw;
-      if (line.length === 0) continue;
-      checked++;
-      for (const s of spellings(line)) expect(mainBundle.includes(s), `${code} in main: ${line}`).toBe(false);
-      expect(
-        spellings(line).some((s) => explainBundle.includes(s)),
-        `${code} in explain entry: ${line}`,
-      ).toBe(true);
+test(
+  "the @keel/check entry bundled alone has no reason line and no fix example of any kernel code; the @keel/check/explain entry bundled alone has every one",
+  async () => {
+    const mainBundle = await bundle(exportTarget("."));
+    const explainBundle = await bundle(exportTarget("./explain"));
+    const kernel = reportedCodes().filter((c) => /^[EWI]1\d{3}$/.test(c));
+    expect(kernel.length).toBeGreaterThan(0);
+    let checked = 0;
+    for (const code of kernel) {
+      const lines = explain(code).split("\n").slice(1);
+      for (const raw of lines) {
+        if (raw.startsWith("see:")) continue;
+        const line = raw.startsWith("fix: ") ? raw.slice("fix: ".length) : raw;
+        if (line.length === 0) continue;
+        checked++;
+        for (const s of spellings(line)) expect(mainBundle.includes(s), `${code} in main: ${line}`).toBe(false);
+        expect(
+          spellings(line).some((s) => explainBundle.includes(s)),
+          `${code} in explain entry: ${line}`,
+        ).toBe(true);
+      }
     }
-  }
-  expect(checked).toBeGreaterThan(0);
-}, 60_000);
+    expect(checked).toBeGreaterThan(0);
+  },
+  fixedTime(60_000),
+);
 
 // clause 4
 test("tooling/budgets.json has a size line for @keel/check and one for @keel/check/explain", () => {

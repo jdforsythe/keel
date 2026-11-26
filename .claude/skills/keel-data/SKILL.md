@@ -5,7 +5,7 @@ description: "Durable Keel storage, app data (std-postgres), concurrent and offl
 
 # Data: storage, writes, live views, workflows
 
-Signatures: `keel docs k.persist`, `k.data`, `k.sync`, `std.db`, `std.postgres`, `std.postgres-changes`, `std.contracts`, `std.offline`, `std.outbox-owner`, `std.conflicts`, `std.channels`, `std.live`, `std.workflows`.
+Signatures: `keel docs data` and `keel docs live` list them: `keel docs k.persist`, `k.data`, `k.sync`, `std.db`, `std.postgres`, `std.postgres-changes`, `std.contracts`, `std.offline`, `std.outbox-owner`, `std.conflicts`, `std.channels`, `std.live`, `std.workflows`.
 
 ## Durable storage
 

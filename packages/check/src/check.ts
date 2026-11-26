@@ -224,10 +224,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
         ? ["light", "dark"]
         : undefined,
       lookLibrary: (look) => {
+        // A library's look by the `look` group's keys alone (k.a11y-static Library contrast).
         const lib = looks.listed.find((l) => !l.own && l.shipped?.names.get("look")?.includes(look) === true);
-        const host = realAll.find((f) => f.path === `${dir}tokens.ts`)?.source ?? "";
-        const written = host.includes(`'${look}'`) || host.includes(`"${look}"`);
-        return lib === undefined || written ? undefined : lib.id;
+        return lib?.id;
       },
       libraryFileOf: (p) => {
         const lib = looks.libraryOf(libs.real(p));

@@ -1,5 +1,6 @@
 // Spec: k.module, clause "`stdConfig` returns, for the `ctx` given to `createApp({ std })`, every module's config, equal to its manifest literal, and `{}` for another ctx; a `std.json` failing a registered schema rejects with E1158 naming the path, a hand-edited one with E1160."
 // Seed 1337
+import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -90,49 +91,61 @@ const validConfig = fc.record({
 const moduleIds = fc.uniqueArray(fc.constantFrom("alpha", "beta", "gamma", "delta"), { minLength: 1, maxLength: 3 });
 
 describe("k.module: stdConfig and createApp({ std })", () => {
-  it("`stdConfig` returns, for the `ctx` given to `createApp({ std })`, every module's config, equal to its manifest literal, and `{}` for another ctx", async () => {
-    // seed 1337
-    await fc.assert(
-      fc.asyncProperty(moduleIds, fc.array(validConfig, { minLength: 3, maxLength: 3 }), async (ids, cfgs) => {
-        const mods = ids.map((id, i) => ({ id, config: cfgs[i] }));
-        const file = fileOf(await buildStd(PKG, mods));
-        const ctx = mkCtx();
-        await app(ctx, file);
-        const expected: Record<string, unknown> = {};
-        for (const m of mods) expected[m.id] = m.config;
-        expect(stdConfig(ctx, PKG, Config)).toEqual(expected);
-        expect(stdConfig(mkCtx(), PKG, Config)).toEqual({});
-      }),
-      { seed: 1337, numRuns: 15 },
-    );
-  }, 120_000);
+  it(
+    "`stdConfig` returns, for the `ctx` given to `createApp({ std })`, every module's config, equal to its manifest literal, and `{}` for another ctx",
+    async () => {
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(moduleIds, fc.array(validConfig, { minLength: 3, maxLength: 3 }), async (ids, cfgs) => {
+          const mods = ids.map((id, i) => ({ id, config: cfgs[i] }));
+          const file = fileOf(await buildStd(PKG, mods));
+          const ctx = mkCtx();
+          await app(ctx, file);
+          const expected: Record<string, unknown> = {};
+          for (const m of mods) expected[m.id] = m.config;
+          expect(stdConfig(ctx, PKG, Config)).toEqual(expected);
+          expect(stdConfig(mkCtx(), PKG, Config)).toEqual({});
+        }),
+        { seed: 1337, numRuns: 15 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
-  it("a `std.json` failing a registered schema rejects with E1158 naming the path", async () => {
-    // Built while LATE has no schema (the build keeps the value); a stricter schema is registered afterwards.
-    const file = fileOf(await buildStd(LATE, [{ id: "alpha", config: { limit: 5, tags: [] } }]));
-    s.register(LATE, s.object({ limit: s.int({ min: 10, max: 100 }), tags: s.array(s.string()) }));
-    await expect(app(mkCtx(), file)).rejects.toMatchObject({
-      code: "E1158",
-      message: expect.stringContaining("limit"),
-    });
-  }, 120_000);
+  it(
+    "a `std.json` failing a registered schema rejects with E1158 naming the path",
+    async () => {
+      // Built while LATE has no schema (the build keeps the value); a stricter schema is registered afterwards.
+      const file = fileOf(await buildStd(LATE, [{ id: "alpha", config: { limit: 5, tags: [] } }]));
+      s.register(LATE, s.object({ limit: s.int({ min: 10, max: 100 }), tags: s.array(s.string()) }));
+      await expect(app(mkCtx(), file)).rejects.toMatchObject({
+        code: "E1158",
+        message: expect.stringContaining("limit"),
+      });
+    },
+    fixedTime(120_000),
+  );
 
-  it("a hand-edited `std.json` rejects with E1160", async () => {
-    // seed 1337
-    await fc.assert(
-      fc.asyncProperty(validConfig, fc.integer({ min: 1, max: 100 }), async (config, other) => {
-        const text = await buildStd(PKG, [{ id: "alpha", config }]);
-        const doc: unknown = JSON.parse(text);
-        if (!isRec(doc) || !isRec(doc.data)) throw new Error("std.json is not { data, hash }");
-        const edited = JSON.stringify({
-          data: { [PKG]: { alpha: { ...config, limit: config.limit === other ? other + 101 : other } } },
-          hash: doc.hash,
-        });
-        await expect(app(mkCtx(), fileOf(edited))).rejects.toMatchObject({ code: "E1160" });
-      }),
-      { seed: 1337, numRuns: 15 },
-    );
-  }, 120_000);
+  it(
+    "a hand-edited `std.json` rejects with E1160",
+    async () => {
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(validConfig, fc.integer({ min: 1, max: 100 }), async (config, other) => {
+          const text = await buildStd(PKG, [{ id: "alpha", config }]);
+          const doc: unknown = JSON.parse(text);
+          if (!isRec(doc) || !isRec(doc.data)) throw new Error("std.json is not { data, hash }");
+          const edited = JSON.stringify({
+            data: { [PKG]: { alpha: { ...config, limit: config.limit === other ? other + 101 : other } } },
+            hash: doc.hash,
+          });
+          await expect(app(mkCtx(), fileOf(edited))).rejects.toMatchObject({ code: "E1160" });
+        }),
+        { seed: 1337, numRuns: 15 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
   it("a missing or non-JSON `std` file rejects with E1160", async () => {
     await expect(app(mkCtx(), path.join(tmp, "absent.json"))).rejects.toMatchObject({ code: "E1160" });

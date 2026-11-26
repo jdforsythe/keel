@@ -4,6 +4,7 @@
 // ASSUMPTIONS (spec silent, readings asserted):
 //  - A case that holds a rung, `stale` or `keptNoReport` asserts that the key is present, that the keys after the four fixed ones are in the spec's order and each a name the spec lists, not that the other optional keys are absent: which items hold which rung is k.ledger Ledger's.
 //  - A project with no optional condition has exactly the four fixed keys, in order.
+import { fixedTime } from "@keel/tooling/test-time";
 import { readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
@@ -89,59 +90,85 @@ function writtenKeys(
 }
 
 describe("k.ledger File: the summary `counts`", () => {
-  it("are `items`, `verified`, `unsafe` and `warnings`, in that order, with none of the optional ones", () => {
-    expect(writtenKeys("counts-bare", BARE)).toEqual(BASE);
-  }, 60_000);
+  it(
+    "are `items`, `verified`, `unsafe` and `warnings`, in that order, with none of the optional ones",
+    () => {
+      expect(writtenKeys("counts-bare", BARE)).toEqual(BASE);
+    },
+    fixedTime(60_000),
+  );
 
-  it("then `hostElements` when above 0", () => {
-    const keys = writtenKeys("counts-host", { ...BARE, ...HOST_FILE });
-    expect(keys.slice(0, 5)).toEqual([...BASE, "hostElements"]);
-    expectOrder(keys);
-  }, 60_000);
+  it(
+    "then `hostElements` when above 0",
+    () => {
+      const keys = writtenKeys("counts-host", { ...BARE, ...HOST_FILE });
+      expect(keys.slice(0, 5)).toEqual([...BASE, "hostElements"]);
+      expectOrder(keys);
+    },
+    fixedTime(60_000),
+  );
 
-  it("then `negativeTypes` when above 0", () => {
-    const keys = writtenKeys("counts-negative", { ...BARE, ...NEGATIVE_FILE });
-    expect(keys.slice(0, 5)).toEqual([...BASE, "negativeTypes"]);
-    expectOrder(keys);
-  }, 60_000);
+  it(
+    "then `negativeTypes` when above 0",
+    () => {
+      const keys = writtenKeys("counts-negative", { ...BARE, ...NEGATIVE_FILE });
+      expect(keys.slice(0, 5)).toEqual([...BASE, "negativeTypes"]);
+      expectOrder(keys);
+    },
+    fixedTime(60_000),
+  );
 
-  it("then `monitored`, a rung key, when an item holds it", () => {
-    const keys = writtenKeys("counts-monitored", MONITORED_FILES);
-    expect(keys).toContain("monitored");
-    expectOrder(keys);
-  }, 60_000);
+  it(
+    "then `monitored`, a rung key, when an item holds it",
+    () => {
+      const keys = writtenKeys("counts-monitored", MONITORED_FILES);
+      expect(keys).toContain("monitored");
+      expectOrder(keys);
+    },
+    fixedTime(60_000),
+  );
 
-  it("then `example`, a rung key, when an item holds it", () => {
-    const keys = withProject("counts-example", { [SOURCE]: source, [EXAMPLE]: exampleTest }, (dir) => {
-      expect(keel(dir, ["test"]).status).toBe(0);
-      return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
-    });
-    expect(keys).toContain("example");
-    expectOrder(keys);
-  }, 120_000);
-
-  it("then `probabilistic`, a rung key, when an item holds it", () => {
-    const keys = withProject(
-      "counts-probabilistic",
-      { [SOURCE]: source, [EXAMPLE]: exampleTest, [PROPERTY]: propertyTest(SEEDED_100) },
-      (dir) => {
+  it(
+    "then `example`, a rung key, when an item holds it",
+    () => {
+      const keys = withProject("counts-example", { [SOURCE]: source, [EXAMPLE]: exampleTest }, (dir) => {
         expect(keel(dir, ["test"]).status).toBe(0);
         return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
-      },
-    );
-    expect(keys).toContain("probabilistic");
-    expectOrder(keys);
-  }, 120_000);
+      });
+      expect(keys).toContain("example");
+      expectOrder(keys);
+    },
+    fixedTime(120_000),
+  );
 
-  it("then `exhaustive` and `proven`, rung keys, when items hold them", () => {
-    const store = (name: string): string => `import { s } from "@keel/schema";
+  it(
+    "then `probabilistic`, a rung key, when an item holds it",
+    () => {
+      const keys = withProject(
+        "counts-probabilistic",
+        { [SOURCE]: source, [EXAMPLE]: exampleTest, [PROPERTY]: propertyTest(SEEDED_100) },
+        (dir) => {
+          expect(keel(dir, ["test"]).status).toBe(0);
+          return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
+        },
+      );
+      expect(keys).toContain("probabilistic");
+      expectOrder(keys);
+    },
+    fixedTime(120_000),
+  );
+
+  it(
+    "then `exhaustive` and `proven`, rung keys, when items hold them",
+    () => {
+      const store = (name: string): string => `import { s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 
 const State = s.object({ on: s.boolean() });
 export const ${name} = store(State, { on: false }, { id: "m.${name}" });
 export const ${name}Set = transaction(${name}, "m.${name}Set", State, (_state, payload) => ({ on: payload.on }));
 `;
-    const explore = (name: string, call: string): string => `import { explore } from "@keel/testing";
+      const explore = (name: string, call: string): string => `import { explore } from "@keel/testing";
 import { expect, it } from "vitest";
 import { ${name}Set } from "../src/${name}.ts";
 
@@ -150,65 +177,79 @@ it("explores ${name}", () => {
   expect(result.states.length).toBeGreaterThan(0);
 });
 `;
-    const keys = withProject(
-      "counts-explore",
-      {
-        "packages/m/src/open.ts": store("open"),
-        "packages/m/src/closed.ts": store("closed"),
-        "packages/m/test/open.test.ts": explore("open", "explore([openSet], { depth: 2 })"),
-        "packages/m/test/closed.test.ts": explore("closed", "explore([closedSet])"),
-      },
-      (dir) => {
+      const keys = withProject(
+        "counts-explore",
+        {
+          "packages/m/src/open.ts": store("open"),
+          "packages/m/src/closed.ts": store("closed"),
+          "packages/m/test/open.test.ts": explore("open", "explore([openSet], { depth: 2 })"),
+          "packages/m/test/closed.test.ts": explore("closed", "explore([closedSet])"),
+        },
+        (dir) => {
+          return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
+        },
+      );
+      expect(keys).toContain("exhaustive");
+      expect(keys).toContain("proven");
+      expectOrder(keys);
+    },
+    fixedTime(120_000),
+  );
+
+  it(
+    "then `stale` when above 0",
+    () => {
+      const report = mutationReport(
+        { "src/clamp.ts": { source, statuses: mutantsOf(3, 1) } },
+        { high: 90, low: 80, break: 40 },
+      );
+      const keys = withProject("counts-stale", { [SOURCE]: source, [PKG_REPORT]: report }, (dir) => {
+        expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+        writeFiles(dir, { [SOURCE]: `${source}// edited after the mutation run\n` });
         return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
-      },
-    );
-    expect(keys).toContain("exhaustive");
-    expect(keys).toContain("proven");
-    expectOrder(keys);
-  }, 120_000);
-
-  it("then `stale` when above 0", () => {
-    const report = mutationReport(
-      { "src/clamp.ts": { source, statuses: mutantsOf(3, 1) } },
-      { high: 90, low: 80, break: 40 },
-    );
-    const keys = withProject("counts-stale", { [SOURCE]: source, [PKG_REPORT]: report }, (dir) => {
-      expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
-      writeFiles(dir, { [SOURCE]: `${source}// edited after the mutation run\n` });
-      return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
-    });
-    expect(keys).toContain("stale");
-    expectOrder(keys);
-  }, 120_000);
-
-  it("a committed a11y item with no `reports/a11y.json` is written at `none` and `counts` never holds `keptNoReport`", () => {
-    const routes = `${JSON.stringify({ data: { r: { path: "/r" } }, hash: "fnv1a:00000000" })}\n`;
-    const keys = withProject("counts-no-kept", { ".keel/routes.json": routes }, (dir) => {
-      expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
-      const led: unknown = JSON.parse(readFileSync(join(dir, COMMITTED), "utf8"));
-      const base = typeof led === "object" && led !== null ? led : {};
-      writeFiles(dir, {
-        [COMMITTED]: `${JSON.stringify({ ...base, a11y: [{ item: "a11y:.:r#1.4.3", rung: "example" }] }, null, 2)}\n`,
       });
-      return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
-    });
-    expect(keys).not.toContain("keptNoReport");
-    expectOrder(keys);
-  }, 120_000);
+      expect(keys).toContain("stale");
+      expectOrder(keys);
+    },
+    fixedTime(120_000),
+  );
 
-  it("property: any subset of `hostElements`, `negativeTypes` and `monitored` gives the four fixed keys and then exactly those, in the spec's order", () => {
-    const conditions: Record<string, Record<string, string>> = {
-      hostElements: HOST_FILE,
-      negativeTypes: NEGATIVE_FILE,
-      monitored: MONITORED_FILES,
-    };
-    fc.assert(
-      fc.property(fc.subarray(Object.keys(conditions)), (chosen) => {
-        const files = chosen.reduce<Record<string, string>>((acc, k) => ({ ...acc, ...conditions[k] }), { ...BARE });
-        const keys = writtenKeys("counts-subset", files);
-        expect(keys).toEqual([...BASE, ...CANON.filter((k) => chosen.includes(k))]);
-      }),
-      { seed: SEED, numRuns: 8 },
-    );
-  }, 300_000);
+  it(
+    "a committed a11y item with no `reports/a11y.json` is written at `none` and `counts` never holds `keptNoReport`",
+    () => {
+      const routes = `${JSON.stringify({ data: { r: { path: "/r" } }, hash: "fnv1a:00000000" })}\n`;
+      const keys = withProject("counts-no-kept", { ".keel/routes.json": routes }, (dir) => {
+        expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+        const led: unknown = JSON.parse(readFileSync(join(dir, COMMITTED), "utf8"));
+        const base = typeof led === "object" && led !== null ? led : {};
+        writeFiles(dir, {
+          [COMMITTED]: `${JSON.stringify({ ...base, a11y: [{ item: "a11y:.:r#1.4.3", rung: "example" }] }, null, 2)}\n`,
+        });
+        return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
+      });
+      expect(keys).not.toContain("keptNoReport");
+      expectOrder(keys);
+    },
+    fixedTime(120_000),
+  );
+
+  it(
+    "property: any subset of `hostElements`, `negativeTypes` and `monitored` gives the four fixed keys and then exactly those, in the spec's order",
+    () => {
+      const conditions: Record<string, Record<string, string>> = {
+        hostElements: HOST_FILE,
+        negativeTypes: NEGATIVE_FILE,
+        monitored: MONITORED_FILES,
+      };
+      fc.assert(
+        fc.property(fc.subarray(Object.keys(conditions)), (chosen) => {
+          const files = chosen.reduce<Record<string, string>>((acc, k) => ({ ...acc, ...conditions[k] }), { ...BARE });
+          const keys = writtenKeys("counts-subset", files);
+          expect(keys).toEqual([...BASE, ...CANON.filter((k) => chosen.includes(k))]);
+        }),
+        { seed: SEED, numRuns: 8 },
+      );
+    },
+    fixedTime(300_000),
+  );
 });

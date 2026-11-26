@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { routesRun } from "../src/internal/routesRun.ts";
 
@@ -54,28 +55,40 @@ describe("routesRun", () => {
     expect(fs.existsSync(file())).toBe(false);
   });
 
-  it("an all-node topology writes .keel/routes.json, then rewrites a forged one with a W1005 note", async () => {
-    expect(await routesRun(proj, NODE_TOP)).toEqual({ code: 0, notes: [] });
-    const genuine = fs.readFileSync(file(), "utf8");
-    expect(genuine).toContain("/home");
+  it(
+    "an all-node topology writes .keel/routes.json, then rewrites a forged one with a W1005 note",
+    async () => {
+      expect(await routesRun(proj, NODE_TOP)).toEqual({ code: 0, notes: [] });
+      const genuine = fs.readFileSync(file(), "utf8");
+      expect(genuine).toContain("/home");
 
-    fs.chmodSync(file(), 0o644);
-    fs.writeFileSync(file(), genuine.replace("/home", "/forged"));
-    const again = await routesRun(proj, NODE_TOP);
-    expect(again.code).toBe(0);
-    expect(again.notes.some((n) => n.startsWith("W1005 .keel/routes.json differed"))).toBe(true);
-    expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
-  }, 60_000);
+      fs.chmodSync(file(), 0o644);
+      fs.writeFileSync(file(), genuine.replace("/home", "/forged"));
+      const again = await routesRun(proj, NODE_TOP);
+      expect(again.code).toBe(0);
+      expect(again.notes.some((n) => n.startsWith("W1005 .keel/routes.json differed"))).toBe(true);
+      expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
+    },
+    fixedTime(60_000),
+  );
 
-  it("a routes.ts with a syntax error does not throw: code 1 or a Keel-coded note", async () => {
-    const bad = makeProject("export const routes = manifest({ \n");
-    const r = await routesRun(bad, NODE_TOP);
-    expect(r.code === 1 || r.notes.some((n) => /E10(00|06)/.test(n))).toBe(true);
-  }, 60_000);
+  it(
+    "a routes.ts with a syntax error does not throw: code 1 or a Keel-coded note",
+    async () => {
+      const bad = makeProject("export const routes = manifest({ \n");
+      const r = await routesRun(bad, NODE_TOP);
+      expect(r.code === 1 || r.notes.some((n) => /E10(00|06)/.test(n))).toBe(true);
+    },
+    fixedTime(60_000),
+  );
 
-  it("a routes.ts exporting no routes is an E1006 note and code 1", async () => {
-    const none = makeProject("export const other = 1;\n");
-    const r = await routesRun(none, NODE_TOP);
-    expect(r).toEqual({ code: 1, notes: ["E1006 modules/m/routes.ts exports no routes\n"] });
-  }, 60_000);
+  it(
+    "a routes.ts exporting no routes is an E1006 note and code 1",
+    async () => {
+      const none = makeProject("export const other = 1;\n");
+      const r = await routesRun(none, NODE_TOP);
+      expect(r).toEqual({ code: 1, notes: ["E1006 modules/m/routes.ts exports no routes\n"] });
+    },
+    fixedTime(60_000),
+  );
 });

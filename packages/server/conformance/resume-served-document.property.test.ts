@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.resume, clause "For every route of a test app, the body of the document `createApp` serves, resumed with the app's compiled components by route id and its stores, returns no warning, keeps every server node, and a handler fired on a server element runs and updates the bindings it writes."
 // Seed: 1337 (fc.assert seed below). Generated trees of layout, static and island levels and structural ops; real compiled TSX, real createApp, real resume.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -91,51 +92,55 @@ export default function Page(props) {
 `;
 
 describe("k.resume: served documents resume", () => {
-  it("property (seed 1337): a generated tree of layout, static and island levels and structural ops resumes with no warning, keeping every server node, and each handler runs once per event", async () => {
-    let run = 0;
-    await fc.assert(
-      fc.asyncProperty(
-        fc.array(fc.boolean(), { maxLength: 2 }),
-        fc.boolean(),
-        fc.array(ops, { maxLength: 3 }),
-        async (layoutKinds, pageIsland, body) => {
-          run++;
-          document.body.innerHTML = "";
-          const levels: Level[] = layoutKinds.map((island, i) => ({
-            id: `pr${run}l${i}.layout`,
-            source: island ? islandLayout(`pr${run}l${i}`) : staticLayout(`pr${run}l${i}`),
-            title: `layout ${i}`,
-            ...(i === 0 ? {} : { layout: `pr${run}l${i - 1}.layout` }),
-          }));
-          levels.push({
-            id: `pr${run}p.page`,
-            source: pageSource(`pr${run}p`, pageIsland, body),
-            path: "/gen",
-            title: "page",
-            ...(layoutKinds.length === 0 ? {} : { layout: `pr${run}l${layoutKinds.length - 1}.layout` }),
-          });
-          const doc = await serve(levels, "/gen");
-          expect(doc.status).toBe(200);
-          install(doc);
-          const before = elementsOf(document.body);
-          const { warnings, console: logged } = resumeBody(componentsOf(levels));
-          expect(warnings).toEqual([]);
-          expect(logged).toEqual([]);
-          expectKept(before);
-          const counters = [
-            ...layoutKinds.flatMap((island, i) => (island ? [`pr${run}l${i}`] : [])),
-            ...(pageIsland ? [`pr${run}p`] : []),
-          ];
-          for (const k of counters) {
-            await click(`${k}.inc`);
-            expectText(`${k}.out`, "1");
-          }
-          for (const el of before) expect(el.isConnected).toBe(true);
-        },
-      ),
-      { seed: SEED, numRuns: 20 },
-    );
-  }, 240_000);
+  it(
+    "property (seed 1337): a generated tree of layout, static and island levels and structural ops resumes with no warning, keeping every server node, and each handler runs once per event",
+    async () => {
+      let run = 0;
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(fc.boolean(), { maxLength: 2 }),
+          fc.boolean(),
+          fc.array(ops, { maxLength: 3 }),
+          async (layoutKinds, pageIsland, body) => {
+            run++;
+            document.body.innerHTML = "";
+            const levels: Level[] = layoutKinds.map((island, i) => ({
+              id: `pr${run}l${i}.layout`,
+              source: island ? islandLayout(`pr${run}l${i}`) : staticLayout(`pr${run}l${i}`),
+              title: `layout ${i}`,
+              ...(i === 0 ? {} : { layout: `pr${run}l${i - 1}.layout` }),
+            }));
+            levels.push({
+              id: `pr${run}p.page`,
+              source: pageSource(`pr${run}p`, pageIsland, body),
+              path: "/gen",
+              title: "page",
+              ...(layoutKinds.length === 0 ? {} : { layout: `pr${run}l${layoutKinds.length - 1}.layout` }),
+            });
+            const doc = await serve(levels, "/gen");
+            expect(doc.status).toBe(200);
+            install(doc);
+            const before = elementsOf(document.body);
+            const { warnings, console: logged } = resumeBody(componentsOf(levels));
+            expect(warnings).toEqual([]);
+            expect(logged).toEqual([]);
+            expectKept(before);
+            const counters = [
+              ...layoutKinds.flatMap((island, i) => (island ? [`pr${run}l${i}`] : [])),
+              ...(pageIsland ? [`pr${run}p`] : []),
+            ];
+            for (const k of counters) {
+              await click(`${k}.inc`);
+              expectText(`${k}.out`, "1");
+            }
+            for (const el of before) expect(el.isConnected).toBe(true);
+          },
+        ),
+        { seed: SEED, numRuns: 20 },
+      );
+    },
+    fixedTime(240_000),
+  );
 });
 
 it("the generator reaches every structural op", () => {

@@ -1,6 +1,7 @@
 // Spec: k.ledger, clause "A passing `prove` makes the transactions it names `proven`."
 // The real `keel` binary over a temp project (OS tmpdir). Each case proves its own one-transaction store, so one
 // `keel ledger` run reports every case. `prove` is @keel/testing/prove's (k.prove). Seed: 1337 (no property in this file).
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import { ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
 import { keel } from "./test-sim-project.ts";
@@ -39,19 +40,27 @@ const files = (): Record<string, string> => ({
 });
 
 describe("k.ledger: `prove` evidence", () => {
-  it("A passing `prove` makes the transactions it names `proven`.", () => {
-    const run = withProject("ledger-prove", files(), (dir) => keel(dir, ["ledger"]));
-    expect(ledgerRecord(run, "packages/m/src/proved.ts#provedSet")?.rung).toBe("proven");
-    expect(ledgerRecord(run, "packages/m/src/named.ts#namedSet")?.rung).toBe("example");
-  }, 60_000);
+  it(
+    "A passing `prove` makes the transactions it names `proven`.",
+    () => {
+      const run = withProject("ledger-prove", files(), (dir) => keel(dir, ["ledger"]));
+      expect(ledgerRecord(run, "packages/m/src/proved.ts#provedSet")?.rung).toBe("proven");
+      expect(ledgerRecord(run, "packages/m/src/named.ts#namedSet")?.rung).toBe("example");
+    },
+    fixedTime(60_000),
+  );
 
-  it("the `proven` evidence of a passing `prove` lists the Z3 version", () => {
-    const record = withProject("ledger-prove-evidence", files(), (dir) =>
-      ledgerRecord(keel(dir, ["ledger"]), "packages/m/src/proved.ts#provedSet"),
-    );
-    const evidence = record?.evidence;
-    expect(typeof evidence).toBe("string");
-    expect(String(evidence)).toMatch(/z3/i);
-    expect(String(evidence)).toMatch(/\d+\.\d+\.\d+/);
-  }, 60_000);
+  it(
+    "the `proven` evidence of a passing `prove` lists the Z3 version",
+    () => {
+      const record = withProject("ledger-prove-evidence", files(), (dir) =>
+        ledgerRecord(keel(dir, ["ledger"]), "packages/m/src/proved.ts#provedSet"),
+      );
+      const evidence = record?.evidence;
+      expect(typeof evidence).toBe("string");
+      expect(String(evidence)).toMatch(/z3/i);
+      expect(String(evidence)).toMatch(/\d+\.\d+\.\d+/);
+    },
+    fixedTime(60_000),
+  );
 });

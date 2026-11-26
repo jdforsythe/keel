@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import { type Files, apply } from "./helpers.ts";
 
@@ -58,22 +59,26 @@ function script(dir: string, name: string): { status: number | null; out: string
 describe("a fresh scaffold passes its own scripts untouched", () => {
   for (const workspace of [true, false])
     for (const adapter of ADAPTERS)
-      it(`${workspace ? "workspace" : "standalone"} ${adapter}: its scripts exit 0`, () => {
-        // A workspace project lives inside the repo (its vite serves the repo's tooling); a standalone one stands alone.
-        const parent = workspace ? nodePath.join(REPO_ROOT, ".fixtures") : os.tmpdir();
-        fs.mkdirSync(parent, { recursive: true });
-        const dir = fs.mkdtempSync(nodePath.join(parent, "keel-scaffold-first-"));
-        try {
-          onDisk(apply("project", { name: "shop", adapter, workspace }, new Map()), dir);
-          const pkg = JSON.parse(fs.readFileSync(nodePath.join(dir, "package.json"), "utf8"));
-          expect(pkg.devDependencies["@keel/cli"]).toBeDefined();
-          expect(pkg.scripts.check).toContain("keel check");
-          const results = SCRIPTS.map((n) => ({ n, ...script(dir, n) }));
-          expect(
-            results.map((r) => (r.status === 0 ? `${r.n} 0` : `${r.n} ${r.status}\n${r.out.slice(-1500)}`)),
-          ).toEqual(SCRIPTS.map((n) => `${n} 0`));
-        } finally {
-          fs.rmSync(dir, { recursive: true, force: true });
-        }
-      }, 240_000);
+      it(
+        `${workspace ? "workspace" : "standalone"} ${adapter}: its scripts exit 0`,
+        () => {
+          // A workspace project lives inside the repo (its vite serves the repo's tooling); a standalone one stands alone.
+          const parent = workspace ? nodePath.join(REPO_ROOT, ".fixtures") : os.tmpdir();
+          fs.mkdirSync(parent, { recursive: true });
+          const dir = fs.mkdtempSync(nodePath.join(parent, "keel-scaffold-first-"));
+          try {
+            onDisk(apply("project", { name: "shop", adapter, workspace }, new Map()), dir);
+            const pkg = JSON.parse(fs.readFileSync(nodePath.join(dir, "package.json"), "utf8"));
+            expect(pkg.devDependencies["@keel/cli"]).toBeDefined();
+            expect(pkg.scripts.check).toContain("keel check");
+            const results = SCRIPTS.map((n) => ({ n, ...script(dir, n) }));
+            expect(
+              results.map((r) => (r.status === 0 ? `${r.n} 0` : `${r.n} ${r.status}\n${r.out.slice(-1500)}`)),
+            ).toEqual(SCRIPTS.map((n) => `${n} 0`));
+          } finally {
+            fs.rmSync(dir, { recursive: true, force: true });
+          }
+        },
+        fixedTime(240_000),
+      );
 });

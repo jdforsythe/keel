@@ -5,6 +5,7 @@
 // ASSUMED: a claim's `file` for an app project is `apps/a/modules/m/f.ts`, as the clause says; a mutation report's keys are paths relative to its project, as Stryker writes them;
 // `keel ledger` run with `--write` also reports W1733 for a project with a page route and no `reports/a11y.json`, whose path is `<project>/reports/a11y.json` (`reports/a11y.json` for `.`).
 // k.ledger-items Projects names `examples/<e>` beside `packages` and `apps`: the clause list holds no case for it, so the case here follows the Projects paragraph.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { collect, mutantsOf, mutationReport, readJson, sha256 } from "./ledger-fixture-kinds.ts";
@@ -197,28 +198,32 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it("for any names, each `packages/<p>`, `apps/<a>` and `examples/<e>` with a `package.json` and a test file but no report is named by its path in one W1733 at `<path>/reports/tests/` (property)", () => {
-    const name = fc.stringMatching(/^[a-z]{1,6}$/);
-    const names = fc.uniqueArray(name, { minLength: 1, maxLength: 3 });
-    fc.assert(
-      fc.property(names, names, names, (ps, as, es) => {
-        const paths = [
-          ...ps.map((n) => `packages/${n}`),
-          ...as.map((n) => `apps/${n}`),
-          ...es.map((n) => `examples/${n}`),
-        ];
-        const files: Record<string, string> = {};
-        for (const p of paths) {
-          files[`${p}/package.json`] = packageJson("x");
-          files[`${p}/test/x.test.ts`] = TEST_FILE;
-        }
-        const dir = project("items-proj-names", files);
-        const found = diagsOf(keel(dir, ["ledger"], { reports: "none" }), "W1733").map((d) => String(d.path));
-        expect(found.sort()).toEqual(paths.map((p) => `${p}/reports/tests/`).sort());
-        removeProject(dir);
-        made.splice(made.indexOf(dir), 1);
-      }),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
+  it(
+    "for any names, each `packages/<p>`, `apps/<a>` and `examples/<e>` with a `package.json` and a test file but no report is named by its path in one W1733 at `<path>/reports/tests/` (property)",
+    () => {
+      const name = fc.stringMatching(/^[a-z]{1,6}$/);
+      const names = fc.uniqueArray(name, { minLength: 1, maxLength: 3 });
+      fc.assert(
+        fc.property(names, names, names, (ps, as, es) => {
+          const paths = [
+            ...ps.map((n) => `packages/${n}`),
+            ...as.map((n) => `apps/${n}`),
+            ...es.map((n) => `examples/${n}`),
+          ];
+          const files: Record<string, string> = {};
+          for (const p of paths) {
+            files[`${p}/package.json`] = packageJson("x");
+            files[`${p}/test/x.test.ts`] = TEST_FILE;
+          }
+          const dir = project("items-proj-names", files);
+          const found = diagsOf(keel(dir, ["ledger"], { reports: "none" }), "W1733").map((d) => String(d.path));
+          expect(found.sort()).toEqual(paths.map((p) => `${p}/reports/tests/`).sort());
+          removeProject(dir);
+          made.splice(made.indexOf(dir), 1);
+        }),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
 });

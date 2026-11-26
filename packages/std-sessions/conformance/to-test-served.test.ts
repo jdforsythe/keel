@@ -14,6 +14,7 @@
 // Reading asserted: the control for E1004 is the same imports written from a file under `modules/cart/test/` of the `node` module, which k.boundary Reach counts as client-reachable.
 // Reading asserted: a `node` page's server data in a served session comes from an `add` click recorded as an input, so the marked session for the `app` form seeds nothing through `state`.
 // Untestable here: several placed modules joined with `routeTable`, and a stdlib module's package `./routes` (the fixture places one app module).
+import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import path from "node:path";
 import { check } from "@keel/check";
@@ -105,7 +106,7 @@ describe("std.sessions: to-test of a node deployable's page", () => {
     fx.write("topology.ts", NODE_TOPOLOGY);
     fx.write("sessions/failing.json", sessionFile(await buggySession()));
     out = await emit(fx);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   test('the `to-test` file of a `node` page calls `createApp` with `deployable: "api"`', () => {
     expect(out.code).toBe(0);
@@ -151,19 +152,25 @@ describe("std.sessions: to-test of a node deployable's page", () => {
     expect(out.source).not.toContain("identity.server");
   });
 
-  test("`keel check` on the `to-test` file of a `node` page reports no W1723", () => {
-    const files = tsFiles(fx);
-    expect(files.map((f) => f.path)).toContain(out.path);
-    const diags = check(files, { root: fx.dir }).diagnostics;
-    expect(diags.filter((d) => d.code === "W1723" && d.path === out.path)).toEqual([]);
-    expect(diags.filter((d) => d.code.startsWith("E") && d.path === out.path)).toEqual([]);
-  }, 30_000);
+  test(
+    "`keel check` on the `to-test` file of a `node` page reports no W1723",
+    () => {
+      const files = tsFiles(fx);
+      expect(files.map((f) => f.path)).toContain(out.path);
+      const diags = check(files, { root: fx.dir }).diagnostics;
+      expect(diags.filter((d) => d.code === "W1723" && d.path === out.path)).toEqual([]);
+      expect(diags.filter((d) => d.code.startsWith("E") && d.path === out.path)).toEqual([]);
+    },
+    fixedTime(30_000),
+  );
 
-  test("`keel check` reports W1723 on a hand-written router-mode `renderRoute` of the same page (the warning is not vacuous)", () => {
-    const rel = "modules/cart/test/handwritten.test.ts";
-    fx.write(
-      rel,
-      `import { createCtx } from "@keel/ctx";
+  test(
+    "`keel check` reports W1723 on a hand-written router-mode `renderRoute` of the same page (the warning is not vacuous)",
+    () => {
+      const rel = "modules/cart/test/handwritten.test.ts";
+      fx.write(
+        rel,
+        `import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import { test } from "vitest";
 import { routes } from "../routes.ts";
@@ -174,27 +181,37 @@ test("hand-written", async () => {
   h.dispose();
 });
 `,
-    );
-    try {
-      const diags = check(tsFiles(fx), { root: fx.dir }).diagnostics;
-      expect(diags.some((d) => d.code === "W1723" && d.path === rel)).toBe(true);
-    } finally {
-      fs.rmSync(path.join(fx.dir, rel), { force: true });
-    }
-  }, 30_000);
+      );
+      try {
+        const diags = check(tsFiles(fx), { root: fx.dir }).diagnostics;
+        expect(diags.some((d) => d.code === "W1723" && d.path === rel)).toBe(true);
+      } finally {
+        fs.rmSync(path.join(fx.dir, rel), { force: true });
+      }
+    },
+    fixedTime(30_000),
+  );
 
-  test("the `to-test` file of a `node` page fails under `keel test` on the buggy fixture", async () => {
-    expect(out.path).toMatch(EMITTED);
-    const r = await run(["test", out.path], { cwd: fx.dir, files: fx.files() });
-    expect(r.code).toBe(1);
-  }, 120_000);
+  test(
+    "the `to-test` file of a `node` page fails under `keel test` on the buggy fixture",
+    async () => {
+      expect(out.path).toMatch(EMITTED);
+      const r = await run(["test", out.path], { cwd: fx.dir, files: fx.files() });
+      expect(r.code).toBe(1);
+    },
+    fixedTime(120_000),
+  );
 
-  test("the `to-test` file of a `node` page passes once the fix is applied", async () => {
-    expect(out.path).toMatch(EMITTED);
-    fx.fix();
-    const r = await run(["test", out.path], { cwd: fx.dir, files: fx.files() });
-    expect(r.code).toBe(0);
-  }, 120_000);
+  test(
+    "the `to-test` file of a `node` page passes once the fix is applied",
+    async () => {
+      expect(out.path).toMatch(EMITTED);
+      fx.fix();
+      const r = await run(["test", out.path], { cwd: fx.dir, files: fx.files() });
+      expect(r.code).toBe(0);
+    },
+    fixedTime(120_000),
+  );
 });
 
 describe("std.sessions: to-test of a node deployable's page with an identity.server.ts", () => {
@@ -208,7 +225,7 @@ describe("std.sessions: to-test of a node deployable's page with an identity.ser
     fx.write("identity.server.ts", IDENTITY);
     fx.write("sessions/failing.json", sessionFile(await buggySession()));
     out = await emit(fx);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   test("with an `identity.server.ts` in the project, the `to-test` file imports `../identity.server.ts` and passes it to `createApp`", () => {
     expect(out.code).toBe(0);
@@ -217,24 +234,32 @@ describe("std.sessions: to-test of a node deployable's page with an identity.ser
     expect(out.source).toMatch(/createApp\(\s*\{[^}]*\bidentity\b/);
   });
 
-  test("with an `identity.server.ts` in the fixture, `keel check` on the `to-test` file reports no W1723 and no E1004", () => {
-    const files = tsFiles(fx);
-    expect(files.map((f) => f.path)).toContain(out.path);
-    const diags = check(files, { root: fx.dir }).diagnostics;
-    expect(diags.filter((d) => d.code === "W1723" && d.path === out.path)).toEqual([]);
-    expect(diags.filter((d) => d.code === "E1004" && d.path === out.path)).toEqual([]);
-  }, 30_000);
+  test(
+    "with an `identity.server.ts` in the fixture, `keel check` on the `to-test` file reports no W1723 and no E1004",
+    () => {
+      const files = tsFiles(fx);
+      expect(files.map((f) => f.path)).toContain(out.path);
+      const diags = check(files, { root: fx.dir }).diagnostics;
+      expect(diags.filter((d) => d.code === "W1723" && d.path === out.path)).toEqual([]);
+      expect(diags.filter((d) => d.code === "E1004" && d.path === out.path)).toEqual([]);
+    },
+    fixedTime(30_000),
+  );
 
-  test("control: the same import of `identity.server.ts` from a file under `modules/cart/test/` of the `node` module is E1004 (the check is not vacuous)", () => {
-    const rel = "modules/cart/test/imports-identity.test.ts";
-    fx.write(rel, SERVER_IMPORTS_IDENTITY);
-    try {
-      const diags = check(tsFiles(fx), { root: fx.dir }).diagnostics;
-      expect(diags.some((d) => d.code === "E1004" && d.path === rel)).toBe(true);
-    } finally {
-      fs.rmSync(path.join(fx.dir, rel), { force: true });
-    }
-  }, 30_000);
+  test(
+    "control: the same import of `identity.server.ts` from a file under `modules/cart/test/` of the `node` module is E1004 (the check is not vacuous)",
+    () => {
+      const rel = "modules/cart/test/imports-identity.test.ts";
+      fx.write(rel, SERVER_IMPORTS_IDENTITY);
+      try {
+        const diags = check(tsFiles(fx), { root: fx.dir }).diagnostics;
+        expect(diags.some((d) => d.code === "E1004" && d.path === rel)).toBe(true);
+      } finally {
+        fs.rmSync(path.join(fx.dir, rel), { force: true });
+      }
+    },
+    fixedTime(30_000),
+  );
 });
 
 describe("std.sessions: to-test of a client deployable's page", () => {
@@ -246,7 +271,7 @@ describe("std.sessions: to-test of a client deployable's page", () => {
     fx = diskFixture();
     fx.write("sessions/failing.json", sessionFile(await buggySession()));
     out = await emit(fx, [], ROUTER_EMITTED);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   test("for a session of a `client` deployable's page the `to-test` file passes `state` and no `app`", () => {
     expect(out.code).toBe(0);
@@ -280,34 +305,46 @@ describe("std.sessions: the `user` option of a `to-test` file", () => {
         fx = diskFixture();
         if (c.topology !== undefined) fx.write("topology.ts", c.topology);
         fx.write("sessions/failing.json", sessionFile(await buggySession()));
-      }, 120_000);
+      }, fixedTime(120_000));
 
-      test("a `to-test` file written without `--user` holds no `user` option", async () => {
-        const out = await emit(fx, [], c.pattern);
-        expect(out.code).toBe(0);
-        expect(out.path).not.toBe("");
-        expect(out.source).not.toMatch(/\buser\s*:/);
-      }, 120_000);
+      test(
+        "a `to-test` file written without `--user` holds no `user` option",
+        async () => {
+          const out = await emit(fx, [], c.pattern);
+          expect(out.code).toBe(0);
+          expect(out.path).not.toBe("");
+          expect(out.source).not.toMatch(/\buser\s*:/);
+        },
+        fixedTime(120_000),
+      );
 
-      test("a `to-test` file written with `--user <id>` holds that id exactly once and no other user id", async () => {
-        await fc.assert(
-          fc.asyncProperty(userId, async (id) => {
-            const out = await emit(fx, ["--user", id], c.pattern);
-            expect(out.code).toBe(0);
-            const options = [...out.source.matchAll(/\buser\s*:\s*"([^"]*)"/g)].map((m) => m[1]);
-            expect(options).toEqual([id]);
-            expect(out.source.split(id)).toHaveLength(2);
-            expect(out.source.match(/\buser\s*:/g)).toHaveLength(1);
-          }),
-          { seed: 1337, numRuns: 3 },
-        );
-      }, 300_000);
+      test(
+        "a `to-test` file written with `--user <id>` holds that id exactly once and no other user id",
+        async () => {
+          await fc.assert(
+            fc.asyncProperty(userId, async (id) => {
+              const out = await emit(fx, ["--user", id], c.pattern);
+              expect(out.code).toBe(0);
+              const options = [...out.source.matchAll(/\buser\s*:\s*"([^"]*)"/g)].map((m) => m[1]);
+              expect(options).toEqual([id]);
+              expect(out.source.split(id)).toHaveLength(2);
+              expect(out.source.match(/\buser\s*:/g)).toHaveLength(1);
+            }),
+            { seed: 1337, numRuns: 3 },
+          );
+        },
+        fixedTime(300_000),
+      );
 
-      test("a `to-test` file written with `--user u1` holds `u1` once and no other user id", async () => {
-        const out = await emit(fx, ["--user", "u1"], c.pattern);
-        expect([...out.source.matchAll(/\buser\s*:\s*"([^"]*)"/g)].map((m) => m[1])).toEqual(["u1"]);
-        expect(out.source.match(/\buser\s*:/g)).toHaveLength(1);
-      }, 120_000);
+      test(
+        "a `to-test` file written with `--user u1` holds `u1` once and no other user id",
+        async () => {
+          const out = await emit(fx, ["--user", "u1"], c.pattern);
+          expect([...out.source.matchAll(/\buser\s*:\s*"([^"]*)"/g)].map((m) => m[1])).toEqual(["u1"]);
+          expect(out.source.match(/\buser\s*:/g)).toHaveLength(1);
+        },
+        fixedTime(120_000),
+      );
     });
   }
 });
@@ -319,20 +356,26 @@ describe("std.sessions: a served `to-test` file holds no personal data past the 
   });
   afterAll(() => fx.dispose());
 
-  test("the `app` form holds no recorded `s.string()` value outside `expose` and no `s.secret` or password value, and no `--user` id when none was given", async () => {
-    fx.write("topology.ts", NODE_TOPOLOGY);
-    fx.write("sessions/failing.json", sessionFile(await servedMarkedSession()));
-    const out = await emit(fx);
-    expect(out.code).toBe(0);
-    expect(out.source).toContain("createApp");
-    for (const [name, marker] of Object.entries(MARKERS.hidden)) expect(out.source, name).not.toContain(marker);
-    expect(out.source).not.toContain(MARKERS.exposed);
-  }, 120_000);
+  test(
+    "the `app` form holds no recorded `s.string()` value outside `expose` and no `s.secret` or password value, and no `--user` id when none was given",
+    async () => {
+      fx.write("topology.ts", NODE_TOPOLOGY);
+      fx.write("sessions/failing.json", sessionFile(await servedMarkedSession()));
+      const out = await emit(fx);
+      expect(out.code).toBe(0);
+      expect(out.source).toContain("createApp");
+      for (const [name, marker] of Object.entries(MARKERS.hidden)) expect(out.source, name).not.toContain(marker);
+      expect(out.source).not.toContain(MARKERS.exposed);
+    },
+    fixedTime(120_000),
+  );
 
-  test("the `app` form with an `expose` entry in the module still passes no `state` and holds no recorded store value", async () => {
-    fx.write(
-      "modules/cart/module.ts",
-      `import { module } from "@keel/compiler";
+  test(
+    "the `app` form with an `expose` entry in the module still passes no `state` and holds no recorded store value",
+    async () => {
+      fx.write(
+        "modules/cart/module.ts",
+        `import { module } from "@keel/compiler";
 
 export default module({
   id: "cart",
@@ -342,12 +385,14 @@ export default module({
   std: { "@keel/std-sessions": { expose: ["store:cart.cart#note"] } },
 });
 `,
-    );
-    fx.write("sessions/failing.json", sessionFile(await servedMarkedSession()));
-    const out = await emit(fx);
-    expect(out.code).toBe(0);
-    expect(out.path).toMatch(EMITTED);
-    expect(out.source).not.toMatch(/\bstate\b/);
-    for (const marker of Object.values(MARKERS.hidden)) expect(out.source).not.toContain(marker);
-  }, 120_000);
+      );
+      fx.write("sessions/failing.json", sessionFile(await servedMarkedSession()));
+      const out = await emit(fx);
+      expect(out.code).toBe(0);
+      expect(out.path).toMatch(EMITTED);
+      expect(out.source).not.toMatch(/\bstate\b/);
+      for (const marker of Object.values(MARKERS.hidden)) expect(out.source).not.toContain(marker);
+    },
+    fixedTime(120_000),
+  );
 });

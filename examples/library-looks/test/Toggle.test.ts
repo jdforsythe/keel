@@ -1,6 +1,7 @@
 import { signal } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { Toggle } from "../src/index.ts";
@@ -52,7 +53,7 @@ it("its pressed state is the prop's", () => {
   }
 });
 
-it("after any run of clicks, aria-pressed equals the parity", { timeout: 30_000 }, async () => {
+it("after any run of clicks, aria-pressed equals the parity", { timeout: fixedTime(30_000) }, async () => {
   await fc.assert(
     fc.asyncProperty(fc.boolean(), fc.nat({ max: 8 }), async (start, clicks) => {
       const view = mount(start);

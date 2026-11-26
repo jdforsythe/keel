@@ -20,6 +20,7 @@ Canonical names. Changing one requires an RFC.
 - **rung**: proven, exhaustive, probabilistic, example, monitored.
 - **conformance suite**: the executable, implementation-independent form of a spec section.
 - **spec status**: proposed -> implemented -> conformance-covered -> frozen.
+- **area**: a named group of spec sections, one row of the spec map with an area map of its own (`spec/areas/<area>.md`, `keel docs <area>`); each section is in exactly one (k.docs).
 - **extension point**: schema type registry, check rule registry, capability registry, module manifest, inspector hooks (`inspector({ id, schema, read })`: a named, schema-typed section of the inspect document), output formatter registry.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.
@@ -27,8 +28,8 @@ Canonical names. Changing one requires an RFC.
 - **look**: a named style set in the `look` group of `tokens.ts`, applied as `look="<name>"`; the element's own props replace the set's per prop (k.ui).
 - **library tokens**: the tokens object a library ships from its `./tokens` entry, `<id>Tokens`, each name `<id>.<name>`; the app spreads it into its own `tokens.ts`, and its names are the ones the library's files may write (k.looks).
 - **color scheme**: `light` or `dark`, one value of each color token; an app's `schemes` names one or both, and with both the person's system preference or a `SchemeSelect` pick decides (k.schemes).
-- **theme**: a named, partial set of token values under `themes` in `tokens.ts`, turned on by its `when`: `choice` (a visitor's pick through `ThemeSelect`), `contrast` (`prefers-contrast: more`) or `print`; it re-values custom properties and changes no class (k.values, k.schemes).
-- **combination**: one color scheme with the themes on at once, the values a visitor sees and contrast is judged in, named like `dark+slate+hc` (k.a11y-static).
+- **theme**: a named, partial set of token values under `themes` in `tokens.ts`, turned on by its `when`: `choice` (a visitor's pick through `ThemeSelect`), `contrast` (`prefers-contrast: more`) or `print`; it re-values custom properties and changes no class (k.themes, k.schemes).
+- **combination**: one color scheme with the themes on at once, the values a visitor sees and contrast is judged in, named like `dark+slate+hc` (k.themes).
 - **overlay**: a token of the `overlay` group, a color with alpha and the opaque colors it may sit on, judged composited over each (k.values).
 - **host element**: `Host` from `@keel/ui`, the one element whose node outside code owns (a chart library, d3, a standard custom element), given a schema-typed value and run by `hostCode({ mount, update, dispose })`; client only, opaque to the harness and replay, counted in the ledger (k.host-element).
 - **driver**: an object passed as `createCtx({ drivers })` that supplies `storage` or `net` on a `real` or `shell` ctx and keeps that capability's contract.

@@ -4,6 +4,7 @@
 // The real `keel` binary runs `keel test` over a temp project (OS tmpdir) whose test builds `createCtx({})` with no
 // options and records what it got. Control: the same project under plain vitest, without `keel`, sees `real`, so
 // this test fails if `keel test` stopped setting the sim contract. No generated inputs; seed n/a.
+import { fixedTime } from "@keel/tooling/test-time";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
@@ -72,7 +73,7 @@ beforeAll(() => {
   removeFile(dir, "test/observed.json");
   controlStatus = plainVitest(dir).status;
   controlSaw = read();
-}, 180_000);
+}, fixedTime(180_000));
 
 afterAll(() => {
   removeProject(dir);

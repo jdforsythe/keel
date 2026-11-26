@@ -6,9 +6,10 @@ import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it, vi } from "vitest";
 
-const LONG = 120_000;
+const LONG = fixedTime(120_000);
 
 const z3 = vi.hoisted((): { afterStart: (() => void) | undefined; enter: () => void } => ({
   afterStart: undefined,

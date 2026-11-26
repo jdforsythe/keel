@@ -53,11 +53,12 @@ export function looksDiags(
     } catch {
       continue;
     }
-    for (const [key, what] of entryProblems(parsed))
+    const exists = (rel: string): boolean => byPath.has(`${lib.folder}${rel}`);
+    for (const [key, what] of entryProblems(parsed, exists, importedSubpaths(files, lib.name)))
       for (const { path, entry } of looks.entries.get(lib.name) ?? []) {
         const file = byPath.get(path);
-        if (file !== undefined)
-          out.push(moduleDiag("E1815", file, entry.start, `${lib.name} exports "${key}" ${what}`, undefined, SEE));
+        const message = key === undefined ? `${lib.name} ${what}` : `${lib.name} exports "${key}" ${what}`;
+        if (file !== undefined) out.push(moduleDiag("E1815", file, entry.start, message, undefined, SEE));
       }
   }
   const tokensFile = files.find((f) => f.path.replace(/^\.\//, "") === `${looks.dir}tokens.ts`);
@@ -148,6 +149,18 @@ export function looksDiags(
     }
   }
   return out;
+}
+
+/** The subpaths (`.`, `./tokens`) of `name` that the code files among `files` import, export from or load. */
+function importedSubpaths(files: readonly SourceFile[], name: string): string[] {
+  const out = new Set<string>();
+  const quoted = name.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+  const pattern = new RegExp(`(?:from|import|import\\()\\s*["'\`]${quoted}(/[^"'\`]*)?["'\`]`, "g");
+  for (const f of files) {
+    if (!/\.[cm]?[jt]sx?$/.test(f.path) || f.path.includes("node_modules/")) continue;
+    for (const m of f.source.matchAll(pattern)) out.add(m[1] === undefined ? "." : `.${m[1]}`);
+  }
+  return [...out].sort();
 }
 
 /** Whether `lib`'s shipped object holds `name` in `group`. */

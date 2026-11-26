@@ -10,6 +10,7 @@
 // Compile failures are asserted by type-checking in-memory modules (never written to disk) with packages/router/tsconfig.json: a control module
 // that binds and reads everything correctly has no error, and each bad module, one line away from the control, has at least one.
 // ASSUMPTION: E1113 over an entry's `output` is thrown by `contract()` or by the handler's declaration; `declare` below builds both, so either throws.
+import { fixedTime } from "@keel/tooling/test-time";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { action, loader } from "@keel/router";
@@ -175,15 +176,23 @@ describe("k.privacy E1113", () => {
 });
 
 describe("k.guards bearer", () => {
-  it("`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).", () => {
-    expect(typeErrors(CONTROL)).toEqual([]);
-    expect(typeErrors(BAD.pageReadsBearer).length).toBeGreaterThan(0);
-    expect(typeErrors(BAD.userIsNotAString).length).toBeGreaterThan(0);
-  }, 120_000);
+  it(
+    "`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none).",
+    () => {
+      expect(typeErrors(CONTROL)).toEqual([]);
+      expect(typeErrors(BAD.pageReadsBearer).length).toBeGreaterThan(0);
+      expect(typeErrors(BAD.userIsNotAString).length).toBeGreaterThan(0);
+    },
+    fixedTime(120_000),
+  );
 
-  it("an API action returning a value its entry's `output` refuses, and a page action declaring an `output`, do not compile", () => {
-    expect(typeErrors(CONTROL)).toEqual([]);
-    expect(typeErrors(BAD.wrongOutputValue).length).toBeGreaterThan(0);
-    expect(typeErrors(BAD.pageWithOutput).length).toBeGreaterThan(0);
-  }, 120_000);
+  it(
+    "an API action returning a value its entry's `output` refuses, and a page action declaring an `output`, do not compile",
+    () => {
+      expect(typeErrors(CONTROL)).toEqual([]);
+      expect(typeErrors(BAD.wrongOutputValue).length).toBeGreaterThan(0);
+      expect(typeErrors(BAD.pageWithOutput).length).toBeGreaterThan(0);
+    },
+    fixedTime(120_000),
+  );
 });

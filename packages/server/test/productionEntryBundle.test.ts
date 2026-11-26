@@ -2,13 +2,14 @@
 // so the built server starts wherever Node runs, with no native binding to resolve.
 import fs from "node:fs";
 import path from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildNodeFixture } from "../conformance/topology-build-fixture.ts";
 
 let fixture = "";
 beforeAll(() => {
   fixture = buildNodeFixture();
-}, 90_000);
+}, fixedTime(90_000));
 afterAll(() => fs.rmSync(fixture, { recursive: true, force: true }));
 
 describe("production entry of a node deployable", () => {

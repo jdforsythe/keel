@@ -11,6 +11,7 @@ import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { Box, Button, TextArea } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -85,26 +86,33 @@ describe("record bounds", () => {
       expect(last?.kind === "fire" && last.event).toEqual({ type: "input", value: text });
       h.dispose();
     },
-    2000 * 50,
+    fixedTime(2000 * 50),
   );
 
-  test("property (seed 1337): the serialized session never exceeds the byte bound", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 60_000 }), { minLength: 1, maxLength: 12 }), async (lens) => {
-        const ctx = createCtx({ mode: "sim", seed: 1337 });
-        const { rec, h } = await open(ctx);
-        for (const n of lens) {
-          await h.fire("memo.body", { type: "input", value: "é".repeat(n) });
-          const now = Session.parse(inspectors.get("sessions.live")?.read(ctx));
-          expect(now.ok).toBe(true);
-          if (now.ok) expect(bytes(now.value)).toBeLessThanOrEqual(MAX_SESSION_BYTES);
-        }
-        expect(bytes(rec.stop())).toBeLessThanOrEqual(MAX_SESSION_BYTES);
-        h.dispose();
-      }),
-      { seed: 1337, numRuns: 25 },
-    );
-  }, 60_000);
+  test(
+    "property (seed 1337): the serialized session never exceeds the byte bound",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(fc.integer({ min: 0, max: 60_000 }), { minLength: 1, maxLength: 12 }),
+          async (lens) => {
+            const ctx = createCtx({ mode: "sim", seed: 1337 });
+            const { rec, h } = await open(ctx);
+            for (const n of lens) {
+              await h.fire("memo.body", { type: "input", value: "é".repeat(n) });
+              const now = Session.parse(inspectors.get("sessions.live")?.read(ctx));
+              expect(now.ok).toBe(true);
+              if (now.ok) expect(bytes(now.value)).toBeLessThanOrEqual(MAX_SESSION_BYTES);
+            }
+            expect(bytes(rec.stop())).toBeLessThanOrEqual(MAX_SESSION_BYTES);
+            h.dispose();
+          },
+        ),
+        { seed: 1337, numRuns: 25 },
+      );
+    },
+    fixedTime(60_000),
+  );
 
   test("errors() keeps the first 32 and the last 32 errors, in order", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });

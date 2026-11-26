@@ -4,6 +4,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RESUME_ENTRY } from "../src/entry/RESUME_ENTRY.ts";
 import { resumeEntry } from "../src/entry/resumeEntry.ts";
@@ -301,7 +302,7 @@ describe("vite: project inputs", () => {
     link();
   });
 
-  it("warns with the css problems and refreshes the css only when stale", { timeout: 30000 }, async () => {
+  it("warns with the css problems and refreshes the css only when stale", { timeout: fixedTime(30000) }, async () => {
     write("tokens.ts", TOKENS);
     write("A.tsx", page('p="1"'));
     write("Bad.tsx", page('bg="nope"'));
@@ -322,26 +323,30 @@ describe("vite: project inputs", () => {
     expect(warnings).toHaveLength(2);
   });
 
-  it("calls the bundler's warn with its own context and tolerates a missing one", { timeout: 30000 }, async () => {
-    write("tokens.ts", TOKENS);
-    write("Bad.tsx", page('bg="nope"'));
-    const p = keel();
-    p.configResolved({ root, command: "build" });
-    let self: unknown;
-    const ctx = {
-      warn(this: unknown) {
-        self = this;
-      },
-    };
-    await p.buildStart.call(ctx);
-    expect(self).toBe(ctx);
-    const q = keel();
-    q.configResolved({ root });
-    await expect(q.buildStart.call(undefined)).resolves.toBeUndefined();
-    await expect(q.buildStart.call({})).resolves.toBeUndefined();
-  });
+  it(
+    "calls the bundler's warn with its own context and tolerates a missing one",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("tokens.ts", TOKENS);
+      write("Bad.tsx", page('bg="nope"'));
+      const p = keel();
+      p.configResolved({ root, command: "build" });
+      let self: unknown;
+      const ctx = {
+        warn(this: unknown) {
+          self = this;
+        },
+      };
+      await p.buildStart.call(ctx);
+      expect(self).toBe(ctx);
+      const q = keel();
+      q.configResolved({ root });
+      await expect(q.buildStart.call(undefined)).resolves.toBeUndefined();
+      await expect(q.buildStart.call({})).resolves.toBeUndefined();
+    },
+  );
 
-  it("compiles every app source in buildStart and writes routes.json", { timeout: 30000 }, async () => {
+  it("compiles every app source in buildStart and writes routes.json", { timeout: fixedTime(30000) }, async () => {
     write("src/A.tsx", "export default function A() { return <p>a</p> }");
     write("src/a.test.ts", "this is not code");
     write("test/b.ts", "this is not code");
@@ -354,7 +359,7 @@ describe("vite: project inputs", () => {
     expect(artifact("routes.json").data).toEqual({});
   });
 
-  it("reads routes from every module directory when there is no topology", { timeout: 30000 }, async () => {
+  it("reads routes from every module directory when there is no topology", { timeout: fixedTime(30000) }, async () => {
     write("modules/b/routes.ts", routesTs("b"));
     write("modules/a/routes.ts", routesTs("a"));
     write("modules/c/other.ts", "export const x = 1;");
@@ -365,74 +370,82 @@ describe("vite: project inputs", () => {
     expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
   });
 
-  it("has no routes without a modules directory", { timeout: 30000 }, async () => {
+  it("has no routes without a modules directory", { timeout: fixedTime(30000) }, async () => {
     const p = keel();
     p.configResolved({ root });
     await p.buildStart.call(undefined);
     expect(artifact("routes.json").data).toEqual({});
   });
 
-  it("reads only the modules of the deployable, skipping missing routes files", { timeout: 30000 }, async () => {
-    write(
-      "topology.ts",
-      `export default { web: { modules: ["b", "a", "missing"], adapter: "client" }, api: { modules: ["x"], adapter: "node" } };\n`,
-    );
-    write("modules/b/routes.ts", routesTs("b"));
-    write("modules/a/routes.ts", routesTs("a"));
-    write("modules/x/routes.ts", routesTs("x"));
-    write("modules/other/routes.ts", routesTs("other"));
-    const p = keel();
-    p.configResolved({ root, command: "serve" });
-    await p.buildStart.call(undefined);
-    expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
-    expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(
-        ["/modules/a/routes.ts", "/modules/b/routes.ts"],
-        "virtual:keel.css",
-        {},
-        {},
-        undefined,
-        "dev",
-        false,
-        true,
-        "web",
-      ),
-    );
-  });
+  it(
+    "reads only the modules of the deployable, skipping missing routes files",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write(
+        "topology.ts",
+        `export default { web: { modules: ["b", "a", "missing"], adapter: "client" }, api: { modules: ["x"], adapter: "node" } };\n`,
+      );
+      write("modules/b/routes.ts", routesTs("b"));
+      write("modules/a/routes.ts", routesTs("a"));
+      write("modules/x/routes.ts", routesTs("x"));
+      write("modules/other/routes.ts", routesTs("other"));
+      const p = keel();
+      p.configResolved({ root, command: "serve" });
+      await p.buildStart.call(undefined);
+      expect(Object.keys(artifact("routes.json").data)).toEqual(["a.index", "b.index"]);
+      expect(await p.load("/@keel/entry.ts")).toBe(
+        entryCode(
+          ["/modules/a/routes.ts", "/modules/b/routes.ts"],
+          "virtual:keel.css",
+          {},
+          {},
+          undefined,
+          "dev",
+          false,
+          true,
+          "web",
+        ),
+      );
+    },
+  );
 
-  it("binds service targets only for the modules the client's browser code imports", { timeout: 30000 }, async () => {
-    write(
-      "topology.ts",
-      `export default { web: { modules: ["w"], adapter: "client" }, api: { modules: ["used", "hidden", "sessions"], adapter: "node" }, other: { modules: ["unseen"], adapter: "node" } };\n`,
-    );
-    write("modules/w/routes.ts", routesTs("w"));
-    write("modules/w/call.ts", `import { c } from "../used/c.contract.ts";\nexport const x = c;\n`);
-    write("modules/w/load.server.ts", `import { h } from "../hidden/h.ts";\nexport const y = h;\n`);
-    write("modules/used/c.contract.ts", "export const c = 1;\n");
-    write("modules/hidden/h.ts", "export const h = 1;\n");
-    write("modules/unseen/u.ts", "export const u = 1;\n");
-    const p = keel();
-    p.configResolved({ root, command: "serve" });
-    await p.buildStart.call(undefined);
-    const code = await p.load("/@keel/entry.ts");
-    expect(code).toBe(
-      entryCode(
-        ["/modules/w/routes.ts"],
-        "virtual:keel.css",
-        {},
-        { api: ["used", "sessions"] },
-        undefined,
-        "dev",
-        false,
-        true,
-        "web",
-      ),
-    );
-    expect(code).not.toContain("hidden");
-    expect(code).not.toContain("unseen");
-  });
+  it(
+    "binds service targets only for the modules the client's browser code imports",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write(
+        "topology.ts",
+        `export default { web: { modules: ["w"], adapter: "client" }, api: { modules: ["used", "hidden", "sessions"], adapter: "node" }, other: { modules: ["unseen"], adapter: "node" } };\n`,
+      );
+      write("modules/w/routes.ts", routesTs("w"));
+      write("modules/w/call.ts", `import { c } from "../used/c.contract.ts";\nexport const x = c;\n`);
+      write("modules/w/load.server.ts", `import { h } from "../hidden/h.ts";\nexport const y = h;\n`);
+      write("modules/used/c.contract.ts", "export const c = 1;\n");
+      write("modules/hidden/h.ts", "export const h = 1;\n");
+      write("modules/unseen/u.ts", "export const u = 1;\n");
+      const p = keel();
+      p.configResolved({ root, command: "serve" });
+      await p.buildStart.call(undefined);
+      const code = await p.load("/@keel/entry.ts");
+      expect(code).toBe(
+        entryCode(
+          ["/modules/w/routes.ts"],
+          "virtual:keel.css",
+          {},
+          { api: ["used", "sessions"] },
+          undefined,
+          "dev",
+          false,
+          true,
+          "web",
+        ),
+      );
+      expect(code).not.toContain("hidden");
+      expect(code).not.toContain("unseen");
+    },
+  );
 
-  it("picks the first client deployable by name, or KEEL_DEPLOYABLE", { timeout: 30000 }, async () => {
+  it("picks the first client deployable by name, or KEEL_DEPLOYABLE", { timeout: fixedTime(30000) }, async () => {
     write(
       "topology.ts",
       `export default { zeta: { modules: ["z"], adapter: "client" }, api: { modules: ["a"], adapter: "node" }, mid: { modules: ["m"], adapter: "client" } };\n`,
@@ -482,7 +495,7 @@ describe("vite: project inputs", () => {
 
   it(
     "gives the production entries when Vite reports no command; only serve gives dev",
-    { timeout: 30000 },
+    { timeout: fixedTime(30000) },
     async () => {
       write(
         "topology.ts",
@@ -504,7 +517,7 @@ describe("vite: project inputs", () => {
     },
   );
 
-  it("throws topology problems when building and warns when serving", { timeout: 30000 }, async () => {
+  it("throws topology problems when building and warns when serving", { timeout: fixedTime(30000) }, async () => {
     write("topology.ts", `export default { a: 5, b: { modules: [], adapter: 'x' } };\n`);
     const p = keel();
     expect(() => p.configResolved({ root, command: "build" })).toThrow(
@@ -523,30 +536,34 @@ describe("vite: project inputs", () => {
     ]);
   });
 
-  it("watches project files: refreshes eagerly with a server, lazily without", { timeout: 30000 }, async () => {
-    write("tokens.ts", TOKENS);
-    write("A.tsx", page('p="1"'));
-    const p = keel();
-    p.configResolved({ root, command: "build" });
-    await p.buildStart.call(undefined);
-    const f = fakeServer();
-    p.configureServer(f.server);
-    const base = f.reloaded.length;
-    write("tokens.ts", TOKENS.replace("4px", "5px"));
-    p.watchChange(path.join(root, "A.tsx"), { event: "update" });
-    p.watchChange(path.join(root, "xtokens.ts"), { event: "update" });
-    p.watchChange(path.join(root, "node_modules/x/tokens.ts"), { event: "update" });
-    p.watchChange(path.join(root, "tokens.tsx"), { event: "update" });
-    expect(f.reloaded).toHaveLength(base);
-    expect((await p.load("/__keel.css")) ?? "").toContain("--k-space-1:4px");
-    p.watchChange(path.join(root, "tokens.ts"), { event: "update" });
-    await vi.waitFor(() => expect(f.reloaded).toHaveLength(base + 1));
-    expect((await p.load("/__keel.css")) ?? "").toContain("--k-space-1:5px");
-  });
+  it(
+    "watches project files: refreshes eagerly with a server, lazily without",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("tokens.ts", TOKENS);
+      write("A.tsx", page('p="1"'));
+      const p = keel();
+      p.configResolved({ root, command: "build" });
+      await p.buildStart.call(undefined);
+      const f = fakeServer();
+      p.configureServer(f.server);
+      const base = f.reloaded.length;
+      write("tokens.ts", TOKENS.replace("4px", "5px"));
+      p.watchChange(path.join(root, "A.tsx"), { event: "update" });
+      p.watchChange(path.join(root, "xtokens.ts"), { event: "update" });
+      p.watchChange(path.join(root, "node_modules/x/tokens.ts"), { event: "update" });
+      p.watchChange(path.join(root, "tokens.tsx"), { event: "update" });
+      expect(f.reloaded).toHaveLength(base);
+      expect((await p.load("/__keel.css")) ?? "").toContain("--k-space-1:4px");
+      p.watchChange(path.join(root, "tokens.ts"), { event: "update" });
+      await vi.waitFor(() => expect(f.reloaded).toHaveLength(base + 1));
+      expect((await p.load("/__keel.css")) ?? "").toContain("--k-space-1:5px");
+    },
+  );
 
   it(
     "marks the css stale for routes, schema and topology files and refreshes on the next load",
-    { timeout: 30000 },
+    { timeout: fixedTime(30000) },
     async () => {
       write("tokens.ts", TOKENS);
       write("A.tsx", page('p="1"'));
@@ -574,7 +591,7 @@ describe("vite: project inputs", () => {
 
   it(
     "recompiles every module when topology.ts changes, and never fails a transform on E1004",
-    { timeout: 30000 },
+    { timeout: fixedTime(30000) },
     async () => {
       write("topology.ts", `export default { web: { modules: ["m"], adapter: "client" } };\n`);
       const p = keel();
@@ -594,7 +611,7 @@ describe("vite: project inputs", () => {
     },
   );
 
-  it("warns when a background refresh fails", { timeout: 30000 }, async () => {
+  it("warns when a background refresh fails", { timeout: fixedTime(30000) }, async () => {
     write("tokens.ts", TOKENS);
     const warnings: string[] = [];
     const p = keel();

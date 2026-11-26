@@ -138,7 +138,10 @@ export function Part(props: PartProps): Node {
     for (const k of HTML) put(el, p, k, k, plain);
     put(el, p, "colSpan", "colspan", ariaText);
     put(el, p, "hidden", "hidden", flag);
-    if (tag === "button" || tag === "input") put(el, p, "disabled", "disabled", flag);
+    // A `button` or `switch` in a roving group (`tabIndex` set) stays focusable while disabled (k.roles #15).
+    const roving = (role === "button" || role === "switch") && props.tabIndex !== undefined;
+    if ((tag === "button" || tag === "input") && !roving) put(el, p, "disabled", "disabled", flag);
+    else if (roving) put(el, p, "disabled", "aria-disabled", (v) => (v === true ? "true" : null));
     else put(el, p, "disabled", "aria-disabled", ariaText);
     put(el, p, "tabIndex", "tabindex", ariaText);
     if (role === "checkbox" || role === "radio") {
@@ -183,7 +186,8 @@ export function Part(props: PartProps): Node {
         }
       });
     const click = props.onClick;
-    listen(el, "click", click && (() => click()));
+    const off = (): boolean => roving && read(p.disabled) === true;
+    listen(el, "click", click && (() => (off() ? undefined : click())));
     const focusIn = props.onFocus;
     listen(el, "focus", focusIn && (() => focusIn()));
     const blur = props.onBlur;

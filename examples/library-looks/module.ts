@@ -4,5 +4,5 @@ export default module({
   id: "acme",
   deps: [],
   capabilities: [],
-  public: { exports: ["Card", "Badge", "Switch", "Toggle"] },
+  public: { exports: ["Card", "Badge", "Switch", "Toggle", "Toolbar"] },
 });

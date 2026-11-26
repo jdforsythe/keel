@@ -8,10 +8,10 @@ import { defineTokens } from "@keel/ui";
 import { brandTokens } from "@keel/ui/brand";
 import { BASE, sharedRoot } from "./E1013-support.ts";
 import {
-  BRAND_ONLY,
   PACKAGE_JSON as ACME_PACKAGE_JSON,
   ROOT as ACME_ROOT,
   SHIPPED as ACME_SHIPPED,
+  BRAND_ONLY,
   app as acmeApp,
   badgeSource,
   composed,
@@ -96,6 +96,7 @@ const library = (id: string, deps: string[], ledger = true): Files[number][] => 
     "node_modules/@acme/charts/module.ts",
     `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [${deps.map((d) => `'${d}'`).join(", ")}], capabilities: [], public: { exports: [] } })\n`,
   ),
+  f("node_modules/@acme/charts/src/index.ts", "export {}\n"),
   ...(ledger
     ? [
         f(

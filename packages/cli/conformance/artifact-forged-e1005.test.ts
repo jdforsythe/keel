@@ -2,6 +2,7 @@
 // Drives the real binary (packages/cli/src/bin.ts) over a temp project holding real `.keel/` artifacts built by @keel/compiler/vite.
 // Forged artifacts are self-consistent: data and hash come from a public `compile` of other sources.
 // Seed: 1337 (fc.assert seed below). Each spawn costs about a second; total spawns stay <= 8.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -96,7 +97,7 @@ beforeAll(async () => {
   for (const name of fs.readdirSync(path.join(proj, ".keel")).sort()) {
     if (name.endsWith(".json")) originals.set(name, fs.readFileSync(path.join(proj, ".keel", name), "utf8"));
   }
-}, 120_000);
+}, fixedTime(120_000));
 
 afterAll(() => {
   fs.rmSync(proj, { recursive: true, force: true });
@@ -154,71 +155,95 @@ const readSrc = (n: string): string => fs.readFileSync(path.join(proj, "src", n)
 const writeSrc = (n: string, t: string): void => fs.writeFileSync(path.join(proj, "src", n), t);
 
 describe("k.compiler: forged and stale .keel/ artifacts (real binary)", () => {
-  it("a clean build makes keel check report no E1005", () => {
-    expect(originals.size).toBeGreaterThan(0);
-    expect(e1005(runCheck(proj, []).records)).toEqual([]);
-  }, 120_000);
+  it(
+    "a clean build makes keel check report no E1005",
+    () => {
+      expect(originals.size).toBeGreaterThan(0);
+      expect(e1005(runCheck(proj, []).records)).toEqual([]);
+    },
+    fixedTime(120_000),
+  );
 
-  it("An artifact with changed data and a recomputed hash (ids.json) is E1005 on exactly that file (exit 1)", () => {
-    try {
-      write("ids.json", forged("ids.json"));
-      const r = runCheck(proj, []);
-      expect(e1005(r.records)).toEqual([".keel/ids.json"]);
-      expect(r.status).toBe(1);
-    } finally {
-      restore();
-    }
-  }, 120_000);
+  it(
+    "An artifact with changed data and a recomputed hash (ids.json) is E1005 on exactly that file (exit 1)",
+    () => {
+      try {
+        write("ids.json", forged("ids.json"));
+        const r = runCheck(proj, []);
+        expect(e1005(r.records)).toEqual([".keel/ids.json"]);
+        expect(r.status).toBe(1);
+      } finally {
+        restore();
+      }
+    },
+    fixedTime(120_000),
+  );
 
-  it("A forged a11y.json, deps.json or ids.json with recomputed hash is E1005 on exactly that file", () => {
-    // seed 1337
-    fc.assert(
-      fc.property(
-        fc.constantFrom<"a11y.json" | "deps.json" | "ids.json">("a11y.json", "deps.json", "ids.json"),
-        (name) => {
-          try {
-            write(name, forged(name));
-            expect(e1005(runCheck(proj, []).records)).toEqual([`.keel/${name}`]);
-          } finally {
-            restore();
-          }
-        },
-      ),
-      { seed: 1337, numRuns: 2 },
-    );
-  }, 120_000);
-
-  it("A routes.json with data for routes that do not exist (no routes.ts) and a recomputed hash is E1005", () => {
-    const withRoutes = compile(sources, { routes: { r: ENTRY } });
-    try {
-      write("routes.json", artifactText(withRoutes.artifacts["routes.json"], withRoutes.hashes["routes.json"]));
-      expect(e1005(runCheck(proj, []).records)).toEqual([".keel/routes.json"]);
-    } finally {
-      restore();
-    }
-  }, 120_000);
-
-  it("An artifact older than its sources is E1005: editing src/Badge.tsx without rebuilding flags ids.json", () => {
-    const badge = readSrc("Badge.tsx");
-    try {
-      writeSrc(
-        "Badge.tsx",
-        `export default function Badge() {\n  return <div><span id="badge.count">3</span><span id="badge.extra">4</span></div>\n}\n`,
+  it(
+    "A forged a11y.json, deps.json or ids.json with recomputed hash is E1005 on exactly that file",
+    () => {
+      // seed 1337
+      fc.assert(
+        fc.property(
+          fc.constantFrom<"a11y.json" | "deps.json" | "ids.json">("a11y.json", "deps.json", "ids.json"),
+          (name) => {
+            try {
+              write(name, forged(name));
+              expect(e1005(runCheck(proj, []).records)).toEqual([`.keel/${name}`]);
+            } finally {
+              restore();
+            }
+          },
+        ),
+        { seed: 1337, numRuns: 2 },
       );
-      expect(e1005(runCheck(proj, []).records)).toContain(".keel/ids.json");
-    } finally {
-      writeSrc("Badge.tsx", badge);
-    }
-  }, 120_000);
+    },
+    fixedTime(120_000),
+  );
 
-  it("keel check .keel (paths restricted to the artifacts) still reports a forged ids.json as E1005", () => {
-    try {
-      write("ids.json", forged("ids.json"));
-      expect(e1005(runCheck(proj, [".keel"]).records)).toEqual([".keel/ids.json"]);
-    } finally {
-      restore();
-    }
-  }, 120_000);
+  it(
+    "A routes.json with data for routes that do not exist (no routes.ts) and a recomputed hash is E1005",
+    () => {
+      const withRoutes = compile(sources, { routes: { r: ENTRY } });
+      try {
+        write("routes.json", artifactText(withRoutes.artifacts["routes.json"], withRoutes.hashes["routes.json"]));
+        expect(e1005(runCheck(proj, []).records)).toEqual([".keel/routes.json"]);
+      } finally {
+        restore();
+      }
+    },
+    fixedTime(120_000),
+  );
+
+  it(
+    "An artifact older than its sources is E1005: editing src/Badge.tsx without rebuilding flags ids.json",
+    () => {
+      const badge = readSrc("Badge.tsx");
+      try {
+        writeSrc(
+          "Badge.tsx",
+          `export default function Badge() {\n  return <div><span id="badge.count">3</span><span id="badge.extra">4</span></div>\n}\n`,
+        );
+        expect(e1005(runCheck(proj, []).records)).toContain(".keel/ids.json");
+      } finally {
+        writeSrc("Badge.tsx", badge);
+      }
+    },
+    fixedTime(120_000),
+  );
+
+  it(
+    "keel check .keel (paths restricted to the artifacts) still reports a forged ids.json as E1005",
+    () => {
+      try {
+        write("ids.json", forged("ids.json"));
+        expect(e1005(runCheck(proj, [".keel"]).records)).toEqual([".keel/ids.json"]);
+      } finally {
+        restore();
+      }
+    },
+    fixedTime(120_000),
+  );
 });
 
 describe("k.compiler: forged artifacts through the library check()", () => {

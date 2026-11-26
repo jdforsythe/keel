@@ -7,6 +7,7 @@
 // entry's `ctx` to a page component as its second argument.
 // ASSUMED: the unset call is sent without `credentials: 'include'` (the spec names the flag only for another origin).
 // ASSUMED: the call is a GET `/api/ping` and the answer's body is not read by the assertions (the recorder answers 200 with an empty JSON object).
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -175,27 +176,35 @@ describe("k.hosting: the client entry binds keel-peer tags to its ctx", () => {
     document.head.innerHTML = "";
   });
 
-  test("With `KEEL_PEER_API=https://api.test` a `service({ contract })` call from the client entry fetches `https://api.test` plus the path with credentials included", async () => {
-    const { root, status } = build({ KEEL_PEER_API: "https://api.test" });
-    expect(status).toBe(0);
-    const seen = await run(root, "https://web.test/");
-    expect(seen.length).toBeGreaterThan(0);
-    for (const r of seen) {
-      expect(r.url.startsWith("https://api.test/api/ping")).toBe(true);
-      expect(r.credentials).toBe("include");
-    }
-  }, 180_000);
+  test(
+    "With `KEEL_PEER_API=https://api.test` a `service({ contract })` call from the client entry fetches `https://api.test` plus the path with credentials included",
+    async () => {
+      const { root, status } = build({ KEEL_PEER_API: "https://api.test" });
+      expect(status).toBe(0);
+      const seen = await run(root, "https://web.test/");
+      expect(seen.length).toBeGreaterThan(0);
+      for (const r of seen) {
+        expect(r.url.startsWith("https://api.test/api/ping")).toBe(true);
+        expect(r.credentials).toBe("include");
+      }
+    },
+    fixedTime(180_000),
+  );
 
-  test("With `KEEL_PEER_API` unset a `service({ contract })` call from the client entry goes to the document's origin, without credentials included", async () => {
-    const { root, status } = build({});
-    expect(status).toBe(0);
-    const html = fs.readFileSync(path.join(root, "dist", "web", "index.html"), "utf8");
-    expect(html).not.toContain('name="keel-peer"');
-    const seen = await run(root, "https://web.test/");
-    expect(seen.length).toBeGreaterThan(0);
-    for (const r of seen) {
-      expect(r.url.startsWith("https://web.test/api/ping")).toBe(true);
-      expect(r.credentials).not.toBe("include");
-    }
-  }, 180_000);
+  test(
+    "With `KEEL_PEER_API` unset a `service({ contract })` call from the client entry goes to the document's origin, without credentials included",
+    async () => {
+      const { root, status } = build({});
+      expect(status).toBe(0);
+      const html = fs.readFileSync(path.join(root, "dist", "web", "index.html"), "utf8");
+      expect(html).not.toContain('name="keel-peer"');
+      const seen = await run(root, "https://web.test/");
+      expect(seen.length).toBeGreaterThan(0);
+      for (const r of seen) {
+        expect(r.url.startsWith("https://web.test/api/ping")).toBe(true);
+        expect(r.credentials).not.toBe("include");
+      }
+    },
+    fixedTime(180_000),
+  );
 });

@@ -1,15 +1,15 @@
 // @vitest-environment happy-dom
 // Spec: k.aria, clause "With `brandTokens`, a `button` `Part` with `pressed` from a signal and `states={{ pressed: { bg: 'accent' } }}` has the `accent` rule under `[aria-pressed=\"true\"]` in the CSS file, and setting the signal true changes only its `aria-pressed` attribute."
 // Spec: k.aria, clause "With `brandTokens`, `states={{ disabled: { fg: 'textSecondary' } }}` puts its rule under both `:disabled` and `[aria-disabled=\"true\"]`, so a `menuitemradio` with `disabled` true matches it; `states={{ current: { weight: 'bold' } }}` matches a `gridcell` with `current: 'date'` and not one with `current` false."
-// Spec: k.aria, clause "`states={{ pressed: { bg: 'accent' } }}` on a base element `Button` is a type error."
-// Spec: k.aria, clause "There, on `Part` and in a `look` or `base` set, `states` takes every state below; on a base element, the first four. Each state's rule matches any of its selectors:" (the states table: `hover`, `focusVisible`, `active` `:hover`, `:focus-visible`, `:active`; `disabled` `:disabled`, `[aria-disabled=\"true\"]`; `selected` `[aria-selected=\"true\"]`; `checked` `[aria-checked=\"true\"]`, `:checked`; `pressed` `[aria-pressed=\"true\"]`; `expanded` `[aria-expanded=\"true\"]`; `current` `[aria-current]:not([aria-current=\"false\"])`; `highlighted` `[data-k-highlighted]`)
+// Spec: k.aria, clause "`states={{ pressed: { bg: 'accent' } }}` on a base element `Button` is a type error, asserted by `tsc --noEmit` over `conformance/`, which the package's `check` script runs (`vitest run` does not type-check)."
+// Spec text (k.aria): "There, on `Part` and in a `look` or `base` set, `states` takes every state below; on a base element, the first four. Each state's rule matches any of its selectors:" (the states table: `hover`, `focusVisible`, `active` `:hover`, `:focus-visible`, `:active`; `disabled` `:disabled`, `[aria-disabled=\"true\"]`; `selected` `[aria-selected=\"true\"]`; `checked` `[aria-checked=\"true\"]`, `:checked`; `pressed` `[aria-pressed=\"true\"]`; `expanded` `[aria-expanded=\"true\"]`; `current` `[aria-current]:not([aria-current=\"false\"])`; `highlighted` `[data-k-highlighted]`)
 // Seed: 1337 (fc.assert below).
 // The CSS half runs the compiler's collection (`compile`) into `compileStyles`, as packages/compiler/conformance/part-styles.test.ts and aria-states-css.test.ts do for `highlighted`; the DOM half asserts that each emitted selector matches the element the spec names, by `Element.matches` in happy-dom.
-// "A type error" (the last clause) is asserted with `expectTypeOf` on the `states` key set, which `tsc` judges; vitest at run time cannot fail it (no `@ts-expect-error` is used).
+// The type case is asserted by `tsc --noEmit` over `conformance/` (packages/ui/tsconfig.json includes `conformance`; the `check` script runs `tsc --noEmit && biome check src test`). "A type error" (the last clause) is asserted with `expectTypeOf` on the `states` key set, which `tsc` judges; vitest at run time cannot fail it (no `@ts-expect-error` is used).
 // ASSUMPTIONS: a usage under `pressed`, `current` or `disabled` is `{ props, state }` as the other states are; the state names are the table's. "The `accent` rule under `[aria-pressed=\"true\"]`" is the class rule `.<c>[aria-pressed="true"]`.
 import { compile } from "@keel/compiler";
+import type { Button } from "@keel/ui";
 import { Part } from "@keel/ui/aria";
-import { Button } from "@keel/ui";
 import { brandTokens } from "@keel/ui/brand";
 import { compileStyles } from "@keel/ui/css";
 import fc from "fast-check";

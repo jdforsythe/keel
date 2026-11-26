@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { compile } from "../compile.ts";
+import { shippedTokensPlugin } from "../hosting/shippedTokensPlugin.ts";
 import { appLibraries } from "../std/appLibraries.ts";
 import { libraryRel } from "../std/libraryRel.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
@@ -162,6 +163,7 @@ export async function evaluateProject(input: {
     // A stylesheet a host element code file imports (k.host-code) is the browser build's asset: here it is nothing.
     loader: { ".css": "empty" },
     plugins: [
+      shippedTokensPlugin(root),
       {
         name: "keel-jsx",
         setup(b) {

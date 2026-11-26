@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // @vitest-environment node
 // Red team of the log scrub at scale (k.privacy Server log): values and texts of 80,000 characters and more, 20,000
 // values at once, and the property that no value of any text makes the scrub throw or leaves a copy. The small cases
@@ -11,7 +12,7 @@ import { stepBounds } from "./stepBounds.ts";
 const SEED = 1337;
 // The cases scrub texts of hundreds of thousands of characters and run 300 generated cases; a starved worker needs
 // more than the default 5 s.
-const SCALE_MS = 60_000;
+const SCALE_MS = fixedTime(60_000);
 
 const chars = fc.oneof(
   fc.constantFrom(

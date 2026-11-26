@@ -1,0 +1,39 @@
+{
+  "clipped": {
+    "a11y": "accessibility",
+    "deps": "dependencies",
+    "compat": "compatibility",
+    "e2e": "end-to-end",
+    "pii": "personal data",
+    "sim": "simulation",
+    "config": "configuration",
+    "env": "environment",
+    "impl": "implementation",
+    "info": "information",
+    "repo": "repository",
+    "auth": "authentication",
+    "i18n": "locales"
+  },
+  "names": [
+    "CLI",
+    "MCP",
+    "LSP",
+    "API",
+    "CSP",
+    "DOM",
+    "JSX",
+    "JSON",
+    "HTML",
+    "HTTP",
+    "CSS",
+    "URL",
+    "CI",
+    "WCAG",
+    "OpenAPI",
+    "SQLite",
+    "PGlite",
+    "GitHub",
+    "iOS",
+    "Z3"
+  ]
+}

@@ -14,6 +14,7 @@ import { vocabulary } from "../internal/vocabulary.ts";
 import type { StyleProp } from "../types/StyleProp.ts";
 import type { Tokens } from "../types/Tokens.ts";
 import { schemesOf } from "./schemesOf.ts";
+import { stateSelectors } from "./stateSelectors.ts";
 
 type Rule = {
   readonly cls: string;
@@ -98,7 +99,7 @@ function rootBlocks(tokens: Tokens): string[] {
 }
 
 const selectorsOf = (sel: string, state: PartState | undefined): string =>
-  (states.find((s) => s.key === state)?.sel ?? [""]).map((s) => `${sel}${s}`).join(",");
+  (state === undefined ? [""] : stateSelectors(state)).map((s) => `${sel}${s}`).join(",");
 
 const ruleText = (r: Rule): string => `${selectorsOf(`.${r.cls}`, r.state)}{${r.body}}`;
 

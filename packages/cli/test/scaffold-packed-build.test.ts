@@ -20,6 +20,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { fixedTime } from "@keel/tooling/test-time";
 import { expect, it } from "vitest";
 import { runEngine } from "../src/internal/runEngine.ts";
 
@@ -198,24 +199,28 @@ function install(cwd: string): string {
 }
 
 // The time limit covers the packed packages' builds: minutes on a checkout with none, a second from turbo's cache.
-it("a scaffolded project builds with keel build from exactly its listed dependencies", async () => {
-  const e = await runEngine(["scaffold", "project", "shop"], { cwd: "/work", files: [] });
-  expect(e.result.code).toBe(0);
-  const cwd = realpathSync(mkdtempSync(join(tmpdir(), "keel-packed-build-")));
-  try {
-    for (const w of e.writes) {
-      if (w.content === null) continue;
-      const path = join(cwd, w.path.replace(/^\/work\/shop\//, "").replace(/^shop\//, ""));
-      mkdirSync(dirname(path), { recursive: true });
-      writeFileSync(path, w.content);
+it(
+  "a scaffolded project builds with keel build from exactly its listed dependencies",
+  async () => {
+    const e = await runEngine(["scaffold", "project", "shop"], { cwd: "/work", files: [] });
+    expect(e.result.code).toBe(0);
+    const cwd = realpathSync(mkdtempSync(join(tmpdir(), "keel-packed-build-")));
+    try {
+      for (const w of e.writes) {
+        if (w.content === null) continue;
+        const path = join(cwd, w.path.replace(/^\/work\/shop\//, "").replace(/^shop\//, ""));
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, w.content);
+      }
+      ship(packed(listed(cwd)));
+      const keel = install(cwd);
+      const r = spawnSync(process.execPath, [keel, "build"], { cwd, env: childEnv(), encoding: "utf8" });
+      const out = `${r.stdout}${r.stderr}`;
+      expect(r.status, out).toBe(0);
+      expect(out.trim().split("\n").at(-1), out).toMatch(/^ok build /);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
     }
-    ship(packed(listed(cwd)));
-    const keel = install(cwd);
-    const r = spawnSync(process.execPath, [keel, "build"], { cwd, env: childEnv(), encoding: "utf8" });
-    const out = `${r.stdout}${r.stderr}`;
-    expect(r.status, out).toBe(0);
-    expect(out.trim().split("\n").at(-1), out).toMatch(/^ok build /);
-  } finally {
-    rmSync(cwd, { recursive: true, force: true });
-  }
-}, 600_000);
+  },
+  fixedTime(600_000),
+);

@@ -1,5 +1,6 @@
 import { clipMessage } from "@keel/schema/internal";
 
+import { traceDetail } from "./internal/traceDetail.ts";
 import type { TestDiag } from "./types/TestDiag.ts";
 import type { TestReport } from "./types/TestReport.ts";
 
@@ -72,18 +73,31 @@ function uncaught(e: unknown, cwd: string): TestDiag {
 
 /** A fast-check failure's first line, and its lines that replay and show it: seed and path, the shrunk counterexample, the error. */
 const PROPERTY = /^Property failed after /;
+const TRACE = /^E1729 /;
+/** An E1704 of `properties` or `simulate`: its lines after the first hold the shrunk inputs (`props`, `payload`, `state`). */
+const SHRUNK = /^E1704 /;
+const SHRUNK_LINE = /^ {2}(?:props|payload|state): /;
 const PROPERTY_LINE = /^(?:\{ seed: |Counterexample: |Shrunk \d|Got error: )/;
 /** The longest line a failure's detail keeps (a counterexample can be a whole generated page). */
 const DETAIL = 512;
 
 /**
  * The failure's own lines the message could not hold: its first line when the clipped message cut it, and for a
- * fast-check failure its seed and path, counterexample, shrink count and error line, each clipped to DETAIL.
+ * fast-check failure its seed and path, counterexample, shrink count and error line, for an E1704 its shrunk `props`, `payload` and `state` lines, and for E1729 the two trace
+ * entries that differ without their data (`traceDetail`), each clipped to DETAIL.
  */
 function detail(message: string, shown: string, said: string): string[] {
   const lines = strip(message).split("\n");
   const out = shown.includes(said) ? [] : [said];
   if (PROPERTY.test(lines[0] ?? "")) out.push(...lines.filter((l) => PROPERTY_LINE.test(l)));
+  if (SHRUNK.test(lines[0] ?? ""))
+    out.push(
+      ...lines
+        .slice(1)
+        .filter((l) => SHRUNK_LINE.test(l))
+        .map((l) => l.trim()),
+    );
+  if (TRACE.test(lines[0] ?? "")) out.push(...traceDetail(lines[1], lines[2]));
   return out.map((l) => clipMessage(l, DETAIL));
 }
 
@@ -105,7 +119,7 @@ function compactDiff(d: string | undefined): string | undefined {
  * a harness failure carrying an E17xx `code` (E1704 `properties` and `simulate`, E1708-E1710 `explore`) as that code
  * at the test file's own frame, the message `first line (suite > test)`; each with
  * a `fix` carrying the failure's first line when the message cut it, a fast-check failure's seed and path,
- * counterexample, shrink count and error line, the compact diff and up to four more app frames; a file that failed outside any test gets
+ * counterexample, shrink count and error line, an E1729's two differing trace entries, the compact diff and up to four more app frames; a file that failed outside any test gets
  * one T0001 at line 1 and counts as one test, failed (so `failed` never exceeds `tests`); each error outside any test's result (vitest's unhandled errors, or one `keel test` held
  * around the run) one T0001 `uncaught: <code> <first line>` at its first app frame, else at 1:1 of its
  * `VITEST_TEST_PATH`, else unlocated. Pure; shared by the cli and the repository's vitest reporter.

@@ -2,9 +2,9 @@
 // Spec: k.looks, clause "`src/acmeTokens.ts` given a spread `...other` in `color` is one E1812 at the spread with message `acmeTokens.ts holds a spread; it is one defineTokens literal`; a `color` key `'accent'` is one E1812 with message `acmeTokens names color \"accent\" without acme.`; a `\"./tokens\"` `keel` target `./src/tokens.ts` is one E1812 at `exports`."
 // Spec: k.looks, clause "In the library's own folder with root `tokens.ts` composing the shipped object as the fix writes it, `keel check` reports one E1804 at the `'acme.badge'` key of `src/acmeTokens.ts` with message `look.acme.badge: fg \"acme.ink\" on bg \"acme.accent\" is 4.42:1 in light, needs 4.5:1` when `acme.accent` is `#787878`, and none when it is `#0B5CAD`."
 // Spec: k.looks, clause "In that own folder, a fixture key `'acme.accent': '#000000'` after the spread is one E1813 with message `color \"acme.accent\": the fixture overrides acme's default`, and `keel pack` then reports it and one E1164 naming `check`."
-// Spec: k.looks, clause "E1811 a library file's token name its shipped tokens lack (`<prop>=\"<value>\" is not in <id>Tokens`, `breakpoint \"<key>\" is not in <id>Tokens`, `look=\"<value>\" is not in <id>Tokens`; with no `./tokens` entry each ends `: <name> ships no ./tokens entry` in place of ` is not in <id>Tokens`; `<value>` clipped at 20 units as k.check Diagnostics clips a message (its first 17 units and `...`); fix: none)"
-// Spec: k.looks, clause "E1812 a `./tokens` entry whose `keel` target is not `./src/<id>Tokens.ts`, at `exports` (`./tokens keel target is not ./src/<id>Tokens.ts`), or a shipped tokens file out of form, at the first node out of form (`<id>Tokens.ts holds <what>; it is one defineTokens literal`, `<what>` one of `another import`, `another statement`, `a spread`, `a type assertion` (`as`, `satisfies`), `a computed value`; `<id>Tokens names <group> \"<token>\" without <id>.`; `<id>Tokens holds base`; `<id>Tokens holds schemes`; `look \"<look>\" names <group> \"<token>\", not in <id>Tokens`; `<id>Tokens fails TokenSchema at <path>`; fix: none)"
-// Spec: k.looks, clause "E1813 a name with a `.` in the app's tokens that no listed library ships, or a fixture key overriding a default (In an app, Own folder; fix: none)" (the fixture half; the app half is library-looks-e1810.test.ts).
+// Rules (k.looks): "E1811 a library file's token name its shipped tokens lack (`<prop>=\"<value>\" is not in <id>Tokens`, `breakpoint \"<key>\" is not in <id>Tokens`, `look=\"<value>\" is not in <id>Tokens`; with no `./tokens` entry each ends `: <name> ships no ./tokens entry` in place of ` is not in <id>Tokens`; `<value>` clipped at 20 units as k.check Diagnostics clips a message (its first 17 units and `...`); fix: none)"
+// Rules (k.looks): "E1812 a `./tokens` entry whose `keel` target is not `./src/<id>Tokens.ts`, at `exports` (`./tokens keel target is not ./src/<id>Tokens.ts`), or a shipped tokens file out of form, at the first node out of form (`<id>Tokens.ts holds <what>; it is one defineTokens literal`, `<what>` one of `another import`, `another statement`, `a spread`, `a type assertion` (`as`, `satisfies`), `a computed value`; `<id>Tokens names <group> \"<token>\" without <id>.`; `<id>Tokens holds base`; `<id>Tokens holds schemes`; `look \"<look>\" names <group> \"<token>\", not in <id>Tokens`; `<id>Tokens fails TokenSchema at <path>`; fix: none)"
+// Rules (k.looks): "E1813 a name with a `.` in the app's tokens that no listed library ships, or a fixture key overriding a default (In an app, Own folder; fix: none)" (the fixture half; the app half is library-looks-e1810.test.ts).
 // Seed: 1337 (fc.assert below). The pack half of the last clause (`keel pack` reports it and one E1164 naming `check`) is packages/cli/conformance/library-looks-pack.test.ts.
 // ASSUMPTIONS: see library-looks-support.ts. The own folder is the library's files at the root of the files `check()` is given (k.library-pack Own folder), its root `tokens.ts` importing `./src/acmeTokens.ts`. A shipped-file diagnostic is at the file's own path (`node_modules/@acme/ui/src/acmeTokens.ts` in an app, `src/acmeTokens.ts` in the own folder). ``<value>` of E1811 is clipped as k.check Diagnostics clips a message: at 20 units or fewer it is whole, over 20 its first 17 units and `...`. E1810 to E1814 are judged over the tokens artifact the root `tokens.ts` evaluates to (`composed`).
 // AMBIGUOUS: "a spread" is `...other` in a group, `holds schemes` is asserted for `schemes: ['light']`, though an array is also no string or object literal ("a computed value"): the spec does not say which message wins, and the reading asserted is that a key the file may not hold is named first.
@@ -12,7 +12,6 @@ import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { CHECK_CASE_BOUND } from "./check-time.ts";
-import { manifestFile } from "./module-support.ts";
 import {
   type Files,
   PACKAGE_JSON,
@@ -32,6 +31,7 @@ import {
   shippedSource,
   sourceOf,
 } from "./library-looks-support.ts";
+import { manifestFile } from "./module-support.ts";
 
 const FIXED = fixedTokens();
 const e1811 = (props: string, over: Files = [], drop: string[] = []) =>
