@@ -1,5 +1,5 @@
 {
-  "commit": "7a7b425e5fd070526dd7d04f64cb5df859a8d785",
+  "commit": "fac6bd53066ad4822e87a7437bdd2326166acc28",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-26T20:57:47.799Z",
+  "generatedAt": "2026-11-26T21:26:12.850Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1412,10 +1412,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 1179,
+        "example": 1181,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 2,
+        "none": 6,
         "probabilistic": 253,
         "proven": 44
       },
@@ -1669,7 +1669,7 @@
         },
         "k.docs": {
           "byRung": {
-            "example": 13,
+            "example": 19,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1677,8 +1677,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 13,
-          "verified": 13
+          "total": 19,
+          "verified": 19
         },
         "k.drive": {
           "byRung": {
@@ -2813,29 +2813,29 @@
         },
         "std.postgres": {
           "byRung": {
-            "example": 16,
+            "example": 15,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 1,
             "probabilistic": 4,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 20,
-          "verified": 20
+          "verified": 19
         },
         "std.postgres-changes": {
           "byRung": {
-            "example": 6,
+            "example": 3,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 3,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 6,
-          "verified": 6
+          "verified": 3
         },
         "std.report": {
           "byRung": {
@@ -3020,11 +3020,11 @@
           "verified": 9
         }
       },
-      "total": 1484,
-      "verified": 1482
+      "total": 1490,
+      "verified": 1484
     },
     "evidenceByRung": {
-      "example": 2620,
+      "example": 2622,
       "exhaustive": 21,
       "monitored": 8,
       "probabilistic": 458,
@@ -3596,10 +3596,10 @@
       "total": 641,
       "verified": 588
     },
-    "items": 2805,
+    "items": 2811,
     "negativeTypes": 90,
     "unsafe": 33,
-    "verified": 2750
+    "verified": 2752
   },
   "mutation": {
     "packages": {
