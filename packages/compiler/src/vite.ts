@@ -34,6 +34,7 @@ import { isNodeBuiltin } from "./internal/isNodeBuiltin.ts";
 import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
 import { keelMark } from "./internal/keelMark.ts";
+import type { HeldLibrary } from "./internal/libraryOf.ts";
 import { libraryRegisters } from "./internal/libraryRegisters.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
@@ -46,6 +47,7 @@ import { projectManifests } from "./internal/projectManifests.ts";
 import { readJson } from "./internal/readJson.ts";
 import { registeredIn } from "./internal/registeredIn.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
+import { rewriteLiftedReads } from "./internal/rewriteLiftedReads.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { shortPath } from "./internal/shortPath.ts";
 import { stubCode } from "./internal/stubCode.ts";
@@ -342,6 +344,11 @@ export default function (): {
   let ownLibrary = false;
   /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
   let hosting: string | undefined;
+  /**
+   * A `node` deployable's build: the libraries its server bundle reads, whose bundled package files' literal `../` reads
+   * inside their package are rewritten (`rewriteLiftedReads`, k.server-deps); unset in any other run.
+   */
+  let liftedLibraries: readonly HeldLibrary[] | undefined;
   /** The app modules the client entry's service map names, and the client's own; unset until the entry loads. */
   let mapped: ReadonlySet<string> | undefined;
   const modules = new Map<string, Entry>();
@@ -895,6 +902,7 @@ export default function (): {
       const at = path.resolve(user.root ?? process.cwd());
       // A `static` deployable's server bundle is the build's alone: it renders the documents and is removed.
       const ssrOut = built ? `node_modules/.keel/prerender/${name}` : out;
+      if (!built) liftedLibraries = allLibraries(at);
       return {
         ...own,
         build: {
@@ -1209,15 +1217,21 @@ export default function (): {
     },
     transform(this: unknown, code, id, options) {
       if (options?.ssr === false) note(code, id);
+      // A `node` deployable's server bundle: a package file's `../` read inside its package reads its copy.
+      const lifted =
+        liftedLibraries !== undefined && command === "build" && options?.ssr === true
+          ? rewriteLiftedReads(id, code, liftedLibraries)
+          : null;
+      const kept = lifted === null ? null : { code: lifted, map: null };
       const rel = relOf(id);
-      if (rel === null || stubbed.has(id) || (devStubbed.has(id) && forBrowser(this, options))) return null;
-      const entry = compileModule(rel, code);
+      if (rel === null || stubbed.has(id) || (devStubbed.has(id) && forBrowser(this, options))) return kept;
+      const entry = compileModule(rel, lifted ?? code);
       const dupes = flush()
         .filter((d) => d.file === rel)
         .map((d) => `E1404 ${rel} duplicate element id "${d.id.slice(0, 30)}" (also in another module)`);
       const failures = [...entry.failures, ...dupes];
       if (failures.length > 0) throw new Error(failures.join("\n"));
-      return entry.output === undefined ? null : { code: entry.output.code, map: null };
+      return entry.output === undefined ? kept : { code: entry.output.code, map: null };
     },
     watchChange(id, change) {
       const rel = relOf(id);
