@@ -1,7 +1,7 @@
 import { scope } from "@keel/reactive";
 import { live } from "@keel/std-live";
-import { fixedTime } from "@keel/tooling/test-time";
 import { simulate } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { expect, it } from "vitest";
 import { copy } from "../modules/shopping/copy.store.ts";
 import { hydrate } from "../modules/shopping/hydrate.transaction.ts";
