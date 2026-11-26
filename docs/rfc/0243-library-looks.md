@@ -247,6 +247,7 @@ ARIA's authoring practices, pattern by pattern, against k.aria and k.roles:
 Applied in this commit.
 - k.looks (new, `proposed`): Names, Shipped tokens, Needs, In an app, Fix, Own folder, Rules (E1810 to E1813), Conformance #1 to #11.
 - k.schemes (new, `proposed`): Schemes, CSS, Choice, First paint, Checks, Rules (E1814), Conformance #1 to #10.
+- Settled for the conformance-writer: E1810 to E1814 judge the evaluated tokens and read `tokens.ts`'s text only for positions and the fix; no tokens, no judgement. E1813 sits at the opening quote. A shipped `base` or `schemes` key gets its own E1812 message. The fix's layout is the formatter's (`biome format`). Clipping at 20 units keeps 17 units and `...`. k.looks #11 names the border's own property. The server reads `schemes.json` from its artifacts folder, beside `routes.json` and `std.json`. k.schemes #9 covers `client` deployables too. k.check's list of fixtures that carry a fix gains E1810; the code block's comment padding is trimmed so k.check stays within 3,100.
 - k.roles (to `implemented`): Roles gains seven rows and the `button` and `menuitem` props; Attributes gains their rows; Keys is new; Conformance gains #9 to #14. No existing clause changes.
 - k.ui (to `implemented`): Tokens names `schemes` and library names and points color pairs to k.schemes; Base elements lists `SchemeSelect`. No conformance clause changes. The k.ui example's pairs are the app's own colors, so its "both schemes" clause holds.
 - Map: rows k.looks and k.schemes; k.ui and k.roles read `implemented`. `tooling/docs-owners.json`: k.looks under `@keel/check`, k.schemes under `@keel/ui`.
@@ -261,6 +262,12 @@ By the `conformance-writer`, from the spec text.
 - `packages/ui/conformance/schemes-css.test.ts`: k.schemes #1 to #4. `packages/check/conformance/schemes-contrast.test.ts`: #5 and #10. `packages/ui/conformance/scheme-select.test.ts`: #6 and #7. `packages/server/conformance/scheme-cookie.test.ts`: #8 (wherever `createApp`'s document conformance lives). `packages/cli/conformance/scheme-static-script.test.ts`: #9.
 - `packages/ui/conformance/roles-more.test.ts`: k.roles #9 to #14.
 - `fixtures-by-code.ts` and `fix-diffs.test.ts`: fixtures for E1810 (with its fix), E1811, E1812, E1813, E1814.
+- Owed as end-to-end cases for RFC 0244's runner (a real browser over the built app), since happy-dom cannot show them:
+  - A `node` page with both schemes and `keel-scheme=dark` paints dark from the first frame, and a `static` page with the same cookie paints dark before its body parses: no light frame, for both.
+  - With no choice made, a page with both schemes follows the browser's `prefers-color-scheme` (emulated light and dark), and `color-scheme` darkens the native controls.
+  - `data-k-scheme="light"` under an emulated dark preference keeps the light values.
+  - On https, the cookie that `SchemeSelect` writes carries `Secure`.
+  - Real Space and Enter on a focused `switch` and on a `button` with `pressed` each call `onClick` once.
 
 ## Migration
 None. No in-tree app, example or library writes a color pair or a dotted name, and no library writes a token literal in `src/` (`libraries/charts` uses `styles`). The scaffolds are unchanged.
