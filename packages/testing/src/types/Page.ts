@@ -38,5 +38,6 @@ export interface Page {
   style(id: string, names: readonly StyleName[]): Promise<Partial<Record<StyleName, string>>>;
   resume(): Promise<void>;
   problems(): readonly Problem[];
-  open(path: string): Promise<Page>;
+  /** Another tab in this context (its cookies and storage); `hold` as `Served.open`'s. */
+  open(path: string, options?: { readonly hold?: boolean }): Promise<Page>;
 }

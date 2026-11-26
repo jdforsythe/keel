@@ -11,6 +11,7 @@ import { pageScript } from "./pageScript.ts";
 import { quiet } from "./quiet.ts";
 import { seconds } from "./seconds.ts";
 import { trackTab } from "./trackTab.ts";
+import { withoutScripts } from "./withoutScripts.ts";
 
 /**
  * A new browser context of a serve (k.e2e-page open) through the serve's proxy, recording a trace from the start, and
@@ -32,7 +33,6 @@ export async function openContext(o: {
 }): Promise<Page> {
   const browser = await fileBrowser();
   const context = await browser.newContext({
-    javaScriptEnabled: o.scripts,
     serviceWorkers: "allow",
     ...(o.proxy === "" ? {} : { proxy: { server: o.proxy } }),
     // Chromium trusts the loopback certificate by its key (fileBrowser.ts); the other engines take no such list.
@@ -54,6 +54,18 @@ export async function openContext(o: {
     const tab = await context.newPage();
     const state: TabState = trackTab(tab, hold);
     run.tabs.push(state);
+    // Scripts off: no script of the page reaches it, and each document arrives with its script elements taken out,
+    // so the page script of this harness still reads the page.
+    if (!o.scripts)
+      await tab.route("**/*", async (route) => {
+        const r = route.request();
+        if (r.resourceType() === "script") return route.abort("blockedbyclient");
+        if (r.resourceType() !== "document") return route.continue();
+        const answer = await route.fetch();
+        const type = answer.headers()["content-type"] ?? "";
+        if (!type.includes("text/html")) return route.fulfill({ response: answer });
+        await route.fulfill({ response: answer, body: withoutScripts(await answer.text()) });
+      });
     if (hold)
       await tab.route("**/*", async (route) => {
         if (state.holding && route.request().resourceType() === "script") {
@@ -63,8 +75,10 @@ export async function openContext(o: {
         }
         await route.continue().catch(() => undefined);
       });
-    const page = makePage(state, { project: o.project, origin: o.origin, run, verb: o.verb, failed: o.failed }, (p) =>
-      tabAt(p, false),
+    const page = makePage(
+      state,
+      { project: o.project, origin: o.origin, run, verb: o.verb, failed: o.failed },
+      (p, h) => tabAt(p, h),
     );
     const ms = boundMs();
     const from = performance.now();

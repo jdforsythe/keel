@@ -63,9 +63,28 @@ async function requestOptions(init: RequestInit): Promise<{
  * A page handle over `state`'s tab (k.e2e-page Verbs): ids alone, each checked against the project first (E1705), each
  * wait bounded and E1735 when it runs out, each verb that acts resolving once the tab is quiet.
  */
-export function makePage(state: TabState, deps: PageDeps, openTab: (path: string) => Promise<Page>): Page {
+export function makePage(
+  state: TabState,
+  deps: PageDeps,
+  openTab: (path: string, hold: boolean) => Promise<Page>,
+): Page {
   const { tab } = state;
   const { project, origin } = deps;
+
+  /**
+   * `id` checked before the verb waits (k.e2e-page Verbs): known to the project's source (`knownId`), else shown on the
+   * page now, a widget's id composed at run time, else E1705 with no wait and no request sent.
+   */
+  const checked = async (id: string): Promise<string> => {
+    try {
+      return knownId(project, id);
+    } catch (e) {
+      if (!(e instanceof Error) || Reflect.get(e, "code") !== "E1705") throw e;
+      const present = await tab.evaluate((i) => document.getElementById(i) !== null, id).catch(() => false);
+      if (present) return id;
+      throw e;
+    }
+  };
 
   /** Runs `act` as one verb: its mark, and the failing mark when it rejects. */
   const verb = async <T>(act: () => Promise<T>): Promise<T> => {
@@ -194,7 +213,7 @@ export function makePage(state: TabState, deps: PageDeps, openTab: (path: string
     });
 
   const page: Page = {
-    fire: (id, event) => verb(() => fireOne(knownId(project, id), event)),
+    fire: (id, event) => verb(async () => fireOne(await checked(id), event)),
     press: (key) =>
       verb(async () => {
         const ms = boundMs();
@@ -202,16 +221,16 @@ export function makePage(state: TabState, deps: PageDeps, openTab: (path: string
         await tab.keyboard.press(key);
         await settled("press", key, ms, from);
       }),
-    find: (id) => verb(() => shownNow("find", knownId(project, id), () => found(id), boundMs())),
+    find: (id) => verb(async () => shownNow("find", await checked(id), () => found(id), boundMs())),
     findAll: async (prefix) => {
       await ensureScript(tab);
       return tab.evaluate((p) => globalThis.__keelE2e?.findAll(p) ?? [], prefix);
     },
-    until: (id, match, wait?: Wait) => verb(() => waitFor("until", knownId(project, id), match, boundMs(wait))),
+    until: (id, match, wait?: Wait) => verb(async () => waitFor("until", await checked(id), match, boundMs(wait))),
     settle: () => verb(() => settled("settle", "", boundMs())),
     a11y: (id) =>
       verb(async (): Promise<A11yNode> => {
-        const at = id === undefined ? null : knownId(project, id);
+        const at = id === undefined ? null : await checked(id);
         const node = await shownNow(
           "a11y",
           at ?? "",
@@ -306,10 +325,10 @@ export function makePage(state: TabState, deps: PageDeps, openTab: (path: string
       }),
     layout: (id) =>
       verb(
-        (): Promise<Layout> =>
+        async (): Promise<Layout> =>
           shownNow(
             "layout",
-            id === undefined ? "" : knownId(project, id),
+            id === undefined ? "" : await checked(id),
             () =>
               ensureScript(tab).then(() => tab.evaluate((i) => globalThis.__keelE2e?.layout(i) ?? null, id ?? null)),
             boundMs(),
@@ -319,7 +338,7 @@ export function makePage(state: TabState, deps: PageDeps, openTab: (path: string
       verb(async () => {
         const values = await shownNow(
           "style",
-          knownId(project, id),
+          await checked(id),
           () =>
             ensureScript(tab).then(() =>
               tab.evaluate(([i, n]) => globalThis.__keelE2e?.style(i, n) ?? null, [id, [...names]] as const),
@@ -348,7 +367,7 @@ export function makePage(state: TabState, deps: PageDeps, openTab: (path: string
         if (!check.ok) throw fail("E1720", `the document did not resume in place: ${check.why}`, { why: check.why });
       }),
     problems: () => state.problems.splice(0),
-    open: (path) => openTab(path),
+    open: (path, options) => openTab(path, options?.hold === true),
   };
   return page;
 }

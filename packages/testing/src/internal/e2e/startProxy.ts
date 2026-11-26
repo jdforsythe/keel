@@ -12,7 +12,8 @@ const PEER = /^([a-z0-9-]+)\.peer\.keel\.test$/;
 /**
  * A serve's proxy on 127.0.0.1: a request for a mapped origin goes to its `answer` (`https` ended with the shipped
  * loopback certificate), one for `<name>.peer.keel.test` to that deployable's port (`peers`), and every other request
- * on, unchanged. Loopback requests never reach it: a browser sends them direct.
+ * on, unchanged; a loopback one (Playwright sends those through it too) to its port, an answer cut off there cut off
+ * for the page.
  */
 export async function startProxy(
   origins: ReadonlyMap<string, AnswerEntry>,
@@ -25,11 +26,15 @@ export async function startProxy(
     const out = request({ host, port, path, method: req.method, headers: req.headers }, (r) => {
       res.writeHead(r.statusCode ?? 502, r.headers);
       r.pipe(res);
+      // An answer cut off upstream (a stopped deployable's event stream) is cut off for the page too.
+      r.on("aborted", () => res.destroy());
+      r.on("error", () => res.destroy());
     });
     out.on("error", () => {
-      if (!res.headersSent) res.writeHead(502);
-      res.end();
+      if (res.headersSent) res.destroy();
+      else res.writeHead(502).end();
     });
+    res.on("close", () => out.destroy());
     req.pipe(out);
   };
 

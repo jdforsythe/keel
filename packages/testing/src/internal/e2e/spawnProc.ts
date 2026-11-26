@@ -77,7 +77,9 @@ export function spawnProc(opts: {
         if (line.trim() === "") return;
         const r = parseLogLine(line);
         log.push(r);
-        if (r.kind === "summary" && r.name === "listen") void probe();
+        // The listen record, json or compact (`env` may set `KEEL_FORMAT`).
+        if ((r.kind === "summary" && r.name === "listen") || (r.kind === "other" && /^ok listen/.test(r.text)))
+          void probe();
         else if (!opts.waitListen) void probe();
       };
       for (const s of [c.stdout, c.stderr]) if (s !== null) createInterface({ input: s }).on("line", onLine);
