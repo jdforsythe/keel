@@ -16,4 +16,4 @@ status: implemented
 - `params` failing the channel's schema and a payload over 7,900 bytes each throw E2460 and run no statement.
 - With a `follow` open, a `pg_stat_activity` backend has `application_name` `keel-listen-<pid>`.
 - On Postgres 17, terminating the listening connection's backend reports `lost` to each open follow; the next `follow` opens a new connection and gets the next change.
-- On Postgres 17, with `KEEL_POSTGRES_URL` naming a port nothing listens on, `follow` resolves a function, and its `on` gets `{ kind: 'lost' }` exactly once.
+- With `KEEL_POSTGRES_URL` a `postgres:` URL naming a port nothing listens on (no server needed), `follow` resolves a function, and its `on` gets `{ kind: 'lost' }` exactly once.
