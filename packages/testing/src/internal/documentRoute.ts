@@ -2,7 +2,7 @@ import { type Ctx, type Net, createCtx } from "@keel/ctx";
 import { browserCtx, holdOn } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import type { RouteTable } from "@keel/router";
-import { compileRoutes, encodeHref } from "@keel/router/internal";
+import { compileRoutes, encodeHref, isHref } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import { resume } from "@keel/runtime-dom/ops";
 import type { Island } from "@keel/runtime-dom/ops";
@@ -288,6 +288,9 @@ export async function documentRoute<T extends RouteTable>(
     },
     route,
     navigate: async (href) => {
+      // As the router's `navigate` (k.router): a value that is no Href, once each backslash reads as a slash and a hash is dropped, is E1501.
+      if (typeof href !== "string" || !isHref(href.replaceAll("\\", "/").replace(/#.*$/s, "")))
+        throw fail("E1501", "navigate: the value is no Href, a path of this origin", { url: href });
       const nav = { method: "GET", url: href, body: null };
       documents.push(nav);
       follow(nav);
