@@ -4,6 +4,8 @@ What a subagent in a lane is told, so a fresh orchestrator can brief one without
 
 ## Rules every lane brief carries
 
+- Done right comes before done (the plan's D191). A lane never weakens Keel to get through: no new `unsafe/` file where a typed way exists, no rule exemption, no loosened or deleted assertion, no raised limit or budget for a limit that is not a size budget, no skipped or retried test, no narrower public surface than the design asks for. When the right way is blocked, the lane stops on that point and reports it with the reason; the orchestrator decides.
+
 - Work only in the lane's worktree. Do not push. Do not merge into the main line unless the brief is an integrator's.
 - Never edit `packages/*/conformance/**`, except removing a skip marker in a commit prefixed `rfc:NNNN`. A case that disagrees with the spec is reported with file:line and the spec sentence; the `conformance-writer` subagent corrects it. A builder cannot spawn one: the orchestrator does.
 - The order for an RFC: spec text applied to `spec/` (so `pnpm spec <topic>` prints the clauses), then conformance by the `conformance-writer` from the spec text only, then the build.
