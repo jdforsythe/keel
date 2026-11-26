@@ -65,4 +65,4 @@ The command runs `test`, `check` and `ledger`, makes no network request, and wri
 Keel's checks stop where a person's judgment starts. Before a release, the app goes to an accessibility firm for WCAG 2.2 AA with a desktop and a mobile screen reader, starting from the criteria `a11y.json` leaves to a person, and to a pen-test firm for OWASP ASVS level 2. Both receive the verified bundle and its `keyId`, `docs/THREAT-MODEL.md`, an https deployment and one browser profile per role. The pen test covers access control, CSRF (the write proof), XSS (escaping, the policy, Trusted Types), headers and the caller cookie, personal data in logs, sessions and `/sessions/list`, and the documented caps on bodies, the report window and the session ingest. A finding on a criterion the ledger claimed at `example` also adds the rule or test that would have caught it.
 
 subject: spec/kernel/k.a11y.md spec/kernel/k.security.md spec/kernel/k.privacy*.md spec/kernel/k.reveal.md spec/kernel/k.evidence.md packages/testing/src/a11y/ packages/check/src/rules/ tooling/evidence*.mjs
-verified: 3190e26ae653272180ea7a368098f885a7615f09
+verified: a077a1d486bc27b43e43a65b1f94d94167290822
