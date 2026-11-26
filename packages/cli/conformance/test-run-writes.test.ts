@@ -1,6 +1,5 @@
 // Spec: k.test-run, clause "`keel test` over a project whose `test/a.test.ts` holds a passing test at line 3, a failing one at line 6 and an `it.skip` at line 9 writes `reports/tests/run.json` holding `test/a.test.ts` with the SHA-256 of its source and the tests `{ line: 3, state: 'passed' }`, `{ line: 6, state: 'failed' }` and `{ line: 9, state: 'skipped' }`, and no other file in `reports/tests/`."
 // Spec: k.test-run, clause "In a git checkout of a project whose `.keel/` files `keel build` wrote, with `reports/` ignored, `git status --porcelain` prints nothing after `keel test`."
-// Pending (rfc:0235 step 5; the git case waits for step 6, backlog 0999): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // Seed: 1337 (the one property, 4 runs). Binary runs: 1 `keel test` per case (2 for the edit case), 1 per property run, and for the git case 1 `keel build` and 1 `keel test`.
 // The real `keel` binary over temp projects (OS tmpdir; no vitest config: vitest's defaults). The git case builds golden-free `staticTree()` (static-support.ts), commits what `keel build`
 // wrote (`.keel/` tracked, `node_modules`, `dist` and `reports` ignored) and gives it one test file that imports a module page so the compiler plugin transforms app code during the run.
@@ -136,7 +135,7 @@ describe("k.test-run: a test run writes under `reports/` only", () => {
     SLOW * 2,
   );
 
-  it.skip(
+  it(
     "In a git checkout of a project whose `.keel/` files `keel build` wrote, with `reports/` ignored, `git status --porcelain` prints nothing after `keel test`",
     () => {
       const tree = {
