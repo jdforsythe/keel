@@ -91,6 +91,12 @@ function watch(fn: () => boolean, ms: number): Promise<boolean> {
   });
 }
 
+// A policy violation reaches the test as a `csp` problem through the context's binding (openContext.ts).
+document.addEventListener("securitypolicyviolation", (e) => {
+  const blocked = e.blockedURI === "" ? "inline" : e.blockedURI;
+  globalThis.__keelProblem?.("csp", `${e.effectiveDirective} blocked ${blocked}`);
+});
+
 const where = (el: Element): string => `<${el.tagName.toLowerCase()}${el.id === "" ? "" : ` id="${el.id}"`}>`;
 
 /** The rules `a11y()` runs: the harness's page rules, and those a DOM with layout and colour can run. */

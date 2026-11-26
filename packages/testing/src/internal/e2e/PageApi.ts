@@ -41,4 +41,6 @@ export type PageApi = {
 declare global {
   // The page script's functions (inPage.ts); absent until it is evaluated in a document.
   var __keelE2e: PageApi | undefined;
+  // The context's binding a policy violation is reported through (openContext.ts).
+  var __keelProblem: ((kind: string, text: string) => void) | undefined;
 }

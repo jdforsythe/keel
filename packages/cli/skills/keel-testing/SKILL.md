@@ -1,6 +1,6 @@
 ---
 name: keel-testing
-description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, e2e serve and page, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1719, E1722, E1726, E1727, E1728, E1729, E1730, E1732, E1733, E1734-E1738, W1733, W1608, W1723, E1108"
+description: "Test Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs, e2e; E170x, E1706, E1708-E1710, E1715-E1719, E1722, E1726, E1727, E1728, E1729, E1730, E1732, E1733, W1733, W1608, W1723, E1108"
 ---
 
 # Testing and correctness
