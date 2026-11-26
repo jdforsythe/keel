@@ -64,10 +64,17 @@ async function ended(child: ChildProcess): Promise<End> {
   return end;
 }
 
-/** An assertion's message: how the child ended and its output, the last 4000 characters of it. */
+/**
+ * An assertion's message: how the child ended and its output, its lines joined on one line (the reporter prints a
+ * message's first line, up to 512 characters), the last 440 characters of it.
+ */
 function said(end: End, out: string): string {
-  const tail = out.length > 4000 ? `...${out.slice(-4000)}` : out;
-  return `child exit ${end.code} signal ${end.signal}, output:\n${tail}`;
+  const flat = out
+    .split("\n")
+    .filter((l) => l.trim() !== "")
+    .join(" | ");
+  const tail = flat.length > 440 ? `...${flat.slice(-440)}` : flat;
+  return `child exit ${end.code} signal ${end.signal}: ${tail}`;
 }
 
 function run(file: string, extra: Record<string, string> = {}): ChildProcess {
