@@ -5,6 +5,7 @@
     "k.check",
     "k.cli",
     "k.compat",
+    "k.derived",
     "k.docs",
     "k.errors",
     "k.escapes",

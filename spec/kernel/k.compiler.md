@@ -1,5 +1,5 @@
 # k.compiler: Compiler and artifacts
-status: conformance-covered
+status: implemented
 
 **API.** One Vite plugin, no options (`@keel/compiler/vite`).
 
@@ -7,15 +7,15 @@ status: conformance-covered
 
 **Escaping by context.** Attributes and properties are set through the DOM. Server HTML escapes text and attribute contexts separately. **URL policy** (runtime ops, `Link`/`Image`): URL attributes are `href`, `src`, `action`, `formaction`, `xlink:href`, `poster`, `data`, `ping`/`srcset`/`imagesrcset` (each URL; split at spaces, commas), and `to`/`from`/`by`/`values` on any element (each `;` item). Navigation attributes (`href`, `action`, `formaction`, `Link to`) take an `Href` from a contract's `href()` or an absolute URL; a literal there starting with `/` or matching a `routes.json` path pattern is E1501. The rest are assets: relative literals pass. A value with a URL whose parsed scheme is not `http`, `https`, `mailto`, or `tel` renders as `about:blank`. Raw HTML has no API outside `unsafe`.
 
-**Artifacts.** Written to `.keel/` on each build and dev change: sorted-key JSON, a content hash, read-only. `keel check` recompiles the project holding each `.keel/`; a differing hash or unknown file is E1005.
+**Artifacts.** Derived files (k.derived), written to `.keel/` as views: sorted-key JSON, a content hash, read-only.
 - `deps.json`: reactive graph (k.reactive).
 - `ids.json`: `{ [elementId]: { file, line, col, component, tag, role } }` (k.component ids).
-- `routes.json`: `{ [routeId]: { path, params, search, actions, layout, guard, module } }`, an API entry adding `api: true` and `method` (k.api); `layout` is the id of the layout that wraps the page or layout, else `null`; `module` the module that declares the route; schemas as JSON Schema. An id, `path`, `layout`, `actions` or guard `redirect` unlike its contract or `routes.ts` literal (a placed stdlib module's: its package's `./contract` and `./routes`) is E1005.
+- `routes.json`: `{ [routeId]: { path, params, search, actions, layout, guard, module } }`, an API entry adding `api: true` and `method` (k.api); `layout` is the id of the layout that wraps the page or layout, else `null`; `module` the module that declares the route; schemas as JSON Schema. It is derived by evaluating the route tables, a placed stdlib module's from its package's `./contract` and `./routes`.
 - `a11y.json`: per element id, expected `role` and the source of its accessible name (`label`, `alt`, `text`, `aria`). Its rules are one table, `@keel/compiler/a11y`, the harness applies to the DOM (WAI-ARIA 1.2, HTML-AAM): `img` with literal `alt=""` is `presentation`, unnamed; `section` without `aria-label(ledby)` is `generic`; name from content only for non-control roles ARIA 1.2 names from contents. A role, input `type`, or `select` `size`/`multiple` unknown statically is `null`, not compared.
 
-**Build-time evaluation.** `tokens.ts` and each `routes.ts` run once in Node, bundled as the server build bundles: a package's CommonJS code may `require` Node built-ins and other packages (`pg` does). Only module top levels run; no handler or capability side does. A thrown E code is kept; else `tokens.ts` throwing or exporting no tokens is E1807 (k.ui), a `routes.ts` throwing or exporting no `routes` or a `routes` that is no route table, or a throwing contract file (k.compat), is E1006, with file and message. Any other failure is E1049. In `keel build` and `vite build` each of these is an error: the build exits 1; `keel dev` prints it and keeps serving.
+**Build-time evaluation.** `tokens.ts` and each `routes.ts` run once in Node, bundled as the server build bundles: a package's CommonJS code may `require` Node built-ins and other packages (`pg` does). Only module top levels run; no handler or capability side does. A thrown E code is kept; else `tokens.ts` throwing or exporting no tokens is E1807 (k.ui), a `routes.ts` throwing or exporting no `routes` or a `routes` that is no route table, or a throwing contract file (k.compat), is E1006, with file and message. Any other failure is E1049. In `keel check`, `keel build` and `vite build` each of these is an error: the command exits 1; `keel dev` prints it and keeps serving.
 
-**Rules.** E1000 source does not parse (at the parser's location, `syntax error: <parser message>`; nothing else runs on it) · E1001 `For` without `key`, or `key` not a field of the item · E1002 raw HTML (`innerHTML` family, `DOMParser`, `document.write`, `on*` strings, also spread; data in `script`/`style`) · E1003 any `srcdoc`, `<base>` `href` or `<meta>` `http-equiv`, or a literal the URL policy renders as `about:blank` in a URL attribute or `Link to`/`Image src`; fix removes the attribute, except a required prop · E1004 a server-only module (k.boundary) named by a value import, re-export or literal `import()` in client-reachable code (k.boundary Reach) · E1005 hand edit to generated output (`.keel/`, `turbo.json`, CI workflows, Dockerfiles, API schemas) · W1005 `routes.json` parts not literal in a contract or `routes.ts` (k.contract Static reading), named; builds rewrite it, warning if it differs · E1049 internal compiler failure: message verbatim, no app location or code.
+**Rules.** E1000 source does not parse (at the parser's location, `syntax error: <parser message>`; nothing else runs on it) · E1001 `For` without `key`, or `key` not a field of the item · E1002 raw HTML (`innerHTML` family, `DOMParser`, `document.write`, `on*` strings, also spread; data in `script`/`style`) · E1003 any `srcdoc`, `<base>` `href` or `<meta>` `http-equiv`, or a literal the URL policy renders as `about:blank` in a URL attribute or `Link to`/`Image src`; fix removes the attribute, except a required prop · E1004 a server-only module (k.boundary) named by a value import, re-export or literal `import()` in client-reachable code (k.boundary Reach) · E1005 generated output that differs from what generates it: a view under k.derived Frozen, a file in `.keel/` no derivation writes, `turbo.json`, CI workflows, API schemas; when only the bytes differ, the fix restores them · W1005 reserved: no command reports it · E1049 internal compiler failure: message verbatim, no app location or code.
 
 **Conformance.**
 - Compiling the same sources twice yields byte-identical JS and artifacts.
@@ -24,7 +24,7 @@ status: conformance-covered
 - A dynamic `href` whose value is `javascript:alert(1)` renders as `about:blank`.
 - `ids.json` has exactly one entry per element in source, and each key is an id the harness `find(id)` resolves.
 - Reordering a keyed `For` list preserves the DOM node identity of every row.
-- Changing any byte of a file under `.keel/` makes `keel check` report E1005 on that file.
+- Changing any byte of a file under `.keel/` makes `keel check --frozen` report E1005 on that file.
 - A component with no dynamic expressions compiles to a single cloned template and no bindings.
 - A literal `poster="javascript:alert(1)"` is E1003, and the same value bound dynamically renders as `about:blank`.
 - Any `srcdoc`, and a `vbscript:` URL in any URL attribute, is E1003 as a literal and `about:blank` when bound.
@@ -32,11 +32,11 @@ status: conformance-covered
 - `<img alt="">`, an unnamed `<section>`, `<td>` and `<li>` with text render with no E1702.
 - A file with a syntax error yields only E1000, also in `routes.ts` at build time.
 - A `routes.ts` throwing a plain Error is E1006; throwing `{ code: 'E1502' }` keeps E1502.
-- A compared `.keel/` artifact with changed `data` and recomputed `hash`, or older than its sources, is E1005.
-- Beside a literal `routes.ts`, `keel check` passes a genuine `routes.json`, is E1005 with a route added, W1005 with a computed `path`; `vite build` and a `node`-only `keel build` rewrite a differing one with W1005.
+- Under `keel check --frozen`, a `.keel/` artifact with changed `data` and recomputed `hash`, or older than its sources, is E1005.
+- Beside a `routes.ts`, literal or with a computed `path`, `keel check --frozen` passes a genuine `routes.json` and is E1005 with a route added; `keel check`, `vite build` and a `node`-only `keel build` rewrite a differing one, reporting nothing for it.
 - `javascript:` in `object data`, a `srcset` candidate, or a `<set>` `to`/`<animate>` `values` item is E1003 as a literal and `about:blank` bound; any `<base>` `href` or `<meta>` `http-equiv` is E1003, never rendered.
 - `<script>{x}`, `<style>{x}` and `<script src={x}>` are E1002 and bind nothing.
-- With `@keel/std-health` placed, `keel check` over its `routes.json` gives no E1005 or W1005; a binding spread is W1005.
+- With `@keel/std-health` placed, `keel check --frozen` over its `routes.json`, its binding written whole or spread, gives no E1005.
 - `export * from './a.server'` and `import('./a.server')` in client-reachable code are each E1004; `export type` from it is not.
 - A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: `routes.json` lists its routes and no E1006 is printed.
 - `keel build` of a project whose `modules/a/routes.ts` throws prints one E1006 naming that file, counts it among its summary's errors and exits 1, with a `client` deployable and with `node` ones only.

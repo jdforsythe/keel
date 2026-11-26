@@ -1,5 +1,5 @@
 # k.shell: Native shells
-status: conformance-covered
+status: implemented
 **Declaration.** A `client` deployable may name the native shells that package it: `shells: { capacitor?: { id, name }, tauri?: { id, name } }` in `topology.ts`. `id` is a reverse-DNS app id and its return links' scheme (k.return), `name` its title; the version the app's `package.json` `version`. Each shell's package provides it and must be in `dependencies` (E1572, k.deploy): `capacitor` (Android, iOS) `@keel/std-capacitor`, `tauri` (desktop) `@keel/std-tauri`. So must each native plugin its target names (Plugins). The rest: std.capacitor, std.tauri. `shells` on another adapter, or an `id` that is not reverse-DNS, is E1573.
 
 **Shell ctx.** A shell build's entry is the `client` entry with `createCtx({ mode: 'shell', drivers })`, `drivers` the package's `<shell>Drivers({ origin?, connect })`, `origin` the build's origin as a URL (Build 2; absent when it has none), `connect` the build's other origins (Origins): its `storage` and `net` (k.persist). The page loads from the shell's own origin, so the drivers keep this contract:
@@ -30,7 +30,7 @@ type ShellTarget = {
 
 **Plugins.** `plugins` gives the npm packages whose native half the shell's own tool installs only when the app lists them: `plugin` at the exact `version`, `need` what uses it, the three at most 50 characters together. It reads `app` alone, so a plugin of a feature the app has not turned on (`identity` false) is not given and nothing is reported for it. Each one absent from the app's `package.json` `dependencies`, or there at another version text, is one E1572 at the deployable's key in `topology.ts`, `<deployable>: <shell> needs <plugin> <version> (<need>)`, its fix that entry added or set, keys sorted; once per plugin in a project. `keel check` reports them; so does `keel build --target <shell>`, with its tools. No `package.json`, or one that is not a JSON object: none.
 
-**Files.** `files` gives the shell files, read-only deploy files (k.deploy; E1005, fix: the regenerated file); a path with a `..` segment, a `\` or a leading `/`, or one a link carries out (k.scaffold Links) is E1585: none of the set is written. Another file there is the app's. Removing a shell removes its files.
+**Files.** `files` gives the shell files, deploy files (k.deploy); a path with a `..` segment, a `\` or a leading `/`, or one a link carries out (k.scaffold Links) is E1585: none of the set is written. Another file there is the app's. Removing a shell removes its files.
 
 **Build.** `keel build --target <shell>` [`--platform <p>`] [`--release`] builds each `client` deployable declaring it:
 1. A shell no `client` deployable declares, or a `--platform` not in the target's `platforms` or missing while it has some, is E1052; a package registering no target, E1585.
@@ -47,7 +47,7 @@ type ShellTarget = {
 - `shells` on a `node` deployable is one E1573; `id: 'golden'` is one E1573.
 - With `api`, `keel build --target tauri` with `KEEL_ORIGIN` unset, and with it empty, prints one E1574 naming it and builds nothing; with `http://localhost:8080` it proceeds.
 - The `www` entry a shell build writes creates its ctx with `mode: 'shell'` and the package's drivers; the plain `client` entry is unchanged.
-- `keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 whose fix restores it; removing `tauri` removes it; a file `files` does not give stays.
+- `keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 under `keel check --frozen`, whose fix restores it; removing `tauri` removes it; a file `files` does not give stays.
 - With `tools` giving two entries, the build prints two E1575, each naming its `tool` and `need`, exits 1, writes nothing under `dist/web/tauri/` and calls no `build`.
 - With `platforms: ['x']`, `--platform y` and no `--platform` are each one E1052; a stub registering nothing, or a path `../a.json`, is one E1585.
 - A `build` whose `error` has an `error:` line then 20 more prints 12 from it and exits 1; one returning an `artifact` prints it in the trailer.

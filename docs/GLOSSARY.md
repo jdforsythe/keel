@@ -47,6 +47,7 @@ Canonical names. Changing one requires an RFC.
 - **drive**: how `simulate` moves a run's clock: when no work of the run is pending, to its next moment, so a scenario that awaits work waiting on the clock is answered and two runs of one `SimRun` give one trace (k.drive).
 - **held work**: a capability's sim work passed to `hold(label, start)`, the work that answers through something made outside the run; it is held until delivered, holds in the order they started (k.sim, k.drive-law).
 - **law check**: with `law` on (the default under `keel test`), each run of `simulate` that passed runs a second time with its `SimRun` and the two traces are compared; traces that differ fail with E1729 (k.drive-law).
+- **derived file**: a file Keel computes from a project's tree (the `.keel/` artifacts, `.keel/surface.json`, the deploy files); no command reads its bytes on disk to judge, test or serve, and a run that is not frozen rewrites it when it differs (k.derived).
 - **type cache**: the results of `keel check`'s type pass kept across processes in `node_modules/.cache/keel/` (or `check()`'s `typeCache` folder), each entry keyed by content and used only when every file system question it recorded gets the same answer; it changes the time a run takes, never its output (k.check-cache).
 
 subject: spec/ packages/*/package.json
