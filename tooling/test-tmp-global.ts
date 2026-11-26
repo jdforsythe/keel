@@ -14,6 +14,8 @@ const MKDTEMP_PREFIX = /mkdtemp(?:Sync)?\([^"'`\n]*["'`]([^"'`/]+)["'`]/g;
 
 /** Node's own code cache, which it makes in the temp folder of a process that enables it: not a test's folder. */
 const NODE_COMPILE_CACHE = "node-compile-cache";
+/** `tsx`'s own cache folder (`tsx-<uid>`), made by any child process that runs under it: not a test's folder either. */
+const TSX_CACHE = /^tsx-\d+$/;
 
 /** `.ts`, `.mjs` and `.tsx` files under `dir`, without descending into `node_modules`. */
 function sources(dir: string): string[] {
@@ -95,7 +97,7 @@ export default function setup(): () => void {
     rmSync(root, { recursive: true, force: true, maxRetries: 3 });
     const named = new Map<string, number>();
     for (const name of left) {
-      if (name === NODE_COMPILE_CACHE) continue;
+      if (name === NODE_COMPILE_CACHE || TSX_CACHE.test(name)) continue;
       // An entry whose name starts with a prefix a conformance file makes is that file's: it may name a sibling of the
       // folder it made (`<folder>-base.json`) that its own cleanup does not remove.
       if ([...allowed].some((p) => name.startsWith(p))) continue;
