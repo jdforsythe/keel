@@ -402,24 +402,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-conflicts/conformance/find-races.test.ts",
-    "line": 40,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-conflicts/conformance/find-races.test.ts",
-    "line": 57,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-conflicts/conformance/find-races.test.ts",
-    "line": 66,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-db/conformance/check-deps-dropped-rule.test.ts",
     "line": 14,
     "text": "120_000",
