@@ -2820,7 +2820,7 @@ export type RecountInput = s.infer<typeof RecountInput>;
 export const LATEST_KEY = "digest.latest";
 ```
 
-`attempt` is the one sanctioned way to catch: it turns a throw into `err` with `keel.unexpected`. App code never writes `throw` (E1451) or `try`/`catch` (E1452).
+`attempt` is the one sanctioned way to catch: it turns a throw into `err` with `keel.unexpected`, or, given a second argument `expect`, into the `KeelError` `expect` returns for a thrown value it recognizes. App code never writes `throw` (E1451) or `try`/`catch` (E1452), inside `unsafe(` or out; a bug is `defect(message)`, which reaches the nearest `Boundary` as a throw does, and `try`/`finally` cleans up.
 
 ```ts title="modules/digest/readLatest.ts"
 import type { Ctx } from "@keel/ctx";
@@ -3310,7 +3310,7 @@ Every line is `CODE path:line:col message`. Errors start with `E`, warnings with
 | E1258 | gave a component an element made before the call, as `children` or another prop | make it inside a thunk: `icon: () => <Icon />` |
 | E1301 | ran a transaction a component's `uses` does not list | add it to `uses` |
 | E1302 | read `ctx` or a global in a transaction | pass the value in the payload |
-| E1451, E1452 | `throw`, or `try`/`catch` | `return err(…)`, `attempt(…)` |
+| E1451, E1452 | `throw`, or `try`/`catch` | `return err(…)` or `defect(…)`, `attempt(…)` |
 | E1601 | `Date`, `Math.random`, `fetch`, `localStorage` in app code | `ctx.clock`, `ctx.random`, an endpoint, `ctx.storage` |
 | E1515 | a binding that misses an entry of the contract, names one it lacks, or holds a handler written for another id | bind every entry once, under the id its handler names |
 | E1514 | a contract file importing a component, handler or `routes.ts` | import `*.schema.ts` files and packages only |
