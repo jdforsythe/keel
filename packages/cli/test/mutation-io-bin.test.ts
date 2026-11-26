@@ -319,7 +319,7 @@ describe("keel binary", () => {
       const r = await keel(d, ["build"]);
       expect(r.code).toBe(0);
       expect(r.stderr).toBe("");
-      expect(r.stdout).toBe("ok build 0 files, 5 artifacts, 0 errors\n");
+      expect(r.stdout).toBe("ok build 0 files, 6 artifacts, 0 errors\n");
       expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
     },
     fixedTime(30_000),
@@ -354,7 +354,7 @@ describe("keel binary", () => {
     "build without vite.config.ts is just the engine build",
     async () => {
       const r = await keel(tmp(), ["build"]);
-      expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 5 artifacts, 0 errors\n", stderr: "" });
+      expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 6 artifacts, 0 errors\n", stderr: "" });
     },
     fixedTime(30_000),
   );
@@ -367,7 +367,7 @@ describe("keel binary", () => {
       const r = await keel(d, ["build"]);
       expect(r.code).toBe(1);
       expect(r.stderr).toBe("bad1\nbad2\nbad3\nbad4\nbad5\nbad6\n");
-      expect(r.stdout).toBe("fail build 0 files, 5 artifacts, 1 errors\n");
+      expect(r.stdout).toBe("fail build 0 files, 6 artifacts, 1 errors\n");
     },
     fixedTime(30_000),
   );
@@ -394,7 +394,7 @@ describe("keel binary", () => {
       expect(r.stderr).toBe(
         'error during build:\nBuild failed with 1 error:\n[plugin keel]\nmodules/accounts/loadMe.server.ts:1:7: ERROR: Could not resolve "does-not-exist-xyz"\n',
       );
-      expect(r.stdout).toBe("fail build 0 files, 5 artifacts, 1 errors\n");
+      expect(r.stdout).toBe("fail build 0 files, 6 artifacts, 1 errors\n");
     },
     fixedTime(30_000),
   );
