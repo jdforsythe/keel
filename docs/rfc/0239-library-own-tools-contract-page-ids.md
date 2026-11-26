@@ -56,6 +56,7 @@ Applied in this commit; the sentences are quoted under Proposal. Sections at the
 - After the second review: k.module Rules adds E1170, `"keel": "library"` in an app's folder (one holding `topology.ts` or `modules/`): `keel check` reads it as an app and `keel pack` stops with it; k.library-pack Own folder names it, and to stay at 3,100 tokens drops the example `(`conformance/`)` after "no other code file" and the word "record" after "summary".
 - After the second review: k.library In an app writes what E1753 says when two packages register one rule code (`rule code <code> is registered by <a> and <b>`, at the second's `deps` entry, no E1159); its Conformance adds a last bullet.
 - After the second review: k.library Rules E1166 adds that a library after the id's first holder (an app module, else the first library by name) reads no file under `modules/<id>/`, so no other error follows; its E1166 Conformance bullet adds "and no other error". To stay under 3,100 tokens the E1753 sentence is written shorter and two `(k.library-pack)` pointers go.
+- After the second review: std.i18n API states which inputs `numberParts`, `formatUnit`, `formatList` and `formatDateTime` refuse, each a `RangeError` `<function>: ...` as std.temporal's `durationOf` throws: what `Intl` refuses, a `numberParts` string that is no plain decimal, and a `formatDateTime` `timeZone` that is no non-empty string; its Conformance adds a last bullet.
 - Status: k.library-pages and std.i18n read `implemented`; k.contract, std.geo and std.tokens read `implemented` until their new or changed clauses are covered; the map rows follow. k.library stays `proposed`, k.library-pack `implemented`, std.health `conformance-covered` (its clauses are unchanged).
 
 ## Conformance diff
@@ -74,6 +75,7 @@ By the `conformance-writer`, from the spec text, under `rfc:0239`. Kernel confor
 - After the second review, owed: k.module's E1170 bullet (an app folder's `package.json` `{"name":"@acme/app","keel":"library"}`, with `modules/` and with `topology.ts`, under `keel check` and `keel pack`).
 - After the second review, owed: k.library's last bullet (`@acme/evil` and `@acme/charts` registering `E2991`, either order).
 - After the second review, owed: k.library's E1166 bullet (`modules/charts/module.ts` beside `@acme/charts` of id `charts`) re-cited with "and no other error".
+- After the second review, owed: std.i18n's last bullet (the refused inputs and `-0`); std.i18n#8 (host independence) is unchanged.
 
 ## Migration
 None: nothing is released.
