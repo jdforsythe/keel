@@ -26,12 +26,28 @@ function sources(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+/** The folders of the Keel libraries (`"keel": "library"`) the project's `package.json` lists. */
+function libraries(dir: string): string[] {
+  const pkg: unknown = JSON.parse(read(join(dir, "package.json")) ?? "{}");
+  const names = new Set<string>();
+  for (const field of ["dependencies", "devDependencies"]) {
+    const deps: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, field) : undefined;
+    if (typeof deps === "object" && deps !== null) for (const n of Object.keys(deps)) names.add(n);
+  }
+  return [...names].flatMap((n) => {
+    const at = join(dir, "node_modules", n);
+    const own: unknown = JSON.parse(read(join(at, "package.json")) ?? "{}");
+    return typeof own === "object" && own !== null && Reflect.get(own, "keel") === "library" ? [at] : [];
+  });
+}
+
 const read = (path: string): string | undefined => (existsSync(path) ? readFileSync(path, "utf8") : undefined);
 
 /**
  * A built project as `serve` needs it: its deployables from `topology.ts` (read, never run), the variables
  * `deploy/compose.yaml` marks required for each, and the ids its pages can show: `.keel/ids.json`'s, an id under one
- * of them or under a template id's head its source writes (a keyed row), and a form field's (`<formId>:<path>`). A project with no `topology.ts` is E1737.
+ * of them, under the fixed head or tail of a template id its or its libraries' source writes (a keyed row, a
+ * library component's own), and a form field's (`<formId>:<path>`). A project with no `topology.ts` is E1737.
  */
 export function readProject(dir: string): ProjectInfo {
   const source = read(join(dir, "topology.ts"));
@@ -50,12 +66,12 @@ export function readProject(dir: string): ProjectInfo {
   const parsed: unknown = idsText === undefined ? {} : JSON.parse(idsText);
   const data = typeof parsed === "object" && parsed !== null ? Reflect.get(parsed, "data") : undefined;
   const ids = new Set(typeof data === "object" && data !== null ? Object.keys(data) : []);
-  const heads = idHeads(sources(join(dir, "modules")));
+  const heads = idHeads([...sources(join(dir, "modules")), ...libraries(dir).flatMap((d) => sources(join(d, "src")))]);
   // A form's field is `<formId>:<path>`, its form id often a hash of its schema (k.forms Bindings): never in ids.json.
   const knows = (id: string): boolean =>
     ids.has(id) ||
     id.includes(":") ||
-    heads.some((h) => id.startsWith(h)) ||
+    heads.some((h) => (h.startsWith(".") ? id.endsWith(h) : id.startsWith(h))) ||
     [...ids].some((k) => id.startsWith(`${k}.`));
   return { dir, deployables, ids: [...ids].sort(), knows };
 }
