@@ -6,7 +6,8 @@
 // Assumption: a driver's `close()` (k.deploy: "awaits close()") is read without a cast; the spec names no closing method on the storage.
 // Assumption: child processes run `node --experimental-strip-types` on workspace sources, found by relative path (`packages/<pkg>/src/index.ts`).
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -41,6 +42,17 @@ interface Pool {
   query(text: string, values?: readonly unknown[]): Promise<PoolResult>;
   connect(): Promise<PoolClient>;
   end(): Promise<void>;
+}
+
+/** The engine's two WebAssembly modules, compiled once for the file's every PGlite instead of for each one. */
+let modules: { pgliteWasmModule: WebAssembly.Module; initdbWasmModule: WebAssembly.Module } | undefined;
+function pgliteModules(): { pgliteWasmModule: WebAssembly.Module; initdbWasmModule: WebAssembly.Module } {
+  if (modules === undefined) {
+    const dist = dirname(createRequire(import.meta.url).resolve("@electric-sql/pglite"));
+    const load = (name: string): WebAssembly.Module => new WebAssembly.Module(readFileSync(join(dist, name)));
+    modules = { pgliteWasmModule: load("pglite.wasm"), initdbWasmModule: load("initdb.wasm") };
+  }
+  return modules;
 }
 
 /** A pg Pool-shaped adapter over one PGlite: a checked-out client holds a mutex until released, so transactions never interleave. */
@@ -162,7 +174,7 @@ export async function makeRig(kind: Kind): Promise<Rig> {
       },
     };
   }
-  const db = new PGlite();
+  const db = new PGlite(pgliteModules());
   await db.waitReady;
   const pool = pglitePool(db);
   const url = new URL("postgres://keel:keel@localhost:5432/keel");
