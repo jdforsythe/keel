@@ -1,7 +1,8 @@
 // Shared fixtures for the k.docs conformance (not a test file). Seed 1337 where a test generates input.
 // Shapes are the ones k.docs "Packed files" states: `node_modules/@keel/<name>/package.json` with a `version`,
 // `docs/index.json` `{ sections: [{ id, title, codes }] }`, `docs/<id>.md`; the cli adds `docs/map.json`
-// `{ sections: [{ id, title, package }] }` and `skills/<name>/SKILL.md` with `name` and `description` frontmatter.
+// `{ areas: [{ id, title, sections: [{ id, title, package, holds }] }] }`, `docs/glossary.json` `{ terms: [{ term, text, ids }] }`
+// and `skills/<name>/SKILL.md` with `name` and `description` frontmatter.
 // ASSUMED: the in-process `run` of fixtures.ts reads `node_modules/` paths from its virtual file list, and the
 // running `@keel/cli` is the fixture's `node_modules/@keel/cli`. The spec names no other seam for installed packages.
 import { type Files, keel as keelRun, parseJsonLines } from "./fixtures";
@@ -38,15 +39,34 @@ export function pkg(
 
 export const skillText = (s: Skill): string => `---\nname: ${s.name}\ndescription: ${s.description}\n---\n${s.body}`;
 
-/** The running `@keel/cli`: package.json, map.json (`map` rows: id, title, owner package name) and skills. */
+export type MapRow = { id: string; title: string; package: string; holds?: string; area?: string };
+export type Term = { term: string; text: string; ids: string[] };
+
+/** Rows grouped into areas in first-seen order; a row with no `area` lands in `all`. Area titles are `Area <id>`. */
+export function areasOf(map: MapRow[]): { id: string; title: string; sections: Rec[] }[] {
+  const out: { id: string; title: string; sections: Rec[] }[] = [];
+  for (const r of map) {
+    const id = r.area ?? "all";
+    let a = out.find((x) => x.id === id);
+    if (a === undefined) {
+      a = { id, title: `Area ${id}`, sections: [] };
+      out.push(a);
+    }
+    a.sections.push({ id: r.id, title: r.title, package: r.package, holds: r.holds ?? `holds of ${r.id}` });
+  }
+  return out;
+}
+
+/** The running `@keel/cli`: package.json, map.json (`map` rows: id, title, owner package name, area), glossary and skills. */
 export function cliPkg(
-  map: { id: string; title: string; package: string }[],
+  map: MapRow[],
   skills: Skill[],
-  opts: { omitMap?: boolean; own?: Section[] } = {},
+  opts: { omitMap?: boolean; own?: Section[]; terms?: Term[] } = {},
 ): Files {
   const base = "node_modules/@keel/cli";
   const files = pkg("cli", CLI_VERSION, opts.own ?? []);
-  if (opts.omitMap !== true) files.push({ path: `${base}/docs/map.json`, source: json({ sections: map }) });
+  if (opts.omitMap !== true) files.push({ path: `${base}/docs/map.json`, source: json({ areas: areasOf(map) }) });
+  if (opts.terms !== undefined) files.push({ path: `${base}/docs/glossary.json`, source: json({ terms: opts.terms }) });
   for (const s of skills) files.push({ path: `${base}/skills/${s.name}/SKILL.md`, source: skillText(s) });
   return files;
 }
@@ -81,8 +101,8 @@ export function baseline(extra: Files = []): Files {
     ...project(["cli", "router"]),
     ...cliPkg(
       [
-        { id: "k.router", title: "Routes", package: "@keel/router" },
-        { id: "std.tables", title: "Tables", package: "@keel/std-tables" },
+        { id: "k.router", title: "Routes", package: "@keel/router", area: "routes" },
+        { id: "std.tables", title: "Tables", package: "@keel/std-tables", area: "ui" },
       ],
       [CLIENT_SKILL],
     ),

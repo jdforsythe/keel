@@ -5,7 +5,7 @@ description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KE
 
 # Build and deploy
 
-Exact rules: `keel docs k.deploy`, `k.hosting`, `k.topology`, `k.shell`, `k.user`. A code's section: `keel docs --for <code>`.
+Exact rules: `keel docs deploy` lists: `k.deploy` `k.hosting` `k.topology` `k.shell` `k.user`. `keel docs --for <code>` finds one.
 
 **Topology.** `topology.ts` default-exports `topology({ <name>: { modules, adapter } })`. Adapters: `node`, `static`, `client`. A module lives in one deployable; moving it edits `topology.ts` alone, or run `keel codemod place <module> --to <deployable> [--adapter node]`, which also regenerates the deploy files.
 

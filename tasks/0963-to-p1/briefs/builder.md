@@ -2,7 +2,7 @@
 
 Work ONLY in your lane's worktree. Do not push, do not merge into the main line, do not touch any other worktree.
 
-Read first, in the lane: `CLAUDE.md`, `tasks/0963-to-p1/briefs/README.md` (the rules every lane carries: follow all of them), `.claude/skills/keel-package-dev/SKILL.md`, `docs/OUTPUT.md`, your RFC and ADR, then the spec sections with `pnpm spec <topic>`. Run `pnpm install --offline` and `pnpm build` first. The pattern for what a finished RFC lane holds: `git log --format=%s --grep='0204' jdforsythe/test-impl | head -20`.
+Read first, in the lane: `CLAUDE.md`, `tasks/0963-to-p1/briefs/README.md` (the rules every lane carries: follow all of them), `.claude/skills/keel-package-dev/SKILL.md`, `docs/OUTPUT.md`, your RFC and ADR, then the spec sections with `pnpm spec <area>` and `pnpm spec <id>`. Run `pnpm install --offline` and `pnpm build` first. The pattern for what a finished RFC lane holds: `git log --format=%s --grep='0204' jdforsythe/test-impl | head -20`.
 
 - The conformance is already written in the lane and fails for want of the build. NEVER edit `packages/*/conformance/**`. If a case seems to disagree with the spec text, do not bend the code to it and do not edit it: report file:line and the spec sentence. Never change a test's configuration or harness so that a case passes when the product would not behave that way.
 - Build exactly what the RFC and spec state; one export per file; no `any`, casts, non-null assertions or `@ts-ignore` outside `unsafe/`; no bare `Date`, `Math.random`, `fetch`; kernel packages never import std packages (`tooling/deps.json`). A new code gets its explanation where codes are explained (`keel explain`).

@@ -6,7 +6,7 @@ import { summary } from "./summary.ts";
 /** Whole output, trailer included, stays within the 120-token explain budget (chars / 4). */
 const BUDGET_CHARS = 480;
 
-/** A stdlib code (spec/00-map.md: E2xxx, W2xxx): its rule registers when the project's std deps load. */
+/** A stdlib code (E2xxx, W2xxx, the spec map's code letters, k.docs): its rule registers when the project's std deps load. */
 const STD_CODE = /^[EWI]2\d{3}$/;
 
 /**

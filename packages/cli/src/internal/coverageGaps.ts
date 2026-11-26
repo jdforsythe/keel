@@ -6,7 +6,7 @@ import { makeDiag } from "./makeDiag.ts";
 import { specClauses } from "./specClauses.ts";
 import { specStatus } from "./specStatus.ts";
 
-/** Statuses that claim every Conformance clause is asserted by a conformance test (spec/00-map.md status key). */
+/** Statuses that claim every Conformance clause is asserted by a conformance test (the spec statuses of k.docs and the glossary). */
 const COVERED = new Set(["conformance-covered", "frozen"]);
 
 /**
