@@ -1,5 +1,5 @@
 {
-  "commit": "d829b060a9fd89421df4563778e36e160acbae0d",
+  "commit": "7c6de6d4b5e35e0626ef8a12bb5faff9bb695259",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-26T10:55:38.986Z",
+  "generatedAt": "2026-11-26T12:29:38.841Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1676,7 +1676,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
+          "status": "implemented",
           "total": 13,
           "verified": 13
         },
@@ -4178,17 +4178,17 @@
         "unitFiles": 90
       },
       "packages/cli": {
-        "conformanceCases": 1025,
-        "conformanceFiles": 230,
+        "conformanceCases": 1036,
+        "conformanceFiles": 232,
         "exploreFiles": 1,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 212,
+        "propertyCalls": 214,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 861,
+        "unitCases": 864,
         "unitFiles": 123
       },
       "packages/compiler": {
@@ -4739,17 +4739,17 @@
       }
     },
     "totals": {
-      "conformanceCases": 6900,
-      "conformanceFiles": 1517,
+      "conformanceCases": 6911,
+      "conformanceFiles": 1519,
       "exploreFiles": 21,
       "fails": 3,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 3042,
+      "propertyCalls": 3044,
       "proveFiles": 24,
       "simulateFiles": 31,
       "skipTodo": 5,
-      "unitCases": 7092,
+      "unitCases": 7095,
       "unitFiles": 1161
     }
   },
