@@ -1,6 +1,6 @@
 # RFC 0241: a control's value in `find`, token names at `keel check`, a package's files above their folder
 
-Status: accepted (ADR-0263), accepted by the orchestrator on 2026-11-25. Amends k.testing (Harness, Conformance), k.ui (Style props, Rules, Conformance), k.a11y-static (Tokens, Token names, Conformance), k.server-deps (Files a bundled package reads, Rules, Conformance), the map. From `apps/household` (backlog 1107, 1114, 1118).
+Status: implemented (ADR-0263), accepted by the orchestrator on 2026-11-25. Amends k.testing (Harness, Conformance), k.ui (Style props, Rules, Conformance), k.a11y-static (Tokens, Token names, Conformance), k.server-deps (Files a bundled package reads, Rules, Conformance), the map. From `apps/household` (backlog 1107, 1114, 1118).
 
 ## Decisions
 - D1 (1107): `find(id)` gains `value`: the live DOM `value` of an `input` (not `checkbox`, `radio` or `file`), a `textarea` or a `select`, as a string; absent on every other element but a host element, whose `value` k.host-element already defines. `text` stays the trimmed text content.
