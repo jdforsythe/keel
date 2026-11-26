@@ -50,7 +50,7 @@ export function applyQuery<T, S extends Field<T>, F extends Field<T>>(
   });
   const sort = search.sort;
   if (sort !== undefined && cols.sort.includes(sort)) {
-    const cmp = compareBy(cols, sort, new Intl.Collator(locale));
+    const cmp = compareBy(cols, sort, locale);
     const dir = search.dir === "desc" ? -1 : 1;
     kept.sort((a, b) => dir * cmp(a, b) || byKey(a[cols.key], b[cols.key]));
   }

@@ -1,5 +1,4 @@
-import type { Locale } from "@keel/std-i18n";
-import { formatDecimal } from "../unsafe/formatDecimal.ts";
+import { type Locale, numberParts } from "@keel/std-i18n";
 import { noDecimalForm } from "../unsafe/noDecimalForm.ts";
 import type { Money } from "./Money.schema.ts";
 import { EXPONENT } from "./internal/EXPONENT.ts";
@@ -22,13 +21,15 @@ function decimal(amount: number, e: number): string {
 }
 
 /**
- * `m` written for `locale` (std.money): `Intl.NumberFormat` in currency style over the exact decimal of `amount` at
- * the currency's exponent, so no amount passes through a float. `{ amount: 1250, currency: 'EUR' }` is `€12.50` in
+ * `m` written for `locale` (std.money): `numberParts` of `@keel/std-i18n` in currency style over the exact decimal of
+ * `amount` at the currency's exponent, joined, so no amount passes through a float. `{ amount: 1250, currency: 'EUR' }` is `€12.50` in
  * `en-US` and `12,50 €` in `de-DE`. Reads no host locale.
  */
 export function formatMoney(m: Money, locale: Locale): string {
   if (!Number.isSafeInteger(m.amount) || Math.abs(m.amount) > 1e15) return noDecimalForm(m.amount);
   const d = decimal(m.amount, EXPONENT[m.currency]);
   if (!isDecimal(d)) return noDecimalForm(m.amount);
-  return formatDecimal(new Intl.NumberFormat(locale, { style: "currency", currency: m.currency }), d);
+  return numberParts(d, locale, m.currency)
+    .map((p) => p.value)
+    .join("");
 }

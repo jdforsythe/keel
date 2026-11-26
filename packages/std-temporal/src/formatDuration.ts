@@ -1,11 +1,11 @@
-import type { Locale } from "@keel/std-i18n";
+import { type Locale, formatList, formatUnit } from "@keel/std-i18n";
 import type { Duration } from "./Duration.schema.ts";
 import type { UnitStyle } from "./UnitStyle.schema.ts";
 import { durationValue } from "./internal/durationValue.ts";
 
 /**
  * `d` written for `locale` (std.temporal): its nonzero hours, minutes and seconds (with the millisecond fraction; `PT0S`
- * as zero seconds), each an `Intl.NumberFormat` unit, joined by `Intl.ListFormat` type `unit`. A negative `d` signs its
+ * as zero seconds), each a `formatUnit`, joined by `formatList` type `unit` (both of `@keel/std-i18n`). A negative `d` signs its
  * first unit. `Intl.DurationFormat` is not used: Node 22 lacks it.
  */
 export function formatDuration(d: Duration, locale: Locale, style: UnitStyle): string {
@@ -17,8 +17,6 @@ export function formatDuration(d: Duration, locale: Locale, style: UnitStyle): s
     [(a % 6e4) / 1e3, "second"],
   ];
   const shown = units.filter(([n], k) => n || (k === 2 && !a));
-  const text = shown.map(([n, unit], k) =>
-    new Intl.NumberFormat(locale, { style: "unit", unit, unitDisplay: style }).format(k || ms >= 0 ? n : -n),
-  );
-  return new Intl.ListFormat(locale, { type: "unit", style }).format(text);
+  const text = shown.map(([n, unit], k) => formatUnit(k || ms >= 0 ? n : -n, locale, unit, style));
+  return formatList(text, locale, "unit", style);
 }

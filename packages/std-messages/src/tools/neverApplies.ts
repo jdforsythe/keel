@@ -1,5 +1,5 @@
 import { type Edit, type Finding, type RuleDef, defineRule } from "@keel/check";
-import { attempt } from "@keel/schema";
+import { Locale, pluralCategories } from "@keel/std-i18n";
 import { exactKey } from "../internal/exactKey.ts";
 import { clip } from "./internal/clip.ts";
 import { inLocaleFile } from "./internal/inLocaleFile.ts";
@@ -13,10 +13,10 @@ import { unwrap } from "./internal/unwrap.ts";
 
 const CATEGORIES = ["zero", "one", "two", "few", "many"];
 
-/** The plural categories `Intl.PluralRules` selects for `locale`; `undefined` for a tag it does not know. */
+/** The plural categories `locale` selects (`pluralCategories`); `undefined` for a tag that is no `Locale`. */
 function selected(locale: string): readonly string[] | undefined {
-  const r = attempt(() => new Intl.PluralRules(locale).resolvedOptions().pluralCategories);
-  return r.ok ? r.value : undefined;
+  const r = Locale.parse(locale);
+  return r.ok ? pluralCategories(r.value) : undefined;
 }
 
 /**

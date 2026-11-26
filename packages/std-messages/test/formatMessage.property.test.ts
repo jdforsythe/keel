@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
-import type { Locale } from "@keel/std-i18n";
+import { type Locale, formatNumber, plural } from "@keel/std-i18n";
 import { formatMessage, messages } from "@keel/std-messages";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -44,7 +44,7 @@ test("a {name} placeholder renders its string param as written and a number thro
       fc.constantFrom<Locale>("en-US", "de-DE", "ja-JP"),
       (who, n, l) => {
         const out = formatMessage({ text: "{who}: {n}" }, { who, n }, l);
-        expect(out).toBe(`${who}: ${new Intl.NumberFormat(l).format(n)}`);
+        expect(out).toBe(`${who}: ${formatNumber(n, l)}`);
       },
     ),
     { seed: SEED, numRuns: 200 },
@@ -55,8 +55,9 @@ test("a plural renders the form Intl.PluralRules selects, with # and {n} filled"
   const msg = { plural: "n", zero: "none", one: "# one {n}", other: "# many" };
   fc.assert(
     fc.property(fc.integer({ min: 0, max: 1e5 }), fc.constantFrom<Locale>("en-US", "de-DE", "ja-JP"), (n, l) => {
-      const form = new Intl.PluralRules(l).select(n);
-      const num = new Intl.NumberFormat(l).format(n);
+      // The category `Intl.PluralRules` selects: `plural` over forms named by their category (std.i18n).
+      const form = plural(n, l, { zero: "zero", one: "one", two: "two", few: "few", many: "many", other: "other" });
+      const num = formatNumber(n, l);
       const want = form === "zero" ? "none" : form === "one" ? `${num} one ${num}` : `${num} many`;
       expect(formatMessage(msg, { n }, l)).toBe(want);
     }),
