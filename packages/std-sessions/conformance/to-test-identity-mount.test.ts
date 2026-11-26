@@ -3,6 +3,7 @@
 // std.sessions, Commands "Otherwise they replay without `serve`, with `mount` the default export of the project's `identity.ts` when there is one, and the `to-test` file imports it as `mount` and passes it."
 // Seed 1337 (the session's seed; no generated input). The fixture is fixtures/cart-bug (a `client` deployable `web`); the identity fixture rewrites its topology so `web` is served by a `node` deployable `api` holding a module `gate` (E1589 otherwise) and adds `identity.ts` and `identity.server.ts`.
 // ASSUMPTIONS: the router-form file is `modules/cart/test/session-<fingerprint>.test.ts`; "its `renderRoute` options hold `mount`" is a `mount` key in the object literal of the one `renderRoute` call; `identity.ts` from there is `../../../identity.ts`.
+import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import path from "node:path";
 import { check } from "@keel/check";
@@ -63,7 +64,7 @@ describe("std.sessions: to-test of a client deployable's page in a project with 
     fx.write("identity.server.ts", IDENTITY_SERVER);
     fx.write("sessions/failing.json", sessionFile(await buggySession()));
     out = await emit(fx);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   test("the `to-test` file of a `client` deployable's page imports identity.ts's default export as `mount`", () => {
     expect(out.code).toBe(0);
@@ -76,27 +77,35 @@ describe("std.sessions: to-test of a client deployable's page in a project with 
     expect(optionsOf(out.source)).not.toMatch(/\bapp\b/);
   });
 
-  test("`keel check` on the `to-test` file reports no E1730", () => {
-    const files = tsFiles(fx);
-    expect(files.map((f) => f.path)).toContain(out.path);
-    const diags = check(files, { root: fx.dir }).diagnostics;
-    expect(diags.filter((d) => d.code === "E1730")).toEqual([]);
-  }, 30_000);
+  test(
+    "`keel check` on the `to-test` file reports no E1730",
+    () => {
+      const files = tsFiles(fx);
+      expect(files.map((f) => f.path)).toContain(out.path);
+      const diags = check(files, { root: fx.dir }).diagnostics;
+      expect(diags.filter((d) => d.code === "E1730")).toEqual([]);
+    },
+    fixedTime(30_000),
+  );
 
-  test("control: the same file with the `mount` import and key removed is one E1730 (the check is not vacuous)", () => {
-    const stripped = out.source
-      .replace(/^import\s+mount\s+from\s+"[^"]*identity\.ts";?\n/m, "")
-      .replace(/,\s*mount\b(?!\s*from)/, "");
-    expect(stripped).not.toBe(out.source);
-    const rel = "modules/cart/test/stripped.test.ts";
-    fx.write(rel, stripped);
-    try {
-      const diags = check(tsFiles(fx), { root: fx.dir }).diagnostics;
-      expect(diags.filter((d) => d.code === "E1730" && d.path === rel)).toHaveLength(1);
-    } finally {
-      fs.rmSync(path.join(fx.dir, rel), { force: true });
-    }
-  }, 30_000);
+  test(
+    "control: the same file with the `mount` import and key removed is one E1730 (the check is not vacuous)",
+    () => {
+      const stripped = out.source
+        .replace(/^import\s+mount\s+from\s+"[^"]*identity\.ts";?\n/m, "")
+        .replace(/,\s*mount\b(?!\s*from)/, "");
+      expect(stripped).not.toBe(out.source);
+      const rel = "modules/cart/test/stripped.test.ts";
+      fx.write(rel, stripped);
+      try {
+        const diags = check(tsFiles(fx), { root: fx.dir }).diagnostics;
+        expect(diags.filter((d) => d.code === "E1730" && d.path === rel)).toHaveLength(1);
+      } finally {
+        fs.rmSync(path.join(fx.dir, rel), { force: true });
+      }
+    },
+    fixedTime(30_000),
+  );
 });
 
 describe("std.sessions: to-test of a client deployable's page in a project without identity.ts", () => {
@@ -107,7 +116,7 @@ describe("std.sessions: to-test of a client deployable's page in a project witho
     fx = diskFixture();
     fx.write("sessions/failing.json", sessionFile(await buggySession()));
     out = await emit(fx);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   test("in a fixture without identity.ts the `to-test` file imports nothing from it and its options hold no `mount`", () => {
     expect(out.code).toBe(0);
