@@ -38,6 +38,18 @@ function playwrightCore(): string | undefined {
   return found === undefined ? undefined : join(store, found, "node_modules", "playwright-core");
 }
 
+/** The workspace's `@types/node` (pnpm keeps it under `.pnpm/`): a fixture project links it so its build (E1751) resolves Node's types. */
+function typesNode(): string | undefined {
+  const hoisted = join(REPO, "node_modules", "@types", "node");
+  if (existsSync(hoisted)) return hoisted;
+  const store = join(REPO, "node_modules", ".pnpm");
+  if (!existsSync(store)) return undefined;
+  const found = readdirSync(store)
+    .filter((n) => n.startsWith("@types+node@"))
+    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0];
+  return found === undefined ? undefined : join(store, found, "node_modules", "@types", "node");
+}
+
 export type Made = { dir: string };
 const made: string[] = [];
 /** Removes every project this file made; call it from `afterAll`. */
@@ -47,18 +59,25 @@ export const cleanup = (): void => {
 
 /**
  * A project of `tree` in a new folder under the OS tmpdir with `@keel/*`, `vitest`, `vite`, `typescript` and `fast-check` linked, and,
- * unless `playwright` is false, `playwright-core` (absent from the project's resolution when false).
+ * unless `playwright` is false, `playwright-core` (absent from the project's resolution when false), and `@types/node`; the
+ * `@keel/<name>` packages in `omit` are not linked (a library missing a package its host needs).
  */
-export function project(tree: Tree, opts: { playwright?: boolean } = {}): string {
+export function project(tree: Tree, opts: { playwright?: boolean; omit?: readonly string[] } = {}): string {
   const dir = mkdtempSync(join(tmpdir(), "keel-e2e-"));
   made.push(dir);
   write(dir, tree);
   mkdirSync(join(dir, "node_modules", "@keel"), { recursive: true });
   for (const pkg of readdirSync(join(REPO, "packages")))
-    symlinkSync(join(REPO, "packages", pkg), join(dir, "node_modules", "@keel", pkg));
+    if (!(opts.omit ?? []).includes(pkg))
+      symlinkSync(join(REPO, "packages", pkg), join(dir, "node_modules", "@keel", pkg));
   for (const name of ["vitest", "vite", "typescript", "fast-check", "happy-dom"]) {
     const from = join(REPO, "node_modules", name);
     if (existsSync(from)) symlinkSync(from, join(dir, "node_modules", name));
+  }
+  const types = typesNode();
+  if (types !== undefined) {
+    mkdirSync(join(dir, "node_modules", "@types"), { recursive: true });
+    symlinkSync(types, join(dir, "node_modules", "@types", "node"));
   }
   const pw = playwrightCore();
   if (opts.playwright !== false && pw !== undefined) symlinkSync(pw, join(dir, "node_modules", "playwright-core"));
@@ -108,9 +127,9 @@ export const keelE2e = (dir: string, paths: readonly string[] = [], opts: Parame
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
 export type Outcome = "passed" | "failed" | "skipped";
-/** The state `reports/tests/e2e.json` holds for the test of `file` at `line`, or undefined. */
-export function outcome(dir: string, file: string, line: number): Outcome | undefined {
-  const path = join(dir, "reports", "tests", "e2e.json");
+/** The state `reports/tests/<reportFile>` (default `e2e.json`) holds for the test of `file` at `line`, or undefined. */
+export function outcome(dir: string, file: string, line: number, reportFile = "e2e.json"): Outcome | undefined {
+  const path = join(dir, "reports", "tests", reportFile);
   if (!existsSync(path)) return undefined;
   const report: unknown = JSON.parse(readFileSync(path, "utf8"));
   const files = isRecord(report) && isRecord(report.files) ? report.files : {};
@@ -160,4 +179,71 @@ export function failureOf(stdout: string, file: string, line: number): string | 
     block.push(r);
   }
   return block.join("\n");
+}
+
+/**
+ * `test/support.ts` of a fixture project (a source text): `envOf` reads `GET /api/<module>/env` of a deployable from the test
+ * process (the values its process holds), `alive` looks for a process by a word of its command line.
+ */
+export const SUPPORT_ENV = `import { spawnSync } from 'node:child_process'
+import { connect } from 'node:net'
+import { serve } from '@keel/testing/e2e'
+export type Served = Awaited<ReturnType<typeof serve>>
+export async function envOf(app: Served, deployable: string, mod = 'a'): Promise<Record<string, string>> {
+  const res = await app.fetch(\`/api/\${mod}/env\`, { deployable, headers: { accept: 'application/json' } })
+  const body: unknown = await res.json()
+  const results = typeof body === 'object' && body !== null ? Reflect.get(body, 'results') : undefined
+  const entry = typeof results === 'object' && results !== null ? Reflect.get(results, \`\${mod}.env\`) : undefined
+  const value = typeof entry === 'object' && entry !== null ? Reflect.get(entry, 'value') : undefined
+  if (typeof value !== 'object' || value === null) throw new Error('no env answer')
+  return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, String(v)]))
+}
+/** True when nothing accepts a connection at \`origin\`. */
+export const refused = (origin: string): Promise<boolean> =>
+  new Promise((resolve) => {
+    const url = new URL(origin)
+    const socket = connect(Number(url.port), url.hostname)
+    socket.once('connect', () => {
+      socket.destroy()
+      resolve(false)
+    })
+    socket.once('error', () => resolve(true))
+  })
+export const alive = (needle: string): boolean => {
+  const ps = spawnSync('ps', ['-A', '-o', 'command='], { encoding: 'utf8' })
+  return ps.stdout.split('\\n').some((l) => l.includes(needle))
+}
+`;
+
+/** `test/board.ts` of a module-`a` fixture project: the server store `a.board` the test hands to `state`, `until` and `log`, made in a scope (E1203) once. */
+export const SUPPORT_BOARD = `import { scope } from '@keel/reactive'
+import { boards } from '../modules/a/boards.ts'
+let made: ReturnType<typeof boards>['board'] | undefined
+export function board(): ReturnType<typeof boards>['board'] {
+  if (made === undefined) made = scope(() => undefined).run(() => boards().board)
+  return made
+}
+`;
+
+/** The `Failure` shape a test reads a rejection into: its `code` and `message`. */
+export const FAILURE = `export const failure = async (p: Promise<unknown>): Promise<{ code: unknown; message: string }> => {
+  const e: unknown = await p.then(() => undefined, (x: unknown) => x)
+  return { code: Reflect.get(Object(e), 'code'), message: String(Reflect.get(Object(e), 'message')) }
+}
+`;
+
+/** What a failed case shows: the run's T0001 lines of the fixture's own files (each with its indented lines), else the tail of its output. */
+export function reasons(r: Run | undefined): string {
+  if (r === undefined) return "no run";
+  const rows = r.stdout.split("\n");
+  const out: string[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    if (!(rows[i] ?? "").startsWith("T0001 test/")) continue;
+    out.push(rows[i] ?? "");
+    for (const n of rows.slice(i + 1)) {
+      if (!n.startsWith("  ")) break;
+      out.push(n);
+    }
+  }
+  return out.length > 0 ? out.join("\n").slice(0, 4000) : `${r.stdout}\n${r.stderr}`.slice(-3000);
 }
