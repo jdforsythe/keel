@@ -1,4 +1,4 @@
-// k.library Ids, a library's route component: a file a `manifest(` call of `@keel/router` in the same library binds as
+// k.library-pages, a library's route component: a file a `manifest(` call of `@keel/router` in the same library binds as
 // a route's `component` (a relative default import), whose stem `public.exports` does not list and which no `exports`
 // entry gives, may give an element the literal id `<id>.<rest>`, `<id>` the library's manifest id. Any other prefix,
 // the bare id, a widget file the table binds nothing from, a public page and an app's import of another library's

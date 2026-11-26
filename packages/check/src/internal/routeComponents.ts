@@ -83,7 +83,7 @@ function readFile(c: Checked): Read {
 }
 
 /**
- * The route component files of the libraries among `checked` (k.library Ids), each to its library's manifest `id`: a
+ * The route component files of the libraries among `checked` (k.library-pages), each to its library's manifest `id`: a
  * file a `manifest(` call of `@keel/router` in a file of the same library binds as an entry's `component`, that
  * component a name the binding file imports by a relative default import and uses nowhere else. A file whose stem the
  * library's `public.exports` lists, that one of `entryFiles` (the files the libraries' `exports` give) names, or that

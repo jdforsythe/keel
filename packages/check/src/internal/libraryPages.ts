@@ -8,7 +8,7 @@ import { routeComponents } from "./routeComponents.ts";
 
 /**
  * The route component files of the libraries among `checked` (real paths), each to its library's manifest `id`
- * (`routeComponents`, k.library Ids), read with `libs` over `all`: a library's manifest is the `module.ts` of its
+ * (`routeComponents`, k.library-pages), read with `libs` over `all`: a library's manifest is the `module.ts` of its
  * package folder, and its entries' files are the ones `libs.entries` gives.
  */
 export function libraryPages(

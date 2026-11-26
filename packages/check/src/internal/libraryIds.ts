@@ -54,7 +54,7 @@ const inSpace = (text: string | undefined, id: string | undefined): boolean =>
  * them) and `@keel/ui/aria`'s `Part`, rendered as JSX or called, whose `id` the reader (`idReader`, over the checked
  * files and the libraries' `entries`) cannot read as built from its component's `id` prop; aliases and namespace
  * imports followed. In a library's route component file (`pages`, each to its library's manifest `id`,
- * `routeComponents`), an `id` that is a string literal `<id>.<rest>` is read as built too. At the element's name; no fix.
+ * `routeComponents`, k.library-pages), an `id` that is a string literal `<id>.<rest>` is read as built too. At the element's name; no fix.
  */
 export function libraryIds(
   checked: readonly Checked[],
