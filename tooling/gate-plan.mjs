@@ -152,6 +152,10 @@ export const SLOW = {
   memory: "7700m",
   volume: "keel-gate-pnpm-store",
   workdir: "/work",
+  /** The user the shards run as; `node` is the image's own non-root user. */
+  user: "node",
+  /** The most shards that run at once: each container has its own cpus and memory, within the docker machine's. */
+  parallel: 3,
   /** Milliseconds each docker command may take before the job fails naming it. */
   limits: { short: 120_000, pull: 600_000, copy: 900_000 },
 };
@@ -164,8 +168,21 @@ function slowDecision(skip, only) {
   return { name: SLOW_JOB, decision: "run", rule };
 }
 
-/** The container's name: `keel-gate-slow-<sha>`. */
-export const slowContainer = (short) => `keel-gate-slow-${short}`;
+/** The container's name: `keel-gate-slow-<sha>`; a shard's own container adds `-<shard>`. */
+export const slowContainer = (short, shard) => `keel-gate-slow-${short}${shard === undefined ? "" : `-${shard}`}`;
+
+/**
+ * How many shards run at once: the most that fit in the docker machine's cpus and memory at `cpus` and `memory` each,
+ * no more than `want` (`SLOW.parallel` when it is not given) and at least 1.
+ */
+export function slowParallel({ want = SLOW.parallel, machineCpus, machineMemory, cpus, memory }) {
+  const mem = /^(\d+)([bkmg])$/i.exec(memory);
+  const unit = { b: 1, k: 1024, m: 1024 ** 2, g: 1024 ** 3 }[String(mem?.[2]).toLowerCase()];
+  const bytes = mem === null || unit === undefined ? Number.POSITIVE_INFINITY : Number(mem[1]) * unit;
+  const byCpu = Math.floor(machineCpus / cpus);
+  const byMemory = Math.floor(machineMemory / bytes);
+  return Math.max(1, Math.min(want, byCpu, byMemory));
+}
 
 /**
  * `docker run` arguments for the long-lived container the shards run in. The tree goes in with `docker cp`; the only
@@ -187,11 +204,27 @@ export function slowRunArgs({ name, image, cpus = SLOW.cpus, memory = SLOW.memor
     `${volume}:/pnpm-store`,
     "-w",
     SLOW.workdir,
+    // A runner is no root user and has an init that reaps orphans: as root, a file mode no longer stops a write, and
+    // without an init a killed process stays a zombie that a test for "the process is gone" still sees.
+    "--init",
+    "--user",
+    SLOW.user,
     image,
     "sleep",
     "infinity",
   ];
 }
+
+/**
+ * Run as root in a fresh container, after the tree is copied in: the tools `ubuntu-latest` has and the image has not
+ * (the tests read listening ports with `lsof`), and the tree and pnpm's store owned by the user the shards run as.
+ */
+export const slowSetupScript = [
+  "apt-get update -qq",
+  "apt-get install -y -qq --no-install-recommends lsof >/dev/null",
+  `chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`,
+  `[ "$(stat -c %U /pnpm-store)" = ${SLOW.user} ] || chown -R ${SLOW.user}:${SLOW.user} /pnpm-store`,
+].join(" && ");
 
 /** Host paths a `docker run` argument list mounts: `-v`/`--volume`/`--mount` with a source that is not a named volume. */
 export function bindMounts(args) {

@@ -11,7 +11,9 @@ import {
   slowContainer,
   slowEnv,
   slowExecArgs,
+  slowParallel,
   slowRunArgs,
+  slowSetupScript,
   slowShards,
   slowSteps,
   applyRewrites,
@@ -375,6 +377,30 @@ describe("the slow-machine job", () => {
     expect(args).toContain(`${SLOW.volume}:/pnpm-store`);
     expect(bindMounts(args)).toEqual([]);
     expect(args.some((a) => a.startsWith("--mount"))).toBe(false);
+  });
+
+  it("runs as a non-root user under an init, as a hosted runner does", () => {
+    const args = slowRunArgs({ name: "keel-gate-slow-x", image: "node:22" });
+    expect(args).toContain("--init");
+    expect(args[args.indexOf("--user") + 1]).toBe(SLOW.user);
+    expect(SLOW.user).not.toBe("root");
+    expect(slowSetupScript).toContain("lsof");
+    expect(slowSetupScript).toContain(`chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`);
+  });
+
+  it("names a shard's container after the commit and the shard", () => {
+    expect(slowContainer("0123456789ab", 3)).toBe("keel-gate-slow-0123456789ab-3");
+  });
+
+  it("runs as many shards at once as the docker machine holds, no more than asked", () => {
+    const gb = 1024 ** 3;
+    const machine = { machineCpus: 10, machineMemory: 25 * gb, cpus: 2, memory: "7700m" };
+    expect(slowParallel(machine)).toBe(3);
+    expect(slowParallel({ ...machine, want: 2 })).toBe(2);
+    expect(slowParallel({ ...machine, machineMemory: 12 * gb })).toBe(1);
+    expect(slowParallel({ ...machine, machineCpus: 4 })).toBe(2);
+    expect(slowParallel({ ...machine, machineCpus: 1 })).toBe(1);
+    expect(slowParallel({ ...machine, cpus: 1, machineMemory: 100 * gb, want: 6 })).toBe(6);
   });
 
   it("finds a bind mount in any spelling", () => {

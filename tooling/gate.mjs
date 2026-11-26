@@ -4,7 +4,7 @@
 // tooling/gate-plan.mjs; docs/GATE.md says what runs, what is skipped and why.
 // Usage: node tooling/gate.mjs [<rev>] [--scale <n>] [--with <job,...>] [--allow-skip <job,...>] [--only <job,...>]
 //          [--fail-fast] [--quiet] [--max-load <n>] [--load-wait <minutes>] [--worktree <path>]
-//          [--skip-slow] [--slow-cpus <n>] [--slow-memory <size>]
+//          [--skip-slow] [--slow-cpus <n>] [--slow-memory <size>] [--slow-parallel <n>]
 //        node tooling/gate.mjs --status [<rev>]
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -35,7 +35,9 @@ import {
   slowContainer,
   slowEnv,
   slowExecArgs,
+  slowParallel,
   slowRunArgs,
+  slowSetupScript,
   slowShards,
   slowSteps,
   stepName,
@@ -63,6 +65,7 @@ const VALUE = new Set([
   "format",
   "slow-cpus",
   "slow-memory",
+  "slow-parallel",
 ]);
 const flags = new Set();
 const values = new Map();
@@ -128,6 +131,9 @@ const maxLoad = Number(values.get("max-load") ?? 30);
 const loadWaitMs = Number(values.get("load-wait") ?? 20) * 60_000;
 const slowCpus = Number(values.get("slow-cpus") ?? SLOW.cpus);
 const slowMemory = values.get("slow-memory") ?? SLOW.memory;
+const slowParallelWanted = values.has("slow-parallel") ? Number(values.get("slow-parallel")) : undefined;
+if (slowParallelWanted !== undefined && !(Number.isInteger(slowParallelWanted) && slowParallelWanted > 0))
+  fail(`fail gate --slow-parallel ${values.get("slow-parallel")} is not a positive whole number`);
 if (!(slowCpus > 0)) fail(`fail gate --slow-cpus ${values.get("slow-cpus")} is not a positive number`);
 if (!/^\d+[bkmg]$/i.test(slowMemory)) fail(`fail gate --slow-memory ${slowMemory} is not a size such as 7700m`);
 if (!(Number(scale) > 0)) fail(`fail gate --scale ${scale} is not a positive number`);
@@ -532,13 +538,23 @@ function dockerBounded(args, ms) {
 async function runSlow() {
   const major = nodeMajor(source) ?? "22";
   const image = `node:${major}`;
+  const builtImage = `${slowContainer(short)}:built`;
   const name = slowContainer(short);
-  const note = `${slowCpus} cpus, ${slowMemory}`;
   const dir = path.join(out, "slow-shards");
   fs.mkdirSync(dir, { recursive: true });
   const clone = path.join(dir, "tree");
   const env = slowEnv(source);
   const shards = slowShards(source);
+  const info = docker(["info", "--format", "{{.NCPU}} {{.MemTotal}}"]).stdout.trim().split(" ").map(Number);
+  const parallel =
+    slowParallelWanted ??
+    slowParallel({
+      machineCpus: info[0] ?? 0,
+      machineMemory: info[1] ?? 0,
+      cpus: slowCpus,
+      memory: slowMemory,
+    });
+  const note = `${slowCpus} cpus, ${slowMemory}${parallel > 1 ? `, ${parallel} shards at once` : ""}`;
   const make = (label, extra = {}) => ({
     label,
     name: SLOW_JOB,
@@ -552,11 +568,11 @@ async function runSlow() {
   const prep = make(SLOW_JOB);
   const results = [];
   const t = performance.now();
-  const exec = async (record, label, script, stepEnv, deadline, index) => {
-    const log = path.join(dir, `${String(index).padStart(2, "0")}-${slug(label)}.log`);
+  const exec = async (container, record, label, script, stepEnv, deadline, index) => {
+    const log = path.join(dir, `${String(index).padStart(3, "0")}-${slug(label)}.log`);
     const s0 = performance.now();
     const load = await waitForLoad();
-    const args = slowExecArgs(name, { ...env, ...stepEnv }, script);
+    const args = slowExecArgs(container, { ...env, ...stepEnv }, script);
     const r = await runScript(`exec docker ${args.map(shq).join(" ")}`, {
       cwd: rootDir,
       env: baseEnv(),
@@ -572,6 +588,20 @@ async function runSlow() {
     record.load = Math.max(record.load, load);
     if (status === "fail") record.status = "fail";
     return status === "ok";
+  };
+  // One shard in a container of its own: the job's `timeout-minutes` to itself, as on a runner of its own.
+  const shardMs = (source.jobs["test-shard"]["timeout-minutes"] ?? 35) * 60_000;
+  const runShard = async (container, shard) => {
+    const rec = make(`${SLOW_JOB} ${shard}`);
+    const s0 = performance.now();
+    let good = true;
+    let i = shard * 100;
+    for (const step of slowSteps(source, shard).steps) {
+      if (!good) break;
+      good = await exec(container, rec, step.name, step.run, step.env, Date.now() + shardMs, i++);
+    }
+    rec.seconds = (performance.now() - s0) / 1000;
+    return rec;
   };
   try {
     const have =
@@ -595,46 +625,63 @@ async function runSlow() {
     const mounts = bindMounts(runArgs);
     if (mounts.length > 0) throw new Error(`the slow container would bind-mount ${mounts.join(", ")}`);
     dockerBounded(runArgs, SLOW.limits.short);
-    dockerBounded(["exec", name, "mkdir", "-p", SLOW.workdir], SLOW.limits.short);
+    dockerBounded(["exec", "-u", "0", name, "mkdir", "-p", SLOW.workdir], SLOW.limits.short);
     dockerBounded(["cp", `${clone}${path.sep}.`, `${name}:${SLOW.workdir}`], SLOW.limits.copy);
     fs.rmSync(clone, { recursive: true, force: true });
-    // Each shard has the job's `timeout-minutes` to itself, as on a runner of its own.
-    const shardMs = (source.jobs["test-shard"]["timeout-minutes"] ?? 35) * 60_000;
+    dockerBounded(["exec", "-u", "0", name, "bash", "-c", slowSetupScript], SLOW.limits.pull);
     const first = slowSteps(source, shards[0] ?? 1);
     let i = 1;
-    let ok = await exec(prep, "corepack", "corepack enable && pnpm --version", {}, Date.now() + 600_000, i++);
+    let ok = await exec(name, prep, "corepack", "corepack enable && pnpm --version", {}, Date.now() + 600_000, i++);
     for (const step of first.install)
-      ok = ok && (await exec(prep, step.name, step.run, step.env, Date.now() + 1_800_000, i++));
+      ok = ok && (await exec(name, prep, step.name, step.run, step.env, Date.now() + 1_800_000, i++));
     // The builds CI's check job leaves in the turbo cache, outside the shards' times.
-    ok = ok && (await exec(prep, "pnpm build", "pnpm build", {}, Date.now() + 3_600_000, i++));
+    ok = ok && (await exec(name, prep, "pnpm build", "pnpm build", {}, Date.now() + 3_600_000, i++));
     prep.seconds = (performance.now() - t) / 1000;
     results.push(prep);
-    for (const shard of shards) {
-      const rec = make(`${SLOW_JOB} ${shard}`);
-      if (!ok) {
-        rec.status = "not-run";
-        rec.reason = "the container's setup failed";
+    if (!ok) {
+      for (const shard of shards)
+        results.push(make(`${SLOW_JOB} ${shard}`, { status: "not-run", reason: "the container's setup failed" }));
+    } else if (parallel <= 1) {
+      // One after another in the prepared container; a step cut off at its time may still run in it, so the rest wait.
+      for (const shard of shards) {
+        const rec = await runShard(name, shard);
         results.push(rec);
-        continue;
-      }
-      const s0 = performance.now();
-      const { steps } = slowSteps(source, shard);
-      let good = true;
-      for (const step of steps) {
-        if (!good) break;
-        good = await exec(rec, step.name, step.run, step.env, Date.now() + shardMs, i++);
-      }
-      rec.seconds = (performance.now() - s0) / 1000;
-      results.push(rec);
-      if (!good) {
-        // A step cut off at its time may still run in the container; later shards would share its CPUs.
-        const rest = shards.slice(shards.indexOf(shard) + 1);
         if (rec.steps.some((st) => st.timedOut)) {
-          for (const n of rest)
+          for (const n of shards.slice(shards.indexOf(shard) + 1))
             results.push(make(`${SLOW_JOB} ${n}`, { status: "not-run", reason: "after a shard timed out" }));
           break;
         }
       }
+    } else {
+      // The built tree is reused: one image from the prepared container, and each shard in a container of its own,
+      // `parallel` at a time, each with the job's cpus and memory.
+      dockerBounded(["commit", name, builtImage], SLOW.limits.copy);
+      docker(["rm", "-f", "-v", name]);
+      const queue = [...shards];
+      const done = new Map();
+      const worker = async () => {
+        for (let shard = queue.shift(); shard !== undefined; shard = queue.shift()) {
+          const mine = slowContainer(short, shard);
+          containers.add(mine);
+          docker(["rm", "-f", "-v", mine]);
+          try {
+            dockerBounded(
+              slowRunArgs({ name: mine, image: builtImage, cpus: slowCpus, memory: slowMemory }),
+              SLOW.limits.short,
+            );
+            done.set(shard, await runShard(mine, shard));
+          } catch (e) {
+            done.set(
+              shard,
+              make(`${SLOW_JOB} ${shard}`, { status: "fail", reason: e instanceof Error ? e.message : String(e) }),
+            );
+          } finally {
+            docker(["rm", "-f", "-v", mine]);
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(parallel, shards.length) }, worker));
+      for (const shard of shards) results.push(done.get(shard) ?? make(`${SLOW_JOB} ${shard}`, { status: "not-run" }));
     }
   } catch (e) {
     prep.status = "fail";
@@ -643,6 +690,7 @@ async function runSlow() {
     if (!results.includes(prep)) results.unshift(prep);
   } finally {
     docker(["rm", "-f", "-v", name]);
+    docker(["image", "rm", "-f", builtImage]);
     fs.rmSync(clone, { recursive: true, force: true });
   }
   return results;
