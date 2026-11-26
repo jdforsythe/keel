@@ -4,7 +4,7 @@
 // a skill id is the entry whose id has no `.` (section ids are `k.router`, `std.tables`; skill names are `keel-client`).
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { cleanup, keel, materialize, readTree, type CliRecord } from "./keel-cli.ts";
+import { childOutput, cleanup, keel, materialize, readTree, type CliRecord } from "./keel-cli.ts";
 
 export { cleanup, keel, materialize, readTree };
 export type { CliRecord };
@@ -15,7 +15,7 @@ export const END = "<!-- keel:end -->";
 export function scaffolded(extra: string[] = []): { dir: string; proj: string } {
   const dir = materialize(new Map());
   const r = keel(dir, ["scaffold", "project", "shop", ...extra]);
-  if (r.status !== 0) throw new Error(`scaffold project failed: ${r.status}`);
+  if (r.status !== 0) throw new Error(`scaffold project failed (status ${String(r.status)}): ${childOutput(r)}`);
   return { dir, proj: join(dir, "shop") };
 }
 

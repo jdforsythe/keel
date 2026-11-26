@@ -17,6 +17,7 @@ import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { childOutput } from "./topology-build-fixture.ts";
 
 type Component = (props: RouteProps, ctx: Ctx) => Node;
 type Fetcher = { fetch(req: Request): Promise<Response> };
@@ -128,7 +129,7 @@ beforeAll(() => {
     env: { ...process.env, KEEL_AGENT: "1" },
   });
   if (r.status !== 0) {
-    throw new Error(`keel build failed (status ${String(r.status)})\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   }
 }, 90_000);
 

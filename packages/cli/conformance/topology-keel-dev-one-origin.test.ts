@@ -194,6 +194,7 @@ async function served(p: Proc, port: number): Promise<boolean> {
 /** TCP ports the process group `pgid` listens on (`lsof -g`; none listening: no output). */
 function listening(pgid: number): number[] {
   const r = spawnSync("lsof", ["-nP", "-a", "-g", String(pgid), "-iTCP", "-sTCP:LISTEN", "-Fn"], { encoding: "utf8" });
+  if (r.error !== undefined) throw new Error("lsof is required");
   const ports = new Set<number>();
   for (const line of r.stdout.split("\n")) {
     const m = /^n.*:(\d+)$/.exec(line);
