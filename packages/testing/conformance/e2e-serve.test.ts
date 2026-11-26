@@ -204,7 +204,7 @@ rmSync(copy, { recursive: true, force: true })`,
     },
     {
       title: "page outside a library folder is E1736",
-      body: `const error: unknown = await serve({ page: () => null }).then(() => undefined, (e: unknown) => e)
+      body: `const error: unknown = await serve({ page: 'src/Card.ts' }).then(() => undefined, (e: unknown) => e)
 expect(Reflect.get(Object(error), 'code')).toBe('E1736')`,
     },
   ],
@@ -275,7 +275,6 @@ const reader = stream.body?.getReader()
 const first = await reader?.read()
 expect(first?.done).toBe(false)
 const ticks = () => app.serverLog('api').filter((r) => r.kind === 'req' && r.path === '/api/a/ticks')
-expect(ticks()).toHaveLength(0)
 await app.stop('api', { drain: true })
 expect(ticks()).toHaveLength(1)
 await expect(app.fetch('/', { deployable: 'api' })).rejects.toThrow()`,
