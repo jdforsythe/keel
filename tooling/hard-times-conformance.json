@@ -408,18 +408,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-health/conformance/app-import.test.ts",
-    "line": 23,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-health/conformance/app-import.test.ts",
-    "line": 31,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-i18n/conformance/e2301.test.ts",
     "line": 36,
     "text": "30_000",
