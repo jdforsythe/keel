@@ -15,13 +15,14 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { bundleVerify } from "../src/internal/bundleVerify.ts";
 import { bundleWrite } from "../src/internal/bundleWrite.ts";
 import type { Io } from "../src/types/Io.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
-const SLOW = 180_000;
+const SLOW = fixedTime(180_000);
 const SEED = 1337;
 const dirs: string[] = [];
 afterAll(() => {

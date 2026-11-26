@@ -1,6 +1,7 @@
 // Spec: k.ledger, clause "A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`."
 // k.ledger, Ledger "`proven`: a passing type-level test (its body calls `expectTypeOf` or `assertType`, type-checked by the package's `check`), a passing closed-form `explore` (k.model) or a passing `prove` its body awaits or returns (k.prove; evidence: Z3 version); nothing else claims it."
 // The real `keel` binary over a temp project (OS tmpdir). Seed: 1337 (no property in this file).
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import { ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
 import { EXAMPLE, ITEM, SOURCE, exampleTest, source } from "./ledger-fixture.ts";
@@ -24,16 +25,28 @@ const rungOf = (test: string, extra: Record<string, string> = {}) =>
   );
 
 describe("k.ledger: type-level evidence", () => {
-  it("A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`.", () => {
-    expect(rungOf(typeTest("expectTypeOf(clamp).returns.toBeNumber();"))).toBe("proven");
-  }, 60_000);
+  it(
+    "A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`.",
+    () => {
+      expect(rungOf(typeTest("expectTypeOf(clamp).returns.toBeNumber();"))).toBe("proven");
+    },
+    fixedTime(60_000),
+  );
 
-  it("a passing test whose body asserts with `assertType` makes the exports it names `proven`", () => {
-    expect(rungOf(typeTest("assertType<number>(clamp(1, 0, 2));"))).toBe("proven");
-  }, 60_000);
+  it(
+    "a passing test whose body asserts with `assertType` makes the exports it names `proven`",
+    () => {
+      expect(rungOf(typeTest("assertType<number>(clamp(1, 0, 2));"))).toBe("proven");
+    },
+    fixedTime(60_000),
+  );
 
-  it("a passing test that names the export without asserting its type does not claim `proven`", () => {
-    const noAssertion = typeTest("void clamp(1, 0, 2);");
-    expect(rungOf(noAssertion, { [EXAMPLE]: exampleTest })).toBe("example");
-  }, 60_000);
+  it(
+    "a passing test that names the export without asserting its type does not claim `proven`",
+    () => {
+      const noAssertion = typeTest("void clamp(1, 0, 2);");
+      expect(rungOf(noAssertion, { [EXAMPLE]: exampleTest })).toBe("example");
+    },
+    fixedTime(60_000),
+  );
 });

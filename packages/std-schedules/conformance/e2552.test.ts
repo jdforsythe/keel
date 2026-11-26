@@ -2,6 +2,7 @@
 // std.schedules, rule E2552: a `schedule` key not prefixed by its module id, or a `schedule` outside `modules/<id>/schedules.server.ts` (fix prefixes the key).
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -73,33 +74,45 @@ export const runners = ${o.runners ?? "[jobs, schedules]"}
   { path: "topology.ts", source: topo("node") },
 ];
 
-test("E2552 fires on a `schedule` key not prefixed by its module id and not on its clean twin.", () => {
-  fc.assert(
-    fc.property(word, (name) => {
-      expect(found(project({ key: name }), "E2552").length).toBe(1);
-      expect(found(project({ key: `orders.${name}` }), "E2552").length).toBe(0);
-    }),
-    { seed: 1337, numRuns: 30 },
-  );
-}, 30_000);
+test(
+  "E2552 fires on a `schedule` key not prefixed by its module id and not on its clean twin.",
+  () => {
+    fc.assert(
+      fc.property(word, (name) => {
+        expect(found(project({ key: name }), "E2552").length).toBe(1);
+        expect(found(project({ key: `orders.${name}` }), "E2552").length).toBe(0);
+      }),
+      { seed: 1337, numRuns: 30 },
+    );
+  },
+  fixedTime(30_000),
+);
 
-test("E2552 fires on a `schedule` outside `modules/<id>/schedules.server.ts` and not on its clean twin.", () => {
-  expect(found(project({ path: "modules/orders/other.server.ts" }), "E2552").length).toBe(1);
-  expect(found(project(), "E2552").length).toBe(0);
-}, 30_000);
+test(
+  "E2552 fires on a `schedule` outside `modules/<id>/schedules.server.ts` and not on its clean twin.",
+  () => {
+    expect(found(project({ path: "modules/orders/other.server.ts" }), "E2552").length).toBe(1);
+    expect(found(project(), "E2552").length).toBe(0);
+  },
+  fixedTime(30_000),
+);
 
-test("E2552's fix prefixes the key with the module id, and re-checking the patched file reports no E2552.", () => {
-  fc.assert(
-    fc.property(word, (name) => {
-      const files = project({ key: name });
-      const d = found(files, "E2552");
-      expect(d.length).toBe(1);
-      const patched = applyFix(files, d[0]?.fix ?? "");
-      expect(patched.find((f) => f.path === "modules/orders/schedules.server.ts")?.source).toContain(
-        `"orders.${name}"`,
-      );
-      expect(found(patched, "E2552").length).toBe(0);
-    }),
-    { seed: 1337, numRuns: 20 },
-  );
-}, 30_000);
+test(
+  "E2552's fix prefixes the key with the module id, and re-checking the patched file reports no E2552.",
+  () => {
+    fc.assert(
+      fc.property(word, (name) => {
+        const files = project({ key: name });
+        const d = found(files, "E2552");
+        expect(d.length).toBe(1);
+        const patched = applyFix(files, d[0]?.fix ?? "");
+        expect(patched.find((f) => f.path === "modules/orders/schedules.server.ts")?.source).toContain(
+          `"orders.${name}"`,
+        );
+        expect(found(patched, "E2552").length).toBe(0);
+      }),
+      { seed: 1337, numRuns: 20 },
+    );
+  },
+  fixedTime(30_000),
+);

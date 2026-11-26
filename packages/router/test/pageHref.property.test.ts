@@ -2,6 +2,7 @@
 // origin, rebuilt and idempotent, and a refusal is the same value. Seed 1337.
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { guard } from "../src/guard.ts";
@@ -151,23 +152,27 @@ describe("pageHref properties", () => {
     );
   });
 
-  it("text of 2,048 characters built to make a matcher backtrack is answered at once", () => {
-    const hard = [
-      `/${"/".repeat(2047)}`,
-      `/${"a/".repeat(1023)}x`,
-      `/list?${"&".repeat(2041)}`,
-      `/list?${"a=%".repeat(680)}`,
-      `/${"%2".repeat(682)}`,
-      `/${"%2e".repeat(682)}`,
-      `/${"/..".repeat(682)}`,
-      `/names/${"%C3".repeat(680)}`,
-      `/list/${"/".repeat(2040)}x`,
-      `${"/".repeat(2047)}a`,
-    ];
-    for (const x of hard) pageHref(t, x);
-    // Backtracking would run past the test's own 2 s bound.
-    expect(hard.every((x) => x.length <= 2048)).toBe(true);
-  }, 2000);
+  it(
+    "text of 2,048 characters built to make a matcher backtrack is answered at once",
+    () => {
+      const hard = [
+        `/${"/".repeat(2047)}`,
+        `/${"a/".repeat(1023)}x`,
+        `/list?${"&".repeat(2041)}`,
+        `/list?${"a=%".repeat(680)}`,
+        `/${"%2".repeat(682)}`,
+        `/${"%2e".repeat(682)}`,
+        `/${"/..".repeat(682)}`,
+        `/names/${"%C3".repeat(680)}`,
+        `/list/${"/".repeat(2040)}x`,
+        `${"/".repeat(2047)}a`,
+      ];
+      for (const x of hard) pageHref(t, x);
+      // Backtracking would run past the test's own 2 s bound.
+      expect(hard.every((x) => x.length <= 2048)).toBe(true);
+    },
+    fixedTime(2000),
+  );
 
   it("`returnRefused` refuses over 2,048 characters and accepts exactly 2,048", () => {
     expect(returnRefused(`/${"a".repeat(2047)}`)).toBe(false);

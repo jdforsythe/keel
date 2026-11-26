@@ -4,6 +4,7 @@
 // Seed 1337
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -67,27 +68,35 @@ const project = (inputSrc: string): Files => [
   { path: "topology.ts", source: topo("node") },
 ];
 
-test("E2503 fires on a job `input` schema holding `s.secret` and not on its clean twin, and carries no fix.", () => {
-  fc.assert(
-    fc.property(word, (field) => {
-      const bad = found(project(`s.object({ ${field}: s.secret(s.string()) })`), "E2503");
-      expect(bad.length).toBe(1);
-      expect(bad[0]?.fix).toBeUndefined();
-      expect(found(project(`s.object({ ${field}: s.string() })`), "E2503").length).toBe(0);
-    }),
-    { seed: 1337, numRuns: 30 },
-  );
-}, 30_000);
+test(
+  "E2503 fires on a job `input` schema holding `s.secret` and not on its clean twin, and carries no fix.",
+  () => {
+    fc.assert(
+      fc.property(word, (field) => {
+        const bad = found(project(`s.object({ ${field}: s.secret(s.string()) })`), "E2503");
+        expect(bad.length).toBe(1);
+        expect(bad[0]?.fix).toBeUndefined();
+        expect(found(project(`s.object({ ${field}: s.string() })`), "E2503").length).toBe(0);
+      }),
+      { seed: 1337, numRuns: 30 },
+    );
+  },
+  fixedTime(30_000),
+);
 
-test("E2503 fires on `s.secret` nested in an object, array or optional inside the job `input`.", () => {
-  for (const src of [
-    "s.object({ a: s.object({ b: s.secret(s.string()) }) })",
-    "s.object({ a: s.array(s.secret(s.string())) })",
-    "s.object({ a: s.secret(s.string()).optional() })",
-  ]) {
-    expect(found(project(src), "E2503").length).toBe(1);
-  }
-}, 30_000);
+test(
+  "E2503 fires on `s.secret` nested in an object, array or optional inside the job `input`.",
+  () => {
+    for (const src of [
+      "s.object({ a: s.object({ b: s.secret(s.string()) }) })",
+      "s.object({ a: s.array(s.secret(s.string())) })",
+      "s.object({ a: s.secret(s.string()).optional() })",
+    ]) {
+      expect(found(project(src), "E2503").length).toBe(1);
+    }
+  },
+  fixedTime(30_000),
+);
 
 test("A `queue` whose input holds `s.secret` throws E2503.", () => {
   fc.assert(
@@ -106,32 +115,40 @@ const withJobFile = (source: string): Files =>
     f.path === "modules/orders/sendReceipt.server.ts" ? { path: f.path, source } : f,
   );
 
-test("E2503 fires for `job` reached through `import * as jobs`.", () => {
-  fc.assert(
-    fc.property(word, (field) => {
-      const viaNamespace = (inner: string) =>
-        withJobFile(
-          `import * as jobs from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nexport const sendReceipt = jobs.job({ input: s.object({ ${field}: ${inner} }) }, async () => ok(null))\n`,
-        );
-      expect(found(viaNamespace("s.secret(s.string())"), "E2503").length).toBe(1);
-      expect(found(viaNamespace("s.string()"), "E2503").length).toBe(0);
-    }),
-    { seed: 1337, numRuns: 20 },
-  );
-}, 30_000);
+test(
+  "E2503 fires for `job` reached through `import * as jobs`.",
+  () => {
+    fc.assert(
+      fc.property(word, (field) => {
+        const viaNamespace = (inner: string) =>
+          withJobFile(
+            `import * as jobs from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nexport const sendReceipt = jobs.job({ input: s.object({ ${field}: ${inner} }) }, async () => ok(null))\n`,
+          );
+        expect(found(viaNamespace("s.secret(s.string())"), "E2503").length).toBe(1);
+        expect(found(viaNamespace("s.string()"), "E2503").length).toBe(0);
+      }),
+      { seed: 1337, numRuns: 20 },
+    );
+  },
+  fixedTime(30_000),
+);
 
-test("E2503 does not fire for a `.secret()` call on an object other than `@keel/schema`'s `s`.", () => {
-  fc.assert(
-    fc.property(word, (field) => {
-      const vaultInInput = withJobFile(
-        `import { job } from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nconst vault = { secret: (x: unknown) => x }\nexport const sendReceipt = job({ input: vault.secret(s.object({ ${field}: s.string() })) }, async () => ok(null))\n`,
-      );
-      expect(found(vaultInInput, "E2503").length).toBe(0);
-      const vaultInBody = withJobFile(
-        `import { job } from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nconst vault = { secret: (x: unknown) => x }\nexport const sendReceipt = job({ input: s.object({ ${field}: s.string() }) }, async () => { vault.secret(1); return ok(null) })\n`,
-      );
-      expect(found(vaultInBody, "E2503").length).toBe(0);
-    }),
-    { seed: 1337, numRuns: 20 },
-  );
-}, 30_000);
+test(
+  "E2503 does not fire for a `.secret()` call on an object other than `@keel/schema`'s `s`.",
+  () => {
+    fc.assert(
+      fc.property(word, (field) => {
+        const vaultInInput = withJobFile(
+          `import { job } from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nconst vault = { secret: (x: unknown) => x }\nexport const sendReceipt = job({ input: vault.secret(s.object({ ${field}: s.string() })) }, async () => ok(null))\n`,
+        );
+        expect(found(vaultInInput, "E2503").length).toBe(0);
+        const vaultInBody = withJobFile(
+          `import { job } from "@keel/std-jobs"\nimport { ok, s } from "@keel/schema"\nconst vault = { secret: (x: unknown) => x }\nexport const sendReceipt = job({ input: s.object({ ${field}: s.string() }) }, async () => { vault.secret(1); return ok(null) })\n`,
+        );
+        expect(found(vaultInBody, "E2503").length).toBe(0);
+      }),
+      { seed: 1337, numRuns: 20 },
+    );
+  },
+  fixedTime(30_000),
+);

@@ -3,6 +3,7 @@
 // Observed from the public API through `keel build` output: the JS files under dist/. A locale's entry text is a marker string unique
 // to that locale file, so "holds the entry" is "contains the marker". `keel build` builds a client-only topology with the project's
 // own Vite build (k.server Build), so the fixture carries an index.html whose entry script imports the routes, and the output is dist/.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -149,7 +150,7 @@ export const routes = manifest(app, {
   });
   if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   dist = path.join(fx, "dist");
-}, 120_000);
+}, fixedTime(120_000));
 
 afterAll(() => {
   for (const dir of roots) fs.rmSync(dir, { recursive: true, force: true });

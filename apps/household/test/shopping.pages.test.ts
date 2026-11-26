@@ -145,7 +145,7 @@ const idOf = (n: number) => {
 
 const LIST_RUNS = 50;
 /** One run renders the list page and the list and reads them: 20 ms alone. The bound is 1,000 ms a run, 50 times the work alone for the machine's other workers; it is the machine's own work, so it is fixed time. */
-const LIST_RUN_MS = 1_000;
+const LIST_RUN_MS = fixedTime(1_000);
 
 it(
   "renders the list page and the list for any copy and any items, each with an id as the server mints them",

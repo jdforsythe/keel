@@ -4,6 +4,7 @@
 // Seed 1337
 // Assumption: a fire is observed by spying `jobs.enqueue` (the schedule calls `queue.enqueue(ctx, job, input, { key })`); the key suffix `<t>`
 // is accepted as epoch milliseconds or as the `Instant` text of the fire minute.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
 import { job, queue } from "@keel/std-jobs";
@@ -119,33 +120,37 @@ const instantArb = fc
   )
   .map(([minute, off]) => minute * MIN + off);
 
-test("For generated `cron` values and instants `t`, the next fire time after `t` matches the expression, and no minute strictly between them does (checked by a minute-by-minute scan).", async () => {
-  await fc.assert(
-    fc.asyncProperty(cronArb, instantArb, async (cron, t) => {
-      const matches = matcher(cron);
-      let next = Math.floor(t / MIN) * MIN + MIN;
-      const limit = next + 800 * 1440 * MIN;
-      while (next < limit && !matches(next)) next += MIN;
-      fc.pre(next < limit);
-      const { ctx, jobs, fires } = fixture();
-      const schedules = schedule(jobs, { "orders.x": { cron, zone: "UTC", job: "orders.digest", input: {} } });
-      ctx.clock.advance(t);
-      const ac = new AbortController();
-      const running = schedules.run(ctx, ac.signal);
-      await settle();
-      // nothing fires at any minute before `next`: jump to one minute short of it
-      if (next - MIN > t) {
-        ctx.clock.advance(next - MIN - t);
+test(
+  "For generated `cron` values and instants `t`, the next fire time after `t` matches the expression, and no minute strictly between them does (checked by a minute-by-minute scan).",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(cronArb, instantArb, async (cron, t) => {
+        const matches = matcher(cron);
+        let next = Math.floor(t / MIN) * MIN + MIN;
+        const limit = next + 800 * 1440 * MIN;
+        while (next < limit && !matches(next)) next += MIN;
+        fc.pre(next < limit);
+        const { ctx, jobs, fires } = fixture();
+        const schedules = schedule(jobs, { "orders.x": { cron, zone: "UTC", job: "orders.digest", input: {} } });
+        ctx.clock.advance(t);
+        const ac = new AbortController();
+        const running = schedules.run(ctx, ac.signal);
         await settle();
-      }
-      expect(fires.length).toBe(0);
-      ctx.clock.advance(next - ctx.clock.now());
-      await settle();
-      expect(fires.length).toBe(1);
-      expect(fires[0]?.at).toBe(next);
-      expect(matches(fires[0]?.at ?? 0)).toBe(true);
-      await stop(running, ac);
-    }),
-    { seed: 1337, numRuns: 25 },
-  );
-}, 120_000);
+        // nothing fires at any minute before `next`: jump to one minute short of it
+        if (next - MIN > t) {
+          ctx.clock.advance(next - MIN - t);
+          await settle();
+        }
+        expect(fires.length).toBe(0);
+        ctx.clock.advance(next - ctx.clock.now());
+        await settle();
+        expect(fires.length).toBe(1);
+        expect(fires[0]?.at).toBe(next);
+        expect(matches(fires[0]?.at ?? 0)).toBe(true);
+        await stop(running, ac);
+      }),
+      { seed: 1337, numRuns: 25 },
+    );
+  },
+  fixedTime(120_000),
+);

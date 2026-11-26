@@ -12,6 +12,7 @@
 // ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { servedBy } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
 // the client artifact copy lands at `dist/<servedBy>/index.html` and `dist/<servedBy>/assets/`; the W1567 diag is a JSON log line with kind "diag" (dev mode sink).
 // The `service({ contract })` binding of the `keel-peer` tags is observed in packages/cli/conformance/hosting-peer-binding.test.ts.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
@@ -242,55 +243,63 @@ const preflight = (urlPath: string, origin: string, method = "POST"): Request =>
 const tokens = (v: string | null): string[] => (v ?? "").split(",").map((t) => t.trim().toLowerCase());
 
 describe("k.hosting", () => {
-  test("`keel build` of a fixture with a `client` deployable `web` writes `dist/web/index.html` and hashed files under `dist/web/assets/`; no file in it holds a URL that is neither root-absolute nor absolute.", () => {
-    const b = buildFixture(WEB_AND_API);
-    expect(b.status).toBe(0);
-    const dist = path.join(b.root, "dist", "web");
-    expect(fs.existsSync(path.join(dist, "index.html"))).toBe(true);
-    const assets = fs.readdirSync(path.join(dist, "assets"));
-    expect(assets.length).toBeGreaterThan(0);
-    for (const f of assets) expect(f).toMatch(/[-.][A-Za-z0-9_-]{6,}\.[a-z0-9]+$/);
-    expect(fs.existsSync(path.join(dist, "keel-mark.svg"))).toBe(true);
-    const absolute = (u: string): boolean => /^\/(?!\/)/.test(u) || /^https?:\/\//.test(u) || /^(data:|#)/.test(u);
-    for (const file of filesUnder(dist)) {
-      const text = fs.readFileSync(file, "utf8");
-      if (file.endsWith(".html")) {
-        for (const m of text.matchAll(/\b(?:src|href|content)="([^"]*)"/g)) {
-          const v = m[1] ?? "";
-          if (/^[./]/.test(v) || /^[a-z0-9_-]+\.[a-z0-9]+$/i.test(v)) expect(absolute(v), `${file}: ${v}`).toBe(true);
+  test(
+    "`keel build` of a fixture with a `client` deployable `web` writes `dist/web/index.html` and hashed files under `dist/web/assets/`; no file in it holds a URL that is neither root-absolute nor absolute.",
+    () => {
+      const b = buildFixture(WEB_AND_API);
+      expect(b.status).toBe(0);
+      const dist = path.join(b.root, "dist", "web");
+      expect(fs.existsSync(path.join(dist, "index.html"))).toBe(true);
+      const assets = fs.readdirSync(path.join(dist, "assets"));
+      expect(assets.length).toBeGreaterThan(0);
+      for (const f of assets) expect(f).toMatch(/[-.][A-Za-z0-9_-]{6,}\.[a-z0-9]+$/);
+      expect(fs.existsSync(path.join(dist, "keel-mark.svg"))).toBe(true);
+      const absolute = (u: string): boolean => /^\/(?!\/)/.test(u) || /^https?:\/\//.test(u) || /^(data:|#)/.test(u);
+      for (const file of filesUnder(dist)) {
+        const text = fs.readFileSync(file, "utf8");
+        if (file.endsWith(".html")) {
+          for (const m of text.matchAll(/\b(?:src|href|content)="([^"]*)"/g)) {
+            const v = m[1] ?? "";
+            if (/^[./]/.test(v) || /^[a-z0-9_-]+\.[a-z0-9]+$/i.test(v)) expect(absolute(v), `${file}: ${v}`).toBe(true);
+          }
         }
+        if (file.endsWith(".css")) {
+          for (const m of text.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g))
+            expect(absolute(m[1] ?? ""), `${file}: ${m[1]}`).toBe(true);
+        }
+        if (file.endsWith(".js")) expect(text).not.toMatch(/(?:from\s*|import\s*\(?\s*)["']\.{1,2}\//);
       }
-      if (file.endsWith(".css")) {
-        for (const m of text.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g))
-          expect(absolute(m[1] ?? ""), `${file}: ${m[1]}`).toBe(true);
-      }
-      if (file.endsWith(".js")) expect(text).not.toMatch(/(?:from\s*|import\s*\(?\s*)["']\.{1,2}\//);
-    }
-  }, 180_000);
+    },
+    fixedTime(180_000),
+  );
 
-  test("E1565 / With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`; `service({ contract })` binding (packages/cli/conformance/hosting-peer-binding.test.ts); `KEEL_PEER_API=nope` fails the build with one E1565 naming the key.", () => {
-    const set = buildFixture(WEB_AND_API, { KEEL_PEER_API: "https://api.test" });
-    expect(set.status).toBe(0);
-    const html = fs.readFileSync(path.join(set.root, "dist", "web", "index.html"), "utf8");
-    const tags = keelPeerTags(html);
-    expect(tags).toHaveLength(1);
-    expect(tags[0]).toContain('data-deployable="api"');
-    expect(tags[0]).toContain('content="https://api.test"');
-    const entries = filesUnder(path.join(set.root, "dist", "web", "assets")).filter((f) => f.endsWith(".js"));
-    expect(entries.some((f) => fs.readFileSync(f, "utf8").includes("keel-peer"))).toBe(true);
+  test(
+    "E1565 / With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`; `service({ contract })` binding (packages/cli/conformance/hosting-peer-binding.test.ts); `KEEL_PEER_API=nope` fails the build with one E1565 naming the key.",
+    () => {
+      const set = buildFixture(WEB_AND_API, { KEEL_PEER_API: "https://api.test" });
+      expect(set.status).toBe(0);
+      const html = fs.readFileSync(path.join(set.root, "dist", "web", "index.html"), "utf8");
+      const tags = keelPeerTags(html);
+      expect(tags).toHaveLength(1);
+      expect(tags[0]).toContain('data-deployable="api"');
+      expect(tags[0]).toContain('content="https://api.test"');
+      const entries = filesUnder(path.join(set.root, "dist", "web", "assets")).filter((f) => f.endsWith(".js"));
+      expect(entries.some((f) => fs.readFileSync(f, "utf8").includes("keel-peer"))).toBe(true);
 
-    const unset = buildFixture(WEB_AND_API);
-    expect(unset.status).toBe(0);
-    expect(keelPeerTags(fs.readFileSync(path.join(unset.root, "dist", "web", "index.html"), "utf8"))).toHaveLength(0);
+      const unset = buildFixture(WEB_AND_API);
+      expect(unset.status).toBe(0);
+      expect(keelPeerTags(fs.readFileSync(path.join(unset.root, "dist", "web", "index.html"), "utf8"))).toHaveLength(0);
 
-    const bad = buildFixture(WEB_AND_API, { KEEL_PEER_API: "nope" });
-    expect(bad.status).not.toBe(0);
-    const lines = bad.out.split("\n").filter((l) => l.includes("E1565"));
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatch(/E1565 /);
-    expect(lines[0]).toContain("KEEL_PEER_API");
-    expect(bad.out).not.toContain("nope");
-  }, 300_000);
+      const bad = buildFixture(WEB_AND_API, { KEEL_PEER_API: "nope" });
+      expect(bad.status).not.toBe(0);
+      const lines = bad.out.split("\n").filter((l) => l.includes("E1565"));
+      expect(lines).toHaveLength(1);
+      expect(lines[0]).toMatch(/E1565 /);
+      expect(lines[0]).toContain("KEEL_PEER_API");
+      expect(bad.out).not.toContain("nope");
+    },
+    fixedTime(300_000),
+  );
 
   test("With `allow: ['https://app.test']`: a preflight from that origin to an API route is 204 with the six headers; a POST from it runs the action and carries the two response headers; the same requests from `https://other.test` are 405 and 403; a preflight to a page is 405.", async () => {
     const app = await boot();
@@ -347,24 +356,28 @@ describe("k.hosting", () => {
     expect(onPage.headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  test("`KEEL_ALLOW_ORIGINS=*` exits 1 with one E1560 naming the key.", async () => {
-    const b = buildFixture(WEB_AND_API);
-    expect(b.status).toBe(0);
-    await fc.assert(
-      fc.property(fc.constantFrom("*", "https://app.test/path", "https://ok.test,*"), (value) => {
-        const r = spawnSync(process.execPath, [path.join(b.root, "dist", "api", "server.mjs")], {
-          cwd: b.root,
-          encoding: "utf8",
-          env: deployEnv({ KEEL_SECRET: "s".repeat(32), KEEL_ALLOW_ORIGINS: value }),
-        });
-        expect(r.status).toBe(1);
-        const lines = `${r.stdout}${r.stderr}`.split("\n").filter((l) => l.includes("E1560"));
-        expect(lines).toHaveLength(1);
-        expect(lines[0]).toContain("KEEL_ALLOW_ORIGINS");
-      }),
-      { seed: SEED, numRuns: 3 },
-    );
-  }, 240_000);
+  test(
+    "`KEEL_ALLOW_ORIGINS=*` exits 1 with one E1560 naming the key.",
+    async () => {
+      const b = buildFixture(WEB_AND_API);
+      expect(b.status).toBe(0);
+      await fc.assert(
+        fc.property(fc.constantFrom("*", "https://app.test/path", "https://ok.test,*"), (value) => {
+          const r = spawnSync(process.execPath, [path.join(b.root, "dist", "api", "server.mjs")], {
+            cwd: b.root,
+            encoding: "utf8",
+            env: deployEnv({ KEEL_SECRET: "s".repeat(32), KEEL_ALLOW_ORIGINS: value }),
+          });
+          expect(r.status).toBe(1);
+          const lines = `${r.stdout}${r.stderr}`.split("\n").filter((l) => l.includes("E1560"));
+          expect(lines).toHaveLength(1);
+          expect(lines[0]).toContain("KEEL_ALLOW_ORIGINS");
+        }),
+        { seed: SEED, numRuns: 3 },
+      );
+    },
+    fixedTime(240_000),
+  );
 
   test("A request from an allowed origin with `sec-fetch-site: cross-site` logs W1567 once for that origin.", async () => {
     const lines: string[] = [];
@@ -404,66 +417,78 @@ describe("k.hosting", () => {
     expect(w1567().filter((l) => l.includes(second))).toHaveLength(1);
   });
 
-  test("With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566.", async () => {
-    const b = buildFixture(
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "api" } }`,
-    );
-    expect(b.status).toBe(0);
-    const index = fs.readFileSync(path.join(b.root, "dist", "web", "index.html"), "utf8");
-    expect(fs.readFileSync(path.join(b.root, "dist", "api", "index.html"), "utf8")).toBe(index);
-    const asset = fs.readdirSync(path.join(b.root, "dist", "api", "assets"))[0];
-    if (asset === undefined) throw new Error("host has no copied assets");
-    await withServer(b.root, "api", async (port) => {
-      for (const p of ["/", "/no/such/page"]) {
-        const doc = await send(port, "GET", p, { accept: "text/html" });
-        expect(doc.status).toBe(200);
-        expect(doc.body).toBe(index);
-        expect(String(doc.headers["cache-control"])).toContain("no-cache");
-        const head = await send(port, "HEAD", p, { accept: "text/html" });
-        expect(head.status).toBe(200);
+  test(
+    "With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566.",
+    async () => {
+      const b = buildFixture(
+        `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "api" } }`,
+      );
+      expect(b.status).toBe(0);
+      const index = fs.readFileSync(path.join(b.root, "dist", "web", "index.html"), "utf8");
+      expect(fs.readFileSync(path.join(b.root, "dist", "api", "index.html"), "utf8")).toBe(index);
+      const asset = fs.readdirSync(path.join(b.root, "dist", "api", "assets"))[0];
+      if (asset === undefined) throw new Error("host has no copied assets");
+      await withServer(b.root, "api", async (port) => {
+        for (const p of ["/", "/no/such/page"]) {
+          const doc = await send(port, "GET", p, { accept: "text/html" });
+          expect(doc.status).toBe(200);
+          expect(doc.body).toBe(index);
+          expect(String(doc.headers["cache-control"])).toContain("no-cache");
+          const head = await send(port, "HEAD", p, { accept: "text/html" });
+          expect(head.status).toBe(200);
+        }
+        for (const accept of ["application/json", "text/event-stream"]) {
+          expect((await send(port, "GET", "/no/such/page", { accept })).status).toBe(404);
+        }
+        const a = await send(port, "GET", `/assets/${asset}`);
+        expect(a.status).toBe(200);
+        expect(String(a.headers["cache-control"])).toContain("immutable");
+      });
+
+      const onClient = buildFixture(
+        `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "web" } }`,
+      );
+      expect(onClient.status).not.toBe(0);
+      expect(onClient.out).toContain("E1566");
+    },
+    fixedTime(300_000),
+  );
+
+  test(
+    "E1566 `servedBy` on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one.",
+    () => {
+      const bad = [
+        `{ api: { modules: ["api"], adapter: "node", servedBy: "api" }, web: { modules: ["app"], adapter: "client" } }`,
+        `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "nowhere" } }`,
+        `{ api: { modules: ["api"], adapter: "node" }, pre: { modules: ["app"], adapter: "static" }, web: { modules: [], adapter: "client", servedBy: "pre" } }`,
+      ];
+      for (const t of bad) {
+        const b = buildFixture(t);
+        expect(b.status, t).not.toBe(0);
+        expect(b.out, t).toContain("E1566");
       }
-      for (const accept of ["application/json", "text/event-stream"]) {
-        expect((await send(port, "GET", "/no/such/page", { accept })).status).toBe(404);
-      }
-      const a = await send(port, "GET", `/assets/${asset}`);
-      expect(a.status).toBe(200);
-      expect(String(a.headers["cache-control"])).toContain("immutable");
-    });
+    },
+    fixedTime(300_000),
+  );
 
-    const onClient = buildFixture(
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "web" } }`,
-    );
-    expect(onClient.status).not.toBe(0);
-    expect(onClient.out).toContain("E1566");
-  }, 300_000);
-
-  test("E1566 `servedBy` on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one.", () => {
-    const bad = [
-      `{ api: { modules: ["api"], adapter: "node", servedBy: "api" }, web: { modules: ["app"], adapter: "client" } }`,
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "nowhere" } }`,
-      `{ api: { modules: ["api"], adapter: "node" }, pre: { modules: ["app"], adapter: "static" }, web: { modules: [], adapter: "client", servedBy: "pre" } }`,
-    ];
-    for (const t of bad) {
-      const b = buildFixture(t);
-      expect(b.status, t).not.toBe(0);
-      expect(b.out, t).toContain("E1566");
-    }
-  }, 300_000);
-
-  test("A deployable with `host: 'api'` is one E1552 naming `host`; `topology()` throws E1552 for it.", () => {
-    const leftover = `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "api" } }`;
-    const b = buildFixture(leftover);
-    expect(b.status).not.toBe(0);
-    expect(b.out.match(/E1552/g)?.length).toBe(1);
-    expect(b.out).toContain("host");
-    expect(fs.existsSync(path.join(b.root, "dist"))).toBe(false);
-    const declared = {
-      api: { modules: ["api"], adapter: "node" },
-      web: { modules: ["app"], adapter: "client", host: "api" },
-    };
-    // Reflect.apply: the declaration is deliberately outside `topology`'s parameter type.
-    expect(() => Reflect.apply(topology, undefined, [declared])).toThrow(/^E1552/);
-  }, 300_000);
+  test(
+    "A deployable with `host: 'api'` is one E1552 naming `host`; `topology()` throws E1552 for it.",
+    () => {
+      const leftover = `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "api" } }`;
+      const b = buildFixture(leftover);
+      expect(b.status).not.toBe(0);
+      expect(b.out.match(/E1552/g)?.length).toBe(1);
+      expect(b.out).toContain("host");
+      expect(fs.existsSync(path.join(b.root, "dist"))).toBe(false);
+      const declared = {
+        api: { modules: ["api"], adapter: "node" },
+        web: { modules: ["app"], adapter: "client", host: "api" },
+      };
+      // Reflect.apply: the declaration is deliberately outside `topology`'s parameter type.
+      expect(() => Reflect.apply(topology, undefined, [declared])).toThrow(/^E1552/);
+    },
+    fixedTime(300_000),
+  );
 
   test("A deployable key the Declaration omits is E1552 too: `topology()` with a key but `modules`, `adapter`, `servedBy`, `storage`, `shells`, `caller`, `origins` throws a message starting E1552.", () => {
     // Seed 1337 (SEED, fixtures.ts).

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { testTime } from "../test-time.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 
 const lint = path.join(import.meta.dirname, "..", "structure-lint.mjs");
 const made: string[] = [];
@@ -43,7 +43,7 @@ const keelConfigured =
   "import { keelConfig } from '@keel/tooling/vitest-config';\nexport default keelConfig({ test: {} });\n";
 
 // Each case runs structure-lint over a throwaway root, a process of its own: about 0.6 s here, so 20 s.
-describe("S0017 in structure-lint's file set", { timeout: 20_000 }, () => {
+describe("S0017 in structure-lint's file set", { timeout: fixedTime(20_000) }, () => {
   it("an untimed properties test in a library with its own vitest config is one S0017 at its line", () => {
     const d = s0017({ "libraries/x/vitest.config.ts": ownConfig, "libraries/x/test/p.test.ts": untimed });
     expect(d.map((x) => [x.path, x.line])).toEqual([["libraries/x/test/p.test.ts", 5]]);

@@ -3,7 +3,7 @@
 import { type ChildProcess, type SpawnSyncReturns, fork, spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { testTime } from "../test-time.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 import { crashDiags, endDiags, isCrash } from "../vitest-reporter.ts";
 import { describeExit, lastSaid, requestFiles, watchWorkerExits, workerExits } from "../worker-exits.ts";
 
@@ -21,43 +21,51 @@ function said(r: SpawnSyncReturns<string>): string {
 }
 
 describe("a worker that dies mid-run", () => {
-  it("is one T0001 line per file naming the test and the signal, and the run fails", () => {
-    const r = spawnSync(process.execPath, [vitest, "run"], {
-      cwd: fixtures,
-      env: { ...process.env, KEEL_AGENT: "1" },
-      encoding: "utf8",
-      timeout: testTime(60_000),
-    });
-    expect(r.status, said(r)).toBe(1);
-    const lines = r.stdout.split("\n").filter((l) => l.startsWith("T0001 "));
-    expect(lines, said(r)).toContain("T0001 kill.fixture.ts:1:1 is killed: worker killed by SIGKILL");
-    expect(lines, said(r)).toContain(
-      "T0001 abort.fixture.ts:1:1 aborts: worker killed by SIGABRT: FATAL ERROR: Reached heap limit Allocation failed",
-    );
-    expect(
-      lines.filter((l) => l.startsWith("T0001 plain.fixture.ts:")),
-      said(r),
-    ).toHaveLength(1);
-    expect(
-      lines.some((l) => l.includes("[vitest-pool]")),
-      said(r),
-    ).toBe(false);
-    expect(r.stdout, said(r)).toMatch(/^fail 3 tests, 3 failed, 0 skipped/m);
-  }, 90_000);
+  it(
+    "is one T0001 line per file naming the test and the signal, and the run fails",
+    () => {
+      const r = spawnSync(process.execPath, [vitest, "run"], {
+        cwd: fixtures,
+        env: { ...process.env, KEEL_AGENT: "1" },
+        encoding: "utf8",
+        timeout: testTime(60_000),
+      });
+      expect(r.status, said(r)).toBe(1);
+      const lines = r.stdout.split("\n").filter((l) => l.startsWith("T0001 "));
+      expect(lines, said(r)).toContain("T0001 kill.fixture.ts:1:1 is killed: worker killed by SIGKILL");
+      expect(lines, said(r)).toContain(
+        "T0001 abort.fixture.ts:1:1 aborts: worker killed by SIGABRT: FATAL ERROR: Reached heap limit Allocation failed",
+      );
+      expect(
+        lines.filter((l) => l.startsWith("T0001 plain.fixture.ts:")),
+        said(r),
+      ).toHaveLength(1);
+      expect(
+        lines.some((l) => l.includes("[vitest-pool]")),
+        said(r),
+      ).toBe(false);
+      expect(r.stdout, said(r)).toMatch(/^fail 3 tests, 3 failed, 0 skipped/m);
+    },
+    fixedTime(90_000),
+  );
 });
 
 describe("a run vitest fails with no failed test", () => {
-  it("is a T0001 line and a fail trailer, never an ok trailer over exit 1", () => {
-    const r = spawnSync(process.execPath, [vitest, "run", "matches-no-file"], {
-      cwd: fixtures,
-      env: { ...process.env, KEEL_AGENT: "1" },
-      encoding: "utf8",
-      timeout: testTime(60_000),
-    });
-    expect(r.status, said(r)).toBe(1);
-    expect(r.stdout, said(r)).toMatch(/^T0001 no test ran: vitest ended the run as failed$/m);
-    expect(r.stdout, said(r)).toMatch(/^fail 0 tests, 0 failed, 0 skipped/m);
-  }, 90_000);
+  it(
+    "is a T0001 line and a fail trailer, never an ok trailer over exit 1",
+    () => {
+      const r = spawnSync(process.execPath, [vitest, "run", "matches-no-file"], {
+        cwd: fixtures,
+        env: { ...process.env, KEEL_AGENT: "1" },
+        encoding: "utf8",
+        timeout: testTime(60_000),
+      });
+      expect(r.status, said(r)).toBe(1);
+      expect(r.stdout, said(r)).toMatch(/^T0001 no test ran: vitest ended the run as failed$/m);
+      expect(r.stdout, said(r)).toMatch(/^fail 0 tests, 0 failed, 0 skipped/m);
+    },
+    fixedTime(90_000),
+  );
 });
 
 describe("endDiags", () => {

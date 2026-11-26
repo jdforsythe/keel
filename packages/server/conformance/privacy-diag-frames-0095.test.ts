@@ -3,6 +3,7 @@
 // @vitest-environment happy-dom
 // ASSUMED shape (k.server Log): `frames` is an array of strings in json mode. The stack is generated: an app frame whose
 // file name holds the marked `note` value, which is lowercase letters (so no unmarked text can mimic it).
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -55,15 +56,19 @@ async function framesFor(note: string, mode: "dev" | "production"): Promise<unkn
 
 describe("k.privacy: scrubbed diag frames", () => {
   for (const mode of ["dev", "production"] as const) {
-    test(`an action throwing an Error whose stack names a file path holding a marked input value logs that frame with [pii] in place of the value, in ${mode}`, async () => {
-      await fc.assert(
-        fc.asyncProperty(words, async (note) => {
-          const frames = await framesFor(note, mode);
-          expect(frames).toEqual(["modules/orders/[pii].server.ts:10:4", "modules/orders/other.ts:3:1"]);
-          expect(JSON.stringify(frames)).not.toContain(note);
-        }),
-        { seed: SEED, numRuns: 25 },
-      );
-    }, 120_000);
+    test(
+      `an action throwing an Error whose stack names a file path holding a marked input value logs that frame with [pii] in place of the value, in ${mode}`,
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(words, async (note) => {
+            const frames = await framesFor(note, mode);
+            expect(frames).toEqual(["modules/orders/[pii].server.ts:10:4", "modules/orders/other.ts:3:1"]);
+            expect(JSON.stringify(frames)).not.toContain(note);
+          }),
+          { seed: SEED, numRuns: 25 },
+        );
+      },
+      fixedTime(120_000),
+    );
   }
 });

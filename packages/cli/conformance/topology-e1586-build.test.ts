@@ -5,6 +5,7 @@
 // ASSUMPTION: a stdlib package is found through an app
 // module's `deps` in the project's `node_modules`; its module id is the `id` of its root `module.ts`; a failed
 // build exits 1 and writes no `dist/`.
+import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -68,21 +69,29 @@ const go = async (command: "build" | "check", shape: Case) => {
 describe("k.topology: E1586 in `keel check` and `keel build`", () => {
   for (const command of ["check", "build"] as const) {
     for (const shape of ["contract-only", "routes-missing-file"] as const) {
-      test(`${command}: a placed stdlib module with \`./contract\` and ${shape === "contract-only" ? "no `./routes` export" : "a `./routes` naming a missing file"} is one E1586 at its \`topology.ts\` id, exit 1${command === "build" ? ", nothing written" : ""}`, async () => {
-        const { r, e1586, wrote } = await go(command, shape);
-        expect(e1586).toHaveLength(1);
-        expect(e1586[0]).toContain('"E1586"');
-        expect(e1586[0]).toContain("topology.ts");
-        expect(e1586[0]).toContain(ID);
-        expect(r.code).toBe(1);
-        if (command === "build") expect(wrote).toBe(false);
-      }, 60_000);
+      test(
+        `${command}: a placed stdlib module with \`./contract\` and ${shape === "contract-only" ? "no `./routes` export" : "a `./routes` naming a missing file"} is one E1586 at its \`topology.ts\` id, exit 1${command === "build" ? ", nothing written" : ""}`,
+        async () => {
+          const { r, e1586, wrote } = await go(command, shape);
+          expect(e1586).toHaveLength(1);
+          expect(e1586[0]).toContain('"E1586"');
+          expect(e1586[0]).toContain("topology.ts");
+          expect(e1586[0]).toContain(ID);
+          expect(r.code).toBe(1);
+          if (command === "build") expect(wrote).toBe(false);
+        },
+        fixedTime(60_000),
+      );
     }
     for (const shape of ["both", "neither"] as const) {
-      test(`${command}: ${shape === "both" ? "`./contract` and `./routes` both resolving" : "neither export (a runner-only module)"} is no E1586`, async () => {
-        const { e1586 } = await go(command, shape);
-        expect(e1586).toEqual([]);
-      }, 60_000);
+      test(
+        `${command}: ${shape === "both" ? "`./contract` and `./routes` both resolving" : "neither export (a runner-only module)"} is no E1586`,
+        async () => {
+          const { e1586 } = await go(command, shape);
+          expect(e1586).toEqual([]);
+        },
+        fixedTime(60_000),
+      );
     }
   }
 });

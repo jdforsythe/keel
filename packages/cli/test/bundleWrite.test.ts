@@ -6,6 +6,7 @@ import { createHash, createPublicKey, generateKeyPairSync, verify } from "node:c
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { KERNEL_SINK_RUNGS } from "../src/internal/KERNEL_SINK_RUNGS.ts";
@@ -14,7 +15,7 @@ import type { Input } from "../src/types/Input.ts";
 import type { Io } from "../src/types/Io.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
-const SLOW = 180_000;
+const SLOW = fixedTime(180_000);
 const dirs: string[] = [];
 afterAll(() => {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

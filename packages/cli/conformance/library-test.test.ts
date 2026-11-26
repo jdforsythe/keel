@@ -4,6 +4,7 @@
 // Seed: 1337 (no generated input: two fixtures, one `keel test` each). Binary runs: 2.
 // ASSUMPTIONS (spec silent): the test is `test/badge.test.ts` and builds `render`'s component by giving `modules/shop/Wrap.tsx`'s default export a `Props` (`s.object({})`), on a sim ctx;
 // "the test fails" is a non-zero exit of `keel test` with a summary that is not ok. The library without a `keel` condition keeps `"."` at its `default` (`index.js`, which exports nothing).
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, expect, test } from "vitest";
 import { cleanup, keel, library, materialize, siteTree } from "./library-support.ts";
 
@@ -44,16 +45,24 @@ function testRun(withKeel: boolean) {
   return keel(dir, ["test"]);
 }
 
-test('In that project, a test under `test/` that renders with `render` (k.testing) an app component rendering `<Badge id="shop.wrap" />` finds `shop.wrap.box` under `keel test`', () => {
-  const r = testRun(true);
-  const summary = r.records.find((x) => x.kind === "summary");
-  expect(summary?.ok, JSON.stringify(r.records).slice(0, 600)).toBe(true);
-  expect(r.status).toBe(0);
-}, 600_000);
+test(
+  'In that project, a test under `test/` that renders with `render` (k.testing) an app component rendering `<Badge id="shop.wrap" />` finds `shop.wrap.box` under `keel test`',
+  () => {
+    const r = testRun(true);
+    const summary = r.records.find((x) => x.kind === "summary");
+    expect(summary?.ok, JSON.stringify(r.records).slice(0, 600)).toBe(true);
+    expect(r.status).toBe(0);
+  },
+  fixedTime(600_000),
+);
 
-test("In that project, with no `keel` in the library's `exports`, `Badge` is not found and the test fails", () => {
-  const r = testRun(false);
-  const summary = r.records.find((x) => x.kind === "summary");
-  expect(summary?.ok).toBe(false);
-  expect(r.status).not.toBe(0);
-}, 600_000);
+test(
+  "In that project, with no `keel` in the library's `exports`, `Badge` is not found and the test fails",
+  () => {
+    const r = testRun(false);
+    const summary = r.records.find((x) => x.kind === "summary");
+    expect(summary?.ok).toBe(false);
+    expect(r.status).not.toBe(0);
+  },
+  fixedTime(600_000),
+);

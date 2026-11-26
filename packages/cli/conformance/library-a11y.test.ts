@@ -9,6 +9,7 @@
 // and the message of the app twin's, the wrapper's id and the test's name aside. A failure prints as a `keel test` record whose message holds the element's id; the wrapper of the library's component renders it as `shop.lib`, the app twin's as `shop.app`, and the messages are compared with those aside.
 // Spec text (k.a11y-static): "**Library contrast.** In an app, an E1804 at an element of a library file, or at a library look (a key of the `look` group alone, whatever other groups hold the same name), is reported in `tokens.ts` and not at the library's file: at the opening quote of the app's key for its `fg` when the app writes one, else for its `bg`, else at the spread `...<id>Tokens.color`, else line 1, column 1; once per pair and scheme however many elements and looks hold it; message `<fg> on <bg> is <ratio>:1 in <scheme>, needs <need>:1; override in tokens.ts`."
 // The Contrast kind's static half is that clause: its E1804 stands in the app's `tokens.ts` at the `"fg"` key (the app writes one), not at the library's path; the other two kinds are reported at the library's path.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { LIB, NAME, type Rec, type Tree, cleanup, keel, library, materialize, siteTree } from "./library-support.ts";
 
@@ -91,33 +92,37 @@ beforeAll(() => {
   dir = materialize({ ...siteTree([libraryWith()]), "tokens.ts": TOKENS, ...appFiles, "test/a11y.test.ts": TEST });
   checked = keel(dir, ["check"]).records.filter((x) => x.kind === "diag");
   tested = keel(dir, ["test"]).records.filter((x) => x.kind === "diag");
-}, 600_000);
+}, fixedTime(600_000));
 afterAll(() => cleanup(dir));
 
 for (const k of KINDS) {
-  test(`${k.what} in a library component is reported ${k.staticCode} by \`keel check\` ${k.name === "Contrast" ? "in the app's `tokens.ts` at the opening quote of its `fg` key, once per pair and scheme, with no fix, while the same element in an app module is at its own path" : "at the library's path with no fix, as the same element in an app module is at its own"}`, () => {
-    const inApp = checked.filter((x) => x.code === k.staticCode && x.path === `modules/shop/${k.name}.tsx`);
-    expect(inApp.length).toBeGreaterThanOrEqual(1);
-    const inLib = checked.filter((x) => x.code === k.staticCode && x.path === `${LIB}/src/${k.name}.tsx`);
-    if (k.name === "Contrast") {
-      expect(inLib, "none at the library's path").toEqual([]);
-      const inTokens = checked.filter((x) => x.code === "E1804" && x.path === "tokens.ts");
-      expect(inTokens.length).toBe(1);
-      expect(String(inTokens[0]?.message)).toMatch(
-        /^fg on bg is [\d.]+:1 in light, needs [\d.]+:1; override in tokens\.ts$/,
-      );
-      expect(inTokens[0]?.fix).toBeUndefined();
-      expect(inTokens[0]?.line).toBe(2);
-      const col = (TOKENS.split("\n")[1] ?? "").indexOf('"fg"') + 1;
-      expect(inTokens[0]?.col).toBeGreaterThanOrEqual(col);
-      expect(inTokens[0]?.col).toBeLessThanOrEqual(col + 3);
-      expect(checked.filter((x) => String(x.path).startsWith("node_modules/") && x.code === "E1804")).toEqual([]);
-      return;
-    }
-    expect(inLib.length).toBeGreaterThanOrEqual(1);
-    expect(inLib.length).toBe(inApp.length);
-    for (const d of inLib) expect(d.fix).toBeUndefined();
-  }, 600_000);
+  test(
+    `${k.what} in a library component is reported ${k.staticCode} by \`keel check\` ${k.name === "Contrast" ? "in the app's `tokens.ts` at the opening quote of its `fg` key, once per pair and scheme, with no fix, while the same element in an app module is at its own path" : "at the library's path with no fix, as the same element in an app module is at its own"}`,
+    () => {
+      const inApp = checked.filter((x) => x.code === k.staticCode && x.path === `modules/shop/${k.name}.tsx`);
+      expect(inApp.length).toBeGreaterThanOrEqual(1);
+      const inLib = checked.filter((x) => x.code === k.staticCode && x.path === `${LIB}/src/${k.name}.tsx`);
+      if (k.name === "Contrast") {
+        expect(inLib, "none at the library's path").toEqual([]);
+        const inTokens = checked.filter((x) => x.code === "E1804" && x.path === "tokens.ts");
+        expect(inTokens.length).toBe(1);
+        expect(String(inTokens[0]?.message)).toMatch(
+          /^fg on bg is [\d.]+:1 in light, needs [\d.]+:1; override in tokens\.ts$/,
+        );
+        expect(inTokens[0]?.fix).toBeUndefined();
+        expect(inTokens[0]?.line).toBe(2);
+        const col = (TOKENS.split("\n")[1] ?? "").indexOf('"fg"') + 1;
+        expect(inTokens[0]?.col).toBeGreaterThanOrEqual(col);
+        expect(inTokens[0]?.col).toBeLessThanOrEqual(col + 3);
+        expect(checked.filter((x) => String(x.path).startsWith("node_modules/") && x.code === "E1804")).toEqual([]);
+        return;
+      }
+      expect(inLib.length).toBeGreaterThanOrEqual(1);
+      expect(inLib.length).toBe(inApp.length);
+      for (const d of inLib) expect(d.fix).toBeUndefined();
+    },
+    fixedTime(600_000),
+  );
 
   const text = (prefix: "lib" | "app"): string =>
     tested
@@ -128,10 +133,14 @@ for (const k of KINDS) {
       )
       .join("\n");
 
-  test(`${k.what} in a library component fails its render under \`keel test\` with ${k.renderCode} naming its element id, as the same element in an app module does`, () => {
-    const inApp = text("app");
-    expect(inApp, "the app twin fails with the code").not.toBe("");
-    expect(inApp).toContain(`shop.<wrap>.${k.sub}`);
-    expect(text("lib")).toBe(inApp);
-  }, 600_000);
+  test(
+    `${k.what} in a library component fails its render under \`keel test\` with ${k.renderCode} naming its element id, as the same element in an app module does`,
+    () => {
+      const inApp = text("app");
+      expect(inApp, "the app twin fails with the code").not.toBe("");
+      expect(inApp).toContain(`shop.<wrap>.${k.sub}`);
+      expect(text("lib")).toBe(inApp);
+    },
+    fixedTime(600_000),
+  );
 }

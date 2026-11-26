@@ -3,6 +3,7 @@
 import { readFile } from "node:fs/promises";
 import type { SimCtx } from "@keel/ctx";
 import { simulate } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
 /** Fetch through a route that reads this file 20 times before it answers; the answer, once `run()` resolved. */
@@ -35,7 +36,7 @@ describe("simulate run()", () => {
   // Each run's route reads this file 20 times: about 50 ms a run here, so 1 s a run for the 20 runs.
   it(
     "property: under any schedule the request has an outcome once run() resolves",
-    { timeout: 20 * 1_000 },
+    { timeout: fixedTime(20 * 1_000) },
     async () => {
       await simulate(
         async ({ ctx, run }) => {

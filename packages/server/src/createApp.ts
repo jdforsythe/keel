@@ -208,7 +208,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     byId,
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
-    keys: await callerSigner(opts.secret, opts.deployable ?? ""),
+    keys: await callerSigner(opts.secret, opts.deployable ?? "", opts.ctx.random),
     secure: opts.secure,
     built,
     entry:

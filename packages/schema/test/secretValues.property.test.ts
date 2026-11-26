@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // Seed 1337. The internal read @keel/server takes of each Secret a request makes: its strings, numbers and data keys,
 // read beside the node it was sealed under, and never a declared field name.
 import fc from "fast-check";
@@ -236,7 +237,7 @@ test("every value the read by value alone gives is still given", () => {
 test(
   "a 1,000,000-deep json secret returns without overflowing the stack, and gives nothing past the visit cap",
   {
-    timeout: 2 * 1_000_000 * 0.005,
+    timeout: fixedTime(2 * 1_000_000 * 0.005),
   },
   () => {
     let deep: unknown = "bottom";

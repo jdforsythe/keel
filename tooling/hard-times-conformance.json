@@ -1,1 +1,554 @@
-[]
+[
+  {
+    "path": "packages/check/conformance/E1563-W1564.test.ts",
+    "line": 18,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/check/conformance/E1563-W1564.test.ts",
+    "line": 24,
+    "text": "2 * 14 * 30_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/check/conformance/check-cache.test.ts",
+    "line": 19,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/E1561-retired.test.ts",
+    "line": 9,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/E1561-retired.test.ts",
+    "line": 14,
+    "text": "4 * 2 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/E1562-base-route-change.test.ts",
+    "line": 25,
+    "text": "6 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/build-production-mode.test.ts",
+    "line": 14,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/build-target-e1574.test.ts",
+    "line": 18,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/build-trailer-files-0211.test.ts",
+    "line": 13,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-cache.test.ts",
+    "line": 33,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-cache.test.ts",
+    "line": 34,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/check-trailer-files-0211.test.ts",
+    "line": 13,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-0092.test.ts",
+    "line": 24,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-0092.test.ts",
+    "line": 38,
+    "text": "2 * 3 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-accepts-property.test.ts",
+    "line": 14,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/compat-output-0104.test.ts",
+    "line": 22,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/data-dev-helper-reload-0194.test.ts",
+    "line": 16,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/data-dev-reload.test.ts",
+    "line": 16,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/deploy-files-build-0092.test.ts",
+    "line": 11,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/dev-port-0091.test.ts",
+    "line": 21,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/dev-uncaught.test.ts",
+    "line": 18,
+    "text": "90_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-audit.test.ts",
+    "line": 22,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-caller.test.ts",
+    "line": 10,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-deterministic.test.ts",
+    "line": 16,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-failing-run.test.ts",
+    "line": 21,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-no-key.test.ts",
+    "line": 18,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-no-pii.test.ts",
+    "line": 12,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-pii-coverage.test.ts",
+    "line": 22,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-security.test.ts",
+    "line": 18,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-shipped-rungs-0095.test.ts",
+    "line": 18,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-tamper.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/evidence-write-verify.test.ts",
+    "line": 25,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/library-ledger.test.ts",
+    "line": 1236,
+    "text": "100_000 * 12",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/mcp-build-0092.test.ts",
+    "line": 20,
+    "text": "2 * 2 * 60_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/origins-dev-own-frame.test.ts",
+    "line": 20,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/origins-evidence.test.ts",
+    "line": 9,
+    "text": "600_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/privacy-pii-json-schema.test.ts",
+    "line": 11,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/review-loudness.test.ts",
+    "line": 120,
+    "text": "6 * 3 * 3 * 10_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/schema-format-json-schema.test.ts",
+    "line": 12,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/security-csp-txt.test.ts",
+    "line": 11,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/shell-connect.test.ts",
+    "line": 53,
+    "text": "5 * 120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/surface-normal-sources.test.ts",
+    "line": 34,
+    "text": "21 * 2 * 40_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/surface-v2-layout.test.ts",
+    "line": 7,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-run-load-failure-count.test.ts",
+    "line": 11,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-run-summary.test.ts",
+    "line": 13,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/test-run-writes.test.ts",
+    "line": 18,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-dev-inspect-deployables-0190.test.ts",
+    "line": 10,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-dev-poll-0211.test.ts",
+    "line": 20,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/topology-keel-dev-one-origin.test.ts",
+    "line": 18,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/boundary-stubs.test.ts",
+    "line": 14,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/e1011-client-service-map.test.ts",
+    "line": 19,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/entry-mode.test.ts",
+    "line": 17,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/shell-entry-mount.test.ts",
+    "line": 26,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/compiler/conformance/shell-entry.test.ts",
+    "line": 25,
+    "text": "180_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/leave-process.test.ts",
+    "line": 42,
+    "text": "20_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/mount-placement.test.ts",
+    "line": 76,
+    "text": "RUNS * 1_500",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/render-route-document-fields-0180.test.ts",
+    "line": 19,
+    "text": "RUNS * 500 + 3_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/sim-route-load.test.ts",
+    "line": 51,
+    "text": "RUNS * 2_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/server/conformance/store-view-store-resume-0181.test.ts",
+    "line": 24,
+    "text": "RUNS * 1_000 + 2_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/android-cleartext.test.ts",
+    "line": 28,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/build-tools.test.ts",
+    "line": 29,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/ci-workflow.test.ts",
+    "line": 15,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/no-origin-allow.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/return-scheme.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/shell-app-packages.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/shell-files.test.ts",
+    "line": 13,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-capacitor/conformance/shell-plugins.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-db/conformance/check-deps-dropped-rule.test.ts",
+    "line": 14,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/build-target-e1575.test.ts",
+    "line": 16,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/build-tools.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/ci-workflow.test.ts",
+    "line": 12,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/no-origin-http-capability.test.ts",
+    "line": 25,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/return-scheme.test.ts",
+    "line": 11,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/shell-app-packages.test.ts",
+    "line": 26,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/shell-files.test.ts",
+    "line": 13,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/shell-scope.test.ts",
+    "line": 27,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-tauri/conformance/tauri-conf.test.ts",
+    "line": 13,
+    "text": "300_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-temporal/conformance/check-deps-dropped.test.ts",
+    "line": 13,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-counter.test.ts",
+    "line": 15,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-deterministic.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1715.test.ts",
+    "line": 14,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1716.test.ts",
+    "line": 13,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1717.test.ts",
+    "line": 12,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1718.test.ts",
+    "line": 7,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-e1721.test.ts",
+    "line": 17,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-initial.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-not-inductive.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-obligations.test.ts",
+    "line": 12,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-options.test.ts",
+    "line": 15,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-result.test.ts",
+    "line": 12,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/prove-unique-ids.test.ts",
+    "line": 11,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/testing/conformance/sim-tracked.test.ts",
+    "line": 44,
+    "text": "300",
+    "needs": "fixedTime"
+  }
+]

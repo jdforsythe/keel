@@ -4,10 +4,11 @@
 // build GET answers other than 200 is one E1588 naming the route id and the status.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { type Tree, cleanup, diags, keel, materialize } from "../conformance/compat-support.ts";
 
-const SLOW = 300_000;
+const SLOW = fixedTime(300_000);
 const HOME_TEXT = "HOME-TEXT-1337";
 const ABOUT_TEXT = "ABOUT-TEXT-1337";
 type Failing = "none" | "notFound" | "denied" | "throws";

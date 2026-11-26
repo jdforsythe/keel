@@ -8,7 +8,7 @@ import { cellStorage } from "../src/internal/cellStorage.ts";
 
 const run = { seed: 1337, numRuns: 200 };
 /** One run is at most 12 calls that each yield to the event loop once or twice: a few ms alone. Each gets 500 ms, the machine's own work with a wide margin, so fixed time. The property-time transform cannot read `numRuns` from `run`, so each test states its time. */
-const RUN_MS = 500;
+const RUN_MS = fixedTime(500);
 const key = fc.constantFrom("a", "b", "c", "d");
 const val = fc.option(fc.constantFrom("1", "2", "3"), { nil: null });
 const op = fc.oneof(

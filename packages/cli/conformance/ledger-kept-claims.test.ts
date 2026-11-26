@@ -6,6 +6,7 @@
 // Seed: 1337 (no property: fixed projects, the real `keel` binary over temp projects in the OS tmpdir).
 // ASSUMPTIONS: the committed ledger is first written by `keel ledger --write` over the bare project, then its `a11y` list is edited (an array of `{ item, rung }`, as tooling/ledger/ledger.json holds it); `.keel/routes.json` is `{ data: { r: { path: "/r" } }, hash }` (a page route: a non-null `path`, no `api: true`);
 // an `A11yRun` is `{ route, component, rules, violations: [{ rule, element }], file, test, passed }`; `E1804` is the rule mapped to 1.4.3; `--diff` reads the committed ledger at tooling/ledger/ledger.json.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -76,48 +77,60 @@ const compactLine = (dir: string, args: readonly string[]): string => {
 };
 
 describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
-  it("in a project with page route `r` and no `reports/a11y.json`, `--write` over a ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, reports one W1733 at `reports/a11y.json`, holds no `keptNoReport` in `counts`, and `--diff` reports E1706 for it", () => {
-    const dir = project("ledger-no-report", { ".keel/routes.json": ROUTES });
-    commit(dir, [{ item: ITEM, rung: "example" }]);
-    const written = keel(dir, ["ledger", "--write", COMMITTED]);
-    expect(rungOf(dir, ITEM)).toBe("none");
-    expect(diags(written, "W1733")).toEqual([expect.objectContaining({ path: "reports/a11y.json" })]);
-    expect(countsOf(written)).not.toHaveProperty("keptNoReport");
-    commit(dir, [{ item: ITEM, rung: "example" }]);
-    expect(diags(keel(dir, ["ledger", "--diff"]), "E1706").length).toBeGreaterThan(0);
-  }, 60_000);
+  it(
+    "in a project with page route `r` and no `reports/a11y.json`, `--write` over a ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, reports one W1733 at `reports/a11y.json`, holds no `keptNoReport` in `counts`, and `--diff` reports E1706 for it",
+    () => {
+      const dir = project("ledger-no-report", { ".keel/routes.json": ROUTES });
+      commit(dir, [{ item: ITEM, rung: "example" }]);
+      const written = keel(dir, ["ledger", "--write", COMMITTED]);
+      expect(rungOf(dir, ITEM)).toBe("none");
+      expect(diags(written, "W1733")).toEqual([expect.objectContaining({ path: "reports/a11y.json" })]);
+      expect(countsOf(written)).not.toHaveProperty("keptNoReport");
+      commit(dir, [{ item: ITEM, rung: "example" }]);
+      expect(diags(keel(dir, ["ledger", "--diff"]), "E1706").length).toBeGreaterThan(0);
+    },
+    fixedTime(60_000),
+  );
 
-  it("with a `reports/a11y.json` holding one failed run of `r` with an E1804 violation, `--write` writes `a11y:.:r#1.4.3` at `none`, no `keptNoReport`, and `--diff` reports E1706; with the run passed and no violations it is `example`", () => {
-    const dir = project("ledger-recomputed", { ".keel/routes.json": ROUTES, "reports/a11y.json": FAILED });
-    commit(dir, [{ item: ITEM, rung: "example" }]);
-    const diff = keel(dir, ["ledger", "--diff"]);
-    expect(diags(diff, "E1706").length).toBeGreaterThan(0);
-    const written = keel(dir, ["ledger", "--write", COMMITTED]);
-    expect(rungOf(dir, ITEM)).toBe("none");
-    expect(countsOf(written)).not.toHaveProperty("keptNoReport");
+  it(
+    "with a `reports/a11y.json` holding one failed run of `r` with an E1804 violation, `--write` writes `a11y:.:r#1.4.3` at `none`, no `keptNoReport`, and `--diff` reports E1706; with the run passed and no violations it is `example`",
+    () => {
+      const dir = project("ledger-recomputed", { ".keel/routes.json": ROUTES, "reports/a11y.json": FAILED });
+      commit(dir, [{ item: ITEM, rung: "example" }]);
+      const diff = keel(dir, ["ledger", "--diff"]);
+      expect(diags(diff, "E1706").length).toBeGreaterThan(0);
+      const written = keel(dir, ["ledger", "--write", COMMITTED]);
+      expect(rungOf(dir, ITEM)).toBe("none");
+      expect(countsOf(written)).not.toHaveProperty("keptNoReport");
 
-    writeFiles(dir, { "reports/a11y.json": PASSED });
-    commit(dir, [{ item: ITEM, rung: "example" }]);
-    keel(dir, ["ledger", "--write", COMMITTED]);
-    expect(rungOf(dir, ITEM)).toBe("example");
-  }, 60_000);
-
-  it("`a11y:.:gone#1.4.3` for a route not in `.keel/routes.json` and the old-form `a11y:r#1.4.3` are not written, with and without `reports/a11y.json`", () => {
-    for (const report of [undefined, FAILED, PASSED]) {
-      const dir = project("ledger-gone", {
-        ".keel/routes.json": ROUTES,
-        ...(report === undefined ? {} : { "reports/a11y.json": report }),
-      });
-      commit(dir, [
-        { item: ITEM, rung: "example" },
-        { item: GONE, rung: "example" },
-        { item: OLD, rung: "example" },
-      ]);
+      writeFiles(dir, { "reports/a11y.json": PASSED });
+      commit(dir, [{ item: ITEM, rung: "example" }]);
       keel(dir, ["ledger", "--write", COMMITTED]);
-      expect(collect(readLedger(dir), ["item", "rung"]).map((x) => x.item)).not.toContain(GONE);
-      expect(collect(readLedger(dir), ["item", "rung"]).map((x) => x.item)).not.toContain(OLD);
-    }
-  }, 120_000);
+      expect(rungOf(dir, ITEM)).toBe("example");
+    },
+    fixedTime(60_000),
+  );
+
+  it(
+    "`a11y:.:gone#1.4.3` for a route not in `.keel/routes.json` and the old-form `a11y:r#1.4.3` are not written, with and without `reports/a11y.json`",
+    () => {
+      for (const report of [undefined, FAILED, PASSED]) {
+        const dir = project("ledger-gone", {
+          ".keel/routes.json": ROUTES,
+          ...(report === undefined ? {} : { "reports/a11y.json": report }),
+        });
+        commit(dir, [
+          { item: ITEM, rung: "example" },
+          { item: GONE, rung: "example" },
+          { item: OLD, rung: "example" },
+        ]);
+        keel(dir, ["ledger", "--write", COMMITTED]);
+        expect(collect(readLedger(dir), ["item", "rung"]).map((x) => x.item)).not.toContain(GONE);
+        expect(collect(readLedger(dir), ["item", "rung"]).map((x) => x.item)).not.toContain(OLD);
+      }
+    },
+    fixedTime(120_000),
+  );
 
   const A = "packages/a/src/a.ts";
   const REPORT = "packages/a/reports/mutation/mutation.json";
@@ -129,21 +142,25 @@ describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
     reportOf(statuses, source).replaceAll('"Killed"', '"Ignored"');
   const claimsOf = (dir: string) => collect(readLedger(dir), ["file", "sha", "killed"]).filter((c) => c.file === A);
 
-  it("a stale committed claim and a report holding only `Ignored` mutants for the tree's source: `--write` stores no claim and `--diff` reports no W1714; with one `Killed` mutant it stores a claim with the file's `sha`, and no W1714", () => {
-    const dir = project("ledger-ignored", { [A]: a1, [REPORT]: reportOf(mutantsOf(1, 0), a1) });
-    expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
-    expect(claimsOf(dir)).toHaveLength(1);
-    const committed = readFileSync(join(dir, COMMITTED), "utf8");
+  it(
+    "a stale committed claim and a report holding only `Ignored` mutants for the tree's source: `--write` stores no claim and `--diff` reports no W1714; with one `Killed` mutant it stores a claim with the file's `sha`, and no W1714",
+    () => {
+      const dir = project("ledger-ignored", { [A]: a1, [REPORT]: reportOf(mutantsOf(1, 0), a1) });
+      expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+      expect(claimsOf(dir)).toHaveLength(1);
+      const committed = readFileSync(join(dir, COMMITTED), "utf8");
 
-    writeFiles(dir, { [A]: a2, [REPORT]: ignored(mutantsOf(1, 0), a2) });
-    expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
-    expect(claimsOf(dir)).toEqual([]);
-    writeFiles(dir, { [COMMITTED]: committed });
-    expect(diags(keel(dir, ["ledger", "--diff"]), "W1714")).toEqual([]);
+      writeFiles(dir, { [A]: a2, [REPORT]: ignored(mutantsOf(1, 0), a2) });
+      expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+      expect(claimsOf(dir)).toEqual([]);
+      writeFiles(dir, { [COMMITTED]: committed });
+      expect(diags(keel(dir, ["ledger", "--diff"]), "W1714")).toEqual([]);
 
-    writeFiles(dir, { [COMMITTED]: committed, [REPORT]: reportOf(mutantsOf(1, 0), a2) });
-    expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
-    expect(claimsOf(dir)).toEqual([expect.objectContaining({ file: A, sha: sha256(a2) })]);
-    expect(diags(keel(dir, ["ledger", "--diff"]), "W1714")).toEqual([]);
-  }, 120_000);
+      writeFiles(dir, { [COMMITTED]: committed, [REPORT]: reportOf(mutantsOf(1, 0), a2) });
+      expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+      expect(claimsOf(dir)).toEqual([expect.objectContaining({ file: A, sha: sha256(a2) })]);
+      expect(diags(keel(dir, ["ledger", "--diff"]), "W1714")).toEqual([]);
+    },
+    fixedTime(120_000),
+  );
 });
