@@ -1,7 +1,8 @@
 // The helpers the package's own tests share: a rig per driver (SQLite on a temporary file, Postgres on PGlite or on the
 // server `KEEL_TEST_POSTGRES_URL` names, its keel tables dropped first) and child `node` processes.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -11,6 +12,17 @@ import type { KeyValueStorage } from "@keel/ctx";
 import { postgres } from "@keel/std-db/postgres";
 import { sqlite } from "@keel/std-db/sqlite";
 import pg from "pg";
+
+/** The engine's two WebAssembly modules, compiled once for the file's every PGlite instead of for each one. */
+let modules: { pgliteWasmModule: WebAssembly.Module; initdbWasmModule: WebAssembly.Module } | undefined;
+function pgliteModules(): { pgliteWasmModule: WebAssembly.Module; initdbWasmModule: WebAssembly.Module } {
+  if (modules === undefined) {
+    const dist = dirname(createRequire(import.meta.url).resolve("@electric-sql/pglite"));
+    const load = (name: string): WebAssembly.Module => new WebAssembly.Module(readFileSync(join(dist, name)));
+    modules = { pgliteWasmModule: load("pglite.wasm"), initdbWasmModule: load("initdb.wasm") };
+  }
+  return modules;
+}
 
 export type Kind = "sqlite" | "postgres";
 export const KINDS: readonly Kind[] = ["sqlite", "postgres"];
@@ -157,7 +169,7 @@ export async function makeRig(kind: Kind): Promise<Rig> {
       },
     };
   }
-  const db = new PGlite();
+  const db = new PGlite(pgliteModules());
   await db.waitReady;
   const pool = pglitePool(db);
   const url = new URL("postgres://keel:keel@localhost:5432/keel");
