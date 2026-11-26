@@ -217,11 +217,13 @@ export function slowRunArgs({ name, image, cpus = SLOW.cpus, memory = SLOW.memor
 
 /**
  * Run as root in a fresh container, after the tree is copied in: the tools `ubuntu-latest` has and the image has not
- * (the tests read listening ports with `lsof`), and the tree and pnpm's store owned by the user the shards run as.
+ * (the tests read listening ports with `lsof`), pnpm's shims, and the tree and pnpm's store owned by the user the shards run as.
  */
 export const slowSetupScript = [
   "apt-get update -qq",
   "apt-get install -y -qq --no-install-recommends lsof >/dev/null",
+  // The shims go in /usr/local/bin, which only root writes; a runner's setup-node writes it for the job's user.
+  "corepack enable",
   `chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`,
   `[ "$(stat -c %U /pnpm-store)" = ${SLOW.user} ] || chown -R ${SLOW.user}:${SLOW.user} /pnpm-store`,
 ].join(" && ");

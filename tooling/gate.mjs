@@ -631,7 +631,7 @@ async function runSlow() {
     dockerBounded(["exec", "-u", "0", name, "bash", "-c", slowSetupScript], SLOW.limits.pull);
     const first = slowSteps(source, shards[0] ?? 1);
     let i = 1;
-    let ok = await exec(name, prep, "corepack", "corepack enable && pnpm --version", {}, Date.now() + 600_000, i++);
+    let ok = await exec(name, prep, "pnpm version", "pnpm --version", {}, Date.now() + 600_000, i++);
     for (const step of first.install)
       ok = ok && (await exec(name, prep, step.name, step.run, step.env, Date.now() + 1_800_000, i++));
     // The builds CI's check job leaves in the turbo cache, outside the shards' times.

@@ -385,6 +385,7 @@ describe("the slow-machine job", () => {
     expect(args[args.indexOf("--user") + 1]).toBe(SLOW.user);
     expect(SLOW.user).not.toBe("root");
     expect(slowSetupScript).toContain("lsof");
+    expect(slowSetupScript).toContain("corepack enable");
     expect(slowSetupScript).toContain(`chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`);
   });
 
