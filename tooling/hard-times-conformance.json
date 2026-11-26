@@ -408,60 +408,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-offline/conformance/e2651.test.ts",
-    "line": 94,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/owner-message.test.ts",
-    "line": 73,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/storage-faults.test.ts",
-    "line": 252,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/storage-faults.test.ts",
-    "line": 274,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/storage-faults.test.ts",
-    "line": 295,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/storage-faults.test.ts",
-    "line": 329,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/storage-faults.test.ts",
-    "line": 347,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/storage-faults.test.ts",
-    "line": 368,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-offline/conformance/storage-faults.test.ts",
-    "line": 397,
-    "text": "10_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-postgres/conformance/sim-held.test.ts",
     "line": 238,
     "text": "60_000",
