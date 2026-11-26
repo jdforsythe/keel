@@ -5,7 +5,7 @@
 **Context.** A library's files are read as the app's for every rule (RFC 0163). Moving std-temporal, std-health, std-tokens and std-geo onto the format met three readings no library could satisfy: the own folder never registered the library's own formats and rules, check placed a contract only at `modules/<id>/<id>.contract.ts`, and k.library Ids left a route component, which has no caller, no way to give its page an id. Two capabilities did not have E1607's `<id>.<name>` form.
 
 **Decision.**
-- In its own folder, `keel check` imports the library's own `./tools` and holds the library and the `@keel/*` packages its `package.json` names in scope, as an app listing it does; a `./tools` that does not import is E1159 at `package.json`.
+- In its own folder, `keel check` imports the library's own `./tools` and holds the library and the `@keel/*` packages its `package.json` names in scope, as an app listing it does, for its formats and its dependencies' rules; the rules its own `./tools` registers judge the projects that list it, not its own folder, however a file there imports the library (D190); a `./tools` that does not import is E1159 at `package.json`.
 - A library's contract is the one `contract()` in the file its `exports["./contract"]` names; any other file of the library is E1513 naming that file.
 - In a route component file (bound by the library's own `manifest(`, not public, no `exports` target), an element may take a literal id `<manifest id>.<rest>`.
 - `geo` is `geo.position`, `tokens` is `tokens.opaque`.

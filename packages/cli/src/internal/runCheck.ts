@@ -24,8 +24,8 @@ import { relPath } from "./relPath.ts";
  * The files of the libraries `project`'s manifests reach join `project` and, with `libraries`, the checked files
  * (`checkInputs`, k.library In an app). `reach` holds the manifests whose `deps` name the libraries read and imported
  * (default `project`; a library's own folder gives its own manifest, k.library-pack Own folder). `own` names the
- * library whose own folder `cwd` is: its own `./tools` is imported and its formats and rules apply as in an app that
- * lists it.
+ * library whose own folder `cwd` is: its own `./tools` is imported and its formats apply as in an app that lists it;
+ * the rules it registers do not run there (`check`'s `own`).
  */
 export async function runCheck(
   cwd: string,

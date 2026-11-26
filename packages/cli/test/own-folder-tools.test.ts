@@ -1,10 +1,13 @@
 // Seed 1337 (no generated input: fixed fixtures). k.library-pack Own folder: `keel check` in a library's own folder
-// imports the library's own `./tools`, as an app whose manifest lists the library imports it, so its formats and rules
-// hold over its own files; a format literal its own format refuses is still E1108; a library with no `./tools`
+// imports the library's own `./tools`, as an app whose manifest lists the library imports it, so its formats hold over
+// its own files and its rules do not (they judge the apps that list it); a format literal its own format refuses is still E1108; a library with no `./tools`
 // registers nothing, so the same literal is E1108 not registered; a declared `./tools` that does not import is E1159 at
 // `package.json`.
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, expect, test } from "vitest";
 import { type Tree, cleanup, diags, keel, materialize } from "../conformance/compat-support.ts";
+import { library, project, toolsRule } from "../conformance/library-support.ts";
 
 const SLOW = 120_000;
 const made: string[] = [];
@@ -71,12 +74,39 @@ test(
   SLOW,
 );
 
+const RULE = `import "../Code.schema.ts";\nimport { defineRule } from "@keel/check";\ndefineRule({\n  code: "E2999",\n  message: "library rule ran",\n  see: "k.library",\n  explain: "Fixture rule a library's ./tools export registers.",\n  check: ({ file }) => (file.path.endsWith("/A.ts") ? [{ path: file.path, line: 1, col: 1 }] : []),\n});\n`;
+
 test(
-  "a rule the own ./tools registers judges the library's own files",
+  "a rule the own ./tools registers does not judge the library's own files, however they import it",
   () => {
-    const rule = `import "../Code.schema.ts";\nimport { defineRule } from "@keel/check";\ndefineRule({\n  code: "E2999",\n  message: "library rule ran",\n  see: "k.library",\n  explain: "Fixture rule a library's ./tools export registers.",\n  check: ({ file }) => (file.path.endsWith("/A.ts") ? [{ path: file.path, line: 1, col: 1 }] : []),\n});\n`;
-    const found = diags(keel(own("./src/tools/index.ts", rule), ["check"]), "E2999");
-    expect(found.map((d) => d.path)).toEqual(["src/A.ts"]);
+    const dir = own("./src/tools/index.ts", RULE);
+    mkdirSync(join(dir, "test"), { recursive: true });
+    writeFileSync(
+      join(dir, "test", "A.ts"),
+      'import { A } from "@keel/std-ownfix";\nimport { B } from "../src/B.ts";\nexport const both = [A, B];\n',
+    );
+    expect(diags(keel(dir, ["check"]), "E2999")).toEqual([]);
+  },
+  SLOW,
+);
+
+test(
+  "an app listing the library is judged by the rule its ./tools registers",
+  () => {
+    const app = project({
+      libraries: [
+        library({
+          name: NAME,
+          id: "ownfix",
+          exports: { "./tools": "./tools.js" },
+          files: { "tools.js": toolsRule("E2999") },
+        }),
+      ],
+      deps: [NAME],
+    });
+    const dir = materialize(app);
+    made.push(dir);
+    expect(diags(keel(dir, ["check"]), "E2999").length).toBeGreaterThan(0);
   },
   SLOW,
 );

@@ -5,16 +5,16 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { check } from "@keel/check";
-import "../src/tools/index.ts";
+import "@keel/std-db/tools";
+import type { PgClient } from "@keel/std-db/postgres";
+import type { PgPool } from "@keel/std-db/postgres";
+import { postgres } from "@keel/std-db/postgres";
+import { sqlite } from "@keel/std-db/sqlite";
 import { afterEach, describe, expect, test } from "vitest";
 import { checkLayout } from "../src/internal/checkLayout.ts";
 import { dbError } from "../src/internal/dbError.ts";
 import { distinctKeys } from "../src/internal/distinctKeys.ts";
 import { opFailed } from "../src/internal/opFailed.ts";
-import type { PgClient } from "../src/postgres/index.server.ts";
-import type { PgPool } from "../src/postgres/index.server.ts";
-import { postgres } from "../src/postgres/index.server.ts";
-import { sqlite } from "../src/sqlite/index.server.ts";
 import { removeDir, tempDir } from "./support.server.ts";
 
 /** The rejection of `p`; fails when `p` resolves. */

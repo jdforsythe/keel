@@ -31,7 +31,7 @@ import { summary } from "./summary.ts";
  * Run over every code file, it checks the files of the app's libraries too (`runCheck`, k.library In an app).
  * In a library's own folder (`ownLibrary`) it reads the folder as an app holds the library installed (`asInstalled`):
  * every k.library rule holds and E1162 does not; the libraries its manifest lists are read and imported as an app's
- * are, its own `./tools` is imported as an app that lists it imports it, and each diagnostic is located at the folder's
+ * are, its own `./tools` is imported as an app that lists it imports it (its formats hold, its rules do not run), and each diagnostic is located at the folder's
  * own path (k.library-pack Own folder).
  */
 export async function checkCommand(input: Input, given: Io): Promise<OutRecord[]> {

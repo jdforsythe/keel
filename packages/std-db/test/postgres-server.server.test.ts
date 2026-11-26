@@ -4,13 +4,13 @@
 // without it; the TLS cases also need that server to have `ssl` on.
 import { createServer } from "node:net";
 import { setTimeout as sleep } from "node:timers/promises";
+import type { PgPool } from "@keel/std-db/postgres";
+import { postgres } from "@keel/std-db/postgres";
 import { fixedTime, testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import pg from "pg";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import type { DbStorage } from "../src/DbStorage.ts";
-import type { PgPool } from "../src/postgres/index.server.ts";
-import { postgres } from "../src/postgres/index.server.ts";
 import { SEED } from "./support.server.ts";
 
 const SERVER = process.env.KEEL_TEST_POSTGRES_URL ?? "";

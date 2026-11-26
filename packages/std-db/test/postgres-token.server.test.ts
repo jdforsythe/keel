@@ -1,7 +1,7 @@
+import { postgres } from "@keel/std-db/postgres";
 // The opening token of the Postgres driver is the transaction id of its opening transaction; one that is not a number
 // fails the open (E2153) rather than becoming a token two processes share.
 import { expect, test, vi } from "vitest";
-import { postgres } from "../src/postgres/index.server.ts";
 
 const xid = vi.hoisted(() => ({ value: "42" }));
 

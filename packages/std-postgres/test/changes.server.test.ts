@@ -6,15 +6,15 @@ import { join } from "node:path";
 import { explain } from "@keel/check/explain";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { database } from "@keel/std-postgres/server";
 import type { FollowEvent } from "@keel/std-postgres/server";
 import "@keel/std-postgres/tools";
 import fc from "fast-check";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { canonicalJson } from "../src/server/internal/canonicalJson.server.ts";
-import { changesDb } from "./modules/t/changesDb.server.ts";
 
 const board = { name: "t.board", params: s.object({ b: s.string() }) };
-const notes = changesDb;
+const notes = database("t.changesDb", { migrations: { "./migrations/0001-init.sql": "select 1" } });
 const before = process.env.KEEL_POSTGRES_URL;
 let dir = "";
 

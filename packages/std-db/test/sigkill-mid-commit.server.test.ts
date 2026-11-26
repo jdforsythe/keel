@@ -1,8 +1,8 @@
 // A SIGKILL while a child process commits in a loop leaves the SQLite file at one commit's state: both keys equal.
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { sqlite } from "@keel/std-db/sqlite";
 import { expect, test } from "vitest";
-import { sqlite } from "../src/sqlite/index.server.ts";
 import { closeStorage, removeDir, spawnNode, tempDir, writeScript } from "./support.server.ts";
 
 const driver = new URL("../src/sqlite/index.server.ts", import.meta.url).href;

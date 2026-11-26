@@ -14,7 +14,8 @@ import type { SourceFile } from "./SourceFile.ts";
  * `typeCache`: a folder the type pass keeps its results in across processes (k.check-cache), each used only when every
  * file system question the pass asked gets the same answer again (file bytes by hash, existence, real paths, listings);
  * results are the same with or without it. `own`: the library whose own folder `root` is (k.library-pack Own folder);
- * its formats and rules apply as in an app whose manifest lists it.
+ * its formats and the rules of the packages its `package.json` names apply as in an app whose manifest lists it; the
+ * rules it registers itself do not.
  */
 export type CheckOptions = {
   readonly root?: string;

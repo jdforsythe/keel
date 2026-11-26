@@ -223,7 +223,12 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
   if (typed !== undefined)
     out.push(...typed.diagnostics.filter((d) => d.code !== "E1406" || !e1403.has(`${d.path}:${d.line}:${d.col}`)));
 
-  const registered = rules().filter((r) => ruleInScope(ruleOwners.get(r.code), scope, depsRuleOwners));
+  // A rule a package registers judges the projects that list it, not the package's own folder (k.library-pack Own folder).
+  const registered = rules().filter(
+    (r) =>
+      ruleInScope(ruleOwners.get(r.code), scope, depsRuleOwners) &&
+      (opts.own === undefined || ruleOwners.get(r.code) !== opts.own),
+  );
   const checked: Checked[] = [];
   for (const file of code) {
     const parsed = parseFile(file);
