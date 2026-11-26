@@ -16,16 +16,12 @@ function matches(key: string, subpath: string): boolean {
 
 /**
  * k.entries Shape (E1815): what is out of shape in a library's parsed `package.json` `exports`, as `[key, what]`
- * (`key` undefined for the whole `exports`). `exists` tells whether the library holds a file at a path relative to
- * its folder; `imported` lists the subpaths (`.`, `./tokens`) the files check reads import from the library. An
+ * (`key` undefined for the whole `exports`): a `keel` value names a file when it is a `./` path under `src/` or
+ * `unsafe/`. `imported` lists the subpaths (`.`, `./tokens`) the files check reads import from the library. An
  * entry with no `keel` at all is read at its other target (k.library); a `*` key is out of shape only for an
  * imported subpath no explicit entry gives.
  */
-export function entryProblems(
-  pkg: unknown,
-  exists: (rel: string) => boolean,
-  imported: readonly string[],
-): [string | undefined, string][] {
+export function entryProblems(pkg: unknown, imported: readonly string[]): [string | undefined, string][] {
   const exportsMap: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "exports") : undefined;
   if (exportsMap === undefined) return [];
   if (typeof exportsMap !== "object" || exportsMap === null || Array.isArray(exportsMap))
@@ -49,7 +45,7 @@ export function entryProblems(
     const file: unknown = Reflect.get(target, "keel");
     const rel = typeof file === "string" ? file.replace(/^\.\//, "") : "";
     const placed = /^(?:src|unsafe)\//.test(rel) && typeof file === "string" && file.startsWith("./");
-    if (!placed || (!rel.includes("*") && !exists(rel))) {
+    if (!placed) {
       out.push([key, "keel names no file"]);
       continue;
     }
