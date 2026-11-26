@@ -1,9 +1,10 @@
 import { parseAst } from "vite";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PER_RUN_MS, propertyTimes } from "../property-times.ts";
+import { testTime } from "../test-time.ts";
 
 const IMPORT = `import { properties, simulate } from "@keel/testing";\n`;
-const times = (body: string, testTimeout = 5000): string | undefined =>
+const times = (body: string, testTimeout = testTime(5000)): string | undefined =>
   propertyTimes(IMPORT + body, (c) => parseAst(c), testTimeout);
 
 describe("propertyTimes", () => {
@@ -35,7 +36,7 @@ describe("propertyTimes", () => {
     expect(times(`it("p", { timeout: 1 }, async () => { await properties(A); });`)).toBeUndefined();
     expect(times(`it("p", () => { expect(1).toBe(1); });`)).toBeUndefined();
     const other = `import { properties } from "./mine.ts";\nit("p", async () => { await properties(A); });`;
-    expect(propertyTimes(other, (c) => parseAst(c), 5000)).toBeUndefined();
+    expect(propertyTimes(other, (c) => parseAst(c), testTime(5000))).toBeUndefined();
   });
   it("inserts at UTF-16 offsets, so a test named in another script keeps its text", () => {
     const out = times(
@@ -61,17 +62,21 @@ describe("propertyTimes", () => {
     expect(run(`import * as fc from "fast-check";`, "fc.assert")).toContain(`{ timeout: ${50 * PER_RUN_MS} }`);
     expect(run(`import { assert as check } from "fast-check";`, "check")).toContain(`{ timeout: ${50 * PER_RUN_MS} }`);
     const bare = `import fc from "fast-check";\nit("p", () => { fc.assert(fc.property(A, f)); });`;
-    expect(propertyTimes(bare, (c) => parseAst(c), 5000)).toContain(`{ timeout: ${100 * PER_RUN_MS} }`);
+    expect(propertyTimes(bare, (c) => parseAst(c), testTime(5000))).toContain(`{ timeout: ${100 * PER_RUN_MS} }`);
   });
   it("leaves an assert that is not fast-check's, and fast-check's other calls", () => {
     expect(
-      propertyTimes(`import fc from "./mine.ts";\nit("p", () => { fc.assert(x); });`, (c) => parseAst(c), 5000),
+      propertyTimes(
+        `import fc from "./mine.ts";\nit("p", () => { fc.assert(x); });`,
+        (c) => parseAst(c),
+        testTime(5000),
+      ),
     ).toBeUndefined();
     expect(
       propertyTimes(
         `import fc from "fast-check";\nit("p", () => { fc.sample(A, { seed: 1, numRuns: 3 }); });`,
         (c) => parseAst(c),
-        5000,
+        testTime(5000),
       ),
     ).toBeUndefined();
   });
@@ -79,7 +84,7 @@ describe("propertyTimes", () => {
     afterEach(() => vi.unstubAllEnvs());
     it("gives each run its whole PER_RUN_MS: a run is the machine's own work", () => {
       vi.stubEnv("KEEL_TEST_TIME_SCALE", "0.1");
-      expect(times(`it("p", async () => { await properties(Page); });`, 500)).toContain("{ timeout: 30000 }");
+      expect(times(`it("p", async () => { await properties(Page); });`, testTime(500))).toContain("{ timeout: 30000 }");
     });
   });
   it("reads runs and numRuns from a top-level const options object", () => {
@@ -87,6 +92,6 @@ describe("propertyTimes", () => {
       "{ timeout: 12000 }",
     );
     const fc = `import * as fc from "fast-check";\nconst run = { seed: 1, numRuns: 200 };\nit("p", () => { fc.assert(P, run); });`;
-    expect(propertyTimes(fc, (c) => parseAst(c), 500)).toContain("{ timeout: 60000 }");
+    expect(propertyTimes(fc, (c) => parseAst(c), testTime(500))).toContain("{ timeout: 60000 }");
   });
 });
