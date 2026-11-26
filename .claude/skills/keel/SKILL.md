@@ -5,7 +5,7 @@ description: "Read first in a Keel app: app shape, one export per file, the rule
 
 # Building a Keel app
 
-**Reading path.** `keel docs` lists areas, `keel docs <area>` an area's sections, `keel docs <id>` one (`k.router`), `keel docs --for <code, name or term>` finds them; `keel explain <code>` its fix. A std section opens once its package is installed (E1065). An API no section describes: stop, report `blocked: <what is missing>`. TS2688 or TS2875 in an E1751 means kit types did not resolve: report `blocked: kit types`; do not edit `node_modules`.
+**Reading path.** `keel docs` lists areas, `keel docs <area>` an area's sections, `keel docs <id>` one (`k.router`), `keel docs --for <code, name or term>` finds them; `keel explain <code>` its fix. A std section opens once its package is in `package.json`, installed (E1065). An API no section describes: stop, report `blocked: <what is missing>`. TS2688 or TS2875 in an E1751: kit types did not resolve; report `blocked: kit types`, never edit `node_modules`.
 
 **Shape.** App code lives in modules, `modules/<id>/`; `keel scaffold project` starts with module `app`, to build on or delete with its `topology.ts` entry. Each file has one export and is named after it (E1752); a component file may also export `Props` and `uses`.
 - `module.ts`: `export default module({ id, deps, capabilities, public: { exports } })` (`@keel/compiler`). Route ids, store ids, transaction names and error codes start with the module id (E1155).
@@ -37,13 +37,13 @@ export default function TodoList(props: Infer<typeof Props>) {
 
 **Rules.**
 - Failures are values: return `err(...)`, never `throw` (E1451); wrap throwing code in `attempt`, never `try` (E1452); never drop a `Result` (E1453).
-- No `Date`, `Math.random`, `crypto.randomUUID`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651). An `import()` is W1608, a load `simulate` does not wait for: use a static import.
+- No `Date`, `Math.random`, `crypto.randomUUID`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651). An `import()` is W1608, a load `simulate` does not wait for: import statically.
 - No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757), whose reason, 8 words or more, says why the escape holds (E1760). A claim that a call must not compile is a negative type test: `test/<name>.test-d.ts`, each `// @ts-expect-error <what must not compile>` one claim, imported by nothing (E1761); no `@keel/*` import with an `internal` segment (E1576). Import a `modules/` file by a relative path (E1013); code outside the project is a workspace package, never a relative path out of it (E1015).
 - A format value written in source (a store's initial value, a fixture) is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`), E1108 when it does not parse.
 
-**Commands.** `keel check` (E1005 on `.keel/` files after an edit until `keel build` runs) · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` · `keel codemod rename|move|place`: prefer them to hand edits.
+**Commands.** `keel check` (E1005 on `.keel/` files after an edit until `keel build` runs) · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` · `keel codemod rename|move|place`, preferred to hand edits.
 
-**Libraries.** A module lists a library in `deps` by its scoped name (`'@acme/charts'`) and `keel check` checks its files as the app's; to write one, load keel-library.
+**Libraries.** A module lists a library in `deps` by scoped name (`'@acme/charts'`); `keel check` checks its files as the app's; to write one: keel-library.
 
 **Skills.** Examples put several exports in one block; in an app each is a file.
 - keel-client: components, pages, forms, action redirects (`ok(href)`), widgets, tables, text.
