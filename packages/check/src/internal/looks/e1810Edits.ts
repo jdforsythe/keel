@@ -20,7 +20,7 @@ function importsOf(program: Program): { readonly from: ReadonlyMap<string, strin
 }
 
 /**
- * E1810's fix (k.looks Fix) as edits of `tokens.ts`: the import of `<id>Tokens` after the last import, and for each
+ * E1810's fix (k.looks Fix) as edits of `tokens.ts`: the import of `<id>Tokens` on a new line after the last import's line, and for each
  * group the shipped object holds, in k.ui's order with `look` last, `...<id>Tokens.<group>` after the last spread of
  * the literal's `<group>` object, or a new `<group>: { ...S.<group>, ...<id>Tokens.<group> }` at its end. `tokens` is
  * `defineTokens(<object literal>)`, or an imported name `S` taken as `defineTokens({ ...S })`. Null when the fix
@@ -35,7 +35,11 @@ export function e1810Edits(
 ): Edit[] | null {
   const found = tokensInit(program);
   if (found === undefined || lib.shipped === null) return null;
-  const { from, lastEnd } = importsOf(program);
+  const imports = importsOf(program);
+  const { from } = imports;
+  // After the last import's line, so a comment that ends it stays on it.
+  const lineEnd = source.indexOf("\n", imports.lastEnd);
+  const lastEnd = imports.lastEnd === 0 ? 0 : lineEnd < 0 ? source.length : lineEnd;
   const local = `${lib.id}Tokens`;
   const groups = [...lib.shipped.names.keys()];
   /** The groups the tokens a spread `...S` names hold: `brandTokens`'s, a library's shipped ones, else every group. */

@@ -218,6 +218,21 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const looks = looksOf(realAll, dir);
     projectLooks.set(project, {
       libraryOf: (p) => looks.libraryOf(libs.real(p)),
+      ownSchemes: [
+        ...(looks.own?.shipped?.value.color === undefined ? [] : Object.values(Object(looks.own.shipped.value.color))),
+      ].some((v) => typeof v === "object" && v !== null)
+        ? ["light", "dark"]
+        : undefined,
+      lookLibrary: (look) => {
+        const lib = looks.listed.find((l) => !l.own && l.shipped?.names.get("look")?.includes(look) === true);
+        const host = realAll.find((f) => f.path === `${dir}tokens.ts`)?.source ?? "";
+        const written = host.includes(`'${look}'`) || host.includes(`"${look}"`);
+        return lib === undefined || written ? undefined : lib.id;
+      },
+      libraryFileOf: (p) => {
+        const lib = looks.libraryOf(libs.real(p));
+        return lib === undefined || lib.own ? undefined : lib.id;
+      },
       ships: (name) => looks.listed.some((l) => [...(l.shipped?.names.values() ?? [])].some((n) => n.includes(name))),
       shippedLook: (look) => {
         const lib = looks.listed.find((l) => l.shipped?.names.get("look")?.includes(look) === true);
@@ -255,7 +270,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const dates = typed?.dates.get(libs.real(file.path)) ?? (typed === undefined ? undefined : new Set<number>());
     const input = { file, ast: parsed.program, artifacts, project };
     // One by one: a file may give more findings than a spread call takes arguments.
-    for (const d of runRules(registered, dates === undefined ? input : { ...input, dates })) out.push(d);
+    const selects = typed?.schemeSelects.get(libs.real(file.path));
+    const typedInput = dates === undefined ? input : { ...input, dates, schemeSelects: selects ?? new Set<number>() };
+    for (const d of runRules(registered, typedInput)) out.push(d);
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
   // The passes that read a library's files where they lie.

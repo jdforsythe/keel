@@ -1,15 +1,25 @@
 import { clipMessage } from "@keel/schema/internal";
 import { contrast } from "@keel/ui/css";
-import { type Expression, type JSXAttribute, type JSXAttributeItem, type JSXChild, Visitor } from "oxc-parser";
+import {
+  type Expression,
+  type JSXAttribute,
+  type JSXAttributeItem,
+  type JSXChild,
+  type Program,
+  Visitor,
+} from "oxc-parser";
 import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
 import { BASE_ROLE } from "../internal/BASE_ROLE.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { projectLooks } from "../internal/looks/projectLooks.ts";
+import { parseFile } from "../internal/parseFile.ts";
 import { schemesIn } from "../internal/schemesIn.ts";
 import { str } from "../internal/str.ts";
 import { tokenSetAt } from "../internal/tokenSetAt.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
+import type { SourceFile } from "../types/SourceFile.ts";
 
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 /** The user agent's text and canvas, where neither the element nor `base.page` names a color. */
@@ -142,6 +152,7 @@ function setToken(set: unknown, prop: string): string | undefined {
 /** The first scheme where `fg` on `bg` falls below its threshold, as finding data, or undefined. */
 function failing(
   tokens: unknown,
+  schemes: readonly ("light" | "dark")[],
   fg: string,
   bg: string,
   size: string | null | undefined,
@@ -150,7 +161,7 @@ function failing(
   // An unread size or weight is judged at 3:1, which text of every size needs.
   const px = size === null || weight === null ? 24 : pixels(tokens, size);
   const min = px >= 24 || (px >= 18.66 && weightOf(tokens, weight ?? undefined) >= 700) ? 3 : 4.5;
-  for (const scheme of schemesIn(tokens)) {
+  for (const scheme of schemes) {
     const a = colorIn(tokens, fg, scheme);
     const b = colorIn(tokens, bg, scheme);
     if (a === undefined || b === undefined) continue;
@@ -160,35 +171,120 @@ function failing(
   return undefined;
 }
 
+/** The elements of `ast` holding text whose contrast fails, each with the offset of its `<` and the finding data. */
+function judgeElements(
+  ast: Program,
+  tokens: unknown,
+  schemes: readonly ("light" | "dark")[],
+): { at: number; bad: Readonly<Record<string, string>> }[] {
+  const out: { at: number; bad: Readonly<Record<string, string>> }[] = [];
+  const base = isRec(tokens) && isRec(tokens.base) ? tokens.base : {};
+  const page = base.page;
+  const pageFg = setToken(page, "fg") ?? UA_FG;
+  const pageSize = setToken(page, "fontSize");
+  const pageWeight = setToken(page, "weight");
+  const looks = isRec(tokens) && isRec(tokens.look) ? tokens.look : {};
+  const frames: Frame[] = [];
+  new Visitor({
+    JSXElement: (el) => {
+      const n = el.openingElement;
+      const name = n.name.type === "JSXIdentifier" ? n.name.name : "";
+      const parent = frames.at(-1) ?? EDGE;
+      if (!STYLED.has(name)) {
+        frames.push(PASS.has(name) ? parent : EDGE);
+        return;
+      }
+      const roleName = BASE_ROLE[name];
+      const role = roleName === undefined ? undefined : base[roleName];
+      const look = written(n.attributes, "look");
+      const set = typeof look === "string" && look !== "absent" ? looks[look] : undefined;
+      const resolve = (prop: (typeof PROPS)[number]): Value => {
+        const own = written(n.attributes, prop);
+        if (own !== "absent") return own;
+        if (look === null) return null;
+        return setToken(set, prop) ?? setToken(role, prop) ?? parent[prop];
+      };
+      const exempt =
+        parent.exempt ||
+        on(n.attributes, "hidden") ||
+        on(n.attributes, "disabled") ||
+        written(n.attributes, "aria-disabled") === "true";
+      const frame: Frame = {
+        fg: resolve("fg"),
+        bg: resolve("bg"),
+        fontSize: resolve("fontSize"),
+        weight: resolve("weight"),
+        exempt,
+      };
+      frames.push(frame);
+      if (exempt || !holdsText(el.children)) return;
+      const fg = frame.fg === undefined ? pageFg : frame.fg;
+      if (fg === null || frame.bg === null || frame.bg === undefined) return;
+      const size = frame.fontSize === undefined ? pageSize : frame.fontSize;
+      const weight = frame.weight === undefined ? pageWeight : frame.weight;
+      const bad = failing(tokens, schemes, fg, frame.bg, size, weight);
+      if (bad !== undefined) out.push({ at: n.start, bad });
+    },
+    "JSXElement:exit": () => {
+      frames.pop();
+    },
+  }).visit(ast);
+  return out;
+}
+
+/** The offset in `tokens.ts` where a library pair's finding lands (k.looks Library contrast). */
+function pairAt(host: SourceFile, fg: string, bg: string, id: string): number {
+  for (const name of [fg, bg]) {
+    const m = new RegExp(`(["'])${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\1\\s*:`).exec(host.source);
+    if (m !== null) return m.index;
+  }
+  const spread = host.source.indexOf(`...${id}Tokens.color`);
+  return spread < 0 ? 0 : spread;
+}
+
 /**
  * E1804 (k.a11y, k.a11y-static): text whose `fg` contrasts below 4.5:1 (3:1 when large: `fontSize` >= 24px, or
- * >= 18.66px at `weight` >= 700) in each of the tokens' color schemes (k.schemes) against its `bg`. Each `base` set (on its own `bg`, else
- * `base.page`'s, else white) and each look is judged at the project's `tokens.ts` (else its first file). In an app
- * file, a base element or `Part` holding text is judged with its `fg`, `bg`, `fontSize` and `weight` resolved as the
- * render check resolves them: its own literal prop, its literal look's set, its role's `base` set, then its parent's
- * through base elements, `Part` and the intrinsics that add no markup. At the component's edge or below another
- * component `bg` is not found and the rest are `base.page`'s; an element whose `fg` or `bg` is unread (an expression,
- * a responsive object, a computed look, a spread) or not found is left to the render check; an unread size judges at
- * 3:1. Text under a `hidden`, `disabled` (bare or `{true}`) or `aria-disabled="true"` element is exempt, and `states`
- * are not read. Tokens come from the `tokens` project artifact; without it the rule reports nothing.
+ * >= 18.66px at `weight` >= 700) in each of the tokens' color schemes (k.schemes; in a library's own folder, both when
+ * a shipped color is a pair) against its `bg`. Each `base` set (on its own `bg`, else `base.page`'s, else white) and
+ * each look is judged at the project's `tokens.ts` (else its first file); a look a library ships, in its own folder at
+ * its key in the shipped file. In an app file, a base element or `Part` holding text is judged with its `fg`, `bg`,
+ * `fontSize` and `weight` resolved as the render check resolves them: its own literal prop, its literal look's set,
+ * its role's `base` set, then its parent's through base elements, `Part` and the intrinsics that add no markup. At the
+ * component's edge or below another component `bg` is not found and the rest are `base.page`'s; an element whose `fg`
+ * or `bg` is unread (an expression, a responsive object, a computed look, a spread) or not found is left to the render
+ * check; an unread size judges at 3:1. Text under a `hidden`, `disabled` (bare or `{true}`) or `aria-disabled="true"`
+ * element is exempt, and `states` are not read. In an app, what fails in a listed library's file or look is reported
+ * in `tokens.ts` once per pair and scheme, where the app can override (k.looks Library contrast). Tokens come from the
+ * `tokens` project artifact; without it the rule reports nothing.
  */
 export const lowContrast: RuleDef = {
   code: "E1804",
   message: (f) => {
+    const tail = `is ${str(f.data, "ratio")}:1 in ${str(f.data, "scheme")}, needs ${str(f.data, "need")}:1`;
+    if (str(f.data, "lib") !== "")
+      return clipMessage(`${str(f.data, "fg")} on ${str(f.data, "bg")} ${tail}; override in tokens.ts`, 89);
     const set = str(f.data, "set");
     const pair = `fg "${str(f.data, "fg")}" on bg "${str(f.data, "bg")}"`;
-    const tail = `is ${str(f.data, "ratio")}:1 in ${str(f.data, "scheme")}, needs ${str(f.data, "need")}:1`;
     return clipMessage(set === "" ? `${pair} ${tail}` : `${set}: ${pair} ${tail}`, 89);
   },
   see: "k.a11y",
   check: ({ file, ast, artifacts, project }) => {
     const tokens = artifacts.tokens;
     if (tokens === undefined) return [];
+    const looks = projectLooks.get(project);
+    const schemes = looks?.ownSchemes ?? schemesIn(tokens);
     const out: Finding[] = [];
     const base = isRec(tokens) && isRec(tokens.base) ? tokens.base : {};
     const page = base.page;
     const pageFg = setToken(page, "fg") ?? UA_FG;
     const pageBg = setToken(page, "bg") ?? UA_BG;
+    const host = project.find((f) => /(?:^|\/)tokens\.ts$/.test(f.path));
+    // A listed library's pair, in an app: one finding per pair and scheme, in `tokens.ts`.
+    const pairs = new Map<string, { bad: Readonly<Record<string, string>>; id: string }>();
+    const libraryPair = (bad: Readonly<Record<string, string>>, id: string): void => {
+      const key = `${bad.fg ?? ""}|${bad.bg ?? ""}|${bad.scheme ?? ""}`;
+      if (!pairs.has(key)) pairs.set(key, { bad, id });
+    };
     const sets: [string, unknown][] = Object.entries(base)
       .filter(([name]) => name !== "focus")
       .map(([name, set]) => [`base.${name}`, set]);
@@ -198,59 +294,34 @@ export const lowContrast: RuleDef = {
       const fg = setToken(set, "fg");
       const bg = setToken(set, "bg");
       if (fg === undefined && bg === undefined) continue;
-      const bad = failing(tokens, fg ?? pageFg, bg ?? pageBg, setToken(set, "fontSize"), setToken(set, "weight"));
-      const at = bad === undefined ? undefined : tokenSetAt(file, project, label);
+      const bad = failing(
+        tokens,
+        schemes,
+        fg ?? pageFg,
+        bg ?? pageBg,
+        setToken(set, "fontSize"),
+        setToken(set, "weight"),
+      );
+      if (bad === undefined) continue;
+      const shipper = label.startsWith("look.") ? looks?.lookLibrary(label.slice("look.".length)) : undefined;
+      if (shipper !== undefined) {
+        if (host?.path === file.path) libraryPair(bad, shipper);
+        continue;
+      }
+      const at = tokenSetAt(file, project, label);
       if (at !== undefined) out.push(findingAt(file, at, { ...bad, set: label }));
     }
-    if (!isAppPath(file.path)) return out;
-    const pageSize = setToken(page, "fontSize");
-    const pageWeight = setToken(page, "weight");
-    const looks = isRec(tokens) && isRec(tokens.look) ? tokens.look : {};
-    const frames: Frame[] = [];
-    new Visitor({
-      JSXElement: (el) => {
-        const n = el.openingElement;
-        const name = n.name.type === "JSXIdentifier" ? n.name.name : "";
-        const parent = frames.at(-1) ?? EDGE;
-        if (!STYLED.has(name)) {
-          frames.push(PASS.has(name) ? parent : EDGE);
-          return;
-        }
-        const roleName = BASE_ROLE[name];
-        const role = roleName === undefined ? undefined : base[roleName];
-        const look = written(n.attributes, "look");
-        const set = typeof look === "string" && look !== "absent" ? looks[look] : undefined;
-        const resolve = (prop: (typeof PROPS)[number]): Value => {
-          const own = written(n.attributes, prop);
-          if (own !== "absent") return own;
-          if (look === null) return null;
-          return setToken(set, prop) ?? setToken(role, prop) ?? parent[prop];
-        };
-        const exempt =
-          parent.exempt ||
-          on(n.attributes, "hidden") ||
-          on(n.attributes, "disabled") ||
-          written(n.attributes, "aria-disabled") === "true";
-        const frame: Frame = {
-          fg: resolve("fg"),
-          bg: resolve("bg"),
-          fontSize: resolve("fontSize"),
-          weight: resolve("weight"),
-          exempt,
-        };
-        frames.push(frame);
-        if (exempt || !holdsText(el.children)) return;
-        const fg = frame.fg === undefined ? pageFg : frame.fg;
-        if (fg === null || frame.bg === null || frame.bg === undefined) return;
-        const size = frame.fontSize === undefined ? pageSize : frame.fontSize;
-        const weight = frame.weight === undefined ? pageWeight : frame.weight;
-        const bad = failing(tokens, fg, frame.bg, size, weight);
-        if (bad !== undefined) out.push(findingAt(file, n.start, bad));
-      },
-      "JSXElement:exit": () => {
-        frames.pop();
-      },
-    }).visit(ast);
+    if (host !== undefined && host.path === file.path && looks !== undefined)
+      for (const f of project) {
+        const id = looks.libraryFileOf(f.path);
+        if (id === undefined || !/\.[jt]sx$/.test(f.path)) continue;
+        const parsed = parseFile(f);
+        if (parsed.ok) for (const { bad } of judgeElements(parsed.program, tokens, schemes)) libraryPair(bad, id);
+      }
+    for (const { bad, id } of pairs.values())
+      out.push(findingAt(file, pairAt(file, bad.fg ?? "", bad.bg ?? "", id), { ...bad, lib: "1" }));
+    if (!isAppPath(file.path) || looks?.libraryFileOf(file.path) !== undefined) return out;
+    for (const { at, bad } of judgeElements(ast, tokens, schemes)) out.push(findingAt(file, at, bad));
     return out;
   },
 };

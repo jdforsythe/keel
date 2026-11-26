@@ -1493,6 +1493,13 @@ const ROWS: readonly Row[] = [
     "k.schemes",
   ],
   [
+    "E1815",
+    "a listed library's exports entry holds keel other than as its first condition",
+    "keel check reads the keel target as the library's source, and the compiler and tokens.ts's evaluation resolve the first condition that matches, so keel goes first, at the top level, or they could load another file. Nothing of the library is evaluated while one stands.",
+    '"./tokens": { "default": "./x.js", "keel": "./src/acmeTokens.ts" } -> { "keel": "./src/acmeTokens.ts", "default": "./x.js" }',
+    "k.looks",
+  ],
+  [
     "E1820",
     "reversed direction over two or more focusable elements",
     "Focus follows document order; a reversed direction shows it backwards.",

@@ -11,8 +11,8 @@ const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null && !
  * Read `<id>Tokens.ts` as text, never running it (k.looks Shipped tokens): one `import { defineTokens } from
  * '@keel/ui'` and `export const <id>Tokens = defineTokens({ ... })`, the argument an object literal of identifier or
  * string keys and string or object literal values. The first node out of form, in source order, is the problem: a
- * top-level `base` or `schemes` key before its value is judged, then another import or statement, a spread, a computed
- * key or value, a name without `<id>.`; once in form, a look naming a token the object lacks, then `TokenSchema`.
+ * top-level `base` or `schemes` key before its value is judged, then another import or statement, a spread, a type
+ * assertion (`as`, `satisfies`), a computed key or value, a name without `<id>.`; once in form, a look naming a token the object lacks, then `TokenSchema`.
  */
 export function readShipped(program: Program, id: string): Shipped {
   const names = new Map<string, string[]>();
@@ -47,6 +47,10 @@ export function readShipped(program: Program, id: string): Shipped {
   };
   const leaf = (e: Expression): unknown => {
     if (e.type === "Literal" && typeof e.value === "string") return e.value;
+    if (e.type === "TSAsExpression" || e.type === "TSSatisfiesExpression") {
+      fail(e.start, form("a type assertion"));
+      return leaf(e.expression);
+    }
     if (e.type === "ObjectExpression") return read(e);
     fail(e.start, form("a computed value"));
     return undefined;
@@ -67,7 +71,11 @@ export function readShipped(program: Program, id: string): Shipped {
         fail(p.start, form("a computed value"));
         continue;
       }
-      const v = p.value;
+      let v = p.value;
+      if (v.type === "TSAsExpression" || v.type === "TSSatisfiesExpression") {
+        fail(v.start, form("a type assertion"));
+        while (v.type === "TSAsExpression" || v.type === "TSSatisfiesExpression") v = v.expression;
+      }
       if (v.type !== "ObjectExpression") {
         out[group] = leaf(v);
         continue;
@@ -112,7 +120,15 @@ export function readShipped(program: Program, id: string): Shipped {
       init.callee.name === "defineTokens";
     if (!shaped) fail(st.start, form("another statement"));
     else if (arg?.type === "SpreadElement") fail(arg.start, form("a spread"));
-    else if (arg?.type !== "ObjectExpression") fail(arg?.start ?? st.start, form("a computed value"));
+    else if (arg?.type === "TSAsExpression" || arg?.type === "TSSatisfiesExpression") {
+      fail(arg.start, form("a type assertion"));
+      let inner: Expression = arg.expression;
+      while (inner.type === "TSAsExpression" || inner.type === "TSSatisfiesExpression") inner = inner.expression;
+      if (inner.type === "ObjectExpression") {
+        main = inner;
+        value = top(inner);
+      }
+    } else if (arg?.type !== "ObjectExpression") fail(arg?.start ?? st.start, form("a computed value"));
     else {
       main = arg;
       value = top(arg);

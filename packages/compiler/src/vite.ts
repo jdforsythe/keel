@@ -971,8 +971,7 @@ export default function (): {
                 fs.existsSync(std) ? std : undefined,
               );
               if (failed.length > 0) throw evaluationFailed(failed);
-              if (await offersScheme(at, top[name]?.modules ?? []))
-                addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
+              if (await offersScheme(at)) addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
               return;
             }
             // The files bundled package files read beside themselves (k.server-deps); a problem fails the build, which
@@ -1231,15 +1230,9 @@ export default function (): {
       if (command === "build" && problems.length > 0) throw evaluationFailed(problems);
     },
     async closeBundle() {
-      // A `client` document loads the first-paint scheme script when it offers the choice (k.schemes First paint).
+      // A `client` document loads the first-paint scheme script when the app has both schemes (k.schemes First paint).
       const index = path.join(root, "dist", hosting ?? "", "index.html");
-      const modules = hosting === undefined ? [] : (topology?.[hosting]?.modules ?? []);
-      if (
-        hosting !== undefined &&
-        shellOf() === undefined &&
-        fs.existsSync(index) &&
-        (await offersScheme(root, modules))
-      )
+      if (hosting !== undefined && shellOf() === undefined && fs.existsSync(index) && (await offersScheme(root)))
         addSchemeScript(path.dirname(index), ["index.html"]);
       const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
       // A failed build wrote no `dist/<name>/`, and gets no mark either.

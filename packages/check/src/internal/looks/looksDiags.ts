@@ -10,6 +10,7 @@ import { unifiedDiff } from "../unifiedDiff.ts";
 import type { LookLibrary } from "./LookLibrary.ts";
 import type { Looks } from "./Looks.ts";
 import { e1810Edits } from "./e1810Edits.ts";
+import { entryProblems } from "./entryProblems.ts";
 import { tokensInit } from "./tokensInit.ts";
 
 type Rec = Readonly<Record<string, unknown>>;
@@ -41,6 +42,23 @@ export function looksDiags(
     const problem = lib.shipped?.problem;
     if (shipped !== undefined && problem !== undefined && problem !== null)
       out.push(moduleDiag("E1812", shipped, problem.at, problem.message, undefined, SEE));
+  }
+  // E1815: an entry's `keel` other than first, at each `deps` entry naming the library, judged whatever the tokens.
+  for (const lib of looks.listed) {
+    if (lib.own) continue;
+    const pkg = byPath.get(lib.packagePath);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(pkg?.source ?? "");
+    } catch {
+      continue;
+    }
+    for (const [key, what] of entryProblems(parsed))
+      for (const { path, entry } of looks.entries.get(lib.name) ?? []) {
+        const file = byPath.get(path);
+        if (file !== undefined)
+          out.push(moduleDiag("E1815", file, entry.start, `${lib.name} exports "${key}" ${what}`, undefined, SEE));
+      }
   }
   const tokensFile = files.find((f) => f.path.replace(/^\.\//, "") === `${looks.dir}tokens.ts`);
   if (tokensFile !== undefined && !tokens.given) return out;
