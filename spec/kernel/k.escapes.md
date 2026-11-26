@@ -1,5 +1,5 @@
 # k.escapes: Escape codes
-status: conformance-covered
+status: implemented
 
 **Purpose.** The findings `keel review` reports (k.review): each code, its danger, and what it reads. A file is read by syntax, as `keel check` reads it; a range code reads the changes between `<base>` and `<head>`. A test file is `*.test.*` or `*.spec.*`, or under `test/`, `tests/` or `__tests__/`; a server file is named `*.server.*` or `*.guard.*` (k.boundary's server-only names); app code is k.check's. A finding's text (its `id`, k.review) is the source of the node its row names; of a JSON or YAML entry, its key and value as written; of a whole file, empty; of a range code, its message. A call is one whose callee is that name.
 
@@ -10,6 +10,7 @@ status: conformance-covered
 | R1010 | opt-in | each entry of `origins` in `topology.ts` (`origins: { img: { 'https://img.cdn.example': 'photos' } }`, k.origins): `connect`, `frame` high; `img`, `media`, `font` low; the value its reason |
 | R1011 | high, opt-in | an `allow` property of the object a `createApp(` call takes, or the word `KEEL_ALLOW_ORIGINS` in a tracked file but Markdown |
 | R1012 | high, opt-in | a `reveal` call |
+| R1013 | medium | a `defect` call (k.errors) where a `Result` is `err`: in the consequent of an `if` testing `!x.ok` or `x.ok === false`, in the `else` of `if (x.ok)`, or as the third operand of `x.ok ? a : b`, `x` a name or member |
 | R1014 | high, opt-in | a `handle` property of the object an `identity(` call takes, or of `createApp(`'s `identity` object |
 | R1050 | medium | a cast (not `as const`), `any`, `!` or ts-suppression comment (a negative type test's expectation aside, k.unsafe) in a test file, a `.d.ts`, a `*.config.*` file, or a file under `unsafe/` or `.keel/` |
 | R1051 | medium | a comment that starts `eslint-disable`, `biome-ignore` or `oxlint-disable` |
@@ -49,3 +50,4 @@ status: conformance-covered
 - A tracked `.ts` file that does not parse is one R1150, and the other findings still print.
 - A test file losing one `expect` call between `<base>` and `<head>` is one R1060; a test file renamed unchanged is none.
 - A file kept by the range with one `.pii(` call fewer is one R1108.
+- R1013 is one finding each for `if (!r.ok) return defect('x')`, `if (r.ok) use(r.value); else defect('x')` and `const v = r.ok ? r.value : defect('x')` in `modules/m/a.ts`; `return rows[0] ?? defect('x')` and `if (r.ok) defect('x')` are none.

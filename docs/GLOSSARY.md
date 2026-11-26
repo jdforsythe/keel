@@ -47,6 +47,8 @@ Canonical names. Changing one requires an RFC.
 - **held work**: a capability's sim work passed to `hold(label, start)`, the work that answers through something made outside the run; it is held until delivered, holds in the order they started (k.sim, k.drive-law).
 - **law check**: with `law` on (the default under `keel test`), each run of `simulate` that passed runs a second time with its `SimRun` and the two traces are compared; traces that differ fail with E1729 (k.drive-law).
 - **type cache**: the results of `keel check`'s type pass kept across processes in `node_modules/.cache/keel/` (or `check()`'s `typeCache` folder), each entry keyed by content and used only when every file system question it recorded gets the same answer; it changes the time a run takes, never its output (k.check-cache).
+- **defect**: a failure no caller is meant to handle (a bug in the calling code, a broken invariant, stored state that fails its own shape, a fault under a contract that throws), raised by `defect(message, code?)` from `@keel/schema`; never a `Result`'s `err`, and never passed to `attempt`'s `expect` (k.errors).
+- **module root**: a scope made while no scope runs, as at a module's top level: it has no parent and lives until its own `dispose()`; state a module or library keeps for its life is made inside one with `run` (k.reactive).
 
 subject: spec/ packages/*/package.json
 verified: 73b4d1ef9220bab121ee35682833de03d269bd58

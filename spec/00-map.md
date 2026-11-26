@@ -49,8 +49,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
-| k.errors | Results, boundaries | conformance-covered | Result |
-| k.check | Checker, diagnostics | conformance-covered | codes |
+| k.errors | Results, boundaries | implemented | Result |
+| k.check | Checker, diagnostics | implemented | codes |
 | k.check-cache | Type cache | conformance-covered | reuse |
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
@@ -108,7 +108,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
 | k.review | Review of escapes | conformance-covered | ranges |
-| k.escapes | Escape codes | conformance-covered | R codes |
+| k.escapes | Escape codes | implemented | R codes |
 | k.unsafe | Unsafe, type tests | conformance-covered | count |
 
 ## Stdlib
