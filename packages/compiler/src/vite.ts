@@ -18,6 +18,7 @@ import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
 import type { HeldLibrary } from "./internal/HeldLibrary.ts";
 import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
 import { STUB_NAME } from "./internal/STUB_NAME.ts";
+import { addSchemeScript } from "./internal/addSchemeScript.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
 import { bundledFiles } from "./internal/bundledFiles.ts";
@@ -39,6 +40,7 @@ import { libraryRegisters } from "./internal/libraryRegisters.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
+import { offersScheme } from "./internal/offersScheme.ts";
 import { packageRoot } from "./internal/packageRoot.ts";
 import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
@@ -141,6 +143,13 @@ const SQLITE_CODE = 'export const { DatabaseSync } = process.getBuiltinModule("n
 const CSS_ID = "/__keel.css";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
 const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
+/** The `.html` files under `dir`, relative to it. */
+const htmlUnder = (dir: string): string[] =>
+  fs
+    .readdirSync(dir, { recursive: true, encoding: "utf8" })
+    .filter((f) => f.endsWith(".html"))
+    .map((f) => f.split(path.sep).join("/"));
+
 /** App module manifests: their `std` entries are `std.json`. */
 const MANIFEST = /^modules\/[^/]+\/module\.[cm]?[jt]s$/;
 
@@ -332,6 +341,9 @@ export default function (): {
   let css = "";
   /** The tokens' `look` sets, once evaluated: `compile` lowers a `look` to their classes. */
   let looks: Readonly<Record<string, unknown>> | undefined;
+  // The tokens' color schemes (k.schemes First paint).
+  let schemes: readonly string[] = ["light"];
+  let schemesRead = false;
   let looksKey = "";
   let stale = true;
   let usageKeys = "";
@@ -759,6 +771,8 @@ export default function (): {
     if (writes) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
+    // Written once the tokens are evaluated, so a run that compiles no CSS leaves the file as it is.
+    if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes] })]);
     for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
@@ -844,6 +858,8 @@ export default function (): {
     problems = r.problems;
     css = r.css;
     looks = r.looks;
+    schemes = r.schemes;
+    schemesRead = true;
     looksKey = canonicalJson(r.looks);
     routes = r.routes;
     // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it.
@@ -955,6 +971,7 @@ export default function (): {
                 fs.existsSync(std) ? std : undefined,
               );
               if (failed.length > 0) throw evaluationFailed(failed);
+              if (await offersScheme(at)) addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
               return;
             }
             // The files bundled package files read beside themselves (k.server-deps); a problem fails the build, which
@@ -973,12 +990,15 @@ export default function (): {
             });
             const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
             const all = projectManifests(every, listSources(at), at);
-            const table = await evaluateProject({ root: at, tokensFile: undefined, routesFiles: all, usages: [] });
+            // The tokens too, for the schemes the server's first paint reads (k.schemes First paint).
+            const tokensFile = fs.existsSync(path.join(at, "tokens.ts")) ? "tokens.ts" : undefined;
+            const table = await evaluateProject({ root: at, tokensFile, routesFiles: all, usages: [] });
             if (table.problems.length > 0) throw evaluationFailed(table.problems);
             copyMigrations(at, path.join(at, out), top[name]?.modules ?? []);
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
             if (fs.existsSync(path.join(at, ".keel", "std.json")))
               fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
+            fs.writeFileSync(path.join(at, out, "schemes.json"), `${JSON.stringify({ schemes: table.schemes })}\n`);
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
@@ -1209,7 +1229,11 @@ export default function (): {
       // keeps serving (k.compiler Build-time evaluation).
       if (command === "build" && problems.length > 0) throw evaluationFailed(problems);
     },
-    closeBundle() {
+    async closeBundle() {
+      // A `client` document loads the first-paint scheme script when the app has both schemes (k.schemes First paint).
+      const index = path.join(root, "dist", hosting ?? "", "index.html");
+      if (hosting !== undefined && shellOf() === undefined && fs.existsSync(index) && (await offersScheme(root)))
+        addSchemeScript(path.dirname(index), ["index.html"]);
       const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
       // A failed build wrote no `dist/<name>/`, and gets no mark either.
       if (hosting !== undefined && fs.existsSync(path.dirname(mark)) && !fs.existsSync(mark))

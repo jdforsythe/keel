@@ -39,6 +39,7 @@ import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
 import { ownFrame } from "./internal/ownFrame.ts";
 import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
+import { readSchemes } from "./internal/readSchemes.ts";
 import { redacted } from "./internal/redacted.ts";
 import { refuseModuleWrites } from "./internal/refuseModuleWrites.ts";
 import { reportSource } from "./internal/reportSource.ts";
@@ -198,6 +199,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     if (framed !== undefined) throw codedError("E1590", `${who}: origins.frame: ${framed} is the app's own origin`);
   }
   const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets, hosted) : undefined;
+  const schemes = await readSchemes(opts.artifacts);
   const sv: Served = {
     table: served,
     ctx: opts.ctx,
@@ -236,6 +238,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     days: top[name]?.caller?.days,
     origins: top[name]?.origins,
     framed: new Set(),
+    schemes,
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, top, Object.keys(peers));

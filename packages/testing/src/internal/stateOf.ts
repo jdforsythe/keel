@@ -19,6 +19,7 @@ export function stateOf(el: Element, role: string): A11yState {
     checked?: boolean | "mixed";
     disabled?: boolean;
     expanded?: boolean;
+    pressed?: boolean;
     selected?: boolean;
     invalid?: boolean;
     focused?: boolean;
@@ -40,6 +41,8 @@ export function stateOf(el: Element, role: string): A11yState {
   const expanded = aria("expanded");
   if (expanded !== null) state.expanded = expanded === "true";
   else if (tag === "details") state.expanded = el.hasAttribute("open");
+  const pressed = aria("pressed");
+  if (pressed !== null) state.pressed = pressed === "true";
   const selected = aria("selected");
   if (selected !== null) state.selected = selected === "true";
   else if (tag === "option") state.selected = Reflect.get(el, "selected") === true;

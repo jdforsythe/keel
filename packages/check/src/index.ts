@@ -6,6 +6,7 @@ export { dependencyNeed } from "./dependencyNeed.ts";
 export { format } from "./format.ts";
 export { LedgerFileSchema } from "./LedgerFileSchema.ts";
 export { ledgerCount } from "./ledgerCount.ts";
+export { libraryEntryDiags } from "./libraryEntryDiags.ts";
 export { outputSchemas } from "./outputSchemas.ts";
 export { readLibraryLedger } from "./readLibraryLedger.ts";
 export { reportedCodes } from "./reportedCodes.ts";

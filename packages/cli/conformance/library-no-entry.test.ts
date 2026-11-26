@@ -159,7 +159,13 @@ for (const linked of [true, false]) {
       test(
         `a declared \`./tools\` that does not import is E1159 \`<name> ./tools <target> does not import; build it\`: ${what} is exactly one E1159, at the \`${NAME}\` entry, from \`keel check\` and \`keel build\``,
         () => {
-          const fx = fixture(library({ exports: { "./tools": target }, files }), linked);
+          const fx = fixture(
+            library({
+              exports: { "./tools": { keel: "./src/tools.ts", default: target } },
+              files: { "src/tools.ts": "export {}\n", ...files },
+            }),
+            linked,
+          );
           for (const args of [["check"], ["build"]]) {
             const r = keel(fx.dir, args);
             const found = diags(r, "E1159");
@@ -181,8 +187,8 @@ for (const linked of [true, false]) {
         made.push(join(marker, ".."));
         const fx = fixture(
           library({
-            exports: { "./tools": "./tools.js" },
-            files: { "tools.js": toolsRule("E2999"), "index.js": BOOM(marker) },
+            exports: { "./tools": { keel: "./src/tools.ts", default: "./tools.js" } },
+            files: { "src/tools.ts": "export {}\n", "tools.js": toolsRule("E2999"), "index.js": BOOM(marker) },
           }),
           linked,
         );

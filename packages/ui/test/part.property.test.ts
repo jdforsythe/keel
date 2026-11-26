@@ -186,6 +186,48 @@ const cases: Record<PartRole, (g: Gen) => Node[]> = {
     }),
   ],
   radio: (g) => cases.radiogroup(g),
+  switch: (g) => [Part({ id: "w", role: "switch", label: g.name, checked: g.on, disabled: g.on, children: text(g) })],
+  toolbar: (g) => [
+    Part({
+      id: "t",
+      role: "toolbar",
+      label: g.name,
+      orientation: g.on ? "vertical" : "horizontal",
+      children: () => [
+        Part({ id: "t.a", role: "button", pressed: g.on, tabIndex: 0, children: text(g) }),
+        Part({ id: "t.b", role: "button", describedBy: "t.a", tabIndex: -1, children: text(g) }),
+      ],
+    }),
+  ],
+  menubar: (g) => [
+    Part({
+      id: "m",
+      role: "menubar",
+      label: g.name,
+      children: () => [
+        Part({ id: "m.a", role: "menuitem", hasPopup: "menu", expanded: g.on, tabIndex: 0, children: text(g) }),
+        Part({ id: "m.b", role: "menuitemradio", checked: g.on, tabIndex: -1, children: text(g) }),
+      ],
+    }),
+  ],
+  menuitemradio: (g) => [
+    Part({
+      id: "m",
+      role: "menu",
+      label: g.name,
+      children: () => [
+        Part({ id: "m.a", role: "menuitemradio", checked: g.on, children: text(g) }),
+        Part({ id: "m.b", role: "menuitemradio", checked: !g.on, children: text(g) }),
+      ],
+    }),
+  ],
+  meter: (g) => [
+    Part({ id: "d", role: "meter", label: g.name, min: 0, max: 10, value: 4, valueText: g.name, children: text(g) }),
+  ],
+  progressbar: (g) => [
+    Part({ id: "p", role: "progressbar", label: g.name, value: g.on ? 3 : undefined, max: 10, children: text(g) }),
+  ],
+  region: (g) => [Part({ id: "r", role: "region", label: g.name, children: text(g) })],
 };
 
 afterEach(() => {
@@ -210,7 +252,7 @@ test(
         expect(r.violations.map((v) => `${role}: ${v.id}`)).toEqual([]);
         off();
       }),
-      { seed: SEED, numRuns: 93 },
+      { seed: SEED, numRuns: 120 },
     );
   },
   fixedTime(60_000),
