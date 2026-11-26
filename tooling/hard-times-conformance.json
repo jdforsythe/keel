@@ -300,30 +300,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
-    "line": 33,
-    "text": "30000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
-    "line": 40,
-    "text": "30000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
-    "line": 46,
-    "text": "30000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/compiler/conformance/build-eval-routes.test.ts",
-    "line": 53,
-    "text": "30000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/compiler/conformance/e1011-client-service-map.test.ts",
     "line": 19,
     "text": "180_000",
@@ -334,12 +310,6 @@
     "line": 17,
     "text": "180_000",
     "needs": "fixedTime"
-  },
-  {
-    "path": "packages/compiler/conformance/eval-require-events-0175.test.ts",
-    "line": 58,
-    "text": "60000",
-    "needs": "testTime"
   },
   {
     "path": "packages/compiler/conformance/shell-entry-mount.test.ts",
