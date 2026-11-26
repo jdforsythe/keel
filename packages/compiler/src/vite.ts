@@ -770,7 +770,7 @@ export default function (): {
     if (writes) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
-    texts.push(["schemes.json", `${JSON.stringify({ schemes })}\n`]);
+    texts.push(["schemes.json", artifactText({ schemes: [...schemes] })]);
     for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);

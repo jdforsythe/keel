@@ -1,6 +1,7 @@
 import path from "node:path";
 import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
+import { hashOf } from "@keel/compiler/internal";
 import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { servedByEdit } from "@keel/compiler/hosting/servedByEdit";
@@ -27,6 +28,7 @@ import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
 import { looksDiags } from "./internal/looks/looksDiags.ts";
+import { schemesIn } from "./internal/schemesIn.ts";
 import { looksOf } from "./internal/looks/looksOf.ts";
 import { projectLooks } from "./internal/looks/projectLooks.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
@@ -97,7 +99,12 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
       .map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const topology = topologyOf(dir, project, opts);
     const options = topology === undefined ? {} : { topology };
-    const hashes = artifactHashes(sources, options);
+    const compiled = artifactHashes(sources, options);
+    // `schemes.json` (k.schemes) is derived from the evaluated tokens: with no `tokens.ts`, one scheme.
+    const tokens: unknown = opts.artifacts?.tokens ?? opts.projectArtifacts?.[dir]?.tokens;
+    const hasTokens = project.some((f) => f.path === `${dir}tokens.ts`);
+    const schemes = tokens !== undefined ? schemesIn(tokens) : hasTokens ? undefined : ["light"];
+    const hashes = schemes === undefined ? compiled : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes] }) };
     // Packages a route manifest spreads resolve from the project's own directory, as its imports do.
     const literal = { ...options, root: path.join(opts.root ?? process.cwd(), dir) };
     out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, literal) } : { hashes });
