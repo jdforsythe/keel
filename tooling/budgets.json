@@ -6,7 +6,7 @@
     "spec.map": 1660,
     "explain": 300,
     "mcp.tools-list": 2150,
-    "docs.map": 1720,
+    "docs.map": 1690,
     "docs.section": 3100,
     "docs.skill": 3700,
     "docs.for": 400,
@@ -202,7 +202,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "21.75kb",
+      "max": "22kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

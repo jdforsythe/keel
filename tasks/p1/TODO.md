@@ -43,6 +43,8 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [x] `done` RFC and ADR status lines say what is built
 - [ ] `next` RFC 0191's last part: the `Box as="nav"` conformance case (backlog 0580)
 
+- [ ] `running` the `unsafe` count comes down (the plan's D192): 33 on the main line and 39 in `lane-std-formats`, most of it one throw wrapper per stdlib package and the detached scopes; RFC 0242 gives a library a sanctioned defect signal and module-level ownership so those stop being escapes; then the casts a type guard or a typed schema builder removes (`testing/unsafe/axeSync.ts`, `std-messages/unsafe/asEntry.ts`, `std-tables/unsafe/asQuerySchema.ts`); the target is below the 13 the kernel alone had
+
 ### W2 Weakness clearance
 The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 105 after them in 15 lanes (A2), 24 for the docs sweep, 7 moved to `tasks/FUTURE.md`, 52 closed as done or overtaken, 2 that need a person.
 - [x] `done` the backlog triaged with decisions, in fix lanes
