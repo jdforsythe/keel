@@ -1,18 +1,21 @@
-// Spec: k.looks, clause "In the fixed project, `\"./tokens\":{\"default\":\"./evil.js\",\"keel\":\"./src/acmeTokens.ts\"}` is one E1815 at the `'@acme/ui'` entry with message `@acme/ui exports \"./tokens\" lists keel after another condition`, and `evil.js`, which writes a file when run, writes none during `keel check`; `\"./tokens\":{\"import\":{\"keel\":\"./src/acmeTokens.ts\"}}` and `\".\":{\"node\":\"./index.js\",\"keel\":\"./src/index.ts\"}` are each one E1815."
-// Spec: k.looks, clause "In the fixed project with `schemes: ['light', 'dark']` and `'acme.ink': { light: '#FFFFFF', dark: '#FFFFFF' }` shipped against an `acme.accent` of `{ light: '#0B5CAD', dark: '#787878' }`, `keel check` reports one E1804 at the spread `...acmeTokens.color` in `tokens.ts` with message `acme.ink on acme.accent is 4.42:1 in dark, needs 4.5:1; override in tokens.ts` and none under `node_modules/`."
+// Spec: k.entries, clause "**Shape.** A listed library's `package.json` `exports` is an object, and each entry is an object whose first key is `keel` and whose `keel` value is a string naming a file under `src/` or `unsafe/` (`./tools` included, whose other conditions Node reads). Anything else is E1815 at each `deps` entry naming the library: an `exports` that is a string or an array (`<name> exports is no object`); an entry that is a string, an array or `null` (`<name> exports \"<key>\" is no object with keel first`); `keel` after another key (`<name> exports \"<key>\" lists keel after another condition`) or only deeper (`<name> exports \"<key>\" nests keel under another condition`); a `keel` value that is no string or names no such file (`<name> exports \"<key>\" keel names no file`); a key with `*` that matches a subpath a file check reads imports from the library (`<name> exports \"<key>\" matches \"<subpath>\"; give it an entry`). E1815 is judged from `package.json`'s text before anything of the project is evaluated or bundled, and while one stands no file of that library is evaluated or bundled and `tokens.ts` is not evaluated, so the file check reads is the one every surface loads."
+// Spec: k.entries, clause "**Rules.** E1815 a listed library's `exports` out of shape (Shape; fix: none). A diagnostic at a `deps` entry lies on it, from its opening quote to its closing one."
+// Spec: k.entries, clause "`\"./tokens\":{\"default\":\"./evil.js\",\"keel\":\"./src/acmeTokens.ts\"}` is one E1815 at the `'@acme/ui'` entry with message `@acme/ui exports \"./tokens\" lists keel after another condition`, and `evil.js`, which writes a file when run, writes none during `keel check`; `\"./tokens\":{\"import\":{\"keel\":\"./src/acmeTokens.ts\"}}` and `\".\":{\"node\":\"./index.js\",\"keel\":\"./src/index.ts\"}` are each one E1815."
+// Spec: k.entries, clause "Each of `\"./tokens\":[\"./evil.js\",{\"keel\":\"./src/acmeTokens.ts\"}]`, `\"./tokens\":\"./evil.js\"`, `\"./tokens\":null`, `\"./tokens\":{\"keel\":{\"default\":\"./evil.js\"}}`, `\"./tokens\":{\"keel\":\"./lib/t.ts\"}` and `exports` `\"./evil.js\"` is one E1815 at the `'@acme/ui'` entry, and `evil.js` writes no file during `keel check` or `keel build`."
+// Spec: k.entries, clause "With no `./tokens` entry and `\"./*\":{\"keel\":\"./src/*.ts\",\"default\":\"./evil.js\"}`, `tokens.ts`'s import of `@acme/ui/tokens` is one E1815 with message `@acme/ui exports \"./*\" matches \"./tokens\"; give it an entry`, and `evil.js` writes no file during `keel check` or `keel build`."
+// Spec: k.a11y-static, clause "**Library contrast.** In an app, an E1804 at an element of a library file, or at a library look (a key of the `look` group alone, whatever other groups hold the same name), is reported in `tokens.ts` and not at the library's file: at the opening quote of the app's key for its `fg` when the app writes one, else for its `bg`, else at the spread `...<id>Tokens.color`, else line 1, column 1; once per pair and scheme however many elements and looks hold it; message `<fg> on <bg> is <ratio>:1 in <scheme>, needs <need>:1; override in tokens.ts`."
+// Spec: k.a11y-static, clause "In k.looks' fixed project with `schemes: ['light', 'dark']` and `'acme.ink': { light: '#FFFFFF', dark: '#FFFFFF' }` shipped against an `acme.accent` of `{ light: '#0B5CAD', dark: '#787878' }`, `keel check` reports one E1804 at the spread `...acmeTokens.color` in `tokens.ts` with message `acme.ink on acme.accent is 4.42:1 in dark, needs 4.5:1; override in tokens.ts` and none under `node_modules/`, and one, not two, when the app's tokens also hold a `radius` token `acme.badge`."
 // Spec: k.looks, clause "`src/acmeTokens.ts` with `defineTokens({ ... } as const)` is one E1812 with message `acmeTokens.ts holds a type assertion; it is one defineTokens literal`."
-// Spec: k.looks, clause "With `tokens.ts`'s last import line `import { brandTokens } from \"@keel/ui/brand\"; // brand`, E1810's fix leaves that line as it is and adds the import on the line after it."
-// Spec: k.looks, clause "E1815 a listed library's `exports` entry holding `keel` other than first (Entries; fix: none)"
-// Spec: k.looks, clause "**Library contrast.** In an app, an E1804 at an element of a library file, or at a library look, is reported in `tokens.ts`: at the opening quote of the app's key for its `fg` when the app writes one, else for its `bg`, else at the spread `...<id>Tokens.color`, else line 1, column 1; once per pair and scheme; message `<fg> on <bg> is <ratio>:1 in <scheme>, needs <need>:1; override in tokens.ts`."
-// Spec: k.looks, clause "**Entries.** In each listed library's `package.json` `exports`, an entry holding `keel` holds it as its first key and nowhere deeper, else E1815 at each `deps` entry naming the library (`<name> exports \"<key>\" lists keel after another condition`, or `<name> exports \"<key>\" nests keel under another condition` when `keel` sits only deeper)."
-// Seed: 1337 (fc.assert below). The half of #12 that needs `keel check` to run (`evil.js` writes a marker file and none is written) is packages/cli/conformance/library-entries-e1815-cli.test.ts, since `check()` evaluates nothing.
-// ASSUMPTIONS: see library-looks-support.ts. "At each `deps` entry" is a position on the `'@acme/ui'` literal of `modules/<id>/module.ts`; a nested `keel` reads `@acme/ui exports "<key>" nests keel under another condition` (the spec gives the form `... nests keel under another condition` beside `<name> exports "<key>" lists keel after another condition`). A library-file E1804 in an app is judged over the tokens given as the artifact. In #13 "at the spread" is a position on the `...acmeTokens.color` text. In #14 the position is the line of the assertion. In #15 the fix is applied with `git apply`.
+// Spec: k.looks, clause "With `tokens.ts`'s last import line `import { brandTokens } from \"@keel/ui/brand\"; // brand`, E1810's fix leaves that line as it is and adds the import on the line after it; with `/* a` ending that line and ` b */` on the next, it adds the import after the line holding ` b */`."
+// Spec: k.looks, clause "**Fix.** E1810's fix applies when `tokens` is `defineTokens(<object literal>)`, or an imported name `S`, taken as `defineTokens({ ...S })` with `defineTokens` imported from `@keel/ui` when the file does not import it. It adds `import { <id>Tokens } from \"<name>/tokens\";` after the last import, and for each group the shipped object holds, in k.ui's order with `look` last: `...<id>Tokens.<group>` after the last spread of the literal's `<group>` object, or, when the literal has no `<group>` property, `<group>: { ...S.<group>, ...<id>Tokens.<group> }` at its end, with one `...S.<group>` per top-level spread `...S` of an imported name whose tokens hold that group, in order. A `<group>` written as anything but an object literal gets no fix. The fix moves no comment: the import goes on its own line after the line on which the last import statement ends, or, when a comment that begins on that line ends on a later one, after the line that comment ends on. The fix's layout is not judged: a test compares the fixed file with the expected one after formatting both with `biome format` under the repo's configuration."
+// Seed: 1337 (fc.assert below). The half that needs `keel check`, `keel build` and `keel dev` to run (`evil.js` writes a marker file and none is written) is packages/cli/conformance/library-entries-e1815-cli.test.ts, since `check()` evaluates nothing.
+// ASSUMPTIONS: see library-looks-support.ts. "At each `deps` entry" is a position on the `'@acme/ui'` literal of `modules/<id>/module.ts`. In the library-contrast cases "at the spread" is a position on the `...acmeTokens.color` text. In the E1812 case the position is the line of the assertion. The E1810 fix is applied with `git apply`.
+// "keel names no file" is read as the spec lists it: a `keel` value that is no string, or a string naming no file under `src/` or `unsafe/` of the library (a file outside both, `./lib/t.ts`, and a missing `./src/missing.ts`, are each one).
 import { defineTokens } from "@keel/ui";
 import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { CHECK_CASE_BOUND } from "./check-time.ts";
-import { manifestFile } from "./module-support.ts";
 import {
   type Files,
   PACKAGE_JSON,
@@ -29,6 +32,7 @@ import {
   shippedSource,
   sourceOf,
 } from "./library-looks-support.ts";
+import { manifestFile } from "./module-support.ts";
 
 const FIXED = fixedTokens();
 const MODULE = "modules/shop/module.ts";
@@ -342,6 +346,256 @@ test(
       }),
       { seed: SEED, numRuns: 6 },
     );
+  },
+  CHECK_CASE_BOUND,
+);
+
+// ---- k.entries Shape: every refused shape at every entry key
+const KEYS = [".", "./tokens", "./contract", "./routes", "./tools"] as const;
+const LIB_FILES: Files = [
+  { path: `${ROOT}/lib/t.ts`, source: "export const t = 1\n" },
+  { path: `${ROOT}/unsafe/tools.ts`, source: "export const tools = 1\n" },
+  { path: `${ROOT}/src/contract.ts`, source: "export const c = 1\n" },
+];
+const VALID: Record<string, unknown> = {
+  ".": { keel: "./src/index.ts", default: "./index.js" },
+  "./tokens": { keel: SRC, default: "./index.js" },
+};
+/** The library's `package.json` with entry `key` holding `entry` and the fixture's other entries as they are. */
+const withEntry = (key: string, entry: unknown): string => pkg({ ...VALID, [key]: entry });
+const noObject = (key: string): string => `@acme/ui exports "${key}" is no object with keel first`;
+const after = (key: string): string => `@acme/ui exports "${key}" lists keel after another condition`;
+const nests = (key: string): string => `@acme/ui exports "${key}" nests keel under another condition`;
+const noFile = (key: string): string => `@acme/ui exports "${key}" keel names no file`;
+const SHAPES: { label: string; entry: unknown; message: (key: string) => string }[] = [
+  { label: '`"./evil.js"` (a string)', entry: EVIL, message: noObject },
+  { label: '`["./evil.js", { keel }]` (an array)', entry: [EVIL, { keel: SRC }], message: noObject },
+  { label: "`null`", entry: null, message: noObject },
+  { label: "`{ default, keel }` (keel after another condition)", entry: { default: EVIL, keel: SRC }, message: after },
+  { label: "`{ import: { keel } }` (keel nested)", entry: { import: { keel: SRC } }, message: nests },
+  { label: "`{ keel: { default } }` (keel is no string)", entry: { keel: { default: EVIL } }, message: noFile },
+  { label: "`{ keel: 5 }` (keel is no string)", entry: { keel: 5 }, message: noFile },
+  { label: "`{ keel: null }`", entry: { keel: null }, message: noFile },
+  {
+    label: '`{ keel: "./lib/t.ts" }` (a file outside src/ and unsafe/)',
+    entry: { keel: "./lib/t.ts" },
+    message: noFile,
+  },
+  {
+    label: '`{ keel: "./src/missing.ts" }` (a file that does not exist)',
+    entry: { keel: "./src/missing.ts" },
+    message: noFile,
+  },
+];
+for (const key of KEYS) {
+  for (const shape of SHAPES) {
+    test(
+      `with ${shape.label} at \`"${key}"\`, there is one E1815 at the \`'@acme/ui'\` entry with message \`${shape.message(key)}\`, and no fix`,
+      () => {
+        const files = app(FIXED, [{ path: PACKAGE_JSON, source: withEntry(key, shape.entry) }, ...LIB_FILES]);
+        const d = codesOf(files, "E1815", composed());
+        expect(d.map((x) => x.message)).toEqual([shape.message(key)]);
+        expect(d[0]?.path).toBe(MODULE);
+        expect(atText(sourceOf(files, MODULE), "'@acme/ui'", d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
+        expect(d[0]?.fix).toBeUndefined();
+      },
+      CHECK_CASE_BOUND,
+    );
+  }
+}
+
+test(
+  "an `exports` that is a string (`\"./evil.js\"`) or an array is one E1815 with message `@acme/ui exports is no object` at the `'@acme/ui'` entry",
+  () => {
+    for (const exports of [EVIL, [EVIL], [{ keel: "./src/index.ts" }], []]) {
+      const d = e1815(pkg(exports), LIB_FILES);
+      expect(
+        d.map((x) => x.message),
+        JSON.stringify(exports),
+      ).toEqual(["@acme/ui exports is no object"]);
+      expect(d[0]?.path).toBe(MODULE);
+      expect(d[0]?.fix).toBeUndefined();
+    }
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "an entry holding `keel` first and naming a file under `src/` or `unsafe/`, whatever follows and whichever key holds it, is no E1815",
+  () => {
+    const entries: [string, unknown][] = [
+      ["./contract", { keel: "./src/contract.ts", default: "./index.js" }],
+      ["./routes", { keel: "./src/contract.ts", node: "./index.js", default: "./index.js" }],
+      ["./tools", { keel: "./unsafe/tools.ts", node: "./index.js", default: "./index.js" }],
+      ["./tools", { keel: "./src/contract.ts" }],
+    ];
+    for (const [key, entry] of entries) {
+      expect(e1815(withEntry(key, entry), LIB_FILES), `${key} ${JSON.stringify(entry)}`).toEqual([]);
+    }
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "a refused shape in any of several entries is one E1815 for the first, and each `deps` entry naming the library holds it, in every module that lists it",
+  () => {
+    const json = pkg({ ...VALID, "./contract": EVIL, "./routes": { default: EVIL, keel: "./src/contract.ts" } });
+    const files = app(FIXED, [
+      { path: PACKAGE_JSON, source: json },
+      ...LIB_FILES,
+      manifestFile({ id: "shop2", deps: ["@acme/ui"] }),
+    ]);
+    const d = codesOf(files, "E1815", composed());
+    expect(d.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(d.map((x) => x.path))).toEqual(new Set([MODULE, "modules/shop2/module.ts"]));
+    for (const x of d) expect(x.message).toMatch(/^@acme\/ui exports "\.\/(contract|routes)" /);
+  },
+  CHECK_CASE_BOUND,
+);
+
+// ---- a `*` key
+const WILD = { "./*": { keel: "./src/*.ts", default: EVIL } };
+test(
+  'with no `./tokens` entry and `"./*":{"keel":"./src/*.ts","default":"./evil.js"}`, `tokens.ts`\'s import of `@acme/ui/tokens` is one E1815 with message `@acme/ui exports "./*" matches "./tokens"; give it an entry`',
+  () => {
+    const json = pkg({ ".": VALID["."], ...WILD });
+    const files = app(FIXED, [{ path: PACKAGE_JSON, source: json }]);
+    const d = codesOf(files, "E1815", composed());
+    expect(d.map((x) => x.message)).toEqual(['@acme/ui exports "./*" matches "./tokens"; give it an entry']);
+    expect(d[0]?.path).toBe(MODULE);
+    expect(d[0]?.fix).toBeUndefined();
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "a `*` key that matches no subpath a file check reads imports from the library is no E1815, and one that matches is, whatever condition follows `keel`",
+  () => {
+    const json = (key: string, entry: unknown): string => pkg({ ".": VALID["."], [key]: entry });
+    for (const key of ["./icons/*", "./x-*", "./deep/*/file"]) {
+      expect(e1815(json(key, { keel: "./src/*.ts" })), key).toEqual([]);
+    }
+    for (const key of ["./*", "./tok*", "./*ens"]) {
+      const d = e1815(json(key, { keel: "./src/*.ts", default: EVIL }));
+      expect(
+        d.map((x) => x.message),
+        key,
+      ).toEqual([`@acme/ui exports "${key}" matches "./tokens"; give it an entry`]);
+    }
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "a shape out of form in any entry is one E1815, generated over keys and shapes, and an entry in form is none",
+  () => {
+    const keys = fc.constantFrom(...KEYS);
+    const shape = fc.constantFrom(...SHAPES);
+    fc.assert(
+      fc.property(keys, shape, (key, s) => {
+        const d = e1815(withEntry(key, s.entry), LIB_FILES);
+        expect(d.map((x) => x.message)).toEqual([s.message(key)]);
+      }),
+      { seed: SEED, numRuns: 12 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
+
+// ---- k.a11y-static Library contrast: a look found by `look` keys only
+test(
+  "one E1804 at the spread `...acmeTokens.color`, not two, when the app's tokens also hold a `radius` token `acme.badge` named like the library's look",
+  () => {
+    const source = PAIRS.replace("%TAIL%", "");
+    const files = app(source, accentDark("#787878"));
+    const tokens = defineTokens({
+      ...brandTokens,
+      schemes: ["light", "dark"],
+      color: {
+        ...brandTokens.color,
+        "acme.accent": { light: "#0B5CAD", dark: "#787878" },
+        "acme.ink": { light: "#FFFFFF", dark: "#FFFFFF" },
+      },
+      radius: { ...brandTokens.radius, "acme.badge": "4px" },
+      look: { ...brandTokens.look, "acme.badge": { bg: "acme.accent", fg: "acme.ink" } },
+    });
+    const d = codesOf(files, "E1804", tokens);
+    expect(d).toHaveLength(1);
+    expect(d[0]?.message).toBe("acme.ink on acme.accent is 4.42:1 in dark, needs 4.5:1; override in tokens.ts");
+    expect(d[0]?.path).toBe("tokens.ts");
+    expect(atText(source, "...acmeTokens.color", d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "a name held only by a group other than `look` (a `radius` or `space` token `acme.badge`, no look of that name) is no library look: a `Text` naming it by `look` is judged as the element it is",
+  () => {
+    const source = PAIRS.replace("%TAIL%", "").replace("  look: { ...brandTokens.look, ...acmeTokens.look },\n", "");
+    const tokens = defineTokens({
+      ...brandTokens,
+      schemes: ["light", "dark"],
+      color: {
+        ...brandTokens.color,
+        "acme.accent": { light: "#0B5CAD", dark: "#787878" },
+        "acme.ink": { light: "#FFFFFF", dark: "#FFFFFF" },
+      },
+      radius: { ...brandTokens.radius, "acme.badge": "4px" },
+    });
+    const d = codesOf(app(source, accentDark("#787878")), "E1804", tokens);
+    expect(d.filter((x) => x.path !== "tokens.ts")).toEqual([]);
+    expect(d.length).toBeLessThanOrEqual(1);
+  },
+  CHECK_CASE_BOUND,
+);
+
+// ---- E1810's fix after a multi-line comment
+const MULTI = (lines: string[]): string =>
+  `import { brandTokens } from "@keel/ui/brand"; /* ${lines.join("\n")} */\nexport const tokens = brandTokens;\n`;
+test(
+  "with `/* a` ending the last import line and ` b */` on the next, E1810's fix adds the import on the line after the line holding ` b */`, and moves no comment line",
+  () => {
+    const source = `import { brandTokens } from "@keel/ui/brand"; /* a\n b */\nexport const tokens = brandTokens;\n`;
+    const patched = sourceOf(fixOf(source), "tokens.ts").split("\n");
+    const open = patched.indexOf('import { brandTokens } from "@keel/ui/brand"; /* a');
+    expect(open).toBeGreaterThanOrEqual(0);
+    expect(patched[open + 1]).toBe(" b */");
+    expect(patched[open + 2]).toBe('import { acmeTokens } from "@acme/ui/tokens";');
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "whatever the number of lines a comment that begins on the last import's line spans, the fix goes after the line it ends on and the comment's lines stay together",
+  () => {
+    const word = fc.stringMatching(/^[a-z]{1,6}$/);
+    fc.assert(
+      fc.property(fc.array(word, { minLength: 2, maxLength: 5 }), (words) => {
+        const [first = "a", ...rest] = words;
+        const source = MULTI([first, ...rest]);
+        const patched = sourceOf(fixOf(source), "tokens.ts").split("\n");
+        const open = patched.indexOf(`import { brandTokens } from "@keel/ui/brand"; /* ${first}`);
+        expect(open).toBeGreaterThanOrEqual(0);
+        for (let i = 0; i < rest.length; i++) {
+          expect(patched[open + 1 + i]).toBe(i === rest.length - 1 ? `${rest[i]} */` : rest[i]);
+        }
+        expect(patched[open + 1 + rest.length]).toBe('import { acmeTokens } from "@acme/ui/tokens";');
+      }),
+      { seed: SEED, numRuns: 6 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "a last import statement that spans lines gets the new import after the line it ends on, and a comment that begins and ends on an earlier line moves nothing",
+  () => {
+    const source = `/* top\n note */\nimport {\n  brandTokens,\n} from "@keel/ui/brand";\nexport const tokens = brandTokens;\n`;
+    const patched = sourceOf(fixOf(source), "tokens.ts").split("\n");
+    const end = patched.indexOf('} from "@keel/ui/brand";');
+    expect(end).toBeGreaterThanOrEqual(0);
+    expect(patched[end + 1]).toBe('import { acmeTokens } from "@acme/ui/tokens";');
+    expect(patched.slice(0, 2)).toEqual(["/* top", " note */"]);
   },
   CHECK_CASE_BOUND,
 );
