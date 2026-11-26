@@ -47,6 +47,7 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   const packages: SourceFile[] = [];
   const entries = new Map<string, string>();
   const contracts = new Map<string, LibraryContract>();
+  const manifests: SourceFile[] = [];
   const byPath = new Map(files.map((f) => [f.path, f]));
   for (const f of files) {
     const m = PACKAGE.exec(f.path);
@@ -74,6 +75,7 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     const target = declared === undefined ? undefined : (entryTarget(declared) ?? "").replace(/^\.\//, "");
     const file = target !== undefined && CONTRACT_FILE.test(target) ? `${under}${target}` : undefined;
     contracts.set(under, { target, file });
+    if (!byPath.has(`${under}module.ts`)) manifests.push({ path: `${under}module.ts`, source: manifest.source });
   }
   const toView = new Map<string, string>();
   const toReal = new Map<string, string>();
@@ -97,5 +99,6 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     packages,
     entries,
     contracts,
+    manifests,
   };
 }

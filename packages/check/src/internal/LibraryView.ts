@@ -13,6 +13,8 @@ import type { LibraryContract } from "./LibraryContract.ts";
  * (`<p>modules/<id>/`) to its `./contract` entry (k.contract): `target` the file it names, package-relative, read as
  * `entries` reads one (undefined when it declares none), and `file` that file's view path when it is a
  * `*.contract.ts` file under `src/` (else undefined).
+ * `manifests` holds each library's root `module.ts` at its view path, `<p>modules/<id>/module.ts`, where no file of
+ * the given ones lies: the module a registered rule finds by a `module.ts` path prefix of a library file.
  */
 export type LibraryView = {
   readonly view: (path: string) => string;
@@ -21,4 +23,5 @@ export type LibraryView = {
   readonly packages: readonly SourceFile[];
   readonly entries: ReadonlyMap<string, string>;
   readonly contracts: ReadonlyMap<string, LibraryContract>;
+  readonly manifests: readonly SourceFile[];
 };
