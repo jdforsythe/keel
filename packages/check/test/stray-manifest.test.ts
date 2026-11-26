@@ -73,3 +73,16 @@ it("a manifest where one belongs is no E1171", () => {
     }),
   ).toEqual([]);
 });
+
+it("E1171's message fits 89 units and names where a manifest belongs", () => {
+  const d = check(
+    [
+      { path: "modules/a/module.ts", source: manifest("a", []) },
+      { path: "modules/a/sub/module.ts", source: manifest("a", []) },
+    ],
+    { types: false },
+  ).diagnostics.find((x) => x.code === "E1171");
+  expect(d?.message).toBe("this module.ts is no manifest; modules/<id>/ or a library's root holds the manifest");
+  expect(d?.message.length).toBeLessThanOrEqual(89);
+  expect([d?.line, d?.col]).toEqual([1, 1]);
+});

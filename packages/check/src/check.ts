@@ -147,7 +147,7 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
     path: f.path,
     line: 1,
     col: 1,
-    message: `${f.path} is no module manifest; a module's is modules/<id>/module.ts, a library's its root module.ts`,
+    message: "this module.ts is no manifest; modules/<id>/ or a library's root holds the manifest",
     see: "k.module",
   }));
   const reported = new Map<string, Set<string>>();
