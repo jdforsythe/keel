@@ -5,13 +5,13 @@ import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
 import { BASE_ROLE } from "../internal/BASE_ROLE.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
+import { schemesIn } from "../internal/schemesIn.ts";
 import { str } from "../internal/str.ts";
 import { tokenSetAt } from "../internal/tokenSetAt.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const SCHEMES = ["light", "dark"] as const;
 /** The user agent's text and canvas, where neither the element nor `base.page` names a color. */
 const UA_FG = "#000000";
 const UA_BG = "#FFFFFF";
@@ -107,7 +107,7 @@ const holdsText = (kids: readonly JSXChild[]): boolean =>
   );
 
 /** A color token's hex in `scheme` (a hex is taken as is), or undefined (unknown token, non-hex value). */
-function colorIn(tokens: unknown, name: string, scheme: (typeof SCHEMES)[number]): string | undefined {
+function colorIn(tokens: unknown, name: string, scheme: "light" | "dark"): string | undefined {
   if (HEX.test(name)) return name;
   const color = isRec(tokens) ? tokens.color : undefined;
   const v = isRec(color) ? color[name] : undefined;
@@ -150,7 +150,7 @@ function failing(
   // An unread size or weight is judged at 3:1, which text of every size needs.
   const px = size === null || weight === null ? 24 : pixels(tokens, size);
   const min = px >= 24 || (px >= 18.66 && weightOf(tokens, weight ?? undefined) >= 700) ? 3 : 4.5;
-  for (const scheme of SCHEMES) {
+  for (const scheme of schemesIn(tokens)) {
     const a = colorIn(tokens, fg, scheme);
     const b = colorIn(tokens, bg, scheme);
     if (a === undefined || b === undefined) continue;
@@ -162,7 +162,7 @@ function failing(
 
 /**
  * E1804 (k.a11y, k.a11y-static): text whose `fg` contrasts below 4.5:1 (3:1 when large: `fontSize` >= 24px, or
- * >= 18.66px at `weight` >= 700) in either color scheme against its `bg`. Each `base` set (on its own `bg`, else
+ * >= 18.66px at `weight` >= 700) in each of the tokens' color schemes (k.schemes) against its `bg`. Each `base` set (on its own `bg`, else
  * `base.page`'s, else white) and each look is judged at the project's `tokens.ts` (else its first file). In an app
  * file, a base element or `Part` holding text is judged with its `fg`, `bg`, `fontSize` and `weight` resolved as the
  * render check resolves them: its own literal prop, its literal look's set, its role's `base` set, then its parent's

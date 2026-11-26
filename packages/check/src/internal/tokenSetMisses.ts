@@ -7,7 +7,7 @@ function walk(
   tokens: Readonly<Record<string, unknown>>,
   set: unknown,
   label: string,
-  out: { set: string; what: string }[],
+  out: { set: string; what: string; token: string }[],
 ): void {
   if (!isRec(set)) return;
   const has = (group: string, name: string): boolean => {
@@ -21,9 +21,9 @@ function walk(
       typeof v === "string" ? [["base", v]] : isRec(v) ? Object.entries(v) : [];
     for (const [bp, token] of values) {
       if (bp !== "base" && !has("breakpoint", bp))
-        out.push({ set: label, what: `${prop} breakpoint "${bp}" is not a breakpoint token` });
+        out.push({ set: label, what: `${prop} breakpoint "${bp}" is not a breakpoint token`, token: bp });
       if (typeof token === "string" && !groups.some((g) => has(g, token)))
-        out.push({ set: label, what: `${prop}="${token}" is not a ${groups[0] ?? ""} token` });
+        out.push({ set: label, what: `${prop}="${token}" is not a ${groups[0] ?? ""} token`, token });
     }
   }
   const states = set.states;
@@ -32,11 +32,13 @@ function walk(
 
 /**
  * E1801 over the tokens artifact: a token name or breakpoint in a `base` set or a look that the tokens do not
- * declare, labelled by set (`base.button`, `look.primary.states.hover`). `base.focus` names a color token.
+ * declare, labelled by set (`base.button`, `look.primary.states.hover`), with the name. `base.focus` names a color token.
  */
-export function tokenSetMisses(tokens: unknown): readonly { readonly set: string; readonly what: string }[] {
+export function tokenSetMisses(
+  tokens: unknown,
+): readonly { readonly set: string; readonly what: string; readonly token: string }[] {
   if (!isRec(tokens)) return [];
-  const out: { set: string; what: string }[] = [];
+  const out: { set: string; what: string; token: string }[] = [];
   const colors = tokens.color;
   const sets: readonly (readonly [string, unknown])[] = [
     ["base", tokens.base],
@@ -47,7 +49,7 @@ export function tokenSetMisses(tokens: unknown): readonly { readonly set: string
     for (const [name, set] of Object.entries(named)) {
       if (group === "base" && name === "focus") {
         if (typeof set === "string" && !(isRec(colors) && Object.hasOwn(colors, set)))
-          out.push({ set: "base.focus", what: `"${set}" is not a color token` });
+          out.push({ set: "base.focus", what: `"${set}" is not a color token`, token: set });
         continue;
       }
       walk(tokens, set, `${group}.${name}`, out);

@@ -29,8 +29,8 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> => typeof 
 
 /**
  * The `tokens` export of `<root>/tokens.ts`, parsed by the project's `TokenSchema` (k.a11y-static Tokens), or
- * undefined when the file is absent. The file and everything it imports are bundled with esbuild (Node's conditions,
- * as `evaluateProject`) and imported from a fresh temporary file on every call, so a long-lived process never judges
+ * undefined when the file is absent. The file and everything it imports are bundled with esbuild (Node's conditions
+ * and `keel`, as `evaluateProject`, so a library's `./tokens` entry is its source, k.looks) and imported from a fresh temporary file on every call, so a long-lived process never judges
  * a stale token. A throw, a bundle error, no `tokens` export or a `TokenSchema` failure gives the reason, worded as
  * the render harness words it.
  */
@@ -44,7 +44,7 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
       write: false,
       format: "esm",
       platform: "node",
-      conditions: [],
+      conditions: ["keel"],
       target: "node20",
       logLevel: "silent",
       loader: { ".css": "empty" },

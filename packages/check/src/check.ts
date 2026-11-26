@@ -26,6 +26,9 @@ import { isSqlPath } from "./internal/isSqlPath.ts";
 import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
+import { looksDiags } from "./internal/looks/looksDiags.ts";
+import { looksOf } from "./internal/looks/looksOf.ts";
+import { projectLooks } from "./internal/looks/projectLooks.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
@@ -201,7 +204,21 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
       reported.set(path, (reported.get(path) ?? new Set()).add(d.code));
     }
     const own = opts.projectArtifacts?.[dir];
-    for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...own, ...opts.artifacts });
+    const artifacts = { ...compiled.artifacts, ...own, ...opts.artifacts };
+    for (const f of group) artifactsOf.set(f.path, artifacts);
+    // k.looks: the libraries' shipped tokens read as text, judged against the tokens the project is given.
+    const looks = looksOf(realAll, dir);
+    projectLooks.set(project, {
+      libraryOf: (p) => looks.libraryOf(libs.real(p)),
+      ships: (name) => looks.listed.some((l) => [...(l.shipped?.names.values() ?? [])].some((n) => n.includes(name))),
+      shippedLook: (look) => {
+        const lib = looks.listed.find((l) => l.shipped?.names.get("look")?.includes(look) === true);
+        const at = lib?.shipped?.keys.get(`look\u0000${look}`);
+        return lib === undefined || at === undefined ? undefined : { path: libs.view(lib.shippedPath), at };
+      },
+    });
+    const tokens: unknown = Reflect.get(artifacts, "tokens");
+    out.push(...looksDiags(looks, realAll, { given: tokens !== undefined, value: tokens }));
   }
 
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
