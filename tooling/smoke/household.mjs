@@ -27,7 +27,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { testTime } from "../test-time.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 import { freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
 const LIMIT_MS = testTime(300_000);
@@ -743,7 +743,9 @@ try {
   );
   server = serve(port, storage, pglite);
   const restarted = await up(`${origin}/`);
-  const done = restarted && (await showing(page, "Done", testTime(60_000)));
+  // The run's own time is an input, no bound: a step the killed server held runs again after its 10 s timeout and a
+  // second (11 s), and four 2 s waits lie between the five staples (8 s); 60 s is the allowance on top.
+  const done = restarted && (await showing(page, "Done", fixedTime(19_000) + testTime(60_000)));
   const final = await runsAt();
   step(
     "after the restart the run ends once, done, and the page shows it",
