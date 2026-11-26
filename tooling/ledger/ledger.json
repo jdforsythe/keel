@@ -4,10 +4,10 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2626,
-    "probabilistic": 458,
+    "example": 2676,
+    "probabilistic": 464,
     "exhaustive": 21,
-    "proven": 83,
+    "proven": 92,
     "monitored": 8
   },
   "exports": [
@@ -2455,6 +2455,12 @@
     },
     {
       "pkg": "check",
+      "name": "libraryEntryDiags",
+      "file": "packages/check/src/libraryEntryDiags.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "check",
       "name": "outputSchemas",
       "file": "packages/check/src/outputSchemas.ts",
       "rung": "probabilistic"
@@ -3819,7 +3825,7 @@
       "pkg": "ui",
       "name": "TokenSchema",
       "file": "packages/ui/src/TokenSchema.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "ui",
@@ -3897,6 +3903,10 @@
     },
     {
       "item": "k.a11y-static#f615b232",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#8d857f72",
       "rung": "example"
     },
     {
@@ -4088,6 +4098,18 @@
       "rung": "example"
     },
     {
+      "item": "k.aria#97a3a541",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#61b2f02f",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#271851f2",
+      "rung": "proven"
+    },
+    {
       "item": "k.boundary#224ae0db",
       "rung": "example"
     },
@@ -4244,7 +4266,7 @@
       "rung": "example"
     },
     {
-      "item": "k.check#90e5b6c1",
+      "item": "k.check#992e115b",
       "rung": "example"
     },
     {
@@ -5132,6 +5154,18 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.entries#05328e09",
+      "rung": "example"
+    },
+    {
+      "item": "k.entries#24811811",
+      "rung": "example"
+    },
+    {
+      "item": "k.entries#f09b6b8f",
+      "rung": "example"
+    },
+    {
       "item": "k.errors#3f4e7e6f",
       "rung": "probabilistic"
     },
@@ -5836,11 +5870,11 @@
       "rung": "example"
     },
     {
-      "item": "k.library#17176882",
+      "item": "k.library#e9951397",
       "rung": "example"
     },
     {
-      "item": "k.library#6000d59e",
+      "item": "k.library#ea1ca39c",
       "rung": "example"
     },
     {
@@ -5852,7 +5886,7 @@
       "rung": "example"
     },
     {
-      "item": "k.library#38e12e12",
+      "item": "k.library#39fd396c",
       "rung": "example"
     },
     {
@@ -5953,6 +5987,62 @@
     },
     {
       "item": "k.links#e439c86f",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#5eebba90",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#8a34e638",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#660cdfbb",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#2bce984f",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#c856dd27",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#297337d4",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#f1d5ea46",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#dfee4a50",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#6ca23b00",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#e66e14df",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#49e9c581",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#e83df9b2",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#71197280",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#b5a23548",
       "rung": "example"
     },
     {
@@ -6816,6 +6906,34 @@
       "rung": "example"
     },
     {
+      "item": "k.roles#015966e1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#29aba082",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#29027f94",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#25dfecca",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#96315fb8",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#59c96e39",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#e8152bf6",
+      "rung": "example"
+    },
+    {
       "item": "k.router#eb8f5717",
       "rung": "probabilistic"
     },
@@ -7218,6 +7336,58 @@
     {
       "item": "k.schema#ed0065aa",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.schemes#55b54379",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#b5469b5c",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#ea5496ee",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#dc10b009",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#e8c53c65",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#df1bee48",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#1e874786",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#fae691f8",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#78586903",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#92194bf1",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#fe36241d",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#6d0659d0",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#56b3430f",
+      "rung": "example"
     },
     {
       "item": "k.security#ce4eda49",
@@ -8209,6 +8379,42 @@
     },
     {
       "item": "k.user#c54380af",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#6b105347",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#e2ff705c",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#ad86b29e",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#77e365ab",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#14dec614",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#2f016dcd",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#863f1ea9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#25f0014a",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#893a9074",
       "rung": "example"
     },
     {
@@ -12547,6 +12753,11 @@
       "version": "0.1.0",
       "unsafe": 0,
       "hostElements": 1
+    },
+    "@example/library-looks": {
+      "version": "0.1.0",
+      "unsafe": 0,
+      "hostElements": 0
     },
     "@keel-libs/charts": {
       "version": "0.1.0",
