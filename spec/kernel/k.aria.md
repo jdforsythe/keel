@@ -47,6 +47,10 @@ status: implemented
 | `current` | `[aria-current]:not([aria-current="false"])` |
 | `highlighted` | `[data-k-highlighted]` |
 
+**Scheme.** `Box scheme="light"` or `scheme="dark"`, a literal read at build, writes `data-k-scheme`: on screen the element and what it holds take that scheme under the page's theme (k.schemes CSS); in an app with one scheme it is E1814.
+
+**Print.** On a base element or `Part` (k.ui), a responsive style prop takes the key `print` beside its breakpoints, in looks and `base` sets too (`p={{ base: '3', print: '0' }}`); its rule sits in `@media print` after its section's breakpoint blocks, and a `breakpoint` token named `print` is E1807. `media="screen"` hides the element in print and `media="print"` shows it in print only (class `k-media-<value>`; once an element writes it, `keel.base` holds `@media print{.k-media-screen{display:none!important}}` and `@media screen{.k-media-print{display:none!important}}`). The keyword style props `breakBefore` and `breakAfter` take `page` or `avoid`, `breakInside` takes `avoid`. A `print` theme's values apply when printing (k.schemes CSS).
+
 **Rules.** E1823 unreadable `styles` (no fix).
 
 **Conformance.**
@@ -63,3 +67,5 @@ status: implemented
 - With `brandTokens`, a `button` `Part` with `pressed` from a signal and `states={{ pressed: { bg: 'accent' } }}` has the `accent` rule under `[aria-pressed="true"]` in the CSS file, and setting the signal true changes only its `aria-pressed` attribute.
 - With `brandTokens`, `states={{ disabled: { fg: 'textSecondary' } }}` puts its rule under both `:disabled` and `[aria-disabled="true"]`, so a `menuitemradio` with `disabled` true matches it; `states={{ current: { weight: 'bold' } }}` matches a `gridcell` with `current: 'date'` and not one with `current` false.
 - `states={{ pressed: { bg: 'accent' } }}` on a base element `Button` is a type error, asserted by `tsc --noEmit` over `conformance/`, which the package's `check` script runs (`vitest run` does not type-check).
+- With `brandTokens`, `<Box p={{ base: '3', print: '0' }} direction="column">` puts a rule declaring `padding:var(--k-space-0)` in an `@media print` block after the `@media (min-width: 1024px)` block; a `breakpoint` token `print` is one E1807; `<Box media="screen">` has class `k-media-screen` and `keel.base` holds `@media print{.k-media-screen{display:none!important}}`, and with no `media` written the CSS holds no `k-media-`; `breakInside="avoid"` compiles to `break-inside:avoid`, and `breakInside="page"` is a type error.
+- With color tokens `fg` `{ light: '#111111', dark: '#eeeeee' }` and `bg` `{ light: '#ffffff', dark: '#111111' }`, `<Box id="side" scheme="dark">` renders `data-k-scheme="dark"` on its element in server and client output and the CSS holds `:root [data-k-scheme="dark"]` declaring `color-scheme:dark` and `--k-color-fg:#eeeeee` under `@media screen`; with no `scheme` written, the CSS holds no ` [data-k-scheme=`; with `brandTokens`, `<Box scheme="dark">` is one E1814 at the attribute with message `scheme="dark" needs schemes light and dark; the tokens have light only`.

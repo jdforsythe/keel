@@ -57,7 +57,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.check-cache | Type cache | conformance-covered | reuse |
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
-| k.cli | CLI, MCP, LSP | conformance-covered | flags |
+| k.cli | CLI, MCP, LSP | implemented | flags |
 | k.docs | Installed docs | conformance-covered | read |
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
