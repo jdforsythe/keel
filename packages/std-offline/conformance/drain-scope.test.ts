@@ -15,9 +15,12 @@ const armed = async (title: string) => {
   server.attach(ctx);
   const o = outbox(`drainscope${++n}.outbox`, Api, {});
   server.next({ kind: "reject" });
-  const sc = scope(() => {
-    void drain(ctx, o, { owner: OWNER });
-  });
+  const sc = scope(
+    () => {
+      void drain(ctx, o, { owner: OWNER });
+    },
+    { detached: true },
+  );
   await settle();
   await send(ctx, o, "editTodo", edit("t1", title), { base: 0, owner: OWNER });
   expect(server.posts).toHaveLength(1);

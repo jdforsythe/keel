@@ -76,25 +76,28 @@ const writer = (op: { readonly base?: number; readonly key?: string }) => ({
 /** Live stores after `ops` (every op must commit); the scope stays open until `dispose()`. */
 export function open(opts: Options, ops: readonly Op[]) {
   const made: { snapshot: Snapshot<BoardState>; stores: ReturnType<ReturnType<typeof boardStores>> }[] = [];
-  const sc = scope(() => {
-    const st = boardStores(opts)();
-    for (const op of ops) {
-      if (op.t === "undo") {
-        if (!st.board.undo()) throw new Error("fixture: nothing to undo");
-        continue;
+  const sc = scope(
+    () => {
+      const st = boardStores(opts)();
+      for (const op of ops) {
+        if (op.t === "undo") {
+          if (!st.board.undo()) throw new Error("fixture: nothing to undo");
+          continue;
+        }
+        const r =
+          op.t === "add"
+            ? tx(st.addTodo, { id: op.id, title: op.title }, writer(op))
+            : op.t === "edit"
+              ? tx(st.editTodo, { id: op.id, title: op.title }, writer(op))
+              : tx(st.toggleTodo, { id: op.id }, writer(op));
+        if (!r.ok) throw new Error(`fixture: ${op.t} was refused`);
       }
-      const r =
-        op.t === "add"
-          ? tx(st.addTodo, { id: op.id, title: op.title }, writer(op))
-          : op.t === "edit"
-            ? tx(st.editTodo, { id: op.id, title: op.title }, writer(op))
-            : tx(st.toggleTodo, { id: op.id }, writer(op));
-      if (!r.ok) throw new Error(`fixture: ${op.t} was refused`);
-    }
-    // a stored snapshot is JSON
-    const snapshot: Snapshot<BoardState> = JSON.parse(JSON.stringify(st.board.snapshot()));
-    made.push({ snapshot, stores: st });
-  });
+      // a stored snapshot is JSON
+      const snapshot: Snapshot<BoardState> = JSON.parse(JSON.stringify(st.board.snapshot()));
+      made.push({ snapshot, stores: st });
+    },
+    { detached: true },
+  );
   const [first] = made;
   if (first === undefined) throw new Error("fixture: build failed");
   return { ...first, dispose: () => sc.dispose() };
@@ -142,27 +145,30 @@ export const serveWith =
       const sets: unknown[] = [];
       let reply = "{}";
       let status = 200;
-      const sc = scope(() => {
-        const st = boardStores({ edit })();
-        if (isSnapshot<BoardState>(parsed)) st.board.restore(parsed);
-        if (url.pathname === "/api/edit") {
-          const p = Edit.parse(body);
-          if (!p.ok) status = 422;
-          else {
-            const r = tx(
-              st.editTodo,
-              { id: p.value.id, title: p.value.title },
-              { base: p.value.write.base, key: p.value.write.key },
-            );
-            if (r.ok) sets.push(ctx.storage.set(`keel.store.${STORE_ID}`, JSON.stringify(st.board.snapshot())));
+      const sc = scope(
+        () => {
+          const st = boardStores({ edit })();
+          if (isSnapshot<BoardState>(parsed)) st.board.restore(parsed);
+          if (url.pathname === "/api/edit") {
+            const p = Edit.parse(body);
+            if (!p.ok) status = 422;
             else {
-              status = r.error.code === "keel.conflict" ? 409 : 400;
-              reply = JSON.stringify({ err: r.error.code });
+              const r = tx(
+                st.editTodo,
+                { id: p.value.id, title: p.value.title },
+                { base: p.value.write.base, key: p.value.write.key },
+              );
+              if (r.ok) sets.push(ctx.storage.set(`keel.store.${STORE_ID}`, JSON.stringify(st.board.snapshot())));
+              else {
+                status = r.error.code === "keel.conflict" ? 409 : 400;
+                reply = JSON.stringify({ err: r.error.code });
+              }
             }
           }
-        }
-        if (status === 200) reply = JSON.stringify({ head: st.board.head(), todos: st.board.get("todos") });
-      });
+          if (status === 200) reply = JSON.stringify({ head: st.board.head(), todos: st.board.get("todos") });
+        },
+        { detached: true },
+      );
       sc.dispose();
       await Promise.all(sets);
       return new Response(reply, { status, headers });
@@ -238,9 +244,12 @@ function build() {
 }
 
 const made: ReturnType<typeof build>[] = [];
-scope(() => {
-  made.push(build());
-});
+scope(
+  () => {
+    made.push(build());
+  },
+  { detached: true },
+);
 const [built] = made;
 if (built === undefined) throw new Error("conflicts fixture: build failed");
 

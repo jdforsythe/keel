@@ -125,9 +125,12 @@ test("Ctx A queues offline as `a`, ctx B sends online as `b` and gets `sent`: A'
   expect((await stored(a, `keel.outbox.${id}`)).map((e) => e.key)).toEqual(keysA);
 
   a.net.setOnline(true);
-  const sc = scope(() => {
-    void drain(a, o, { owner: "a" });
-  });
+  const sc = scope(
+    () => {
+      void drain(a, o, { owner: "a" });
+    },
+    { detached: true },
+  );
   await settle();
   expect(sa.posts.map((p) => p.key)).toEqual(keysA);
   expect(sa.entries()).toHaveLength(1);

@@ -18,9 +18,12 @@ afterEach(disposeLive);
 export const inScope = <T>(fn: () => T): { value: T; dispose: () => void } => {
   disposeLive();
   const slot: T[] = [];
-  const sc = scope(() => {
-    slot.push(fn());
-  });
+  const sc = scope(
+    () => {
+      slot.push(fn());
+    },
+    { detached: true },
+  );
   live.add(sc);
   const [value] = slot;
   if (value === undefined) {

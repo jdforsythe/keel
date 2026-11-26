@@ -96,35 +96,41 @@ afterEach(async () => {
 /** `live` on `ctx` against `origin`, hydrating a fresh client store `view` from the board store's snapshot in `ctx.storage`. */
 function page(ctx: SimCtx, origin: string, id: string) {
   const made: { view?: ReturnType<typeof makeView> } = {};
-  const viewScope = scope(() => {
-    made.view = makeView(id);
-  });
+  const viewScope = scope(
+    () => {
+      made.view = makeView(id);
+    },
+    { detached: true },
+  );
   const view = made.view;
   if (view === undefined) throw new Error("page: store scope did not run");
   let reads = 0;
-  const sc = scope(() => {
-    live(
-      ctx,
-      origin,
-      boardChannel,
-      {},
-      {
-        read: async (c) => {
-          reads++;
-          const raw = await c.storage.get("keel.store.board.items");
-          const snap: unknown = JSON.parse(raw ?? "null");
-          const state = field(snap, "state");
-          const head = field(snap, "head");
-          const items = field(state, "items");
-          return ok({
-            head: typeof head === "number" ? head : 0,
-            items: Array.isArray(items) ? items.map(String) : [],
-          });
+  const sc = scope(
+    () => {
+      live(
+        ctx,
+        origin,
+        boardChannel,
+        {},
+        {
+          read: async (c) => {
+            reads++;
+            const raw = await c.storage.get("keel.store.board.items");
+            const snap: unknown = JSON.parse(raw ?? "null");
+            const state = field(snap, "state");
+            const head = field(snap, "head");
+            const items = field(state, "items");
+            return ok({
+              head: typeof head === "number" ? head : 0,
+              items: Array.isArray(items) ? items.map(String) : [],
+            });
+          },
+          hydrate: view.hydrate,
         },
-        hydrate: view.hydrate,
-      },
-    );
-  });
+      );
+    },
+    { detached: true },
+  );
   return {
     view: view.store,
     hydrate: view.hydrate,

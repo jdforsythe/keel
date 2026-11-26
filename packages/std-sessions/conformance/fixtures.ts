@@ -70,9 +70,12 @@ let built: ReturnType<typeof build> | undefined;
 export const fixture = (): ReturnType<typeof build> => {
   if (built !== undefined) return built;
   const made: ReturnType<typeof build>[] = [];
-  scope(() => {
-    made.push(build());
-  });
+  scope(
+    () => {
+      made.push(build());
+    },
+    { detached: true },
+  );
   const [first] = made;
   if (first === undefined) throw new Error("fixture: build failed");
   built = first;
@@ -221,9 +224,12 @@ let buggy: ReturnType<typeof buildBuggy> | undefined;
 const buggyFixture = (): ReturnType<typeof buildBuggy> => {
   if (buggy !== undefined) return buggy;
   const made: ReturnType<typeof buildBuggy>[] = [];
-  scope(() => {
-    made.push(buildBuggy());
-  });
+  scope(
+    () => {
+      made.push(buildBuggy());
+    },
+    { detached: true },
+  );
   const [first] = made;
   if (first === undefined) throw new Error("buggy fixture: build failed");
   buggy = first;

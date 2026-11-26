@@ -28,9 +28,12 @@ test("With one outbox declared outside a scope, entries queued offline on ctx A 
       const keys = entriesOf(o).map((e) => e.key);
       expect(keys).toHaveLength(ts.length);
 
-      const scB = scope(() => {
-        void drain(b, o, { owner: "b" });
-      });
+      const scB = scope(
+        () => {
+          void drain(b, o, { owner: "b" });
+        },
+        { detached: true },
+      );
       await settle();
       expect(entriesOf(o).map((e) => e.state)).toEqual(ts.map(() => "queued"));
       expect(server.posts).toHaveLength(0);
@@ -42,9 +45,12 @@ test("With one outbox declared outside a scope, entries queued offline on ctx A 
       scB.dispose();
 
       a.net.setOnline(true);
-      const scA = scope(() => {
-        void drain(a, o, { owner: "a" });
-      });
+      const scA = scope(
+        () => {
+          void drain(a, o, { owner: "a" });
+        },
+        { detached: true },
+      );
       await settle();
       expect(server.posts.map((p) => p.key)).toEqual(keys);
       expect(server.entries()).toHaveLength(ts.length);
