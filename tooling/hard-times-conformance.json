@@ -354,42 +354,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-brands/conformance/brands.test.ts",
-    "line": 69,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-brands/conformance/brands.test.ts",
-    "line": 81,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-brands/conformance/brands.test.ts",
-    "line": 98,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-brands/conformance/brands.test.ts",
-    "line": 115,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-brands/conformance/brands.test.ts",
-    "line": 130,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-brands/conformance/brands.test.ts",
-    "line": 142,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-capacitor/conformance/android-cleartext.test.ts",
     "line": 28,
     "text": "300_000",
