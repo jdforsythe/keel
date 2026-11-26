@@ -43,7 +43,13 @@ it("the page reads GitHub's API from the browser alone: the policy names it, no 
       : Response.json([{ tag_name: "v0.0.1", name: "Served by the stand-in", published_at: null }], { headers: cors }),
   );
   const app = await serve({ origins: { "https://api.github.com": github } });
-  const page = await app.open("/");
+  // One cookie for this app's origin and one for GitHub's: neither may reach the stand-in.
+  const page = await app.open("/", {
+    cookies: [
+      { name: "keel.caller", value: "c1", origin: app.origin() },
+      { name: "gh", value: "g1", origin: "https://api.github.com", sameSite: "None", secure: true },
+    ],
+  });
   expect((await page.find("app.home.title")).text).toBe("A site with no server");
 
   await page.fire("app.nav.releases", { type: "click" });
@@ -51,7 +57,7 @@ it("the page reads GitHub's API from the browser alone: the policy names it, no 
   await page.reload();
   await page.until("app.releases.list", { text: /v0\.0\.1/ });
 
-  // Two plain GETs, no preflight, and none of the headers a Keel server would be sent.
+  // Two plain GETs, no preflight (an OPTIONS would be in the log), and none of the headers a Keel server would be sent.
   const heard = github.requests();
   expect(heard.map((r) => `${r.method} ${r.url}`)).toEqual([`GET ${API}`, `GET ${API}`]);
   const names = heard.flatMap((r) => r.headers);

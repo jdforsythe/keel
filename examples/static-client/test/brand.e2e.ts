@@ -1,7 +1,7 @@
 // The browser halves of RFC 0188 that unit tests cannot reach, in Chromium: a copy of this example in a temporary
 // folder, on `brandTokens`, its page replaced by one with no styling of its own (a 200-character unbroken string, a
 // Link, a Button, an Input with its label, and a row Box of three Buttons) and built with `keel build`. Then: at 320px
-// the document does not scroll sideways; the page's root has the brand's font and colour; Tab focus on the link, the
+// the document does not scroll sideways; the body has the brand's font, colour and background; Tab focus on the link, the
 // button and the input shows the 2px solid brand ring at 2px offset and a mouse click on the button shows none; the
 // Box `direction={{ base: 'column', md: 'row' }}` stacks at 390px and is a row sharing a top edge at 1024px. No page
 // or console error is raised (an unread one fails the test).
@@ -86,10 +86,11 @@ it("the brand's reset, focus ring and responsive Box hold in Chromium", { timeou
     // 320px: no sideways scroll with a 200-character string.
     expect((await page.layout()).scrollWidth).toBeLessThanOrEqual(320);
 
-    // The page's root takes the body's brand font and colour.
-    const root = await page.style("app.home", ["font-family", "color"]);
-    expect(root["font-family"]?.replace(/^["']/, "").startsWith("Source Serif 4")).toBe(true);
-    expect(root.color).toBe("rgb(26, 25, 30)");
+    // The body has the brand's font, colour and background.
+    const body = await page.style(undefined, ["font-family", "color", "background-color"]);
+    expect(body["font-family"]?.replace(/^["']/, "").startsWith("Source Serif 4")).toBe(true);
+    expect(body.color).toBe("rgb(26, 25, 30)");
+    expect(body["background-color"]).toBe("rgb(249, 249, 249)");
 
     // Tab order is the document order: link, button, input; each shows the brand ring when it takes the focus.
     for (const id of ["app.home.link", "app.home.button", "brand.note:note"]) {
