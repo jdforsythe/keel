@@ -8,9 +8,9 @@ Keel is a full-stack web framework whose primary author is a coding agent. It ha
 
 ## Start here
 
-Read order for an agent on a fresh start: `docs/HANDOFF.md`, `docs/PRINCIPLES.md`, `docs/GLOSSARY.md`, `docs/ARCHITECTURE.md`. Load the `keel-architecture` skill, then run `/resume`. Retrieve spec and ADR sections with `pnpm spec <topic>` instead of reading `spec/` or `docs/adr/` whole.
+Read order for an agent on a fresh start: `docs/HANDOFF.md`, `docs/PRINCIPLES.md`, `docs/GLOSSARY.md`, `docs/ARCHITECTURE.md`. Load the `keel-architecture` skill, then run `/resume`. Retrieve spec sections with `pnpm spec` (the areas), `pnpm spec <area>`, `pnpm spec <id>` and `pnpm spec --for <code, name or term>`, and ADR sections the same way, instead of reading `spec/` or `docs/adr/` whole.
 
-Commands: `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec <topic>`. Each prints compact structured output (`docs/OUTPUT.md`); pass `--format=pretty` for a human.
+Commands: `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec`. Each prints compact structured output (`docs/OUTPUT.md`); pass `--format=pretty` for a human.
 
 First run: `pnpm install && pnpm check`.
 

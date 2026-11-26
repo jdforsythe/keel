@@ -156,7 +156,7 @@ Rules:
 ### Lane 16 spec-size · tooling, spec · RFC (principle 8 bound, the section splits) · M
 - [ ] 0981 k.module is over its 6,000-character limit and the budgets gate passes
 - [ ] 0807 `keel spec` and `tooling/budgets.mjs` measure a section differently; make them one
-- [ ] 1100 the spec map plus the largest section is over principle 8's 4,000 tokens; decided: a section bound that keeps the sum under it
+- [x] 1100 the spec map plus the largest section is over principle 8's 4,000 tokens; decided: a section bound that keeps the sum under it
 - [ ] 1043 std.postgres is about 3,065 tokens; split it with 1100
 
 ### Lane 17 shells-proof · std-tauri, apps with `identity.ts`, CI shell jobs · no RFC · L
