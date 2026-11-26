@@ -9,6 +9,8 @@ import { parseFile } from "./parseFile.ts";
 const PACKAGE = /^((?:(?!node_modules\/).)*?)node_modules\/(@[^/]+\/[^/]+)\/package\.json$/;
 /** A library's contract file: a `*.contract.ts` source under `src/` (k.contract). */
 const CONTRACT_FILE = /^src\/(?:[^/]+\/)*[^/]+\.contract\.ts$/;
+/** The app module folder a path lies in, `<p>modules/<id>/`. */
+const APP_FOLDER = /^(?:(?!node_modules\/).)*?modules\/[^/]+\//;
 const FILE = /^((?:(?!node_modules\/).)*?)node_modules\/(@[^/]+\/[^/]+)\/((?:src|unsafe)\/.+)$/;
 
 /** The parsed JSON of `source`; undefined when it does not parse. */
@@ -25,7 +27,8 @@ function parse(source: string): unknown {
  * The library files among `files` and the paths rules read them at (`LibraryView`). A library is a
  * `<p>node_modules/<name>/package.json` that `libraryKind` reads as `library`, `<p>` holding no `node_modules/`, beside a
  * `module.ts` whose literal `id` names the folder its files read under (the package name without one). A library file
- * whose view is the path of a file of `files` keeps its own path.
+ * whose view is the path of a file of `files` keeps its own path, and so does every file of a library whose `id` an app
+ * module of `files` holds, or a library before it by package name (E1166): no file of it is read as the holder's.
  */
 export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   const ids = new Map<string, string>();
@@ -34,9 +37,18 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   const contracts = new Map<string, LibraryContract>();
   const manifests: SourceFile[] = [];
   const byPath = new Map(files.map((f) => [f.path, f]));
+  // Each app module folder (`<p>modules/<id>/`) a file lies in: a library holding that id is not read under it.
+  const held = new Set<string>();
   for (const f of files) {
-    const m = PACKAGE.exec(f.path);
-    if (m === null) continue;
+    const at = APP_FOLDER.exec(f.path)?.[0];
+    if (at !== undefined && !f.path.includes("node_modules/")) held.add(at);
+  }
+  // By package name, so of two libraries holding one id the first by name is read under it (E1166's order).
+  const found = files
+    .map((f) => ({ f, m: PACKAGE.exec(f.path) }))
+    .filter((x): x is { f: SourceFile; m: RegExpExecArray } => x.m !== null)
+    .sort((a, b) => (a.f.path < b.f.path ? -1 : a.f.path > b.f.path ? 1 : 0));
+  for (const { f, m } of found) {
     const [, prefix = "", name = ""] = m;
     if (libraryKind(parse(f.source), name) !== "library") continue;
     const manifest = byPath.get(`${prefix}node_modules/${name}/module.ts`);
@@ -44,8 +56,11 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     const parsed = parseFile(manifest);
     const id = parsed.ok ? readManifest(parsed.program)?.id : undefined;
     const under = `${prefix}modules/${id ?? name}/`;
-    ids.set(`${prefix}node_modules/${name}/`, under);
     packages.push(f);
+    // E1166 (k.library): a library whose id an app module or a library read before it holds keeps its files where they lie.
+    if (held.has(under)) continue;
+    held.add(under);
+    ids.set(`${prefix}node_modules/${name}/`, under);
     const exports = Reflect.get(Object(parse(f.source)), "exports");
     const sugar =
       typeof exports === "string" ||
