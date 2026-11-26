@@ -16,9 +16,12 @@ const flush = async (): Promise<void> => {
 };
 const owned = <T>(init: T): Signal<T> => {
   const slot: Signal<T>[] = [];
-  scope(() => {
-    slot.push(signal(init));
-  });
+  scope(
+    () => {
+      slot.push(signal(init));
+    },
+    { detached: true },
+  );
   const [sig] = slot;
   if (sig === undefined) throw new Error("fixture: no signal");
   return sig;

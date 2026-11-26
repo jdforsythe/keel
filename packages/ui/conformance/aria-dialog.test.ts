@@ -13,7 +13,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals and computeds are created in a scope (k.reactive E1203). */
-const owner = scope(() => undefined);
+const owner = scope(() => undefined, { detached: true });
 const signal = <T>(v: T) => owner.run(() => newSignal(v));
 
 const SEED = 1337;

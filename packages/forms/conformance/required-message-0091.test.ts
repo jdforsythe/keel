@@ -18,21 +18,24 @@ type Seen = { rule: string };
 
 function blurMessage(value: string | undefined, issues: Seen[] = []): string | undefined {
   const out: { v?: string | undefined }[] = [];
-  const sc = scope(() => {
-    const f = form(Schema, {
-      issueText: (issue: Seen) => {
-        issues.push({ rule: issue.rule });
-        return `T:${issue.rule}`;
-      },
-    });
-    const plain = form(Schema, {});
-    for (const g of [f, plain]) {
-      const title = g.field("title");
-      if (value !== undefined) title.set(value);
-      title.blur();
-    }
-    out.push({ v: plain.errors()["title"] });
-  });
+  const sc = scope(
+    () => {
+      const f = form(Schema, {
+        issueText: (issue: Seen) => {
+          issues.push({ rule: issue.rule });
+          return `T:${issue.rule}`;
+        },
+      });
+      const plain = form(Schema, {});
+      for (const g of [f, plain]) {
+        const title = g.field("title");
+        if (value !== undefined) title.set(value);
+        title.blur();
+      }
+      out.push({ v: plain.errors()["title"] });
+    },
+    { detached: true },
+  );
   sc.dispose();
   return out[0]?.v;
 }
@@ -95,13 +98,16 @@ describe("k.forms required message (rfc:0091)", () => {
   test("a non-empty value shorter than `min` keeps the `min` message, not `required`", () => {
     const Two = s.object({ title: s.string({ min: 2 }) });
     const out: (string | undefined)[] = [];
-    const sc = scope(() => {
-      const f = form(Two, {});
-      const title = f.field("title");
-      title.set("a");
-      title.blur();
-      out.push(f.errors()["title"]);
-    });
+    const sc = scope(
+      () => {
+        const f = form(Two, {});
+        const title = f.field("title");
+        title.set("a");
+        title.blur();
+        out.push(f.errors()["title"]);
+      },
+      { detached: true },
+    );
     sc.dispose();
     expect(out[0]).toBe("Must be at least 2 characters");
   });
