@@ -109,6 +109,11 @@ beforeAll(() => {
   write(fixture, "modules/app/Counter.tsx", BUILT_COUNTER);
   write(
     fixture,
+    "tokens.ts",
+    'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n',
+  );
+  write(
+    fixture,
     "modules/app/routes.ts",
     'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest(app, { "app.home": { component: Counter } });\n',
   );

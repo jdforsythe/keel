@@ -46,7 +46,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
-| k.ui | Tokens, styling | implemented | CSS |
+| k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
@@ -59,7 +59,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
-| k.testing | Harness, properties | implemented | fire |
+| k.testing | Harness, properties | conformance-covered | fire |
 | k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
 | k.model | Store exploration | conformance-covered | traces |
@@ -95,7 +95,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.library-pack | Library publishing | implemented | pack |
 | k.server-deps | Server dependencies | implemented | env |
 | k.a11y | Accessibility | conformance-covered | WCAG |
-| k.a11y-static | Static contrast | implemented | E1804 |
+| k.a11y-static | Static contrast | conformance-covered | E1804 |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | conformance-covered | grid |
 | k.host-element | Host elements | conformance-covered | charts |
