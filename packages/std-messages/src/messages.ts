@@ -1,8 +1,7 @@
 import { type Schema, s } from "@keel/schema";
 import type { Locale } from "@keel/std-i18n";
 import { asEntry } from "../unsafe/asEntry.ts";
-import { badSet } from "../unsafe/badSet.ts";
-import { refused } from "../unsafe/refused.ts";
+import { setFault } from "../unsafe/setFault.ts";
 import type { MessageSet } from "./MessageSet.ts";
 import type { Keys } from "./internal/Keys.ts";
 import { PARTS } from "./internal/PARTS.schema.ts";
@@ -10,6 +9,7 @@ import type { ParamKind } from "./internal/ParamKind.ts";
 import { genMessage } from "./internal/genMessage.ts";
 import { kindOf } from "./internal/kindOf.ts";
 import { messageOk } from "./internal/messageOk.ts";
+import { refused } from "./internal/refused.ts";
 import { templateOk } from "./internal/templateOk.ts";
 
 const IDENT = /^[A-Za-z_$][\w$]*$/;
@@ -44,14 +44,14 @@ export function messages<L extends Locale, const K extends Keys>(
   keys: K,
   load: (locale: L) => Promise<unknown>,
 ): MessageSet<L, K> {
-  if (locales.node.kind !== "enum") return badSet("messages: locales not an s.enum");
+  if (locales.node.kind !== "enum") return setFault("messages: locales not an s.enum");
   const shape: Record<string, Schema<unknown>> = {};
   for (const [key, params] of Object.entries(keys)) {
-    if (!IDENT.test(key)) return badSet(`messages: bad key '${key}'`);
+    if (!IDENT.test(key)) return setFault(`messages: bad key '${key}'`);
     const kinds = new Map<string, ParamKind>();
     for (const [name, schema] of Object.entries(params)) {
       const kind = IDENT.test(name) ? kindOf(schema) : undefined;
-      if (kind === undefined) return badSet(`messages: bad param '${name}' of '${key}'`);
+      if (kind === undefined) return setFault(`messages: bad param '${name}' of '${key}'`);
       kinds.set(name, kind);
     }
     shape[key] = messageType(kinds);

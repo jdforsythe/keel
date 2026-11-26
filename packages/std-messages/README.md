@@ -16,4 +16,6 @@ Uses the **schema type registry** (k.formats `s.format`: each message is a forma
 
 ## Unsafe
 
-count: 1 (`unsafe/asEntry.ts`: the set's schema typed as the schema of the entry its keys describe)
+count: 2
+- `unsafe/asEntry.ts`: the set's schema typed as the schema of the entry its keys describe.
+- `unsafe/setFault.ts`: the `Error` std.messages specifies for a refused declaration or a locale entry failing its set, a throw in a library's code.
