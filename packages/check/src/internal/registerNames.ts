@@ -68,8 +68,14 @@ function paramIndex(fn: ReadFn, name: string): number {
   );
 }
 
-/** The functions `file` exports, under any name, as `exportedFunction` finds them. */
-function exportedFns(checked: Checked, fileOf: ReturnType<typeof fileOfIn>): Set<ReadFn> {
+/** `${start}:${end}`: a function's span in its file. */
+const spanOf = (fn: ReadFn): string => `${fn.start}:${fn.end}`;
+
+/**
+ * The spans (`start:end`) of the functions `file` exports, under any name, as `exportedFunction` finds them: by span,
+ * as its read may parse the file again (the parse memo is bounded) and hand back other nodes for the same functions.
+ */
+function exportedFns(checked: Checked, fileOf: ReturnType<typeof fileOfIn>): Set<string> {
   const names = new Set<string>();
   for (const st of checked.parsed.program.body) {
     if (st.type === "ExportDefaultDeclaration") names.add("default");
@@ -80,10 +86,10 @@ function exportedFns(checked: Checked, fileOf: ReturnType<typeof fileOfIn>): Set
       for (const v of d.declarations) if (v.id.type === "Identifier") names.add(v.id.name);
     for (const sp of st.specifiers) names.add(sp.exported.type === "Identifier" ? sp.exported.name : sp.exported.value);
   }
-  const out = new Set<ReadFn>();
+  const out = new Set<string>();
   for (const n of names) {
     const hit = exportedFunction(n, checked.file, fileOf);
-    if (hit !== undefined && hit.file.path === checked.file.path) out.add(hit.fn);
+    if (hit !== undefined && hit.file.path === checked.file.path) out.add(spanOf(hit.fn));
   }
   return out;
 }
@@ -113,7 +119,7 @@ function deferred(
       const arg = call.arguments[0];
       if (arg?.type !== "Identifier") continue;
       const holder = fns.find((f) => f.start <= call.start && f.end >= call.end && paramIndex(f, arg.name) >= 0);
-      if (holder === undefined || !exported.has(holder)) continue;
+      if (holder === undefined || !exported.has(spanOf(holder))) continue;
       calls.add(call);
       params.set(fnKey(checked.file.path, holder), paramIndex(holder, arg.name));
     }
