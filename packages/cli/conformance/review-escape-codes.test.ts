@@ -10,7 +10,7 @@ import { PROJECT, ofCode, range, review, withRepo } from "./review-support.ts";
 const RANGE_CODES = ["R1060", "R1061", "R1100", "R1103", "R1104", "R1105", "R1107", "R1108"];
 
 test("In a fixture git repository each code of the table is reported on its fixture by a range and not on its clean twin; with `--all`, the range codes but R1101 and R1102 are absent.", () => {
-  expect(new Set(CASES.map((c) => c.code)).size).toBe(28);
+  expect(new Set(CASES.map((c) => c.code)).size).toBe(29);
 });
 
 test.each(CASES.map((c) => [c.code, c] as const))(

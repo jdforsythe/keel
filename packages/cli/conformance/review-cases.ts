@@ -49,6 +49,15 @@ export const CASES: readonly Case[] = [
     },
   },
   {
+    code: "R1015",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/p.ts":
+        "type T = number;\nexport function isT(x: unknown): x is T {\n  return typeof x === 'number';\n}\n",
+    },
+  },
+  {
     code: "R1014",
     range: false,
     base: {},
