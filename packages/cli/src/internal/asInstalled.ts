@@ -26,7 +26,9 @@ export function asInstalled(
       { path: `${at}package.json`, source: pkg },
       // The folder's own `package.json` stays too: it marks the folder as the library's own (k.looks Own folder).
       { path: "package.json", source: pkg },
-      ...files.filter((f) => read(f.path) && f.path !== "package.json").map((f) => ({ path: to(f.path), source: f.source })),
+      ...files
+        .filter((f) => read(f.path) && f.path !== "package.json")
+        .map((f) => ({ path: to(f.path), source: f.source })),
     ],
     to,
     back,

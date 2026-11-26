@@ -343,6 +343,7 @@ export default function (): {
   let looks: Readonly<Record<string, unknown>> | undefined;
   // The tokens' color schemes (k.schemes First paint).
   let schemes: readonly string[] = ["light"];
+  let schemesRead = false;
   let looksKey = "";
   let stale = true;
   let usageKeys = "";
@@ -770,7 +771,8 @@ export default function (): {
     if (writes) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
-    texts.push(["schemes.json", artifactText({ schemes: [...schemes] })]);
+    // Written once the tokens are evaluated, so a run that compiles no CSS leaves the file as it is.
+    if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes] })]);
     for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
@@ -857,6 +859,7 @@ export default function (): {
     css = r.css;
     looks = r.looks;
     schemes = r.schemes;
+    schemesRead = true;
     looksKey = canonicalJson(r.looks);
     routes = r.routes;
     // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it.

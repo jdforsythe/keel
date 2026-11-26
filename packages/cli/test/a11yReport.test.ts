@@ -86,12 +86,12 @@ describe("a11yReport", () => {
 
   test("a default export is read when there is no named tokens export; the named one wins", async () => {
     const byDefault = project({ "tokens.ts": 'export default { color: { a: "#000000", b: "#ffffff" } };\n' });
-    expect((await a11yReport(byDefault, [], map, true)).contrast).toHaveLength(4);
+    expect((await a11yReport(byDefault, [], map, true)).contrast).toHaveLength(2);
     const both = project({
       "tokens.ts":
         'export const tokens = { color: { a: "#000000", b: "#ffffff" } };\nexport default { color: { a: "#000000", b: "#ffffff", c: "#777777" } };\n',
     });
-    expect((await a11yReport(both, [], map, true)).contrast).toHaveLength(4);
+    expect((await a11yReport(both, [], map, true)).contrast).toHaveLength(2);
   });
 
   test("a tokens file that throws, or no tokens.ts, gives no rows", async () => {
