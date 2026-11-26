@@ -376,8 +376,10 @@ const NO_FIX = [
   "E1163", // k.library Rules: no fix; a diagnostic in a library file carries none (k.library In an app)
   "E1166", // k.library Rules: no fix stated; which of the two ids to rename is the author's choice
   "E1167", // k.server-deps Rules: no fix stated; the name an `env` entry should hold is the author's
+  "E1203", // k.reactive Static: no fix; the scope to run in is the author's to capture
   "E1204", // the Case per resource state is the author's
   "E1207", // whether to drop the detached scope or own it differently is a design change
+  "E1208", // k.reactive Static: no fix; the scope to nest in or run in is the author's to capture
   "E1251", // the JSX that replaces an op is the author's
   "E1252", // the JSX or ctx replacement is the author's
   "E1302", // moving the effect out of the transaction is a design change
@@ -429,6 +431,7 @@ const NO_FIX = [
   "E1758", // the locale or time zone is an argument the caller holds
   "E1760", // k.unsafe Rules: none carries a fix; the reason is the author's to write
   "E1761", // k.unsafe Rules: none carries a fix; where the negative type test lives is the author's choice
+  "E1762", // k.unsafe Rules: no fix; moving the predicate into unsafe() or giving it a key guard is the author's choice
   "E1801", // a look name that no `look` declares has no nearest token; the author names the look or declares it
   "E1802", // the missing prop value is the author's choice
   "E1607", // which registered name to keep is the author's choice

@@ -1,8 +1,8 @@
 // Spec: k.errors, clause "In `modules/m/a.ts`, `try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } finally { h() }` is one; `defect('x')` (imported from `@keel/schema`) is no E1451 and `throw new Error('x')` is one, message `throw in app code; return err(...) when expected, defect(...) when a bug`."
 // Spec: k.errors, clause "In `modules/m/a.ts`, `defect('x', 'E28')`, `defect('x', code)` with `const code = 'E2801'` above it, and `k.defect('x', 'e2801')` under `import * as k from '@keel/schema'` are one E1455 each at the second argument, with no fix; `defect('x')`, `defect('x', 'E2801')` and `` defect(`x ${n}`, 'E2801') `` are none."
-// k.errors, Rules "E1451 `throw` in app code, message `throw in app code; return err(...) when expected, defect(...) when a bug` (fix: `return err(...)`)"
-// k.errors, Rules "E1455 a call of `defect` (`@keel/schema`, any alias, or `<ns>.defect`) whose second argument is not a string literal of `E` and four digits, at that argument, message `defect code is not a literal E and four digits` (no fix)"
-// k.errors, Rules "An `unsafe(` range lifts neither E1451 nor E1452 (k.check App code)."
+// k.errors, Rules "E1451 `throw`, or a call of `Promise.reject`, in app code, message `throw in app code; return err(...) when expected, defect(...) when a bug` (fix: `return err(...)`)"
+// k.errors, Rules "E1455 a call of `defect` (`@keel/schema`) whose second argument is not a string literal of `E` and four digits, at that argument, message `defect code is not a literal E and four digits` (no fix)"
+// k.errors, Rules "An `unsafe(` range lifts neither E1451 nor E1452 (k.check App code); each finds its callee as k.unsafe One path says."
 // Seed 1337. Fixtures are source text over in-memory file maps, `{ types: false }`; the `unsafe` call is built from a
 // constant so this file's own source holds no literal call, only fixture text does.
 import { check } from "@keel/check";
@@ -73,6 +73,22 @@ test("the message of E1451 names `defect` for every thrown expression", () => {
     }),
     { seed: SEED, numRuns: 20 },
   );
+});
+
+// ---- E1451 and E1452 beyond `throw` and `try`/`catch` ----
+
+test("E1451 is a call of `Promise.reject` as it is a `throw`, with the same message", () => {
+  const ds = of(run(`${DECLS}export function a() { return Promise.reject(e) }\n`), "E1451");
+  expect(ds).toHaveLength(1);
+  expect(ds[0]?.message).toBe(MESSAGE);
+});
+
+test("E1452 is a `.then()` given a second argument, `Promise.allSettled` and `Promise.any`, and not a `.then()` given one", () => {
+  const body = (expr: string) => `${DECLS}export function a() { return ${expr} }\n`;
+  for (const expr of ["p.then(f, g)", "Promise.allSettled([p])", "Promise.any([p])"]) {
+    expect(of(run(body(expr)), "E1452"), expr).toHaveLength(1);
+  }
+  expect(of(run(body("p.then(f)")), "E1452")).toEqual([]);
 });
 
 // ---- E1455 ----
@@ -147,8 +163,13 @@ test("property: a second argument that is a string literal of `E` and four digit
 
 const STMTS: readonly (readonly [string, string])[] = [
   ["E1451", "throw e"],
+  ["E1451", "Promise.reject(e)"],
   ["E1452", "try { f() } catch { g() }"],
   ["E1452", "p.catch(() => 0)"],
+  ["E1452", "p.then(f, g)"],
+  ["E1452", "Promise.allSettled([p])"],
+  ["E1452", "Promise.any([p])"],
+  ["E1452", "for (;;) { try { f() } finally { break } }"],
 ];
 const insideSrc = (stmt: string) => `${DECLS}${HELPER}export const a = ${U}('r', () => { ${stmt} })\n`;
 const outsideSrc = (stmt: string) => `${DECLS}export function a() { ${stmt} }\n`;

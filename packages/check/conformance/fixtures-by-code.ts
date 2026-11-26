@@ -487,6 +487,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1203: {
+    bad: [
+      f(
+        "src/x.ts",
+        "import { signal } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  await g()\n  return signal(0)\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/x.ts",
+        "import { signal } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  const v = signal(0)\n  await g()\n  return v\n}\n",
+      ),
+    ],
+  },
   E1204: {
     opts: NO_TYPES,
     bad: [
@@ -516,6 +530,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f(
         "modules/app/Work.ts",
         "import { scope } from '@keel/reactive'\nexport const Work = scope(() => {}, { onError: () => {} })\n",
+      ),
+    ],
+  },
+  E1208: {
+    bad: [
+      f(
+        "src/x.ts",
+        "import { scope } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  await g()\n  return scope(() => undefined)\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/x.ts",
+        "import { scope } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  const v = scope(() => undefined)\n  await g()\n  return v\n}\n",
       ),
     ],
   },
@@ -1432,6 +1460,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     opts: NO_TYPES,
     bad: [f("modules/m/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
     clean: [f("modules/m/test/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
+  },
+  E1762: {
+    bad: [
+      f(
+        "src/isRunner.ts",
+        "export const isRunner = (x: unknown): x is { run(n: number): string } => typeof x === 'object' && x !== null\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/isRow.ts",
+        "export const isRow = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null\n",
+      ),
+    ],
   },
   E1755: {
     bad: [],
