@@ -1,11 +1,10 @@
-// Spec: std.postgres, clause "On Postgres 17 and on a `pglite:` folder, `query` of `select repeat('x', 3)::varchar(2)` is `err` `postgres.database` with data `{ sqlstate: '22001' }` and `query` of `select 'a'::int` with `{ sqlstate: '22P02' }`; inside a `transaction` after `set local statement_timeout = 1`, `select pg_sleep(1)` is `err` `postgres.database` `{ sqlstate: '57014' }`; `select raise_it()`, a function doing `raise exception 'x'`, is `{ sqlstate: 'P0001' }`; no `data` holds more keys than `sqlstate`."
+// Spec: std.postgres, clause "On Postgres 17 and on a `pglite:` folder, `run` of `insert into t (v) values ('xyz')`, `t.v` a `varchar(2)` column, is `err` `postgres.database` with data `{ sqlstate: '22001' }` and `query` of `select 'a'::int` with `{ sqlstate: '22P02' }`; inside a `transaction` after `set local statement_timeout = 1`, `select pg_sleep(1)` is `err` `postgres.database` `{ sqlstate: '57014' }`; `select raise_it()`, a function doing `raise exception 'x'`, is `{ sqlstate: 'P0001' }`; no `data` holds more keys than `sqlstate`."
 // Spec: std.postgres, clause "`query` of `select * from no_such_table` rejects with a value `isDefect(v, 'E2461')` accepts whose message is `E2461 std.postgres: the database answered SQLSTATE 42P01`."
 // std.postgres, Errors "A database error of a class a caller can act on is `postgres.database`, data `{ sqlstate }`, the five-character SQLSTATE and nothing of the error's text: classes `22`, `40` (but the reruns), `53`, `54`, `55`, `57` and `P0` (a statement timeout `57014`, a lock not available `55P03`, a too long value `22001`, the app's own `raise`); `57P01` to `57P03` and class `08` are `keel.unreachable`. Any other SQLSTATE (class `42`: the app's own SQL is wrong; `XX`: the store is) is a bug, a defect E2461."
 // std.postgres, Rules "E2461 a database error no error above takes, a defect, message `E2461 std.postgres: the database answered SQLSTATE <sqlstate>`"
 // Seed: 1337.
 // Gate: runs on PGlite always and on Postgres 17 only with `KEEL_TEST_POSTGRES_URL` (the shared `MODES`, sim left out: sim runs no SQL); no case is skipped by a marker.
 // Assumption: the SQLSTATE of the property's cases is raised by a plpgsql function (`raise exception 'x' using errcode = code`), so a class no real statement reaches in a test is still reached; the reruns `40001` and `40P01` raised that way are rerun three times and then `keel.conflict`, as a real serialization failure is.
-// Spec error, reported: `select repeat('x', 3)::varchar(2)` is an explicit cast, which Postgres truncates to 'xx' without an error, so the clause's first example answers ok; the case asserts its stated outcome (22001, "a too long value") through an `insert` into a `varchar(2)`.
 // Assumption: a lone `query` of an unacted-on database error resolves a `Result` for the classes above, and throws the defect for any other, as for the spec's `no_such_table` clause.
 import { isDefect, s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
@@ -44,14 +43,14 @@ const codeOf = (e: unknown): string => {
 for (const m of REAL) {
   describe(m.name, () => {
     test(
-      "a too long value is `err` `postgres.database` with data `{ sqlstate: '22001' }` (an `insert` of 'xxx' into a `varchar(2)`: an explicit cast, the clause's `select repeat('x', 3)::varchar(2)`, truncates and answers ok)",
+      "`run` of `insert into t (v) values ('xyz')`, `t.v` a `varchar(2)` column, is `err` `postgres.database` with data `{ sqlstate: '22001' }`",
       async () => {
         const x = setup();
         const mode = m.make();
         try {
           const ctx = await mode.ctx(x.cap);
           okOf(await x.db(ctx).run(sql(NoRows)`create table ${sqlName(x.short)} (v varchar(2))`));
-          const e = errOf(await x.db(ctx).run(sql(NoRows)`insert into ${sqlName(x.short)} values (${"xxx"})`));
+          const e = errOf(await x.db(ctx).run(sql(NoRows)`insert into ${sqlName(x.short)} (v) values ('xyz')`));
           expect(e.code).toBe("postgres.database");
           expect(dataOf(e)).toEqual({ sqlstate: "22001" });
         } finally {
