@@ -1854,6 +1854,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
@@ -2038,6 +2041,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2314,6 +2320,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2682,6 +2691,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
