@@ -266,7 +266,7 @@ By the `conformance-writer`, from the spec text.
 None. No in-tree app, example or library writes a color pair or a dotted name, and no library writes a token literal in `src/` (`libraries/charts` uses `styles`). The scaffolds are unchanged.
 
 ## Token impact
-- Spec: k.looks about 2,250 and k.schemes about 1,415 of 3,100; k.roles 1,218 to about 2,100; k.ui 2,855 to about 2,880, or about 2,960 with RFC 0241. The map grows by two rows and stays within `spec.map` 1,660. `docs.map` (the `keel docs` map) re-based 1,690 to 1,710 for the two rows.
+- Spec: k.looks about 2,250 and k.schemes about 1,415 of 3,100; k.roles 1,218 to about 2,100; k.ui 2,855 to about 2,880, or about 2,960 with RFC 0241. The map grows by two rows and stays within `spec.map` 1,660. The `keel docs` map stays within `docs.map` 1,690: the new rows' titles are one word, and six kernel rows' titles are shorter (`Compatibility`, `Checker`, `Compiler`, `Durable storage`, `Deploy files`, `Server deps`), each pointing at the same section.
 - `keel explain`: five entries, each under 300 tokens.
 - `@keel/ui`: `SchemeSelect` and the scheme CSS; measure against its budget in the build. The static scheme script is at most 300 bytes, and only in deployables that render `SchemeSelect`.
 

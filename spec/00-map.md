@@ -32,7 +32,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.reactive | Reactivity | implemented | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
-| k.compiler | Compiler, artifacts | conformance-covered | JSX |
+| k.compiler | Compiler | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
@@ -52,7 +52,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
-| k.check | Checker, diagnostics | conformance-covered | codes |
+| k.check | Checker | conformance-covered | codes |
 | k.check-cache | Type cache | conformance-covered | reuse |
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
@@ -81,12 +81,12 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
-| k.persist | Storage, durable state | conformance-covered | drivers |
+| k.persist | Durable storage | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | conformance-covered | peers |
-| k.deploy | Entry, deploy files | conformance-covered | entry |
+| k.deploy | Deploy files | conformance-covered | entry |
 | k.shell | Native shells | conformance-covered | target |
-| k.compat | Surface compatibility | conformance-covered | accepts |
+| k.compat | Compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | conformance-covered | servedBy |
 | k.head | Document head | conformance-covered | title |
@@ -95,7 +95,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.module | Module manifest | implemented | surface |
 | k.library | Libraries | proposed | packages |
 | k.library-pack | Library publishing | implemented | pack |
-| k.server-deps | Server dependencies | implemented | env |
+| k.server-deps | Server deps | implemented | env |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.a11y-static | Static contrast | conformance-covered | E1804 |
 | k.aria | Widget parts | conformance-covered | roles |
