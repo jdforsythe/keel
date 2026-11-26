@@ -11,4 +11,6 @@ export type Proc = {
   start(): Promise<void>;
   /** SIGKILL; resolves once it has exited. */
   kill(): Promise<void>;
+  /** SIGTERM, letting it drain; resolves with its exit code, or the signal that ended it. */
+  drain(): Promise<number | string>;
 };

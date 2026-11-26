@@ -35,7 +35,10 @@ export interface Page {
   scroll(y: number): Promise<void>;
   viewport(size: { readonly width: number; readonly height: number }): Promise<void>;
   layout(id?: string): Promise<Layout>;
-  style(id: string, names: readonly StyleName[]): Promise<Partial<Record<StyleName, string>>>;
+  /** The computed `names` of `id`, or of the `body` with `id` `undefined`. */
+  style(id: string | undefined, names: readonly StyleName[]): Promise<Partial<Record<StyleName, string>>>;
+  /** The document's title, as `document.title` reads it. */
+  title(): Promise<string>;
   resume(): Promise<void>;
   problems(): readonly Problem[];
   /** Another tab in this context (its cookies and storage); `hold` as `Served.open`'s. */

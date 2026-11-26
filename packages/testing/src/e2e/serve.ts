@@ -30,6 +30,8 @@ import { testEnd } from "../internal/e2e/testEnd.ts";
 import type { LogRecord } from "../types/LogRecord.ts";
 import type { ServeOptions } from "../types/ServeOptions.ts";
 import type { Served } from "../types/Served.ts";
+import type { StoreLog } from "../types/StoreLog.ts";
+import { build } from "./build.ts";
 
 /** Readiness bound (k.e2e serve): 20 s of the machine's own work, fixed time. */
 const READY = 20_000;
@@ -61,7 +63,13 @@ const originOf = (o: string): string => {
 export async function serve(options: ServeOptions = {}): Promise<Served> {
   requireE2e("serve");
   const dir = resolve(options.project ?? process.cwd());
-  if (options.page !== undefined) return libraryPage(dir, options);
+  if (options.page !== undefined) {
+    // A library's page: its host project written, built and served as an app is (k.e2e Libraries).
+    const host = libraryPage(dir, options);
+    await build(host);
+    const { page: _page, props: _props, ...rest } = options;
+    return serve({ ...rest, project: host });
+  }
   const project = readProject(dir);
   const data = mkdtempSync(join(tmpdir(), "keel-e2e-data-"));
   const secret = randomBytes(32).toString("hex");
@@ -195,6 +203,24 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
     if (!r.ok) throw e2eError("E1736", `state ${store.id}: the stored value does not parse: ${r.error.message}`, {});
     return r.value;
   };
+  const logOf = async (store: Store<unknown>): Promise<StoreLog> => {
+    const reader = await openStore(sourceOf(store));
+    try {
+      const text = await reader.get(`keel.store.${store.id}`);
+      if (text === undefined) return { head: 0, entries: [] };
+      const held: unknown = JSON.parse(text);
+      const head = typeof held === "object" && held !== null ? Reflect.get(held, "head") : undefined;
+      const log: unknown = typeof held === "object" && held !== null ? Reflect.get(held, "log") : undefined;
+      const entries = (Array.isArray(log) ? log : []).flatMap((e: unknown) => {
+        const id: unknown = typeof e === "object" && e !== null ? Reflect.get(e, "id") : undefined;
+        const name: unknown = typeof e === "object" && e !== null ? Reflect.get(e, "name") : undefined;
+        return typeof id === "number" && typeof name === "string" ? [{ id, name }] : [];
+      });
+      return { head: typeof head === "number" ? head : 0, entries };
+    } finally {
+      await reader.close();
+    }
+  };
   const state = async <T>(store: Store<T>): Promise<T> => {
     const reader = await openStore(sourceOf(store));
     try {
@@ -215,6 +241,7 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
         path,
         scripts: opts.scripts !== false,
         hold: opts.hold === true,
+        cookies: opts.cookies ?? [],
         proxy: proxy?.server ?? "",
         mapped: routes.size > 0,
         verb: mark,
@@ -233,6 +260,7 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
       return name === undefined ? [] : [...(procs.get(name)?.log ?? [])];
     },
     state,
+    log: (store) => logOf(store),
     until: async (store, test, wait) => {
       mark();
       const ms = boundMs(wait);
@@ -274,8 +302,25 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
         store: store.id,
       });
     },
-    stop: async (deployable) => {
-      for (const [name, p] of procs) if (deployable === undefined || deployable === name) await p.kill();
+    stop: async (deployable, how = {}) => {
+      for (const [name, p] of procs) {
+        if (deployable !== undefined && deployable !== name) continue;
+        if (how.drain !== true) {
+          await p.kill();
+          continue;
+        }
+        // SIGTERM: the server stops listening, awaits its close() and exits (k.deploy).
+        const code = await p.drain();
+        if (code !== 0)
+          throw e2eError(
+            "E1737",
+            `${name} did not drain: it exited ${typeof code === "number" ? `with code ${code}` : code}`,
+            {
+              deployable: name,
+              records: p.log.slice(-LAST),
+            },
+          );
+      }
     },
     start: async (deployable) => {
       for (const [name, p] of procs)

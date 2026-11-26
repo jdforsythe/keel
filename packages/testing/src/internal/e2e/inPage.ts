@@ -1,3 +1,5 @@
+/// <reference path="./PageApi.ts" />
+// The page script's globals (`__keelE2e`, `__keelProblem`) are declared in PageApi.ts.
 // The page script of `@keel/testing/e2e` (k.e2e-page): bundled once per test process (pageScript.ts) and evaluated in
 // each document a tab loads, through Playwright, outside the page's content security policy. It reads the live DOM with
 // the harness's own role, name and state rules, so `find`, `findAll` and `a11y` say what the harness says, and runs
@@ -112,11 +114,16 @@ function ruleIds(): string[] {
   return ids;
 }
 
+/** The page's `data-k-island` values, in document order. */
+const islands = (): string =>
+  [...document.querySelectorAll("[data-k-island]")].map((el) => el.getAttribute("data-k-island") ?? "").join(", ");
+
 type Snapshot = {
   readonly elements: readonly (readonly [Element, string])[];
   readonly focus: Element | null;
   readonly values: readonly (readonly [Element, string, number | null, number | null])[];
   readonly scroll: readonly [number, number];
+  readonly islands: string;
 };
 let snapshot: Snapshot | undefined;
 
@@ -164,7 +171,7 @@ const api: PageApi = {
     };
   },
   style: (id, names) => {
-    const el = byId(id);
+    const el = id === null ? document.body : byId(id);
     if (el === null) return null;
     const css = getComputedStyle(el);
     return Object.fromEntries(names.map((n) => [n, css.getPropertyValue(n)]));
@@ -217,6 +224,7 @@ const api: PageApi = {
         return [el, value, start, end];
       }),
       scroll: [scrollX, scrollY],
+      islands: islands(),
     };
   },
   held: (): HeldCheck => {

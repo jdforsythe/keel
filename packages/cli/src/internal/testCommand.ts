@@ -29,7 +29,8 @@ export async function testCommand(
   io: Io,
   report: true | ((run: TestRunReport) => void) = true,
 ): Promise<OutRecord[]> {
-  if (input.e2e === true) return (await import("./e2eCommand.ts")).e2eCommand(input, io);
+  // Behind its own entry, loaded only for `--e2e` (`@keel/cli` size budget).
+  if (input.e2e === true) return (await import("@keel/cli/e2e")).e2eCommand(input, io);
   const configured = existsSync(io.cwd) && readdirSync(io.cwd).some((n) => VITEST_CONFIG.test(n));
   const runnable = configured || projectFiles(io).some((f) => TEST_FILE.test(f.path));
   // A library holds no page route, so its own folder keeps no render claims (k.library-pack Own folder).

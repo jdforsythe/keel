@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Diag } from "./Diag.ts";
-import { makeDiag } from "./makeDiag.ts";
+import type { Diag } from "../internal/Diag.ts";
+import { makeDiag } from "../internal/makeDiag.ts";
 
 /** The `playwright-core` version `@keel/testing` pins as its optional peer (k.e2e Browser). */
 function pinned(): string {

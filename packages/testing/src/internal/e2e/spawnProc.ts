@@ -104,6 +104,14 @@ export function spawnProc(opts: {
     if (c !== undefined && c.exitCode === null && c.signalCode === null) c.kill("SIGKILL");
     await exited;
   };
+  /** SIGTERM, then the process's own exit: its code, or the signal that ended it. */
+  const drain = async (): Promise<number | string> => {
+    const c = child;
+    if (c === undefined) return 0;
+    if (c.exitCode === null && c.signalCode === null) c.kill("SIGTERM");
+    await exited;
+    return c.exitCode ?? c.signalCode ?? 0;
+  };
 
   return {
     name: opts.name,
@@ -129,5 +137,6 @@ export function spawnProc(opts: {
       }
     },
     kill,
+    drain,
   };
 }

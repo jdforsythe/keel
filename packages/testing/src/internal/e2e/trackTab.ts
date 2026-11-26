@@ -50,8 +50,9 @@ export function trackTab(tab: Tab, holding: boolean): TabState {
     wake();
   });
   tab.on("console", (m) => {
-    if (m.type() !== "error") return;
-    state.problems.push({ kind: "console", text: m.text() });
+    const type = m.type();
+    if (type !== "error" && type !== "warning") return;
+    state.problems.push({ kind: type === "error" ? "console" : "warning", text: m.text() });
     wake();
   });
   return state;

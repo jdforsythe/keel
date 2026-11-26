@@ -2,6 +2,7 @@ import type { Store } from "@keel/store";
 import type { LogRecord } from "./LogRecord.ts";
 import type { OpenOptions } from "./OpenOptions.ts";
 import type { Page } from "./Page.ts";
+import type { StoreLog } from "./StoreLog.ts";
 import type { Wait } from "./Wait.ts";
 
 /** The running deployables of one `serve` (k.e2e Served). */
@@ -16,8 +17,13 @@ export interface Served {
   /** A server store's value as the deployable's storage holds it. */
   state<T>(store: Store<T>): Promise<T>;
   until<T>(store: Store<T>, test: (value: T) => boolean, wait?: Wait): Promise<T>;
-  /** SIGKILL; every deployable when none is named. */
-  stop(deployable?: string): Promise<void>;
+  /** A server store's log: its head and each entry's id and name, no payload. */
+  log<T>(store: Store<T>): Promise<StoreLog>;
+  /**
+   * SIGKILL, every deployable when none is named; with `drain`, SIGTERM and the process's own exit, which must be
+   * code 0 (else E1737).
+   */
+  stop(deployable?: string, options?: { readonly drain?: boolean }): Promise<void>;
   /** A stopped deployable again, on its port and data. */
   start(deployable?: string): Promise<void>;
   dispose(): Promise<void>;

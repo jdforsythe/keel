@@ -1,3 +1,5 @@
+/// <reference path="./PageApi.ts" />
+// The page script's globals (`__keelE2e`, `__keelProblem`) are declared in PageApi.ts.
 import type { TabState } from "./TabState.ts";
 import { busy } from "./busy.ts";
 import { ensureScript } from "./ensureScript.ts";

@@ -9,4 +9,8 @@ export type StyleName =
   | "outline-color"
   | "outline-offset"
   | "flex-direction"
-  | "display";
+  | "display"
+  | "padding-top"
+  | "padding-right"
+  | "padding-bottom"
+  | "padding-left";

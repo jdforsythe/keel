@@ -1,3 +1,5 @@
+/// <reference path="./PageApi.ts" />
+// The page script's globals (`__keelE2e`, `__keelProblem`) are declared in PageApi.ts.
 import type { Locator, Page as Tab } from "playwright-core";
 import type { A11yNode } from "../../types/A11yNode.ts";
 import type { CookieInfo } from "../../types/CookieInfo.ts";
@@ -334,14 +336,15 @@ export function makePage(
             boundMs(),
           ),
       ),
+    title: () => tab.title(),
     style: (id, names) =>
       verb(async () => {
         const values = await shownNow(
           "style",
-          await checked(id),
+          id === undefined ? "" : await checked(id),
           () =>
             ensureScript(tab).then(() =>
-              tab.evaluate(([i, n]) => globalThis.__keelE2e?.style(i, n) ?? null, [id, [...names]] as const),
+              tab.evaluate(([i, n]) => globalThis.__keelE2e?.style(i, n) ?? null, [id ?? null, [...names]] as const),
             ),
           boundMs(),
         );

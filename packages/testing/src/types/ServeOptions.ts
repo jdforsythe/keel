@@ -10,7 +10,7 @@ export type ServeOptions = {
   readonly origins?: Readonly<Record<string, Answered>>;
   /** `keel dev` in place of the built deployables. */
   readonly dev?: true;
-  /** In a library's own folder: the component its one page `/` renders (k.e2e Libraries). */
-  readonly page?: (props: never) => unknown;
+  /** In a library's own folder: the component file (`src/Card.ts`) whose export its one page `/` renders (k.e2e Libraries). */
+  readonly page?: string;
   readonly props?: Readonly<Record<string, unknown>>;
 };

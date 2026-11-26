@@ -1,17 +1,17 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { peerKey } from "@keel/compiler/hosting/peerKey";
+import { buildCommand } from "../internal/buildCommand.ts";
+import { isError } from "../internal/isError.ts";
+import { makeDiag } from "../internal/makeDiag.ts";
+import { projectFiles } from "../internal/projectFiles.ts";
+import { projectTopology } from "../internal/projectTopology.ts";
+import { vitestRun } from "../internal/vitestRun.ts";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { browserCheck } from "./browserCheck.ts";
-import { buildCommand } from "./buildCommand.ts";
 import { e2eFiles } from "./e2eFiles.ts";
-import { isError } from "./isError.ts";
-import { makeDiag } from "./makeDiag.ts";
-import { projectFiles } from "./projectFiles.ts";
-import { projectTopology } from "./projectTopology.ts";
-import { vitestRun } from "./vitestRun.ts";
 
 /** An e2e test that declares no timeout has 60 s, fixed time: it bounds a build's output starting and a browser's work (k.e2e Time). */
 const TIMEOUT = 60_000;

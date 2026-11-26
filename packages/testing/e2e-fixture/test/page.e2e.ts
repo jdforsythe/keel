@@ -95,6 +95,6 @@ it("stop and start keep the data; two serves share nothing", async () => {
 });
 
 it("page outside a library's folder is E1736", async () => {
-  const e = await failure(serve({ page: () => null }));
+  const e = await failure(serve({ page: "src/Card.ts" }));
   expect(e.code).toBe("E1736");
 });

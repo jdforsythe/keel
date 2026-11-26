@@ -16,7 +16,7 @@ export type PageApi = {
   readonly focusOrder: () => string[];
   readonly axe: () => Promise<Violation[]>;
   readonly layout: (id: string | null) => Layout | null;
-  readonly style: (id: string, names: readonly string[]) => Record<string, string> | null;
+  readonly style: (id: string | null, names: readonly string[]) => Record<string, string> | null;
   /** Resolves `true` once `match` holds of `id`, re-read on each DOM change; `false` after `ms`. */
   readonly until: (id: string, match: PageMatch, ms: number) => Promise<boolean>;
   /** What `id` shows now, for a wait's message: `text was "…"`, `not shown`, `still shown`. */

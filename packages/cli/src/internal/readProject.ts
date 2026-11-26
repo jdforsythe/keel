@@ -4,6 +4,8 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
 
 const SKIP = new Set(["node_modules", "dist", "coverage", "reports", ".turbo", ".git", ".worktrees"]);
+/** The host project `serve({ page })` writes in a library's folder (k.e2e Libraries): generated, never the library's source. */
+const E2E_HOST = /(?:^|\/)\.keel\/e2e-host$/;
 const TEXT = /\.(?:[cm]?[jt]sx?|json|md|ya?ml|css|html|txt|rs|toml)$|(?:^|\/)Dockerfile$/;
 const MAX_BYTES = 1_000_000;
 /** Build configuration is tooling, type-checked by the project's own tsc, not app code for `keel check`. */
@@ -58,7 +60,8 @@ export function readProject(cwd: string, scope: "query" | "ledger" | "tree"): { 
       const r = rel === "" ? e.name : `${rel}/${e.name}`;
       const abs = join(dir, e.name);
       if (e.isDirectory()) {
-        if (!SKIP.has(e.name) || (scope === "ledger" && (TO_REPORT.test(r) || TO_A11Y.test(r)))) walk(abs, r);
+        if ((!SKIP.has(e.name) && !E2E_HOST.test(r)) || (scope === "ledger" && (TO_REPORT.test(r) || TO_A11Y.test(r))))
+          walk(abs, r);
       } else if (e.isFile() && want(r, abs)) out.push({ path: r, source: readFileSync(abs, "utf8") });
     }
   };

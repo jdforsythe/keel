@@ -1,3 +1,4 @@
+import type { CookieSeed } from "../../types/CookieSeed.ts";
 import type { Page } from "../../types/Page.ts";
 import type { ContextRun } from "./ContextRun.ts";
 import type { ProjectInfo } from "./ProjectInfo.ts";
@@ -24,6 +25,7 @@ export async function openContext(o: {
   readonly path: string;
   readonly scripts: boolean;
   readonly hold: boolean;
+  readonly cookies: readonly CookieSeed[];
   readonly proxy: string;
   readonly mapped: boolean;
   readonly verb: () => void;
@@ -39,6 +41,17 @@ export async function openContext(o: {
     ...(o.mapped && engineOf() !== "chromium" ? { ignoreHTTPSErrors: true } : {}),
   });
   await context.tracing.start({ screenshots: true, snapshots: true });
+  if (o.cookies.length > 0)
+    await context.addCookies(
+      o.cookies.map((c) => ({
+        name: c.name,
+        value: c.value,
+        url: c.origin,
+        ...(c.sameSite === undefined ? {} : { sameSite: c.sameSite }),
+        ...(c.secure === undefined ? {} : { secure: c.secure }),
+        ...(c.httpOnly === undefined ? {} : { httpOnly: c.httpOnly }),
+      })),
+    );
   const run: ContextRun = { context, tabs: [] };
   o.contexts.push(run);
   await context.exposeBinding("__keelProblem", (source, kind: unknown, text: unknown) => {
