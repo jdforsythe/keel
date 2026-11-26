@@ -1,5 +1,5 @@
 {
-  "commit": "22ed144aa3bf69196e3e95823af20ca764a1c603",
+  "commit": "570254af3e514049090c9722d76a83196dd5d56c",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-26T22:14:33.280Z",
+  "generatedAt": "2026-11-26T23:25:48.041Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1412,12 +1412,12 @@
     },
     "clauses": {
       "byRung": {
-        "example": 1179,
+        "example": 1221,
         "exhaustive": 6,
         "monitored": 0,
         "none": 2,
-        "probabilistic": 253,
-        "proven": 44
+        "probabilistic": 258,
+        "proven": 53
       },
       "sections": {
         "README": {
@@ -1448,7 +1448,7 @@
         },
         "k.a11y-static": {
           "byRung": {
-            "example": 10,
+            "example": 11,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1456,8 +1456,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 10,
-          "verified": 10
+          "total": 11,
+          "verified": 11
         },
         "k.api": {
           "byRung": {
@@ -1479,11 +1479,11 @@
             "monitored": 0,
             "none": 0,
             "probabilistic": 0,
-            "proven": 3
+            "proven": 6
           },
           "status": "implemented",
-          "total": 10,
-          "verified": 10
+          "total": 13,
+          "verified": 13
         },
         "k.boundary": {
           "byRung": {
@@ -1669,7 +1669,7 @@
         },
         "k.docs": {
           "byRung": {
-            "example": 13,
+            "example": 19,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1677,8 +1677,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 13,
-          "verified": 13
+          "total": 19,
+          "verified": 19
         },
         "k.drive": {
           "byRung": {
@@ -1708,7 +1708,7 @@
         },
         "k.entries": {
           "byRung": {
-            "example": 0,
+            "example": 3,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1716,8 +1716,8 @@
             "proven": 0
           },
           "status": "proposed",
-          "total": 0,
-          "verified": 0
+          "total": 3,
+          "verified": 3
         },
         "k.errors": {
           "byRung": {
@@ -1955,7 +1955,7 @@
         },
         "k.looks": {
           "byRung": {
-            "example": 0,
+            "example": 14,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1963,8 +1963,8 @@
             "proven": 0
           },
           "status": "proposed",
-          "total": 0,
-          "verified": 0
+          "total": 14,
+          "verified": 14
         },
         "k.model": {
           "byRung": {
@@ -2241,16 +2241,16 @@
         },
         "k.roles": {
           "byRung": {
-            "example": 3,
+            "example": 4,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 0,
-            "proven": 5
+            "proven": 11
           },
           "status": "implemented",
-          "total": 8,
-          "verified": 8
+          "total": 15,
+          "verified": 15
         },
         "k.router": {
           "byRung": {
@@ -2345,7 +2345,7 @@
         },
         "k.schemes": {
           "byRung": {
-            "example": 0,
+            "example": 13,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2353,8 +2353,8 @@
             "proven": 0
           },
           "status": "proposed",
-          "total": 0,
-          "verified": 0
+          "total": 13,
+          "verified": 13
         },
         "k.security": {
           "byRung": {
@@ -2553,16 +2553,16 @@
         },
         "k.values": {
           "byRung": {
-            "example": 0,
+            "example": 4,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 0,
+            "probabilistic": 5,
             "proven": 0
           },
           "status": "proposed",
-          "total": 0,
-          "verified": 0
+          "total": 9,
+          "verified": 9
         },
         "std.brands": {
           "byRung": {
@@ -3072,23 +3072,23 @@
           "verified": 9
         }
       },
-      "total": 1484,
-      "verified": 1482
+      "total": 1540,
+      "verified": 1538
     },
     "evidenceByRung": {
-      "example": 2620,
+      "example": 2676,
       "exhaustive": 21,
       "monitored": 8,
-      "probabilistic": 458,
-      "proven": 83
+      "probabilistic": 464,
+      "proven": 92
     },
     "exports": {
       "byRung": {
-        "example": 380,
+        "example": 379,
         "exhaustive": 5,
         "monitored": 0,
-        "none": 53,
-        "probabilistic": 164,
+        "none": 54,
+        "probabilistic": 165,
         "proven": 39
       },
       "packages": {
@@ -3097,11 +3097,11 @@
             "example": 5,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 1,
             "probabilistic": 8,
             "proven": 0
           },
-          "total": 13,
+          "total": 14,
           "verified": 13
         },
         "cli": {
@@ -3634,24 +3634,24 @@
         },
         "ui": {
           "byRung": {
-            "example": 1,
+            "example": 0,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 2,
+            "probabilistic": 3,
             "proven": 2
           },
           "total": 5,
           "verified": 5
         }
       },
-      "total": 641,
+      "total": 642,
       "verified": 588
     },
-    "items": 2805,
+    "items": 2862,
     "negativeTypes": 90,
     "unsafe": 33,
-    "verified": 2750
+    "verified": 2806
   },
   "mutation": {
     "packages": {
