@@ -11,13 +11,7 @@
       "default": "./dist/src/index.js"
     }
   },
-  "files": [
-    "module.ts",
-    "src",
-    "dist",
-    ".keel/ledger.json",
-    "README.md"
-  ],
+  "files": ["module.ts", "src", "dist", ".keel/ledger.json", "README.md"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "check": "keel check",
