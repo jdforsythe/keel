@@ -10,16 +10,19 @@ const c = contract("dn", { "dn.page": { path: "/dn" } });
 const routes = manifest(c, { "dn.page": { component: () => document.createElement("main") } });
 const app = {
   fetch: async (): Promise<Response> =>
-    new Response("<!doctype html><html lang=\"en\"><head><title>t</title></head><body><main><h1>t</h1></main></body></html>", {
-      headers: { "content-type": "text/html" },
-    }),
+    new Response(
+      '<!doctype html><html lang="en"><head><title>t</title></head><body><main><h1>t</h1></main></body></html>',
+      {
+        headers: { "content-type": "text/html" },
+      },
+    ),
 };
 
 test("navigate with a value that is no Href rejects E1501 and records no document", async () => {
   const h = await renderRoute("dn.page", { routes, app });
   try {
     for (const bad of ["https://evil.example/x", "//evil.example/x", "dn", ""]) {
-      const got = await h.navigate(bad as never).then(
+      const got = await Reflect.apply(h.navigate, h, [bad]).then(
         () => null,
         (e: unknown) => e,
       );
