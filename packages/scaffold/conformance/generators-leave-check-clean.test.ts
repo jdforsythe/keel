@@ -3,6 +3,7 @@
 // Extra cases keep the relative-import proxy (every relative import resolves to a file in the tree).
 // Service (RFC 0039): `modules/orders/OrdersApi.schema.ts` exporting `OrdersApi` and `api.server.ts` exporting `api` satisfy
 // E1752; the case runs both on the in-process placement and on the real `keel scaffold service --openapi` output.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, it } from "vitest";
 import { type Files, ORDERS_OPENAPI, SERVICE_INPUT, apply, fresh, withStoreCart } from "./fixtures.ts";
 import { type CliRecord, cleanup, keel, materialize, readTree } from "./keel-cli.ts";
@@ -102,41 +103,81 @@ function cleanDir(dir: string, testFiles: number): void {
 }
 
 describe("keel check and keel test are clean after each generator", () => {
-  it("project in an empty tree leaves keel check and keel test clean", () => {
-    clean(apply("project", { name: "shop" }, new Map()).files);
-  }, 60000);
-  it("module in a fresh project leaves keel check and keel test clean", () => {
-    clean(apply("module", { id: "billing" }, fresh()).files);
-  }, 60000);
-  it("route orders.list at /orders in a fresh project leaves keel check and keel test clean", () => {
-    clean(apply("route", { id: "orders.list", path: "/orders" }, fresh()).files);
-  }, 60000);
-  it("component orders/OrderTile in a fresh project leaves keel check and keel test clean", () => {
-    clean(apply("component", { id: "orders/OrderTile" }, fresh()).files);
-  }, 60000);
-  it("store orders.basket in a fresh project leaves keel check and keel test clean", () => {
-    clean(apply("store", { id: "orders.basket" }, fresh()).files);
-  }, 60000);
-  it("transaction: store orders.cart in a fresh project leaves keel check and keel test clean", () => {
-    clean(withStoreCart());
-  }, 60000);
-  it("transaction orders.cart.addItem in a fresh project leaves keel check and keel test clean", () => {
-    clean(apply("transaction", { id: "orders.cart.addItem" }, withStoreCart()).files);
-  }, 60000);
-  it("service: a fresh project leaves keel check and keel test clean", () => {
-    clean(fresh());
-  }, 60000);
-  it("service orders with an OpenAPI-generated schema and service source leaves keel check and keel test clean", () => {
-    clean(apply("service", SERVICE_INPUT, freshNode()).files);
-  }, 60000);
-  it("keel scaffold service orders --openapi openapi.json in a fresh node project leaves keel check and keel test clean", () => {
-    const dir = materialize(nodeWithOpenApi());
-    dirs.push(dir);
-    const gen = keel(dir, ["scaffold", "service", "orders", "--openapi", "openapi.json"]);
-    expect(gen.status, JSON.stringify(gen.records)).toBe(0);
-    const tree = readTree(dir);
-    expect(tree.get("modules/orders/OrdersApi.schema.ts")).toMatch(/^export const OrdersApi = endpoints\(/m);
-    expect(tree.get("modules/orders/api.server.ts")).toContain('import { OrdersApi } from "./OrdersApi.schema.ts";');
-    cleanDir(dir, [...tree.keys()].filter((p) => /\.test\.tsx?$/.test(p)).length);
-  }, 60000);
+  it(
+    "project in an empty tree leaves keel check and keel test clean",
+    () => {
+      clean(apply("project", { name: "shop" }, new Map()).files);
+    },
+    fixedTime(60000),
+  );
+  it(
+    "module in a fresh project leaves keel check and keel test clean",
+    () => {
+      clean(apply("module", { id: "billing" }, fresh()).files);
+    },
+    fixedTime(60000),
+  );
+  it(
+    "route orders.list at /orders in a fresh project leaves keel check and keel test clean",
+    () => {
+      clean(apply("route", { id: "orders.list", path: "/orders" }, fresh()).files);
+    },
+    fixedTime(60000),
+  );
+  it(
+    "component orders/OrderTile in a fresh project leaves keel check and keel test clean",
+    () => {
+      clean(apply("component", { id: "orders/OrderTile" }, fresh()).files);
+    },
+    fixedTime(60000),
+  );
+  it(
+    "store orders.basket in a fresh project leaves keel check and keel test clean",
+    () => {
+      clean(apply("store", { id: "orders.basket" }, fresh()).files);
+    },
+    fixedTime(60000),
+  );
+  it(
+    "transaction: store orders.cart in a fresh project leaves keel check and keel test clean",
+    () => {
+      clean(withStoreCart());
+    },
+    fixedTime(60000),
+  );
+  it(
+    "transaction orders.cart.addItem in a fresh project leaves keel check and keel test clean",
+    () => {
+      clean(apply("transaction", { id: "orders.cart.addItem" }, withStoreCart()).files);
+    },
+    fixedTime(60000),
+  );
+  it(
+    "service: a fresh project leaves keel check and keel test clean",
+    () => {
+      clean(fresh());
+    },
+    fixedTime(60000),
+  );
+  it(
+    "service orders with an OpenAPI-generated schema and service source leaves keel check and keel test clean",
+    () => {
+      clean(apply("service", SERVICE_INPUT, freshNode()).files);
+    },
+    fixedTime(60000),
+  );
+  it(
+    "keel scaffold service orders --openapi openapi.json in a fresh node project leaves keel check and keel test clean",
+    () => {
+      const dir = materialize(nodeWithOpenApi());
+      dirs.push(dir);
+      const gen = keel(dir, ["scaffold", "service", "orders", "--openapi", "openapi.json"]);
+      expect(gen.status, JSON.stringify(gen.records)).toBe(0);
+      const tree = readTree(dir);
+      expect(tree.get("modules/orders/OrdersApi.schema.ts")).toMatch(/^export const OrdersApi = endpoints\(/m);
+      expect(tree.get("modules/orders/api.server.ts")).toContain('import { OrdersApi } from "./OrdersApi.schema.ts";');
+      cleanDir(dir, [...tree.keys()].filter((p) => /\.test\.tsx?$/.test(p)).length);
+    },
+    fixedTime(60000),
+  );
 });
