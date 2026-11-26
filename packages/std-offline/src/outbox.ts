@@ -12,7 +12,7 @@ import { OutboxState } from "./internal/OutboxState.schema.ts";
 import { Resolve } from "./internal/Resolve.schema.ts";
 import { Settle } from "./internal/Settle.schema.ts";
 import { declareConfig } from "./internal/declareConfig.ts";
-import { isWrite } from "./internal/isWrite.ts";
+import { writeOf } from "./internal/writeOf.ts";
 
 /**
  * Declare an outbox (std.offline) over the API write entries of `contract` (k.contract), sent through
@@ -29,8 +29,9 @@ export function outbox<const C extends Contract>(
   opts: { readonly limit?: number | undefined; readonly maxBytes?: number | undefined } = {},
 ): Outbox<Writes<C>> {
   const api: Record<string, Endpoint> = {};
-  for (const [entry, e] of Object.entries(contract.entries)) {
-    if (!isWrite(e)) continue;
+  for (const [entry, value] of Object.entries(contract.entries)) {
+    const e = writeOf(value);
+    if (e === undefined) continue;
     const name = entry.slice(contract.module.length + 1);
     const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
@@ -39,10 +40,10 @@ export function outbox<const C extends Contract>(
     api[name] = e;
   }
   const entries = Object.fromEntries(
-    Object.entries(contract.entries).map(([entry, e]) => [
-      entry,
-      isWrite(e) ? { ...e, errors: { 400: s.json(), 409: s.json(), ...e.errors } } : e,
-    ]),
+    Object.entries(contract.entries).map(([entry, e]) => {
+      const w = writeOf(e);
+      return [entry, w === undefined ? e : { ...e, errors: { 400: s.json(), 409: s.json(), ...w.errors } }];
+    }),
   );
   const client = service({ contract: { ...contract, entries } });
   let c: Config | undefined;

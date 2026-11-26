@@ -16,4 +16,5 @@ None. Token names are not typed per app (principle 2); `check` validates them ag
 
 ## Unsafe
 
-count: 0
+count: 1
+- `unsafe/readValue.ts`: a host's readable `value` read through `get()` typed as the input's value `I`.

@@ -16,4 +16,5 @@ None. One way per concept; no `untrack` (an untracked read is `scope.run`, which
 
 ## Unsafe
 
-count: 0
+count: 1
+- `unsafe/outcomeOf.ts`: a fetcher's value typed as an `Outcome`: a branded k.schema `Result` as it is, any other value as its `ok`.

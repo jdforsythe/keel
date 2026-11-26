@@ -1,9 +1,9 @@
 import type { Ctx } from "@keel/ctx";
+import { fetcherOf } from "../../unsafe/fetcherOf.ts";
+import { signerOf } from "../../unsafe/signerOf.ts";
 import { MODULES_KEY } from "./MODULES_KEY.ts";
 import type { Target } from "./Target.ts";
 import { USERS_KEY } from "./USERS_KEY.ts";
-import { isFetcher } from "./isFetcher.ts";
-import { isSigner } from "./isSigner.ts";
 
 /**
  * Resolve `service({ module })` for one call (k.topology Calls and peers, k.hosting Peers): on a ctx a `createApp` or
@@ -21,10 +21,9 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   const origin = typeof found === "string" && /^https?:\/\//.test(found) ? found : undefined;
   const table: unknown = Reflect.get(globalThis, MODULES_KEY);
   const bound: unknown = table instanceof WeakMap ? table.get(ctx) : undefined;
-  const signer = bound instanceof Map ? bound.get("keel.user") : undefined;
-  const sign: Target["sign"] = isSigner(signer)
-    ? (method, url, user, body) => signer(module, method, url, user, body)
-    : undefined;
+  const signer = signerOf(bound instanceof Map ? bound.get("keel.user") : undefined);
+  const sign: Target["sign"] =
+    signer === undefined ? undefined : (method, url, user, body) => signer(module, method, url, user, body);
   const users: unknown = Reflect.get(globalThis, USERS_KEY);
   const given: unknown = sign !== undefined && users instanceof WeakMap ? users.get(ctx) : undefined;
   const user = typeof given === "string" ? given : undefined;
@@ -44,14 +43,15 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   };
   const at: unknown = bound instanceof Map ? bound.get(module) : undefined;
   if (typeof at === "string") return net(at);
-  if (isFetcher(at))
+  const app = fetcherOf(at);
+  if (app !== undefined)
     return {
       base: `http://${module}.keel.invalid`,
       module: true,
       keel: true,
       sign,
       user,
-      send: (req) => at.fetch(req),
+      send: (req) => app.fetch(req),
     };
   if (bound === undefined && origin !== undefined) return net(origin);
   return net(`http://${module}.keel.invalid`);

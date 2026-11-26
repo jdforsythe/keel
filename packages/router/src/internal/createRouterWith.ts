@@ -5,6 +5,7 @@ import type { CaughtError } from "@keel/runtime-dom";
 import { boundary, list } from "@keel/runtime-dom/ops";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
 import type { ServerState } from "@keel/store/internal";
+import { routeStateOf } from "../../unsafe/routeStateOf.ts";
 import type { Href } from "../types/Href.ts";
 import type { RouteTable } from "../types/RouteTable.ts";
 import type { Router } from "../types/Router.ts";
@@ -30,7 +31,6 @@ import { formHandle } from "./formHandle.ts";
 import { guardLoop } from "./guardLoop.ts";
 import { guardNext } from "./guardNext.ts";
 import { isHref } from "./isHref.ts";
-import { isRouteStateOf } from "./isRouteStateOf.ts";
 import { matchUrl } from "./matchUrl.ts";
 import { mounted } from "./mounted.ts";
 import { needsBare } from "./needsBare.ts";
@@ -135,7 +135,8 @@ export function createRouterWith<T extends RouteTable>(
     const pending = signal(false);
     const route = computed((): StateOf<T> => {
       const state = { ...place.get(), pending: pending.get() };
-      if (isRouteStateOf<StateOf<T>>(own, state)) return state;
+      const typed = routeStateOf<StateOf<T>>(own, state);
+      if (typed !== undefined) return typed;
       throw new Error(`k.router: route id ${String(state.id)} is not in this route table`);
     });
     return { view, place, pending, route };

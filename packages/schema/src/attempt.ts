@@ -12,7 +12,7 @@ type Settled<T, E> = [T] extends [never]
     ? Promise<Result<U, E>>
     : Result<T, E>;
 
-const isThenable = (x: unknown): x is PromiseLike<unknown> =>
+const isThenable = (x: unknown): boolean =>
   (typeof x === "object" || typeof x === "function") && x !== null && typeof Reflect.get(x, "then") === "function";
 
 /**

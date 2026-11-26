@@ -16,4 +16,7 @@
 
 ## Unsafe
 
-count: 0
+count: 3
+- `unsafe/callable.ts`: a bound `component`, `errorElement` or `title` function typed by `manifest`'s `Binding` signature.
+- `unsafe/objectSchemaOf.ts`: a schema with `decodeStrings`, which only `s.object` makes, typed as an `ObjectSchema`.
+- `unsafe/routeStateOf.ts`: a route state built from a match in the table typed as the table's state.

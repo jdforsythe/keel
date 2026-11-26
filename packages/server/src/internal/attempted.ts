@@ -8,7 +8,7 @@ type Attempted<T> = [T] extends [never]
     ? Promise<Result<U, Unexpected>>
     : Result<T, Unexpected>;
 
-const isThenable = (x: unknown): x is PromiseLike<unknown> =>
+const isThenable = (x: unknown): boolean =>
   (typeof x === "object" || typeof x === "function") && x !== null && typeof Reflect.get(x, "then") === "function";
 
 /**

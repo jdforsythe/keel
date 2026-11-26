@@ -53,7 +53,13 @@ export function match<U extends object>(
         return;
       }
       const ctx = parent.root.ctx;
-      if (rid > 0 && key === "state" && (t === "loading" || t === "ready" || t === "error") && observed(ctx))
+      if (
+        rid > 0 &&
+        key === "state" &&
+        (t === "loading" || t === "ready" || t === "error") &&
+        ctx !== undefined &&
+        observed(ctx)
+      )
         tell(ctx, { kind: "resource", id: String(rid), state: t });
       const render = Object.hasOwn(cases, t) ? cases[t] : undefined;
       if (render === undefined) {

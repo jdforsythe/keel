@@ -3,6 +3,7 @@ import { Schedule, type SimCtx, createCtx } from "@keel/ctx";
 import type { RouteTable } from "@keel/router";
 import { type JsonValue, s } from "@keel/schema";
 import { type RouteHarness, renderRoute } from "@keel/testing";
+import { routeTableOf } from "../../../unsafe/routeTableOf.ts";
 import type { Recorder } from "../../Recorder.ts";
 import { Session } from "../../Session.schema.ts";
 import { SessionEvent } from "../../SessionEvent.ts";
@@ -41,10 +42,6 @@ const Ms = s.object({ ms: s.number() });
 const Index = s.object({ index: s.number() });
 /** Statuses whose response has no body. */
 const EMPTY = new Set([101, 204, 205, 304]);
-
-function isTable(x: unknown): x is Table {
-  return field(x, "kind") === "keel.routeTable" && Array.isArray(field(x, "contracts"));
-}
 
 function parsed<T>(schema: { parse(x: unknown): { ok: true; value: T } | { ok: false } }, x: unknown, what: string): T {
   const r = schema.parse(x);
@@ -145,8 +142,8 @@ export function userRealm(port: MessagePort, load: (url: string) => Promise<unkn
   const open = async (arg: unknown): Promise<null> => {
     const o = parsed(Open, arg, "open");
     const mod = await load(o.user);
-    const table = field(mod, "routes");
-    if (!isTable(table)) throw new TypeError(`group: ${o.user} exports no routes`);
+    const table = routeTableOf(field(mod, "routes"));
+    if (table === undefined) throw new TypeError(`group: ${o.user} exports no routes`);
     routes = table;
     const c = createCtx({ mode: "sim", seed: o.seed, ...(o.schedule === null ? {} : { schedule: o.schedule }) });
     ctx = c;

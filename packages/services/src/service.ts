@@ -7,9 +7,9 @@ import type { EndpointMap } from "./EndpointMap.ts";
 import type { ServiceOptions } from "./ServiceOptions.ts";
 import type { Target } from "./internal/Target.ts";
 import { call } from "./internal/call.ts";
+import { endpointOf } from "./internal/endpointOf.ts";
 import { events } from "./internal/events.ts";
 import { fail } from "./internal/fail.ts";
-import { isEndpoint } from "./internal/isEndpoint.ts";
 import { keelOrigin } from "./internal/keelOrigin.ts";
 import { moduleTarget } from "./internal/moduleTarget.ts";
 
@@ -65,8 +65,9 @@ export function service(opts: ServiceOptions): unknown {
       ? Object.entries(contract.entries).map(([id, e]) => [id.slice(contract.module.length + 1), e])
       : Object.entries(opts.schema ?? {});
   const methods = Object.fromEntries(
-    named.flatMap(([name, e]) => {
-      if (!isEndpoint(e)) return [];
+    named.flatMap(([name, entry]) => {
+      const e = endpointOf(entry);
+      if (e === undefined) return [];
       const ms = e.timeout === undefined ? fallback : positive(e.timeout, name);
       const method = e.events
         ? (input: unknown, ctx: Ctx) => events(e, target(ctx), ms, limit, input, ctx)

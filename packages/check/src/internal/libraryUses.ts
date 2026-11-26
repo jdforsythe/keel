@@ -1,5 +1,5 @@
 import { posix } from "node:path";
-import type { Argument, CallExpression, Program } from "oxc-parser";
+import { type Argument, type CallExpression, type Program, Visitor } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
 import type { FileOf } from "./functionRead/FileOf.ts";
@@ -35,7 +35,6 @@ const keyName = (n: unknown): string | undefined => {
   const v = field(n, "value");
   return nameOf(n) ?? (isNode(n) && n.type === "Literal" && typeof v === "string" ? v : undefined);
 };
-const isCall = (n: Node): n is CallExpression => n.type === "CallExpression";
 const list = (x: unknown): unknown[] => (Array.isArray(x) ? x : []);
 /** Positions that carry no value: a name there is no occurrence. */
 const TYPES = new Set([
@@ -296,6 +295,16 @@ export function libraryUses(
     }
     return name;
   };
+  let calls: Map<object, CallExpression> | undefined;
+  /** `n` as the program's typed call node when it is one. */
+  const callOf = (n: Node): CallExpression | undefined => {
+    if (calls === undefined) {
+      const found = new Map<object, CallExpression>();
+      new Visitor({ CallExpression: (c) => void found.set(c, c) }).visit(program);
+      calls = found;
+    }
+    return calls.get(n);
+  };
   const out: Use[] = [];
   const flag = (target: Target | undefined, at: number, name: string): void =>
     void out.push({ kind: target?.kind === "deep" ? "deep" : "value", at, name });
@@ -333,14 +342,9 @@ export function libraryUses(
       flag(target, node.start, name);
       return;
     }
-    if (
-      target.kind === "fn" &&
-      pt === "CallExpression" &&
-      key === "callee" &&
-      field(parent, "optional") !== true &&
-      isCall(parent)
-    )
-      return void out.push({ kind: "call", call: parent, name, arg: parent.arguments[target.index] });
+    const call = target.kind === "fn" && pt === "CallExpression" && key === "callee" ? callOf(parent) : undefined;
+    if (target.kind === "fn" && call !== undefined && call.optional !== true)
+      return void out.push({ kind: "call", call, name, arg: call.arguments[target.index] });
     if (target.kind === "ns" && pt === "MemberExpression" && key === "object" && field(parent, "computed") !== true) {
       const prop = nameOf(field(parent, "property"));
       const held = prop === undefined ? undefined : t.exported(target.entry, prop, target.depth);

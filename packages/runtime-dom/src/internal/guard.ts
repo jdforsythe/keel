@@ -11,5 +11,5 @@ export function guard(owner: Owner, at: string, fn: () => unknown): void {
     report(owner, error, at);
     return;
   }
-  if (isPromiseLike(out)) out.then(undefined, (error: unknown) => report(owner, error, at));
+  if (isPromiseLike(out)) Promise.resolve(out).catch((error: unknown) => report(owner, error, at));
 }

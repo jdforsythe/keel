@@ -1,3 +1,4 @@
+import { callable } from "../../unsafe/callable.ts";
 import type { Contract } from "../contract/types/Contract.ts";
 import type { Action } from "../types/Action.ts";
 import type { ApiAction } from "../types/ApiAction.ts";
@@ -13,7 +14,6 @@ import { carriedFits } from "./carriedFits.ts";
 import { checkEntries } from "./checkEntries.ts";
 import { codedError } from "./codedError.ts";
 import { isAction } from "./isAction.ts";
-import { isFunction } from "./isFunction.ts";
 import { isGuard } from "./isGuard.ts";
 import { isLoader } from "./isLoader.ts";
 import { isStub } from "./isStub.ts";
@@ -134,6 +134,9 @@ export function bindTable(c: Contract, binding: unknown): Compiled {
       const a = s.kind === "page" ? actionAt(c, s, v, at(v)) : undefined;
       if (a !== undefined) actions[v] = a;
     }
+    const view = callable<NonNullable<Def["component"]>>(component);
+    const shown = callable<NonNullable<Def["errorElement"]>>(errorElement);
+    const titled = callable<NonNullable<Def["title"]>>(title);
     defs.set(id, {
       ...s,
       contract: c,
@@ -141,9 +144,9 @@ export function bindTable(c: Contract, binding: unknown): Compiled {
       ...(typeof layout === "string" ? { layout } : {}),
       ...(guard === undefined ? {} : { guard }),
       ...(loader === undefined ? {} : { loader }),
-      ...(isFunction<NonNullable<Def["component"]>>(component) ? { component } : {}),
-      ...(isFunction<NonNullable<Def["errorElement"]>>(errorElement) ? { errorElement } : {}),
-      ...(isFunction<NonNullable<Def["title"]>>(title) ? { title } : {}),
+      ...(view === undefined ? {} : { component: view }),
+      ...(shown === undefined ? {} : { errorElement: shown }),
+      ...(titled === undefined ? {} : { title: titled }),
     });
     bindings.set(id, Object.freeze({ contract: c, entry: Object(c.entries[id]), binding: Object.freeze({ ...b }) }));
   }

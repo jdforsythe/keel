@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { type Program, parseSync } from "oxc-parser";
+import { devAppOf } from "../unsafe/devAppOf.ts";
 import { compile } from "./compile.ts";
 import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
 import { DEV_ENTRY } from "./entry/DEV_ENTRY.ts";
@@ -171,15 +172,6 @@ type DevApp = {
   served(path: string): boolean;
   readonly mount: string | undefined;
 };
-const isDevApp = (v: unknown): v is [string, DevApp["app"], DevApp["served"], DevApp["mount"]] =>
-  Array.isArray(v) &&
-  typeof v[0] === "string" &&
-  typeof v[2] === "function" &&
-  (v[3] === undefined || typeof v[3] === "string") &&
-  typeof v[1] === "object" &&
-  v[1] !== null &&
-  typeof Reflect.get(v[1], "fetch") === "function" &&
-  typeof Reflect.get(v[1], "close") === "function";
 type Warn = (message: string) => void;
 type BuildConfig = {
   build: {
@@ -404,9 +396,7 @@ export default function (): {
       evaluated = true;
       const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
       const apps: unknown = mod?.apps;
-      return (Array.isArray(apps) ? apps : [])
-        .filter(isDevApp)
-        .map(([name, app, served, mount]) => ({ name, app, served, mount }));
+      return (Array.isArray(apps) ? apps : []).flatMap((a) => devAppOf(a) ?? []);
     })();
     loading = run;
     // Only the load no edit overtook becomes the live apps. One an edit overtook is closed by `reloadDev`, and its

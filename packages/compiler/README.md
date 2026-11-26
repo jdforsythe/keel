@@ -23,4 +23,4 @@
 
 ## Unsafe
 
-count: 0. The test helper `evaluate` runs compile output in-process with `new Function` (`src/testing/runCommonJs.ts`, left out of the published build).
+count: 1. `unsafe/devAppOf.ts`: an entry of the dev entry's `apps` export typed as the dev app tuple `devEntryCode` writes. The test helper `evaluate` runs compile output in-process with `new Function` (`src/testing/runCommonJs.ts`, left out of the published build).

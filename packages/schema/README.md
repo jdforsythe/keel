@@ -16,4 +16,5 @@
 
 ## Unsafe
 
-count: 0
+count: 1
+- `unsafe/formEntriesOf.ts`: a string input whose `entries` and `getAll` are functions typed as a `FormData` or `URLSearchParams` of any realm.

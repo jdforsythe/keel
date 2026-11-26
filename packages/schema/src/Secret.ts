@@ -3,6 +3,8 @@ import { listening } from "./internal/listening.ts";
 
 const MARKER = "[secret]";
 const INSPECT = Symbol.for("nodejs.util.inspect.custom");
+/** Every secret `of` made: `is` is a key guard on it. */
+const sealed = new WeakSet<object>();
 
 /**
  * The parsed value of `s.secret(inner)` (k.schema Secrets). The value lives in a private field: JSON, `String()`,
@@ -18,6 +20,7 @@ export class Secret<T> {
   private constructor(value: T, inner: Node) {
     this.#value = value;
     this.#inner = inner;
+    sealed.add(this);
     Object.freeze(this);
   }
 
@@ -32,7 +35,7 @@ export class Secret<T> {
   }
 
   static is(x: unknown): x is Secret<unknown> {
-    return typeof x === "object" && x !== null && #value in x;
+    return typeof x === "object" && x !== null && sealed.has(x);
   }
 
   static open<T>(secret: Secret<T>): T {

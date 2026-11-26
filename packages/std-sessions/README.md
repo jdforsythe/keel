@@ -67,4 +67,5 @@ Uses **capabilities** (`session`), **inspector hooks** (`sessions.live`), the **
 
 ## Unsafe
 
-count: 0
+count: 1
+- `unsafe/routeTableOf.ts`: a group user module's `routes` export of kind `keel.routeTable` typed as the route table it is.
