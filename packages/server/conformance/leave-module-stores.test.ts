@@ -8,7 +8,7 @@
 import { fixedTime } from "@keel/tooling/test-time";
 import { action, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
-import { ok, s } from "@keel/schema";
+import { isDefect, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { resumeDocument } from "@keel/testing";
 import fc from "fast-check";
@@ -76,7 +76,7 @@ const releasing = loader(lm, "lm.release", { output: Data }, () => {
 });
 
 // The timer of the late-write clause: it is started by a request and fires after the response.
-let seen: string | undefined;
+let seen: unknown;
 let fired: () => void = () => undefined;
 const timerFired = new Promise<void>((resolve) => {
   fired = resolve;
@@ -86,7 +86,7 @@ const scheduling = action(lm, "lm.timer", { input: Note }, () => {
     try {
       void tx(setRows, { rows: "late" });
     } catch (e) {
-      seen = String(e);
+      seen = e;
     }
     fired();
   }, 30);
@@ -111,7 +111,7 @@ describe("k.leave Module stores: restore, undo and undoWhere on a module store t
       const log: Lines = { lines: [] };
       const doc = await serveRoutes(routes, MODULES, "/op", { mode: "dev", log });
       expect(doc.status).toBe(500);
-      expect(doc.text).toMatch(/Error: E1256/);
+      expect(log.lines.some((l) => /threw: Defect: E1256/.test(l))).toBe(true);
       expect(e1256(log)).not.toHaveLength(0);
       expect(board.get("rows")).toBe("two");
       expect(board.head()).toBe(head);
@@ -174,7 +174,7 @@ describe("k.leave Module stores: late work stays checked", () => {
     expect(res.status).toBe(200);
     expect(seen).toBeUndefined();
     await timerFired;
-    expect(seen?.startsWith("Error: E1256") || seen?.startsWith("E1256")).toBe(true);
+    expect(isDefect(seen, "E1256")).toBe(true);
     expect(board.get("rows")).toBe("");
     expect(board.log()).toHaveLength(0);
   });

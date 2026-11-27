@@ -232,10 +232,11 @@ describe("k.resume: E1256 a write to a module store during a request", () => {
     unchanged();
   });
 
-  it("the error is an Error whose message starts with E1256 and names the store", async () => {
-    const doc = await serveRoutes(routes, MODULES, "/after", { mode: "dev" });
-    expect(doc.text).toMatch(/E1256/);
-    expect(doc.text).toContain("rm.board");
+  it("the throw's message starts with E1256: dev's full-text diag reads `Defect: E1256`", async () => {
+    const log: Lines = { lines: [] };
+    const doc = await serveRoutes(routes, MODULES, "/after", { mode: "dev", log });
+    expect(doc.status).toBe(500);
+    expect(log.lines.some((l) => /threw: Defect: E1256/.test(l))).toBe(true);
   });
 
   it("a route with an errorElement shows it when its loader writes a module store", async () => {
