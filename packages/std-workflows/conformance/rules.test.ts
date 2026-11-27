@@ -332,19 +332,23 @@ describe("std.workflows: keel check rules", () => {
     ).not.toThrow();
   });
 
-  test("E2355 does not fire, in `check` or `workflow`, for a generated event name that is not reserved or already used.", () => {
-    const used = new Set([...reserved, "begin", "hide", "purged", "stuck", "expired", "undo", "fin"]);
-    fc.assert(
-      fc.property(
-        word.filter((n) => !used.has(n)),
-        (name) => {
-          expect(found(withEvent(name), "E2355")).toEqual([]);
-          expect(() =>
-            inRoot(() => workflow(nextId("p"), { chart: chartWith(name), steps: { purging: stepOver } })),
-          ).not.toThrow();
-        },
-      ),
-      { seed: 1337, numRuns: 30 },
-    );
-  }, fixedTime(30_000));
+  test(
+    "E2355 does not fire, in `check` or `workflow`, for a generated event name that is not reserved or already used.",
+    () => {
+      const used = new Set([...reserved, "begin", "hide", "purged", "stuck", "expired", "undo", "fin"]);
+      fc.assert(
+        fc.property(
+          word.filter((n) => !used.has(n)),
+          (name) => {
+            expect(found(withEvent(name), "E2355")).toEqual([]);
+            expect(() =>
+              inRoot(() => workflow(nextId("p"), { chart: chartWith(name), steps: { purging: stepOver } })),
+            ).not.toThrow();
+          },
+        ),
+        { seed: 1337, numRuns: 30 },
+      );
+    },
+    fixedTime(30_000),
+  );
 });
