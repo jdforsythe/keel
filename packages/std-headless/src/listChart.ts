@@ -81,7 +81,7 @@ export function listChart<O extends Option>(
     indexOf: (key: string) => list.get().findIndex((o) => o.key === key),
     opened: (at: number) => {
       sync();
-      if (!open.get()) send(c.events.open, { count: size(), at: Math.min(at, 9999) });
+      if (!open.get()) send(c.events.open, { count: size(), at: Math.max(-1, Math.min(at, 9999)) });
     },
     close: (back: boolean) => {
       sync();
