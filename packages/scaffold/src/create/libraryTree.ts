@@ -8,7 +8,8 @@ import type { ScaffoldError } from "../types/ScaffoldError.ts";
 /**
  * The tree of a new library (k.library-pack Scaffold, k.create Files), path -> text from the library's own folder,
  * the one `createPlan --library` and `keel scaffold library` both write: what `library` writes, then `.gitignore` and
- * the agent files with `skills` (the library's block). `@keel/*` stay at `^<version>`; `packageManager` as an app's.
+ * the agent files with `skills` (the library's block). `@keel/*` stay at `^<version>`; `packageManager` and yarn's
+ * `.yarnrc.yml` as an app's.
  */
 export function libraryTree(input: {
   readonly name: string;
@@ -20,5 +21,6 @@ export function libraryTree(input: {
   if (!made.ok) return made;
   const own = new Map(made.value.files);
   own.set(".gitignore", GITIGNORE);
+  if (input.packageManager?.startsWith("yarn@") === true) own.set(".yarnrc.yml", "nodeLinker: node-modules\n");
   return withAgents(own, input.skills);
 }
