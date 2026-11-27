@@ -4,7 +4,7 @@ import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { keyName } from "../internal/keyName.ts";
 import { str } from "../internal/str.ts";
-import { uiElementSites } from "../internal/uiElementSites.ts";
+import { uiSitesOf } from "../internal/uiSitesOf.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
@@ -31,8 +31,8 @@ function labelKeys(el: JSXOpeningElement | undefined): string[] | undefined {
 }
 
 /**
- * E1816 (k.schemes Checks): a `ThemeSelect` of `@keel/ui` in an app or library file (`uiElementSites`: imports,
- * re-exports, namespace members) in a project whose tokens have no `choice` theme (a theme with no `when` or
+ * E1816 (k.schemes Checks): a `ThemeSelect` of `@keel/ui` in an app or library file (with the type pass on, the ones the checker
+ * resolves to it; without, `uiElementSites`: imports, re-exports, namespace members) in a project whose tokens have no `choice` theme (a theme with no `when` or
  * `when: 'choice'`), at the element or call; or whose `labels` literal has a key other than `default` and the `choice`
  * themes (`ThemeSelect labels name no theme <key>`), or lacks a `choice` theme (`ThemeSelect labels lack <name>`). A
  * project whose `tokens.ts` gave no tokens judges none; with no `tokens.ts` the tokens have no theme.
@@ -47,7 +47,7 @@ export const themeSelectChoice: RuleDef = {
     return "ThemeSelect needs a choice theme; the tokens have none";
   },
   see: "k.schemes",
-  check: ({ file, ast, artifacts, project }) => {
+  check: ({ file, ast, artifacts, project, themeSelects }) => {
     if (!isAppPath(file.path)) return [];
     const hasFile = project.some(
       (f) => /(?:^|\/)tokens\.ts$/.test(f.path) && !/(?:^|\/)(?:modules|node_modules)\//.test(f.path),
@@ -61,7 +61,7 @@ export const themeSelectChoice: RuleDef = {
           .map(([name]) => name)
       : [];
     const out: Finding[] = [];
-    for (const site of uiElementSites(file, ast, project, "ThemeSelect")) {
+    for (const site of uiSitesOf(file, ast, project, "ThemeSelect", themeSelects)) {
       if (choice.length === 0) {
         out.push(findingAt(file, site.at, { kind: "none" }));
         continue;

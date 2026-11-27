@@ -274,8 +274,18 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const dates = typed?.dates.get(libs.real(file.path)) ?? (typed === undefined ? undefined : new Set<number>());
     const input = { file, ast: parsed.program, artifacts, project };
     // One by one: a file may give more findings than a spread call takes arguments.
-    const selects = typed?.schemeSelects.get(libs.real(file.path));
-    const typedInput = dates === undefined ? input : { ...input, dates, schemeSelects: selects ?? new Set<number>() };
+    const at = (m: ReadonlyMap<string, ReadonlySet<number>> | undefined): ReadonlySet<number> =>
+      m?.get(libs.real(file.path)) ?? new Set<number>();
+    const typedInput =
+      dates === undefined
+        ? input
+        : {
+            ...input,
+            dates,
+            schemeSelects: at(typed?.schemeSelects),
+            themeSelects: at(typed?.themeSelects),
+            boxes: at(typed?.boxes),
+          };
     for (const d of runRules(registered, typedInput)) out.push(d);
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
