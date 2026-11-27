@@ -10,7 +10,7 @@ import { flows, workflow } from "@keel/std-workflows";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { close, nextId, pass, sim } from "./fixtures.ts";
+import { close, nextId, pass, sim, inRoot } from "./fixtures.ts";
 
 const none = s.object({});
 const Data = s.object({ n: s.int({ min: 0, max: 10 }) });
@@ -18,42 +18,46 @@ const Data = s.object({ n: s.int({ min: 0, max: 10 }) });
 /** `loop` is a step state; `again` leads back to `loop` while `n < limit`, then to `done`; `stay` has no `to`. */
 const loopFlow = (limit: number, keys: string[]) => {
   const id = nextId("selfEntry");
-  const c = chart(nextId("selfEntryChart"), {
-    data: Data,
-    start: { n: 0 },
-    events: { begin: none, again: none, stay: none, stuck: s.object({ code: s.string() }) },
-    guards: { more: (d) => d.n < limit },
-    actions: { bump: (d) => ({ n: d.n + 1 }) },
-    initial: "queued",
-    states: {
-      queued: { on: { begin: "loop" } },
-      loop: {
-        on: {
-          again: [{ to: "loop", guard: "more", do: "bump" }, { to: "done" }],
-          stay: { do: "bump" },
-          stuck: "failed",
+  const c = inRoot(() =>
+    chart(nextId("selfEntryChart"), {
+      data: Data,
+      start: { n: 0 },
+      events: { begin: none, again: none, stay: none, stuck: s.object({ code: s.string() }) },
+      guards: { more: (d) => d.n < limit },
+      actions: { bump: (d) => ({ n: d.n + 1 }) },
+      initial: "queued",
+      states: {
+        queued: { on: { begin: "loop" } },
+        loop: {
+          on: {
+            again: [{ to: "loop", guard: "more", do: "bump" }, { to: "done" }],
+            stay: { do: "bump" },
+            stuck: "failed",
+          },
+        },
+        done: { final: true },
+        failed: { final: true },
+      },
+    }),
+  );
+  const wf = inRoot(() =>
+    workflow(id, {
+      chart: c,
+      steps: {
+        loop: {
+          run: async (_data, _ctx, env) => {
+            keys.push(env.key);
+            return ok({});
+          },
+          done: "again",
+          failed: "stuck",
+          attempts: 3,
+          timeoutMs: 60_000,
         },
       },
-      done: { final: true },
-      failed: { final: true },
-    },
-  });
-  const wf = workflow(id, {
-    chart: c,
-    steps: {
-      loop: {
-        run: async (_data, _ctx, env) => {
-          keys.push(env.key);
-          return ok({});
-        },
-        done: "again",
-        failed: "stuck",
-        attempts: 3,
-        timeoutMs: 60_000,
-      },
-    },
-    waits: {},
-  });
+      waits: {},
+    }),
+  );
   const jobs = queue({ ...wf.jobs });
   return { id, wf, jobs };
 };

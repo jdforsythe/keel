@@ -5,15 +5,19 @@ import { scope } from "@keel/reactive";
 // Assumption: a network failure is a rejected fetch; the retry is armed 1 s after the first failure; 70 s passes every retry delay (max 60 s).
 import { drain, outbox, send } from "@keel/std-offline";
 import fc from "fast-check";
-import { expect, test } from "vitest";
+import { afterAll, expect, test } from "vitest";
 import { Api, OWNER, createServer, edit, settle, simCtx, tick } from "./fixtures.ts";
+
+/** A root this file's test makes (k.reactive Module roots: `scope(fn, { detached: true })`), disposed when the file's tests end. */
+const root = scope(() => undefined, { detached: true });
+afterAll(() => root.dispose());
 
 let n = 0;
 const armed = async (title: string) => {
   const ctx = simCtx();
   const server = createServer();
   server.attach(ctx);
-  const o = outbox(`drainscope${++n}.outbox`, Api, {});
+  const o = root.run(() => outbox(`drainscope${++n}.outbox`, Api, {}));
   server.next({ kind: "reject" });
   const sc = scope(
     () => {
