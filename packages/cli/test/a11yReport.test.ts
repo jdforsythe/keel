@@ -85,9 +85,11 @@ describe("a11yReport", () => {
     expect(r.contrast[2]?.ratio).toBeCloseTo(5.32, 2);
   });
 
-  test("a default export is read when there is no named tokens export; the named one wins", async () => {
+  // k.a11y-static Tokens: the project's tokens are the `tokens` export, as `keel check` evaluates them; a file with a
+  // default export alone exports no tokens (E1807), so the table is empty.
+  test("the named tokens export is read, never a default export", async () => {
     const byDefault = project({ "tokens.ts": 'export default { color: { a: "#000000", b: "#ffffff" } };\n' });
-    expect((await a11yReport(byDefault, [], map, true)).contrast).toHaveLength(2);
+    expect((await a11yReport(byDefault, [], map, true)).contrast).toEqual([]);
     const both = project({
       "tokens.ts":
         'export const tokens = { color: { a: "#000000", b: "#ffffff" } };\nexport default { color: { a: "#000000", b: "#ffffff", c: "#777777" } };\n',

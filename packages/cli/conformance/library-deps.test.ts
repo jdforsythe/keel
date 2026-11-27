@@ -6,6 +6,7 @@
 // Rules: E1159 "A package `deps` entry that resolves to no package with `\"keel\": \"library\"` is E1159 (k.module)."
 // In an app: "A `deps` entry that begins with `@` names a package; any other entry is a module id of the project."
 // Seed 1337
+// The `./routes` entry is `{ keel, default }` (k.entries: an entry lists `keel` first), and an entry with a `keel` condition is read at that source (k.library Kind; k.entries): the routes table is in `src/routes.ts`, and the built `routes.js` holds none.
 // ASSUMPTIONS (spec silent): in clause 10 `deps` is the app's `modules/shop/module.ts` list, gaining the entry beside `'@acme/charts'`; "at the entry" is a position on the entry's line
 // from its opening quote to its closing one. Clause 12 builds the project without `modules/shop/Page.tsx` (the compile of a library's files is a later slice's clause, k.library 1 to 7);
 // `routes.json` is `dist/api/routes.json` of the deployable `api`. No std package is imported: the libraries are written by the test.
@@ -15,7 +16,6 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import {
   NAME,
-  ROUTES_JS,
   type Rec,
   SEED,
   SLOW,
@@ -147,6 +147,16 @@ test(
   SLOW,
 );
 
+/** The routes of `ROUTES_JS` as library source: `src/routes.ts` holds the manifest and takes its contract from `shared.ts` beside `package.json`, which no check reads as a library file (`contract()` is E1513 in `src/`, k.contract). */
+const ROUTES_SRC: Tree = {
+  "shared.ts":
+    'import { contract } from "@keel/router/contract";\nexport const charts = contract("charts", { "charts.about": { path: "/about" } });\n',
+  "src/routes.ts":
+    'import { manifest } from "@keel/router";\nimport About from "./About.tsx";\nimport { charts } from "../shared.ts";\nexport const routes = manifest(charts, { "charts.about": { component: () => About({ id: "charts.about" }) } });\n',
+  "src/About.tsx":
+    "import { Text } from '@keel/ui'\nexport default function About(props: { id: string }) {\n  return <Text id={`${props.id}.text`}>about</Text>\n}\n",
+};
+
 /** The text of `dist/api/routes.json` after `keel build` over a project whose deployable `api` serves `modules`, the library exporting `./routes`. */
 function routesJson(modules: string[]): string {
   const dir = materialize(
@@ -156,7 +166,7 @@ function routesJson(modules: string[]): string {
       libraries: [
         library({
           exports: { "./routes": { keel: "./src/routes.ts", default: "./routes.js" } },
-          files: { "src/routes.ts": "export {}\n", "routes.js": ROUTES_JS },
+          files: { ...ROUTES_SRC, "routes.js": "export {}\n" },
         }),
       ],
     }),
