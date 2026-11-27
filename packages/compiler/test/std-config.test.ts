@@ -1,7 +1,6 @@
 // k.module Std config (rfc:0066): stdArtifact, readStd, bindStd, stdConfig, importDeps, and the Vite plugin's std.json.
 // Seed 1337 (fast-check, recorded in each fc.assert).
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { stdArtifact } from "@keel/compiler";
 import { bindStd } from "@keel/compiler/std/bindStd";
@@ -12,6 +11,7 @@ import { stdImporting } from "@keel/compiler/std/stdImporting";
 import keel from "@keel/compiler/vite";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { artifactText } from "../src/internal/artifactText.ts";
@@ -185,7 +185,7 @@ describe("importDeps", () => {
     fs.writeFileSync(path.join(dir, file), body);
   };
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-deps-"));
+    root = tempDir("keel-deps-");
     pkg("std-ok", "globalThis.__keelStdOk = (globalThis.__keelStdOk ?? 0) + 1;\nexport {};\n");
     pkg("std-boom", "throw new Error('boom');\n");
   });
@@ -306,7 +306,7 @@ describe("importDeps", () => {
 describe("vite plugin std.json", () => {
   let root = "";
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-vite-std-"));
+    root = tempDir("keel-vite-std-");
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
   const write = (rel: string, text: string): void => {

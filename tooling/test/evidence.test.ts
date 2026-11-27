@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { renderMarkdown } from "../evidence-markdown.mjs";
 import {
@@ -18,7 +18,7 @@ import {
   testsPart,
 } from "../evidence.mjs";
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evidence-"));
+const root = tempDir("keel-evidence-");
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
 const put = (rel: string, text: string) => {

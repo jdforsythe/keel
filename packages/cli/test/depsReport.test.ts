@@ -2,14 +2,15 @@
 // once per name and version, as a CycloneDX 1.5 component with its lockfile integrity and its package.json license.
 // Each project is a small pnpm layout in the OS temp directory (outside the workspace, so `pnpm list` reads it alone);
 // no network request is made. Seed 1337.
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { depsReport } from "../src/internal/depsReport.ts";
 
-const SLOW = 180_000;
+const SLOW = fixedTime(180_000);
 const dirs: string[] = [];
 afterAll(() => {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
@@ -29,7 +30,7 @@ const install = (
   direct: string[],
   links: Record<string, { version: string; license?: string }> = {},
 ): string => {
-  const root = mkdtempSync(join(tmpdir(), "keel-deps-"));
+  const root = tempDir("keel-deps-");
   dirs.push(root);
   const specs = (names: string[]): string =>
     names
@@ -202,7 +203,7 @@ describe("depsReport", () => {
   test(
     "a directory pnpm cannot list gives no components, never a throw",
     () => {
-      const empty = mkdtempSync(join(tmpdir(), "keel-deps-"));
+      const empty = tempDir("keel-deps-");
       dirs.push(empty);
       const r = depsReport(empty, null);
       expect(r).toEqual({ bomFormat: "CycloneDX", specVersion: "1.5", components: [], advisories: null });

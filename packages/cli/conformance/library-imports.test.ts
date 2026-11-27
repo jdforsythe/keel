@@ -7,6 +7,7 @@
 // `package.json` `dependencies`; one only the app holds is installed in the project's `node_modules` and the library lists none. Resolution "from the library's folder" is Node's: the library's `node_modules`, then each
 // folder above it. The spec names no rule for a package the library imports and does not list; it says only that the package is one of its `dependencies` and that the import is no E1163, which is what is asserted for the
 // undeclared case (a hole in the gate if that is meant to be refused: nothing flags it). An import an app file is refused for is `import { readFileSync } from 'node:fs'` (E1759, k.check).
+import { fixedTime } from "@keel/tooling/test-time";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, expect, test } from "vitest";
@@ -36,7 +37,7 @@ const PLAIN = (root: string): Tree => ({
   [`${root}/index.d.ts`]: "export const tag: string\n",
 });
 const BADGE_USING =
-  "import { Box, Text } from '@keel/ui'\nimport { tag } from 'plainpkg'\nexport default function Badge(props: { id: string }) {\n  return (\n    <Box id={`${props.id}.box`} p=\"2\">\n      <Text id={`${props.id}.text`}>{tag}</Text>\n    </Box>\n  )\n}\n";
+  "import { Box, Text } from '@keel/ui'\nimport { tag } from 'plainpkg'\nexport default function Badge(props: { id: string }) {\n  return (\n    <Box id={`${props.id}.box`}>\n      <Text id={`${props.id}.text`}>{tag}</Text>\n    </Box>\n  )\n}\n";
 const libPkg = (dependencies: Record<string, string> | undefined): string =>
   JSON.stringify({
     name: NAME,
@@ -68,56 +69,72 @@ const htmlAndAssets = (dir: string): string =>
       .map((p) => readFileSync(p, "utf8")),
   ].join("\n");
 
-test("A bare import there is read as in an app file and resolves from the library's folder, so its package is one of the library's `dependencies`; it is no E1163: a package the library lists, installed beside it, builds and checks clean", () => {
-  const dir = project(PLAIN(`${LIB}/node_modules/plainpkg`), { plainpkg: "1.0.0" });
-  const checked = keel(dir, ["check"]);
-  expect(checked.records.filter((x) => x.kind === "diag")).toEqual([]);
-  const built = keel(dir, ["build"]);
-  expect(built.status).toBe(0);
-  expect(htmlAndAssets(dir)).toContain(CANARY);
-}, 600_000);
+test(
+  "A bare import there is read as in an app file and resolves from the library's folder, so its package is one of the library's `dependencies`; it is no E1163: a package the library lists, installed beside it, builds and checks clean",
+  () => {
+    const dir = project(PLAIN(`${LIB}/node_modules/plainpkg`), { plainpkg: "1.0.0" });
+    const checked = keel(dir, ["check"]);
+    expect(checked.records.filter((x) => x.kind === "diag")).toEqual([]);
+    const built = keel(dir, ["build"]);
+    expect(built.status).toBe(0);
+    expect(htmlAndAssets(dir)).toContain(CANARY);
+  },
+  fixedTime(600_000),
+);
 
-test("A bare import there is read as in an app file and resolves from the library's folder; it is no E1163: a package only the app installs, which the library does not list, is no E1163 and resolves as Node's resolution from the library's folder finds it", () => {
-  const dir = project(PLAIN("node_modules/plainpkg"), undefined);
-  const checked = keel(dir, ["check"]);
-  expect(diags(checked, "E1163")).toEqual([]);
-  const built = keel(dir, ["build"]);
-  expect(built.status).toBe(0);
-  expect(htmlAndAssets(dir)).toContain(CANARY);
-}, 600_000);
+test(
+  "A bare import there is read as in an app file and resolves from the library's folder; it is no E1163: a package only the app installs, which the library does not list, is no E1163 and resolves as Node's resolution from the library's folder finds it",
+  () => {
+    const dir = project(PLAIN("node_modules/plainpkg"), undefined);
+    const checked = keel(dir, ["check"]);
+    expect(diags(checked, "E1163")).toEqual([]);
+    const built = keel(dir, ["build"]);
+    expect(built.status).toBe(0);
+    expect(htmlAndAssets(dir)).toContain(CANARY);
+  },
+  fixedTime(600_000),
+);
 
-test("A bare import there is read as in an app file: an import an app file is refused for (`node:fs`, E1759) is refused at the library's path with the same code, and in an app module's file alike", () => {
-  const source =
-    "import { readFileSync } from 'node:fs'\nimport { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`}>{String(readFileSync)}</Box>\n}\n";
-  const dir = materialize({
-    ...siteTree([library({ files: { "src/Badge.tsx": source } })]),
-    "modules/shop/Own.tsx": source.replace("Badge", "Own"),
-  });
-  dirs.push(dir);
-  const hits = diags(keel(dir, ["check"]), "E1759");
-  const inLib = hits.filter((x) => x.path === `${LIB}/src/Badge.tsx`);
-  expect(inLib.length).toBeGreaterThanOrEqual(1);
-  for (const h of inLib) expect(h.fix).toBeUndefined();
-  expect(hits.filter((x) => x.path === "modules/shop/Own.tsx").length).toBe(inLib.length);
-}, 600_000);
+test(
+  "A bare import there is read as in an app file: an import an app file is refused for (`node:fs`, E1759) is refused at the library's path with the same code, and in an app module's file alike",
+  () => {
+    const source =
+      "import { readFileSync } from 'node:fs'\nimport { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`}>{String(readFileSync)}</Box>\n}\n";
+    const dir = materialize({
+      ...siteTree([library({ files: { "src/Badge.tsx": source } })]),
+      "modules/shop/Own.tsx": source.replace("Badge", "Own"),
+    });
+    dirs.push(dir);
+    const hits = diags(keel(dir, ["check"]), "E1759");
+    const inLib = hits.filter((x) => x.path === `${LIB}/src/Badge.tsx`);
+    expect(inLib.length).toBeGreaterThanOrEqual(1);
+    for (const h of inLib) expect(h.fix).toBeUndefined();
+    expect(hits.filter((x) => x.path === "modules/shop/Own.tsx").length).toBe(inLib.length);
+  },
+  fixedTime(600_000),
+);
 
-test("a library file the client reaches (a page renders the library, its `exports` entry names the file) importing a server-only file is one E1004 at the library's path; a library file nothing reaches importing `node:fs` is no E1759", () => {
-  const dir = materialize({
-    ...siteTree([
-      library({
-        files: {
-          "src/keys.server.ts": "export const key = 'k'\n",
-          "src/Badge.tsx":
-            "import { Box } from '@keel/ui'\nimport { key } from './keys.server.ts'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`}>{key}</Box>\n}\n",
-          "src/Unreached.ts": "import { readFileSync } from 'node:fs'\nexport const r = readFileSync\n",
-        },
-      }),
-    ]),
-  });
-  dirs.push(dir);
-  const checked = keel(dir, ["check"]);
-  const reached = diags(checked, "E1004");
-  expect(reached.map((x) => x.path)).toEqual([`${LIB}/src/Badge.tsx`]);
-  expect(reached[0]?.fix).toBeUndefined();
-  expect(diags(checked, "E1759").filter((x) => x.path === `${LIB}/src/Unreached.ts`)).toEqual([]);
-}, 600_000);
+test(
+  "a library file the client reaches (a page renders the library, its `exports` entry names the file) importing a server-only file is one E1004 at the library's path; a library file nothing reaches importing `node:fs` is no E1759",
+  () => {
+    const dir = materialize({
+      ...siteTree([
+        library({
+          files: {
+            "src/keys.server.ts": "export const key = 'k'\n",
+            "src/Badge.tsx":
+              "import { Box } from '@keel/ui'\nimport { key } from './keys.server.ts'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`}>{key}</Box>\n}\n",
+            "src/Unreached.ts": "import { readFileSync } from 'node:fs'\nexport const r = readFileSync\n",
+          },
+        }),
+      ]),
+    });
+    dirs.push(dir);
+    const checked = keel(dir, ["check"]);
+    const reached = diags(checked, "E1004");
+    expect(reached.map((x) => x.path)).toEqual([`${LIB}/src/Badge.tsx`]);
+    expect(reached[0]?.fix).toBeUndefined();
+    expect(diags(checked, "E1759").filter((x) => x.path === `${LIB}/src/Unreached.ts`)).toEqual([]);
+  },
+  fixedTime(600_000),
+);

@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // `keel test` runs vitest programmatically on io.cwd with KEEL_TEST=1 and reports OUTPUT.md records.
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
@@ -7,7 +8,7 @@ const lines = (out: string): string[] => out.split("\n").filter((l) => l !== "")
 // What a case that runs vitest bounds: one vitest run of the fixture in process (its server, a worker, three tests),
 // about 1.5 s here alone and up to 3 s beside other work. The bound is 60 s, so a runner ten times slower (scale 0.1)
 // still has 6 s, twice the loaded time.
-const VITEST_RUN = 60_000;
+const VITEST_RUN = fixedTime(60_000);
 
 describe("keel test", () => {
   it(

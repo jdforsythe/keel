@@ -6,6 +6,7 @@ const calls: { files: unknown; options: unknown }[] = [];
 let answer: unknown[] = [];
 
 vi.mock("@keel/check", () => ({
+  libraryEntryDiags: () => [],
   check: (files: unknown, options: unknown) => {
     calls.push({ files, options });
     return { diagnostics: answer };

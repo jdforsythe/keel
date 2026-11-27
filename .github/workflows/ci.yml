@@ -232,6 +232,8 @@ jobs:
       - name: "inspector end to end: served as a node deployable under its own policy, reading golden-1 under keel dev on its server"
         working-directory: apps/inspector
         run: node ../../packages/cli/src/bin.ts test --e2e
+      - name: "values in Chromium: every rule the compiler emits from token values kept, each attack value refused before emission (k.values)"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/values.mjs"
       - name: "resume in place as the smoke judges it: no served element removed and none added under an island root, and each page's served markup, for golden-2's pages and household's setup page, three runs"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
       - name: "examples: check, test and build in each, then its end-to-end files where it has them"

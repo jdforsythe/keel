@@ -3,12 +3,12 @@
 // secret writes one W1556 diag to `log`, because each instance then signs with its own random key.
 import { createHmac } from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { callerSigner } from "../src/internal/callerSigner.ts";
@@ -20,7 +20,7 @@ afterEach(() => {
   for (const d of made.splice(0)) fs.rmSync(d, { recursive: true, force: true });
 });
 const built = (): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-secret-"));
+  const d = tempDir("keel-secret-");
   made.push(d);
   fs.mkdirSync(path.join(d, ".vite"), { recursive: true });
   fs.mkdirSync(path.join(d, "assets"), { recursive: true });

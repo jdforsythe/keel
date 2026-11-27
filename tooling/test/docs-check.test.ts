@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   blocksOf,
@@ -22,6 +23,7 @@ import {
   typeCheck,
   writeCopies,
 } from "../docs-check.mjs";
+import { fixedTime } from "../test-time.ts";
 
 const repo = path.join(import.meta.dirname, "..", "..");
 const codes = (diags: { code: string }[]) => diags.map((d) => d.code);
@@ -32,7 +34,7 @@ afterEach(() => {
   for (const d of scratch.splice(0)) fs.rmSync(d, { recursive: true, force: true });
 });
 const tmp = () => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "docs-check-test-"));
+  const d = tempDir("docs-check-test-");
   scratch.push(d);
   return d;
 };
@@ -225,7 +227,7 @@ describe("D0015 D0016 D0017 D0018: the scaffold templates", () => {
 
 describe("the published skills", () => {
   // Reads every skill, agent template and doc the repository publishes: about 0.6 s here, so 15 s.
-  it("pass every check", { timeout: 15_000 }, () => {
+  it("pass every check", { timeout: fixedTime(15_000) }, () => {
     expect(checkRepo(repo).diags).toEqual([]);
   });
 });

@@ -6,6 +6,7 @@
 // Each section of the shared project holds its own spec file and conformance files, so a file's citation is read apart from the others'.
 // ASSUMED: E1732's `path` is the conformance file and its `line` the 1-based line of the `// Spec:` line; "a note holding `\"`" is read as a `// Spec:` line of another form (E1732);
 // a `// Spec:` line after the file's first statement other than an import is no header line and is not read.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import {
@@ -218,58 +219,66 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     SLOW,
   );
 
-  it("a quote that differs from a bullet only by backticks, quote style, spacing, case and the final period cites it, and one character of substance more or less does not (property)", () => {
-    const word = fc.stringMatching(/^[a-z]{3,8}$/);
-    fc.assert(
-      fc.property(
-        fc.tuple(word, word, word),
-        fc.boolean(),
-        fc.boolean(),
-        fc.boolean(),
-        ([a, b, c], tick, shout, period) => {
-          const bullet = `${a[0]?.toUpperCase()}${a.slice(1)} \`${b}\` is “${c}”.`;
-          const same = `${shout ? a.toUpperCase() : a}   ${tick ? b : `\`${b}\``} is \\"${c}\\"${period ? "." : ""}`;
-          const other = `${a} ${b} is \\"${c}x\\".`;
-          expect(normalForm(same)).toBe(normalForm(bullet));
+  it(
+    "a quote that differs from a bullet only by backticks, quote style, spacing, case and the final period cites it, and one character of substance more or less does not (property)",
+    () => {
+      const word = fc.stringMatching(/^[a-z]{3,8}$/);
+      fc.assert(
+        fc.property(
+          fc.tuple(word, word, word),
+          fc.boolean(),
+          fc.boolean(),
+          fc.boolean(),
+          ([a, b, c], tick, shout, period) => {
+            const bullet = `${a[0]?.toUpperCase()}${a.slice(1)} \`${b}\` is “${c}”.`;
+            const same = `${shout ? a.toUpperCase() : a}   ${tick ? b : `\`${b}\``} is \\"${c}\\"${period ? "." : ""}`;
+            const other = `${a} ${b} is \\"${c}x\\".`;
+            expect(normalForm(same)).toBe(normalForm(bullet));
+            const tree = {
+              [specPath("k.p")]: specText("k.p", [bullet]),
+              [specPath("k.q")]: specText("k.q", [bullet]),
+              [T("p")]: citingFile([`// Spec: k.p, clause "${same}"`]).source,
+              [T("q")]: citingFile([`// Spec: k.q, clause "${other}"`]).source,
+            };
+            inProject("items-cite-prop", tree, (dir) => {
+              const run = keel(dir, ["ledger"]);
+              expect(rung(run, "k.p", bullet)).toBe("example");
+              expect(at(run, "p")).toEqual([]);
+              expect(rung(run, "k.q", bullet)).toBe("none");
+              expect(at(run, "q")).toEqual([expect.objectContaining({ line: 1 })]);
+            });
+          },
+        ),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
+
+  it(
+    'a `"` of a bullet is written `\\"` in a quote: for any quoted words, the escaped quote cites the bullet and the quote with raw `"` is E1732 (property)',
+    () => {
+      const word = fc.stringMatching(/^[a-z]{3,8}$/);
+      fc.assert(
+        fc.property(fc.tuple(word, word), ([a, b]) => {
+          const bullet = `Say "${a}" and "${b}" now.`;
           const tree = {
             [specPath("k.p")]: specText("k.p", [bullet]),
             [specPath("k.q")]: specText("k.q", [bullet]),
-            [T("p")]: citingFile([`// Spec: k.p, clause "${same}"`]).source,
-            [T("q")]: citingFile([`// Spec: k.q, clause "${other}"`]).source,
+            [T("p")]: citingFile([`// Spec: k.p, clause "Say \\"${a}\\" and \\"${b}\\" now."`]).source,
+            [T("q")]: citingFile([`// Spec: k.q, clause "${bullet}"`]).source,
           };
-          inProject("items-cite-prop", tree, (dir) => {
+          inProject("items-cite-esc", tree, (dir) => {
             const run = keel(dir, ["ledger"]);
             expect(rung(run, "k.p", bullet)).toBe("example");
             expect(at(run, "p")).toEqual([]);
             expect(rung(run, "k.q", bullet)).toBe("none");
             expect(at(run, "q")).toEqual([expect.objectContaining({ line: 1 })]);
           });
-        },
-      ),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
-
-  it('a `"` of a bullet is written `\\"` in a quote: for any quoted words, the escaped quote cites the bullet and the quote with raw `"` is E1732 (property)', () => {
-    const word = fc.stringMatching(/^[a-z]{3,8}$/);
-    fc.assert(
-      fc.property(fc.tuple(word, word), ([a, b]) => {
-        const bullet = `Say "${a}" and "${b}" now.`;
-        const tree = {
-          [specPath("k.p")]: specText("k.p", [bullet]),
-          [specPath("k.q")]: specText("k.q", [bullet]),
-          [T("p")]: citingFile([`// Spec: k.p, clause "Say \\"${a}\\" and \\"${b}\\" now."`]).source,
-          [T("q")]: citingFile([`// Spec: k.q, clause "${bullet}"`]).source,
-        };
-        inProject("items-cite-esc", tree, (dir) => {
-          const run = keel(dir, ["ledger"]);
-          expect(rung(run, "k.p", bullet)).toBe("example");
-          expect(at(run, "p")).toEqual([]);
-          expect(rung(run, "k.q", bullet)).toBe("none");
-          expect(at(run, "q")).toEqual([expect.objectContaining({ line: 1 })]);
-        });
-      }),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
+        }),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
 });

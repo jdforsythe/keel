@@ -6,6 +6,7 @@
 // Assumptions (the spec is silent): the token is read from the environment variable `KEEL_SESSIONS_TOKEN` and sent in the
 // request's cookie header; `keys sorted` means the keys of `tx`; "that k.ledger reads" is checked as k.ledger's shape for
 // `.keel/monitored.json` (`{ v: 1, origin, from, to, tx: { [name]: runs } }`, else E1711), not by running `keel ledger`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -253,94 +254,114 @@ const records = (stdout: string): Record<string, unknown>[] =>
     });
 
 describe("std.monitor: keel session monitor", () => {
-  test(`${CLAUSE} (a served tally is written as .keel/monitored.json)`, async () => {
-    await fc.assert(
-      fc.asyncProperty(tallyArb, async (tally) => {
-        const { t, token, dir } = await served(tally);
-        const seen: string[] = [];
-        const r = await run(["session", "monitor", URL_, "--format=json"], {
-          cwd: dir,
-          apply: applyTo(dir),
-          env: { KEEL_SESSIONS_TOKEN: token },
-          fetch: forwarding(t.tallyApp, token, seen),
-        });
-        expect(r.code).toBe(0);
-        expect(seen).toHaveLength(1);
-        expect(seen[0]).toContain(token);
-        const written: unknown = JSON.parse(fs.readFileSync(path.join(dir, MONITORED), "utf8"));
-        // k.ledger's shape for the file
-        expect(Object.keys(Object(written)).sort()).toEqual(["from", "origin", "to", "tx", "v"]);
-        expect(Reflect.get(Object(written), "v")).toBe(1);
-        expect(Reflect.get(Object(written), "origin")).toBe(URL_);
-        expect(tallyFrom(written)).toEqual(tally);
-        const names = Object.keys(Object(Reflect.get(Object(written), "tx")));
-        expect(names).toEqual([...names].sort());
-        for (const n of Object.values(tally.tx)) expect(Number.isInteger(n) && n >= 1).toBe(true);
-      }),
-      { seed: 1337, numRuns: 6 },
-    );
-  }, 30_000);
+  test(
+    `${CLAUSE} (a served tally is written as .keel/monitored.json)`,
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(tallyArb, async (tally) => {
+          const { t, token, dir } = await served(tally);
+          const seen: string[] = [];
+          const r = await run(["session", "monitor", URL_, "--format=json"], {
+            cwd: dir,
+            apply: applyTo(dir),
+            env: { KEEL_SESSIONS_TOKEN: token },
+            fetch: forwarding(t.tallyApp, token, seen),
+          });
+          expect(r.code).toBe(0);
+          expect(seen).toHaveLength(1);
+          expect(seen[0]).toContain(token);
+          const written: unknown = JSON.parse(fs.readFileSync(path.join(dir, MONITORED), "utf8"));
+          // k.ledger's shape for the file
+          expect(Object.keys(Object(written)).sort()).toEqual(["from", "origin", "to", "tx", "v"]);
+          expect(Reflect.get(Object(written), "v")).toBe(1);
+          expect(Reflect.get(Object(written), "origin")).toBe(URL_);
+          expect(tallyFrom(written)).toEqual(tally);
+          const names = Object.keys(Object(Reflect.get(Object(written), "tx")));
+          expect(names).toEqual([...names].sort());
+          for (const n of Object.values(tally.tx)) expect(Number.isInteger(n) && n >= 1).toBe(true);
+        }),
+        { seed: 1337, numRuns: 6 },
+      );
+    },
+    fixedTime(30_000),
+  );
 
-  test(`${CLAUSE} (an unreachable URL reports E2010 and writes nothing)`, async () => {
-    const dir = mkDir();
-    const down = (): Promise<Response> => Promise.reject(new TypeError("fetch failed"));
-    const r = await run(["session", "monitor", URL_, "--format=compact"], {
-      cwd: dir,
-      apply: applyTo(dir),
-      env: { KEEL_SESSIONS_TOKEN: "x" },
-      fetch: down,
-    });
-    expect(r.stdout).toMatch(/E2010/);
-    expect(r.code).toBe(1);
-    expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
-    expect(fs.existsSync(path.join(dir, ".keel"))).toBe(false);
-  }, 30_000);
+  test(
+    `${CLAUSE} (an unreachable URL reports E2010 and writes nothing)`,
+    async () => {
+      const dir = mkDir();
+      const down = (): Promise<Response> => Promise.reject(new TypeError("fetch failed"));
+      const r = await run(["session", "monitor", URL_, "--format=compact"], {
+        cwd: dir,
+        apply: applyTo(dir),
+        env: { KEEL_SESSIONS_TOKEN: "x" },
+        fetch: down,
+      });
+      expect(r.stdout).toMatch(/E2010/);
+      expect(r.code).toBe(1);
+      expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
+      expect(fs.existsSync(path.join(dir, ".keel"))).toBe(false);
+    },
+    fixedTime(30_000),
+  );
 
-  test(`${CLAUSE} (it prints one session.monitor record, and the default file is .keel/monitored.json)`, async () => {
-    await fc.assert(
-      fc.asyncProperty(tallyArb, async (tally) => {
-        const { t, token, dir } = await served(tally);
-        const r = await run(["session", "monitor", URL_, "--format=json"], {
-          cwd: dir,
-          apply: applyTo(dir),
-          env: { KEEL_SESSIONS_TOKEN: token },
-          fetch: forwarding(t.tallyApp, token),
-        });
-        const found = records(r.stdout).filter((x) => x.kind === "session.monitor");
-        expect(found).toHaveLength(1);
-        expect(found[0]).toEqual({
-          kind: "session.monitor",
-          origin: URL_,
-          transactions: Object.keys(tally.tx).length,
-          runs: Object.values(tally.tx).reduce((a, b) => a + b, 0),
-          file: MONITORED,
-        });
-      }),
-      { seed: 1337, numRuns: 6 },
-    );
-  }, 30_000);
+  test(
+    `${CLAUSE} (it prints one session.monitor record, and the default file is .keel/monitored.json)`,
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(tallyArb, async (tally) => {
+          const { t, token, dir } = await served(tally);
+          const r = await run(["session", "monitor", URL_, "--format=json"], {
+            cwd: dir,
+            apply: applyTo(dir),
+            env: { KEEL_SESSIONS_TOKEN: token },
+            fetch: forwarding(t.tallyApp, token),
+          });
+          const found = records(r.stdout).filter((x) => x.kind === "session.monitor");
+          expect(found).toHaveLength(1);
+          expect(found[0]).toEqual({
+            kind: "session.monitor",
+            origin: URL_,
+            transactions: Object.keys(tally.tx).length,
+            runs: Object.values(tally.tx).reduce((a, b) => a + b, 0),
+            file: MONITORED,
+          });
+        }),
+        { seed: 1337, numRuns: 6 },
+      );
+    },
+    fixedTime(30_000),
+  );
 
-  test(`${CLAUSE} (compact line: ok session monitor <n> transactions, <m> runs -> <file>)`, async () => {
-    const { t, token, dir } = await served({ v: 1, from: 10, to: 70, tx: { "a.one": 4, "a.two": 3 } });
-    const r = await run(["session", "monitor", URL_, "--format=compact"], {
-      cwd: dir,
-      apply: applyTo(dir),
-      env: { KEEL_SESSIONS_TOKEN: token },
-      fetch: forwarding(t.tallyApp, token),
-    });
-    expect(r.stdout).toContain(`ok session monitor 2 transactions, 7 runs -> ${MONITORED}`);
-  }, 30_000);
+  test(
+    `${CLAUSE} (compact line: ok session monitor <n> transactions, <m> runs -> <file>)`,
+    async () => {
+      const { t, token, dir } = await served({ v: 1, from: 10, to: 70, tx: { "a.one": 4, "a.two": 3 } });
+      const r = await run(["session", "monitor", URL_, "--format=compact"], {
+        cwd: dir,
+        apply: applyTo(dir),
+        env: { KEEL_SESSIONS_TOKEN: token },
+        fetch: forwarding(t.tallyApp, token),
+      });
+      expect(r.stdout).toContain(`ok session monitor 2 transactions, 7 runs -> ${MONITORED}`);
+    },
+    fixedTime(30_000),
+  );
 
-  test(`${CLAUSE} (--out names the file)`, async () => {
-    const { t, token, dir } = await served({ v: 1, from: 1, to: 2, tx: { "a.one": 1 } });
-    const r = await run(["session", "monitor", URL_, "--out", "out/tally.json", "--format=json"], {
-      cwd: dir,
-      apply: applyTo(dir),
-      env: { KEEL_SESSIONS_TOKEN: token },
-      fetch: forwarding(t.tallyApp, token),
-    });
-    expect(records(r.stdout).find((x) => x.kind === "session.monitor")?.file).toBe("out/tally.json");
-    expect(fs.existsSync(path.join(dir, "out/tally.json"))).toBe(true);
-    expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
-  }, 30_000);
+  test(
+    `${CLAUSE} (--out names the file)`,
+    async () => {
+      const { t, token, dir } = await served({ v: 1, from: 1, to: 2, tx: { "a.one": 1 } });
+      const r = await run(["session", "monitor", URL_, "--out", "out/tally.json", "--format=json"], {
+        cwd: dir,
+        apply: applyTo(dir),
+        env: { KEEL_SESSIONS_TOKEN: token },
+        fetch: forwarding(t.tallyApp, token),
+      });
+      expect(records(r.stdout).find((x) => x.kind === "session.monitor")?.file).toBe("out/tally.json");
+      expect(fs.existsSync(path.join(dir, "out/tally.json"))).toBe(true);
+      expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
+    },
+    fixedTime(30_000),
+  );
 });

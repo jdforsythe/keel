@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -346,33 +347,37 @@ describe("k.resume: two requests in turn never see each other's request stores",
     maxLength: 2,
   });
 
-  it("property: rows returned as loader data, and a store a render creates, belong to their own request", async () => {
-    await fc.assert(
-      fc.asyncProperty(names, async ([a, b]) => {
-        if (a === undefined || b === undefined) throw new Error("fixture: two names");
-        const app = await appOf(routes, MODULES, { mode: "production" });
-        const get = async (path: string): Promise<{ status: number; text: string }> => {
-          const res = await app.fetch(new Request(`http://localhost${path}`, { headers: { accept: "text/html" } }));
-          return { status: res.status, text: await res.text() };
-        };
-        for (const prefix of ["/data/", "/request-store/"]) {
-          const first = await get(`${prefix}${a}`);
-          const second = await get(`${prefix}${b}`);
-          const again = await get(`${prefix}${a}`);
-          expect(first.status).toBe(200);
-          expect(second.status).toBe(200);
-          expect(again.status).toBe(200);
-          expect(first.text).toContain(a);
-          expect(first.text).not.toContain(b);
-          expect(second.text).toContain(b);
-          expect(second.text).not.toContain(a);
-          expect(again.text).toContain(a);
-          expect(again.text).not.toContain(b);
-        }
-      }),
-      { seed: 1337, numRuns: 10 },
-    );
-  }, 120_000);
+  it(
+    "property: rows returned as loader data, and a store a render creates, belong to their own request",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(names, async ([a, b]) => {
+          if (a === undefined || b === undefined) throw new Error("fixture: two names");
+          const app = await appOf(routes, MODULES, { mode: "production" });
+          const get = async (path: string): Promise<{ status: number; text: string }> => {
+            const res = await app.fetch(new Request(`http://localhost${path}`, { headers: { accept: "text/html" } }));
+            return { status: res.status, text: await res.text() };
+          };
+          for (const prefix of ["/data/", "/request-store/"]) {
+            const first = await get(`${prefix}${a}`);
+            const second = await get(`${prefix}${b}`);
+            const again = await get(`${prefix}${a}`);
+            expect(first.status).toBe(200);
+            expect(second.status).toBe(200);
+            expect(again.status).toBe(200);
+            expect(first.text).toContain(a);
+            expect(first.text).not.toContain(b);
+            expect(second.text).toContain(b);
+            expect(second.text).not.toContain(a);
+            expect(again.text).toContain(a);
+            expect(again.text).not.toContain(b);
+          }
+        }),
+        { seed: 1337, numRuns: 10 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
   it("with the loader written as a module store write, both requests fail with E1256 and neither shows the other's rows", async () => {
     const log: Lines = { lines: [] };

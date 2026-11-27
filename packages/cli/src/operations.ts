@@ -1,10 +1,14 @@
 import { s } from "@keel/schema";
 import { EvidenceRecord } from "./evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./internal/A11ySchema.ts";
+import { DocsAreaSchema } from "./internal/DocsAreaSchema.ts";
 import { DocsCiteSchema } from "./internal/DocsCiteSchema.ts";
+import { DocsCodeSchema } from "./internal/DocsCodeSchema.ts";
 import { DocsEntrySchema } from "./internal/DocsEntrySchema.ts";
+import { DocsHitSchema } from "./internal/DocsHitSchema.ts";
 import { DocsSectionSchema } from "./internal/DocsSectionSchema.ts";
 import { DocsSkillSchema } from "./internal/DocsSkillSchema.ts";
+import { DocsTermSchema } from "./internal/DocsTermSchema.ts";
 import { EditSchema } from "./internal/EditSchema.ts";
 import { ExplainSchema } from "./internal/ExplainSchema.ts";
 import { InspectSectionSchema } from "./internal/InspectSectionSchema.ts";
@@ -94,9 +98,19 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "docs",
-    description: "Installed docs: the map, a section or skill, --for <code>, --sync.",
+    description: "Installed docs: the areas, an area, a section or skill; --for a code, block, name or term; --sync.",
     input: s.object({ id: s.string().optional(), for: s.string().optional(), sync: s.boolean().optional(), ...common }),
-    output: outputOf(DocsEntrySchema, DocsSectionSchema, DocsSkillSchema, DocsCiteSchema, EditSchema),
+    output: outputOf(
+      DocsAreaSchema,
+      DocsEntrySchema,
+      DocsSectionSchema,
+      DocsSkillSchema,
+      DocsCiteSchema,
+      DocsCodeSchema,
+      DocsTermSchema,
+      DocsHitSchema,
+      EditSchema,
+    ),
     positional: ["id"],
     scope: "docs",
   },

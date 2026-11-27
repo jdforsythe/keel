@@ -1,10 +1,10 @@
 // securityReport (k.evidence security.json, k.security): per node deployable the headers sent on https and the
 // document policy with `<nonce>`; per client or static one the csp.txt text. Seed 1337.
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Topology } from "@keel/compiler";
 import { cspPolicy, securityHeaders } from "@keel/server/csp";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
 import { securityReport } from "../src/internal/securityReport.ts";
@@ -16,7 +16,7 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 const cwd = (): string => {
-  const d = mkdtempSync(join(here, ".tmp-securityReport-"));
+  const d = tempDir(".tmp-securityReport-", here);
   dirs.push(d);
   return d;
 };

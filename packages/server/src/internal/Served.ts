@@ -58,4 +58,6 @@ export type Served = {
   readonly days?: number | undefined;
   readonly origins?: Origins | undefined;
   readonly framed?: Set<string>;
+  /** Whether the app has both color schemes (`schemes.json`, k.schemes): documents then follow `keel-scheme`. */
+  readonly schemes?: boolean;
 };

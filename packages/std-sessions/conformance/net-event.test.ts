@@ -3,6 +3,7 @@
 // Seed 1337
 // Assumptions: `ctx.net.setOnline(b)` is the sim switch (k.sync); `replay`'s `observed` is the array of events it
 // observed during replay (std.sessions: "others are observations"), so a re-recorded `net` event appears in it.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { record } from "@keel/std-sessions";
 import { replay } from "@keel/std-sessions/replay";
@@ -38,30 +39,34 @@ const changes = (switches: readonly boolean[]): boolean[] => {
 };
 
 describe("std.multi: net events", () => {
-  test("A `net` event that `record` captured is applied by `replay` as a `setOnline` call and recorded again", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.array(fc.boolean(), { minLength: 1, maxLength: 5 }), async (switches) => {
-        const ctx = createCtx({ mode: "sim", seed: SEED });
-        const rec = record(ctx);
-        const h = await renderRoute(base.id, { routes, ctx, state: [[clientView, EMPTY_VIEW]] });
-        for (const b of switches) {
-          ctx.net.setOnline(b);
-          await h.fire("board.probe", { type: "click" });
-        }
-        const live = h.state();
-        const session = rec.stop();
-        h.dispose();
-        expect(netOf(session.events)).toEqual(changes(switches));
+  test(
+    "A `net` event that `record` captured is applied by `replay` as a `setOnline` call and recorded again",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.array(fc.boolean(), { minLength: 1, maxLength: 5 }), async (switches) => {
+          const ctx = createCtx({ mode: "sim", seed: SEED });
+          const rec = record(ctx);
+          const h = await renderRoute(base.id, { routes, ctx, state: [[clientView, EMPTY_VIEW]] });
+          for (const b of switches) {
+            ctx.net.setOnline(b);
+            await h.fire("board.probe", { type: "click" });
+          }
+          const live = h.state();
+          const session = rec.stop();
+          h.dispose();
+          expect(netOf(session.events)).toEqual(changes(switches));
 
-        const r = await replay(session, { routes });
-        // the probe reads `ctx.net.online()`: the replayed state matches only if each `net` event was applied
-        expect(r.state).toEqual(live);
-        expect(r.unapplied).toBeNull();
-        expect(netOf(r.observed)).toEqual(netOf(session.events));
-      }),
-      { seed: 1337, numRuns: 10 },
-    );
-  }, 60_000);
+          const r = await replay(session, { routes });
+          // the probe reads `ctx.net.online()`: the replayed state matches only if each `net` event was applied
+          expect(r.state).toEqual(live);
+          expect(r.unapplied).toBeNull();
+          expect(netOf(r.observed)).toEqual(netOf(session.events));
+        }),
+        { seed: 1337, numRuns: 10 },
+      );
+    },
+    fixedTime(60_000),
+  );
 
   test(
     "A `net` event that `record` captured is applied by `replayGroup` as a `setOnline` call and recorded again",

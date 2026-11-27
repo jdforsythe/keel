@@ -8,6 +8,7 @@
 // The brief's list gives "a report where the test failed" and "a report listing the file but not the test" one W1733 each; k.ledger-items Run evidence gives W1733 for a missing report, a stale
 // `sha` and a file held twice only, so a fresh report whose test failed, skipped or sits outside the call is `none` with no W1733 (asserted).
 // ASSUMED: W1733's message names the first test file as its path under the project (`conformance/a.test.ts`), the files sorted by path; "the first one" is read as the first in that order.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import {
@@ -319,29 +320,33 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it("a report edited by hand to say `passed` for a test whose file changed keeps no rung: any edit of the file after the run voids it (property)", () => {
-    fc.assert(
-      fc.property(fc.stringMatching(/^[a-z ]{1,12}$/), fc.constantFrom("append", "weaken", "fail"), (text, how) => {
-        const edited =
-          how === "append"
-            ? `${CITING.source}// ${text}\n`
-            : how === "weaken"
-              ? CITING.source.replace("expect(1 + 1).toBe(2);", `expect(${text.length}).toBeGreaterThan(-1);`)
-              : CITING.source.replace("toBe(2)", "toBe(3)");
-        fc.pre(edited !== CITING.source);
-        // the report says `passed` at the sha of the source as it was run, which the edit has changed
-        const files = { ...pkg("p", "k.x"), [`packages/p/${A}`]: edited };
-        const dir = project("items-run-hand", files);
-        const run = ledgerAsIs(dir);
-        expect(rungOf(run, "k.x")).toBe("none");
-        expect(w1733(run)).toEqual([expect.objectContaining({ path: "packages/p/reports/tests/" })]);
-        // restored to the run's source, the same report stands again
-        writeFiles(dir, { [`packages/p/${A}`]: CITING.source });
-        expect(rungOf(ledgerAsIs(dir), "k.x")).toBe("example");
-      }),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
+  it(
+    "a report edited by hand to say `passed` for a test whose file changed keeps no rung: any edit of the file after the run voids it (property)",
+    () => {
+      fc.assert(
+        fc.property(fc.stringMatching(/^[a-z ]{1,12}$/), fc.constantFrom("append", "weaken", "fail"), (text, how) => {
+          const edited =
+            how === "append"
+              ? `${CITING.source}// ${text}\n`
+              : how === "weaken"
+                ? CITING.source.replace("expect(1 + 1).toBe(2);", `expect(${text.length}).toBeGreaterThan(-1);`)
+                : CITING.source.replace("toBe(2)", "toBe(3)");
+          fc.pre(edited !== CITING.source);
+          // the report says `passed` at the sha of the source as it was run, which the edit has changed
+          const files = { ...pkg("p", "k.x"), [`packages/p/${A}`]: edited };
+          const dir = project("items-run-hand", files);
+          const run = ledgerAsIs(dir);
+          expect(rungOf(run, "k.x")).toBe("none");
+          expect(w1733(run)).toEqual([expect.objectContaining({ path: "packages/p/reports/tests/" })]);
+          // restored to the run's source, the same report stands again
+          writeFiles(dir, { [`packages/p/${A}`]: CITING.source });
+          expect(rungOf(ledgerAsIs(dir), "k.x")).toBe("example");
+        }),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
 
   it(
     "a report that exists but holds no entry for a test file gives that file no evidence and is one W1733 naming the file",

@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { check } from "../src/index.ts";
 import { CACHE_FORMAT } from "../src/internal/CACHE_FORMAT.ts";
@@ -10,7 +10,7 @@ import { typeCache } from "../src/internal/typeCache.ts";
 let root = "";
 let dir = "";
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), "keel-type-cache-"));
+  root = tempDir("keel-type-cache-");
   mkdirSync(join(root, "node_modules"));
   writeFileSync(join(root, "package.json"), "{}");
   dir = join(root, "node_modules", ".cache", "keel");
@@ -37,6 +37,7 @@ const entry: TypeEntry = {
     },
   ],
   dates: new Map([["a.ts", new Set([3, 7])]]),
+  schemeSelects: new Map([["a.tsx", new Set([5])]]),
 };
 
 it("an entry saved by one process is the entry the next one loads: probes, findings in order, dates", () => {

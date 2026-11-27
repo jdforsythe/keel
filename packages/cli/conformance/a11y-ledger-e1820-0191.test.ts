@@ -2,6 +2,7 @@
 // Seed: 1337 (no property in this file: fixed projects, one binary run per step). The render half is packages/testing/conformance/a11y-e1820-render.test.ts.
 // The real `keel` binary over temp projects, as a11y-ledger-claims.test.ts. Assumed: route ids carry the module prefix (`m.r`), `keel build` (node-only topology) writes `.keel/routes.json`, tokens reach `renderRoute` as `artifacts: { tokens }`, the `direction` is computed at run time so `keel check` reports no E1820.
 // Non-vacuity: the same route whose test expects the E1820 refusal (a violation of a rule mapped to the criteria) is rung `none`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { existsSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -79,7 +80,7 @@ beforeAll(() => {
   passing = ledgerAfterTest(project("a11y-e1820-pass", 1, PASSING));
   violatingDir = project("a11y-e1820-bad", 2, VIOLATING);
   violating = ledgerAfterTest(violatingDir);
-}, 240_000);
+}, fixedTime(240_000));
 afterAll(() => {
   for (const d of created) removeProject(d);
 });

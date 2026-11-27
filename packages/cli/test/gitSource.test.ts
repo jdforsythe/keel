@@ -2,9 +2,9 @@
 // it, the bundle directory aside; null outside a git work tree. Each case builds a small repository in the OS
 // temp directory with `git`; nothing reaches a network. Seed 1337.
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { gitSource } from "../src/internal/gitSource.ts";
@@ -23,7 +23,7 @@ const git = (cwd: string, ...args: string[]): string => {
   return r.stdout.trim();
 };
 const dir = (): string => {
-  const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-git-")));
+  const d = realpathSync(tempDir("keel-git-"));
   dirs.push(d);
   return d;
 };

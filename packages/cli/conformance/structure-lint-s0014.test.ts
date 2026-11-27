@@ -3,7 +3,7 @@
 // `tooling/docs-owners.json`, so the clause takes its rung from here); S0012's neighbour sits in `tooling/test/`. The real
 // `tooling/structure-lint.mjs --root <tmp>` runs over a throwaway root holding one file; its S0014 findings are read.
 // Fixture text is built from constants so this file's own source holds no literal `unsafe(` call.
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -55,46 +55,66 @@ const call = (fn: string): string => `${U}("${REASON}", ${fn})`;
 const FILE = `packages/p/${U}/a.ts`;
 
 describe("k.unsafe Rules: S0014", () => {
-  test('In `tooling/structure-lint.mjs` over a root holding `packages/p/unsafe/a.ts` with `unsafe("one two three four five six seven eight", () => 1)`, one S0014', () => {
-    const d = s0014({ [FILE]: `${call("() => 1")}\n` });
-    expect(d).toHaveLength(1);
-    expect(d[0]?.path).toBe(FILE);
-  }, 90_000);
+  test(
+    'In `tooling/structure-lint.mjs` over a root holding `packages/p/unsafe/a.ts` with `unsafe("one two three four five six seven eight", () => 1)`, one S0014',
+    () => {
+      const d = s0014({ [FILE]: `${call("() => 1")}\n` });
+      expect(d).toHaveLength(1);
+      expect(d[0]?.path).toBe(FILE);
+    },
+    fixedTime(90_000),
+  );
 
-  test("with `() => c as T` in place of `() => 1`, none", () => {
-    expect(s0014({ [FILE]: `declare const c: unknown\ntype T = number\n${call("() => c as T")}\n` })).toEqual([]);
-  }, 90_000);
+  test(
+    "with `() => c as T` in place of `() => 1`, none",
+    () => {
+      expect(s0014({ [FILE]: `declare const c: unknown\ntype T = number\n${call("() => c as T")}\n` })).toEqual([]);
+    },
+    fixedTime(90_000),
+  );
 
-  test("property: a lifted range holding a cast, `!`, `any` or a ts-suppression comment is no S0014; one holding none of them is one", () => {
-    const withEscape = fc.constantFrom(
-      "() => c as T",
-      "() => s!",
-      "() => { const v: any = c; return v }",
-      `() => {\n  // ${IGNORE} the line below is a deliberate error\n  const n: number = "x";\n  return n;\n}`,
-    );
-    const without = fc.constantFrom(
-      "() => 1",
-      "() => { return c }",
-      "() => { const v: unknown = c; return v }",
-      "async () => 2",
-    );
-    const head = "declare const c: unknown\ndeclare const s: string | undefined\ntype T = number\n";
-    fc.assert(
-      fc.property(withEscape, without, (esc, plain) => {
-        expect(s0014({ [FILE]: `${head}${call(esc)}\n` })).toEqual([]);
-        expect(s0014({ [FILE]: `${head}${call(plain)}\n` })).toHaveLength(1);
-      }),
-      { seed: SEED, numRuns: 4 },
-    );
-  }, 180_000);
+  test(
+    "property: a lifted range holding a cast, `!`, `any` or a ts-suppression comment is no S0014; one holding none of them is one",
+    () => {
+      const withEscape = fc.constantFrom(
+        "() => c as T",
+        "() => s!",
+        "() => { const v: any = c; return v }",
+        `() => {\n  // ${IGNORE} the line below is a deliberate error\n  const n: number = "x";\n  return n;\n}`,
+      );
+      const without = fc.constantFrom(
+        "() => 1",
+        "() => { return c }",
+        "() => { const v: unknown = c; return v }",
+        "async () => 2",
+      );
+      const head = "declare const c: unknown\ndeclare const s: string | undefined\ntype T = number\n";
+      fc.assert(
+        fc.property(withEscape, without, (esc, plain) => {
+          expect(s0014({ [FILE]: `${head}${call(esc)}\n` })).toEqual([]);
+          expect(s0014({ [FILE]: `${head}${call(plain)}\n` })).toHaveLength(1);
+        }),
+        { seed: SEED, numRuns: 4 },
+      );
+    },
+    fixedTime(180_000),
+  );
 
-  test("one S0014 per call whose range holds no finding, in a file with several calls", () => {
-    const head = "declare const c: unknown\ntype T = number\n";
-    const d = s0014({ [FILE]: `${head}${call("() => 1")}\n${call("() => c as T")}\n${call("() => 2")}\n` });
-    expect(d).toHaveLength(2);
-  }, 90_000);
+  test(
+    "one S0014 per call whose range holds no finding, in a file with several calls",
+    () => {
+      const head = "declare const c: unknown\ntype T = number\n";
+      const d = s0014({ [FILE]: `${head}${call("() => 1")}\n${call("() => c as T")}\n${call("() => 2")}\n` });
+      expect(d).toHaveLength(2);
+    },
+    fixedTime(90_000),
+  );
 
-  test("S0014 reads `packages/*` only: the same call in `apps/a/modules/m/unsafe/a.ts` is no S0014", () => {
-    expect(s0014({ "apps/a/modules/m/unsafe/a.ts": `${call("() => 1")}\n` })).toEqual([]);
-  }, 90_000);
+  test(
+    "S0014 reads `packages/*` only: the same call in `apps/a/modules/m/unsafe/a.ts` is no S0014",
+    () => {
+      expect(s0014({ "apps/a/modules/m/unsafe/a.ts": `${call("() => 1")}\n` })).toEqual([]);
+    },
+    fixedTime(90_000),
+  );
 });

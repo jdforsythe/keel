@@ -280,7 +280,7 @@ describe("small pure helpers", () => {
 });
 
 describe("seeOf", () => {
-  it("maps a kernel code to the section owning its block (spec map Code ranges), else k.server", () => {
+  it("maps a kernel code to the section owning its block (the kernel code blocks), else k.server", () => {
     const cases: readonly (readonly [string, string])[] = [
       ["E1000", "k.compiler"],
       ["E1057", "k.cli"],

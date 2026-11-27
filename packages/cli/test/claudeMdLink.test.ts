@@ -1,8 +1,8 @@
 // `CLAUDE.md` with `keel docs --sync` (k.scaffold Agent files): an existing one is kept and never written, linked or
 // not; a dangling symlink is refused with E1357 and the whole set with it. Real temp directories.
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { agentSync } from "../src/docs/agentSync.ts";
 import { readDocs } from "../src/docs/readDocs.ts";
@@ -12,7 +12,7 @@ import { hostDocs } from "../src/internal/hostDocs.ts";
 
 const made: string[] = [];
 const tmp = (): string => {
-  const d = mkdtempSync(join(tmpdir(), "keel-claudemd-"));
+  const d = tempDir("keel-claudemd-");
   made.push(d);
   return d;
 };

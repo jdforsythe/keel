@@ -292,6 +292,8 @@ describe("client loaders, actions and guard (through the api deployable)", () =>
     const api = await simApi();
     const id = await addAndFind(api, "Soup");
     await api.app.fetch(asJson("POST", `/api/recipes/${id}/favorite`, {}));
+    // The box lists by `added_on` (a day), then id: an add a day later lists after, whatever ids the seed mints.
+    api.server.clock.advance(86_400_000);
     await addAndFind(api, "Stew");
     const req = reqOf(LocaleParams, { locale: "en-US" });
     const all = await loadIndex.run({ ...req, search: {} }, api.ctx);

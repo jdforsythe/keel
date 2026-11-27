@@ -4,7 +4,6 @@
 // policy; a `frame` origin that is the app's own is refused at startup (E1590) and left out of a document's
 // `frame-src` (logged once in dev). Seed 1337.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { type Origins, parseTopology } from "@keel/compiler";
 import { declaredOrigins } from "@keel/compiler/hosting/declaredOrigins";
@@ -12,6 +11,7 @@ import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblem
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { cspPolicy } from "../src/csp/cspPolicy.ts";
@@ -93,7 +93,7 @@ describe("a frame of the app's own origin", () => {
     for (const d of made.splice(0)) fs.rmSync(d, { recursive: true, force: true });
   });
   const built = (): string => {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-own-frame-"));
+    const d = tempDir("keel-own-frame-");
     made.push(d);
     const files: Record<string, string> = {
       ".vite/manifest.json": JSON.stringify({ e: { file: "assets/entry-abc12345.js", isEntry: true } }),

@@ -129,6 +129,7 @@ describe("build", () => {
       [".keel/ids.json", true],
       [".keel/styles.json", true],
       [".keel/std.json", true],
+      [".keel/schemes.json", true],
     ]);
     for (const w of e.writes) expect(Object.keys(JSON.parse(w.content ?? "{}"))).toEqual(["data", "hash"]);
   });

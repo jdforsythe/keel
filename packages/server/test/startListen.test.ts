@@ -2,9 +2,9 @@
 import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import { Server, createServer } from "node:http";
-import os from "node:os";
 import path from "node:path";
 import { routeTable } from "@keel/router";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { start } from "../src/internal/start.ts";
 import type { StartOptions } from "../src/types/StartOptions.ts";
@@ -17,7 +17,7 @@ const options = {
   dir: ".",
 } as const;
 const built = (): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-start-"));
+  const d = tempDir("keel-start-");
   fs.mkdirSync(path.join(d, ".vite"), { recursive: true });
   fs.mkdirSync(path.join(d, "assets"), { recursive: true });
   fs.writeFileSync(

@@ -1,19 +1,10 @@
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 // The Tauri shell build (std.tauri Build) against fake tools: a temp build folder and a fake `npx` on PATH stand in for
 // the Tauri CLI. Covers the default icon, the app's own icon, `Cargo.lock`, the http capability, a failing tool's output
 // and Cargo's `bin` folder on PATH.
 import type { ShellBuild } from "@keel/cli";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, test } from "vitest";
 import { defaultIcon } from "../src/tools/defaultIcon.ts";
 import { tauriBuild } from "../src/tools/tauriBuild.ts";
@@ -32,7 +23,7 @@ function project(
   files: Record<string, string | Buffer> = {},
   over: Partial<ShellBuild> = {},
 ): { root: string; at: ShellBuild } {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-tauri-build-")));
+  const root = realpathSync(tempDir("keel-tauri-build-"));
   made.push(root);
   const all: Record<string, string | Buffer> = {
     "bin/npx": NPX,

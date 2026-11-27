@@ -3,6 +3,7 @@
 // k.module, Std config "`keel check` (every surface) and `keel build` import each `@keel/std-*` package in an app module's `deps` once, and its `./tools` export"
 // Seed 1337 (the case is one project per code; no generated inputs). The real binary runs in a subprocess so the check-rule registry starts empty.
 // Not asserted (spec silent): the exact text for a code no rule or spec names (the binary says `is not a known code`).
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -57,11 +58,15 @@ describe("k.check: keel explain of a code a registered stdlib rule reports", () 
     ["std-messages", "E2406"],
     ["std-brands", "E2101"],
   ] as const) {
-    it(`\`keel explain ${code}\` in a project whose \`deps\` list \`@keel/${pkg}\` prints the rule's explanation, not unknown`, () => {
-      const out = explain(project(pkg), code);
-      expect(out).toContain(code);
-      expect(out).not.toMatch(/not a known code|unknown/i);
-      expect(out.length).toBeGreaterThan(code.length + 40);
-    }, 120_000);
+    it(
+      `\`keel explain ${code}\` in a project whose \`deps\` list \`@keel/${pkg}\` prints the rule's explanation, not unknown`,
+      () => {
+        const out = explain(project(pkg), code);
+        expect(out).toContain(code);
+        expect(out).not.toMatch(/not a known code|unknown/i);
+        expect(out.length).toBeGreaterThan(code.length + 40);
+      },
+      fixedTime(120_000),
+    );
   }
 });

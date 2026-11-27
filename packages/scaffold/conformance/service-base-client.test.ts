@@ -1,5 +1,6 @@
 // Spec: k.scaffold-service, clause "In the default project that input with `reason: 'order list'` also changes `topology.ts`: `web` has `origins: { connect: { 'https://api.example.com': 'order list' } }` and its other properties as before, and `keel check` is clean; with `base: 'https://api.example.com/v2'` the key is still `https://api.example.com`."
 // seed 1337 (property over hosts and base paths).
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { RUNS, SEED, apply, fresh, lowerName, read } from "./fixtures.ts";
@@ -49,12 +50,16 @@ describe("service in the default project with a reason", () => {
       { seed: SEED, numRuns: RUNS },
     );
   });
-  it("keeps keel check clean", () => {
-    const tree = apply("service", { id: "orders", base: ORIGIN, reason: REASON }, fresh()).files;
-    const dir = materialize(tree);
-    dirs.push(dir);
-    expectCheckAndTestClean(dir, testFileCount(tree));
-  }, 120000);
+  it(
+    "keeps keel check clean",
+    () => {
+      const tree = apply("service", { id: "orders", base: ORIGIN, reason: REASON }, fresh()).files;
+      const dir = materialize(tree);
+      dirs.push(dir);
+      expectCheckAndTestClean(dir, testFileCount(tree));
+    },
+    fixedTime(120000),
+  );
   it("with base 'https://api.example.com/v2' the key is still 'https://api.example.com'", () => {
     const out = apply("service", { id: "orders", base: `${ORIGIN}/v2`, reason: REASON }, fresh());
     expectOnlyConnectAdded(read(fresh(), "topology.ts"), read(out.files, "topology.ts"), ORIGIN, REASON);

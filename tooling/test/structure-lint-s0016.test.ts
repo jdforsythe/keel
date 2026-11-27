@@ -2,11 +2,11 @@
 // and the conformance list).
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { hardTimes } from "../hard-times.mjs";
-import { testTime } from "../test-time.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 
 const lint = path.join(import.meta.dirname, "..", "structure-lint.mjs");
 const made: string[] = [];
@@ -16,7 +16,7 @@ afterAll(() => {
 
 /** Runs structure-lint over a throwaway root holding `files`; returns its S0016 diagnostics. */
 function s0016(files: Record<string, string>): { code: string; path: string; line: number; message: string }[] {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-s0016-"));
+  const root = tempDir("keel-s0016-");
   made.push(root);
   for (const [file, source] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
@@ -60,21 +60,39 @@ describe("hardTimes", () => {
     expect(lines(source)).toEqual([]);
   });
 
-  it("leaves the bounds of vitest calls, which scale on their own, and a const one of them reads", () => {
+  it("finds a bare number in a vitest call's bound: after the callback, in options, in a hook, in a const it reads", () => {
     const source = [
       `import { beforeAll, describe, it } from "vitest";`,
       "const SLOW_MS = 60_000;",
+      "const LIMIT = 90_000;",
       `describe("d", { timeout: SLOW_MS }, () => {});`,
       `it("a", { timeout: 30_000 }, () => {});`,
+      `it("b", () => {}, 2 * 15_000);`,
+      `it("c", () => {}, LIMIT);`,
       "beforeAll(() => {}, 20_000);",
-      `it("b", () => { spawnSync("x", [], { timeout: 9_000 }); });`,
+      `it("d", () => {}, 9);`,
     ].join("\n");
-    expect(lines(source)).toEqual([6]);
+    expect(lines(source)).toEqual([2, 3, 5, 6, 8, 9]);
+  });
+
+  it("passes a bound that goes through a helper, however it is named, held or combined", () => {
+    const source = [
+      `import { it } from "vitest";`,
+      `import { SLOW } from "./bounds.ts";`,
+      "const COLD = fixedTime(15_000);",
+      "const RUNS = 100;",
+      `it("a", () => {}, COLD);`,
+      `it("b", () => {}, SLOW);`,
+      `it("c", { timeout: 2 * COLD + testTime(500) }, () => {});`,
+      `it("d", { timeout: RUNS * 50 }, () => {});`,
+      `it("e", () => {}, fixedTime(10_000) + testTime(20_000));`,
+    ].join("\n");
+    expect(lines(source)).toEqual([]);
   });
 });
 
 // Each case runs structure-lint over a throwaway root, a process of its own: about 0.6 s here, so 20 s.
-describe("S0016 in structure-lint's file set", { timeout: 20_000 }, () => {
+describe("S0016 in structure-lint's file set", { timeout: fixedTime(20_000) }, () => {
   const hard = `import { spawnSync } from "node:child_process";\nspawnSync("x", [], { timeout: 60_000 });\n`;
 
   it("is one S0016 in a package test, a tooling smoke and an app's test folder, and none in a package's source", () => {
@@ -92,7 +110,7 @@ describe("S0016 in structure-lint's file set", { timeout: 20_000 }, () => {
   });
 
   it("passes a conformance time listed in hard-times-conformance.json, and refuses one not listed", () => {
-    const list = [{ path: "packages/a/conformance/c.test.ts", line: 2, text: "60_000", needs: "testTime" }];
+    const list = [{ path: "packages/a/conformance/c.test.ts", line: 2, text: "60_000", needs: "fixedTime" }];
     expect(
       s0016({ "packages/a/conformance/c.test.ts": hard, "tooling/hard-times-conformance.json": JSON.stringify(list) }),
     ).toEqual([]);

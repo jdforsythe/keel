@@ -2,11 +2,11 @@
 // it cannot), createApp serves exactly those files for GET/HEAD, nosniff, immutable only when the manifest names them
 // hashed, never through a symlink out of assets/; the dev entry is gone in production.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { loadAssets } from "../src/internal/loadAssets.ts";
@@ -17,7 +17,7 @@ afterEach(() => {
   for (const d of made.splice(0)) fs.rmSync(d, { recursive: true, force: true });
 });
 const dir = (files: Record<string, string>): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-assets-"));
+  const d = tempDir("keel-assets-");
   made.push(d);
   for (const [rel, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true });
@@ -106,7 +106,7 @@ describe("loadAssets", () => {
 
   it("reads the build through a symlinked build directory (a release link)", async () => {
     const real = dir(built());
-    const link = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "keel-link-")), "current");
+    const link = path.join(tempDir("keel-link-"), "current");
     made.push(path.dirname(link));
     fs.symlinkSync(real, link);
     expect((await loadAssets(link)).entry).toBe("/assets/entry-abc.js");

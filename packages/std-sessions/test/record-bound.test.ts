@@ -86,7 +86,7 @@ describe("record bounds", () => {
       expect(last?.kind === "fire" && last.event).toEqual({ type: "input", value: text });
       h.dispose();
     },
-    2000 * 50,
+    fixedTime(2000 * 50),
   );
 
   test(

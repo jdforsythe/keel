@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@example/library-charts": "workspace:*",
+    "@example/library-looks": "workspace:*",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
@@ -23,6 +24,7 @@
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
+    "@keel/check": "workspace:*",
     "@keel/cli": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",

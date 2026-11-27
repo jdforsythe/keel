@@ -1,8 +1,9 @@
 // piiReport (k.evidence pii.json, k.privacy Personal data): each marked leaf of the project's schema exports, each
 // sink with its clause's rung, and the coverage. Seed 1337.
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
 import { piiReport } from "../src/internal/piiReport.ts";
@@ -16,7 +17,7 @@ afterEach(() => {
 });
 type Rung = "none" | "monitored" | "example" | "probabilistic" | "exhaustive" | "proven";
 const project = (files: Record<string, string>): { dir: string; files: SourceFile[] } => {
-  const dir = mkdtempSync(join(here, ".tmp-piiReport-"));
+  const dir = tempDir(".tmp-piiReport-", here);
   dirs.push(dir);
   for (const [path, source] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });

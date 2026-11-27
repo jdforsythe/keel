@@ -1,6 +1,7 @@
 // Spec: k.scaffold, clause "`--sync` restores an edited block and copy, keeps text outside the block, reruns as no-op; creates absent files; keeps a `CLAUDE.md`, linked or not."
 // k.explain, Agent files "`keel docs --sync` writes them all or none, replacing or appending the block."
 // Seed: none. Red: `keel docs` is absent (E1051), so --sync writes nothing and the scaffold writes no agent files.
+import { fixedTime } from "@keel/tooling/test-time";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -44,7 +45,7 @@ beforeAll(() => {
   const second = keel(proj, ["docs", "--sync"]);
   againStatus = second.status;
   again = readTree(proj);
-}, 120000);
+}, fixedTime(120000));
 afterAll(() => cleanup(dir));
 
 describe("k.scaffold keel docs --sync", () => {

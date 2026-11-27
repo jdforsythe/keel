@@ -1,12 +1,12 @@
 // k.library Kind and In an app: `libraryKind`, `libraryFiles`, and the gates that read a library by kind
 // (`importDeps`, `stdPlacedExports`). Seed 1337 (fast-check, recorded in each fc.assert).
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { importDeps } from "@keel/compiler/std/importDeps";
 import { libraryFiles } from "@keel/compiler/std/libraryFiles";
 import { libraryKind } from "@keel/compiler/std/libraryKind";
 import { stdPlacedExports } from "@keel/compiler/std/stdPlacedExports";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -59,7 +59,7 @@ describe("libraryFiles and the gates", () => {
     source: `export default { id: '${m}', deps: ${JSON.stringify(deps)} }\n`,
   });
   beforeEach(() => {
-    root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-lib-")));
+    root = fs.realpathSync(tempDir("keel-lib-"));
     Reflect.set(globalThis, "__keelLib", []);
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -82,7 +82,7 @@ describe("libraryFiles and the gates", () => {
   });
 
   it("follows a linked library to its real path", () => {
-    const outside = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-lib-real-")));
+    const outside = fs.realpathSync(tempDir("keel-lib-real-"));
     try {
       const real = lib(outside, "@acme/charts", "charts", []);
       fs.mkdirSync(path.join(root, "node_modules", "@acme"), { recursive: true });

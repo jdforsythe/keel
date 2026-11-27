@@ -5,6 +5,7 @@ import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { servedByEdit } from "@keel/compiler/hosting/servedByEdit";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
+import { hashOf } from "@keel/compiler/internal";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
 import { aliasedImports } from "./internal/aliasedImports.ts";
@@ -26,6 +27,9 @@ import { isSqlPath } from "./internal/isSqlPath.ts";
 import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
+import { looksDiags } from "./internal/looks/looksDiags.ts";
+import { looksOf } from "./internal/looks/looksOf.ts";
+import { projectLooks } from "./internal/looks/projectLooks.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
@@ -41,6 +45,7 @@ import { ruleInScope } from "./internal/ruleInScope.ts";
 import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
+import { schemesIn } from "./internal/schemesIn.ts";
 import { stdInScope } from "./internal/stdInScope.ts";
 import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
@@ -94,7 +99,13 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
       .map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const topology = topologyOf(dir, project, opts);
     const options = topology === undefined ? {} : { topology };
-    const hashes = artifactHashes(sources, options);
+    const compiled = artifactHashes(sources, options);
+    // `schemes.json` (k.schemes) is derived from the evaluated tokens: with no `tokens.ts`, one scheme.
+    const tokens: unknown = opts.artifacts?.tokens ?? opts.projectArtifacts?.[dir]?.tokens;
+    const hasTokens = project.some((f) => f.path === `${dir}tokens.ts`);
+    const schemes = tokens !== undefined ? schemesIn(tokens) : hasTokens ? undefined : ["light"];
+    const hashes =
+      schemes === undefined ? compiled : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes] }) };
     // Packages a route manifest spreads resolve from the project's own directory, as its imports do.
     const literal = { ...options, root: path.join(opts.root ?? process.cwd(), dir) };
     out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, literal) } : { hashes });
@@ -201,7 +212,35 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
       reported.set(path, (reported.get(path) ?? new Set()).add(d.code));
     }
     const own = opts.projectArtifacts?.[dir];
-    for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...own, ...opts.artifacts });
+    const artifacts = { ...compiled.artifacts, ...own, ...opts.artifacts };
+    for (const f of group) artifactsOf.set(f.path, artifacts);
+    // k.looks: the libraries' shipped tokens read as text, judged against the tokens the project is given.
+    const looks = looksOf(realAll, dir);
+    projectLooks.set(project, {
+      libraryOf: (p) => looks.libraryOf(libs.real(p)),
+      ownSchemes: [
+        ...(looks.own?.shipped?.value.color === undefined ? [] : Object.values(Object(looks.own.shipped.value.color))),
+      ].some((v) => typeof v === "object" && v !== null)
+        ? ["light", "dark"]
+        : undefined,
+      lookLibrary: (look) => {
+        // A library's look by the `look` group's keys alone (k.a11y-static Library contrast).
+        const lib = looks.listed.find((l) => !l.own && l.shipped?.names.get("look")?.includes(look) === true);
+        return lib?.id;
+      },
+      libraryFileOf: (p) => {
+        const lib = looks.libraryOf(libs.real(p));
+        return lib === undefined || lib.own ? undefined : lib.id;
+      },
+      ships: (name) => looks.listed.some((l) => [...(l.shipped?.names.values() ?? [])].some((n) => n.includes(name))),
+      shippedLook: (look) => {
+        const lib = looks.listed.find((l) => l.shipped?.names.get("look")?.includes(look) === true);
+        const at = lib?.shipped?.keys.get(`look\u0000${look}`);
+        return lib === undefined || at === undefined ? undefined : { path: libs.view(lib.shippedPath), at };
+      },
+    });
+    const tokens: unknown = Reflect.get(artifacts, "tokens");
+    out.push(...looksDiags(looks, realAll, { given: tokens !== undefined, value: tokens }));
   }
 
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
@@ -230,7 +269,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const dates = typed?.dates.get(libs.real(file.path)) ?? (typed === undefined ? undefined : new Set<number>());
     const input = { file, ast: parsed.program, artifacts, project };
     // One by one: a file may give more findings than a spread call takes arguments.
-    for (const d of runRules(registered, dates === undefined ? input : { ...input, dates })) out.push(d);
+    const selects = typed?.schemeSelects.get(libs.real(file.path));
+    const typedInput = dates === undefined ? input : { ...input, dates, schemeSelects: selects ?? new Set<number>() };
+    for (const d of runRules(registered, typedInput)) out.push(d);
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
   // The passes that read a library's files where they lie.

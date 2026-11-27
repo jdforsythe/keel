@@ -1,5 +1,5 @@
 // k.library-pack Own folder: the own-folder reading takes `module.ts`, `src/`, `unsafe/`, `test/` and the root
-// `tokens.ts`; any other code file of the folder (a `conformance/` suite, a tool's script) is not read.
+// `tokens.ts`, with its `package.json` both there and at the root; any other code file of the folder (a `conformance/` suite, a tool's script) is not read.
 import { expect, test } from "vitest";
 import { asInstalled } from "../src/internal/asInstalled.ts";
 
@@ -15,6 +15,7 @@ test("the own folder's module, code, unsafe code and tests are read where an app
   ]);
   expect(v.files.map((f) => f.path)).toEqual([
     "node_modules/@x/lib/package.json",
+    "package.json",
     "node_modules/@x/lib/module.ts",
     "node_modules/@x/lib/src/a.ts",
     "node_modules/@x/lib/unsafe/b.ts",
@@ -34,6 +35,7 @@ test("a conformance suite, a tool's script and a configuration file are not read
   ]);
   expect(v.files.map((f) => f.path)).toEqual([
     "node_modules/@x/lib/package.json",
+    "package.json",
     "tsconfig.json",
     ".keel/ledger.json",
   ]);

@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RESUME_ENTRY } from "../src/entry/RESUME_ENTRY.ts";
 import { resumeEntry } from "../src/entry/resumeEntry.ts";
@@ -27,7 +28,7 @@ const restore = (key: "KEEL_DEPLOYABLE" | "KEEL_INSPECT_ORIGINS", v: string | un
   else process.env[key] = v;
 };
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-mvite-"));
+  root = tempDir(".tmp-mvite-", import.meta.dirname);
   Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
   Reflect.deleteProperty(process.env, "KEEL_INSPECT_ORIGINS");
 });

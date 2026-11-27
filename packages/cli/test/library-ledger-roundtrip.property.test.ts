@@ -1,9 +1,9 @@
 // Seed 1337. k.library-pack Own folder and k.library Ledger: the `.keel/ledger.json` `keel ledger --write` writes in a
 // library's own folder states the `unsafe` and `hostElements` an app counts over the same files once installed, and
 // lists the library's exports with the module id as `pkg`, so the app's E1162 comparison agrees with what it ships.
-import { cpSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, expect, it } from "vitest";
 import { ledgerCommand } from "../src/internal/ledgerCommand.ts";
@@ -36,7 +36,7 @@ function write(dir: string, files: Record<string, string>): void {
 it("the ledger a library writes in its own folder states the counts an app makes over it installed", () => {
   fc.assert(
     fc.property(fc.integer({ min: 0, max: 3 }), fc.integer({ min: 0, max: 3 }), (unsafeCalls, hosts) => {
-      const lib = realpathSync(mkdtempSync(join(tmpdir(), "keel-own-")));
+      const lib = realpathSync(tempDir("keel-own-"));
       made.push(lib);
       write(lib, {
         "package.json": PKG,
@@ -51,7 +51,7 @@ it("the ledger a library writes in its own folder states the counts an app makes
       expect(Reflect.get(Object(shipped), "exports")).toContainEqual(
         expect.objectContaining({ pkg: "charts", name: "Badge", file: "src/Badge.tsx" }),
       );
-      const app = realpathSync(mkdtempSync(join(tmpdir(), "keel-app-")));
+      const app = realpathSync(tempDir("keel-app-"));
       made.push(app);
       write(app, {
         "modules/shop/module.ts":

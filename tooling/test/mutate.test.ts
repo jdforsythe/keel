@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { packageRelative, readTimes } from "../mutate-cache.ts";
 import { changedScope, stopRequested } from "../mutate-changed.mjs";
@@ -59,7 +59,7 @@ describe("process groups", () => {
 describe("stopRequested", () => {
   it("is false without a stop file, and for a stop older than the sequence", () => {
     expect(stopRequested("/nonexistent/stop.json", 0)).toBe(false);
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-stop-"));
+    const dir = tempDir("keel-stop-");
     try {
       const file = path.join(dir, "stop.json");
       fs.writeFileSync(file, JSON.stringify({ at: 1000 }));
@@ -73,7 +73,7 @@ describe("stopRequested", () => {
 
 describe("linkPackages", () => {
   it("links every package and app under .stryker-tmp, a package keeping a shared name", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-link-"));
+    const dir = tempDir("keel-link-");
     try {
       for (const d of ["packages/p", "packages/same", "apps/g", "apps/same"])
         fs.mkdirSync(path.join(dir, d), { recursive: true });

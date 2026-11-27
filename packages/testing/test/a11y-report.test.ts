@@ -1,8 +1,7 @@
 // @vitest-environment happy-dom
 // k.a11y Claims: the harness records each render check in the test's meta; `@keel/testing/a11y` maps rules to
 // criteria and writes reports/a11y.json. Property seed: 1337.
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -10,6 +9,7 @@ import { s } from "@keel/schema";
 import { render, renderRoute } from "@keel/testing";
 import { WCAG_CRITERIA, a11yRules, criteriaOf, writeA11yReport } from "@keel/testing/a11y";
 import type { A11yRun } from "@keel/testing/a11y";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { Button, Text, defineTokens } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -95,7 +95,7 @@ describe("the harness records each render check in the test's meta", () => {
 
 describe("writeA11yReport", () => {
   it("writes reports/a11y.json ordered by file and test, skipping malformed entries", () => {
-    const root = mkdtempSync(join(tmpdir(), "keel-a11y-"));
+    const root = tempDir("keel-a11y-");
     try {
       const check = { route: "m.r", component: null, rules: ["E1804"], violations: [] };
       const runs = writeA11yReport(root, [

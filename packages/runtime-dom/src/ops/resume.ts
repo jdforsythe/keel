@@ -6,6 +6,7 @@ import { islandProps } from "../internal/islandProps.ts";
 import { readState } from "../internal/readState.ts";
 import { resumeIsland } from "../internal/resumeIsland.ts";
 import { servedForm } from "../internal/servedForm.ts";
+import { showRevealed } from "../internal/showRevealed.ts";
 import type { Island } from "../types/Island.ts";
 import type { ResumeOptions } from "../types/ResumeOptions.ts";
 
@@ -100,6 +101,7 @@ export function resume(
   for (const [id, left] of waiting)
     warnings.push(left === REFUSED ? unrestored(id) : `E1253 #k-state has a snapshot for unknown store "${id}"`);
   eventQueue.replay();
+  showRevealed();
   if (thrown !== null) {
     Reflect.set(globalThis, THROWN_WARNINGS, warnings);
     throw thrown.error;

@@ -1,9 +1,9 @@
 // rfc:0059 (backlog 0150): keel build writes routes.json when every deployable is node.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { repoRoot } from "@keel/tooling/repo-root";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { routesRun } from "../src/internal/routesRun.ts";
 
@@ -20,7 +20,7 @@ const CLIENT_TOP = 'export default topology({ web: { modules: ["m"], adapter: "c
 
 const dirs: string[] = [];
 function makeProject(routesTs: string): string {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-routes-run-")));
+  const dir = fs.realpathSync(tempDir("keel-routes-run-"));
   dirs.push(dir);
   fs.mkdirSync(path.join(dir, "modules", "m"), { recursive: true });
   fs.writeFileSync(path.join(dir, "modules", "m", "routes.ts"), routesTs);

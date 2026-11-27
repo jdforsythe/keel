@@ -308,6 +308,10 @@
           "run": "node ../../packages/cli/src/bin.ts test --e2e"
         },
         {
+          "name": "values in Chromium: every rule the compiler emits from token values kept, each attack value refused before emission (k.values)",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/values.mjs"
+        },
+        {
           "name": "resume in place as the smoke judges it: no served element removed and none added under an island root, and each page's served markup, for golden-2's pages and household's setup page, three runs",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
         },

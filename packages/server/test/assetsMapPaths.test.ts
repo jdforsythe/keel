@@ -1,10 +1,10 @@
 // A `*.map` file under `assets/` is never read, so no spelling of its path reaches it.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/createApp.ts";
 import { topology } from "../src/topology.ts";
@@ -15,7 +15,7 @@ let root = "";
 let app: { fetch(req: Request): Promise<Response> };
 
 beforeAll(async () => {
-  root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-map-paths-")));
+  root = fs.realpathSync(tempDir("keel-map-paths-"));
   const files: Record<string, string> = {
     ".vite/manifest.json": JSON.stringify({ e: { file: "assets/entry-Ab12Cd34.js", isEntry: true } }),
     "assets/entry-Ab12Cd34.js": "resume()\n",

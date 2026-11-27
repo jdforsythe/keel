@@ -4,12 +4,12 @@
 // deployables: the front `x` serves module `a`, the peer `y` serves module `b`. Seed 1337; the peer answers through sim
 // net routes.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
@@ -22,7 +22,7 @@ const view = (): Node => document.createElement("p");
 
 /** `routes.json` in a fresh artifacts directory: `y`'s module `b` serves `/b/reset/:token`. */
 function artifacts(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-req-forwarded-"));
+  const dir = tempDir("keel-req-forwarded-");
   const data = { "b.reset": { module: "b", path: "/b/reset/:token" } };
   fs.writeFileSync(path.join(dir, "routes.json"), JSON.stringify({ data, hash: "" }));
   return dir;

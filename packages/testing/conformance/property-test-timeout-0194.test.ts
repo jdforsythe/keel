@@ -1,13 +1,13 @@
+// @vitest-environment node
+// Spec: k.testing, clause "Under `keelConfig`, a test whose one `properties` call names 100 runs and declares no timeout has 30 s; one that declares a timeout keeps it; a test with no `properties` or `simulate` call keeps the configured timeout."
+// k.testing, Properties "Under `keelConfig` a test that calls `properties` or `simulate` and declares no timeout is given 300 ms per run its calls name, at least the configured test timeout; a call reached through a helper is not counted, and a call inside a loop counts once."
+// Seed: 1337 (fc.sample below picks the run counts). Method: child `vitest run` under `keelConfig` over small fixture files; each fixture test appends its `task.timeout` to a file.
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import { execFile } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-// @vitest-environment node
-// Spec: k.testing, clause "Under `keelConfig`, a test whose one `properties` call names 100 runs and declares no timeout has 30 s; one that declares a timeout keeps it; a test with no `properties` or `simulate` call keeps the configured timeout."
-// k.testing, Properties "Under `keelConfig` a test that calls `properties` or `simulate` and declares no timeout is given 300 ms per run its calls name, at least the configured test timeout; a call reached through a helper is not counted, and a call inside a loop counts once."
-// Seed: 1337 (fc.sample below picks the run counts). Method: child `vitest run` under `keelConfig` over small fixture files; each fixture test appends its `task.timeout` to a file.
-import { testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -114,7 +114,7 @@ describe("k.testing: a property or simulation test's time scales with its runs",
       { name: "p100", body: "await properties(CartView, { runs: 100 })" },
       { name: "none", body: "" },
     ]);
-  }, 240_000);
+  }, fixedTime(240_000));
 
   it("under `keelConfig`, a test whose one `properties` call names 100 runs and declares no timeout has 30 s", () => {
     expect(low.get("p100")).toBe(30_000);

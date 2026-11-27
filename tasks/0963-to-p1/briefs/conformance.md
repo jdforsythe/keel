@@ -1,6 +1,6 @@
 # What a conformance writer is told
 
-Work ONLY in your lane's worktree. Do not push, do not merge, do not touch any other worktree. You write from the spec text only: do not read implementation files under `packages/*/src/**`. Load the `keel-conformance` skill if available and follow it; read `tasks/0963-to-p1/briefs/README.md` in the lane for the lane rules. Run `pnpm install --offline` first if there is no node_modules. Print spec text with `pnpm spec <topic>`; the RFC's "Conformance diff" section names what is owed.
+Work ONLY in your lane's worktree. Do not push, do not merge, do not touch any other worktree. You write from the spec text only: do not read implementation files under `packages/*/src/**`. Load the `keel-conformance` skill if available and follow it; read `tasks/0963-to-p1/briefs/README.md` in the lane for the lane rules. Run `pnpm install --offline` first if there is no node_modules. Print spec text with `pnpm spec <id>`; the RFC's "Conformance diff" section names what is owed.
 
 - Every clause is quoted WHOLE, word for word as the spec prints it, in the header of every file that asserts it (a paraphrased or halved clause stays at ledger rung `none`; a clause asserted across two files is quoted whole in both). Follow the header convention of the neighbouring conformance files in the folder.
 - Follow the neighbouring files' conventions for fixtures, type-error cases and by-code fixture tables (`fixtures-by-code.ts`, `fix-diffs.test.ts` and the like when a new code appears).

@@ -5,7 +5,7 @@ description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KE
 
 # Build and deploy
 
-Exact rules: `keel docs k.deploy`, `k.hosting`, `k.topology`, `k.shell`, `k.user`. A code: `keel docs --for <code>`.
+Rules: `keel docs deploy` lists `k.deploy` `k.hosting` `k.topology` `k.shell` `k.user`; `keel docs --for <code>` finds one.
 
 **Topology.** `topology.ts` default-exports `topology({ <name>: { modules, adapter } })`. Adapters: `node`, `static`, `client`. A module lives in one deployable; move it by editing `topology.ts` or with `keel codemod place <module> --to <deployable> [--adapter node]`, which regenerates the deploy files too.
 
@@ -24,7 +24,7 @@ export default topology({
 
 **Origins.** A deployable may set `origins: { img?, media?, font?, connect?, frame? }`, each an origin-to-reason map (exact https origins, 16 at most per directive; E1590, E1591). The declared origins reach the document policy, `csp.txt`, a hosted client's `index.html` and the shells' policies. A browser calls a `connect` origin with `service({ base })`; it sends `x-keel: 1`, so the API's CORS preflight must allow that header.
 
-**Build.** `keel build` runs `keel check` first and stops on an error. It writes `dist/<name>/` per deployable: `server.mjs` and `server.mjs.map` for a `node` one, `index.html` (generated), hashed `assets/`, `keel-mark.svg` and `csp.txt` for a `client` one, and for a `static` one per route its document (`index.html` for `/`, `<path>/index.html` otherwise), `404.html`, `assets/`, `keel-mark.svg` and `csp.txt`. It always builds for production (`NODE_ENV=production`). E1006 fails it. `dist/<name>/` holds the served modules' `migrations/`. It also writes the read-only `deploy/<name>/Dockerfile`, `deploy/compose.yaml` and the CI workflow; edit `topology.ts` instead (E1005).
+**Build.** `keel build` runs `keel check` first and stops on an error. It writes `dist/<name>/` per deployable: `server.mjs` and `server.mjs.map` for a `node` one, `index.html` (generated), hashed `assets/`, `keel-mark.svg` and `csp.txt` for a `client` one, and for a `static` one per route its document (`index.html` for `/`, `<path>/index.html` otherwise), `404.html`, `assets/`, `keel-mark.svg` and `csp.txt`. It always builds for production (`NODE_ENV=production`). E1006 fails it. `dist/<name>/` holds the served modules' `migrations/`. It writes the read-only `deploy/<name>/Dockerfile`, `deploy/compose.yaml` and the CI workflow; edit `topology.ts` instead (E1005).
 
 **Run `server.mjs`.** `node dist/<name>/server.mjs` reads these variables. A deployable with `storage: 'file'` (the default) also needs `--experimental-webstorage --localstorage-file=<path>` (else a page naming `stores` is a 500; the generated Dockerfile passes them); `'sqlite'`, `'postgres'` need none.
 - `PORT` (default 8080).

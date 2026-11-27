@@ -4,11 +4,11 @@
 // `package.json` `types` changed, a new file shadowing a resolution, and a linked package's target gaining one; and
 // what one process carries between calls: the JSX runtime starting or stopping to resolve (other compiler options for
 // files already parsed) and a `@keel/std-*` package leaving `deps` after a call imported it.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, expect, it, vi } from "vitest";
 import { check } from "../src/index.ts";
@@ -51,7 +51,7 @@ const edit: fc.Arbitrary<Edit> = fc.oneof(
 );
 
 function project(): { root: string; foo: string; bar: string } {
-  const base = realpathSync(mkdtempSync(join(tmpdir(), "keel-type-law-")));
+  const base = realpathSync(tempDir("keel-type-law-"));
   bases.push(base);
   const root = join(base, "p");
   const foo = join(root, "node_modules/foo");

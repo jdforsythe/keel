@@ -1,8 +1,8 @@
 // k.evidence Verify: a bundle's verification fails for every single-byte change of any of its files. Seed 1337.
 import { generateKeyPairSync, sign } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { bundleVerify } from "../src/internal/bundleVerify.ts";
@@ -19,7 +19,7 @@ const REPORTS: Record<string, string> = {
   "security.json": json({ v: 1, deployables: [] }),
 };
 
-const dir = mkdtempSync(join(tmpdir(), "keel-evidence-prop-"));
+const dir = tempDir("keel-evidence-prop-");
 const { privateKey, publicKey } = generateKeyPairSync("ed25519");
 const raw = publicKey.export({ format: "der", type: "spki" }).subarray(12);
 const manifest = json({

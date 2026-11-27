@@ -1,8 +1,8 @@
 // Ledger evidence (k.testing Ledger): what a test body reaches and the evidence it gives (testFacts, testEvidence),
 // the mutation-score reader, and the `ledger` file scope of readProject.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { mutationClaims } from "../src/internal/mutationClaims.ts";
 import { readProject } from "../src/internal/readProject.ts";
@@ -413,7 +413,7 @@ describe("readProject ledger scope", () => {
     for (const d of made.splice(0)) rmSync(d, { recursive: true, force: true });
   });
   it("adds each project's mutation report, run reports and package.json to the query files; query and tree skip reports", () => {
-    const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-ledger-scope-")));
+    const d = realpathSync(tempDir("keel-ledger-scope-"));
     made.push(d);
     for (const [rel, text] of [
       ["packages/a/src/a.ts", "x"],

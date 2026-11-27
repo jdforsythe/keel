@@ -24,6 +24,15 @@ function walk(dir: string): string[] {
     .sort();
 }
 
+/** The root `module.ts` of the package at `dir`, or undefined. */
+function rootManifest(dir: string): string | undefined {
+  try {
+    return fs.readFileSync(path.join(dir, "module.ts"), "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * The library named `name` whose package folder is `at` (k.library Kind), followed to its real path: its kind
  * (`libraryKind` over its `package.json`), its root manifest's source and literal `id`, and the files under its `src/`
@@ -34,7 +43,9 @@ export function libraryAt(at: string, name: string): Library | undefined {
   const kind = libraryKind(readJson(path.join(at, "package.json")), name);
   if (kind === undefined) return undefined;
   const dir = fs.realpathSync(at);
-  const manifest = manifestSource(dir);
+  // A library's manifest is its root `module.ts`, read where it lies, never through `exports` (k.library Kind,
+  // k.entries); a stdlib package's is its `./module` export.
+  const manifest = kind === "library" ? rootManifest(dir) : manifestSource(dir);
   const read = manifest === undefined ? null : appManifest(manifest);
   return { name, dir, kind, id: read?.id, manifest, files: CODE.flatMap((d) => walk(path.join(dir, d))) };
 }

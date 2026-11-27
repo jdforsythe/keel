@@ -3,6 +3,7 @@
 // k.runtime Islands: the generated resume entry imports `components` from `/@keel/islands.ts` and calls `resume(document.body, components, { ctx, stores, mode })`.
 // k.server Topology: `node` serves the resume entry.
 // Seed: 1337 (fc.assert seed below). Real compiled TSX (compile + evaluate), in-process createApp, no listening server.
+import { fixedTime } from "@keel/tooling/test-time";
 import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
@@ -113,20 +114,24 @@ describe("k.runtime: resume entry served by createApp", () => {
     expect(doc).not.toMatch(/<script[^>]*type=["']module["']/);
   });
 
-  it("property: for any set of node deployable modules, every island document's module script answers 200 JavaScript calling resume", async () => {
-    const names = fc.uniqueArray(fc.constantFrom("alpha", "beta", "gamma", "delta", "omega"), {
-      minLength: 1,
-      maxLength: 4,
-    });
-    // seed 1337
-    await fc.assert(
-      fc.asyncProperty(names, async (modules) => {
-        const app = await appFor("production", modules);
-        for (const m of modules) {
-          await expectResumeEntry(app, await moduleSrc(app, `/${m}`));
-        }
-      }),
-      { seed: 1337, numRuns: 5 },
-    );
-  }, 120_000);
+  it(
+    "property: for any set of node deployable modules, every island document's module script answers 200 JavaScript calling resume",
+    async () => {
+      const names = fc.uniqueArray(fc.constantFrom("alpha", "beta", "gamma", "delta", "omega"), {
+        minLength: 1,
+        maxLength: 4,
+      });
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(names, async (modules) => {
+          const app = await appFor("production", modules);
+          for (const m of modules) {
+            await expectResumeEntry(app, await moduleSrc(app, `/${m}`));
+          }
+        }),
+        { seed: 1337, numRuns: 5 },
+      );
+    },
+    fixedTime(120_000),
+  );
 });

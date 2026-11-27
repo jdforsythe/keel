@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "unsafe": 0,
+  "hostElements": 0,
+  "negativeTypes": 0,
+  "rungs": {
+    "example": 4,
+    "probabilistic": 1,
+    "exhaustive": 0,
+    "proven": 0,
+    "monitored": 0
+  },
+  "exports": [
+    {
+      "pkg": "acme",
+      "name": "Badge",
+      "file": "src/Badge.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "acme",
+      "name": "Card",
+      "file": "src/Card.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "acme",
+      "name": "Switch",
+      "file": "src/Switch.tsx",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "acme",
+      "name": "Toggle",
+      "file": "src/Toggle.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "acme",
+      "name": "Toolbar",
+      "file": "src/Toolbar.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "acme",
+      "name": "acmeTokens",
+      "file": "src/acmeTokens.ts",
+      "rung": "none"
+    }
+  ],
+  "clauses": [],
+  "a11y": [],
+  "libraries": {}
+}

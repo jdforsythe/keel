@@ -1,13 +1,12 @@
 // k.topology Declaration, k.deploy Storage, k.shell Declaration: `storage` and `shells` read statically, and the
 // production entry imports the std.db driver a `'sqlite'` or `'postgres'` deployable names.
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { rmSync } from "node:fs";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { parseTopology } from "../src/index.ts";
 import { serverEntryCode } from "../src/internal/serverEntryCode.ts";
 
-const root = mkdtempSync(join(tmpdir(), "keel-entry-storage-"));
+const root = tempDir("keel-entry-storage-");
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 const top = (body: string) => parseTopology(`export default topology({ web: { modules: ['a'], ${body} } })\n`);
 

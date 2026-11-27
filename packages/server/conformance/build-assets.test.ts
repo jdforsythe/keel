@@ -3,6 +3,7 @@
 // k.deploy Rules E1555
 // k.head, Server "a `<link rel=\"stylesheet\">` for each `.css` file under `/assets/` that the build manifest's entry chunk names"
 // Seed: 1337 (no generated inputs; the fixture is built once through the real CLI). In-process createApp, no listening server.
+import { fixedTime } from "@keel/tooling/test-time";
 import type { Ctx } from "@keel/ctx";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -131,7 +132,7 @@ beforeAll(() => {
   if (r.status !== 0) {
     throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   }
-}, 90_000);
+}, fixedTime(90_000));
 
 afterAll(() => {
   for (const dir of tmpRoots) fs.rmSync(dir, { recursive: true, force: true });

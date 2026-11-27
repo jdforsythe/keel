@@ -1,19 +1,10 @@
 // Mutation-killing tests for src/bin.ts: the binary is run as a child process with controlled argv, stdin and cwd.
 import { spawn } from "node:child_process";
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 
 const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
@@ -21,7 +12,7 @@ const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
 type Out = { code: number | null; stdout: string; stderr: string };
 const made: string[] = [];
 const tmp = (): string => {
-  const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-mut-bin-")));
+  const d = realpathSync(tempDir("keel-mut-bin-"));
   made.push(d);
   return d;
 };
@@ -319,7 +310,7 @@ describe("keel binary", () => {
       const r = await keel(d, ["build"]);
       expect(r.code).toBe(0);
       expect(r.stderr).toBe("");
-      expect(r.stdout).toBe("ok build 0 files, 5 artifacts, 0 errors\n");
+      expect(r.stdout).toBe("ok build 0 files, 6 artifacts, 0 errors\n");
       expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
     },
     fixedTime(30_000),
@@ -354,7 +345,7 @@ describe("keel binary", () => {
     "build without vite.config.ts is just the engine build",
     async () => {
       const r = await keel(tmp(), ["build"]);
-      expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 5 artifacts, 0 errors\n", stderr: "" });
+      expect(r).toEqual({ code: 0, stdout: "ok build 0 files, 6 artifacts, 0 errors\n", stderr: "" });
     },
     fixedTime(30_000),
   );
@@ -367,7 +358,7 @@ describe("keel binary", () => {
       const r = await keel(d, ["build"]);
       expect(r.code).toBe(1);
       expect(r.stderr).toBe("bad1\nbad2\nbad3\nbad4\nbad5\nbad6\n");
-      expect(r.stdout).toBe("fail build 0 files, 5 artifacts, 1 errors\n");
+      expect(r.stdout).toBe("fail build 0 files, 6 artifacts, 1 errors\n");
     },
     fixedTime(30_000),
   );
@@ -394,7 +385,7 @@ describe("keel binary", () => {
       expect(r.stderr).toBe(
         'error during build:\nBuild failed with 1 error:\n[plugin keel]\nmodules/accounts/loadMe.server.ts:1:7: ERROR: Could not resolve "does-not-exist-xyz"\n',
       );
-      expect(r.stdout).toBe("fail build 0 files, 5 artifacts, 1 errors\n");
+      expect(r.stdout).toBe("fail build 0 files, 6 artifacts, 1 errors\n");
     },
     fixedTime(30_000),
   );

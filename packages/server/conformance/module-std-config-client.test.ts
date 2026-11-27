@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.module, clause "An island document of `createApp({ std })` carries as `std` in `#k-state` the config of `clientStd` packages for the served deployable's modules, and a resumed route component reading `stdConfig` on a ctx `bindClientStd` bound gets the server's value; other packages and modules, and a `createApp` without `std`, add nothing."
 // Seed 1337
+import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -190,27 +191,31 @@ describe("k.module: std config in an island document", () => {
     expect("std" in stateOf(served)).toBe(false);
   });
 
-  it("random module ids and valid configs round-trip server, document, `bindClientStd` and `stdConfig` on the client to the manifest literals, with no server-only value", async () => {
-    // seed 1337
-    await fc.assert(
-      fc.asyncProperty(moduleIds, fc.array(validConfig, { minLength: 3, maxLength: 3 }), async (ids, cfgs) => {
-        const ms: Mod[] = ids.map((id, i) => ({ id, config: cfgs[i] ?? { limit: 1, tags: [] } }));
-        const { file } = artifact(ms);
-        const seen: unknown[] = [];
-        const component = makeComponent(seen, true);
-        const served = await serve(component, mkCtx(), ids, file);
-        expect(served.html).not.toContain(SERVER);
-        document.body.innerHTML = served.bodyHtml;
-        const clientCtx = mkCtx();
-        bindClientStd(clientCtx, served.stateText);
-        expect(stdConfig(clientCtx, PKG, Config)).toEqual(expectedOf(ms));
-        seen.length = 0;
-        const result = resume(document.body, { "app.page": component }, { ctx: clientCtx });
-        expect(result.warnings.filter((w) => /E1253/.test(w))).toEqual([]);
-        expect(seen[seen.length - 1]).toEqual(expectedOf(ms));
-        document.body.innerHTML = "";
-      }),
-      { seed: 1337, numRuns: 15 },
-    );
-  }, 120_000);
+  it(
+    "random module ids and valid configs round-trip server, document, `bindClientStd` and `stdConfig` on the client to the manifest literals, with no server-only value",
+    async () => {
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(moduleIds, fc.array(validConfig, { minLength: 3, maxLength: 3 }), async (ids, cfgs) => {
+          const ms: Mod[] = ids.map((id, i) => ({ id, config: cfgs[i] ?? { limit: 1, tags: [] } }));
+          const { file } = artifact(ms);
+          const seen: unknown[] = [];
+          const component = makeComponent(seen, true);
+          const served = await serve(component, mkCtx(), ids, file);
+          expect(served.html).not.toContain(SERVER);
+          document.body.innerHTML = served.bodyHtml;
+          const clientCtx = mkCtx();
+          bindClientStd(clientCtx, served.stateText);
+          expect(stdConfig(clientCtx, PKG, Config)).toEqual(expectedOf(ms));
+          seen.length = 0;
+          const result = resume(document.body, { "app.page": component }, { ctx: clientCtx });
+          expect(result.warnings.filter((w) => /E1253/.test(w))).toEqual([]);
+          expect(seen[seen.length - 1]).toEqual(expectedOf(ms));
+          document.body.innerHTML = "";
+        }),
+        { seed: 1337, numRuns: 15 },
+      );
+    },
+    fixedTime(120_000),
+  );
 });
