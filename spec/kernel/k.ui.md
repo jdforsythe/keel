@@ -1,6 +1,6 @@
 # k.ui: Tokens and styling
 status: conformance-covered
-**Tokens.** `tokens.ts` at the project root, validated by `TokenSchema`; `defineTokens` and `TokenSchema` come from `@keel/ui/tokens`, which runs at check and build time, never in a client bundle:
+**Tokens.** `tokens.ts` at the project root, validated by `TokenSchema`; `defineTokens` and `TokenSchema` come from `@keel/ui/tokens`, which runs at check and build time only; `brandTokens` (`@keel/ui/brand`) is plain data a component may read:
 ```ts
 export const tokens = defineTokens({
   color: { fg: { light: '#111', dark: '#eee' }, bg: { light: '#fff', dark: '#111' }, accent: '#0a5' },
@@ -62,3 +62,4 @@ The compiler emits one atomic class per (prop, token, breakpoint, state), dedupl
 - `<Box scroll="x" label="Prices">` renders a `div` with `role="region"`, `tabindex="0"`, `aria-label="Prices"` and class `k-scroll`, in server and client output, and has no axe violations holding a `table`; `labelledBy="t"` writes `aria-labelledby="t"` and no `aria-label`; a `Box` without `scroll` writes none of these.
 - `scroll` with `as`, `scroll="y"`, and `scroll="x"` with neither or both of `label` and `labelledBy` are type errors.
 - In a project with no `tokens.ts`, `<Box p="2" direction="column">` is one E1801 at `"2"` and none at `"column"`; with `brandTokens`, `<Text fg="nope">x</Text>` is one E1801 at `"nope"` and `<Text fg="text">x</Text>` none.
+- `keel build`'s client JavaScript for a `static` and a `client` project whose `tokens.ts` calls `defineTokens` and whose page imports `Box` and `brandTokens` holds none of `TokenSchema`, `defineTokens` and `2104542553`.
