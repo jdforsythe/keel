@@ -1,4 +1,4 @@
-import { defineTokens } from "../tokens/defineTokens.ts";
+import type { Tokens } from "../types/Tokens.ts";
 
 /**
  * The Keel brand as tokens (docs/BRAND.md): parchment surface, charcoal text, ISO Ochre `accent` reserved for
@@ -9,8 +9,10 @@ import { defineTokens } from "../tokens/defineTokens.ts";
  * errors, the no-script summary, and a 2px Charcoal focus ring); `look` names `primary`, `secondary` and `control`.
  * Light only: the brand defines one scheme. Color names are alphanumeric so `border` values can name their
  * custom properties (`var(--k-color-divider)`).
+ * Plain data, so a client component may read a value without carrying `@keel/ui/tokens`: `keel check` and
+ * `keel build` validate it with `TokenSchema` as an app's `tokens.ts`, and the package's tests do too.
  */
-export const brandTokens = defineTokens({
+export const brandTokens = {
   color: {
     surface: "#F9F9F9",
     surfaceLow: "#F3F3F3",
@@ -121,4 +123,4 @@ export const brandTokens = defineTokens({
       states: { hover: { bg: "surfaceLow" } },
     },
   },
-});
+} as const satisfies Tokens;

@@ -68,7 +68,8 @@ test(
     // The grammar (the value forms' words, as token-grammar-client-bundle.test.ts reads them, and TokenSchema's
     // message), the colour maths (the sRGB and WCAG transfer constants, the oklab matrix), the unused props' code.
     const absent = ["safe-area-inset", "cqmin", "revert-layer", "fails TokenSchema", "display-p3", "oklch"];
-    absent.push("0.03928", "0.04045", "0.0031308", "0.4122214694707629", "breakInside", "k-media-", "data-k-theme");
+    // Constants without their leading `0`: a minifier prints `0.04045` as `.04045`.
+    absent.push(".03928", ".04045", ".0031308", ".4122214694707629", "breakInside", "k-media-", "data-k-theme");
     for (const text of absent) expect(code.includes(text), text).toBe(false);
   },
   SLOW,
