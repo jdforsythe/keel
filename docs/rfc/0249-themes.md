@@ -13,15 +13,15 @@ Personas: A5 the designer first; A2 the product engineer; A1 with a static site;
 - D6: switching is RFC 0243's mechanism widened: `data-k-theme` beside `data-k-scheme`, the `keel-theme` cookie beside `keel-scheme`, the same head script, and `ThemeSelect` beside `SchemeSelect`. App code reads and sets both through one capability, `appearance(ctx)`, which both controls call.
 - D7: a subtree may fix its scheme (`Box scheme="dark"`), never its theme. The subtree blocks are emitted only once an element writes `scheme`.
 - D8: print: a `print` theme; a `print` key for responsive style props; `media="screen"` and `media="print"`; `breakBefore`, `breakAfter`, `breakInside`. Keel declares `print-color-adjust:exact` with a `print` theme, so what prints is what was judged. No link-URL prop.
-- D9: k.values' `<color>` widens to six opaque forms with exact luminance; out-of-sRGB colors are judged at the lower of as-given and gamut-mapped. Alpha is an `overlay` token that names its backdrops; `shadow` takes alpha directly.
+- D9: k.values' `<color>` widens to six opaque forms with exact luminance; an out-of-sRGB color is judged as given, gamut-mapped and clipped, the lowest ratio standing, so a pair holds whether a browser maps or clips. Alpha is an `overlay` token that names its backdrops; `shadow` takes alpha directly.
 - D10: a library ships `themes.contrast` and `themes.print` only; E1810 makes the app spread them into its own theme of that `when`. A `choice` theme the library never heard of takes the library's top-level values, and the app re-values `<id>.` names in it.
 - D11: `keel tokens import` reads DTCG files, one file per mode, and owns `tokens.design.ts` whole; `tokens.ts` spreads it and keeps the hand edits. `keel tokens set` is the one writer of a single value in `tokens.ts`; RFC 0253's design mode patches through it.
 - D12: no new spec section: the `keel docs` map is at 1,689 of 1,690 tokens and `spec.map` at 1,644 of 1,660, and a section adds a line to each. The text sits in the sections that own each part.
-- D13 (the director, D218): `defineTokens` and `TokenSchema`, with the value forms, the color syntax and the color maths they need, live in their own entry, `@keel/ui/tokens`, which `tokens.ts` imports; an app's `tokens.ts` runs at check and build time, and component code never validates tokens. `contrastTable` joins `@keel/ui/css`, the check and testing entry. The main `@keel/ui` entry holds what components import and re-exports none of them. Rejected: keep `defineTokens` in the main entry and re-base its budget, because every component import would then carry the grammar's weight in the entry's measure, and the entry would no longer say what a client needs.
+- D13 (the director, D218): `defineTokens` and `TokenSchema`, with the value forms, the color syntax and the color maths they need, live in their own entry, `@keel/ui/tokens`, which `tokens.ts` imports; an app's `tokens.ts` runs at check and build time, and component code never validates tokens. `keel check` enforces it: a value import of `@keel/ui/tokens` or `@keel/ui/css` in code a client entry reaches is E1818 (k.themes Check-time entries). `contrastTable` joins `@keel/ui/css`, the check and testing entry. The main `@keel/ui` entry holds what components import and re-exports none of them. Rejected: keep `defineTokens` in the main entry and re-base its budget, because every component import would then carry the grammar's weight in the entry's measure, and the entry would no longer say what a client needs.
 - D14: what an app does not write costs it no bytes. The break props, `media` and `Box scheme` are guarded by `@keel/ui`'s `USES_BREAKS`, `USES_MEDIA` and `USES_SCHEME`, which a build with the Keel plugin serves as `false` when none of the app's style usages writes them, so the bundler drops their code; run from source (tests, `keel dev`) they are `true`. `mount` keeps its `artifacts` on its root; `SchemeSelect` and `ThemeSelect` record their document per ctx, and a client entry with `choice` themes records them, so an app with neither control and no theme carries no record.
 - D15: the `tokens` tool took `mcp.tools-list` to 2,242 tokens of 2,150, the shared flags (`format`, `quiet`, `limit`, `verbose`) repeated in all 17 schemas. Each tool's `inputSchema` leaves them out and `initialize`'s `instructions` state them once (about 70 tokens); every tool still accepts them, and each command stays one tool. Rejected: fewer tools taking a command name, which hides each command's own schema from an agent reading the list; `$defs` and `$ref`, which do not reach across tools.
 - D16: `brandTokens` is plain data typed `satisfies Tokens`, not a `defineTokens` call, so a client component may read a brand value from `@keel/ui/brand` without carrying `@keel/ui/tokens` (the grammar and color maths). Validation is not lost: every k.check run judges the `tokens.ts` that exports it with `TokenSchema` (E1807, k.a11y-static Tokens), and `packages/ui/test/brand.test.ts` parses it. A second entry with a validated copy beside plain values was rejected: two names for one object, and the validated one would add nothing an app's own check does not.
-- Codes: E1816 (`ThemeSelect`), E1817 (overlay backdrop), E1071 and W1072 (`keel tokens`); E1814 widens to `scheme`. ADR-0284.
+- Codes: E1816 (`ThemeSelect`), E1817 (overlay backdrop), E1818 (a check-time entry in client code), E1071 and W1072 (`keel tokens`); E1814 widens to `scheme`; E1807 names the key and the rule. ADR-0284.
 
 ## Problem
 - `tokens.ts` compiles to custom properties on `:root`, and each style prop to one atomic class that reads one (`p="2"` puts `k-p-2` on the element; the stylesheet holds `.k-p-2{padding:var(--k-space-2)}`; `packages/ui/src/css/compileStyles.ts`, `rootBlocks` and `resolve`). A second set of values for the same properties under another selector is a theme, and switching it changes no class and re-renders nothing. Nothing in Keel uses that.
@@ -37,7 +37,7 @@ An app on the Keel brand with a dark scheme, a high-contrast theme, a second bra
 
 ```ts
 // tokens.ts
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 
 export const tokens = defineTokens({
@@ -253,12 +253,12 @@ export default function Article(props: Infer<typeof Props>) {
 
 On screen the page has its contents box and its padding; on paper the box is gone, the padding is 0, the notes start a page, the heading keeps to its paragraph, and the page's address prints at the end. The `paper` theme above sets the colors and a print font. `print` sits after every breakpoint block, so `print: "0"` wins at any paper width.
 
-What `keel check` judges for print, with a `print` theme: contrast in each printing combination, with `media="screen"` subtrees left out and `media="print"` elements judged only there. Since Keel declares `print-color-adjust:exact`, the backgrounds the tokens give are the ones printed, and the judgement is exact. It cannot judge the page box, margins, what a page break cuts, ink density, a printer's gray rendering, or a `print` value of a responsive `fg` or `bg` (a responsive value is unread, as on screen). Without a `print` theme nothing is judged printing, so an app that never thought about paper gets no new errors.
+What `keel check` judges for print, with a `print` theme: contrast in each printing combination, with `media="screen"` subtrees left out and `media="print"` elements judged only there. Since Keel declares `print-color-adjust:exact`, the backgrounds the tokens give are the ones printed, and the judgement is exact. A `print` value of a responsive `fg` or `bg` (`fg={{ base: "textSecondary", print: "text" }}`) is judged in each printing combination as the `print` theme's values are; its screen values stay unread, as for any responsive value. It cannot judge the page box, margins, what a page break cuts, ink density or a printer's gray rendering. Without a `print` theme nothing is judged printing, so an app that never thought about paper gets no new errors.
 
 Link URLs in print are not a prop: Keel's hrefs are route paths, so printing them prints `/docs/guide`, not an address. A page that wants the address prints it with `media="print"`, as above.
 
 ### Colors
-k.values' `<color>` is hex (3 or 6 digits), `rgb(r g b)`, `hsl(h s% l%)`, `oklab(l a b)`, `oklch(l c h)` and `color(display-p3 r g b)`, space-separated only, each channel in a stated range. Every one has an exact luminance: sRGB forms through WCAG's linearisation, `hsl()` through CSS Color 4's `hslToRgb`, the others through CSS Color 4's matrices to linear sRGB. A wide-gamut color has two numbers that matter: its own luminance, which a P3 screen shows, and the luminance of its sRGB gamut-mapped form, which an sRGB screen shows. Keel judges both and keeps the lower. `color(display-p3 0 0 1)` on black is 2.59:1 as given and 2.44:1 mapped; E1804 reports 2.44.
+k.values' `<color>` is hex (3 or 6 digits), `rgb(r g b)`, `hsl(h s% l%)`, `oklab(l a b)`, `oklch(l c h)` and `color(display-p3 r g b)`, space-separated only, each channel in a stated range. Every one has an exact luminance: sRGB forms through WCAG's linearisation, `hsl()` through CSS Color 4's `hslToRgb`, the others through CSS Color 4's matrices to linear sRGB. A wide-gamut color can show three ways: as given on a P3 screen, gamut-mapped by a browser that maps, and clipped per channel by a browser that clips; the CSS writes it as given, with no fallback. Keel judges all three and keeps the lowest. `color(display-p3 0 0 1)` on black is 2.59:1 as given and 2.44:1 mapped and clipped; E1804 reports 2.44. `color(display-p3 0 0.54 0.24)` on white is 4.59:1 as given, 4.51:1 mapped and 4.36:1 clipped, so it fails 4.5:1.
 
 Refused: named colors (a 148-entry table in `@keel/ui` for a form no design tool exports), comma syntax (a second spelling of each form), `none`, `calc()` and relative colors (`rgb(from ...)`), whose value depends on another.
 
@@ -282,7 +282,7 @@ overlay: { scrim: { value: "rgb(26 25 30 / 0.6)", over: ["surface", "card"] } },
 
 ```ts
 // node_modules/@acme/ui/src/acmeTokens.ts (module id `acme`)
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const acmeTokens = defineTokens({
   color: {
@@ -400,7 +400,7 @@ and writes:
 
 ```ts
 // Written by keel tokens import; edit tokens.ts.
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const designTokens = defineTokens({
   color: {
@@ -425,7 +425,7 @@ export const designTokens = defineTokens({
 The `light` and `dark` modes became pairs; `type.heading` became the look `heading` and three tokens; `semi-bold` became `600` by the format's weight table. The app's `tokens.ts`, which exported `brandTokens`, now spreads both:
 
 ```ts
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { designTokens } from "./tokens.design.ts";
 
@@ -512,6 +512,16 @@ Seven points the first text left open, each now one sentence in the section name
 6. k.values Overlays: "An `over` naming anything but a color token the same tokens hold (an overlay among them) fails `TokenSchema` at `overlay.<name>.over`, so `keel check` reports E1807 at `tokens.ts` line 1, column 1 (k.a11y-static Tokens) and judges no element; a backdrop an element's chain finds that `over` does not hold is E1817, from `keel check` only, at the opening quote of the overlay's literal (k.a11y-static Overlays), and the render check composites over the painted backdrop and reports no E1817." Why: a list that names nothing real is a token error like any other; a backdrop is a fact of the markup, found statically, and at render the painted pixels are judged as they are.
 7. k.a11y-static Combinations: "for tokens `TokenSchema` refuses (9 `choice` themes, a second `contrast` or `print`, k.values Themes) it throws E1807 as `defineTokens` does, so it never lists more than 54." Why: `combinations` is public to libraries and tests (L1, A7) and takes a typed `Tokens`, which a caller can build without `defineTokens`; throwing as `compileStyles` does keeps the bound true for every caller.
 
+### Settled from the breaking review
+Each guarantee is kept and enforced. The changed text, by section and clause:
+- k.themes Check-time entries (new) and #6: E1818, message `<entry> is check and build time only; use token names or @keel/ui/brand`, at the specifier of a value import of `@keel/ui/tokens` or `@keel/ui/css` in an app's or library's code file; free in a server-only file, a test file and a tool config, and in `tokens.ts`, the files it imports and a library's `src/<id>Tokens.ts` while no route `component` or `client` module file reaches them. No fix: no client value stands in for the grammar, so the message names what to use. k.ui Tokens and Rules point to it; k.values Stylesheet names the two entries.
+- k.ui #29: the vacuous name probes and the matrix constant give way to a control: the string literals of 6 or more units, at least 20, that `vite build` (which runs no check) puts in the client JavaScript of the same project with a page rendering `Object.keys(defineTokens({})).length` and not with a page importing `Box` alone; the tested build holds none of them. To fit, three explanatory parentheses of k.ui Base, one of Scroll regions and the `border` example are cut.
+- k.values Contrast and #13: an out-of-sRGB color is judged as given, mapped and clipped, the lowest ratio standing; the CSS writes the color as given with no fallback, so these are every form; an `<alpha>` is composited once mapped and once clipped. The worked case: `color(display-p3 0 0.54 0.24)` on `#FFFFFF`, 4.59, 4.51 and 4.36, fails. #12's 2.44 stands (mapped and clipped agree). The "Refused, and why" sentence is cut to its list.
+- k.themes Token errors (new), #4 and #5; k.a11y-static Tokens and #5; k.values Overlays: E1807 sits at the key that writes the failing path (a spread's `...` for a value from a spread or another file), its message `<path>: <what>` from a closed list, `see` the section holding the rule; `<path>` is shortened from its front so `: <what>` is never cut, in json too; E1810's theme message, E1816 and E1817 shorten their names, longest first, so no fixed word is cut. A `tokens.ts` that throws otherwise, or exports no `tokens`, stays at line 1, column 1.
+- k.themes Fixes (new), #8 and #9; k.schemes Rules and k.a11y-static Overlays point to it: E1816's fixes add a missing label, delete a stray one, or delete a `ThemeSelect` with no theme to pick and its import; E1817's adds the backdrop to the overlay's `over`. An overlay on an overlay has no fix, since `over` names only colors.
+- k.themes Combinations and #7; k.a11y-static Values: a responsive `fg` or `bg`'s `print` key is judged in each printing combination as the `print` theme's values are.
+- k.cli Commands and #21: `keel dev` listens on 127.0.0.1, or on the Vite config's `server.host`; no `--host` flag exists. k.deploy Build and #14: `node server.mjs` listens on every address on `PORT`.
+
 ### k.values on `lane-r-look`'s grammar
 When this lane is rebased on `lane-r-look`, its k.values keeps that lane's opening paragraph and its Characters, Numbers and lengths, What check judges and Stylesheet paragraphs whole, and its conformance #1 to #9. This RFC's k.values then changes exactly these sentences, and its Forms paragraph and its `So url(...)` sentence are dropped:
 - Colors: "`<color>` is `#` and 3 or 6 hex digits;" is replaced by this lane's six-form list, with `<ab>` written as "an `<n>`, or `-` and an `<n>`, from -0.5 to 0.5" (that grammar's `<n>` has no sign) and `<h>` an `<n>`, bare or followed by `deg`. "A `<color>` holds no alpha." is replaced by this lane's `<alpha>` sentence with its last clause ("So no named color, ...") kept. The `<ref>` and `<paint>` sentences stay.
@@ -540,6 +550,17 @@ By the `conformance-writer`, from the spec text.
 - `packages/cli/conformance/tokens-import.test.ts`: k.cli #21 to #24. `packages/cli/conformance/tokens-set.test.ts`: #25.
 - `fixtures-by-code.ts`: E1816, E1817, E1071, W1072, and E1814's `scheme` message.
 - Re-quoted or changed for the seven settled points (Spec diff): `theme-select.test.ts` renders through `@keel/testing` `render` with `artifacts: { tokens }` and a `ctx` (no bare `mount` on a separate ctx), takes the options from the tokens, not the `labels` keys, asserts the fallback text `forest` for a theme `labels` lacks and the no-render `false`, and drops its AMBIGUOUS line; `theme-select-e1816.test.ts` is unchanged; `themes-css.test.ts` and `scheme-subtree-e1814.test.ts` quote k.aria #15's `compileStyles` case, whose usage shape they already assume; `library-themes.test.ts` quotes the new Library contrast sentence, its `slate` case unchanged; `tokens-import.test.ts` puts a dropped field's W1072 at the field's key (`"lineHeight"`), not the token's `"$value"`; `color-forms.test.ts` asserts `overlay.scrim.over` as the path of k.values #7's `over: ['nope']`; `combinations.test.ts` asserts that `combinations` throws E1807 for nine `choice` themes and drops its AMBIGUOUS line.
+- k.themes #4 (E1807 at the key, its message and `see`, for a reserved theme name, a pair in a print theme and comma color syntax): `packages/check/conformance/token-errors-e1807.test.ts`.
+- k.themes #5 (E1807 at a spread's `...`, a throw at line 1, column 1, a long path never cutting `: <what>` in compact or json): `token-errors-e1807.test.ts`.
+- k.themes #6 (E1818 where a client entry reaches the import, none where it is free, `keel build` exits 1): `packages/check/conformance/check-time-entries-e1818.test.ts`, its `keel build` half in `packages/cli/conformance/check-time-entries-build.test.ts`.
+- k.themes #7 (a responsive `fg`'s `print` key judged in print, none without a `print` theme): `packages/check/conformance/print-key-e1804.test.ts`.
+- k.themes #8 (E1816's fixes): `packages/check/conformance/theme-fixes.test.ts`.
+- k.themes #9 (E1817's fix, none at 8 names): `theme-fixes.test.ts`.
+- k.values #13 (the clipped ratio 4.36 stands; one declaration, as given): `packages/check/conformance/color-clipped-e1804.test.ts`, its `contrast` and CSS half in `packages/ui/conformance/color-clipped.test.ts`.
+- k.ui #29 re-worded (the control build): re-quote `packages/cli/conformance/token-grammar-client-bundle.test.ts`.
+- k.a11y-static #5 re-worded (`color: { fg: 5 }` at the `fg` key): re-quote its case; `packages/cli/conformance/overlay-over-e1807-cli.test.ts` moves its E1807 to the `over` key, message `overlay.scrim.over: names no color token "nope"` (k.values Overlays).
+- k.cli #21 (`keel dev`'s address): `packages/cli/conformance/dev-listen-address.test.ts`.
+- k.deploy #14 (`server.mjs`'s address): `packages/cli/conformance/server-listen-address.test.ts`.
 - Owed as eight end-to-end cases for RFC 0244's runner:
   1. The CSS compiled from the `tokens.ts` above parses in Chromium with `cssRules.length` equal to the rules emitted (k.values #5 with themes, overlays and every color form).
   2. With `data-k-theme="slate"` and an emulated dark preference, `getComputedStyle(document.body).backgroundColor` is `#10151C`.
@@ -555,7 +576,8 @@ None. No in-tree app writes `themes`, an overlay, a print key or a non-hex color
 
 ## Token impact
 - Spec: k.schemes 1,827 to 3,098 of 3,100; k.values 815 to 2,424; k.a11y-static 2,108 to 3,099; k.aria 1,775 to 2,437; k.cli 1,493 to 2,947; k.ui 2,965 to 3,002; k.looks 3,080 to 3,091; k.testing 3,102 to 3,097. Each fits by trimming sentences that restate what another sentence or section says. No section limit moves. `spec.map` stays 1,644 of 1,660 (one status shorter) and the `keel docs` map 1,689 of 1,690.
-- `keel explain`: four entries (E1816, E1817, E1071, W1072), each under 300 tokens.
+- After the breaking review (chars / 4, against 3,100): k.themes 3,088; k.values 3,098; k.ui 3,098; k.schemes 3,099; k.a11y-static 3,027; k.deploy 1,937; `keel docs k.cli` 1,500 of its 1,500; the `ui` area 495 of 500; skills keel-client 3,169 of 3,170 and keel-library 1,199 of 1,200. No limit moves.
+- `keel explain`: five entries (E1816, E1817, E1818, E1071, W1072), each under 300 tokens.
 - `@keel/ui`: `ThemeSelect`, `appearance`, the six color parsers and the gamut mapping. The parsers and the mapping live in `@keel/ui/css` (check and testing only), so the client entry gains `ThemeSelect` and `appearance` only. `@keel/ui` is already over its 6 kB budget on this lane; the build re-bases it and says by how much.
 
 ## Build plan
@@ -578,3 +600,6 @@ None. No in-tree app writes `themes`, an overlay, a print key or a non-hex color
 6. **No new section** (D12): theme text sits in k.values, k.schemes, k.a11y-static and k.aria because both maps are full. Recommended: at the next map trim, give themes one section (k.themes) gathered from these four.
 7. **Brand dark palette.** The example `tokens.ts` holds a dark scheme for every brand color. Recommended: a brand task adopts those values into `brandTokens` (with the brand guide's sign-off), so the scaffold starts with both schemes and a `print` theme.
 8. **Evidence per combination** (A6). `keel evidence` reports each route's 1.4.3 result, and the render behind it judges every combination, but the bundle does not list the combinations. Recommended: a k.evidence follow-up adds `combinations: [names]` to each a11y record, so a compliance owner reads which themes a claim covers without reading `tokens.ts`.
+9. **Where E1807's words and E1818 live.** Both sit in k.themes (Token errors, Check-time entries), the one section of the `ui` area with room; k.ui, k.values, k.a11y-static and k.schemes point there. Recommended: keep until the next map trim, then give `tokens.ts` at check time a section of its own.
+10. **E1818 has no fix.** No client value stands in for `defineTokens` or `combinations`, so the message names what to use (token names, `brandTokens`) and the diff is left to the author. Recommended: keep.
+11. **E1816 deletes a `ThemeSelect` with no theme to pick.** The other choice, adding a theme to `tokens.ts`, would invent a design. Recommended: keep.
