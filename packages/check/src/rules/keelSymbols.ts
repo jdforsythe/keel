@@ -1,5 +1,6 @@
 import { globalRefs } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
+import { KEEL_SYMBOL_MESSAGE } from "../internal/KEEL_SYMBOL_MESSAGE.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { inKernel } from "../internal/inKernel.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
@@ -19,7 +20,7 @@ const GLOBAL_OBJECT: ReadonlySet<string> = new Set(["globalThis", "window", "sel
  */
 export const keelSymbols: RuleDef = {
   code: "E1766",
-  message: "keel. symbols are the kernel's: app and library code names none",
+  message: KEEL_SYMBOL_MESSAGE,
   see: "k.realm",
   check: ({ file, ast, types }) => {
     if (types === true || !isAppPath(file.path) || inKernel(file.path)) return [];

@@ -6,6 +6,7 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import type { Annotated } from "./Annotated.ts";
 import { CACHE_FORMAT } from "./CACHE_FORMAT.ts";
 import type { FormatSite } from "./FormatSite.ts";
+import { NESTED_RESULT_MESSAGE } from "./NESTED_RESULT_MESSAGE.ts";
 import type { TypeEntry } from "./TypeEntry.ts";
 import type { Typed } from "./Typed.ts";
 import { annotateProps } from "./annotateProps.ts";
@@ -373,7 +374,7 @@ function pass(
       for (const p of unprovenPredicates(sf, checker)) push("E1762", p.at, p.message, "k.identity");
       for (const u of otherSpellings(sf, checker, program)) push(u.code, u.at.getStart(sf), u.message, "k.unsafe");
       for (const t of nestedResultTypes(sf, checker, ownerOf))
-        push("E1459", t.getStart(sf), "Result in a Result: return the inner Result itself", "k.attempt");
+        push("E1459", t.getStart(sf), NESTED_RESULT_MESSAGE, "k.attempt");
       if (!inKernel(file.path))
         for (const o of handMadeErrors(sf, checker, ownerOf))
           if (!refused.has(o.getStart(sf))) push("E1458", o.getStart(sf), HAND_MADE, "k.expect");

@@ -1,4 +1,11 @@
 import ts from "typescript";
+import { DEFECT_CODE_MESSAGE } from "./DEFECT_CODE_MESSAGE.ts";
+import { DEFECT_DETAIL_MESSAGE } from "./DEFECT_DETAIL_MESSAGE.ts";
+import { DEFECT_TEXT_MESSAGE } from "./DEFECT_TEXT_MESSAGE.ts";
+import { DETACHED_MESSAGE } from "./DETACHED_MESSAGE.ts";
+import { KEEL_SYMBOL_MESSAGE } from "./KEEL_SYMBOL_MESSAGE.ts";
+import { NESTED_RESULT_MESSAGE } from "./NESTED_RESULT_MESSAGE.ts";
+import { SUPERVISE_MESSAGE } from "./SUPERVISE_MESSAGE.ts";
 import { THROW_MESSAGE } from "./THROW_MESSAGE.ts";
 import { bareExpression } from "./bareExpression.ts";
 import { catchMessage } from "./catchMessage.ts";
@@ -105,16 +112,16 @@ const SPELLED: ReadonlyMap<string, string> = new Map([
 ]);
 /** The names of the global object E1766 refuses to list (k.realm The keel. names). */
 const GLOBAL_OBJECT: ReadonlySet<string> = new Set(["globalThis", "window", "self", "global"]);
-const KEEL_SYMBOL = "keel. symbols are the kernel's: app and library code names none";
-const IN_APP = "supervise in app code: a library owns supervised work; here use attempt(fn, expect)";
+const KEEL_SYMBOL = KEEL_SYMBOL_MESSAGE;
+const IN_APP = SUPERVISE_MESSAGE;
 const NOT_MESSAGE = "error message is not a literal: pass values as data";
-const NESTED = "Result in a Result: return the inner Result itself";
+const NESTED = NESTED_RESULT_MESSAGE;
 const CODE = /^E\d{4}$/;
-const NOT_LITERAL = "defect code is not a literal E and four digits";
+const NOT_LITERAL = DEFECT_CODE_MESSAGE;
 const UNREADABLE = "defect code check cannot read";
-const NOT_TEXT = "defect message is not a literal: pass values as data, defect('text', { data })";
-const NOT_DETAIL = "defect detail is not an object literal";
-const DETACHED = "scope({ detached }) is for kernel code; nest the scope, or make a module root";
+const NOT_TEXT = DEFECT_TEXT_MESSAGE;
+const NOT_DETAIL = DEFECT_DETAIL_MESSAGE;
+const DETACHED = DETACHED_MESSAGE;
 
 /** One finding: its code, offset in the parsed text, message and spec section. */
 type Use = { readonly code: string; readonly at: number; readonly message: string; readonly see: string };

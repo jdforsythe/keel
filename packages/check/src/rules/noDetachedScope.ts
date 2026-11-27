@@ -1,6 +1,7 @@
 import { globalRefs } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
 import type { Argument } from "oxc-parser";
+import { DETACHED_MESSAGE } from "../internal/DETACHED_MESSAGE.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { inKernel } from "../internal/inKernel.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
@@ -32,7 +33,7 @@ function mayDetach(opts: Argument): boolean {
  */
 export const noDetachedScope: RuleDef = {
   code: "E1207",
-  message: () => "scope({ detached }) is for kernel code; nest the scope, or make a module root",
+  message: () => DETACHED_MESSAGE,
   see: "k.reactive",
   check: ({ file, ast, types }) => {
     if (types === true || !isAppPath(file.path) || inKernel(file.path)) return [];

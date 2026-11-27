@@ -1,4 +1,7 @@
 import { type Node, Visitor } from "oxc-parser";
+import { DEFECT_CODE_MESSAGE } from "../internal/DEFECT_CODE_MESSAGE.ts";
+import { DEFECT_DETAIL_MESSAGE } from "../internal/DEFECT_DETAIL_MESSAGE.ts";
+import { DEFECT_TEXT_MESSAGE } from "../internal/DEFECT_TEXT_MESSAGE.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { num } from "../internal/num.ts";
@@ -46,11 +49,11 @@ export const defectCode: RuleDef = {
   code: "E1455",
   message: (f) => {
     const kind = str(f.data, "kind");
-    if (kind === "message") return "defect message is not a literal: pass values as data, defect('text', { data })";
-    if (kind === "detail") return "defect detail is not an object literal";
+    if (kind === "message") return DEFECT_TEXT_MESSAGE;
+    if (kind === "detail") return DEFECT_DETAIL_MESSAGE;
     if (kind === "unread") return "defect code check cannot read";
     if (kind === "failed") return `defect on a failed Result: pass { cause: ${str(f.data, "name")}.error }`;
-    return "defect code is not a literal E and four digits";
+    return DEFECT_CODE_MESSAGE;
   },
   see: "k.errors",
   check: ({ file, ast, types }) => {

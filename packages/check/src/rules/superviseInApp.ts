@@ -1,4 +1,5 @@
 import { Visitor } from "oxc-parser";
+import { SUPERVISE_MESSAGE } from "../internal/SUPERVISE_MESSAGE.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { packageCallee } from "../internal/packageCallee.ts";
@@ -18,10 +19,7 @@ const PACKAGE = /(?:^|\/)packages\/[^/]+\//;
  */
 export const superviseInApp: RuleDef = {
   code: "E1461",
-  message: (f) =>
-    str(f.data, "kind") === "id"
-      ? "supervise id is not a literal"
-      : "supervise in app code: a library owns supervised work; here use attempt(fn, expect)",
+  message: (f) => (str(f.data, "kind") === "id" ? "supervise id is not a literal" : SUPERVISE_MESSAGE),
   see: "k.supervise",
   check: ({ file, ast, types, project }) => {
     if (types === true || !isAppPath(file.path)) return [];
