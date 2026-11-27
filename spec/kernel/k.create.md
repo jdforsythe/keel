@@ -68,6 +68,7 @@ It also takes `--format`, `--quiet` and `--limit` (k.cli). It reads no standard 
 - `createPlan` given Node 22.14.0 returns E1362 and no file.
 - With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: "npm@10.9.0"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`.
 - With `yarn/4.5.0`, `.yarnrc.yml` holds `nodeLinker: node-modules`; with no user agent, `package.json` has no `packageManager` and the commands are pnpm's.
+- With `yarn/4.5.0`, an app's and a library's `.gitignore` end with the lines `.pnp.*`, `.yarn/*`, `!.yarn/patches`, `!.yarn/plugins`, `!.yarn/releases`, `!.yarn/sdks`, `!.yarn/versions`; with `pnpm/11.17.0`, it holds no line starting `.yarn` or `.pnp`.
 - Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and prints `next pnpm install`; `create-app b` run in `apps/` there reports no W1364; `create-app tools/b` reports W1364 and writes the project.
 - With `node_modules/@keel/cli` at another version above the target, `create-app` reports E1363 naming both versions and writes nothing.
 - `--adapter node --library @a/b`, a second folder argument and `--nope` are each E1052, exit 2, nothing written.
