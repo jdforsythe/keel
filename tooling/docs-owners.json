@@ -90,6 +90,7 @@
     "k.prove",
     "k.e2e",
     "k.e2e-page",
+    "k.e2e-run",
     "k.requests",
     "k.test-run",
     "k.testing"

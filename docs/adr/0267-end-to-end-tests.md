@@ -17,6 +17,19 @@
 - `apps/inspector` reads the inspect document on its server, for loopback targets only. A cross-origin call from the browser to an origin computed at run time is what Keel's policy refuses, and the old smoke passed only because its file server sent no policy.
 - E1734 a missing browser, E1735 a wait that ran out, E1736 a misplaced call, E1737 a deployable that did not start, E1738 an unread browser problem.
 
+- Third part, after a breaking review:
+  - Every server Keel starts while developing or testing listens on loopback. `keel dev` refuses a wider Vite `server.host` with E1560. A production `node` deployable listens on every interface unless `HOST` names one.
+  - The run launches its browser with the sandbox on, except as root on Linux (W1734), and with a fresh profile. Its certificate is made per run.
+  - A page reaches only the served, peer and mapped origins. Anything else is refused and recorded as an `offsite` problem.
+  - Served processes get an environment allowlist.
+  - Everything a run makes sits in one run folder, removed on every end, and a later run sweeps what a killed one left.
+  - `problems(...expected)` takes only what the test names.
+  - `log(store)` gives digests of the stored row and of each payload.
+  - `resume({ grows })` judges every served element under each island.
+  - New verbs: `upload`, `download`, `hover` and `opened()`. Drags, the clipboard and frames have stated ways through.
+  - A library host is made per call, with `wrap` and `tokens`, and its paths must lie in their folders.
+  - The inspector takes an origin only, answers only a loopback `Host` with `Sec-Fetch-Site` `same-origin` or `none`, and gives one failure text.
+
 **Alternatives.**
 - Document Playwright and stop there. That is a harness each developer builds, with CSS selectors, sleeps, no server lifecycle and no ledger tie.
 - `@playwright/test` as the runner. That is a second runner beside vitest, with a second report and a second set of timeouts.

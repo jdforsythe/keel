@@ -1,6 +1,6 @@
 # RFC 0244: end-to-end tests, `keel test --e2e` over the built app
 
-Status: implemented (ADR-0267) but the second part (below: `title`, `style` of the `body` and padding, `warning` problems, the island check of `resume`, `open`'s `cookies`, `log`, `stop`'s `drain`, Libraries), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.e2e and k.e2e-page (implemented). Amends k.cli (the `test` row), k.test-run (Run report, one clause) and k.ledger-items (Run evidence, one clause), the map, `tooling/docs-owners.json` and the glossary (**end-to-end test**). New codes E1734 to E1738. From decision D187 (b) of task 0963 and the A2 end-user review (`tasks/p1/end-user-review.md`).
+Status: implemented (ADR-0267) but the third part (The review's findings, below: k.e2e-run, `HOST`, `keel dev` on loopback, `problems(...expected)`, `log` digests, `resume({ grows })`, `upload`, `download`, `hover`, `opened()`, the known-id rule, library hosts per call, the inspector's caller rule), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.e2e and k.e2e-page (implemented). Amends k.cli (the `test` row), k.test-run (Run report, one clause) and k.ledger-items (Run evidence, one clause), the map, `tooling/docs-owners.json` and the glossary (**end-to-end test**). New codes E1734 to E1738. From decision D187 (b) of task 0963 and the A2 end-user review (`tasks/p1/end-user-review.md`).
 
 ## For the operator
 1. **`--e2e` runs the e2e files alone, not every rung.** Recommended. A7 asks for every rung from one command. `keel test` and `keel test --e2e` share one runner, one reporter, one report folder and one ledger, and the scaffolded CI runs both. Folding e2e into plain `keel test` would make every page-test run build the app and need a browser. To reverse, `keel test --all` runs both in order.
@@ -8,7 +8,11 @@ Status: implemented (ADR-0267) but the second part (below: `title`, `style` of t
 3. **No sim control reaches a built app.** Recommended, and stated in k.e2e Control. Playwright's fake browser clock is left out because the server's clock would not move with it.
 4. **No `e2e:` ledger item kind for now.** Recommended. A passing e2e test is `example` evidence on the items it uses, like any test. A6 may later want "this route was opened in a real browser" as its own item. That can be added when an evidence reader asks for it.
 5. **The shell smokes stay as tooling.** `shell.mjs`, `shell-drive.mjs` and `shell-launch.mjs` drive a Tauri binary, macOS accessibility and XCUITest. The page API here is a browser tab. A native-shell driver behind the same verbs is a follow-up RFC (Migration).
-6. **Map titles trimmed.** Recommended. The spec map had 17 tokens of room and `keel docs` had 1. Instead of raising either budget, eight map titles are shortened with no change of meaning: `Secrets, pii`, `Server deps`, `Surface compat`, `Library pack`, `Escape review`, `A11y`, `Proofs`, `Exploration`. To reverse, restore the titles and re-base `spec.map` to 1,680 and `docs.map` to 1,710.
+7. **`keel dev` listens on loopback alone, with no LAN switch.** Recommended. A phone reaches a dev server through `adb reverse` or the iOS simulator's shared loopback. The reverse is a `--host` flag that prints the risk; every dev-time server answering the whole network is what finding 1 of the review showed going wrong.
+8. **A production `node` deployable listens on every interface unless `HOST` says otherwise.** Recommended: a container's port mapping needs it, and an operator narrows it with `HOST`. The reverse, loopback by default, would break every Dockerfile Keel writes.
+9. **The inspector trusts `Host` and `Sec-Fetch-Site`, with no token.** Recommended (The review's findings, 1). A token in the page cannot guard the first navigation, which is the one an attacker forges.
+10. **New verbs for upload, download, hover and opened tabs; no verb for drag, the clipboard or frames.** Recommended (finding 12).
+6. **Map titles trimmed.** Recommended. The spec map had 17 tokens of room and `keel docs` had 1. Instead of raising either budget, map titles are shortened with no change of meaning: `Secrets, pii`, `Server deps`, `Surface compat`, `Library pack`, `Escape review`, `A11y`, `Proofs`, `Exploration`, and for the third part `Explain`, `Formats`, `Manifest`, `Contract`, and this RFC's own `Tests`, `Pages` and `Runner`. To reverse, restore the titles and re-base `spec.map` to 1,700 and `docs.map` to 1,730.
 
 ## Decisions
 - D1: a file `test/**/*.e2e.ts` or `modules/*/test/**/*.e2e.ts` is an end-to-end test. `keel test` runs none. `keel test --e2e [paths] [--engine chromium|firefox|webkit]` runs them alone, in three steps: `keel build`, a browser check, then vitest (node, forks, two files at once).
@@ -181,7 +185,63 @@ Every browser smoke but the three shell ones is then deleted. A smoke stays, and
 ### The inspector across origins
 `apps/inspector` is a `client` deployable. Its loader calls `service({ base: url })` with `url` taken from the `?url=` search parameter, from the browser, to another origin's `/__keel/inspect`. Its built policy says `connect-src 'self'`, and that policy is right: an app cannot declare "any origin", and `origins` takes exact `https` origins only (E1590), so a dev server's loopback `http` origin cannot be declared at all. E1571 did not see the call because it reads a URL as written, and this base is computed at run time. The smoke passed only because its file server sent no `content-security-policy` header. The `csp.txt` the build wrote was never applied, so the smoke was passing for a reason that should not have worked.
 
-What is right: the inspector reads the inspect document on its server, not in the browser. `apps/inspector` becomes a `node` deployable whose loader (`loadInspect.server.ts`, already server code by name) fetches `<url>/__keel/inspect`. The page then makes no cross-origin request, and `connect-src 'self'` holds unchanged. The dev app answers a GET with no `Origin` from a loopback `Host` (k.cli Inspect), so `KEEL_INSPECT_ORIGINS` is not needed. A server that fetches a URL a visitor typed could be turned against other hosts, so the loader accepts only a loopback target (`localhost`, `127.0.0.1`, `[::1]`) and answers any other with `inspector.unreachable` (`<url> is not on this machine`). The inspector is a tool for one's own dev server. Its e2e test serves itself, serves golden-1 with `dev: true`, opens `/?url=<golden-1's origin>`, and reads the panels by id. `tooling/smoke/inspector.mjs` is then deleted.
+What is right: the inspector reads the inspect document on its server, not in the browser. `apps/inspector` becomes a `node` deployable whose loader (`loadInspect.server.ts`, already server code by name) fetches `<url>/__keel/inspect`. The page then makes no cross-origin request, and `connect-src 'self'` holds unchanged. The dev app answers a GET with no `Origin` from a loopback `Host` (k.cli Inspect), so `KEEL_INSPECT_ORIGINS` is not needed. A server that fetches a URL a visitor typed could be turned against other hosts, so the loader accepts only a loopback target (`localhost`, `127.0.0.1`, `[::1]`) and answers any other with `inspector.unreachable` (`<url> is not on this machine`). The inspector is a tool for one's own dev server. Its e2e test serves itself, serves golden-1 with `dev: true`, opens `/?url=<golden-1's origin>`, and reads the panels by id. `tooling/smoke/inspector.mjs` is then deleted. What the target may be, who may call the loader and its one failure text: The review's findings, 1.
+
+### The review's findings (third part)
+A review attacked the second step's build. Each finding below gives the rule, the clauses that check it (section and position), and what the builder changes. "k.e2e-run" is a new section, which holds the runner's guarantees and the paragraphs k.e2e and k.e2e-page had no room for (Browser, Build input, Time, Ledger, Failure output).
+
+1. **Dev-time servers listen on loopback; the inspector is not a request forwarder.**
+   - Rule: every server Keel starts while developing or testing listens on loopback alone (k.topology Local topology, k.e2e-run Reach). Today `keel dev` takes Vite's `localhost` default, and a Vite `server.host` of `true` widens it. That is now E1560. A production `node` deployable listens on every interface unless `HOST` names an address (k.deploy). That is the spec's stated default, and it lives in k.deploy because k.hosting covers static hosts.
+   - The inspector's loader rules:
+     - It takes `?url=` only when that is an origin: http or https, a loopback host, no user, no path but `/`, no query, no fragment. It builds the request as `new URL(url).origin + '/__keel/inspect'`, so nothing of the caller's string survives.
+     - It answers only a request whose `Host` is a loopback name with a port and whose `Sec-Fetch-Site` is `same-origin` or `none`. Any other request is 403 `keel.denied`, with nothing fetched.
+     - That holds against a page on another origin: a cross-site navigation carries `cross-site`, and DNS rebinding carries a foreign `Host`. It also holds against another machine: the server listens on loopback under `keel dev` and `serve`, and a deployed copy still checks `Host`. A token in the page was rejected: the first navigation, the one an attacker forges, has no page to read it from.
+     - Every fetch failure is one answer, `inspector.unreachable` `no inspect document at <origin>`. That covers a refused connection, a status, a timeout and a body that is not an inspect document, so the answer says nothing about what listens.
+   - Clauses: k.topology #18, k.deploy #14, k.e2e-run #4. The inspector's rules are an app's, so they are checked by `apps/inspector/test/inspector.e2e.ts` and `loadInspect.test.ts`:
+     - `?url=http://127.0.0.1:<p>/admin/delete-all%23` sends nothing to path `/admin/delete-all`;
+     - a request with `Sec-Fetch-Site: cross-site`, or `Host: 192.168.1.5:<p>`, is 403 with no fetch made;
+     - an `answer` on a free port and a closed port give the same text.
+   - Builder: `@keel/cli` dev bind and E1560; `@keel/server` `start` reads `HOST`; `apps/inspector` loader and tests; the run's servers bind `127.0.0.1`.
+2. **A migration loses no assertion, and each migrated assertion is proven red by a mutation.**
+   - Rule: `problems(...expected)` takes only what an entry matches, so reading cannot hide an unexpected problem (k.e2e-page Verbs, Problems). `log(store)` gives `digest`, the SHA-256 of the stored snapshot's text, and each entry's payload `digest`. A restart can then be compared byte for byte without a value in the test's output (k.e2e Served).
+   - Clauses: k.e2e #17, #18; k.e2e-page #11 (reworded), #17 (reworded), #20.
+   - Lane rule: each row of the Migration table names a mutation of the app that turns its assertion red, and the build records that it did.
+   - Builder: the weak rows below.
+3. **`resume.mjs`'s last checks.**
+   - The served-markup check is already expressible: `(await page.fetch(path)).text()` is the served document, sent with the context's cookies (k.e2e-page `fetch`).
+   - `resume({ grows })` records each element under each island root once the document is parsed, before any script runs. After the claim, it rejects E1720 when a recorded element is gone or was replaced, or when an element was added under a root. Elements may be added inside an id named in `grows` and nowhere else, and a removal there is still E1720. The household's event list is named by its id. An element without an id is named by its tag and place.
+   - Clauses: k.e2e-page #21, #22.
+   - Then `resume.mjs` is deleted.
+4. **Library hosts.**
+   - Each `serve({ page })` writes its own `.keel/e2e-host-<random>/` and removes it at dispose. `wrap` (a component file under `test/` taking `children`) and `tokens` (a tokens file under `test/`) cover a surrounding layout and an app's restyling. A component needing route params, a guard or a server is tested in an app.
+   - Clauses: k.e2e #21, #22.
+5. **The browser.**
+   - Chromium's sandbox is on, except on Linux as root (W1734). A fresh profile lives inside the run folder, never the developer's own, with no extensions.
+   - Clauses: k.e2e-run #1, #2.
+6. **Known ids.**
+   - An id is known from `.keel/ids.json`, a form field of a listed form, a template id's head and tail, or the page right now. A listed id's prefix no longer makes an id known. An unknown id is E1705 at once with the nearest 3; only a known id that is not shown yet is waited for.
+   - Clause: k.e2e-page #19.
+7. **Paths in their folder.**
+   - `page` is resolved and must lie under the library's `src/`; `wrap` and `tokens` must lie under `test/`. Anything else is E1736 naming the path.
+   - Clause: k.e2e #23.
+8. **Environment.**
+   - Allowlist: `PATH`, `LANG`, `LC_ALL`, `TZ`, `SystemRoot`. `HOME`, `TMPDIR`, `TMP` and `TEMP` point into the data folder. Then come the runner's names, then `env`.
+   - Clause: k.e2e-run #5.
+9. **Reach and the certificate.**
+   - A certificate is made per run for the mapped host names, and nothing is shipped. A page reaches only the served origins, the peer names and the mapped origins. Every other request, loopback ones among them, is refused before it leaves the browser and is a problem `offsite`, which E1738 fails unless the test takes it.
+   - Clause: k.e2e-run #3.
+10. **Teardown.**
+    - The run folder `keel-e2e-<random>` holds everything the run makes, and `TMPDIR` points there for vitest. It is removed on every end, and on SIGINT with one `stopped:` line. A SIGKILLed run's folder is swept by a later run when it is older than 1 hour, names a dead process and is marked `.keel-e2e`.
+    - Under the repo's `keelConfig` the run folder sits inside the vitest run's own root (`tooling/test-tmp-global.ts` points `TMPDIR` there first). An app outside the repo gets the same containment from `keel test --e2e` itself.
+    - Clauses: k.e2e-run #6, #7.
+11. **Unexpected errors.**
+    - A non-Keel error is the test's T0001 `uncaught: <code> <first line>`, never under `fix:`.
+    - Clause: k.e2e-run #8.
+12. **Walls.**
+    - New verbs: `upload`, `download`, `hover`, `opened()`, and the `dialog` problem kind. A drag is tested through its keyboard path, a copy by the text it holds, a paste by typing, and a frame by its own `serve`. E1705 names the frame case. One line in the keel-testing skill says so.
+    - Clauses: k.e2e-page #23 to #26.
+13. **CI cost.**
+    - Build plan only.
 
 ### Worked case 1: a storefront
 A cart that survives a reload and a declined payment, with card data kept out of the server log (K2). The payment provider is an `answer`, and the app reaches it through its module's `env`.
@@ -298,10 +358,22 @@ Both cases type-check with strict `tsc` against the declarations above. `documen
 - k.test-run Run report: without `shard`, `writeTestReport` removes the folder's other files but `e2e.json`. One clause.
 - k.ledger-items Run evidence: what a test file is (`.test.` or `.spec.` before a script extension, or an e2e file). One clause.
 - Made exact while building: a verb's id is refused (E1705) when it is not in `.keel/ids.json`, not `<id>.<key>` under one of its ids, not under a template id's fixed head or tail the project's or its libraries' source writes, and not a form field's `<formId>:<path>`; `find` gives `value` as k.testing's does, but a host element's, which lives in the runtime; `focusOrder()` is a page verb; a held page's parked scripts are not waited on; the held-page clause reads the caret with `press('x')` and the input's `value`; the cookie clause's cookie is the caller cookie a form POST mints; the problem clause's handler rejects with `Error('boom')` (app code may not `throw`); an artifact is `<file>-<line>-<n>`, `<file>` less its `.ts`, `<line>` the T0001's; the defaults (10 s a wait, 20 s a start, 60 s a test) are fixed time and only `within` scales (docs/TESTING.md Time scale), so the timeout clause reads 60 s at scale 0.1.
+- Third part:
+  - New `spec/kernel/k.e2e-run.md` (proposed). It holds Browser, Build input, Time and Ledger (moved from k.e2e), Reach, Environment, Teardown, Failure output (moved from k.e2e-page), Walls, Output, Rules (W1734), and 8 clauses.
+  - k.e2e: its Libraries paragraph is rewritten, `log` gains digests, the env comes from k.e2e-run, `HOST` is set, and E1736 covers paths. 23 clauses: #17 reworded, #18 and #21 to #23 new.
+  - k.e2e-page:
+    - The known-id rule replaces the "made exact" sentence above: an id under a listed id is no longer known for that alone.
+    - Adds `problems(...expected)`, `resume({ grows })`, `upload`, `download`, `hover`, `opened()` and the `dialog` and `offsite` kinds.
+    - Clauses: 26; #11 and #17 are reworded, and #19 to #26 are new.
+  - k.deploy: `HOST`, and the default of every interface; #14 new.
+  - k.topology: `keel dev` on loopback, with E1560 for a wider `server.host`; #18 new.
+  - Map: row `k.e2e-run`, and more titles shortened (For the operator 6).
+  - `tooling/docs-owners.json`: k.e2e-run owned by `@keel/testing`.
+  - The keel-testing skill: the new verbs and the walls line, held at its 3,700-token target.
 - Map: rows `k.e2e` and `k.e2e-page`, `k.e2e` added to the E170x block, and eight titles shortened (For the operator 6). `tooling/docs-owners.json`: both sections owned by `@keel/testing`. Glossary: **end-to-end test**.
 
 ## Conformance diff
-The conformance-writer covers k.e2e's 19 and k.e2e-page's 18 clauses, k.test-run's new clause and k.ledger-items' new clause, citing each word for word. Proposed files: `packages/cli/conformance/e2e-command.test.ts` (k.e2e clauses on `keel test --e2e`, E1734, E1736, the report files, time); in `packages/testing/conformance/`, `e2e-serve.test.ts` (serve, peers, static, E1737, isolation, stop and start, `until`, answered origins), `e2e-page.test.ts` (verbs, waits, E1705, E1735, hold and resume, offline, cookies, documents, style), `e2e-failure.test.ts` (E1738, the T0001 output, `reports/e2e/`, a11y E1703). k.test-run's clause goes in `packages/cli/conformance/test-run-writes.test.ts`, k.ledger-items' in `packages/cli/conformance/ledger-items-runs.test.ts`. The fixtures are small projects under `packages/testing/conformance/fixtures/e2e/`: a node deployable with one store and one action, a `static` one, a two-`node` topology, a page whose click throws, a held-input island page, and a library folder. A case that needs a browser runs under `keel test --e2e` in its fixture as a child process, bounded at 60 s or more (docs/TESTING.md). The E1734 case runs with `playwright-core` absent from the fixture's resolution, not uninstalled from the repo.
+The conformance-writer covers k.e2e's 23, k.e2e-page's 26 and k.e2e-run's 8 clauses, k.deploy #14 and k.topology #18, k.test-run's new clause and k.ledger-items' new clause, citing each word for word. Proposed files: `packages/cli/conformance/e2e-command.test.ts` (k.e2e clauses on `keel test --e2e`, E1734, E1736, the report files, time); in `packages/testing/conformance/`, `e2e-serve.test.ts` (serve, peers, static, E1737, isolation, stop and start, `until`, answered origins), `e2e-page.test.ts` (verbs, waits, E1705, E1735, hold and resume, offline, cookies, documents, style), `e2e-failure.test.ts` (E1738, the T0001 output, `reports/e2e/`, a11y E1703). k.test-run's clause goes in `packages/cli/conformance/test-run-writes.test.ts`, k.ledger-items' in `packages/cli/conformance/ledger-items-runs.test.ts`. The fixtures are small projects under `packages/testing/conformance/fixtures/e2e/`: a node deployable with one store and one action, a `static` one, a two-`node` topology, a page whose click throws, a held-input island page, and a library folder. A case that needs a browser runs under `keel test --e2e` in its fixture as a child process, bounded at 60 s or more (docs/TESTING.md). The E1734 case runs with `playwright-core` absent from the fixture's resolution, not uninstalled from the repo.
 
 The builder disputed seven points in the first fixtures. One was a spec sentence: the answered-origin clause's `answer` returned no `access-control-allow-origin`, so the page's cross-origin call would fail CORS before it could be "received". The clause now states the header. The other six are fixture errors the conformance-writer corrects from the spec text as it stands:
 - the fixture project links no `@types/node`, so its build is E1751;
@@ -316,18 +388,18 @@ Each smoke becomes `*.e2e.ts` files in the project it tests, and CI's `built-smo
 
 | smoke | becomes | needs that the API lacks |
 | --- | --- | --- |
-| `persist.mjs` | `apps/golden-1/test/persist.e2e.ts`: add, reload, toggle, undo; `state(board)` in place of the SQLite read | none |
-| `restart.mjs` | `apps/golden-1/test/restart.e2e.ts`: `fetch` writes, `stop`, `start`, `state(board)` equal | none: `log(board)` gives the next id (`head + 1`) |
-| `workflow.mjs` | `apps/golden-1/test/workflow.e2e.ts`: a copy with the planted step, `build(copy)`, `serve({ project })`, `until(removal, …)`, `stop` mid-step | none: `log(removal)` and `log(board)` give the attempts, `restored` once and `api.showList` once |
+| `persist.mjs` | `apps/golden-1/test/persist.e2e.ts`: add, reload, toggle, undo; `state(board)` in place of the SQLite read; after the first reload `expect(await page.findAll('todos.listLink')).toHaveLength(1)` (mutation: the list rendered twice) | none |
+| `restart.mjs` | `apps/golden-1/test/restart.e2e.ts`: `fetch` writes, `stop`, `start`; `expect((await app.log(board)).digest).toBe(before.digest)` for the stored row byte for byte, and each entry's `digest` equal (mutation: restore re-encodes the snapshot) | none: `log(board)` gives the digests and the next id (`head + 1`) |
+| `workflow.mjs` | `apps/golden-1/test/workflow.e2e.ts`: a copy with the planted step, `build(copy)`, `serve({ project })`, `until(removal, …)`, `stop` mid-step; the kept instance within the smoke's 10 s, `{ fixed: 5_000, within: 5_000 }` from the restart (mutation: the step retried after a 20 s back-off) | none: `log(removal)` and `log(board)` give the attempts, `restored` once and `api.showList` once |
 | `workflow-postgres.mjs` | the same file's second case, `env: { KEEL_DATABASE_URL: process.env.KEEL_TEST_POSTGRES_URL }`; CI gives a Postgres service | docker leaves the test: the URL is the environment's |
 | `csp.mjs` | `apps/golden-1/test/csp.e2e.ts` and `examples/third-party-origin/test/csp.e2e.ts`: planted origins, `fetch` headers, nonces from the body | none; adds a browser case where `problems()` holds the blocked request |
 | `dev-signin.mjs` | `apps/golden-2/test/dev.e2e.ts` with `serve({ dev: true })`: shells, stylesheets, sign-in by `page.fetch`, stubs, inspect, an edit and `serverLog` | none |
 | `canary.mjs` | `apps/golden-2/test/canary.e2e.ts`: the sign-in flows, `serverLog`, headers, `dist/` and the data folder scanned with `node:fs`, `keel evidence` as a child | none |
 | `brand.mjs` | `examples/static-client/test/brand.e2e.ts` on a fixture copy: `viewport`, `layout`, `press('Tab')`, `style` | none: `style(undefined, …)` reads the `body` |
-| `inspector.mjs` | `apps/inspector/test/inspector.e2e.ts`: `serve()` of itself as a `node` deployable, `serve({ project: golden-1, dev: true })`, pages by id | the inspector reading on its server (The inspector across origins) |
-| `monitor.mjs` | `apps/golden-1/test/monitor.e2e.ts`: two contexts, `offline`, the conflict, `stop('api', { drain: true })`, then `keel session monitor` as a child | the caller cookie signed by hand: `env.KEEL_SECRET` given, the signed value computed in the test |
+| `inspector.mjs` | `apps/inspector/test/inspector.e2e.ts`: `serve()` of itself as a `node` deployable, `serve({ project: golden-1, dev: true })`, pages by id; `expect(count).toMatch(/^Log: [1-9]\d* entries$/)` and the number of `inspector.store.todos.outbox.entry.*` equal to it (mutation: the view always prints `Log empty: nothing to undo`); the caller rule's three cases (finding 1) | the inspector reading on its server (The inspector across origins) |
+| `monitor.mjs` | `apps/golden-1/test/monitor.e2e.ts`: two contexts, `offline`, the conflict, `stop('api', { drain: true })`, then `keel session monitor` as a child; the offline failures taken by `u1.problems({ kind: 'console', text: 'ERR_INTERNET_DISCONNECTED' })` and nothing else, so a detached rejection fails E1738 (mutation: a rejection added to `resolveEdit.ts`) | the caller cookie signed by hand: `env.KEEL_SECRET` given, the signed value computed in the test |
 | `examples.mjs` | one `examples/<x>/test/<x>.e2e.ts` each: `answer` for the OpenAPI stub, `origins` for `api.github.com`, two `node` deployables for compose-peers, `build` after the codemod | none; the check, test and build loop stays in CI |
-| `household.mjs` | `apps/household/test/*.e2e.ts`: sign-in, guards, cookies, `scripts: false`, forged origins by `fetch`, the outbox (worked case 2), conflict, sign-out elsewhere, `stop` with a write in flight, the weekly run | none |
+| `household.mjs` | `apps/household/test/*.e2e.ts`: sign-in, guards, cookies, `scripts: false`, forged origins by `fetch`, the outbox (worked case 2), conflict, sign-out elsewhere, `stop` with a write in flight, the weekly run; in `durable.e2e.ts` the kept name by equality, `expect(JSON.parse(named).name).toBe('Oak Road')` (mutation: the name saved as `Oak Road ` with a space) | none |
 | `resume.mjs` | `apps/golden-2/test/resume.e2e.ts`: `hold`, typing, `scroll`, `resume()`'s claim check, `requests()` for one POST, `viewport`, locale paths, `warning` problems; household's `/setup` steps in `apps/household/test/resume.e2e.ts` | none |
 | `shell.mjs`, `shell-drive.mjs`, `shell-launch.mjs` | stay in `tooling/smoke/` | a native-shell driver (Tauri WebDriver, macOS accessibility, XCUITest), app launch and kill, the shell's store files |
 | `shellReplay.mjs`, `webdriver.mjs` | stay, as the shell smokes' helpers | as above |
@@ -353,7 +425,9 @@ Every assertion of each deleted smoke, the file that now makes it and the test (
 | `household.mjs` | the page titles `Household` and `Shopping list`; the receipts frame's padding | `apps/household/test/access.e2e.ts` | the start-page case; the setup action writes the name, the frame sets the brand serif, and the list takes the menu and keeps it through a reload |
 
 
-`resume.mjs` stays, and CI runs it, because two of its checks are not carried. It counts every served element a claim removes, an element without an id among them, and every element added under an island root but the household's event list, which gains a line by design; `resume()` judges the served elements with an id and the island marks, and a rule for added elements would need that app's exception. It also asserts each page's served markup (`id="recipes.shell"`, `<!--[-->`, the setup page's Connecting text), which no e2e test reads yet. Every other assertion of it is carried.
+`resume.mjs` is deleted once `resume({ grows })` is built: its count of removed served elements, those without an id among them, and of elements added under an island root, with the household's event list named in `grows`, is `resume()`'s check (k.e2e-page #21, #22); its served-markup checks (`id="recipes.shell"`, `<!--[-->`, the setup page's Connecting text) read `(await page.fetch(path)).text()`. Until then it stays, and CI runs it.
+
+The lane's rule: a migrated assertion is proven by a mutation that turns it red. The table names the mutation for each row the review found weak, and the build records, per row, that the mutation made its test fail.
 
 Two checks the smokes made in the page are carried by the conformance instead, as above: the `x-keel` call a stand-in refuses (k.e2e's preflight clause) and the refused connect to an undeclared origin (k.e2e's answered-origins clause, with the example's policy text).
 
@@ -382,3 +456,5 @@ k.e2e is about 2,500 tokens and k.e2e-page about 1,850, each under the 3,100 sec
 - `@keel/scaffold`: none in this RFC. A scaffolded `test/app.e2e.ts` and a CI step follow once the entry is built.
 - Skills: `keel-testing` gains the e2e rung (verbs, waits, what does not reach a built app); `keel-deploy` points to `serve` for the variables.
 - Apps and examples: the Migration table, then CI's `built-smokes` job rewritten as `keel test --e2e` per project.
+- The third part: k.e2e-run (sandbox, fresh profile, the per-run certificate, refusing offsite requests, the environment allowlist, the run folder and its sweep, uncaught output), `HOST` in `@keel/server`'s `start`, `keel dev` on loopback with E1560, `problems(...expected)`, `log` digests, `resume({ grows })`, `upload`, `download`, `hover`, `opened()`, the `dialog` kind, the known-id rule, library hosts per call with `wrap` and `tokens`, and the inspector's loader rules.
+- CI: only the shards that run e2e files install Chromium (today two of seven), and they restore it from a cache keyed by the `playwright-core` version, so a shard with no e2e file downloads no browser.

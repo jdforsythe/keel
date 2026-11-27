@@ -28,7 +28,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | id | section | status | one line |
 |-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
-| k.formats | Format types | conformance-covered | brands |
+| k.formats | Formats | conformance-covered | brands |
 | k.reactive | Reactivity | implemented | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
@@ -41,7 +41,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.defaults | Queued defaults | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
-| k.contract | Module contract | conformance-covered | entries |
+| k.contract | Contract | conformance-covered | entries |
 | k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
@@ -52,7 +52,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.errors | Results, boundaries | conformance-covered | Result |
 | k.check | Checker, diagnostics | conformance-covered | codes |
 | k.check-cache | Type cache | conformance-covered | reuse |
-| k.explain | Explanations | conformance-covered | text |
+| k.explain | Explain | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | conformance-covered | read |
@@ -62,8 +62,9 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
-| k.e2e | E2e tests | implemented | serve |
-| k.e2e-page | E2e pages | implemented | page |
+| k.e2e | Tests | implemented | serve |
+| k.e2e-page | Pages | implemented | page |
+| k.e2e-run | Runner | proposed | reach |
 | k.model | Exploration | conformance-covered | traces |
 | k.prove | Proofs | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
@@ -92,7 +93,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
-| k.module | Module manifest | implemented | surface |
+| k.module | Manifest | implemented | surface |
 | k.library | Libraries | proposed | packages |
 | k.library-pack | Library pack | implemented | pack |
 | k.server-deps | Server deps | implemented | env |

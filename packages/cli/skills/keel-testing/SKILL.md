@@ -126,7 +126,7 @@ it("an add survives a reload", async () => {
   expect((await page.find("a.count")).text).toBe("1");
 });
 ```
-`test/**/*.e2e.ts` runs under `keel test --e2e` alone: it builds, then runs Chromium (`playwright-core` in `devDependencies`, else E1734). `serve({ env, origins })` starts the built deployables on fresh data (`state`, `until`, `stop`, `start`, `serverLog`); `answer(fn)` is your own origin. Pages take the verbs above plus `until(id, { text })`, `findAll`, `press`, `reload`, `offline`, `problems()`, and `open(path, { hold: true })`, `resume()` (E1720). Waits: 10 s, `{ within }` scaled, `{ fixed }` app time (E1735); never sleep. An unread page error fails (E1738). No sim clock, seed or net fault reaches a built app.
+`test/**/*.e2e.ts` runs under `keel test --e2e` alone: it builds, then runs Chromium (`playwright-core`, E1734). `serve({ env, origins })` starts the built app on fresh data (`state`, `log`, `until`, `stop`, `start`, `serverLog`); `answer(fn)` makes an origin. Pages add `until`, `findAll`, `press`, `reload`, `offline`, `upload`, `download`, `hover`, `opened()`, `open(path, { hold })`, `resume()` (E1720). Waits: 10 s, `{ within }` scaled, `{ fixed }` app time (E1735). A problem no `problems({ kind, text })` takes fails (E1738). No verb for drag (use keys), clipboard (type) or frames (`serve` that app). No sim clock, seed or fault reaches a built app.
 
 ## Ledger rungs
 
