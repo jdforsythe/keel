@@ -22,10 +22,11 @@ function packageOf(file: string): { dir: string; name: string } | undefined {
 
 /**
  * The recorded inputs of an evaluation of the project at `root` (a real path), sorted by path: each file it loaded
- * and each file its code read (`reads`, kept at the path the code named, so a read through a link is read through it
- * again), project-relative when it is the project's own (under `root`, outside `node_modules`), else `<package
- * name>/<path in the package>` beside that package's `package.json`, else absolute; and `topology.ts`, which selects
- * what is evaluated. A file that cannot be read is no input (`cacheProbes` records it as absent).
+ * and each file its code or its resolver read (`reads`, kept at the path the code named, so a read through a link is
+ * read through it again), project-relative when it is the project's own (under `root`, outside `node_modules`), else
+ * `<package name>/<path in the package>` beside that package's `package.json` when that package does not hold the
+ * project, else absolute; and `topology.ts`, which selects what is evaluated. A file that cannot be read is no input
+ * (`cacheProbes` records it as absent).
  */
 export function cacheInputs(root: string, loaded: readonly string[], reads: readonly string[] = []): CacheInput[] {
   const out = new Map<string, CacheInput>();
@@ -40,7 +41,9 @@ export function cacheInputs(root: string, loaded: readonly string[], reads: read
       return;
     }
     const pkg = packageOf(real);
-    if (pkg === undefined) {
+    // A package folder holding the project (a workspace root) is no dependency: its files are named absolute.
+    const holds = pkg !== undefined && !relative(pkg.dir, root).startsWith("..");
+    if (pkg === undefined || holds) {
       if (outside) add(file, file);
       return;
     }

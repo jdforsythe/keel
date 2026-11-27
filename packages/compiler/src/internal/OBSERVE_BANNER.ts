@@ -14,9 +14,9 @@ import { UNRESOLVED_MARK } from "./UNRESOLVED_MARK.ts";
  *   and every other function (writes, watches, globs) refused.
  * - `__keelProcess`, which every free `process` names: `env` a view recording each name read (`get`, `in`, a property
  *   descriptor, the value before a first write) and a listing of the names; the process's facts (`argv`, `pid`,
- *   `version`, `cwd()`, ...) recorded when read; `getBuiltinModule` giving these views; `stdout` and `stderr` writing
- *   nowhere, listeners and warnings dropped; native addons and bindings, `mainModule`, `stdin`, `exit`, `chdir` and
- *   setting a property refused.
+ *   `version`, `cwd()`, ...) recorded when read; `getBuiltinModule` giving these views; `stdout` and `stderr`
+ *   writing nowhere, listeners, events and warnings dropped; native addons and bindings, `mainModule`, `stdin`,
+ *   `exit`, `chdir`, `send` and setting a property refused.
  * - `__keelModule`, `node:module`: `createRequire` gives `__keelRequireFor`, `isBuiltin` and `builtinModules` are
  *   Node's, every other member (`_load`, `Module`, `register`, `_cache`, ...) refused.
  * - `__keelRequireFor(base)`: a `require` whose names resolve from `base`'s folder through the bundle's own resolver
@@ -122,8 +122,8 @@ export const OBSERVE_BANNER = [
   "  const fact = (k) => __keelObserved.probes.push(['process', k]);",
   "  const FACTS = new Set(['argv', 'argv0', 'execArgv', 'execPath', 'pid', 'ppid', 'title', 'version', 'versions', 'platform', 'arch', 'release', 'config', 'features', 'debugPort']);",
   "  const CALLED = new Set(['cwd', 'umask', 'getuid', 'geteuid', 'getgid', 'getegid', 'getgroups']);",
-  "  const REFUSED = new Set(['dlopen', 'binding', '_linkedBinding', 'exit', 'reallyExit', 'abort', 'kill', '_kill', 'chdir', 'setuid', 'seteuid', 'setgid', 'setegid', 'setgroups', 'initgroups', 'loadEnvFile', 'setUncaughtExceptionCaptureCallback', 'setSourceMapsEnabled', '_debugProcess', '_rawDebug']);",
-  "  const QUIET = new Set(['on', 'once', 'addListener', 'prependListener', 'prependOnceListener', 'off', 'removeListener', 'removeAllListeners', 'setMaxListeners', 'emitWarning']);",
+  "  const REFUSED = new Set(['dlopen', 'binding', '_linkedBinding', 'exit', 'reallyExit', 'abort', 'kill', '_kill', 'chdir', 'setuid', 'seteuid', 'setgid', 'setegid', 'setgroups', 'initgroups', 'loadEnvFile', 'setUncaughtExceptionCaptureCallback', 'setSourceMapsEnabled', '_debugProcess', '_rawDebug', 'send', 'disconnect']);",
+  "  const QUIET = new Set(['on', 'once', 'addListener', 'prependListener', 'prependOnceListener', 'off', 'removeListener', 'removeAllListeners', 'setMaxListeners', 'emitWarning', 'emit']);",
   "  const made = new Map();",
   "  const own = (k, make) => { if (!made.has(k)) made.set(k, make()); return made.get(k); };",
   "  const no = (k) => () => __keelRefuse(`setting process.${String(k)}`);",
@@ -135,7 +135,7 @@ export const OBSERVE_BANNER = [
   "      if (k === 'stdout' || k === 'stderr') return __keelStream;",
   "      if (k === 'stdin' || k === 'mainModule') return own(k, () => __keelRefusedObj(`process.${k}`));",
   "      if (REFUSED.has(k)) return own(k, () => __keelRefusedFn(function () {}, `process.${k}`));",
-  "      if (QUIET.has(k)) return own(k, () => function () { return k === 'emitWarning' ? undefined : view; });",
+  "      if (QUIET.has(k)) return own(k, () => function () { return k === 'emitWarning' ? undefined : k === 'emit' ? false : view; });",
   "      if (FACTS.has(k)) { fact(k); return Reflect.get(t, k); }",
   "      const v = Reflect.get(t, k);",
   "      if (CALLED.has(k) && typeof v === 'function') return own(k, () => (...a) => { fact(k); return v.apply(t, a); });",
@@ -154,14 +154,14 @@ export const OBSERVE_BANNER = [
   "    if (typeof v === 'function') return __keelRefusedFn(v, `${at}.${k}`);",
   "    return v !== null && typeof v === 'object' && at.split('.').length < 3 ? obj(v, `${at}.${k}`) : v;",
   "  } });",
-  "  const view = obj(__keelCreateRequire(import.meta.url)(name), `node:${name}`);",
+  "  const view = obj(__keelCreateRequire(import.meta.url)(`node:${name}`), `node:${name}`);",
   "  __keelRefusedViews.set(name, view);",
   "  return view;",
   "};",
   "const __keelRecordedViews = new Map();",
   "const __keelRecordedView = (name) => {",
   "  if (__keelRecordedViews.has(name)) return __keelRecordedViews.get(name);",
-  "  const real = __keelCreateRequire(import.meta.url)(name);",
+  "  const real = __keelCreateRequire(import.meta.url)(`node:${name}`);",
   "  const view = new Proxy(real, { get(t, k) {",
   "    const v = Reflect.get(t, k);",
   "    if (typeof k !== 'string' || typeof v !== 'function' || __keelFixed(t, k)) return v;",
