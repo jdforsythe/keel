@@ -9,9 +9,10 @@ const ran = await supervise(ctx, 'jobs.run', () => job.fn(input, ctx, signal), T
 if (!ran.ok) return again(ran.error.code)
 ```
 - `id` is a string literal: dotted, starting with the id of the module or package that calls. It names the supervised work in the report.
-- `failed` is a `KeelError`, the supervisor's own failure for work that threw. It is a value, made before `fn` runs, so nothing of a thrown value reaches it.
-- `fn` returning `v` gives `ok(v)`, and returning a keel `Result` gives that `Result` itself, as `attempt` does (k.attempt); a promise settles the same way in a promise.
+- `failed` is a `KeelError`, the supervisor's own failure for work that threw. It is a value, made before `fn` runs, so nothing of a thrown value reaches it. A `failed` that is no `KeelError` (k.attempt `err`) is the defect E1458, thrown by the call before `fn` runs.
+- `fn` returning `v` gives `ok(v)`, and returning a keel `Result` gives that `Result` itself, as `attempt` does (k.attempt); a promise settles the same way in a promise. A returned value whose inspection throws (a `Proxy` whose traps throw) is a throw of `fn`.
 - For every value `fn` throws or rejects with, a defect and a value wrapping one among them, `supervise` reports the value once (Report) and gives `err(failed)`. It never throws and never rejects for a throw of `fn`; a throw of the reporting itself is dropped. So a supervised throw neither hangs its caller nor ends the process (k.leave Process).
+- `supervise` sets no time: a promise that never settles leaves its call pending, since only the owner of the work knows how long it may take and how to stop it. Each supervisor bounds its work on `ctx.clock` (the table below).
 - The caller learns that the work threw and nothing more: not the value, its class or its text. Code that must tell one failure from another uses `attempt(fn, expect)` inside `fn`.
 
 **Report.** A supervised throw is reported once, as the throw it is, never as the value `failed`:
@@ -25,14 +26,14 @@ if (!ran.ok) return again(ran.error.code)
 
 **The stdlib's supervisors.** Each failure path below runs for any thrown value, a defect and a non-`Error` among them, after the report.
 
-| Supervisor | `id` | Supervised | After a throw |
-| --- | --- | --- | --- |
-| std.jobs' runner | `jobs.run` | a job's `fn`, a workflow step's `run` among them (std.workflows) | `err` `jobs.thrown`: the run counts an attempt, waits and runs again, or moves to `failed` with that code |
-| std.channels' route | `channels.member` | `member` and `identify` | a denial: at open and at a delivery the stream gets `closed` `denied` and ends; at a publish, 403 |
-| std.live | `live.read` | `read` | a failed read: nothing is committed, `status()` is `connecting`, and the next read runs on the backoff std.live gives |
-| std.offline | `offline.storage` | one `ctx.storage` call | the entry is `failed` with `offline.storage` (std.outbox) |
+| Supervisor | `id` | Supervised | Bound on `ctx.clock` | After a throw or the bound |
+| --- | --- | --- | --- | --- |
+| std.jobs' runner | `jobs.run` | a job's `fn`, a workflow step's `run` among them (std.workflows) | the job's `timeoutMs`, then its `signal` aborts (`jobs.timeout`) | `err` `jobs.thrown`: the run counts an attempt, waits and runs again, or moves to `failed` with that code |
+| std.channels' route | `channels.member` | `member`, the re-read of `stores` before it, and `currentUser()` | 5,000 ms (std.channels); `identify`'s own 5,000 ms (k.user) | a denial: at open and at a delivery the stream gets `closed` `denied` and ends; at a publish, 403 |
+| std.live | `live.read` | `read` | 30 s, then its `signal` aborts | a failed read: nothing is committed, `status()` is `connecting`, and the next read runs on the backoff std.live gives |
+| std.offline | `offline.storage` | one `ctx.storage` call | 10 s for a write (std.outbox) | the entry is `failed` with `offline.storage` (std.outbox) |
 
-**Rules.** E1461 `supervise` called in app code, at the callee, message `supervise in app code: a library owns supervised work; here use attempt(fn, expect)`; or, in a library's file, with an `id` that is no string literal, at the argument, message `supervise id is not a literal`. No fix. The callee is found as k.unsafe One path says. R1018 (k.escapes) each call.
+**Rules.** E1461 `supervise` called in app code, at the callee, message `supervise in app code: a library owns supervised work; here use attempt(fn, expect)`; or, in a library's file, with an `id` that is no string literal, at the argument, message `supervise id is not a literal`. No fix. At run time, the defect E1458 `supervise takes a KeelError as failed` (API). The callee is found as k.unsafe One path says. R1018 (k.escapes) each call.
 
 **Conformance.**
 - With `T` a `KeelError` and a sim ctx: `supervise(ctx, 'm.run', () => 1, T)` is `ok(1)`; `supervise(ctx, 'm.run', () => err(U), T)` deep-equals `err(U)` for a second `KeelError` `U`; each `async` form resolves to the same; and none of them reports an `error` event.

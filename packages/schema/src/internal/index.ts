@@ -19,4 +19,5 @@ export type { WeakMapOf } from "./WeakMapOf.ts";
 export { heldSet } from "./heldSet.ts";
 export type { WeakSetOf } from "./WeakSetOf.ts";
 export { isResult } from "./isResult.ts";
+export { isKeelError } from "./isKeelError.ts";
 export { passed } from "./passed.ts";

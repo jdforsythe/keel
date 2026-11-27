@@ -1,5 +1,5 @@
-import { type KeelError, type Result, err, ok } from "@keel/schema";
-import { isResult } from "@keel/schema/internal";
+import { type KeelError, type Result, defect, err, ok } from "@keel/schema";
+import { isKeelError, isResult } from "@keel/schema/internal";
 import type { Ctx } from "./Ctx.ts";
 import { ctxMeta } from "./internal/ctxMeta.ts";
 import { report } from "./internal/report.ts";
@@ -21,6 +21,15 @@ const isThenable = (x: unknown): boolean =>
 /** A keel `Result` `fn` returned is the call's own; any other value is its `ok`. */
 const settled = (v: unknown): Result<unknown, Failure> => (isResult(v) ? v : ok(v));
 
+/** Whether `failed` is a `KeelError`; a value whose inspection throws (a `Proxy`) is none. */
+const isFailure = (failed: unknown): boolean => {
+  try {
+    return isKeelError(failed);
+  } catch {
+    return false;
+  }
+};
+
 /** Report `thrown` once (k.supervise Report): the server's record, then one `error` event; a throw of either is dropped. */
 function reported(ctx: Ctx, id: string, thrown: unknown): void {
   try {
@@ -41,9 +50,10 @@ function reported(ctx: Ctx, id: string, thrown: unknown): void {
 /**
  * Run code the caller does not own and outlive its throws (k.supervise). `fn` returning `v` is `ok(v)`, a keel
  * `Result` it returns is the call's own; every value it throws or rejects with, a defect among them, is reported
- * once and gives `err(failed)`. It never throws or rejects for a throw of `fn`. `failed` is made before `fn` runs,
- * so nothing of a thrown value reaches the caller. A kernel package and a library's file may call it (R1018); app
- * code may not (E1461).
+ * once and gives `err(failed)`, as is a returned value whose inspection throws. It never throws or rejects for a
+ * throw of `fn`, and sets no time: each supervisor bounds its work. `failed` is made before `fn` runs, so nothing of a
+ * thrown value reaches the caller; one that is no `KeelError` is the defect E1458 before `fn` runs. A kernel package
+ * and a library's file may call it (R1018); app code may not (E1461).
  */
 export function supervise<T, E extends Failure>(ctx: Ctx, id: string, fn: () => T, failed: E): Settled<T, E>;
 export function supervise(
@@ -52,9 +62,12 @@ export function supervise(
   fn: () => unknown,
   failed: Failure,
 ): Result<unknown, Failure> | Promise<Result<unknown, Failure>> {
+  if (!isFailure(failed)) defect("supervise takes a KeelError as failed", "E1458");
+  // Made before `fn` runs, so a `failed` read again later cannot turn a supervised throw into a throw of the call.
+  const failure = err(failed);
   const threw = (thrown: unknown): Result<never, Failure> => {
     reported(ctx, id, thrown);
-    return err(failed);
+    return failure;
   };
   let value: unknown;
   try {
@@ -68,6 +81,12 @@ export function supervise(
   } catch (thrown) {
     return threw(thrown);
   }
-  if (!thenable) return settled(value);
+  if (!thenable) {
+    try {
+      return settled(value);
+    } catch (thrown) {
+      return threw(thrown);
+    }
+  }
   return Promise.resolve(value).then(settled, threw).then(undefined, threw);
 }
