@@ -1,12 +1,15 @@
 /// <reference path="./PageApi.ts" />
 // The page script's globals (`__keelE2e`, `__keelProblem`) are declared in PageApi.ts.
-import type { Locator, Page as Tab } from "playwright-core";
+import { readFile } from "node:fs/promises";
+import type { Locator, Response, Page as Tab } from "playwright-core";
 import type { A11yNode } from "../../types/A11yNode.ts";
 import type { CookieInfo } from "../../types/CookieInfo.ts";
+import type { ExpectedProblem } from "../../types/ExpectedProblem.ts";
 import type { Found } from "../../types/Found.ts";
 import type { Layout } from "../../types/Layout.ts";
 import type { Match } from "../../types/Match.ts";
 import type { Page } from "../../types/Page.ts";
+import type { Problem } from "../../types/Problem.ts";
 import type { StyleName } from "../../types/StyleName.ts";
 import type { TestEvent } from "../../types/TestEvent.ts";
 import type { Wait } from "../../types/Wait.ts";
@@ -35,6 +38,10 @@ const toMatch = (m: Match): PageMatch => {
   if (typeof text === "string") return { ...rest, text };
   return { ...rest, pattern: { source: text.source, flags: text.flags } };
 };
+
+/** Whether `p` is one `e` names: its kind, and its text holding `e.text` or matching it. */
+const matches = (p: Problem, e: ExpectedProblem): boolean =>
+  p.kind === e.kind && (typeof e.text === "string" ? p.text.includes(e.text) : new RegExp(e.text).test(p.text));
 
 const locate = (tab: Tab, id: string): Locator => tab.locator(`[id=${JSON.stringify(id)}]`).first();
 
@@ -84,6 +91,7 @@ export function makePage(
       if (!(e instanceof Error) || Reflect.get(e, "code") !== "E1705") throw e;
       const present = await tab.evaluate((i) => document.getElementById(i) !== null, id).catch(() => false);
       if (present) return id;
+      await framed(id);
       throw e;
     }
   };
@@ -137,9 +145,37 @@ export function makePage(
     throw ranOut(name, id, seen, ms);
   };
 
+  /** Resolves `true` once `ready()` holds, re-read on each event of the tab; `false` when `ms` passes. */
+  const arrived = (ready: () => boolean, ms: number): Promise<boolean> =>
+    new Promise((done) => {
+      if (ready()) return done(true);
+      const wake = (): void => {
+        if (!ready()) return;
+        clearTimeout(timer);
+        state.waiters.delete(wake);
+        done(true);
+      };
+      const timer = setTimeout(() => {
+        state.waiters.delete(wake);
+        done(ready());
+      }, ms);
+      state.waiters.add(wake);
+    });
+
+  /** E1705 for `id` shown only inside a frame of the page (k.e2e-run Walls): nothing outside the main frame is read. */
+  const framed = async (id: string): Promise<void> => {
+    if (id === "") return;
+    for (const f of tab.frames()) {
+      if (f === tab.mainFrame()) continue;
+      const inside = await f.evaluate((i) => document.getElementById(i) !== null, id).catch(() => false);
+      if (inside) throw fail("E1705", `${id} is inside a frame: serve that app`, { id });
+    }
+  };
+
   const shownNow = async <T>(name: string, id: string, read: () => Promise<T | null>, ms: number): Promise<T> => {
     const first = await read();
     if (first !== null) return first;
+    await framed(id);
     await waitFor(name, id, {}, ms);
     const again = await read();
     if (again === null) throw ranOut(name, id, "not shown", ms);
@@ -355,13 +391,20 @@ export function makePage(
         }
         return out;
       }),
-    resume: () =>
+    resume: (options = {}) =>
       verb(async () => {
         if (!state.holding) throw e2eError("E1736", "resume: the page was not opened with hold", {}, "k.e2e-page");
+        const grows = options.grows ?? [];
+        await ensureScript(tab);
+        // An id of `grows` not on the page is E1705: it would allow nothing.
+        for (const id of grows) {
+          await checked(id);
+          if (!(await tab.evaluate((i) => document.getElementById(i) !== null, id)))
+            throw fail("E1705", `resume grows ${JSON.stringify(id)}: no element with that id on the page`, { id });
+        }
         const ms = boundMs();
         const from = performance.now();
-        await ensureScript(tab);
-        await tab.evaluate(() => globalThis.__keelE2e?.hold());
+        await tab.evaluate((g) => globalThis.__keelE2e?.hold(g), grows);
         state.holding = false;
         for (const r of state.parked.splice(0)) await r.continue().catch(() => undefined);
         await tab.unrouteAll({ behavior: "ignoreErrors" });
@@ -369,7 +412,71 @@ export function makePage(
         const check = await tab.evaluate(() => globalThis.__keelE2e?.held() ?? { ok: true as const });
         if (!check.ok) throw fail("E1720", `the document did not resume in place: ${check.why}`, { why: check.why });
       }),
-    problems: () => state.problems.splice(0),
+    problems: (...expected) => {
+      if (expected.length === 0) return [...state.problems];
+      const taken = state.problems.filter((p) => expected.some((e) => matches(p, e)));
+      const left = state.problems.filter((p) => !taken.includes(p));
+      state.problems.splice(0, state.problems.length, ...left);
+      return taken;
+    },
+    upload: (id, files) =>
+      verb(async () => {
+        const at = await checked(id);
+        await shownNow("upload", at, () => found(at), boundMs());
+        const isFile = await locate(tab, at).evaluate((el) => el instanceof HTMLInputElement && el.type === "file");
+        if (!isFile) throw fail("E1726", `upload ${at}: not an <input type="file">`, { id: at });
+        await act("upload", at, (loc, ms) =>
+          loc.setInputFiles(
+            files.map((f) => ({
+              name: f.name,
+              mimeType: f.type,
+              buffer: "text" in f ? Buffer.from(f.text, "utf8") : Buffer.from(f.bytes),
+            })),
+            { timeout: ms },
+          ),
+        );
+      }),
+    download: (id) =>
+      verb(async () => {
+        const at = await checked(id);
+        const ms = boundMs();
+        const from = performance.now();
+        // The answer's type, read off the response the click's request got.
+        const types = new Map<string, string>();
+        const seen = (r: Response): void => {
+          types.set(r.url(), (r.headers()["content-type"] ?? "").split(";")[0]?.trim() ?? "");
+        };
+        tab.on("response", seen);
+        try {
+          const [file] = await Promise.all([
+            tab.waitForEvent("download", { timeout: ms }),
+            locate(tab, at).click({ timeout: ms }),
+          ]);
+          const bytes = new Uint8Array(await readFile(await file.path()));
+          // The click's request became the download: it is no request of the page left unanswered.
+          for (const r of [...state.inflight]) if (r.url() === file.url()) state.inflight.delete(r);
+          // A download replaces no document: the navigation it started is over and the page is the one loaded.
+          state.loaded = true;
+          await settled("download", at, ms, from);
+          return { name: file.suggestedFilename(), type: types.get(file.url()) ?? "", bytes };
+        } catch (e) {
+          if (timedOut(e)) throw ranOut("download", at, "no download", ms);
+          throw e;
+        } finally {
+          tab.off("response", seen);
+        }
+      }),
+    hover: (id) => verb(async () => act("hover", await checked(id), (loc, ms) => loc.hover({ timeout: ms }))),
+    opened: () =>
+      verb(async () => {
+        await ensureScript(tab);
+        const asked = await tab.evaluate(() => globalThis.__keelE2e?.opens() ?? 0);
+        const ms = boundMs();
+        // Each tab the page asked for arrives as a `popup` event: waited for, never slept on.
+        if (!(await arrived(() => state.popups.length >= asked, ms)))
+          throw ranOut("opened", "", `${state.popups.length} of ${asked} tabs opened`, ms);
+        return Promise.all([...state.popups].map((p) => deps.adopt(p)));
+      }),
     open: (path, options) => openTab(path, options?.hold === true),
   };
   return page;

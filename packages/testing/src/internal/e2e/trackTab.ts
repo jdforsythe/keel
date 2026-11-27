@@ -18,6 +18,7 @@ export function trackTab(tab: Tab, holding: boolean): TabState {
     holding,
     loaded: false,
     waiters: new Set(),
+    popups: [],
   };
   const wake = (): void => {
     for (const w of [...state.waiters]) w();
@@ -48,6 +49,16 @@ export function trackTab(tab: Tab, holding: boolean): TabState {
   });
   tab.on("pageerror", (e) => {
     state.problems.push({ kind: "pageerror", text: `${e.name}: ${e.message}` });
+    wake();
+  });
+  // A dialog is dismissed and is a problem the test takes (k.e2e-page `problems`).
+  tab.on("dialog", (d) => {
+    state.problems.push({ kind: "dialog", text: d.message() });
+    void d.dismiss().catch(() => undefined);
+    wake();
+  });
+  tab.on("popup", (p) => {
+    state.popups.push(p);
     wake();
   });
   tab.on("console", (m) => {

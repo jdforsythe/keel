@@ -18,4 +18,6 @@ export type TabState = {
   /** Whether the document has fired `load` since its navigation. */
   loaded: boolean;
   readonly waiters: Set<() => void>;
+  /** The tabs this one opened (`target="_blank"`, `window.open`), in order. */
+  readonly popups: Tab[];
 };

@@ -1,3 +1,4 @@
+import type { Page as Tab } from "playwright-core";
 import type { CookieSeed } from "../../types/CookieSeed.ts";
 import type { Page } from "../../types/Page.ts";
 import type { ContextRun } from "./ContextRun.ts";
@@ -28,6 +29,8 @@ export async function openContext(o: {
   readonly cookies: readonly CookieSeed[];
   readonly proxy: string;
   readonly mapped: boolean;
+  /** Whether a page of this serve may reach `origin` (k.e2e-run Reach): a served origin, a peer name or a mapped one. */
+  readonly reaches: (origin: string) => boolean;
   readonly verb: () => void;
   readonly failed: () => void;
   /** The serve's contexts: this one joins them before its first tab loads, so the test's end closes it. */
@@ -62,6 +65,65 @@ export async function openContext(o: {
     }
   });
   await context.addInitScript({ content: await pageScript() });
+  // Reach (k.e2e-run): a request to an origin the serve neither serves nor maps, a loopback one among them, is refused
+  // here, before it leaves the browser, and is the tab's `offsite` problem. A tab's own routes fall back to this one.
+  const refuse = (page: unknown, method: string, url: URL): void => {
+    const tab = run.tabs.find((t) => t.tab === page);
+    if (tab === undefined) return;
+    tab.problems.push({ kind: "offsite", text: `${method} ${url.origin}${url.pathname}` });
+    for (const w of [...tab.waiters]) w();
+  };
+  const outside = (href: string): URL | undefined => {
+    const url = new URL(href);
+    if (url.protocol !== "http:" && url.protocol !== "https:" && url.protocol !== "ws:" && url.protocol !== "wss:")
+      return undefined;
+    const origin = `${url.protocol.replace(/^ws/, "http")}//${url.host}`;
+    return o.reaches(origin) ? undefined : url;
+  };
+  await context.route("**/*", async (route) => {
+    const r = route.request();
+    const off = outside(r.url());
+    if (off === undefined) return route.continue().catch(() => undefined);
+    refuse(r.frame().page(), r.method(), off);
+    await route.abort("blockedbyclient").catch(() => undefined);
+  });
+  await context.routeWebSocket(/.*/, (ws) => {
+    const off = outside(ws.url());
+    if (off === undefined) {
+      ws.connectToServer();
+      return;
+    }
+    const last = run.tabs.at(-1);
+    if (last !== undefined) refuse(last.tab, "GET", off);
+    void ws.close({ code: 1008, reason: "offsite" });
+  });
+
+  // A tab the page opened by itself: tracked from its first event, loaded and quiet as `open` resolves.
+  const adopted = new Map<Tab, Page>();
+  const adopt = async (tab: Tab): Promise<Page> => {
+    const known = adopted.get(tab);
+    if (known !== undefined) return known;
+    const state: TabState = trackTab(tab, false);
+    run.tabs.push(state);
+    const page = makePage(
+      state,
+      { project: o.project, origin: o.origin, run, verb: o.verb, failed: o.failed, adopt },
+      (p, h) => tabAt(p, h),
+    );
+    adopted.set(tab, page);
+    const ms = boundMs();
+    const from = performance.now();
+    try {
+      await tab.waitForLoadState("load", { timeout: ms });
+    } catch (e) {
+      if (e instanceof Error && e.name === "TimeoutError")
+        throw e2eError("E1735", `opened: the document did not load after ${seconds(ms)}`, {}, "k.e2e-page");
+      throw e;
+    }
+    if (!(await quiet(state, from + ms)))
+      throw e2eError("E1735", `opened: the page was not quiet after ${seconds(ms)}`, {}, "k.e2e-page");
+    return page;
+  };
 
   const tabAt = async (path: string, hold: boolean): Promise<Page> => {
     const tab = await context.newPage();
@@ -72,8 +134,9 @@ export async function openContext(o: {
     if (!o.scripts)
       await tab.route("**/*", async (route) => {
         const r = route.request();
+        if (outside(r.url()) !== undefined) return route.fallback();
         if (r.resourceType() === "script") return route.abort("blockedbyclient");
-        if (r.resourceType() !== "document") return route.continue();
+        if (r.resourceType() !== "document") return route.fallback();
         const answer = await route.fetch();
         const type = answer.headers()["content-type"] ?? "";
         if (!type.includes("text/html")) return route.fulfill({ response: answer });
@@ -86,11 +149,11 @@ export async function openContext(o: {
           for (const w of [...state.waiters]) w();
           return;
         }
-        await route.continue().catch(() => undefined);
+        await route.fallback().catch(() => undefined);
       });
     const page = makePage(
       state,
-      { project: o.project, origin: o.origin, run, verb: o.verb, failed: o.failed },
+      { project: o.project, origin: o.origin, run, verb: o.verb, failed: o.failed, adopt },
       (p, h) => tabAt(p, h),
     );
     const ms = boundMs();

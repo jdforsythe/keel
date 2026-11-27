@@ -50,7 +50,12 @@ export function testEnd(): EndOfTest {
     const first = unread[0];
     const e1738 =
       result?.state !== "fail" && first !== undefined
-        ? e2eError("E1738", `${problemText(first)}; read it with problems()`, { problems: unread }, "k.e2e-page")
+        ? e2eError(
+            "E1738",
+            `${problemText(first)}; take it with problems({ kind: '${first.kind}', text })`,
+            { problems: unread },
+            "k.e2e-page",
+          )
         : undefined;
     // E1738 has no frame of its own: it is the test's, at the test's line.
     if (e1738 !== undefined) e1738.stack = `${e1738.message}\n    at ${file}:${at.line}:${at.column}`;

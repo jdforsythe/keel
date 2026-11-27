@@ -157,18 +157,26 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         const more = fs.slice(1).map((f) => `at ${relative(cwd, f.file)}:${f.line}:${f.col}`);
         const whole = str(e.message) ?? "test failed";
         const said = firstLine(whole);
+        // In an e2e test, an error neither Keel's nor an assertion's (a Node system error, a driver's) is
+        // `uncaught: <code> <first line>`, its app frames below it and never under `fix:` (k.e2e-run Output).
+        const foreign = e2e && !/^[EWT]\d{4}$/.test(raw) && str(e.name) !== "AssertionError";
         // An e2e test's failure is one T0001 whose message is the code and its line (k.e2e-page Failure output).
         const message = clip89(
-          coded === undefined
-            ? `${name.join(" > ")}: ${said}`
-            : e2e
-              ? said
-              : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
+          foreign
+            ? `uncaught: ${raw === "" ? "" : `${raw} `}${said}`
+            : coded === undefined
+              ? `${name.join(" > ")}: ${said}`
+              : e2e
+                ? said
+                : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
         );
-        const lines = Array.isArray(e.keelDetail) ? e.keelDetail.filter((l): l is string => typeof l === "string") : [];
-        const fix = [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
-          .filter((x): x is string => x !== undefined)
-          .join("\n");
+        const kept = Array.isArray(e.keelDetail) ? e.keelDetail.filter((l): l is string => typeof l === "string") : [];
+        const lines = foreign ? [...more, ...kept] : kept;
+        const fix = foreign
+          ? ""
+          : [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
+              .filter((x): x is string => x !== undefined)
+              .join("\n");
         diagnostics.push({
           kind: "diag",
           code: e2e ? "T0001" : (coded ?? "T0001"),

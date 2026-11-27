@@ -118,8 +118,31 @@ function ruleIds(): string[] {
 const islands = (): string =>
   [...document.querySelectorAll("[data-k-island]")].map((el) => el.getAttribute("data-k-island") ?? "").join(", ");
 
+/**
+ * An element named as `resume` names it (k.e2e-page): its id, else its tag and place among the elements of that tag
+ * under its nearest ancestor with an id (`li 3 under recipes.list`).
+ */
+const named = (el: Element): string => {
+  if (el.id !== "") return el.id;
+  const tag = el.tagName.toLowerCase();
+  let anc = el.parentElement;
+  while (anc !== null && anc.id === "") anc = anc.parentElement;
+  const scope = anc ?? document.documentElement;
+  const place = [...scope.querySelectorAll(tag)].indexOf(el) + 1;
+  return `${tag} ${place} under ${anc === null ? "the document" : anc.id}`;
+};
+/** The island an element is under: its root's `data-k-island` value, or its id. */
+const islandOf = (el: Element): string => {
+  const root = el.closest("[data-k-island]");
+  return root === null ? "none" : root.getAttribute("data-k-island") || root.id || "unnamed";
+};
+
 type Snapshot = {
   readonly elements: readonly (readonly [Element, string])[];
+  /** Each element under each island root, the roots among them, with its name and island as recorded. */
+  readonly under: ReadonlyMap<Element, readonly [string, string]>;
+  /** The elements of `grows`: additions inside them are allowed. */
+  readonly grows: readonly Element[];
   readonly focus: Element | null;
   readonly values: readonly (readonly [Element, string, number | null, number | null])[];
   readonly scroll: readonly [number, number];
@@ -127,7 +150,12 @@ type Snapshot = {
 };
 let snapshot: Snapshot | undefined;
 
+// The tabs the page asks for: `opened()` waits for as many as were asked. A `window.open` call, and a click on a link
+// whose target opens a new tab that no handler prevented, each count one.
+let opens = 0;
+
 const api: PageApi = {
+  opens: () => opens,
   found: (id) => {
     const el = byId(id);
     return el === null ? null : foundOf(el);
@@ -206,7 +234,10 @@ const api: PageApi = {
       };
       requestAnimationFrame(frame);
     }),
-  hold: () => {
+  hold: (grows) => {
+    const under = new Map<Element, readonly [string, string]>();
+    for (const root of document.querySelectorAll("[data-k-island]"))
+      for (const el of [root, ...root.querySelectorAll("*")]) under.set(el, [named(el), islandOf(el)]);
     const controls = [...document.querySelectorAll("input, textarea, select")];
     snapshot = {
       elements: [...document.querySelectorAll("[id]")]
@@ -228,6 +259,11 @@ const api: PageApi = {
       }),
       scroll: [scrollX, scrollY],
       islands: islands(),
+      under,
+      grows: grows.flatMap((id) => {
+        const el = document.getElementById(id);
+        return el === null ? [] : [el];
+      }),
     };
   },
   held: (): HeldCheck => {
@@ -240,6 +276,14 @@ const api: PageApi = {
         ok: false,
         why: `the claim replaced <${replaced[0].tagName.toLowerCase()} id="${replaced[1]}"> the server sent`,
       };
+    // Each element recorded under an island root is still in the document, where it was.
+    for (const [el, [name, island]] of s.under)
+      if (!el.isConnected) return { ok: false, why: `the claim removed or replaced ${name} in island ${island}` };
+    // No element was added under an island root but inside an element of `grows`.
+    for (const root of document.querySelectorAll("[data-k-island]"))
+      for (const el of [root, ...root.querySelectorAll("*")])
+        if (!s.under.has(el) && !s.grows.some((g) => g !== el && g.contains(el)))
+          return { ok: false, why: `the claim added ${named(el)} in island ${islandOf(el)}` };
     if (document.activeElement !== s.focus)
       return { ok: false, why: `the claim moved focus off ${s.focus === null ? "the page" : where(s.focus)}` };
     for (const [el, value, start, end] of s.values) {
@@ -262,5 +306,16 @@ const api: PageApi = {
     return { ok: true };
   },
 };
+
+const open = window.open.bind(window);
+window.open = (...args: Parameters<typeof window.open>) => {
+  opens++;
+  return open(...args);
+};
+// On `window`, bubbling: after every handler of the page, so a click a handler prevented opens nothing.
+window.addEventListener("click", (e) => {
+  const at = e.target instanceof Element ? e.target.closest("a[href]") : null;
+  if (at instanceof HTMLAnchorElement && at.target === "_blank" && !e.defaultPrevented) opens++;
+});
 
 globalThis.__keelE2e = api;

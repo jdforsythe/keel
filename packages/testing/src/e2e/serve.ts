@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -66,9 +66,24 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
   if (options.page !== undefined) {
     // A library's page: its host project written, built and served as an app is (k.e2e Libraries).
     const host = libraryPage(dir, options);
-    await build(host);
-    const { page: _page, props: _props, ...rest } = options;
-    return serve({ ...rest, project: host });
+    const removeHost = async (): Promise<void> => rmSync(host, { recursive: true, force: true });
+    try {
+      await build(host);
+      const { page: _page, props: _props, wrap: _wrap, tokens: _tokens, ...rest } = options;
+      const inner = await serve({ ...rest, project: host });
+      // The host folder is the handle's: removed at dispose, after its servers stop.
+      testEnd().disposeAtEnd(removeHost);
+      return {
+        ...inner,
+        dispose: async () => {
+          await inner.dispose();
+          await removeHost();
+        },
+      };
+    } catch (e) {
+      await removeHost();
+      throw e;
+    }
   }
   const project = readProject(dir);
   const data = mkdtempSync(join(tmpdir(), "keel-e2e-data-"));
@@ -207,16 +222,19 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
     const reader = await openStore(sourceOf(store));
     try {
       const text = await reader.get(`keel.store.${store.id}`);
-      if (text === undefined) return { head: 0, entries: [] };
+      const sha = (t: string): string => createHash("sha256").update(t, "utf8").digest("hex");
+      if (text === undefined) return { head: 0, digest: "", entries: [] };
       const held: unknown = JSON.parse(text);
       const head = typeof held === "object" && held !== null ? Reflect.get(held, "head") : undefined;
       const log: unknown = typeof held === "object" && held !== null ? Reflect.get(held, "log") : undefined;
       const entries = (Array.isArray(log) ? log : []).flatMap((e: unknown) => {
         const id: unknown = typeof e === "object" && e !== null ? Reflect.get(e, "id") : undefined;
         const name: unknown = typeof e === "object" && e !== null ? Reflect.get(e, "name") : undefined;
-        return typeof id === "number" && typeof name === "string" ? [{ id, name }] : [];
+        const payload: unknown = typeof e === "object" && e !== null ? Reflect.get(e, "payload") : undefined;
+        const digest = sha(JSON.stringify(payload) ?? "");
+        return typeof id === "number" && typeof name === "string" ? [{ id, name, digest }] : [];
       });
-      return { head: typeof head === "number" ? head : 0, entries };
+      return { head: typeof head === "number" ? head : 0, digest: sha(text), entries };
     } finally {
       await reader.close();
     }
@@ -244,6 +262,11 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
         cookies: opts.cookies ?? [],
         proxy: proxy?.server ?? "",
         mapped: routes.size > 0,
+        reaches: (origin) =>
+          routes.has(origin) ||
+          /^http:\/\/[a-z0-9-]+\.peer\.keel\.test$/.test(origin) ||
+          [...hosts.values()].some((h) => h.origin === origin) ||
+          [...procs.values()].some((p) => origin === `http://127.0.0.1:${p.port()}`),
         verb: mark,
         failed: () => {
           failing = new Map(marks);

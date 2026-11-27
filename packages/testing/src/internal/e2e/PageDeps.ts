@@ -1,3 +1,5 @@
+import type { Page as Tab } from "playwright-core";
+import type { Page } from "../../types/Page.ts";
 import type { ContextRun } from "./ContextRun.ts";
 import type { ProjectInfo } from "./ProjectInfo.ts";
 
@@ -11,4 +13,6 @@ export type PageDeps = {
   readonly verb: () => void;
   /** Keeps the current verb's mark as the failing one. */
   readonly failed: () => void;
+  /** A page handle for a tab this context opened by itself (a popup), loaded and quiet. */
+  readonly adopt: (tab: Tab) => Promise<Page>;
 };

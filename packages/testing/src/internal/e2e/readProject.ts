@@ -67,11 +67,11 @@ export function readProject(dir: string): ProjectInfo {
   const data = typeof parsed === "object" && parsed !== null ? Reflect.get(parsed, "data") : undefined;
   const ids = new Set(typeof data === "object" && data !== null ? Object.keys(data) : []);
   const heads = idHeads([...sources(join(dir, "modules")), ...libraries(dir).flatMap((d) => sources(join(d, "src")))]);
-  // A form's field is `<formId>:<path>`, its form id often a hash of its schema (k.forms Bindings): never in ids.json.
+  // Known (k.e2e-page Verbs): listed, a form field `<formId>:<path>` of a listed form id, or fitting a template id's
+  // fixed head or tail. An id under a listed id is not known for that alone.
   const knows = (id: string): boolean =>
     ids.has(id) ||
-    id.includes(":") ||
-    heads.some((h) => (h.startsWith(".") ? id.endsWith(h) : id.startsWith(h))) ||
-    [...ids].some((k) => id.startsWith(`${k}.`));
+    (id.includes(":") && ids.has(id.slice(0, id.indexOf(":"))) && id.length > id.indexOf(":") + 1) ||
+    heads.some((h) => (h.startsWith(".") ? id.endsWith(h) : id.startsWith(h)));
   return { dir, deployables, ids: [...ids].sort(), knows };
 }

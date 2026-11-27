@@ -23,7 +23,9 @@ export type PageApi = {
   readonly seen: (id: string, match: PageMatch) => string;
   /** Resolves once two animation frames pass with no DOM change; `false` after `ms`. */
   readonly calm: (ms: number) => Promise<boolean>;
-  readonly hold: () => void;
+  /** How many tabs the page asked to open so far: `window.open` calls and clicks on `target="_blank"` links. */
+  readonly opens: () => number;
+  readonly hold: (grows: readonly string[]) => void;
   readonly held: () => HeldCheck;
 };
 

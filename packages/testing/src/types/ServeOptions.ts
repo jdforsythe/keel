@@ -13,4 +13,8 @@ export type ServeOptions = {
   /** In a library's own folder: the component file (`src/Card.ts`) whose export its one page `/` renders (k.e2e Libraries). */
   readonly page?: string;
   readonly props?: Readonly<Record<string, unknown>>;
+  /** With `page`: a component file under the library's `test/` taking `children`, the page rendered inside it. */
+  readonly wrap?: string;
+  /** With `page`: a file under the library's `test/` exporting `tokens`, replacing the library's own. */
+  readonly tokens?: string;
 };

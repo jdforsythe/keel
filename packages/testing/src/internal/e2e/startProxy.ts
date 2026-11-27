@@ -2,16 +2,16 @@ import { type IncomingMessage, type ServerResponse, createServer, request } from
 import { connect } from "node:net";
 import { TLSSocket } from "node:tls";
 import type { AnswerEntry } from "./AnswerEntry.ts";
-import { LOOPBACK_CERT } from "./LOOPBACK_CERT.ts";
 import type { ProxyServer } from "./ProxyServer.ts";
+import { runCertificate } from "./runCertificate.ts";
 import { sendResponse } from "./sendResponse.ts";
 import { webRequest } from "./webRequest.ts";
 
 const PEER = /^([a-z0-9-]+)\.peer\.keel\.test$/;
 
 /**
- * A serve's proxy on 127.0.0.1: a request for a mapped origin goes to its `answer` (`https` ended with the shipped
- * loopback certificate), one for `<name>.peer.keel.test` to that deployable's port (`peers`), and every other request
+ * A serve's proxy on 127.0.0.1: a request for a mapped origin goes to its `answer` (`https` ended with a certificate
+ * made for this serve's mapped host names alone, on the run's key, `runCertificate`), one for `<name>.peer.keel.test` to that deployable's port (`peers`), and every other request
  * on, unchanged; a loopback one (Playwright sends those through it too) to its port, an answer cut off there cut off
  * for the page.
  */
@@ -19,6 +19,7 @@ export async function startProxy(
   origins: ReadonlyMap<string, AnswerEntry>,
   peers: (name: string) => number | undefined,
 ): Promise<ProxyServer> {
+  const tlsCert = runCertificate([...new Set([...origins.keys()].map((o) => new URL(o).hostname))]);
   const toAnswer = async (entry: AnswerEntry, req: IncomingMessage, res: ServerResponse, url: string) =>
     sendResponse(res, await entry.respond(await webRequest(req, url)));
 
@@ -68,7 +69,7 @@ export async function startProxy(
     const origin = port === 443 ? `https://${host}` : `https://${host}:${port}`;
     if (origins.has(origin)) {
       socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-      const tls = new TLSSocket(socket, { isServer: true, cert: LOOPBACK_CERT.cert, key: LOOPBACK_CERT.key });
+      const tls = new TLSSocket(socket, { isServer: true, cert: tlsCert.cert, key: tlsCert.key });
       if (head.length > 0) socket.unshift(head);
       inner.emit("connection", tls);
       return;
