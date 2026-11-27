@@ -99,11 +99,10 @@ describe("k.privacy server log", () => {
               const rec: unknown = JSON.parse(l);
               return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
             });
-            expect(diags.length).toBeGreaterThan(0);
-            for (const line of diags) {
-              expect(line).toContain("[pii]");
-              for (const secret of secrets) expect(line).not.toContain(secret);
-            }
+            // dev writes the thrown text in a second diag; the first holds none (k.serverlog Thrown values)
+            expect(diags).toHaveLength(2);
+            expect(diags[1]).toContain("[pii]");
+            for (const line of diags) for (const secret of secrets) expect(line).not.toContain(secret);
           }),
           { seed: SEED, numRuns: 100 },
         );
@@ -144,11 +143,9 @@ describe("k.privacy server log", () => {
           const rec: unknown = JSON.parse(l);
           return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
         });
-        expect(diags.length).toBeGreaterThan(0);
-        for (const line of diags) {
-          expect(line).toContain("[secret]");
-          for (const form of forms) expect(line).not.toContain(form);
-        }
+        expect(diags).toHaveLength(2);
+        expect(diags[1]).toContain("[secret]");
+        for (const line of diags) for (const form of forms) expect(line).not.toContain(form);
         for (const line of lines) for (const form of forms) expect(line).not.toContain(form);
       });
     }
