@@ -26,8 +26,9 @@ const bare = (e: Expression): Expression =>
     ? bare(e.expression)
     : e;
 
-const isFn = (e: Expression): e is ArrowFunctionExpression | FunctionNode =>
-  e.type === "ArrowFunctionExpression" || e.type === "FunctionExpression";
+/** `e` when it is an arrow function or a function expression, else `null`. */
+const fnOf = (e: Expression): ArrowFunctionExpression | FunctionNode | null =>
+  e.type === "ArrowFunctionExpression" || e.type === "FunctionExpression" ? e : null;
 
 /** The function a name in `program` is declared as at its top level: a function declaration or a `const` bound to one. */
 function declared(program: Program, name: string): Fn | null {
@@ -38,7 +39,7 @@ function declared(program: Program, name: string): Fn | null {
     for (const v of d.declarations) {
       if (v.id.type !== "Identifier" || v.id.name !== name || v.init === null || v.init === undefined) continue;
       const init = bare(v.init);
-      return isFn(init) ? init : null;
+      return fnOf(init);
     }
   }
   return null;
@@ -105,7 +106,7 @@ const isReflectGet = (c: Expression): boolean =>
 export function wideExpect(program: Program, expect: Argument | undefined): boolean {
   if (expect === undefined || expect.type === "SpreadElement") return false;
   const given = bare(expect);
-  const fn = isFn(given) ? given : given.type === "Identifier" ? declared(program, given.name) : null;
+  const fn = fnOf(given) ?? (given.type === "Identifier" ? declared(program, given.name) : null);
   if (fn === null || fn.body === null) return false;
   const x = paramOf(fn);
   if (x === null) return false;

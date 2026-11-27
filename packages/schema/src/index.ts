@@ -19,7 +19,7 @@ export { attempt } from "./attempt.ts";
 export { defect } from "./defect.ts";
 export { err } from "./err.ts";
 export { isDefect } from "./isDefect.ts";
-export { keelError } from "./keelErrorSchemas.ts";
+export { keelError } from "./kernelErrors/keelError.ts";
 export { isSchema } from "./isSchema.ts";
 export { isObjectSchema } from "./isObjectSchema.ts";
 export { formatLiteral } from "./formatLiteral.ts";

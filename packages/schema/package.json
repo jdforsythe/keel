@@ -17,8 +17,8 @@
       "default": "./src/internal/index.ts"
     },
     "./internal/refusal": {
-      "types": "./src/internal/refusalGuard.ts",
-      "default": "./src/internal/refusalGuard.ts"
+      "types": "./src/internal/refusal/index.ts",
+      "default": "./src/internal/refusal/index.ts"
     }
   },
   "publishConfig": {
@@ -36,8 +36,8 @@
         "default": "./dist/src/internal/index.js"
       },
       "./internal/refusal": {
-        "types": "./dist/src/internal/refusalGuard.d.ts",
-        "default": "./dist/src/internal/refusalGuard.js"
+        "types": "./dist/src/internal/refusal/index.d.ts",
+        "default": "./dist/src/internal/refusal/index.js"
       }
     }
   },

@@ -18,7 +18,7 @@ const LITERAL_FLAGS =
   ts.TypeFlags.BigIntLiteral;
 
 const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
-const isFn = (n: ts.Node): n is Fn =>
+const isFn = (n: ts.Node): boolean =>
   ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n);
 
 /**

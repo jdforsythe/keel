@@ -1,9 +1,9 @@
-import { s } from "./s.ts";
+import { s } from "../s.ts";
 
 /**
  * The kernel's codes an author returns (k.expect Made errors): `keelError.denied.make({})` and its siblings, each with
- * data `{}`, and `keelError.fields`, whose data maps a field path to its message (k.forms). The file is not named for
- * its export, since a file system that ignores case holds the type `KeelError` beside it.
+ * data `{}`, and `keelError.fields`, whose data maps a field path to its message (k.forms).
+ * In a folder of its own, since a file system that ignores case holds the type `KeelError.ts` beside `src/`'s files.
  */
 export const keelError = Object.freeze({
   denied: s.error("keel.denied", s.object({})),
