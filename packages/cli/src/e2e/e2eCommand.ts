@@ -1,6 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { peerKey } from "@keel/compiler/hosting/peerKey";
+import { createCtx } from "@keel/ctx";
 import { buildCommand } from "../internal/buildCommand.ts";
 import { isError } from "../internal/isError.ts";
 import { makeDiag } from "../internal/makeDiag.ts";
@@ -12,6 +14,9 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { browserCheck } from "./browserCheck.ts";
 import { e2eFiles } from "./e2eFiles.ts";
+import { makeRunFolder } from "./makeRunFolder.ts";
+import { stopDescendants } from "./stopDescendants.ts";
+import { sweepRunFolders } from "./sweepRunFolders.ts";
 
 /** An e2e test that declares no timeout has 60 s, fixed time: it bounds a build's output starting and a browser's work (k.e2e Time). */
 const TIMEOUT = 60_000;
@@ -29,6 +34,12 @@ const trailer = (ok: boolean, tests = 0, failed = 0, skipped = 0): OutRecord => 
  * `keel build` (each unserved `client` deployable built with `KEEL_PEER_<NAME>=http://<name>.peer.keel.test` per `node`
  * one, k.e2e Build input), stopping on its failure; the browser check (E1734); then vitest over the e2e files alone.
  * The run report is `reports/tests/e2e.json`; no other file there changes.
+ *
+ * Teardown (k.e2e-run): at its start the run sweeps what SIGKILLed runs left (`sweepRunFolders`), then makes its one
+ * run folder and points `TMPDIR`, `TMP` and `TEMP` there for vitest, so every data folder, host, profile and trace of
+ * the run is inside it. The folder is removed when the run ends, whatever its result; on SIGINT or SIGTERM every
+ * process the run started is stopped, the folder removed and one `stopped:` line printed, exit 130. On Linux as root
+ * the browser's sandbox is off and the run says so with one W1734.
  */
 export async function e2eCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const files = e2eFiles(io.cwd, input.paths ?? []);
@@ -58,21 +69,51 @@ export async function e2eCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const engine = input.engine ?? "chromium";
   const missing = await browserCheck(io.cwd, engine);
   if (missing !== undefined) return [...diags, missing, trailer(false)];
-  const r = await vitestRun(
-    io.cwd,
-    input.paths ?? [],
-    false,
-    (report) => {
-      const dir = join(io.cwd, "reports", "tests");
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, "e2e.json"), `${JSON.stringify(report, null, 2)}\n`);
-    },
-    {
-      include: GLOBS,
-      timeout: TIMEOUT,
-      env: { KEEL_E2E: "1", KEEL_E2E_ENGINE: engine },
-    },
-  );
-  const out = r.diagnostics.map((d) => makeDiag(d.code, d.message, d));
-  return [...diags, ...out, trailer(r.failed === 0 && r.errors === 0, r.tests, r.failed, r.skipped)];
+  const rooted = process.platform === "linux" && typeof process.getuid === "function" && process.getuid() === 0;
+  const warned =
+    rooted && engine === "chromium"
+      ? [makeDiag("W1734", "chromium sandbox off: running as root", { see: "k.e2e-run" })]
+      : [];
+  const now = createCtx({ mode: "real" }).clock.now();
+  sweepRunFolders(tmpdir(), now);
+  const run = makeRunFolder(now);
+  const stop = (): void => {
+    const n = stopDescendants();
+    rmSync(run, { recursive: true, force: true });
+    process.stdout.write(`stopped: removed ${n} processes and the run folder\n`);
+    process.exit(130);
+  };
+  process.once("SIGINT", stop);
+  process.once("SIGTERM", stop);
+  try {
+    const r = await vitestRun(
+      io.cwd,
+      input.paths ?? [],
+      false,
+      (report) => {
+        const dir = join(io.cwd, "reports", "tests");
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, "e2e.json"), `${JSON.stringify(report, null, 2)}\n`);
+      },
+      {
+        include: GLOBS,
+        timeout: TIMEOUT,
+        env: {
+          KEEL_E2E: "1",
+          KEEL_E2E_ENGINE: engine,
+          KEEL_E2E_RUN: run,
+          KEEL_E2E_SANDBOX: rooted ? "0" : "1",
+          TMPDIR: run,
+          TMP: run,
+          TEMP: run,
+        },
+      },
+    );
+    const out = r.diagnostics.map((d) => makeDiag(d.code, d.message, d));
+    return [...diags, ...warned, ...out, trailer(r.failed === 0 && r.errors === 0, r.tests, r.failed, r.skipped)];
+  } finally {
+    process.off("SIGINT", stop);
+    process.off("SIGTERM", stop);
+    rmSync(run, { recursive: true, force: true });
+  }
 }
