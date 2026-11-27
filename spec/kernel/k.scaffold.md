@@ -48,6 +48,7 @@ keel codemod place digest --to jobs --adapter node
 - Each generator run in a fresh project leaves `keel check` and `keel test` clean.
 - `rename A B` then `rename B A` restores a byte-identical tree.
 - After `rename`, no import, `href()` call, `uses:` entry or element id names the old name.
+- In a fresh library, `codemod rename Example Chart` makes `module.ts` `public.exports` name `Chart`, and `keel check`, clean before, is clean after.
 - `--dry-run` writes nothing and prints the diff a following apply writes.
 - An operation whose edit set would introduce a diagnostic writes no file and reports E1353.
 - Running a generator twice reports E1351 the second time, writing nothing.
