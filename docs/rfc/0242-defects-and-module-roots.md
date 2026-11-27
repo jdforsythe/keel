@@ -545,7 +545,7 @@ Conformance first, then:
 - A number an `expect` copies that encodes text; a helper a copy calls that reads `message` and returns a number.
 - A library that wraps its own code in `supervise` (R1018 lists each call).
 - A defect raised for a failure a caller could have handled (R1013).
-- A marked value copied to an unmarked node of an error's `data`, in a response; a personal value in `data` whose schema has no mark.
+- A schema-marked value that app code copies into an unmarked field of an error's `data` reaches a response, which carries `data` as its schema encodes it: types carry no mark, so check cannot see the copy. A personal value in `data` whose schema has no mark.
 - A request's write to plain module state: nothing refuses it (k.shared Not refused).
 - A throw of a function called in a `finally`; a throwing call check has no row for; a `Result` kept in a binding nothing reads.
 - Code that replaces a built-in before the kernel loads, the inspector protocol, `node:vm` (k.realm). The realm record of D32 is gone, and with it "a forged identity through the realm record".
