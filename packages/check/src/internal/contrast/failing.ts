@@ -1,4 +1,4 @@
-import { type GamutForm, composite, contrast, gamutForms } from "@keel/ui/css";
+import { type GamutForm, composite, contrast, formsOf } from "@keel/ui/css";
 import type { Combo } from "./Combo.ts";
 import { overOf } from "./overOf.ts";
 import { valueIn } from "./valueIn.ts";
@@ -34,10 +34,10 @@ function weightOf(tokens: unknown, name: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** The ratio of a pair of values when every form reads, else undefined (a value check leaves to the render). */
-const ratioOf = (fg: string, bg: string): number | undefined => {
+/** The ratio of a pair of values in one form when every value reads, else undefined (a value check leaves to the render). */
+const ratioOf = (fg: string, bg: string, form: GamutForm): number | undefined => {
   try {
-    return contrast(fg, bg);
+    return contrast(fg, bg, form);
   } catch {
     return undefined;
   }
@@ -50,34 +50,31 @@ const over = (top: string, back: string, form: GamutForm): string | undefined =>
   }
 };
 
+type Judged = { readonly ratio: number; readonly form: GamutForm | undefined };
+
 /**
- * The lowest ratio of `fg` on `bg` in one combination over `back`, or undefined when a value does not read. With an
- * overlay on either side, the pair is composited once in each gamut form (both mapped, both clipped) and the lower
- * ratio stands (k.values Contrast); with none, `contrast` judges the pair in every form.
+ * The lowest ratio of `fg` on `bg` in one combination over `back`, and the form it stands in when a color judged lies
+ * outside sRGB, or undefined when a value does not read (k.gamut Judging). The pair is judged in each form its colors
+ * ship in, sRGB forms together and P3 forms together, a printing combination in sRGB forms only; an overlay on either
+ * side is composited within each form. The lower ratio stands, sRGB's on a tie.
  */
-function lowest(c: Combo, fg: string, bg: string, bgIsOverlay: boolean, back: string | undefined): number | undefined {
+function lowest(c: Combo, fg: string, bg: string, bgIsOverlay: boolean, back: string | undefined): Judged | undefined {
   const fgIsOverlay = overOf(c, fg) !== undefined;
-  if (!bgIsOverlay && !fgIsOverlay) {
-    const a = opaque(c, fg);
-    const b = opaque(c, bg);
-    return a === undefined || b === undefined ? undefined : ratioOf(a, b);
-  }
-  let low: number | undefined;
-  for (const form of gamutForms) {
-    let b: string | undefined;
-    if (!bgIsOverlay) b = opaque(c, bg);
-    else {
-      const top = valueIn(c, "overlay", bg);
-      const base = back === undefined ? undefined : opaque(c, back);
-      b = top === undefined || base === undefined ? undefined : over(top, base, form);
-    }
+  const fgTop = fgIsOverlay ? valueIn(c, "overlay", fg) : opaque(c, fg);
+  const bgTop = bgIsOverlay ? valueIn(c, "overlay", bg) : opaque(c, bg);
+  const base = bgIsOverlay && back !== undefined ? opaque(c, back) : undefined;
+  if (fgTop === undefined || bgTop === undefined || (bgIsOverlay && base === undefined)) return undefined;
+  const all = formsOf(fgTop, bgTop, ...(base === undefined ? [] : [base]));
+  const forms = c.printing ? all.slice(0, 1) : all;
+  let low: Judged | undefined;
+  for (const form of forms) {
+    const b = bgIsOverlay && base !== undefined ? over(bgTop, base, form) : bgTop;
     if (b === undefined) return undefined;
-    const fgTop = fgIsOverlay ? valueIn(c, "overlay", fg) : opaque(c, fg);
-    const a = fgTop === undefined ? undefined : fgIsOverlay ? over(fgTop, b, form) : fgTop;
+    const a = fgIsOverlay ? over(fgTop, b, form) : fgTop;
     if (a === undefined) return undefined;
-    const r = ratioOf(a, b);
+    const r = ratioOf(a, b, form);
     if (r === undefined) return undefined;
-    low = low === undefined ? r : Math.min(low, r);
+    if (low === undefined || r < low.ratio) low = { ratio: r, form: all.length > 1 ? form : undefined };
   }
   return low;
 }
@@ -106,14 +103,15 @@ export function failing(
     const backs: (string | undefined)[] =
       bgOver === undefined ? [undefined] : under === undefined ? [...bgOver] : [under];
     for (const back of backs) {
-      const ratio = lowest(c, fg, bg, bgOver !== undefined, back);
-      if (ratio !== undefined && ratio < min)
+      const judged = lowest(c, fg, bg, bgOver !== undefined, back);
+      if (judged !== undefined && judged.ratio < min)
         return {
           fg,
           bg,
           scheme: c.name,
-          ratio: ratio.toFixed(2),
+          ratio: judged.ratio.toFixed(2),
           need: String(min),
+          ...(judged.form === undefined ? {} : { form: judged.form }),
           ...(bgOver === undefined || back === undefined ? {} : { over: back }),
         };
     }

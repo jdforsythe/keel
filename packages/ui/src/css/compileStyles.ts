@@ -9,6 +9,7 @@ import { states } from "../internal/states.ts";
 import { styleProps } from "../internal/styleProps.ts";
 import { tokenGroups } from "../internal/tokenGroups.ts";
 import { valueForms } from "../internal/valueForms.ts";
+import { valueInForm } from "../internal/valueInForm.ts";
 import { varName } from "../internal/varName.ts";
 import { vocabulary } from "../internal/vocabulary.ts";
 import type { Scheme } from "../types/Scheme.ts";
@@ -119,17 +120,40 @@ const GROUPS: readonly TokenGroup[] = [
   ...tokenGroups.filter((g) => g !== "color" && g !== "breakpoint"),
 ];
 
+/**
+ * A block of custom properties under its conditions, each color in its sRGB form, followed at once, when one of its
+ * colors lies outside sRGB and the layer is not `print`, by a block of the same selector under its conditions with
+ * `screen` and `(color-gamut: p3)` declaring those properties again in their P3 forms (k.gamut CSS).
+ */
+function block(
+  out: string[],
+  conds: readonly (string | undefined)[],
+  selector: string,
+  lead: readonly string[],
+  decls: readonly (readonly [string, string])[],
+  print: boolean,
+): void {
+  const srgb = decls.map(([n, v]) => `${n}:${valueInForm(v, "sRGB")}`);
+  out.push(at(conds, `${selector}{${[...lead, ...srgb].join(";")}}`));
+  if (print) return;
+  const wide = decls.filter(([, v]) => valueInForm(v, "P3") !== valueInForm(v, "sRGB"));
+  if (wide.length === 0) return;
+  const p3 = wide.map(([n, v]) => `${n}:${valueInForm(v, "P3")}`);
+  const own = conds.filter((c) => c !== "screen");
+  out.push(at(["screen", ...own, "(color-gamut: p3)"], `${selector}{${p3.join(";")}}`));
+}
+
 /** The blocks of one layer (k.schemes CSS), in order. */
 function layerBlocks(l: Layer, schemes: readonly Scheme[], subtree: boolean, top: boolean): string[] {
   const both = schemes.length === 2;
   const first = schemes[0] ?? "light";
-  const main: string[] = [];
-  const dark: string[] = [];
+  const main: [string, string][] = [];
+  const dark: [string, string][] = [];
   for (const [n, v] of l.values) {
-    if (typeof v === "string") main.push(`${n}:${v}`);
+    if (typeof v === "string") main.push([n, v]);
     else {
-      main.push(`${n}:${both ? v.light : v[first]}`);
-      if (both) dark.push(`${n}:${v.dark}`);
+      main.push([n, both ? v.light : v[first]]);
+      if (both) dark.push([n, v.dark]);
     }
   }
   const lead = top
@@ -138,28 +162,29 @@ function layerBlocks(l: Layer, schemes: readonly Scheme[], subtree: boolean, top
       ? ["color-scheme:light", "print-color-adjust:exact", "-webkit-print-color-adjust:exact"]
       : [];
   const out: string[] = [];
-  const firstBody = [...lead, ...main];
-  if (firstBody.length > 0) out.push(at([l.media], `${l.selector}{${firstBody.join(";")}}`));
+  if (lead.length + main.length > 0) block(out, [l.media], l.selector, lead, main, l.print);
   if (l.print) return out;
   if (both && (top || dark.length > 0)) {
-    const d = dark.join(";");
-    out.push(
-      at(["screen", l.media, "(prefers-color-scheme: dark)"], `${l.selector}:not([data-k-scheme="light"]){${d}}`),
+    block(
+      out,
+      ["screen", l.media, "(prefers-color-scheme: dark)"],
+      `${l.selector}:not([data-k-scheme="light"])`,
+      [],
+      dark,
+      false,
     );
-    out.push(
-      at(["screen", l.media], `${l.selector}[data-k-scheme="dark"]{${["color-scheme:dark", ...dark].join(";")}}`),
-    );
+    block(out, ["screen", l.media], `${l.selector}[data-k-scheme="dark"]`, ["color-scheme:dark"], dark, false);
     if (top) out.push(`:root[data-k-scheme="light"]{color-scheme:light}`);
   }
   if (subtree)
     for (const sc of schemes) {
-      const decls = [`color-scheme:${sc}`];
+      const decls: [string, string][] = [];
       for (const [n, v] of l.values) {
         const colorish = n.startsWith("--k-color-") || n.startsWith("--k-overlay-");
-        if (typeof v !== "string") decls.push(`${n}:${v[sc]}`);
-        else if (l.theme && colorish) decls.push(`${n}:${v}`);
+        if (typeof v !== "string") decls.push([n, v[sc]]);
+        else if (l.theme && colorish) decls.push([n, v]);
       }
-      out.push(at(["screen", l.media], `${l.selector} [data-k-scheme="${sc}"]{${decls.join(";")}}`));
+      block(out, ["screen", l.media], `${l.selector} [data-k-scheme="${sc}"]`, [`color-scheme:${sc}`], decls, false);
     }
   return out;
 }

@@ -1,2 +1,2 @@
-/** A form a screen shows a color outside the sRGB gamut in (k.values Contrast): CSS Color 4's gamut mapping, or each linear channel clipped to 0 to 1. */
-export type GamutForm = "mapped" | "clipped";
+/** A form a color ships in (k.gamut Forms): its sRGB form, or its P3 form, which a `(color-gamut: p3)` screen shows. */
+export type GamutForm = "sRGB" | "P3";

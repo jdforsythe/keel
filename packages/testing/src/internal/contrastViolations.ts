@@ -1,5 +1,5 @@
 import type { BaseRole, StyleProp, Tokens } from "@keel/ui";
-import { type Combination, type GamutForm, combinations, composite, contrast, gamutForms } from "@keel/ui/css";
+import { type Combination, type GamutForm, combinations, composite, contrast, formsOf } from "@keel/ui/css";
 import type { ClassMap } from "./ClassMap.ts";
 import type { Violation } from "./Violation.ts";
 import { inDisabledFieldset } from "./inDisabledFieldset.ts";
@@ -7,10 +7,10 @@ import { px } from "./px.ts";
 import { styleIndex } from "./styleIndex.ts";
 import { where } from "./where.ts";
 
-/** The ratio of two colors in any k.values form, or undefined when either reads as none (left unjudged). */
-const ratioOf = (fg: string, bg: string): number | undefined => {
+/** The ratio of two colors in one form (k.gamut Judging), or undefined when either reads as none (left unjudged). */
+const ratioOf = (fg: string, bg: string, form: GamutForm): number | undefined => {
   try {
-    return contrast(fg, bg);
+    return contrast(fg, bg, form);
   } catch {
     return undefined;
   }
@@ -165,25 +165,25 @@ export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
           const under = holder === null ? undefined : tokenAt(map, tokens, holder, "bg", at);
           base = under !== undefined && overlays[under] !== undefined ? "" : pick(under, "#FFFFFF");
         }
-        // With an overlay on either side, the pair is composited once in each gamut form, the lower ratio standing.
-        const pairs: (readonly [string, string])[] = [];
-        if (!bgIsOverlay && !fgIsOverlay) pairs.push([fgTop, bgTop]);
-        else
-          for (const form of gamutForms) {
-            const bg = bgIsOverlay ? blend(bgTop, base, form) : bgTop;
-            pairs.push([fgIsOverlay ? blend(fgTop, bg, form) : fgTop, bg]);
-          }
+        // The pair is judged in each form its colors ship in (k.gamut Judging), a printing combination in sRGB forms
+        // only; an overlay on either side is composited within each form. The lower ratio stands, sRGB's on a tie.
+        const all = formsOf(fgTop, bgTop, ...(base === "" ? [] : [base]));
+        const forms = c.printing ? all.slice(0, 1) : all;
         let ratio: number | undefined;
+        let shown: GamutForm | undefined;
         let fg = fgTop;
         let bg = bgTop;
-        for (const [f, b] of pairs) {
-          const r = ratioOf(f, b);
+        for (const form of forms) {
+          const b = bgIsOverlay ? blend(bgTop, base, form) : bgTop;
+          const f = fgIsOverlay ? blend(fgTop, b, form) : fgTop;
+          const r = ratioOf(f, b, form);
           if (r === undefined) {
             ratio = undefined;
             break;
           }
-          if (ratio === undefined || r < ratio) [ratio, fg, bg] = [r, f, b];
+          if (ratio === undefined || r < ratio) [ratio, shown, fg, bg] = [r, form, f, b];
         }
+        const named = all.length > 1 && shown !== undefined ? `${c.name} (${shown})` : c.name;
         const sizeTok = tokenAt(map, tokens, el, "fontSize", at);
         const weightTok = tokenAt(map, tokens, el, "weight", at);
         const size = px(sizeTok === undefined ? "" : (tokens.fontSize?.[sizeTok] ?? ""));
@@ -191,7 +191,7 @@ export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
         const large = size >= 24 || (size >= 18.66 && weight >= 700);
         const need = c.contrast ? (large ? 4.5 : 7) : large ? 3 : 4.5;
         if (ratio !== undefined && ratio < need) {
-          help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok ?? fg} on ${bgTok ?? bg}, ${c.name})`;
+          help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok ?? fg} on ${bgTok ?? bg}, ${named})`;
           break;
         }
       }

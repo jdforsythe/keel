@@ -6,7 +6,7 @@ export type { StyleUsage } from "@keel/compiler";
 export type { Scheme } from "../types/Scheme.ts";
 export { combinations } from "./combinations.ts";
 export { composite } from "./composite.ts";
-export { gamutForms } from "./gamutForms.ts";
+export { formsOf } from "./formsOf.ts";
 export type { Combination } from "../types/Combination.ts";
 export type { GamutForm } from "../types/GamutForm.ts";
 export { contrastTable } from "./contrastTable.ts";

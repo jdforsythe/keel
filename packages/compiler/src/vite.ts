@@ -260,7 +260,34 @@ type Config = {
   optimizeDeps: { exclude: string[] };
 } & (BuildConfig | ClientConfig | Record<never, never>);
 /** What the plugin reads of the project's config before Vite resolves it. */
-type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
+type UserConfig = {
+  root?: string;
+  envPrefix?: unknown;
+  define?: unknown;
+  build?: unknown;
+  css?: unknown;
+  environments?: unknown;
+};
+/**
+ * The CSS minifier of a browser build (k.gamut CSS): esbuild's keeps each custom property's value as written, whatever
+ * the `cssTarget`, so the built CSS holds the colors Keel compiled; `false` (a project's own choice) minifies nothing.
+ * Lightning CSS, Vite's default, rewrites colors and adds `@supports` branches whatever its targets.
+ */
+type CssMinify = "esbuild" | false;
+const isRecord = (v: unknown): v is Readonly<Record<string, unknown>> => typeof v === "object" && v !== null;
+/** A project's `cssMinify` (top level or an environment's), or `css.transformer`, that would rewrite colors. */
+function cssOwned(user: UserConfig): boolean {
+  const minify = (b: unknown): boolean => {
+    const v = isRecord(b) ? b.cssMinify : undefined;
+    return v !== undefined && v !== "esbuild" && v !== false;
+  };
+  const envs = isRecord(user.environments) ? Object.values(user.environments) : [];
+  return (
+    minify(user.build) ||
+    envs.some((e) => isRecord(e) && minify(e.build)) ||
+    (isRecord(user.css) && user.css.transformer === "lightningcss")
+  );
+}
 
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
@@ -302,12 +329,14 @@ export default function (): {
   configEnvironment: (
     name: string,
     env: { consumer?: "client" | "server"; resolve?: { conditions?: string[] } },
-  ) => { resolve: { conditions: string[] } } | null;
+  ) => { resolve?: { conditions: string[] }; build?: { cssMinify: CssMinify } } | null;
   configResolved: (config: {
     root: string;
     command?: "build" | "serve";
     configFile?: string | undefined;
     envPrefix?: string | readonly string[];
+    css?: { transformer?: unknown };
+    environments?: Readonly<Record<string, { consumer?: string; build?: { cssMinify?: unknown } }>>;
   }) => void;
   configureServer: (server: DevServer) => void;
   configurePreviewServer: (server: { middlewares: Middlewares }) => void;
@@ -380,6 +409,9 @@ export default function (): {
   const urlEdges = new Map<string, Set<string>>();
   /** Whether the project's own config sets `envPrefix` or `define` (k.bundle Environment), and whether this is an SSR build. */
   let projectEnv = false;
+  /** Whether the project's own config sets a CSS minifier or transformer that rewrites colors (k.gamut CSS), and whether it turns CSS minifying off. */
+  let projectCss = false;
+  let cssMinify: CssMinify = "esbuild";
   let ssrBuild = false;
   /** Each file's path as its name on disk has it (`realpath`), and the root's, for the name tests and E1010. */
   const disk = new Map<string, string>();
@@ -886,6 +918,8 @@ export default function (): {
       const name = process.env.KEEL_DEPLOYABLE;
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
       projectEnv = user.envPrefix !== undefined || user.define !== undefined;
+      projectCss = cssOwned(user);
+      cssMinify = isRecord(user.build) && user.build.cssMinify === false ? false : "esbuild";
       ssrBuild = env.isSsrBuild === true;
       libraries = appLibraries(path.resolve(user.root ?? process.cwd()));
       const names = libraries.map((l) => l.name);
@@ -1018,14 +1052,17 @@ export default function (): {
     },
     // Every environment (dev, build, test) resolves with the `keel` condition beside its own, so a library's entry is
     // its source (k.library In an app); one that sets none gets Vite's defaults with it.
+    // A browser environment minifies CSS with esbuild's minifier, which keeps every color as compiled (k.gamut CSS).
     configEnvironment(name, env) {
       const own = env.resolve?.conditions;
-      if (own?.includes("keel") === true) return null;
       const client = env.consumer === "client" || (env.consumer === undefined && name === "client");
+      const build = client ? { build: { cssMinify } } : {};
+      if (own?.includes("keel") === true) return client ? build : null;
       return {
         resolve: {
           conditions: ["keel", ...(own === undefined ? (client ? CLIENT_CONDITIONS : SERVER_CONDITIONS) : [])],
         },
+        ...build,
       };
     },
     configResolved(config) {
@@ -1039,10 +1076,17 @@ export default function (): {
       // build before bundling, as does a prefix another plugin merged into the lock.
       const prefix = [config.envPrefix ?? NO_ENV].flat();
       const locked = prefix.length === 1 && prefix[0] === NO_ENV;
+      const configName = config.configFile === undefined ? "vite.config.ts" : show(config.configFile);
       if (command === "build" && !ssrBuild && (projectEnv || !locked))
-        throw new Error(
-          `E1007 server code in browser build: environment config: ${config.configFile === undefined ? "vite.config.ts" : show(config.configFile)}`,
-        );
+        throw new Error(`E1007 server code in browser build: environment config: ${configName}`);
+      // The plugin owns the CSS minifier too (k.gamut CSS): a project's, or another plugin's, that rewrites colors fails
+      // a browser build before bundling.
+      const browsers = Object.values(config.environments ?? {}).filter((e) => e.consumer === "client");
+      const rewrites =
+        config.css?.transformer === "lightningcss" ||
+        browsers.some((e) => e.build?.cssMinify !== "esbuild" && e.build?.cssMinify !== false);
+      if (command === "build" && !ssrBuild && (projectCss || rewrites))
+        throw new Error(`E1007 server code in browser build: css config: ${configName}`);
       readTopology();
     },
     configureServer(s) {

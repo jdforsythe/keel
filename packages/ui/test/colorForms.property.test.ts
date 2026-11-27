@@ -1,5 +1,5 @@
 // Properties of the color forms (k.values Colors, Contrast), compositing, gamut mapping and combinations. Seed 1337.
-import { combinations, composite, contrast, gamutForms } from "@keel/ui/css";
+import { combinations, composite, contrast, formsOf } from "@keel/ui/css";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { gamutMap } from "../src/css/gamutMap.ts";
@@ -45,13 +45,11 @@ describe("color forms", () => {
     expect(colorSyntax("#0008")?.alpha).toBeCloseTo(0x88 / 255, 9);
   });
 
-  it("gamut mapping returns an in-gamut color, and leaves one in the gamut as it is", () => {
+  it("gamut mapping returns a color inside the gamut, and leaves one inside it as it is", () => {
     fc.assert(
-      fc.property(unit, unit, unit, (r, g, b) => {
-        expect(gamutMap([r, g, b])).toEqual([r, g, b]);
-        const p3 = colorSyntax(`color(display-p3 ${r} ${g} ${b})`);
-        expect(p3).not.toBeNull();
-        const out = gamutMap([r * 1.3 - 0.1, g, b * 1.2]);
+      fc.property(unit, unit, unit, fc.constantFrom("sRGB" as const, "P3" as const), (r, g, b, gamut) => {
+        expect(gamutMap([r, g, b], "sRGB")).toEqual([r, g, b]);
+        const out = gamutMap([r * 1.6 - 0.3, g, b * 1.4], gamut);
         for (const c of out) {
           expect(c).toBeGreaterThanOrEqual(-0.000001);
           expect(c).toBeLessThanOrEqual(1.000001);
@@ -61,12 +59,13 @@ describe("color forms", () => {
     );
   });
 
-  it("a pair is never judged above its ratio as given", () => {
+  it("a pair is judged in the 1 to 21 range, in two forms only when a color lies outside sRGB", () => {
     fc.assert(
       fc.property(unit, unit, unit, byte, (r, g, b, k) => {
         const judged = contrast(`color(display-p3 ${r} ${g} ${b})`, hex(k, k, k));
         expect(judged).toBeGreaterThanOrEqual(1);
         expect(judged).toBeLessThanOrEqual(21);
+        expect(formsOf(hex(k, k, k))).toEqual(["sRGB"]);
       }),
       { seed: SEED, numRuns: 60 },
     );
@@ -74,9 +73,10 @@ describe("color forms", () => {
 });
 
 describe("composite", () => {
-  it("alpha 1 is the overlay, alpha 0 the backdrop, and the result lies between them", () => {
+  it("in sRGB, alpha 1 is the overlay, alpha 0 the backdrop, and the result lies between them", () => {
+    const form = "sRGB";
     fc.assert(
-      fc.property(byte, byte, byte, byte, unit, fc.constantFrom(...gamutForms), (r, g, b, k, a, form) => {
+      fc.property(byte, byte, byte, byte, unit, (r, g, b, k, a) => {
         const back = hex(k, k, k);
         expect(contrast(composite(`rgb(${r} ${g} ${b} / 1)`, back, form), hex(r, g, b))).toBeCloseTo(1, 6);
         expect(contrast(composite(`rgb(${r} ${g} ${b} / 0)`, back, form), back)).toBeCloseTo(1, 6);

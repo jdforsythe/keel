@@ -61,9 +61,9 @@ const ROWS: readonly Row[] = [
   [
     "E1007",
     "server code in a browser build (names the chain)",
-    "Reasons: server-only file, node built-in, handler, environment config (a project envPrefix or define), environment value (a KEEL_* value in an emitted file). Workers count.",
-    "move it to a *.server.ts file; drop envPrefix and define, read browser values through clientStd",
-    "k.boundary, k.bundle",
+    "Reasons: server-only file, node built-in, handler, environment config (a project envPrefix or define), environment value (a KEEL_* value in an emitted file), css config (a cssMinify or css.transformer that rewrites colors). Workers count.",
+    "move it to a *.server.ts file; drop envPrefix, define and cssMinify, read browser values through clientStd",
+    "k.boundary, k.bundle, k.gamut",
   ],
   ["E1008", "a stub of a server-only export called", "", "call it from a loader, action or guard", "k.boundary"],
   [

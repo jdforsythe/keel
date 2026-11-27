@@ -92,7 +92,8 @@ function pairAt(
 export const lowContrast: RuleDef = {
   code: "E1804",
   message: (f) => {
-    const tail = `is ${str(f.data, "ratio")}:1 in ${str(f.data, "scheme")}, needs ${str(f.data, "need")}:1`;
+    const form = str(f.data, "form");
+    const tail = `is ${str(f.data, "ratio")}:1 in ${str(f.data, "scheme")}${form === "" ? "" : ` (${form})`}, needs ${str(f.data, "need")}:1`;
     if (str(f.data, "lib") !== "")
       return clipMessage(`${str(f.data, "fg")} on ${str(f.data, "bg")} ${tail}; override in tokens.ts`, 89);
     const set = str(f.data, "set");
