@@ -24,6 +24,16 @@ export function trackTab(tab: Tab, holding: boolean, reaches: (origin: string) =
     for (const w of [...state.waiters]) w();
   };
   const main = (r: Request): boolean => r.isNavigationRequest() && r.frame() === tab.mainFrame();
+  // Reach (k.e2e-run): the serve's proxy refuses a request for an origin the serve neither serves, peers nor maps;
+  // the tab records each such failed request as an `offsite` problem. One the page's own policy blocked never left
+  // the page: that is its `csp` problem alone.
+  tab.on("requestfailed", (r) => {
+    const url = new URL(r.url());
+    if (!/^https?:$/.test(url.protocol) || reaches(url.origin)) return;
+    if ((r.failure()?.errorText ?? "").includes("BLOCKED_BY_CSP")) return;
+    state.problems.push({ kind: "offsite", text: `${r.method()} ${url.origin}${url.pathname}` });
+    wake();
+  });
   tab.on("websocket", (ws) => {
     const url = new URL(ws.url());
     const origin = `${url.protocol.replace(/^ws/, "http")}//${url.host}`;
@@ -32,19 +42,6 @@ export function trackTab(tab: Tab, holding: boolean, reaches: (origin: string) =
     wake();
   });
   tab.on("request", (r) => {
-    // Reach (k.e2e-run): the serve's proxy refuses a request for an origin the serve neither serves, peers nor maps;
-    // the tab records each one as an `offsite` problem.
-    const url = new URL(r.url());
-    if (/^(?:https?|wss?):$/.test(url.protocol)) {
-      const origin = `${url.protocol.replace(/^ws/, "http")}//${url.host}`;
-      if (!reaches(origin)) {
-        state.problems.push({
-          kind: "offsite",
-          text: `${r.method()} ${url.origin.replace(/^ws/, "http")}${url.pathname}`,
-        });
-        wake();
-      }
-    }
     state.requests.push(sentOf(r.method(), r.url(), Object.keys(r.headers())));
     state.inflight.add(r);
     if (main(r)) state.loaded = false;
