@@ -32,6 +32,12 @@ afterEach(() => {
 /** A binding file whose contract sits beside it: evaluation reads it as it reads a contract file. */
 const binding = (id: string, entries: string, bound: string): string =>
   `import { action, guard, loader, manifest } from "@keel/router";\nimport { contract } from "@keel/router/contract";\nimport { ok, s } from "@keel/schema";\nconst c = contract("${id}", { ${entries} });\nconst V = () => null;\nexport const routes = manifest(c, { ${bound} });\n`;
+type Result = Awaited<ReturnType<typeof evaluateProject>>;
+/** A result's data: without the files the bundle loaded and what its code asked (`inputs`, `observe`). */
+const data = (r: Result): Omit<Result, "inputs" | "observe"> => {
+  const { inputs: _inputs, observe: _observe, ...rest } = r;
+  return rest;
+};
 const ROOT_VARS =
   ":root{color-scheme:light;--k-color-fg:#111;--k-color-bg:#fff;--k-space-1:4px;--k-space-2:8px}\n@layer keel.base{\n[hidden]{display:none!important}\ntable{overflow-wrap:break-word}\nth{text-align:inherit}\n.k-scroll{overflow-x:auto;min-width:0}\nbody{overflow-wrap:anywhere}\n.k-summary ul{list-style:none;margin:0;padding:0}\n}\n";
 
@@ -53,7 +59,7 @@ describe("evaluateProject (mutation)", () => {
       routesFiles: [],
       usages: [{ props: { p: "1", bg: "bg" } }, { props: { p: "2" }, breakpoint: "md", state: "hover" }],
     });
-    expect(r).toEqual({
+    expect(data(r)).toEqual({
       css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n.k-bg-bg{background-color:var(--k-color-bg)}\n@media (min-width: 768px){\n.k-md-hover-p-2:hover{padding:var(--k-space-2)}\n}\n`,
       looks: {},
       schemes: ["light"],
@@ -72,7 +78,7 @@ describe("evaluateProject (mutation)", () => {
         routesFiles: [],
         usages: [{ props: { p: "1" } }, { props: { p: "9" } }, { props: { p: "9", bg: "zz" } }],
       });
-      expect(r).toEqual({
+      expect(data(r)).toEqual({
         css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n`,
         looks: {},
         schemes: ["light"],
@@ -92,7 +98,7 @@ describe("evaluateProject (mutation)", () => {
         routesFiles: [],
         usages: [{ props: { p: "1" } }],
       });
-      expect(r).toEqual({
+      expect(data(r)).toEqual({
         css: "",
         looks: {},
         schemes: ["light"],
@@ -221,7 +227,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
 
   it("maps a routes.ts without a routes export to E1006", { timeout: fixedTime(30000) }, async () => {
     write("r/none.ts", "export const other = 1;");
-    expect(await routesOnly("r/none.ts")).toEqual({
+    expect(data(await routesOnly("r/none.ts"))).toEqual({
       css: "",
       looks: {},
       schemes: ["light"],
@@ -297,4 +303,26 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
     write("r/missing.ts", `import { x } from "./nowhere.ts";\nexport const routes = x;`);
     await expect(routesOnly("r/missing.ts")).rejects.toThrow(/Could not resolve "\.\/nowhere\.ts"/);
   });
+});
+
+describe("evaluateProject observes its own reads (k.derived Derivation cache)", () => {
+  it(
+    "records each node:fs read, existence test and process.env name its code asks, apart for each evaluation",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("min.txt", "2");
+      write(
+        "tokens5.ts",
+        `import { readFileSync, existsSync } from "node:fs";\nimport { defineTokens } from "@keel/ui";\nconst n = Number(readFileSync(${JSON.stringify(path.join(root, "min.txt"))}, "utf8")) + Number(process.env.KEEL_EVAL_PROBE ?? "0");\nexistsSync("absent.txt");\nexport const tokens = defineTokens({ color: { fg: "#111" }, space: { 1: \`\${n}px\` } });`,
+      );
+      const a = await evaluateProject({ root, tokensFile: "tokens5.ts", routesFiles: [], usages: [] });
+      const b = await evaluateProject({ root, tokensFile: "tokens.ts", routesFiles: [], usages: [] });
+      const seen = a.observe?.();
+      expect(seen?.reads).toContain(path.join(root, "min.txt"));
+      expect(seen?.probes).toContainEqual(["exists", path.resolve("absent.txt")]);
+      expect(seen?.env).toContainEqual(["KEEL_EVAL_PROBE", null]);
+      expect(b.observe?.().reads ?? []).not.toContain(path.join(root, "min.txt"));
+      expect(b.observe?.().env.map(([n]) => n) ?? []).not.toContain("KEEL_EVAL_PROBE");
+    },
+  );
 });
