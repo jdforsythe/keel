@@ -1,12 +1,12 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { type KeyValueStorage, type StorageWrite, createCtx } from "../src/index.ts";
 import { fileStorage } from "../src/node/index.ts";
 
-const dir = mkdtempSync(join(tmpdir(), "keel-ctx-commit-"));
+const dir = tempDir("keel-ctx-commit-");
 afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
 });

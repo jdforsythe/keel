@@ -6,21 +6,11 @@
 // as it would for a public user; inside the monorepo its own dev dependencies would hide it. The test builds and packs
 // what it installs itself, so it needs no earlier `pnpm build`.
 import { spawnSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { repoRoot } from "@keel/tooling/repo-root";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 import { runEngine } from "../src/internal/runEngine.ts";
 
@@ -204,7 +194,7 @@ it(
   async () => {
     const e = await runEngine(["scaffold", "project", "shop"], { cwd: "/work", files: [] });
     expect(e.result.code).toBe(0);
-    const cwd = realpathSync(mkdtempSync(join(tmpdir(), "keel-packed-build-")));
+    const cwd = realpathSync(tempDir("keel-packed-build-"));
     try {
       for (const w of e.writes) {
         if (w.content === null) continue;

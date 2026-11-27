@@ -3,12 +3,12 @@
 // hosted index.html carry each keel-peer origin, the report endpoint's method, type and multi-report bodies, and a write
 // behind a TLS-terminating proxy passes the same-site check by the forwarded proto. Seed 1337.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { cspPolicy, securityHeaders } from "../src/csp/index.ts";
@@ -81,7 +81,7 @@ describe("cspPolicy and securityHeaders", () => {
   });
 
   it("a hosted client index.html carries the csp.txt policy with its keel-peer origins", async () => {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-sec-host-"));
+    const d = tempDir("keel-sec-host-");
     dirs.push(d);
     const files: Record<string, string> = {
       ".vite/manifest.json": JSON.stringify({ e: { file: "assets/entry-abc12345.js", isEntry: true } }),

@@ -4,7 +4,6 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -14,6 +13,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyWrites } from "../src/internal/applyWrites.ts";
 import { hostIo } from "../src/internal/hostIo.ts";
@@ -22,7 +22,7 @@ import { viteRun } from "../src/internal/viteRun.ts";
 
 const made: string[] = [];
 const tmp = (): string => {
-  const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-mut-io-")));
+  const d = realpathSync(tempDir("keel-mut-io-"));
   made.push(d);
   return d;
 };

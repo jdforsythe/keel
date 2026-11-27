@@ -2,20 +2,11 @@
 // name the file; E1062 for a content file, an added file and a removed one; E1063 for the manifest and the signature.
 // The bundle is written by bundleWrite over a small project; the byte to flip comes from a seeded generator.
 import { createHash, createPublicKey, generateKeyPairSync } from "node:crypto";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  truncateSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, truncateSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { bundleVerify } from "../src/internal/bundleVerify.ts";
 import { bundleWrite } from "../src/internal/bundleWrite.ts";
@@ -59,7 +50,7 @@ let pristine = "";
 let names: string[] = [];
 
 beforeAll(async () => {
-  const cwd = mkdtempSync(join(here, ".tmp-tamper-"));
+  const cwd = tempDir(".tmp-tamper-", here);
   dirs.push(cwd);
   for (const [path, text] of Object.entries(TREE)) {
     mkdirSync(dirname(join(cwd, path)), { recursive: true });
@@ -76,7 +67,7 @@ beforeAll(async () => {
 }, SLOW);
 
 const copy = (): { cwd: string; dir: string } => {
-  const cwd = mkdtempSync(join(here, ".tmp-tamper-copy-"));
+  const cwd = tempDir(".tmp-tamper-copy-", here);
   dirs.push(cwd);
   cpSync(pristine, join(cwd, "bundle"), { recursive: true });
   return { cwd, dir: join(cwd, "bundle") };

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // Real packages dir via a workspace link, so this also holds in Stryker's sandbox copy (where ../.. is not packages/).
@@ -35,7 +36,7 @@ const dataOf = (file: string): Record<string, unknown> => {
 };
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-node-routes-"));
+  root = tempDir(".tmp-node-routes-", import.meta.dirname);
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))

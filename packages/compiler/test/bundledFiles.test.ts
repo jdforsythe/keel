@@ -1,18 +1,18 @@
 // k.server-deps Files a bundled package reads: what a server build copies beside `server.mjs`, and what fails it (E1014).
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, expect, it } from "vitest";
 import { bundledFiles } from "../src/internal/bundledFiles.ts";
 import { rewriteLiftedReads } from "../src/internal/rewriteLiftedReads.ts";
 
-const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-bundled-")));
+const root = fs.realpathSync(tempDir("keel-bundled-"));
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
 /** A package `node_modules/p` under a fresh folder: `files` relative to it; returns the absolute path of `index.js`. */
 function pkg(files: Record<string, string>): string {
-  const dir = fs.mkdtempSync(path.join(root, "app-"));
+  const dir = tempDir("app-", root);
   for (const [rel, text] of Object.entries(files)) {
     const at = path.join(dir, "node_modules", "p", rel);
     fs.mkdirSync(path.dirname(at), { recursive: true });
@@ -91,12 +91,12 @@ function libraryAt(at: string, bytes: string): string {
 it("a library's file is read wherever its real folder is: installed, linked through node_modules, or inside the project", () => {
   fc.assert(
     fc.property(fc.constantFrom("installed" as const, "linked" as const, "project" as const), (where) => {
-      const app = fs.mkdtempSync(path.join(root, "app-"));
+      const app = tempDir("app-", root);
       const real =
         where === "installed"
           ? path.join(app, "node_modules", "@acme", "store")
           : where === "linked"
-            ? fs.mkdtempSync(path.join(root, "workspace-"))
+            ? tempDir("workspace-", root)
             : path.join(app, "libs", "store");
       const file = libraryAt(real, "D");
       if (where === "linked") {
@@ -119,8 +119,8 @@ it("a library's file is read wherever its real folder is: installed, linked thro
 });
 
 it("two libraries shipping a file of one name with other bytes is one E1014; with equal bytes, one copy", () => {
-  const a = fs.mkdtempSync(path.join(root, "a-"));
-  const b = fs.mkdtempSync(path.join(root, "b-"));
+  const a = tempDir("a-", root);
+  const b = tempDir("b-", root);
   const libraries = [
     { name: "@acme/a", dir: a },
     { name: "@acme/b", dir: b },
@@ -145,7 +145,7 @@ it("property: a literal ../ read inside the package is copied without its leadin
       (dir, file, scoped) => {
         const up = "../".repeat(dir.split("/").length);
         const name = scoped ? "@acme/p" : "p";
-        const base = fs.mkdtempSync(path.join(root, "lift-"));
+        const base = tempDir("lift-", root);
         const folder = path.join(base, "node_modules", ...name.split("/"));
         const reader = path.join(folder, ...dir.split("/"), "r.js");
         fs.mkdirSync(path.dirname(reader), { recursive: true });
@@ -173,7 +173,7 @@ it("property: a literal ../ read inside the package is copied without its leadin
 it("a file outside node_modules and no library's is not rewritten; a library's real folder is its package's", () => {
   const app = path.join(root, "plain.js");
   expect(rewriteLiftedReads(app, url("'../x.bin'"), [])).toBeNull();
-  const lib = fs.mkdtempSync(path.join(root, "lib-"));
+  const lib = tempDir("lib-", root);
   fs.mkdirSync(path.join(lib, "src"), { recursive: true });
   fs.writeFileSync(path.join(lib, "x.bin"), "X");
   const file = path.join(lib, "src", "a.js");

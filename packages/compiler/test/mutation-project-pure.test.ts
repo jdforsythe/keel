@@ -1,6 +1,7 @@
 // Mutation-killing tests for listSources, entryCode and mergeArtifacts.
 import fs from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { entryCode } from "../src/internal/entryCode.ts";
 import { listSources } from "../src/internal/listSources.ts";
@@ -12,7 +13,7 @@ import type { RouteEntry } from "../src/types/RouteEntry.ts";
 
 let root = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-mproj-"));
+  root = tempDir(".tmp-mproj-", import.meta.dirname);
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });

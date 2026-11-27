@@ -1,11 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 
 /** Apply a unified diff to `source` (file `path`) with `git apply` in a temp dir; returns the patched text. */
 export function applyPatch(path: string, source: string, patch: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "keel-check-"));
+  const dir = tempDir("keel-check-");
   try {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), source);

@@ -3,10 +3,11 @@
 // signature, E1060 for a run that records errors. The project is handed over as `io.files` (no test file, so no
 // vitest run starts). Seed 1337.
 import { createHash, createPublicKey, generateKeyPairSync, verify } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { KERNEL_SINK_RUNGS } from "../src/internal/KERNEL_SINK_RUNGS.ts";
@@ -42,7 +43,7 @@ const base = (): Record<string, string> => ({
 
 /** Writes `tree` into a fresh temp directory; the Io hands the same files over in memory. */
 const make = (tree: Record<string, string>, env: Record<string, string> = {}, extra: Partial<Io> = {}) => {
-  const cwd = mkdtempSync(join(here, ".tmp-bundleWrite-"));
+  const cwd = tempDir(".tmp-bundleWrite-", here);
   dirs.push(cwd);
   for (const [path, text] of Object.entries(tree)) {
     mkdirSync(dirname(join(cwd, path)), { recursive: true });

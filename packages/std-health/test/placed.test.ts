@@ -1,10 +1,10 @@
 // Seed 1337
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, expect, test } from "vitest";
 
 const pkg = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -15,7 +15,7 @@ afterEach(() => {
 
 /** A project whose one app module lists `deps`, with this package linked into its `node_modules`. */
 function project(deps: readonly string[]): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-health-placed-"));
+  const root = tempDir("keel-health-placed-");
   tmps.push(root);
   fs.mkdirSync(path.join(root, "modules/app"), { recursive: true });
   fs.writeFileSync(

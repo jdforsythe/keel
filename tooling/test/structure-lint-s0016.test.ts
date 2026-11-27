@@ -2,8 +2,8 @@
 // and the conformance list).
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { hardTimes } from "../hard-times.mjs";
 import { fixedTime, testTime } from "../test-time.ts";
@@ -16,7 +16,7 @@ afterAll(() => {
 
 /** Runs structure-lint over a throwaway root holding `files`; returns its S0016 diagnostics. */
 function s0016(files: Record<string, string>): { code: string; path: string; line: number; message: string }[] {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-s0016-"));
+  const root = tempDir("keel-s0016-");
   made.push(root);
   for (const [file, source] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

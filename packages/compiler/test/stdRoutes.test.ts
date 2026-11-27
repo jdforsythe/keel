@@ -7,6 +7,7 @@ import path from "node:path";
 import { routeLiterals } from "@keel/compiler";
 import { buildRoutes } from "@keel/compiler/routes";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { devEntryCode } from "../src/internal/devEntryCode.ts";
 import { projectManifests } from "../src/internal/projectManifests.ts";
@@ -28,7 +29,7 @@ const topology: Topology = { api: { modules: ["app", "frag"], adapter: "node" } 
 const routesFile = (): string => fs.realpathSync(path.join(root, "node_modules/@keel/std-frag/src/routes.ts"));
 
 beforeEach(() => {
-  root = fs.realpathSync(fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-std-routes-")));
+  root = fs.realpathSync(tempDir(".tmp-std-routes-", import.meta.dirname));
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))

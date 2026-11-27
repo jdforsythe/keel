@@ -1,9 +1,9 @@
 // peerPaths (k.topology Calls and peers): the paths the named peers serve, read from `<artifacts>/routes.json`. Each
 // case writes its own artifacts folder and loads a fresh copy of the module.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import type { Topology } from "@keel/compiler";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const TOPOLOGY: Topology = {
@@ -15,7 +15,7 @@ const TOPOLOGY: Topology = {
 let root = "";
 let n = 0;
 beforeAll(() => {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-peerpaths-"));
+  root = tempDir("keel-peerpaths-");
 });
 afterAll(() => {
   fs.rmSync(root, { recursive: true, force: true });

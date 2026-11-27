@@ -3,12 +3,12 @@
 // redirects pass through, the body is capped, hop-by-hop headers stay behind, an unreachable peer is 502 and every
 // forwarded request writes its `req` line. Seed 1337; the peer answers through sim net routes, no wall time.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { type Ctx, createCtx } from "@keel/ctx";
 import { type RouteTable, loader, manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -27,7 +27,7 @@ const page = (): RouteTable =>
 
 /** `routes.json` in a fresh artifacts directory: `y`'s module `b` serves `paths`. */
 function artifacts(paths: readonly string[]): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-forward-"));
+  const dir = tempDir("keel-forward-");
   const data = Object.fromEntries(paths.map((p, i) => [`b.r${i}`, { module: "b", path: p }]));
   fs.writeFileSync(path.join(dir, "routes.json"), JSON.stringify({ data, hash: "" }));
   return dir;

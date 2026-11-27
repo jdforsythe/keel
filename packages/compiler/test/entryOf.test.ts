@@ -2,6 +2,7 @@
 // rule. Examples only: fixed manifests in a temp dir. No random inputs (a fast-check seed would be 1337).
 import fs from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { entryOf } from "../src/internal/entryOf.ts";
 
@@ -23,7 +24,7 @@ const at = (sub: string): string | undefined => {
 };
 
 beforeEach(() => {
-  root = fs.realpathSync(fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-entry-of-")));
+  root = fs.realpathSync(tempDir(".tmp-entry-of-", import.meta.dirname));
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });

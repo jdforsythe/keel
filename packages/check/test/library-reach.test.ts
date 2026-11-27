@@ -1,10 +1,10 @@
 // k.library In an app: the rules that take their file set from somewhere other than the files themselves (the client
 // reach behind E1004 and E1759, the type pass's roots and resolution, the artifacts the compile hands rules) hold a
 // library's file as they hold an app module's file.
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 
@@ -88,7 +88,7 @@ it("the artifacts the compile hands rules hold a library's styles: E1804 with to
 });
 
 // The type pass with the kernel installed: a contract type error (E1510) in a library file is the app twin's.
-const root = mkdtempSync(join(tmpdir(), "keel-library-reach-"));
+const root = tempDir("keel-library-reach-");
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 mkdirSync(join(root, "node_modules"), { recursive: true });
 writeFileSync(join(root, "package.json"), "{}");

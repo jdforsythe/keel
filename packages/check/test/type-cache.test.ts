@@ -1,11 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 import { check } from "../src/index.ts";
 
 it("a changed node_modules file invalidates the kept type check", () => {
-  const root = mkdtempSync(join(tmpdir(), "keel-check-root-"));
+  const root = tempDir("keel-check-root-");
   try {
     const dep = join(root, "node_modules", "dep");
     mkdirSync(dep, { recursive: true });

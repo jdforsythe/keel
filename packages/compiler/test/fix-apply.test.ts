@@ -3,10 +3,11 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { compile } from "@keel/compiler";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 
 function apply(file: string, source: string, fix: string): string {
-  const dir = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-apply-"));
+  const dir = tempDir(".tmp-apply-", import.meta.dirname);
   try {
     fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
     fs.writeFileSync(path.join(dir, file), source);
