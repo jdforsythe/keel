@@ -1,6 +1,6 @@
 # RFC 0255: k.derived: check sees the project as it is
 
-Status: draft (ADR-0293 proposed). Adds k.derived (derived files, their readers, refresh, frozen runs, the derivation cache; W1018). Amends k.compiler (Artifacts, Build-time evaluation, E1005, W1005 reserved), k.compat (Surface version 3 without `sources`; the Sources paragraph removed; Base compares the derived surface), k.check (step 3, the sort note), k.a11y (Artifacts, Claims), k.ledger (the `a11y` order, W1731, two clauses), k.deploy, k.shell and std.tauri (deploy files are views), the glossary (`derived file`) and the tools area. From `tasks/p1/TODO.md` W17 ("`keel check` refreshes its derived `.keel/` files before judging").
+Status: accepted (ADR-0293) by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.derived (derived files, their readers, refresh, frozen runs, the derivation cache; W1018). Amends k.compiler (Artifacts, Build-time evaluation, E1005, W1005 reserved), k.compat (Surface version 3 without `sources`; the Sources paragraph removed; Base compares the derived surface), k.check (step 3, the sort note), k.a11y (Artifacts, Claims), k.ledger (the `a11y` order, W1731, two clauses), k.deploy, k.shell and std.tauri (deploy files are views), k.library-pack (`--check` becomes `--frozen`), k.contract (Static reading reports E1111 alone), the glossary (`derived file`) and the tools area. From `tasks/p1/TODO.md` W17 ("`keel check` refreshes its derived `.keel/` files before judging").
 
 Personas: A2 and its agent form (edit, check, done), A7 (`keel test` after an edit), A3 (CI and committed files), A8 (the build is a function of the tree), F1 (the cost of changing this later); A6 through the ledger.
 
@@ -112,10 +112,14 @@ The compiled views take 50 to 125 ms and are derived on every run. The route eva
 ### 6. Concurrency
 An editor's language server, a terminal `keel check`, `keel dev` and an agent's MCP calls can run together. No lock is taken: a stale lock left by a killed process would stop every later run, and two runs over one tree derive the same bytes. Each view is one atomic rename, so a reader sees a whole file. A run re-reads its inputs' hashes before it renames, and skips the write when one changed during the run, so a slow run cannot put an older tree's view over a newer one's. Nothing Keel judges reads a view, so a brief window where the views on disk describe different moments of the tree never changes a verdict. Two processes writing one cache entry: the last rename stands, as for the type cache.
 
-### 7. Time
-- **Bound.** With the cache warm and no input of the evaluation changed, refresh adds at most 100 ms to a warm `keel check` of `apps/household`: hashing the recorded inputs (the route graph's files) and comparing six views. After an edit to a file the evaluation loaded, the check takes at most 1.5 s more than after an edit to a file it did not load: one bundle and one import, measured at 257 to 687 ms for `routes.json`, with the surface now riding the same evaluation.
-- **How it is tested.** k.derived clause 22 runs both on `apps/household` 5 times each, scaled as the repository's test times are (`docs/TESTING.md`), and fails over the bound. k.check's "under 1 s warm on golden app 1" is unchanged and stays measured by the existing suite.
-- **What an author waits for.** A page edit: the compile they already wait for, plus the route evaluation when that page is in the route graph (every page is: `routes.ts` imports it). The evaluation result is keyed by bytes, so a re-indent re-evaluates once and writes nothing (clause 17).
+### 7. Work, not milliseconds
+The claim a test asserts is the work done, counted, because a wall-clock bound flakes on a shared machine (`docs/TESTING.md` bounds a test's time only through the watchdog, never as an assertion):
+- **No input changed:** no evaluation runs and one cache entry is read per project; the compile runs as it does today.
+- **An edit to a file the evaluation did not load** (a test file): no evaluation.
+- **An edit to a file it loaded:** exactly one evaluation of that project, and the entry it writes records exactly the files the evaluation loaded.
+- **The seam:** the json summary's `counts` (`refreshed`, `evaluated`, `cached`, on every run, 0 included) and the cache entry's `inputs` (k.derived Derivation cache). k.derived clauses 22 to 25 assert them.
+
+What the counts cost, measured as documentation and not as a clause: on `apps/household` at a 1-minute load of 18, a warm compile of every source 31 ms and one route evaluation 257 ms (`buildRoutes`'s bundle; the surface rides the same evaluation once slice 3 lands), against 2.3 s for a warm `keel check`. Measured by a script that imported `artifactHashes`, `buildRoutes` and `surfaceRun` from this branch and timed each twice in one process with `performance.now()`, beside `/usr/bin/time` for the whole commands. A re-indent re-evaluates once and writes nothing (clause 17).
 
 ### 8. keel test, keel dev, keel ledger, scaffold
 - `keel test` derives the compiled views in its own process before vitest starts, hands `a11y.json` to each test process (vitest's `provide` and `inject`), and refreshes the views unless frozen. A render with no `artifacts` then always runs E1702 against the tree under test, in a project never built too (clause 12), which today runs no E1702 when `.keel/a11y.json` is absent.
@@ -153,24 +157,31 @@ Applied in this commit (`pnpm spec k.derived` prints it):
 - k.a11y (`implemented`): Artifacts takes the derived `a11y.json`; Claims reads each project's derived `routes.json`. 3,092 tokens.
 - k.ledger: the `a11y` order by project directory; W1731 on the derived `routes.json`, reported at `.keel/routes.json`; two clauses state route tables instead of a `.keel/routes.json` fixture.
 - k.deploy, k.shell, std.tauri (`implemented`): deploy files are views; their changed-byte clauses under `keel check --frozen` (k.deploy's adds the rewrite by `keel check`). k.shell's Files sentence points to k.deploy for E1005, which keeps it at 3,092 tokens.
+- k.library-pack (`implemented`): `keel pack --check` becomes `keel pack` run frozen (`--frozen`, or `CI` set); the scaffolded `prepack` runs `keel pack --frozen`; the frozen ledger messages; its last clause adds `keel pack` with `CI=true`. 3,083 tokens.
+- k.contract (`implemented`): Static reading reports E1111 alone at a spread, call or name; W1005 is reserved and no clause requires it. The clauses of k.scaffold and std.contracts that assert no W1005 stay true and are unchanged.
 - `spec/areas/tools.md`: the k.derived row. Glossary: `derived file`.
 
 ## Conformance diff
 For the `conformance-writer`, from the spec text only:
 - `packages/cli/conformance/derived.test.ts` (new): k.derived 1 to 21, over copies of `examples/client-only-api` and `apps/household` made by the suite's linked-project helper, the household case of clauses 9 and 16 with a linked copy of `@keel/std-text` outside `node_modules` (a copy inside `node_modules` does not load: Node strips no types there). Clause 13 through the LSP harness the k.cli suite uses. Clause 18 starts `keel dev` on a free port and stops it in `afterAll`.
-- `packages/cli/conformance/derived-time.test.ts` (new): k.derived 22, scaled by `fixedTime`.
+- `packages/cli/conformance/derived-time.test.ts`: replaced by cases of k.derived 22 to 25 on the json `counts` and the cache entry's `inputs`; no case asserts a duration.
 - `packages/compiler/conformance/` (k.compiler): the changed-byte, recomputed-hash, literal-`routes.ts` and std-health clauses pass `--frozen` and assert the rewrite without it.
 - `packages/check/conformance/` or `packages/cli/conformance/` (k.compat, wherever its clauses live): the changed-byte clause with `--frozen`; E1006 at check; the three normal-form clauses removed; the two new ones added.
 - k.a11y: no clause text changes; the suites that build a `.keel/a11y.json` fixture by hand keep passing because a render takes the derivation, and the writer checks each still asserts what its clause says.
 - k.ledger: the two route-table clauses build a project with a `routes.ts` instead of a `.keel/routes.json` file.
 - k.deploy, k.shell, std.tauri: the changed-byte clauses pass `--frozen`.
+- From the conformance-writer's gaps, settled in k.derived: clause 1 adds a page route (an API entry in a `client`-only app is E1511), so clauses 1, 4 and 13 change; clause 3 reads `counts.refreshed`; clause 19 uses a one-route fixture, not household's suite; clause 22's durations become clauses 22 to 25 on the json counts and the cache entry's `inputs`; clause 26 states row 9 (tokens: E1804 at once, no view written); clause 27 states `check()` in process (writes nothing; a differing compiled view is E1005; an evaluated view only against `derived`).
+- `packages/check/conformance/diag-message-fit.test.ts`: W1018 is a command code, not in `reportedCodes()` (k.derived Rules); its fixture is k.derived clause 8.
+- `packages/compiler/conformance/static-reading-w1005.test.ts` and the W1005 half of `route-fragment-spread-0077.test.ts`: removed, since no clause requires W1005; the E1111 half in `packages/check/conformance/static-reading-e1111.test.ts` stays.
+- `packages/cli/conformance/boundary-build-gate.test.ts`, "a warning does not stop `keel build`": the fixture gets its warning from W1012, an `index.html` in the project root (k.head Document source), which `keel check` reports and `keel build` keeps going past.
+- `packages/cli/conformance/` for k.library-pack: the three `--check` clauses read `--frozen`, and the last also runs `keel pack` with `CI=true`.
 - Not conformance, updated by the build: `packages/cli/test/appArtifactsFresh.test.ts` asserts `keel check --frozen` clean and `keel test` writing nothing in a frozen run; `packages/cli/test/scaffold-refresh.test.ts` unchanged.
 
 ## Build plan
 Each slice: spec text is in; the conformance-writer writes the slice's clauses first; then the build.
-1. **Readers and the writer.** `check()` takes the derivation for the compiled views (one compile per project, not two); E1005 only frozen; W1018; the trailer count; `--frozen`, `CI`, `KEEL_FROZEN`; the Vite plugin's writes through W1018 and `KEEL_FROZEN`, and no write failure ends a run (case 11); `keel test` derives `a11y.json` and hands it over; LSP writes nothing. Clauses 2, 3, 6, 7, 8, 11 to 14, 20. Deletes `expectedHashes`' second compile.
+1. **Readers and the writer.** Builder notes: the json summary's `counts.refreshed`, `evaluated` and `cached` are written on every run; `check()` takes a `derived` option and never writes; W1018 is printed by the CLI layer, outside `reportedCodes()`.  `check()` takes the derivation for the compiled views (one compile per project, not two); E1005 only frozen; W1018; the trailer count; `--frozen`, `CI`, `KEEL_FROZEN`; the Vite plugin's writes through W1018 and `KEEL_FROZEN`, and no write failure ends a run (case 11); `keel test` derives `a11y.json` and hands it over; LSP writes nothing. Clauses 2, 3, 6, 7, 8, 11 to 14, 20, 26, 27; k.library-pack's frozen pack. Deletes `expectedHashes`' second compile.
 2. **Version control and deploy files.** Deploy files refreshed by check; the scaffold `.gitignore`; the repository's apps and examples stop tracking the compiled views (`git rm --cached`, one commit, the ledger regenerated on the main line after it). `appArtifactsFresh` rewritten. Clause 21 and the deploy clauses.
-3. **One evaluation, cached, behind the wall.** `routes.json` and `surface.json` from one bundle evaluated in RFC 0251's `data` child (`evaluate({ kind: 'data' })`); the derivation cache; `surface.json` version 3; k.compat's normal form deleted (`sourceHash`, `staleSource`); `--base` on the derivation; `keel ledger` and dev inspect on the derivation; dev refreshes `routes.json`. Clauses 1, 4, 5, 9, 10, 15 to 19, 22. **Depends on RFC 0251's evaluator.** If that slice is not merged when this one starts, this slice builds the child it needs (Node's permission model, read access to the bundle's files, no write, no environment) as the first piece of k.machine Evaluator, and RFC 0251 then extends it; the two lanes agree on `evaluate`'s signature before either merges.
+3. **One evaluation, cached, behind the wall.** `routes.json` and `surface.json` from one bundle evaluated in RFC 0251's `data` child (`evaluate({ kind: 'data' })`); the derivation cache; `surface.json` version 3; k.compat's normal form deleted (`sourceHash`, `staleSource`); `--base` on the derivation; `keel ledger` and dev inspect on the derivation; dev refreshes `routes.json`. Clauses 1, 4, 5, 9, 10, 15 to 19, 22 to 25. **Waits for RFC 0251's evaluator child** (`lane-r-boundary`) and builds no second one; until it merges, slices 1, 2 and 4 land and the evaluated views keep their current writers.
 4. **Docs and skills** (below), with the build that makes each sentence true.
 
 ## Docs and skills
@@ -178,7 +189,7 @@ Within their targets; each edit shortens or keeps the length:
 - `packages/cli/skills/keel/SKILL.md` and `.claude/skills/keel/SKILL.md` line 44: delete "(E1005 on `.keel/` files after an edit until `keel build` runs)". The command list then reads `keel check` · `keel test` · .... The skill's description keeps E1005 among its codes: it still exists, frozen.
 - `packages/cli/skills/keel-testing/SKILL.md` and the `.claude` copy, line 40: "Without `artifacts` a render takes `.keel/a11y.json` and `tokens.ts`" becomes "Without `artifacts` a render takes the tree's `a11y.json` and `tokens.ts`".
 - `docs/guide/build-golden-1.md` section 4: the table's "Written by" column says "derived by every `keel` command"; the paragraph after it loses "A project with no `.keel/` yet checks clean; once a build or test run has written it, editing a source makes `keel check` report E1005 for each stale artifact before your real error. Run `keel build` before `keel check` after edits." and gains one sentence on what is committed; the E1005 row of its code table says "a committed `.keel/surface.json` or deploy file that CI found stale; run `keel check` and commit it".
-- `docs/OUTPUT.md`: the warning examples list W1005; swap it for W1018.
+- `docs/OUTPUT.md`: the warning examples list W1005; swap it for W1018; the summary's `counts` of `keel check` hold `refreshed`, `evaluated` and `cached`.
 - `@keel/scaffold`'s `opProject.ts` comment and `.gitignore` template; `apps/*/README.md` lines that say `keel build` writes the `.keel/` artifacts say every `keel` command keeps them.
 - `packages/check/src/internal/EXPLANATIONS.ts`: E1005's text, W1018's entry, W1568's message ("names no surface of version 2 or 3").
 
@@ -188,7 +199,7 @@ W1018 is new (free on every `lane-*` branch and the main line, checked over `spe
 ## Budgets proposed (not edited)
 - `@keel/cli`: the refresh and the frozen switch are in the check path already loaded; the derivation cache is a few hundred bytes of code. Expect under 1 kB; re-base if over.
 - `@keel/compiler`: `surfaceRun` leaves the CLI for the evaluation entry; the Vite SSR server code it used goes. Expect a net decrease of the CLI.
-- No token limit moves: k.derived is about 2,200 tokens of 3,100, the tools area gains one row within its 500, and every amended section is at or under its previous size but k.ledger (+5 characters).
+- No token limit moves: k.derived is about 2,730 tokens of 3,100, the tools area gains one row within its 500, and every amended section is at or under its previous size but k.ledger (+5 characters).
 
 ## Migration
 None before P1. The repository's own apps and examples are updated in slice 2. A version 2 `surface.json` on a base branch is read by `--base` as before.
@@ -196,15 +207,17 @@ None before P1. The repository's own apps and examples are updated in slice 2. A
 ## Token impact
 | what | before | after |
 | --- | --- | --- |
-| k.derived (new) | none | about 2,200 tokens |
+| k.derived (new) | none | about 2,730 tokens |
 | k.compat | 2,492 | 1,632 (the Sources paragraph and three clauses go) |
 | k.compiler | 1,725 | 1,700 |
-| k.check, k.a11y, k.shell | 3,098, 3,095, 3,099 | 3,097, 3,092, 3,092 |
+| k.check, k.a11y, k.shell, k.library-pack | 3,098, 3,095, 3,099, 3,078 | 3,097, 3,092, 3,092, 3,083 |
 | the `keel` skill | its Commands line | 15 tokens shorter |
 | an agent's loop per edit | `keel build` (8 to 12 s here, and its output) then `keel check` | `keel check` |
 
 ## For the operator
+Items 1 to 3 were taken by the orchestrator as recommended; item 4 was decided otherwise, as it says.
+
 1. **The compiled views leave version control** (D6): `git rm --cached` of `a11y.json`, `ids.json`, `deps.json`, `styles.json`, `std.json` and `routes.json` in every app and example. Recommended: nothing reads them, and the lane rules' "generated files in conflict take either side" step goes with them. If you want them kept, the design holds unchanged: frozen CI then checks them too, at no extra cost.
 2. **`CI` turns frozen on** (D3). Recommended, as pnpm does; a hand-written pipeline gets the guarantee without knowing the flag. The alternative is `--frozen` in the generated workflow only.
 3. **`keel pack --check` becomes `keel pack --frozen`**, so the one idea has one name (principle 1). Recommended; it is one flag in k.library-pack and its clauses, done in slice 2.
-4. **Slice 3 waits on RFC 0251's evaluator** or builds its first piece. Recommended: build it here if 0251's slice 2 has not started when slice 3 does, and agree the `evaluate` signature with that lane first.
+4. **Slice 3 waits on RFC 0251's evaluator.** Decided by the orchestrator: it waits, and builds no second child.

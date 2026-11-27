@@ -1,6 +1,6 @@
 # ADR-0293: k.derived: check sees the project as it is (RFC 0255)
 
-**Status:** proposed
+**Status:** accepted (orchestrator, 2026-11-26), to be confirmed by the operator.
 
 **Context.** `keel check`, `keel test`, `keel ledger` and dev's inspect document read `.keel/` files that only `keel build` and the Vite plugin write, so an edit is judged against the last build. Reproduced on `apps/household`: a page, route, contract, store or `topology.ts` edit is a wrong E1005 ("run keel build"); a dependency upgrade that breaks stored states, or a tree with no `surface.json`, passes `keel check --base` although `keel build` then shows E1563; a read-only `.keel/` makes `keel test` run no test; `keel check` beside `keel dev` disagrees with what dev serves. The guide and the `keel` skill tell people and agents to build before every check.
 
@@ -13,4 +13,4 @@
 
 **Alternatives.** A watcher daemon (needs starting; an agent's shell has none); "build first" documented (today's state, a rule to remember, wrong greens stay); a warning instead of E1005 (keeps every wrong green); re-derive with no cache (0.3 to 0.7 s per check); a digest written into each view (public, so forgeable, and it changes committed files on every dependency bump); no views at all (people and tools read them).
 
-**Consequences.** Edit, `keel check`, done, for a person and an agent; the skill line telling agents to build first goes. CI derives the surface it compares, so a breaking dependency bump fails E1563. Pull requests stop conflicting on compiled views and on `surface.json`'s source hashes. `keel check` writes inside `.keel/` and `deploy/`, never a source. Slice 3 depends on RFC 0251's evaluator. k.derived's clauses hold the time bound: refresh adds at most 100 ms with nothing changed.
+**Consequences.** Edit, `keel check`, done, for a person and an agent; the skill line telling agents to build first goes. CI derives the surface it compares, so a breaking dependency bump fails E1563. Pull requests stop conflicting on compiled views and on `surface.json`'s source hashes. `keel check` writes inside `.keel/` and `deploy/`, never a source. Slice 3 depends on RFC 0251's evaluator. k.derived's clauses state the cost as counted work (no evaluation when nothing changed, one after a loaded file changes), read from the json summary's `counts`; durations are documentation only. `keel pack --check` becomes `--frozen`.
