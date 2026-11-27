@@ -3,7 +3,7 @@ status: proposed
 
 **Purpose.** Identity is a record each kernel package holds in its own module (k.identity), so it is only as sound as three things: that a realm holds one copy of the package, that the record's built-ins are the platform's, and that no name leads to kernel state. This section states each, and what stays open to code written on purpose to get around them.
 
-**One copy.** Each kernel package that makes identities (`@keel/schema`, `@keel/store`, `@keel/router`, `@keel/server`) enters its name and the URL of its file, less query and hash, in the realm's census while its module is evaluated.
+**One copy.** Each kernel package that makes identities (`@keel/schema`, `@keel/store`, `@keel/router`, `@keel/server`) enters its name and the URL of its file, less query and hash, in the realm's census while its module is evaluated. A bundle writes that URL as the file it inlined, so two folders inlined differ (a browser bundle: the path from the project).
 - A second copy of a name from another file is E1765 at that evaluation: it throws a coded refusal (k.deploy Refusals at start) whose message is `two copies of <name> in one realm: <first url> and <second url>`, and nothing more of the second copy runs. Two copies never disagree in silence about what a schema, a defect or an action is.
 - `keel check` and `keel build` report E1765 at the project's `package.json` when its dependencies resolve one of those names to two folders, with the same message and the folders' paths relative to the project.
 - An evaluation from the same file again (a dev reload, a test's module reset) is no second copy. It has a record of its own: a value an earlier evaluation made fails its guards.
@@ -23,7 +23,7 @@ Each finds its callee as k.unsafe One path says; no fix.
 
 **Conformance.**
 - With `@keel/schema` loaded from its package folder, importing a copy of that folder made under another path throws a value whose message starts `E1765 two copies of @keel/schema in one realm: `, then the first copy's file URL, ` and `, and the second's; `isSchema` and `isDefect` of the first copy answer as before; the same holds of `@keel/store` and `@keel/router`.
-- `server.mjs` of a fixture whose bundle loads a second copy of `@keel/schema` from another folder prints one `diag` with code E1765 naming both URLs and exits 1, with no E1577 record.
+- `server.mjs` of a fixture, imported after a copy of `@keel/schema` from another folder was evaluated in its process, prints one `diag` with code E1765 naming both URLs and exits 1, with no E1577 record.
 - A project whose `node_modules` resolves `@keel/schema` to two folders (the app's and one nested under a dependency) is one E1765 at `package.json` from `keel check` and from `keel build`; with one folder it is none.
 - Evaluating `@keel/schema` again from the same file with a fresh module graph throws nothing, and a schema the first evaluation made is not `isSchema` under the second.
 - After `Reflect.set(WeakSet.prototype, 'has', () => true)`, `Reflect.set(WeakMap.prototype, 'has', () => true)` and `Reflect.set(WeakMap.prototype, 'get', () => ({}))` in a module evaluated after the kernel: `isSchema({})`, `isStore({})`, `isDefect(new Error('x'))` and `isRouteTable({})` are false, and `manifest` given `{ ...a }` for an action `a` throws a value whose message starts `E1515`.

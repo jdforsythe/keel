@@ -7,7 +7,7 @@ description: "Read first in a Keel app: app shape, one export per file, the rule
 
 **Reading path.** `keel docs` lists areas, `keel docs <area>` an area's sections, `keel docs <id>` one (`k.router`), `keel docs --for <code, name or term>` finds them; `keel explain <code>` its fix. A std section opens once its package is in `package.json`, installed (E1065). An API no section describes: stop, report `blocked: <what is missing>`. TS2688 or TS2875 in an E1751: kit types did not resolve; report `blocked: kit types`, never edit `node_modules`.
 
-**Shape.** App code lives in modules, `modules/<id>/`; `keel scaffold project` starts with module `app`, to build on or delete with its `topology.ts` entry. Each file has one export and is named after it (E1752); a component file may also export `Props` and `uses`.
+**Shape.** App code lives in modules, `modules/<id>/`; `keel scaffold project` starts with module `app`, to build on or delete. Each file has one export and is named after it (E1752); a component file may also export `Props` and `uses`.
 - `module.ts`: `export default module({ id, deps, capabilities, public: { exports } })` (`@keel/compiler`). Route ids, store ids, transaction names and error codes start with the module id (E1155).
 - `topology.ts`: `export default topology({ web: { modules: ['todos'], adapter: 'client' } })` (`@keel/server`).
 - `*.schema.ts`: schemas live only here (E1104). `T.parse(x)` returns a `Result`; there is no `decode`. `s.array(item)` and `s.record(value)` take one argument.
@@ -36,7 +36,7 @@ export default function TodoList(props: Infer<typeof Props>) {
 ```
 
 **Rules.**
-- Failures: `err(E.make(data))`, never `throw` (E1451); bugs `defect('text')`, values in `data` (E1455); catch: `attempt(fn, expect)` (E1452; `keel explain E1452`: cleanup, wrapping); JSON by `Prefs.parseJson` (E1457); never drop a `Result` (E1453).
+- Failures: `err(E.make(data))`, never `throw` (E1451); bugs `defect('text')`, values in `data` (E1455); catch: `attempt(fn, expect)` (E1452); JSON by `Prefs.parseJson` (E1457); never drop a `Result` (E1453).
 - No `Date`, `Math.random`, `crypto.randomUUID`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651). An `import()` is W1608, unseen by `simulate`: import statically.
 - No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757), whose reason, 8 words or more, says why the escape holds (E1760). A claim that a call must not compile is a negative type test: `test/<name>.test-d.ts`, each `// @ts-expect-error <what must not compile>` one claim, imported by nothing (E1761); no `@keel/*` import with an `internal` segment (E1576). Import a `modules/` file by a relative path (E1013); code outside the project is a workspace package, never a relative path out of it (E1015).
 - A format value written in source is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`), E1108 when it does not parse.
@@ -54,3 +54,4 @@ export default function TodoList(props: Infer<typeof Props>) {
 - keel-compliance: personal data marks, secrets, tokens, the content security policy, evidence.
 - keel-escapes: reading `keel review`, each escape from a protection by danger and novelty.
 - keel-library: a library other apps install.
+- keel-errors: failures, `expect`, retry, rollback, an SDK.
