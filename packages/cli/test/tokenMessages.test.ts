@@ -46,8 +46,8 @@ describe("tokenKeyAt", () => {
   it("is at the last spread of the deepest object literal on the path, else the deepest key, else 1:1", () => {
     const src = `export const tokens = {\n  color: { ...a, ...b, text: "#000000" },\n};\n`;
     expect(tokenKeyAt(src, ["color", "ink"])).toEqual({ line: 2, col: 18 });
-    expect(tokenKeyAt(`export const tokens = { color: base };\n`, ["color", "ink"])).toEqual({ line: 1, col: 25 });
-    expect(tokenKeyAt(`export const other = {};\n`, ["color"])).toEqual({ line: 1, col: 1 });
+    expect(tokenKeyAt("export const tokens = { color: base };\n", ["color", "ink"])).toEqual({ line: 1, col: 25 });
+    expect(tokenKeyAt("export const other = {};\n", ["color"])).toEqual({ line: 1, col: 1 });
   });
 
   it("follows a const of the same file", () => {
