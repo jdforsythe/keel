@@ -8,7 +8,7 @@
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
-import { isDefect, ok, s } from "@keel/schema";
+import { defect, isDefect, ok, s } from "@keel/schema";
 import { owner, signal } from "@keel/reactive";
 import { moduleRoot } from "@keel/reactive/internal";
 import { topology } from "@keel/server";
@@ -22,12 +22,12 @@ const c = contract("p", {
 });
 
 const last = moduleRoot(() => signal(""));
-const root = moduleRoot(() => owner());
+const root = moduleRoot(() => owner() ?? defect("no owner"));
 const counter = (id: string) => {
-  const n = moduleRoot(() => signal(0));
+  const n = signal(0);
   return { id, get: () => n.get(), add: () => n.set(n.get() + 1) };
 };
-const moduleCounter = counter("module");
+const moduleCounter = moduleRoot(() => counter("module"));
 
 interface Gate {
   readonly promise: Promise<void>;
