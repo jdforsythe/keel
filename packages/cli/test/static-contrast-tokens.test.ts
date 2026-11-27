@@ -132,7 +132,10 @@ describe("k.a11y-static: a tokens.ts that gives no tokens is E1807", () => {
   it.each([
     ["exports no tokens", "export const other = {};\n"],
     ["throws", 'throw new Error("boom");\nexport const tokens = {};\n'],
-    ["fails TokenSchema", 'import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = { color: { fg: 5 } };\n'],
+    [
+      "fails TokenSchema",
+      'import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = { color: { fg: 5 } };\n',
+    ],
   ])("a tokens.ts that %s is one E1807 at tokens.ts 1:1, with no E1804", (_, source) => {
     const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": LOW, "tokens.ts": source });
     const r = keel(dir, ["check"]);
