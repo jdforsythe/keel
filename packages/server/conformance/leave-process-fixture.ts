@@ -10,6 +10,8 @@ import { REPO, childOutput, deployEnv } from "./topology-build-fixture.ts";
 export const SEED = 1337;
 /** The text a defect raised by the fixture carries; no record may hold it. The fixture raises defects, the one way app code fails (k.errors Defects). */
 export const THROWN = "planted-thrown-text";
+/** The message of the `Error` the fixture throws 30 ms after a 200 when `LEAVE_THROW` is `error`: it names a person. */
+export const PLANTED_ERROR = "user jane@x.com failed";
 /** What the fixture's own timers are called, spelled so the fixture's source is data here. */
 const TIMER = ["set", "Timeout"].join("");
 
@@ -29,7 +31,11 @@ export default function Home() {
   "unsafe/throwLater.ts": `import { defect } from "@keel/schema";
 ${LIFT}export const throwLater = (...delays: number[]): void =>
   unsafe("the fixture schedules an uncaught throw on purpose", () => {
-    for (const ms of delays) ${TIMER}(() => { defect(${JSON.stringify(THROWN)}); }, ms);
+    for (const ms of delays)
+      ${TIMER}(() => {
+        if (process.env.LEAVE_THROW === "error") AbortSignal.abort(new Error(${JSON.stringify(PLANTED_ERROR)})).throwIfAborted();
+        defect(${JSON.stringify(THROWN)});
+      }, ms);
   });
 `,
   "unsafe/later.ts": `${LIFT}export const later = (ms: number, work: () => void): void =>
