@@ -30,6 +30,10 @@ type Args<E, St> = {
   readonly caller: string;
   readonly user: string;
   readonly bearer: Secret<string> | undefined;
+  /** The request's `Sec-Fetch-Site` (`same-origin`, `same-site`, `cross-site`, `none`), `""` when it sent none. */
+  readonly site: string;
+  /** The host the request was sent to (its `Host` header), `""` for a direct call; `url` carries `KEEL_ORIGIN`'s. */
+  readonly host: string;
   readonly stores: St;
   readonly signal: AbortSignal;
 };
@@ -47,9 +51,11 @@ type ViewIds<C> = {
       : never;
 }[keyof C & string];
 type Fn = (
-  args: Omit<LoaderInput, "user" | "bearer" | "stores"> & {
+  args: Omit<LoaderInput, "user" | "bearer" | "site" | "host" | "stores"> & {
     readonly stores: unknown;
     readonly user: string;
+    readonly site: string;
+    readonly host: string;
     readonly bearer: Secret<string> | undefined;
     readonly signal: AbortSignal;
     readonly currentUser: CurrentUser;
@@ -105,7 +111,19 @@ export function loader(
     withStores(stores, args.stores, ctx, (st) =>
       firstYield((signal) => {
         const user = args.user ?? "";
-        return fn({ ...args, user, bearer: args.bearer, stores: st, signal, currentUser: fixedUser(user) }, ctx);
+        return fn(
+          {
+            ...args,
+            user,
+            bearer: args.bearer,
+            site: args.site ?? "",
+            host: args.host ?? "",
+            stores: st,
+            signal,
+            currentUser: fixedUser(user),
+          },
+          ctx,
+        );
       }),
     );
   const base = {
@@ -122,7 +140,7 @@ export function loader(
     live: (a: LiveInput, ctx: Ctx) => {
       const user = a.user ?? "";
       const currentUser = a.currentUser ?? fixedUser(user);
-      const at = { ...a, user, bearer: a.bearer, currentUser };
+      const at = { ...a, user, bearer: a.bearer, site: a.site ?? "", host: a.host ?? "", currentUser };
       return a.stores !== undefined || stores === undefined
         ? yields(fn({ ...at, stores: a.stores }, ctx))
         : liveWithStores(stores, ctx, (st) => yields(fn({ ...at, stores: st }, ctx)));

@@ -29,6 +29,10 @@ const hostOf = (s: string): URL | undefined => {
   }
 };
 
+/** Whether a connection's remote address is this machine's loopback (`127.0.0.0/8`, `::1`, or either mapped into IPv6). */
+const loopbackPeer = (address: string | undefined): boolean =>
+  address !== undefined && (address === "::1" || /^(::ffff:)?127\.\d+\.\d+\.\d+$/.test(address));
+
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** `data` of `.keel/<name>`, or `{}` when it is missing or unreadable (no build yet). */
@@ -101,6 +105,8 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
  * and, of two apps, the first by name kept. POST takes the page's report as JSON. Both answer only (RFC 0022) a `Host` that is loopback or in `origins`, with an `Origin`
  * that is the server's own or in `origins` (`:*` for any port); others get 403 `keel.denied`. A GET may omit `Origin`
  * (a navigation or curl); a POST or any other method must send one. A listed cross-origin `Origin` is echoed for CORS.
+ * Whatever the headers say, a connection whose remote address is not loopback is 403 `keel.denied` too (k.topology Local
+ * topology: under `keel dev --host` the store values it holds stay on this machine).
  */
 export function inspectMiddleware(
   root: () => string,
@@ -123,7 +129,7 @@ export function inspectMiddleware(
     const write = req.method !== "GET" && req.method !== "HEAD";
     const same = origin === undefined ? !write : from !== undefined && from.host === self?.host;
     const crossOk = origin !== undefined && !same && listed(origins, origin);
-    if (!hostOk || !(same || crossOk))
+    if (!loopbackPeer(req.socket.remoteAddress) || !hostOk || !(same || crossOk))
       return send(res, 403, { ok: false, error: { code: "keel.denied", message: "inspect origin refused", data: {} } });
     if (crossOk) {
       res.setHeader("access-control-allow-origin", origin);

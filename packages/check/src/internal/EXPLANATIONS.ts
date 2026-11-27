@@ -856,6 +856,13 @@ const ROWS: readonly Row[] = [
     "k.compat",
   ],
   [
+    "W1569",
+    "keel dev --host listens beyond loopback",
+    "Anyone on that network reaches the source modules Vite serves, HMR, dev error texts and what the app serves in dev, such as a dev sign-in fixture's fixed secret; /__keel/inspect still answers loopback callers only.",
+    "keel dev (loopback alone), or --host only on a network you trust",
+    "k.topology",
+  ],
+  [
     "W1568",
     "keel check --base names no readable surface of version 2; E1562 not checked",
     "The first pull request has no base surface, so this warns instead of failing.",
@@ -1335,6 +1342,13 @@ const ROWS: readonly Row[] = [
     "The run fails before any file runs; no test is reported skipped.",
     "add playwright-core to devDependencies, then playwright-core install <engine>",
     "k.e2e",
+  ],
+  [
+    "W1734",
+    "keel test --e2e: the Chromium sandbox is off (Linux as root)",
+    "Chromium cannot start its sandbox as root, so page code runs with this process's rights; the run goes on.",
+    "run keel test --e2e as a user other than root, as a CI container's USER line sets",
+    "k.e2e-run",
   ],
   [
     "E1735",

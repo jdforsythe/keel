@@ -18,7 +18,7 @@ const line = (text: string): void => {
  * it). A `'sqlite'` deployable on a Node older than 22.13 (`node`, the running version by default) prints one E1560 naming
  * both versions and exits 1 before the driver loads. Parses `process.env` with `DeployEnv`: a failure prints one E1560 naming the key, never its value, and exits 1.
  * Then serves `createApp` (production, real `ctx`, its route table, runners, the identity source, peers by `KEEL_PEER_<NAME>`, `origin`
- * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, its storage the driver `open` opened on
+ * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT` at `HOST` (every interface when unset), its storage the driver `open` opened on
  * `KEEL_DATABASE_URL` when given (k.deploy Storage; a std.db E2152 or E2153 prints that diag and exits 1), and on
  * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0, or 1 when either rejects (nothing is printed);
  * a second signal during shutdown does nothing. Every `uncaughtException` and `unhandledRejection` prints one E1577
@@ -29,7 +29,15 @@ const line = (text: string): void => {
 export async function start(o: StartOptions, node = process.versions.node): Promise<void> {
   const peers = Object.keys(o.topology).filter((n) => n !== o.deployable && o.topology[n]?.adapter === "node");
   const storage = o.topology[o.deployable]?.storage ?? "file";
-  const keys = ["PORT", "KEEL_ORIGIN", "KEEL_SECRET", "KEEL_ALLOW_ORIGINS", "KEEL_DATABASE_URL", ...peers.map(peerKey)];
+  const keys = [
+    "PORT",
+    "HOST",
+    "KEEL_ORIGIN",
+    "KEEL_SECRET",
+    "KEEL_ALLOW_ORIGINS",
+    "KEEL_DATABASE_URL",
+    ...peers.map(peerKey),
+  ];
   const given: Record<string, string> = {};
   for (const k of keys) {
     const v = process.env[k];
@@ -116,7 +124,9 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   });
   live.app = app;
   const port = env.value.PORT ?? 8080;
-  const srv = serve({ fetch: app.fetch, port }, (a) => {
+  // `HOST` unset: every interface, as Node's `listen(port)` binds (k.deploy).
+  const host = env.value.HOST;
+  const srv = serve({ fetch: app.fetch, port, ...(host === undefined ? {} : { hostname: host }) }, (a) => {
     line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
   });
   live.server = srv;

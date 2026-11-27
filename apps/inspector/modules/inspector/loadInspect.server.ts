@@ -1,54 +1,72 @@
 import { loader } from "@keel/router";
 import { attempt, err, ok } from "@keel/schema";
-import { type ApiError, service } from "@keel/services";
+import { service } from "@keel/services";
 import { Inspection } from "./Inspection.schema.ts";
 import { inspectApi } from "./inspectApi.service.ts";
 import { inspector } from "./inspector.contract.ts";
 
 /** The host names of this machine, as `new URL(...).hostname` writes them. */
 const LOOPBACK: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
+/** The `Sec-Fetch-Site` values of a navigation this machine's own pages or a person typing the address make. */
+const OWN_SITE: ReadonlySet<string> = new Set(["same-origin", "none"]);
 
 /**
- * Whether `url` is an http or https URL whose host is this machine: its `hostname` exactly one of `LOOPBACK`, any
- * port, and no user name or password. Any other scheme, host or a URL that does not parse is not.
+ * The origin `target` names when it is an origin and nothing more: http or https, a loopback host, no user name or
+ * password, no path but `/`, no query and no fragment (`?` or `#` alone count). Anything else is undefined.
  */
-const onThisMachine = (url: string): boolean => {
-  const u = attempt(() => new URL(url));
-  return (
-    u.ok &&
-    (u.value.protocol === "http:" || u.value.protocol === "https:") &&
-    u.value.username === "" &&
-    u.value.password === "" &&
-    LOOPBACK.has(u.value.hostname)
-  );
+const originOf = (target: string): string | undefined => {
+  const u = attempt(() => new URL(target));
+  if (!u.ok) return undefined;
+  const { protocol, username, password, hostname, pathname, search, hash } = u.value;
+  const bare = !/[?#]/.test(target);
+  return (protocol === "http:" || protocol === "https:") &&
+    username === "" &&
+    password === "" &&
+    LOOPBACK.has(hostname) &&
+    pathname === "/" &&
+    search === "" &&
+    hash === "" &&
+    bare
+    ? u.value.origin
+    : undefined;
 };
 
-const reason = (e: ApiError): string =>
-  e.code === "api.status"
-    ? `answered ${e.data.status}`
-    : e.code === "api.decode"
-      ? "did not return an inspect document"
-      : e.code === "api.timeout"
-        ? "timed out"
-        : "is unreachable";
+/** Whether a `Host` header names this machine with a port (`127.0.0.1:4100`, `localhost:4100`, `[::1]:4100`). */
+const loopbackHost = (host: string): boolean => {
+  const u = attempt(() => new URL(`http://${host}`));
+  return u.ok && u.value.port !== "" && LOOPBACK.has(u.value.hostname) && u.value.host === host.toLowerCase();
+};
 
 /**
- * Fetch the inspect document of `search.url` (default: the origin of the request `url`, the inspector itself) on the
- * server and shape it for the views (values as JSON text; absent `sections` is none). The target must be on this
- * machine (`onThisMachine`), since the server fetches a URL a visitor gave: any other is `inspector.unreachable`
- * `<url> is not on this machine`, and nothing is fetched. The fetch goes through `ctx.net` and follows no redirect, so
- * a 3xx is `answered <status>`. An unreachable target or a bad document is `inspector.unreachable`.
+ * Fetch the inspect document of the origin `search.url` names (default: the inspector's own) on the server and shape
+ * it for the views (values as JSON text; absent `sections` is none). Since the server fetches what a visitor names:
+ * - it answers only a request whose `Host` is a loopback name with a port and whose `Sec-Fetch-Site` is `same-origin`
+ *   or `none`; any other is 403 `keel.denied` and nothing is fetched (a cross-site navigation, DNS rebinding);
+ * - it takes `?url=` only when that is an origin on this machine (`originOf`), and requests
+ *   `<origin>/__keel/inspect` built from the parsed origin alone, so nothing else of the caller's string is sent;
+ * - every failure of the fetch (refused, a status, a redirect, a timeout, a body that is no inspect document) is one
+ *   answer, `inspector.unreachable` `no inspect document at <origin>`, which says nothing of what listens there.
+ * The fetch goes through `ctx.net` and follows no redirect.
  */
 export const loadInspect = loader(
   inspector,
   "inspector.index",
   { output: Inspection },
-  async ({ search, url: at }, ctx) => {
-    const url = (search.url ?? new URL(at).origin).replace(/\/+$/, "");
-    if (!onThisMachine(url))
-      return err({ code: "inspector.unreachable", message: `${url} is not on this machine`, data: { url } });
-    const r = await service({ base: url, schema: inspectApi }).get({}, ctx);
-    if (!r.ok) return err({ code: "inspector.unreachable", message: `${url} ${reason(r.error)}`, data: { url } });
+  async ({ search, url: at, host, site }, ctx) => {
+    if (!loopbackHost(host) || !OWN_SITE.has(site))
+      return err({ code: "keel.denied", message: "the inspector answers this machine's own pages only", data: {} });
+    const target = search.url ?? new URL(at).origin;
+    const origin = originOf(target);
+    if (origin === undefined)
+      return err({
+        code: "inspector.unreachable",
+        message: "?url= is not the origin of an app on this machine",
+        data: { url: "" },
+      });
+    const r = await service({ base: origin, schema: inspectApi }).get({}, ctx);
+    if (!r.ok)
+      return err({ code: "inspector.unreachable", message: `no inspect document at ${origin}`, data: { url: origin } });
+    const url = origin;
     const d = r.value;
     const stores = Object.fromEntries(
       Object.entries(d.stores).map(([id, st]) => [id, { state: JSON.stringify(st.state), log: st.log }]),

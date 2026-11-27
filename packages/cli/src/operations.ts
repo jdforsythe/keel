@@ -91,7 +91,7 @@ export const operations: readonly Operation[] = [
   {
     name: "dev",
     description: "Dev server and log stream (k.server).",
-    input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), ...diagnostic }),
+    input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), host: s.string().optional(), ...diagnostic }),
     output: outputOf(ReqSchema),
     positional: [],
     scope: "none",

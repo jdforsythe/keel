@@ -294,6 +294,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
             caller: callerOf(raw, sv),
             user: "",
             bearer: matched?.def.kind === "api" ? bearerOf(raw) : undefined,
+            site: raw.headers.get("sec-fetch-site") ?? "",
+            host: new URL(raw.url).host,
             allowed: api !== undefined,
             held: new Map(),
             pii,
