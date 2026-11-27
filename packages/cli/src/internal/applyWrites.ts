@@ -10,9 +10,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { linkEscapes } from "@keel/scaffold/links";
 import type { Write } from "../types/Write.ts";
 import { WriteRefused } from "./WriteRefused.ts";
-import { linkEscapes } from "./linkEscapes.ts";
 
 const outside = (root: string, abs: string): boolean => {
   const rel = relative(root, abs);

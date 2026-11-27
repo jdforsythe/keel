@@ -1,13 +1,13 @@
 // Seed 1337 (`SEED`). `scaffold library <name>` (k.library-pack Scaffold): a name `@<scope>/<base>` of lowercase letters,
-// digits and `-` writes the twelve files under `<base>/`, `module.ts` holding the base in lowerCamel; any other name is
+// digits and `-` writes the eleven files under `<base>/`, `module.ts` holding the base in lowerCamel; any other name is
 // E1352 and an existing `<base>/` E1351, each writing nothing; equal input gives byte-equal output.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { libraryTree } from "../src/create/index.ts";
 import { scaffold } from "../src/index.ts";
 import { RUNS, SEED } from "./helpers.ts";
 
 const FILES = [
-  ".gitignore",
   "README.md",
   "module.ts",
   "package.json",
@@ -27,7 +27,7 @@ const camel = (segs: readonly string[]): string =>
 const codeOf = (r: ReturnType<typeof scaffold>): string | undefined => (r.ok ? undefined : r.error.data.code);
 
 describe("scaffold library", () => {
-  it("writes the twelve files under <base>/, the id the base in lowerCamel, the kernel peers at the given version", () => {
+  it("writes the eleven files under <base>/, the id the base in lowerCamel, the kernel peers at the given version", () => {
     fc.assert(
       fc.property(scope, fc.array(seg, { minLength: 1, maxLength: 3 }), (sc, segs) => {
         const base = segs.join("-");
@@ -56,7 +56,8 @@ describe("scaffold library", () => {
         const e2e = r.value.files.get(`${base}/test/Example.e2e.ts`) ?? "";
         expect(e2e).toContain(`serve({ page: "src/Example.tsx", props: { id: "lib" } })`);
         expect(e2e).toContain("a11y()");
-        expect(r.value.files.get(`${base}/.gitignore`)).toContain(".keel/e2e-host-*/");
+        const tree = libraryTree({ name: `@${sc}/${base}`, version: "1.2.3", skills: [] });
+        expect(tree.ok && tree.value.get(".gitignore")).toContain(".keel/e2e-host-*/");
         const again = scaffold("library", { name: `@${sc}/${base}`, version: "1.2.3" }, new Map());
         expect(again.ok && [...again.value.files]).toEqual([...r.value.files]);
       }),

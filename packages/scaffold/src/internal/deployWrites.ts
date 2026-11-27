@@ -29,7 +29,8 @@ function fieldOf(text: string | undefined, key: string): string | undefined {
  * when the tree has `turbo.json` (a project outside the Keel monorepo) or when it already holds a `deploy/` file.
  * A deployable's CI job runs on its modules and those they dep on, transitively (`modules/<id>/module.ts` `deps`); a
  * `node` one is passed the `env` names its modules and their libraries need (`deployEnv`, k.server-deps Environment),
- * a library's manifest read at `node_modules/<name>/module.ts` of `files`.
+ * a library's manifest read at `node_modules/<name>/module.ts` of `files`. The CI workflow follows `package.json`'s
+ * `packageManager`.
  * `policy` gives the content security policy of a `client` document for a deployable's declared
  * origins (k.origins). Shell files come from the targets in `shells`
  * (k.shell Files): a file of a shell folder that the target gives no deployable declaring that shell is removed, and
@@ -59,7 +60,7 @@ export function deployWrites(
   const pkg = files.get("package.json");
   const identity = files.has("identity.ts");
   const project = { version: fieldOf(pkg, "version") ?? "0.0.0", pkg: fieldOf(pkg, "name") ?? "", policy, identity };
-  const want = deployFiles(built, { ci, ...project, shells });
+  const want = deployFiles(built, { ci, ...project, shells, packageManager: fieldOf(pkg, "packageManager") });
   const paths = [...files.keys()];
   const keep = always || files.has("turbo.json") || paths.some((p) => p.startsWith("deploy/"));
   for (const [p, v] of want) if (p === CI || keep) out.set(p, v);

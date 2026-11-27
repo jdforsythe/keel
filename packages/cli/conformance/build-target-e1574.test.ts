@@ -57,6 +57,7 @@ function build(origin: string | undefined, format = "json"): { status: number | 
     env[k] = v;
   }
   env.PATH = empty;
+  env.npm_config_user_agent = "pnpm/11.0.0 node/v22.0.0";
   if (origin !== undefined) env.KEEL_ORIGIN = origin;
   const r = spawnSync(process.execPath, [BIN, "build", "--target", "tauri", `--format=${format}`], {
     cwd: project,
@@ -109,7 +110,7 @@ describe("k.shell: E1574", () => {
             for (const bad of [undefined, "", `http://${host}.example`, `${host}.example`]) {
               const run = build(bad, "compact");
               expect(run.out, String(bad)).toContain(
-                "E1574 KEEL_ORIGIN must be an https: origin (http: on localhost only)\n  see: keel docs k.shell",
+                "E1574 KEEL_ORIGIN must be an https: origin (http: on localhost only)\n  see: pnpm keel docs k.shell",
               );
               expect(run.out.match(/E1574/g) ?? []).toHaveLength(1);
               if (bad !== undefined && bad !== "") expect(run.out).not.toContain(host);

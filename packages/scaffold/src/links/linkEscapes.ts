@@ -38,7 +38,7 @@ const resolved = (abs: string): string | undefined => {
  * Whether a write to `abs` is carried out of `real` by a link (k.scaffold Links), `real` being a folder's real path
  * (which need not exist yet): `abs` is a symbolic link, an existing file with more than one hard link, or a path whose
  * nearest existing ancestor's real path, joined with the rest of the path, is outside `real`. An ancestor that cannot
- * be read counts as outside, and a `real` that is not a real path makes every target escape. `applyWrites` (E1357)
+ * be read counts as outside, and a `real` that is not a real path makes every target escape. `keel`'s writes and `create-app`'s (E1357)
  * and the shell files (k.shell E1585) read it.
  */
 export function linkEscapes(real: string, abs: string): boolean {

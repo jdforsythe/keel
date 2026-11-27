@@ -1547,6 +1547,21 @@ importers:
         specifier: ^21.0.4
         version: 21.0.4
 
+  packages/create-app:
+    devDependencies:
+      '@keel/scaffold':
+        specifier: workspace:*
+        version: link:../scaffold
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+
   packages/ctx:
     dependencies:
       '@keel/schema':

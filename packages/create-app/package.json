@@ -1,0 +1,31 @@
+{
+  "name": "@keel/create-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Start a Keel project from an empty folder: pnpm create @keel/app",
+  "bin": {
+    "create-app": "./src/bin.ts"
+  },
+  "publishConfig": {
+    "bin": {
+      "create-app": "./dist/bin.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.15"
+  },
+  "files": ["dist", "skills"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test build.mjs",
+    "test": "vitest run",
+    "build": "node build.mjs",
+    "prepack": "node ../../tooling/docs-check.mjs --write"
+  },
+  "devDependencies": {
+    "@keel/scaffold": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  }
+}

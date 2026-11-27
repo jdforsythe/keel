@@ -7,7 +7,7 @@ const DEFAULT_URL = "http://localhost:5173";
 const URL_MAX = 48;
 const JSON_ONLY = { accept: "application/json" };
 
-/** The parts of `GET /__keel/inspect` (k.cli Inspect) that mark an inspect document; `sections` is absent without inspector hooks. */
+/** The parts of `GET /__keel/inspect` (k.inspect) that mark an inspect document; `sections` is absent without inspector hooks. */
 const InspectDoc = s.object({
   live: s.boolean(),
   graph: s.object({}),
@@ -45,7 +45,12 @@ const done = (records: OutRecord[], counts: Record<string, number>, ok: boolean)
   writes: [],
 });
 
-const diag = (code: string, message: string): OutRecord => ({ kind: "diag", code, message, see: "k.cli" });
+const diag = (code: string, message: string): OutRecord => ({
+  kind: "diag",
+  code,
+  message,
+  see: code === "E1056" ? "k.inspect" : "k.cli",
+});
 
 /** `url` without its query and fragment, cut to `URL_MAX`: the form an E1056 message names. */
 const shown = (url: string): string => {

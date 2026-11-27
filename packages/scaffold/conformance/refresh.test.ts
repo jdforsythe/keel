@@ -107,10 +107,10 @@ describe("the refresh prints nothing while it runs", () => {
     return { status: r.status, lines: r.stdout.split("\n").filter((l) => l.trim() !== "") };
   };
   it(
-    "keel scaffold route app.home --path / --no-loader: the edit lines, then one ok trailer with artifacts, nothing else",
+    "keel scaffold route app.about --path /about --no-loader: the edit lines, then one ok trailer with artifacts, nothing else",
     () => {
       const dir = built(fresh());
-      const r = run(dir, ["scaffold", "route", "app.home", "--path", "/", "--no-loader"], []);
+      const r = run(dir, ["scaffold", "route", "app.about", "--path", "/about", "--no-loader"], []);
       expect(r.status, r.lines.join("\n")).toBe(0);
       const last = r.lines.at(-1) ?? "";
       expect(last).toMatch(/^ok scaffold route \d+ created, \d+ changed, \d+ removed, [1-9]\d* artifacts, 0 errors$/);
@@ -121,10 +121,10 @@ describe("the refresh prints nothing while it runs", () => {
   );
   // OUTPUT.md fixes the compact trailer only; k.scaffold states for every format just "no W1005" and success.
   it(
-    "keel scaffold route app.home --path / --no-loader --format=pretty: exit 0 and no W1005",
+    "keel scaffold route app.about --path /about --no-loader --format=pretty: exit 0 and no W1005",
     () => {
       const dir = built(fresh());
-      const r = run(dir, ["scaffold", "route", "app.home", "--path", "/", "--no-loader"], ["--format=pretty"]);
+      const r = run(dir, ["scaffold", "route", "app.about", "--path", "/about", "--no-loader"], ["--format=pretty"]);
       expect(r.status, r.lines.join("\n")).toBe(0);
       expect(r.lines.join("\n")).not.toContain("W1005");
     },

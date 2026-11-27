@@ -1,15 +1,20 @@
 import { jsonText } from "../internal/jsonText.ts";
-const KEEL = "^0.0.0";
 const KERNEL = ["compiler", "ctx", "forms", "reactive", "router", "runtime-dom", "schema", "server", "store", "ui"];
 
 /**
- * `package.json` of a new project. Standalone: scripts call `keel`, kernel packages as versioned dependencies,
- * `happy-dom` for the test environment `vite.config.ts` names, `@types/node` for the type pass (k.check).
+ * `package.json` of a new project. Standalone: scripts call `keel`, every `@keel/*` package at exactly `version` (the
+ * creating tool's, k.create Versions), `engines.node` `>=22.15`, `packageManager` when given (k.create Package
+ * manager), `happy-dom` for the test environment `vite.config.ts` names, `@types/node` for the type pass (k.check).
  * `workspace`: an app inside the Keel monorepo; the same `keel` scripts (`check` adds `tsc` and Biome over `modules`, which the repo's own
  * tooling runs), `workspace:*` dependencies, no versioned tool dependencies.
  */
-export function packageJson(name: string, workspace = false): string {
-  const v = workspace ? "workspace:*" : KEEL;
+export function packageJson(
+  name: string,
+  workspace = false,
+  version = "0.0.0",
+  packageManager: string | undefined = undefined,
+): string {
+  const v = workspace ? "workspace:*" : version;
   const scripts = {
     build: "keel build",
     check: workspace ? "tsc --noEmit && biome check modules && keel check" : "keel check",
@@ -32,6 +37,8 @@ export function packageJson(name: string, workspace = false): string {
     version: "0.0.0",
     private: true,
     type: "module",
+    ...(packageManager === undefined ? {} : { packageManager }),
+    ...(workspace ? {} : { engines: { node: ">=22.15" } }),
     scripts,
     dependencies: Object.fromEntries(KERNEL.map((p) => [`@keel/${p}`, v])),
     devDependencies: dev,

@@ -30,6 +30,7 @@ export type Input = {
   readonly api?: boolean;
   readonly method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   readonly path?: string;
+  readonly loader?: boolean;
   readonly "no-loader"?: boolean;
   readonly openapi?: string;
   readonly to?: string;

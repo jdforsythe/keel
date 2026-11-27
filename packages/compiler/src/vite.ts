@@ -289,7 +289,7 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * deployable's route matches is answered by that deployable's dev app (`DEV_ENTRY`, `devMiddleware`), anything else by
  * Vite; a changed app source closes the dev apps and the next request loads them again, after they have closed.
  *
- * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
+ * Dev and preview servers serve `/__keel/inspect` (k.inspect): the `.keel/` artifacts plus the live graph and
  * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
  */
 export default function (): {

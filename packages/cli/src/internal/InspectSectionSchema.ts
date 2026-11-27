@@ -1,7 +1,7 @@
 import { s } from "@keel/schema";
 
 /**
- * `keel inspect`: one inspector section of the target app, its schema's `doc()` and its value (k.cli Inspector hooks);
+ * `keel inspect`: one inspector section of the target app, its schema's `doc()` and its value (k.inspect Inspector hooks);
  * `deployable` names the deployable that serves it when the document holds `deployables`.
  */
 export const InspectSectionSchema = s.object({
