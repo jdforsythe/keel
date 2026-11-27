@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { dirname, join, normalize } from "node:path";
+import { dirname, isAbsolute, join, normalize } from "node:path";
 // Spec: k.derived, clause "In the copy of clause 1, after one `keel check`, a second with no file changed has json `counts.evaluated` 0 and `counts.cached` 1."
 // Spec: k.derived, clause "In that copy after one `keel check`, editing `test/` files only gives `counts.evaluated` 0, and editing the contract gives `counts.evaluated` 1."
 // Spec: k.derived, clause "After the contract edit of clause 23, the one entry written in `node_modules/.cache/keel/derived/` has `inputs` holding the contract, `routes.ts` and each project file `routes.ts` imports, directly or through others, no test file, and only paths that exist."
@@ -67,8 +67,9 @@ function closure(dir: string, from: string): string[] {
   return [...seen].sort();
 }
 
-/** True when `p` is a file of the project or of a package under `node_modules` (`<name>/<path>`, a scoped name has two segments). */
+/** True when `p` is a file of the project, of a package under `node_modules` (`<name>/<path>`, a scoped name has two segments), or another's absolute path (k.derived Derivation cache). */
 function exists(dir: string, p: string): boolean {
+  if (isAbsolute(p)) return existsSync(p);
   if (existsSync(join(dir, p))) return true;
   const parts = p.split("/");
   const name = p.startsWith("@") ? parts.slice(0, 2).join("/") : (parts[0] ?? "");

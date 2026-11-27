@@ -1,13 +1,12 @@
 // Spec: k.compiler, clause "A `routes.ts` whose graph reaches a `*.server.ts` file importing `node:child_process`, `node:net` and `node:dns` and calling none of their functions at import time evaluates with no E1050; that file calling `execSync('true')` at its top level makes `keel check` report one E1050 whose message starts `node:child_process.execSync` and exit 1, and `new Socket()` of `node:net` there one starting `node:net.Socket`."
 // Spec: k.compiler, clause "That `*.server.ts` file importing `./a.node` makes `keel check` report one E1050 at that file and the import's line, and exit 1."
 // Spec: k.compiler, clause "That `*.server.ts` file's top level calling `readFileSync(0)`, or `createRequire(import.meta.url)` with a name built at run time naming its sibling `c.cjs`, makes `keel check` report one E1050 and exit 1, and leaves no entry in `node_modules/.cache/keel/derived/`."
-// Also states, k.compiler Build-time evaluation: "The evaluation refuses a read it cannot observe (k.derived Derivation cache) with E1050 naming it: importing a `.node` addon, at the import; calling or constructing a function of `node:child_process`, `cluster`, `worker_threads`, `net`, `tls`, `dgram`, `dns`, `http`, `https` or `http2` (importing them is allowed); `process.dlopen` or `process.binding`; a computed `require` of a file not ending `.json`; a read by a file descriptor the evaluation did not open."
-// Also states, k.compiler Rules: "E1050 a read the build-time evaluation cannot observe (Build-time evaluation), at the import for an addon, else with no location."
+// Also states, k.compiler Build-time evaluation: "The rest is refused with E1050: importing a `.node` addon, at the import; calling or constructing a function of `node:child_process`, `cluster`, `worker_threads`, `net`, `tls`, `dgram`, `dns`, `http`, `https`, `http2`, `vm`, `v8`, `inspector`, `wasi`, `sqlite`, `repl`, `readline` or `trace_events` (importing them is allowed); a `node:fs` write, watch or recursive listing; a read by a file descriptor the evaluation did not open; a code file named at run time; `node:module` but `createRequire`, `isBuiltin` and `builtinModules`; `process.dlopen`, `binding`, `mainModule`, `stdin`, `exit`, `chdir` or a property set; `import.meta.resolve`; `Function`, `eval`, `fetch`, `WebSocket` and `EventSource`."
+// Also states, k.compiler Rules: "E1050 a read the build-time evaluation cannot observe (Build-time evaluation), at the import for an addon, else with no location, its message starting with what it refused (`process.dlopen`)."
 // Seed 1337 (recorded); no random inputs. The household copy of derived-support.ts, built once and cloned per case; the `*.server.ts` file of the clauses is `modules/setup/gate.guard.ts`
 // (a server-only file of a module only a `node` deployable lists, reached from that module's `routes.ts`; k.boundary).
-// ASSUMED: the name of a computed require is the sketch's `["c", "cjs"].join(".")`, and (for a `.json` that must load) an absolute path built the same way, since Node resolves no bare name to a sibling file.
-// ASSUMED: the json diagnostic record carries `path`, `message` and, for a located one, a numeric `line`; a location-less E1050 has no `line`.
-// ASSUMED: the diagnostic of a refused `process.dlopen` or `process.binding` names it in its `path` or `message`; of a computed require or descriptor read, nothing is asserted but the code, exit and absence of location.
+// ASSUMED: the name of a computed require is the sketch's `['./c', 'cjs'].join('.')` (a bare `c.cjs` names a package, which Node resolves from `node_modules` and finds absent: E1006, not a refusal), and (for a `.json` that must load) an absolute path built the same way.
+// k.compiler Rules: a location-less E1050 carries no `path` and no `line`, and its message starts with the refused call (`process.dlopen`); a computed require or descriptor read asserts only the code and exit.
 // The `--format=compact` position of the addon case is `E1050 <path>:<line>:<col> <message>` (docs/OUTPUT.md).
 import { join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
@@ -164,7 +163,7 @@ describe("k.compiler: `process.dlopen` and `process.binding` are E1050 with no l
       const out = keel(t.dir, ["check"]);
       const found = e1050(out);
       expect(found, brief(out)).toHaveLength(1);
-      expect(`${found[0]?.path} ${found[0]?.message}`).toContain(`process.${name}`);
+      expect(found[0]?.message.startsWith(`process.${name}`), found[0]?.message).toBe(true);
       expect(found[0]?.line, brief(out)).toBeUndefined();
       expect(out.status, brief(out)).toBe(1);
     },
@@ -181,7 +180,7 @@ describe("k.compiler: a computed require of a file not ending `.json`, and a rea
       dropCache(t.dir);
       guardFile(
         t,
-        'import { createRequire } from "node:module";\nconst c = createRequire(import.meta.url)(["c", "cjs"].join("."));\nvoid c;',
+        "import { createRequire } from \"node:module\";\nconst c = createRequire(import.meta.url)(['./c', 'cjs'].join('.'));\nvoid c;",
       );
       const out = keel(t.dir, ["check"]);
       expect(e1050(out), brief(out)).toHaveLength(1);
