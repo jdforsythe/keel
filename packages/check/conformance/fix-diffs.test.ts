@@ -171,17 +171,12 @@ const FIXED: FixedCase[] = [
     opts: {},
   },
   {
-    name: "E1451",
+    name: "E1451 (throw of a KeelError in a Result function becomes return err(...))",
     code: "E1451",
-    files: [f("C.tsx", `export function f() { throw new Error("x") }\n`)],
-    opts: {},
+    ...fixtureOf("E1451"),
   },
-  {
-    name: "E1452 (try)",
-    code: "E1452",
-    files: [f("C.tsx", "export function f() { try { return 1 } catch (e) { return 2 } }\n")],
-    opts: {},
-  },
+  { name: "E1452 (cleanup and rethrow becomes try/finally with a flag)", code: "E1452", ...fixtureOf("E1452") },
+  { name: "E1455 (a defect on a failed Result gains { cause: r.error })", code: "E1455", ...fixtureOf("E1455") },
   { name: "E1407 (parameter list rewritten to (props, ctx: Ctx))", code: "E1407", ...fixtureOf("E1407") },
   { name: "E1510 (the refused member removed)", code: "E1510", ...fixtureOf("E1510") },
   { name: "E1515 (the extra binding key removed)", code: "E1515", ...fixtureOf("E1515") },
@@ -344,6 +339,7 @@ const FIX = [
   "E1405",
   "E1451",
   "E1452",
+  "E1455",
   "E1601",
   "E1652",
   "E1653",
@@ -394,7 +390,9 @@ const NO_FIX = [
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
-  "E1455", // k.errors Rules: no fix; the code is a stable name the author writes
+  "E1457", // k.attempt Rules: no fix; whether to parse or attempt is the author's choice
+  "E1458", // k.attempt Rules: no fix; the KeelError to declare is the author's
+  "E1260", // k.shared Rules: no fix; where the state belongs is the author's choice
   "E1501", // the target route id is unknown to the checker
   "E1502", // which path to change is the author's choice
   "E1503", // the params field is the author's to write

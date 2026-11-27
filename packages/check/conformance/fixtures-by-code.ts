@@ -689,12 +689,34 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     ],
   },
   E1451: {
-    bad: [f("src/f.ts", "export function f(n: number) {\n  if (n < 0) throw new Error('neg')\n  return n\n}\n")],
-    clean: [f("src/f.ts", "export function f(n: number) {\n  return n\n}\n")],
+    // a `throw` of a KeelError in a function whose return type takes the Result: the one E1451 that carries a fix (k.fixes)
+    bad: [
+      f(
+        "src/f.ts",
+        "import { err, ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) throw locked\n  return ok(1)\n}\nexport const g = () => err(locked)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { err, ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) return err(locked)\n  return ok(1)\n}\n",
+      ),
+    ],
   },
   E1452: {
-    bad: [f("src/f.ts", "export const f = (p: Promise<number>) => p.catch(() => 0)\n")],
-    clean: [f("src/f.ts", "export const f = (p: Promise<number>) => p\n")],
+    // cleanup and rethrow: the one E1452 that carries a fix (k.fixes)
+    bad: [
+      f(
+        "src/f.ts",
+        "declare function work(): Promise<void>\ndeclare function rollback(): Promise<void>\nexport async function f(): Promise<void> {\n  try { await work() } catch (e) { await rollback(); throw e }\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "declare function work(): Promise<void>\ndeclare function rollback(): Promise<void>\nexport async function f(): Promise<void> {\n  let done = false\n  try { await work(); done = true } finally { if (!done) { await rollback() } }\n}\n",
+      ),
+    ],
   },
   E1453: {
     bad: [
@@ -721,17 +743,39 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     ],
   },
   E1455: {
+    // a defect on a failed Result with no cause: the one E1455 that carries a fix (k.fixes)
     bad: [
       f(
         "src/f.ts",
-        "import { defect } from '@keel/schema'\nexport function f(): never {\n  return defect('x', 'E28')\n}\n",
+        "import { defect } from '@keel/schema'\nimport type { Result } from '@keel/schema'\ndeclare const r: Result<number, { code: 'm.x'; message: string; data: null }>\nexport function f(): void {\n  if (!r.ok) defect('x')\n}\n",
       ),
     ],
     clean: [
       f(
         "src/f.ts",
-        "import { defect } from '@keel/schema'\nexport function f(): never {\n  return defect('x', 'E2801')\n}\n",
+        "import { defect } from '@keel/schema'\nimport type { Result } from '@keel/schema'\ndeclare const r: Result<number, { code: 'm.x'; message: string; data: null }>\nexport function f(): void {\n  if (!r.ok) defect('x', { cause: r.error })\n}\n",
       ),
+    ],
+  },
+  E1457: {
+    bad: [f("src/f.ts", "export const f = (t: string): unknown => JSON.parse(t)\n")],
+    clean: [f("src/f.ts", "export const f = (): unknown => JSON.parse('{}')\n")],
+  },
+  E1458: {
+    bad: [f("src/f.ts", "import { err } from '@keel/schema'\nexport const f = () => err('x')\n")],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { err } from '@keel/schema'\nexport const f = () => err({ code: 'm.x', message: 'm.x', data: null })\n",
+      ),
+    ],
+  },
+  E1260: {
+    bad: [
+      f("modules/p/load.server.ts", "const seen: string[] = []\nexport function load(x: string) { seen.push(x) }\n"),
+    ],
+    clean: [
+      f("modules/p/load.server.ts", "export function load(x: string) { const seen: string[] = []; seen.push(x) }\n"),
     ],
   },
   E1501: {
