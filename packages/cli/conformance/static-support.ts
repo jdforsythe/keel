@@ -3,7 +3,7 @@
 // ASSUMPTIONS (spec names no fixture layout): module `s` serves routes `/` and `/about` whose loaders return `{ text }`
 // and whose page shows `props.data.text` beside a button with a handler (an island); a deployable `site` has adapter `static`; a failing loader returns `err` of a `keel.notFound` error.
 import { testTime } from "@keel/tooling/test-time";
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
 import { dirname, join, resolve } from "node:path";
@@ -121,14 +121,38 @@ export const stopAll = (): Promise<void[]> => Promise.all([...started].map(stop)
 process.once("exit", () => {
   for (const p of started) signal(p, "SIGKILL");
 });
-export const freePort = (): Promise<number> =>
+/**
+ * A port free where the server under test binds it: `"dev"` (the default) is `keel dev`'s own address, 127.0.0.1 (k.cli: `keel dev` listens on 127.0.0.1 only, or on the Vite config's `server.host`);
+ * `"all"` is `node dist/<name>/server.mjs`'s, every address (k.deploy: it listens on every address on `PORT`), so the probe binds no host.
+ */
+export const freePort = (bind: "dev" | "all" = "dev"): Promise<number> =>
   new Promise((res, rej) => {
     const srv = net.createServer();
-    srv.listen(0, "127.0.0.1", () => {
+    const done = (): void => {
       const a = srv.address();
       srv.close(() => (typeof a === "object" && a !== null ? res(a.port) : rej(new Error("no port"))));
-    });
+    };
+    if (bind === "all") srv.listen(0, done);
+    else srv.listen(0, "127.0.0.1", done);
   });
+/**
+ * The addresses a TCP listener on `port` is bound to, as `lsof` names them (`127.0.0.1`, `[::1]`, or `*` for every address); empty when nothing listens.
+ * ASSUMED: `lsof` is on the machine (the spec gives no other way to read a bound address from outside the process).
+ */
+export function listeningOn(port: number): string[] {
+  const r = spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-Fn"], {
+    encoding: "utf8",
+    timeout: testTime(20_000),
+  });
+  return [
+    ...new Set(
+      r.stdout
+        .split("\n")
+        .filter((l) => l.startsWith("n"))
+        .map((l) => l.slice(1).replace(new RegExp(`:${port}$`), "")),
+    ),
+  ];
+}
 export type Reply = { readonly status: number; readonly body: string };
 export const get = (port: number, path: string): Promise<Reply | null> =>
   new Promise((done) => {
@@ -161,7 +185,7 @@ export async function served(p: Proc, port: number): Promise<boolean> {
 const SERVER_SECRET = "s".repeat(32);
 /** Runs `node dist/<name>/server.mjs` (k.hosting) on a free port with `PORT` and `KEEL_SECRET`, polls `GET /` (bounded), calls `fn(port)`, then kills the group. */
 export async function withServer(dir: string, name: string, fn: (port: number) => Promise<void>): Promise<void> {
-  const port = await freePort();
+  const port = await freePort("all");
   const env = childEnv();
   env.PORT = String(port);
   env.KEEL_SECRET = SERVER_SECRET;
