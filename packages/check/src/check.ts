@@ -166,7 +166,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     for (const f of group) projectOf.set(f.path, project);
     // The rules that follow the client's reach follow an import of a library into its files (k.library In an app).
     const libraryFiles = new Set([...members.keys()].filter((p) => isLibrary(libs.real(p))));
-    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles });
+    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles, real: libs.real });
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;

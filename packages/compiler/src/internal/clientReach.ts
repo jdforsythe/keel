@@ -21,7 +21,7 @@ const ROUTES = /(?:^|\/)routes\.ts$/;
  * Server-only is by name, any extension, any case. With none, every file but server-only ones. `reached` is the
  * entries and what they reach, none with no `topology`. `hits` are their
  * imports of server-only files (a query names its file; a `routes.ts` reports none), with the chain when an entry
- * reaches the importer.
+ * reaches the importer. `entries` are the client entries, none with no `topology`.
  */
 export function clientReach(
   files: readonly { readonly path: string; readonly program: Program }[],
@@ -30,6 +30,7 @@ export function clientReach(
 ): {
   readonly subject: ReadonlySet<string>;
   readonly reached: ReadonlySet<string>;
+  readonly entries: readonly string[];
   readonly hits: readonly ReachHit[];
 } {
   const byPath = new Map(files.map((f) => [f.path, f]));
@@ -109,5 +110,5 @@ export function clientReach(
     visit(p, true);
   }
   for (const p of subject) if (!parent.has(p)) visit(p, false);
-  return { subject, reached: new Set(parent.keys()), hits };
+  return { subject, reached: new Set(parent.keys()), entries, hits };
 }

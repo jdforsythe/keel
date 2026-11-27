@@ -23,7 +23,7 @@ function isShipped(path: string, project: readonly SourceFile[]): boolean {
 }
 
 /**
- * The files whose tokens imports are free while no client entry reaches them (k.themes Check-time entries): each
+ * The files whose tokens imports are free while no client entry reaches them (k.check-time Entries): each
  * project root's `tokens.ts` and every file it imports by relative value imports, transitively, and a library's
  * `src/<id>Tokens.ts` (k.looks).
  */

@@ -1523,9 +1523,9 @@ const ROWS: readonly Row[] = [
   [
     "E1818",
     "@keel/ui/tokens or @keel/ui/css imported by code a client bundle reaches",
-    "The token schema, the CSS compiler and contrast run under Node in keel check, keel build, keel dev and tests. Client code names tokens; brandTokens comes from @keel/ui/brand. Free in tests, tool configs, server-only files, tokens.ts and its imports while no client entry reaches them.",
+    "They run under Node only. Client code names tokens; brandTokens is in @keel/ui/brand. Free in server-only, test and *.config.* files, tokens.ts and its imports, a library's src/<id>Tokens.ts, while no client entry reaches them; then at the entry's import.",
     "import { contrast } from '@keel/ui/css' in a page -> drop it and use token names; no fix",
-    "k.themes",
+    "k.check-time",
   ],
   [
     "E1815",
