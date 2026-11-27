@@ -105,7 +105,7 @@ describe("structure-lint: S0020 control leaving a `finally` in every package's `
 describe("structure-lint: S0019 (E1762) in every package's `src/`", () => {
   const CLAIM =
     "export const isRunner = (x: unknown): x is { run(n: number): string } => typeof x === 'object' && x !== null\n";
-  const PLAIN = "export const isRow = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null\n";
+  const PLAIN = "export const isRow = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'\n";
 
   test("a predicate claiming a call signature in `packages/p/src/a.ts` is one S0019", () => {
     expect(lint({ "packages/p/src/a.ts": CLAIM }, "S0019", "packages/p/src/a.ts")).toHaveLength(1);
