@@ -34,7 +34,7 @@ export class Secret<T> {
         listening.current?.(secret);
         return secret;
       },
-      is: (x: unknown): x is Secret<unknown> => typeof x === "object" && x !== null && made().has(x),
+      is: (x: unknown): x is Secret<unknown> => typeof x === "object" && x !== null && kernelSet("secret").has(x),
       open: <V>(secret: Secret<V>): V => secret.#value,
       innerOf: (secret: Secret<unknown>): Node => secret.#inner,
     });

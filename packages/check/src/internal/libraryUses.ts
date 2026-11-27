@@ -27,7 +27,8 @@ const isNode = (x: unknown): x is Node =>
   typeof x === "object" &&
   x !== null &&
   typeof Reflect.get(x, "type") === "string" &&
-  typeof Reflect.get(x, "start") === "number";
+  typeof Reflect.get(x, "start") === "number" &&
+  typeof Reflect.get(x, "end") === "number";
 const field = (n: unknown, k: string): unknown => (isNode(n) ? Reflect.get(n, k) : undefined);
 const nameOf = (n: unknown): string | undefined =>
   isNode(n) && n.type === "Identifier" ? String(field(n, "name")) : undefined;

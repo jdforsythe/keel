@@ -1200,8 +1200,8 @@ export default function (): {
       // After bundling, no emitted browser file holds a `KEEL_*` value of 8 characters or more (k.bundle Environment).
       handler(_options, bundle) {
         if (command !== "build" || this?.environment?.config.consumer !== "client") return;
-        const values = Object.entries(process.env).filter(
-          (e): e is [string, string] => e[0].startsWith("KEEL_") && !PUBLIC_ENV.test(e[0]) && (e[1] ?? "").length >= 8,
+        const values = Object.entries(process.env).flatMap(([k, v]): [string, string][] =>
+          k.startsWith("KEEL_") && !PUBLIC_ENV.test(k) && v !== undefined && v.length >= 8 ? [[k, v]] : [],
         );
         if (values.length === 0) return;
         const decoder = new TextDecoder();

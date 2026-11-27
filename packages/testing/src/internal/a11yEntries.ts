@@ -1,8 +1,8 @@
 import type { A11yEntry } from "@keel/compiler";
 
-const NAMES: readonly string[] = ["label", "alt", "text", "aria", "none"];
 const isRecord = (v: unknown): v is Readonly<Record<string, unknown>> => typeof v === "object" && v !== null;
-const isName = (v: unknown): v is A11yEntry["name"] => typeof v === "string" && NAMES.includes(v);
+const isName = (v: unknown): v is A11yEntry["name"] =>
+  v === "label" || v === "alt" || v === "text" || v === "aria" || v === "none";
 
 /** The entries of `.keel/a11y.json` as the compiler writes it (`{ data, hash }`); entries of another shape are left out. */
 export function a11yEntries(raw: unknown): Record<string, A11yEntry> {

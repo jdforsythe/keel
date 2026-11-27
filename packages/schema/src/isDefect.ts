@@ -6,6 +6,10 @@ import type { Defect } from "./types/Defect.ts";
  * `code`, whether it was made with that code. No property of the value proves it.
  */
 export function isDefect(x: unknown, code?: string): x is Defect {
-  if (typeof x !== "object" || x === null || !kernelSet("defect").has(x)) return false;
-  return code === undefined || Object.getOwnPropertyDescriptor(x, "code")?.value === code;
+  return (
+    typeof x === "object" &&
+    x !== null &&
+    kernelSet("defect").has(x) &&
+    (code === undefined || Object.getOwnPropertyDescriptor(x, "code")?.value === code)
+  );
 }

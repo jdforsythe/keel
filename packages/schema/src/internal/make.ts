@@ -1,3 +1,4 @@
+import { checkedGuard } from "../../unsafe/checkedGuard.ts";
 import type { Result } from "../Result.ts";
 import type { Schema } from "../Schema.ts";
 import type { SchemaError } from "../SchemaError.ts";
@@ -18,13 +19,13 @@ import { seal } from "./seal.ts";
 import { toJson } from "./toJson.ts";
 
 /**
- * Build the public Schema object for a node, frozen with the node and everything under it. The type guard below is
- * the only place unknown becomes T.
+ * Build the public Schema object for a node, frozen with the node and everything under it. The type guard below
+ * (`checkedGuard`, in `unsafe/`) is the only place unknown becomes T.
  */
 export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T, O> {
   freezeNode(node);
   let issues: Issue[] = [];
-  const is = (x: unknown, copies: ReadonlySet<object> = new Set()): x is T => {
+  const is = checkedGuard<T>((x, copies) => {
     issues = [];
     // A value whose shape cannot be read (a revoked Proxy, a throwing trap) is not plain data.
     try {
@@ -33,7 +34,7 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       issues = [{ path: [], rule: "type" }];
     }
     return issues.length === 0;
-  };
+  });
   const sealing = hasSecret(node);
   const parse = (input: unknown): Result<T, SchemaError> => {
     if (!sealing) return is(input) ? ok(input) : err(invalid(issues));

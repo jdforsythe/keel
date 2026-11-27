@@ -3,6 +3,7 @@ import type { Job } from "@keel/std-jobs";
 import type { StateSpec } from "@keel/std-statecharts";
 import { asEvents } from "../unsafe/asEvents.ts";
 import { looseChart } from "../unsafe/looseChart.ts";
+import { stateNames } from "../unsafe/stateNames.ts";
 import type { StepSpec } from "./StepSpec.ts";
 import type { WaitSpec } from "./WaitSpec.ts";
 import type { Workflow } from "./Workflow.type.ts";
@@ -32,7 +33,7 @@ export function workflow<
 >(id: string, spec: WorkflowSpec<D, Ev, S, G, A>): Workflow<D, Ev, S> {
   const { chart } = spec;
   const states: Readonly<Record<string, StateSpec<string, string, string, string> | undefined>> = chart.states;
-  const names = Object.keys(states).filter((n): n is S => n in states);
+  const names = stateNames<S>(chart.states);
   const [first, ...rest] = names;
   const finals = new Set<string>(names.filter((n) => states[n]?.final === true));
   const own = (part: string, state: string, events: readonly string[]): void => {

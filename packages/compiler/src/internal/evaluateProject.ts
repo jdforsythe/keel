@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { s } from "@keel/schema";
 import { build } from "esbuild";
 import { compile } from "../compile.ts";
 import { shippedTokensPlugin } from "../hosting/shippedTokensPlugin.ts";
@@ -29,6 +30,8 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 const isNullableString = (x: unknown): x is string | null => x === null || typeof x === "string";
 
+const Json = s.json();
+
 function isRouteEntry(x: unknown): x is RouteEntry {
   return (
     isRecord(x) &&
@@ -38,8 +41,10 @@ function isRouteEntry(x: unknown): x is RouteEntry {
     isNullableString(x.layout) &&
     typeof x.module === "string" &&
     isNullableString(x.path) &&
-    "params" in x &&
-    "search" in x
+    (x.api === undefined || x.api === true) &&
+    (x.method === undefined || typeof x.method === "string") &&
+    Json.parse(x.params).ok &&
+    Json.parse(x.search).ok
   );
 }
 

@@ -1,15 +1,15 @@
+import { isSchema } from "@keel/schema";
 import type { Evaluated } from "./Evaluated.ts";
 import type { JsonSchema } from "./JsonSchema.ts";
 import { isRecord } from "./isRecord.ts";
-import { isSchemaNode } from "./isSchemaNode.ts";
 import { toJsonSchema } from "./toJsonSchema.ts";
 
 /** The binding members that hold a handler: a loader, an API action and each page action verb. */
 const HANDLERS = ["loader", "action", "DELETE", "PATCH", "POST", "PUT"] as const;
 
-/** The JSON Schema of a schema value (`{ node }`), or `null` when `x` is none. */
+/** The JSON Schema of a schema value, or `null` when `x` is none (k.identity: a schema `s` made in this realm). */
 function schemaOf(x: unknown): JsonSchema | null {
-  return isRecord(x) && isSchemaNode(x.node) ? toJsonSchema(x.node) : null;
+  return isSchema(x) ? toJsonSchema(x.node) : null;
 }
 
 /** One API entry as the surface records it, or `null` when `e` is a page or layout entry. */

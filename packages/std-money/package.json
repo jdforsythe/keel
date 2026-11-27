@@ -17,9 +17,9 @@
       }
     }
   },
-  "files": ["dist", "docs"],
+  "files": ["dist", "unsafe", "docs"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test",
+    "check": "tsc --noEmit && biome check src unsafe test",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",

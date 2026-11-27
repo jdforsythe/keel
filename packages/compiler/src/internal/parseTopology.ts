@@ -19,10 +19,10 @@ function keyName(k: Expression | { type: string }): string | undefined {
   return undefined;
 }
 
-const isAdapter = (v: string): v is Deployable["adapter"] => ADAPTERS.some((x) => x === v);
+const adapterOf = (v: unknown): Deployable["adapter"] | undefined => ADAPTERS.find((x) => x === v);
 type Storage = NonNullable<Deployable["storage"]>;
 const STORAGES: readonly Storage[] = ["file", "sqlite", "postgres"];
-const isStorage = (v: unknown): v is Storage => STORAGES.some((x) => x === v);
+const storageOf = (v: unknown): Storage | undefined => STORAGES.find((x) => x === v);
 const KEYS: ReadonlySet<string> = new Set([
   "modules",
   "adapter",
@@ -133,13 +133,14 @@ export function parseTopology(source: string): { topology: Topology; problems: [
         for (const m of fv.elements)
           if (m !== null && m.type === "Literal" && typeof m.value === "string") modules.push(m.value);
           else problems.push([name, `${name}: module id is not a string literal`]);
-      } else if (k === "adapter" && fv.type === "Literal" && typeof fv.value === "string" && isAdapter(fv.value))
-        adapter = fv.value;
+      } else if (k === "adapter" && fv.type === "Literal" && adapterOf(fv.value) !== undefined)
+        adapter = adapterOf(fv.value);
       else if (k === "servedBy") {
         if (fv.type === "Literal" && typeof fv.value === "string") servedBy = fv.value;
         else problems.push([name, `${name}: ${SERVED_BY_NOT_LITERAL}`]);
       } else if (k === "storage") {
-        if (fv.type === "Literal" && isStorage(fv.value)) storage = fv.value;
+        const st = fv.type === "Literal" ? storageOf(fv.value) : undefined;
+        if (st !== undefined) storage = st;
         else problems.push([name, `${name}: storage is not 'file', 'sqlite' or 'postgres'`]);
       } else if (k === "shells") {
         shells = {};

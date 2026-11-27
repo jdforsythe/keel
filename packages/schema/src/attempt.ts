@@ -2,6 +2,7 @@ import type { KeelError } from "./KeelError.ts";
 import type { Result } from "./Result.ts";
 import { defect } from "./defect.ts";
 import { err } from "./err.ts";
+import { isKeelError } from "./internal/isKeelError.ts";
 import { resultBrand } from "./internal/resultBrand.ts";
 import { wrapsDefect } from "./internal/wrapsDefect.ts";
 import { ok } from "./ok.ts";
@@ -22,7 +23,7 @@ type Settled<T, E extends Failure> = [T] extends [never]
     ? Promise<Flat<U, E>>
     : Flat<T, E>;
 
-const isThenable = (x: unknown): x is PromiseLike<unknown> =>
+const isThenable = (x: unknown): boolean =>
   (typeof x === "object" || typeof x === "function") && x !== null && typeof Reflect.get(x, "then") === "function";
 
 /** A keel `Result` (one `ok` or `err` made) is the call's own; any other value is its `ok`. */
@@ -30,8 +31,12 @@ const settled = (v: unknown): Result<unknown, Failure> =>
   typeof v === "object" && v !== null && Object.hasOwn(v, resultBrand) && isResult(v) ? v : ok(v);
 
 function isResult(v: object): v is Result<unknown, Failure> {
-  const flag: unknown = Reflect.get(v, "ok");
-  return flag === true ? Object.hasOwn(v, "value") : flag === false && Object.hasOwn(v, "error");
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    ((Reflect.get(v, "ok") === true && Object.hasOwn(v, "value")) ||
+    (Reflect.get(v, "ok") === false && isKeelError(Reflect.get(v, "error"))))
+  );
 }
 
 /**

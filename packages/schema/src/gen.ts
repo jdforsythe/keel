@@ -1,4 +1,5 @@
 import * as fc from "fast-check";
+import { parsedAs } from "../unsafe/parsedAs.ts";
 import type { Schema } from "./Schema.ts";
 import type { Node } from "./internal/Node.ts";
 import { fits } from "./internal/fits.ts";
@@ -72,5 +73,5 @@ type Out<S> = S extends Schema<infer T, boolean> ? T : never;
 
 /** fast-check arbitrary yielding only values the schema accepts. Lives on `@keel/schema/gen` so apps do not bundle fast-check. */
 export function gen<S extends Schema<unknown, boolean>>(schema: S): fc.Arbitrary<Out<S>> {
-  return arbitrary(schema.node).filter((x): x is Out<S> => schema.parse(x).ok);
+  return arbitrary(schema.node).filter(parsedAs(schema));
 }
