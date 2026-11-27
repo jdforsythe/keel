@@ -14,6 +14,7 @@ import { redacted } from "../src/internal/redacted.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
 import { scrubbedCause } from "../src/internal/scrubbedCause.ts";
 import { unexpectedOf } from "../src/internal/unexpectedOf.ts";
+import { textRecords } from "./textRecords.ts";
 
 const Notes = s.object({ items: s.array(s.string().pii("content")) });
 const Text = s.object({ text: s.string() });
@@ -72,7 +73,7 @@ describe("diag scrub", () => {
     );
     expect(res.status).toBe(500);
     const body = await res.text();
-    const diag = lines.filter((l) => l.startsWith("keel.unexpected "));
+    const diag = textRecords(lines).filter((l) => l.startsWith("keel.unexpected "));
     expect(diag).toEqual(["keel.unexpected action app.a threw: Error: cannot mail [pii] about [pii]"]);
     for (const text of [body, ...lines]) {
       expect(text).not.toContain("ada@example.test");
@@ -84,7 +85,7 @@ describe("diag scrub", () => {
     const lines: string[] = [];
     const app = await build(lines);
     await app.fetch(new Request("http://localhost/b/c"));
-    expect(lines.filter((l) => l.startsWith("keel.unexpected "))).toEqual([
+    expect(textRecords(lines).filter((l) => l.startsWith("keel.unexpected "))).toEqual([
       "keel.unexpected loader app.b.c threw: Error: no luck for [pii]",
     ]);
   });
@@ -114,7 +115,7 @@ describe("marked record keys", () => {
       }),
     );
     expect(res.status).toBe(500);
-    expect(lines.filter((l) => l.startsWith("keel.unexpected "))).toEqual([
+    expect(textRecords(lines).filter((l) => l.startsWith("keel.unexpected "))).toEqual([
       "keel.unexpected action app.a threw: Error: cannot file [pii]",
     ]);
     expect(await res.text()).not.toContain("maria");
@@ -261,7 +262,11 @@ describe("secret scrub over a request", () => {
         headers: { "content-type": "application/json", accept },
       }),
     );
-    return { status: res.status, body: await res.text(), diags: lines.filter((l) => l.startsWith("keel.unexpected ")) };
+    return {
+      status: res.status,
+      body: await res.text(),
+      diags: textRecords(lines).filter((l) => l.startsWith("keel.unexpected ")),
+    };
   }
 
   it("a pii value and a secret in one thrown message each take their mark, in the log and the dev response", async () => {
@@ -273,14 +278,14 @@ describe("secret scrub over a request", () => {
   });
 
   it("a thrown object holding the secret logs its JSON with the mark", async () => {
-    const out = await run("production", (v) => ({ token: reveal(v.creds.key) }), "application/json");
+    const out = await run("dev", (v) => ({ token: reveal(v.creds.key) }), "application/json");
     expect(out.diags).toEqual(['keel.unexpected action app.a threw: {"token":"[secret]"}']);
     expect(out.body).not.toContain(TOKEN);
   });
 
   it("a number secret in an array is marked; a one-digit one only as a whole token", async () => {
     const out = await run(
-      "production",
+      "dev",
       (v) => new Error(`pins ${v.creds.pins.map((p) => reveal(p)).join(" ")} of 17 tried`),
       "application/json",
     );

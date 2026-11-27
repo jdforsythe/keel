@@ -101,8 +101,10 @@ describe("dev log stream", () => {
         const kind = (r: unknown): unknown => (typeof r === "object" && r !== null && "kind" in r ? r.kind : null);
         const reqs = records.filter((r) => kind(r) === "req");
         const diags = records.filter((r) => kind(r) === "diag");
-        // E1554 for `/bad`'s loader, and a `keel.unexpected` diag for `/broken`'s throwing guard (k.server Log).
-        const bad = cs.filter((c) => (c.path === "/bad" || c.path === "/broken") && c.method !== "OPTIONS").length;
+        // E1554 for `/bad`'s loader, and two `keel.unexpected` diags for `/broken`'s throwing guard in dev, its form
+        // and its text (k.serverlog Thrown values).
+        const sent = (path: string) => cs.filter((c) => c.path === path && c.method !== "OPTIONS").length;
+        const bad = sent("/bad") + 2 * sent("/broken");
         expect(reqs.length).toBe(cs.length);
         expect(diags.length).toBe(bad);
         expect(records.length).toBe(cs.length + bad);

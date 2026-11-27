@@ -85,7 +85,10 @@ describe("onUncaught", () => {
         for (const fn of added[0] ?? []) Reflect.apply(fn, process, [new Error("boom")]);
       });
       expect(first.lines).toEqual([]);
-      expect(second.lines).toEqual(["E1577 uncaught exception in work of route app.late: Error: boom"]);
+      expect(second.lines).toHaveLength(1);
+      expect(second.lines[0]).toMatch(
+        /^E1577 uncaught exception in work of route app\.late: Error #[0-9a-f]{8}( at \S+:\d+)? Error: boom$/,
+      );
     } finally {
       EVENTS.forEach((event, i) => {
         for (const fn of listenersOf(event)) if (!before[i]?.includes(fn)) drop(event, fn);
@@ -93,17 +96,19 @@ describe("onUncaught", () => {
     }
   });
 
-  it("writes `uncaught exception in work of route -` outside a request, then calls then once", async () => {
+  it("writes `uncaught exception in work of route -: ` and the thrown value's form outside a request, then calls then once", async () => {
     const { lines, thens, fresh } = await install();
     fresh.get("uncaughtException")?.(new Error("boom"));
-    expect(lines).toEqual(["E1577 uncaught exception in work of route -"]);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/^E1577 uncaught exception in work of route -: Error #[0-9a-f]{8}( at \S+:\d+)?$/);
     expect(thens()).toBe(1);
   });
 
   it("writes `uncaught rejection ...` for an unhandled rejection", async () => {
     const { lines, thens, fresh } = await install();
     fresh.get("unhandledRejection")?.(new Error("boom"));
-    expect(lines).toEqual(["E1577 uncaught rejection in work of route -"]);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/^E1577 uncaught rejection in work of route -: Error #[0-9a-f]{8}( at \S+:\d+)?$/);
     expect(thens()).toBe(1);
   });
 
@@ -113,10 +118,9 @@ describe("onUncaught", () => {
       fresh.get("uncaughtException")?.(new Error("boom"));
       fresh.get("unhandledRejection")?.(new Error("boom"));
     });
-    expect(lines).toEqual([
-      "E1577 uncaught exception in work of route orders.show",
-      "E1577 uncaught rejection in work of route orders.show",
-    ]);
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(/^E1577 uncaught exception in work of route orders\.show: Error #[0-9a-f]{8}/);
+    expect(lines[1]).toMatch(/^E1577 uncaught rejection in work of route orders\.show: Error #[0-9a-f]{8}/);
   });
 
   it("adds the thrown text only with dev, scrubbed of the request's secrets and pii", async () => {
@@ -126,14 +130,20 @@ describe("onUncaught", () => {
     dev.serving.run({ route: "r", pii: new Set(["ada@example.com"]), secrets: new Set(["s3cr3t-value"]) }, () => {
       dev.fresh.get("uncaughtException")?.(new Error("bad s3cr3t-value for ada@example.com"));
     });
-    expect(dev.lines[0]).toBe("E1577 uncaught exception in work of route -: Error: plain");
-    expect(dev.lines[1]).toBe("E1577 uncaught rejection in work of route -: a string");
-    expect(dev.lines[2]?.startsWith("E1577 uncaught exception in work of route r: Error: bad ")).toBe(true);
+    expect(dev.lines[0]).toMatch(
+      /^E1577 uncaught exception in work of route -: Error #[0-9a-f]{8}( at \S+:\d+)? Error: plain$/,
+    );
+    expect(dev.lines[1]).toMatch(/^E1577 uncaught rejection in work of route -: value #[0-9a-f]{8} a string$/);
+    expect(dev.lines[2]).toMatch(
+      /^E1577 uncaught exception in work of route r: Error #[0-9a-f]{8}( at \S+:\d+)? Error: bad /,
+    );
     expect(dev.lines[2]).not.toContain("s3cr3t-value");
     expect(dev.lines[2]).not.toContain("ada@example.com");
     const prod = await install({ dev: false });
     prod.fresh.get("uncaughtException")?.(new Error("plain"));
-    expect(prod.lines).toEqual(["E1577 uncaught exception in work of route -"]);
+    expect(prod.lines).toHaveLength(1);
+    expect(prod.lines[0]).toMatch(/^E1577 uncaught exception in work of route -: Error #[0-9a-f]{8}( at \S+:\d+)?$/);
+    expect(prod.lines[0]).not.toContain("plain");
   });
 
   it("writes one NDJSON diag with the E1577 code, its see and the error's app frames under json", async () => {
@@ -146,7 +156,7 @@ describe("onUncaught", () => {
     expect(rec).toEqual({
       kind: "diag",
       code: "E1577",
-      message: "uncaught exception in work of route -",
+      message: expect.stringMatching(/^uncaught exception in work of route -: Error #[0-9a-f]{8} at src\/app\.ts:3$/),
       see: "k.server",
       frames: ["src/app.ts:3:4"],
     });
