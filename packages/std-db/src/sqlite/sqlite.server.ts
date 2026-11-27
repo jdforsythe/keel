@@ -3,12 +3,11 @@ import { fileURLToPath } from "node:url";
 import { attempt, defect } from "@keel/schema";
 import type { DbStorage } from "../DbStorage.ts";
 import { DbFailed } from "../internal/DbFailed.schema.ts";
-import { DriverCode } from "../internal/DriverCode.schema.ts";
 import { LAYOUT } from "../internal/LAYOUT.ts";
 import { checkLayout } from "../internal/checkLayout.ts";
 import { checkText } from "../internal/checkText.ts";
 import { distinctKeys } from "../internal/distinctKeys.ts";
-import { driverCode } from "../internal/driverCode.ts";
+import { driverFault } from "../internal/driverFault.ts";
 import { isDriverFailure } from "../internal/isDriverFailure.ts";
 
 const SELECT = "select key, value from keel_kv where key in (select value from json_each(?))";
@@ -25,9 +24,8 @@ export async function sqlite(url: URL): Promise<DbStorage> {
   const opened = attempt(
     () => new DatabaseSync(fileURLToPath(url)),
     (x) => {
-      const code = DriverCode.parse(driverCode(x));
-      return code.ok && isDriverFailure(x)
-        ? DbFailed.make({ driver: "sqlite", op: "open", code: code.value }, "std.db: a storage call failed")
+      return isDriverFailure(x)
+        ? DbFailed.make({ driver: "sqlite", op: "open", ...driverFault(x) }, "std.db: a storage call failed")
         : undefined;
     },
   );
@@ -55,9 +53,8 @@ export async function sqlite(url: URL): Promise<DbStorage> {
         });
       },
       (x) => {
-        const code = DriverCode.parse(driverCode(x));
-        return code.ok && isDriverFailure(x)
-          ? DbFailed.make({ driver: "sqlite", op: "open", code: code.value }, "std.db: a storage call failed")
+        return isDriverFailure(x)
+          ? DbFailed.make({ driver: "sqlite", op: "open", ...driverFault(x) }, "std.db: a storage call failed")
           : undefined;
       },
     );
@@ -75,15 +72,18 @@ export async function sqlite(url: URL): Promise<DbStorage> {
       if (typeof r.key === "string" && typeof r.value === "string") out.set(r.key, r.value);
     return out;
   };
-  const run = async <T>(op: string, texts: readonly (string | undefined)[], fn: () => T): Promise<T> => {
+  const run = async <T>(
+    op: DbFailed["data"]["op"],
+    texts: readonly (string | undefined)[],
+    fn: () => T,
+  ): Promise<T> => {
     checkText(texts);
     if (!db.isOpen) return defect("std.db sqlite: a call after close()", { data: { op } });
     const r = attempt(
       () => ({ value: fn() }),
       (x) => {
-        const code = DriverCode.parse(driverCode(x));
-        return code.ok && isDriverFailure(x)
-          ? DbFailed.make({ driver: "sqlite", op: op, code: code.value }, "std.db: a storage call failed")
+        return isDriverFailure(x)
+          ? DbFailed.make({ driver: "sqlite", op: op, ...driverFault(x) }, "std.db: a storage call failed")
           : undefined;
       },
     );

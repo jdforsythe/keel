@@ -3,12 +3,11 @@ import { attempt, defect } from "@keel/schema";
 import pg from "pg";
 import type { DbStorage } from "../DbStorage.ts";
 import { DbFailed } from "../internal/DbFailed.schema.ts";
-import { DriverCode } from "../internal/DriverCode.schema.ts";
 import { LAYOUT } from "../internal/LAYOUT.ts";
 import { checkLayout } from "../internal/checkLayout.ts";
 import { checkText } from "../internal/checkText.ts";
 import { distinctKeys } from "../internal/distinctKeys.ts";
-import { driverCode } from "../internal/driverCode.ts";
+import { driverFault } from "../internal/driverFault.ts";
 import { isDriverFailure } from "../internal/isDriverFailure.ts";
 import type { PgClient } from "./PgClient.ts";
 import type { PgPool } from "./PgPool.ts";
@@ -63,9 +62,8 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
           return true;
         }),
       (x) => {
-        const code = DriverCode.parse(driverCode(x));
-        return code.ok && isDriverFailure(x)
-          ? DbFailed.make({ driver: "postgres", op: "open", code: code.value }, "std.db: a storage call failed")
+        return isDriverFailure(x)
+          ? DbFailed.make({ driver: "postgres", op: "open", ...driverFault(x) }, "std.db: a storage call failed")
           : undefined;
       },
     );
@@ -115,10 +113,9 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
           return true;
         }),
       (x) => {
-        const code = DriverCode.parse(driverCode(x));
-        return code.ok && isDriverFailure(x)
+        return isDriverFailure(x)
           ? DbFailed.make(
-              { driver: "postgres", op: check ? "commit" : "set", code: code.value },
+              { driver: "postgres", op: check ? "commit" : "set", ...driverFault(x) },
               "std.db: a storage call failed",
             )
           : undefined;
@@ -132,9 +129,8 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
     const r = await attempt(
       () => values(pool, keys),
       (x) => {
-        const code = DriverCode.parse(driverCode(x));
-        return code.ok && isDriverFailure(x)
-          ? DbFailed.make({ driver: "postgres", op: "read", code: code.value }, "std.db: a storage call failed")
+        return isDriverFailure(x)
+          ? DbFailed.make({ driver: "postgres", op: "read", ...driverFault(x) }, "std.db: a storage call failed")
           : undefined;
       },
     );
@@ -168,9 +164,8 @@ async function poolEnded(pool: PgPool): Promise<boolean> {
   const ended = await attempt(
     () => pool.end(),
     (x) => {
-      const code = DriverCode.parse(driverCode(x));
-      return code.ok && isDriverFailure(x)
-        ? DbFailed.make({ driver: "postgres", op: "end", code: code.value }, "std.db: a storage call failed")
+      return isDriverFailure(x)
+        ? DbFailed.make({ driver: "postgres", op: "end", ...driverFault(x) }, "std.db: a storage call failed")
         : undefined;
     },
   );
@@ -207,9 +202,8 @@ async function inTx(pool: PgPool, fn: (c: PgClient) => Promise<boolean>): Promis
       const rolled = await attempt(
         () => c.query("rollback"),
         (x) => {
-          const code = DriverCode.parse(driverCode(x));
-          return code.ok && isDriverFailure(x)
-            ? DbFailed.make({ driver: "postgres", op: "rollback", code: code.value }, "std.db: a storage call failed")
+          return isDriverFailure(x)
+            ? DbFailed.make({ driver: "postgres", op: "rollback", ...driverFault(x) }, "std.db: a storage call failed")
             : undefined;
         },
       );

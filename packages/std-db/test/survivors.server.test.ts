@@ -14,7 +14,7 @@ import { sqlite } from "@keel/std-db/sqlite";
 import { afterEach, describe, expect, test } from "vitest";
 import { checkLayout } from "../src/internal/checkLayout.ts";
 import { distinctKeys } from "../src/internal/distinctKeys.ts";
-import { driverCode } from "../src/internal/driverCode.ts";
+import { driverFault } from "../src/internal/driverFault.ts";
 import { isDriverFailure } from "../src/internal/isDriverFailure.ts";
 import { removeDir, tempDir } from "./support.server.ts";
 
@@ -33,40 +33,47 @@ const closedOp = (e: unknown, driver: string): unknown =>
   messageOf(e) === `std.db ${driver}: a call after close()`
     ? Reflect.get(Object(Reflect.get(Object(e), "data")), "op")
     : e;
-/** A failed call's defect as `<driver> <op> <code>`, read from its cause's data, when its message is the literal. */
+/** A failed call's defect as `<driver> <op> <class> <errcode>`, read from its cause's data, when its message is the literal. */
 const failedOf = (e: unknown): unknown => {
   if (messageOf(e) !== "std.db: a storage call failed") return e;
   const data: unknown = Reflect.get(Object(Reflect.get(Object(e), "cause")), "data");
-  return ["driver", "op", "code"].map((k) => String(Reflect.get(Object(data), k))).join(" ");
+  return ["driver", "op", "class", "errcode"].map((k) => String(Reflect.get(Object(data), k))).join(" ");
 };
 const codeOf = (e: unknown): unknown => (typeof e === "object" && e !== null ? Reflect.get(e, "code") : undefined);
 
-describe("driverCode and isDriverFailure", () => {
-  test("the code names the database's own error code; an Error or a coded object is a driver failure", () => {
-    expect(driverCode({ code: "57P01" })).toBe("57P01");
-    expect(driverCode({ errcode: 5 })).toBe("sqlite 5");
-    expect(driverCode(Object.assign(new Error("x"), { code: "ERR_SQLITE_ERROR", errcode: 19 }))).toBe("sqlite 19");
+describe("driverFault and isDriverFailure", () => {
+  const fault = (c: string, errcode = 0) => ({ class: c, errcode });
+  test("the fault names the SQLSTATE class, SQLite's code or a system code; an Error or a coded object is a driver failure", () => {
+    expect(driverFault({ code: "57P01" })).toEqual(fault("57"));
+    expect(driverFault({ code: "23505" })).toEqual(fault("23"));
+    expect(driverFault({ code: "ECONNREFUSED" })).toEqual(fault("system"));
+    expect(driverFault({ errcode: 5 })).toEqual(fault("sqlite", 5));
+    expect(driverFault(Object.assign(new Error("x"), { code: "ERR_SQLITE_ERROR", errcode: 19 }))).toEqual(
+      fault("sqlite", 19),
+    );
     for (const e of [new Error("secret 4111"), { code: "57P01" }, { errcode: 5 }])
       expect(isDriverFailure(e)).toBe(true);
   });
 
-  test("a code that is not a string and an errcode that is not a number are unknown", () => {
-    expect(driverCode({ code: 7 })).toBe("unknown");
-    expect(driverCode({ errcode: "5" })).toBe("unknown");
-    expect(driverCode({ errcode: "5", code: "C" })).toBe("C");
-    expect(driverCode({})).toBe("unknown");
-    expect(driverCode(new Error("secret"))).toBe("unknown");
+  test("a code that is not a string, no known class or shape, and an errcode that is not a number are unknown", () => {
+    expect(driverFault({ code: 7 })).toEqual(fault("unknown"));
+    expect(driverFault({ errcode: "5" })).toEqual(fault("unknown"));
+    expect(driverFault({ errcode: "5", code: "C" })).toEqual(fault("unknown"));
+    expect(driverFault({ code: "ZZ999" })).toEqual(fault("unknown"));
+    expect(driverFault({ code: "dup key jane@x.com" })).toEqual(fault("unknown"));
+    expect(driverFault({})).toEqual(fault("unknown"));
+    expect(driverFault(new Error("secret"))).toEqual(fault("unknown"));
     expect(isDriverFailure({ code: 7 })).toBe(false);
     expect(isDriverFailure({ errcode: "5" })).toBe(false);
   });
 
   test("a thrown value that is not an object is unknown and no driver failure", () => {
     for (const e of [null, undefined, "code", "errcode", 5, true]) {
-      expect(driverCode(e)).toBe("unknown");
+      expect(driverFault(e)).toEqual(fault("unknown"));
       expect(isDriverFailure(e)).toBe(false);
     }
     const fn = Object.assign(() => undefined, { code: "F", errcode: 3 });
-    expect(driverCode(fn)).toBe("unknown");
+    expect(driverFault(fn)).toEqual(fault("unknown"));
     expect(isDriverFailure(fn)).toBe(false);
   });
 });
@@ -430,11 +437,11 @@ describe("postgres driver over a recording pool", () => {
       return undefined;
     };
     expect(failedOf(await rejection(storage.commit([{ key: "a", expect: null, value: "v" }])))).toBe(
-      "postgres commit 57P01",
+      "postgres commit 57 0",
     );
-    expect(failedOf(await rejection(storage.set("a", "v")))).toBe("postgres set 57P01");
-    expect(failedOf(await rejection(storage.read(["a"])))).toBe("postgres read 57P01");
-    expect(failedOf(await rejection(storage.get("a")))).toBe("postgres read 57P01");
+    expect(failedOf(await rejection(storage.set("a", "v")))).toBe("postgres set 57 0");
+    expect(failedOf(await rejection(storage.read(["a"])))).toBe("postgres read 57 0");
+    expect(failedOf(await rejection(storage.get("a")))).toBe("postgres read 57 0");
     expect(texts(fake)).toEqual([BEGIN, LOCK, "rollback", BEGIN, LOCK, "rollback", SELECT, SELECT]);
     expect(fake.released).toEqual([false, false]);
   });
@@ -445,7 +452,7 @@ describe("postgres driver over a recording pool", () => {
       if (c.text === LOCK || c.text === "rollback") throw Object.assign(new Error("gone"), { code: "08006" });
       return undefined;
     };
-    expect(failedOf(await rejection(storage.set("a", "v")))).toBe("postgres set 08006");
+    expect(failedOf(await rejection(storage.set("a", "v")))).toBe("postgres set 08 0");
     expect(fake.released).toEqual([true]);
   });
 
