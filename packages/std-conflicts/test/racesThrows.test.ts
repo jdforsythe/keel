@@ -18,18 +18,21 @@ const itemStores = (missing: Missing) => () => () => {
   const add = transaction(items, "x.add", s.object({ id: s.string() }), (st, p) => ({
     items: [...st.items, { id: p.id, v: 0 }],
   }));
+  // Each form throws before the closing `defect`, which the `defect` form reaches.
   const fail = (): never => {
-    if (missing === "type") return Reflect.apply(String.prototype.at, undefined, [0]);
-    if (missing === "range") return Reflect.apply(Array, undefined, [-1]);
-    if (missing === "defect") return defect("no item to bump");
-    const thrown: unknown = missing === "string" ? "no item" : new Error("no item");
-    return Reflect.apply(
-      () => {
-        throw thrown;
-      },
-      undefined,
-      [],
-    );
+    if (missing === "type") Reflect.apply(String.prototype.at, undefined, [0]);
+    if (missing === "range") Reflect.apply(Array, undefined, [-1]);
+    if (missing === "string" || missing === "error") {
+      const thrown: unknown = missing === "string" ? "no item" : new Error("no item");
+      Reflect.apply(
+        () => {
+          throw thrown;
+        },
+        undefined,
+        [],
+      );
+    }
+    return defect("no item to bump");
   };
   const bump = transaction(
     items,
