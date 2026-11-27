@@ -1,12 +1,14 @@
 import { existsSync } from "node:fs";
+import { createServer } from "node:http";
 import { join } from "node:path";
-import { serve } from "@hono/node-server";
+import { RequestError, getRequestListener } from "@hono/node-server";
 import { peerKey } from "@keel/compiler/hosting/peerKey";
 import { createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
 import { onUncaught } from "@keel/server/internal/onUncaught";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
+import { denied } from "./denied.ts";
 import { diagLine } from "./diagLine.ts";
 
 const line = (text: string): void => {
@@ -47,7 +49,7 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   const format = json ? "json" : "compact";
   // Set as startup reaches them, so a fault at any point drains what exists.
   const live: {
-    server?: ReturnType<typeof serve>;
+    server?: ReturnType<typeof createServer>;
     app?: Awaited<ReturnType<typeof createApp>>;
     opened?: Awaited<ReturnType<NonNullable<StartOptions["open"]>>>;
   } = {};
@@ -126,8 +128,21 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   const port = env.value.PORT ?? 8080;
   // `HOST` unset: every interface, as Node's `listen(port)` binds (k.deploy).
   const host = env.value.HOST;
-  const srv = serve({ fetch: app.fetch, port, ...(host === undefined ? {} : { hostname: host }) }, (a) => {
-    line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
+  // The request listener hands `app.fetch` each request's connection, whose remote address a `local: true` route reads
+  // (k.contract). A `Host` it cannot read back (`[::ffff:127.0.0.1]:<port>`) reaches no route: refused as a foreign one
+  // (k.contract Local routes); any other request it cannot read stays 400, as it answers alone.
+  const listener = getRequestListener(app.fetch, {
+    ...(host === undefined ? {} : { hostname: host }),
+    errorHandler: (e) =>
+      e instanceof RequestError && e.message === "Invalid host header"
+        ? denied("host refused")
+        : new Response(null, { status: e instanceof RequestError ? 400 : 500 }),
+  });
+  const srv = createServer(listener);
+  srv.listen(port, host, () => {
+    const a = srv.address();
+    const at = typeof a === "object" && a !== null ? a.port : port;
+    line(json ? JSON.stringify({ kind: "summary", name: "listen", port: at }) : `ok listening on port ${at}`);
   });
   live.server = srv;
   srv.on("request", (_q, res) => {

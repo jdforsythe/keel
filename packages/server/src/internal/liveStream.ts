@@ -78,8 +78,6 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c
           search: m.search,
           url: r.url,
           caller: rq.caller.id,
-          site: rq.site,
-          host: rq.host,
           user: rq.user,
           stores,
           signal: ac.signal,

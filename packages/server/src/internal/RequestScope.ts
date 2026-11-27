@@ -18,10 +18,6 @@ export type RequestScope = {
   readonly caller: Caller;
   user: string;
   readonly bearer: Secret<string> | undefined;
-  /** The request's `Sec-Fetch-Site`, `""` when it sent none (a loader's `site`, k.router Loaders). */
-  readonly site: string;
-  /** The host the request was sent to (its `Host` header), whatever `KEEL_ORIGIN` puts in `url` (a loader's `host`). */
-  readonly host: string;
   readonly allowed: boolean;
   readonly held: Map<Factory, Promise<Held>>;
   readonly pii: Set<string>;

@@ -33,6 +33,7 @@ import { inspectResponse } from "./internal/inspectResponse.ts";
 import { keepRunning } from "./internal/keepRunning.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { loadStd } from "./internal/loadStd.ts";
+import { localAllowed } from "./internal/localAllowed.ts";
 import { logUnwritable } from "./internal/logUnwritable.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
@@ -42,6 +43,7 @@ import { peerPaths } from "./internal/peerPaths.ts";
 import { readSchemes } from "./internal/readSchemes.ts";
 import { redacted } from "./internal/redacted.ts";
 import { refuseModuleWrites } from "./internal/refuseModuleWrites.ts";
+import { remoteOf } from "./internal/remoteOf.ts";
 import { reportSource } from "./internal/reportSource.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { requestSecrets } from "./internal/requestSecrets.ts";
@@ -294,8 +296,6 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
             caller: callerOf(raw, sv),
             user: "",
             bearer: matched?.def.kind === "api" ? bearerOf(raw) : undefined,
-            site: raw.headers.get("sec-fetch-site") ?? "",
-            host: new URL(raw.url).host,
             allowed: api !== undefined,
             held: new Map(),
             pii,
@@ -311,20 +311,24 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
       );
     // A preflight from an allowed origin to an API route: no guard, loader or action runs.
     const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");
-    const ran = pre
-      ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
-      : path === CSP_PATH
-        ? await attempted(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
-        : at !== undefined
-          ? await attempted(() => forward(raw, at, sv))
-          : gate === undefined || (gate.ok && raw.method !== "GET")
-            ? await routed()
-            : await attempted(() =>
-                (gate.ok
-                  ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
-                  : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
-                ).then((r) => ({ ...r, route: undefined })),
-              );
+    // A `local: true` route answers this machine alone (k.contract Local routes): checked before anything of it runs.
+    const refusedLocal = matched?.def.local === true && !localAllowed(raw, remoteOf(c.env));
+    const ran = refusedLocal
+      ? { ok: true as const, value: { response: denied("local route refused"), route: matched?.id, diags: [] } }
+      : pre
+        ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
+        : path === CSP_PATH
+          ? await attempted(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
+          : at !== undefined
+            ? await attempted(() => forward(raw, at, sv))
+            : gate === undefined || (gate.ok && raw.method !== "GET")
+              ? await routed()
+              : await attempted(() =>
+                  (gate.ok
+                    ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
+                    : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
+                  ).then((r) => ({ ...r, route: undefined })),
+                );
     // A server bug's thrown text is scrubbed whole before it is clipped for the dev body (`scrubbedCause`).
     const h = ran.ok ? ran.value : crashed(sv.mode, scrubbedCause(ran.error, { secrets, pii }));
     // Every API-route response varies by origin once any origin is allowed, so a shared cache keeps them apart.
@@ -363,8 +367,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
   };
   const app: ServerApp = {
-    fetch: async (req) => {
-      const r = await attempted(() => hono.fetch(req));
+    fetch: async (req, connection) => {
+      const r = await attempted(() => hono.fetch(req, connection));
       return r.ok ? r.value : lastResort(req);
     },
     close: async () => {

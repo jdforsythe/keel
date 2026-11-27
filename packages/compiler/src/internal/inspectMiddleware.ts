@@ -4,6 +4,7 @@ import path from "node:path";
 import { INSPECT_PATH } from "../inspect/INSPECT_PATH.ts";
 import { LOOPBACK } from "../inspect/LOOPBACK.ts";
 import { artifactData } from "../inspect/artifactData.ts";
+import { loopbackPeer } from "../inspect/loopbackPeer.ts";
 import { originListed as listed } from "../inspect/originListed.ts";
 
 /** Largest live report a page may post. */
@@ -28,10 +29,6 @@ const hostOf = (s: string): URL | undefined => {
     return undefined;
   }
 };
-
-/** Whether a connection's remote address is this machine's loopback (`127.0.0.0/8`, `::1`, or either mapped into IPv6). */
-const loopbackPeer = (address: string | undefined): boolean =>
-  address !== undefined && (address === "::1" || /^(::ffff:)?127\.\d+\.\d+\.\d+$/.test(address));
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 

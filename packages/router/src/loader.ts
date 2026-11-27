@@ -30,10 +30,6 @@ type Args<E, St> = {
   readonly caller: string;
   readonly user: string;
   readonly bearer: Secret<string> | undefined;
-  /** The request's `Sec-Fetch-Site` (`same-origin`, `same-site`, `cross-site`, `none`), `""` when it sent none. */
-  readonly site: string;
-  /** The host the request was sent to (its `Host` header), `""` for a direct call; `url` carries `KEEL_ORIGIN`'s. */
-  readonly host: string;
   readonly stores: St;
   readonly signal: AbortSignal;
 };
@@ -50,18 +46,17 @@ type ViewIds<C> = {
       ? K
       : never;
 }[keyof C & string];
-type Fn = (
-  args: Omit<LoaderInput, "user" | "bearer" | "site" | "host" | "stores"> & {
-    readonly stores: unknown;
-    readonly user: string;
-    readonly site: string;
-    readonly host: string;
-    readonly bearer: Secret<string> | undefined;
-    readonly signal: AbortSignal;
-    readonly currentUser: CurrentUser;
-  },
-  ctx: Ctx,
-) => Promise<Out<unknown>> | AsyncGenerator<Out<unknown>>;
+type Base = Omit<LoaderInput, "user" | "bearer" | "stores"> & {
+  readonly stores: unknown;
+  readonly user: string;
+  readonly bearer: Secret<string> | undefined;
+  readonly signal: AbortSignal;
+};
+type PlainFn = (args: Base, ctx: Ctx) => Promise<Out<unknown>>;
+type LiveFn = (args: Base & { readonly currentUser: CurrentUser }, ctx: Ctx) => AsyncGenerator<Out<unknown>>;
+type Fn = PlainFn | LiveFn;
+/** Whether `fn` is an async generator function: a live loader's. */
+const isLive = (fn: Fn): fn is LiveFn => Reflect.get(fn, Symbol.toStringTag) === "AsyncGeneratorFunction";
 
 /** An `events: true` API GET entry's live loader: `fn` is an async generator of `Result`s of the entry's `output`. */
 export function loader<M extends string, C extends Entries, K extends LiveIds<C>, St = undefined>(
@@ -107,23 +102,13 @@ export function loader(
   if (output === undefined) throw new TypeError(`loader("${id}"): no output (a page or layout loader declares one)`);
   if (own !== undefined) refuseSecret(own);
   const { stores } = decl;
+  // A plain loader's `fn` gets exactly the keys k.contract lists; a live one's also `currentUser` (k.user).
   const run = (args: LoaderInput, ctx: Ctx): Promise<Out<unknown>> =>
     withStores(stores, args.stores, ctx, (st) =>
       firstYield((signal) => {
         const user = args.user ?? "";
-        return fn(
-          {
-            ...args,
-            user,
-            bearer: args.bearer,
-            site: args.site ?? "",
-            host: args.host ?? "",
-            stores: st,
-            signal,
-            currentUser: fixedUser(user),
-          },
-          ctx,
-        );
+        const at = { ...args, user, bearer: args.bearer, stores: st, signal };
+        return isLive(fn) ? fn({ ...at, currentUser: fixedUser(user) }, ctx) : fn(at, ctx);
       }),
     );
   const base = {
@@ -134,16 +119,17 @@ export function loader(
     ...(stores === undefined ? {} : { stores }),
     run,
   };
-  if (Reflect.get(fn, Symbol.toStringTag) !== "AsyncGeneratorFunction") return Object.freeze(base);
+  if (!isLive(fn)) return Object.freeze(base);
+  const gen = fn;
   return Object.freeze({
     ...base,
     live: (a: LiveInput, ctx: Ctx) => {
       const user = a.user ?? "";
       const currentUser = a.currentUser ?? fixedUser(user);
-      const at = { ...a, user, bearer: a.bearer, site: a.site ?? "", host: a.host ?? "", currentUser };
+      const at = { ...a, user, bearer: a.bearer, currentUser };
       return a.stores !== undefined || stores === undefined
-        ? yields(fn({ ...at, stores: a.stores }, ctx))
-        : liveWithStores(stores, ctx, (st) => yields(fn({ ...at, stores: st }, ctx)));
+        ? yields(gen({ ...at, stores: a.stores }, ctx))
+        : liveWithStores(stores, ctx, (st) => yields(gen({ ...at, stores: st }, ctx)));
     },
   });
 }

@@ -20,7 +20,7 @@ async function runOne(
   const { sv, rq } = r;
   const { result: ran, frames } = await caught(async () => {
     const stores = l.stores === undefined ? undefined : await openFactory(sv.ctx, rq, l.stores);
-    const at = { ...args, caller: rq.caller.id, user: rq.user, site: rq.site, host: rq.host, stores };
+    const at = { ...args, caller: rq.caller.id, user: rq.user, stores };
     return rq.scope.run(() => l.run(rq.bearer === undefined ? at : { ...at, bearer: rq.bearer }, sv.ctx));
   }, sv.frames);
   if (!ran.ok) {

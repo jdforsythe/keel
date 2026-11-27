@@ -7,8 +7,6 @@ import { inspector } from "./inspector.contract.ts";
 
 /** The host names of this machine, as `new URL(...).hostname` writes them. */
 const LOOPBACK: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
-/** The `Sec-Fetch-Site` values of a navigation this machine's own pages or a person typing the address make. */
-const OWN_SITE: ReadonlySet<string> = new Set(["same-origin", "none"]);
 
 /**
  * The origin `target` names when it is an origin and nothing more: http or https, a loopback host, no user name or
@@ -31,17 +29,11 @@ const originOf = (target: string): string | undefined => {
     : undefined;
 };
 
-/** Whether a `Host` header names this machine with a port (`127.0.0.1:4100`, `localhost:4100`, `[::1]:4100`). */
-const loopbackHost = (host: string): boolean => {
-  const u = attempt(() => new URL(`http://${host}`));
-  return u.ok && u.value.port !== "" && LOOPBACK.has(u.value.hostname) && u.value.host === host.toLowerCase();
-};
-
 /**
  * Fetch the inspect document of the origin `search.url` names (default: the inspector's own) on the server and shape
  * it for the views (values as JSON text; absent `sections` is none). Since the server fetches what a visitor names:
- * - it answers only a request whose `Host` is a loopback name with a port and whose `Sec-Fetch-Site` is `same-origin`
- *   or `none`; any other is 403 `keel.denied` and nothing is fetched (a cross-site navigation, DNS rebinding);
+ * - the page is `local: true` (k.contract Local routes), so the server runs this only for a loopback connection with a
+ *   loopback `Host` and `Sec-Fetch-Site` `same-origin` or `none`; any other request is 403 `keel.denied` first;
  * - it takes `?url=` only when that is an origin on this machine (`originOf`), and requests
  *   `<origin>/__keel/inspect` built from the parsed origin alone, so nothing else of the caller's string is sent;
  * - every failure of the fetch (refused, a status, a redirect, a timeout, a body that is no inspect document) is one
@@ -52,9 +44,7 @@ export const loadInspect = loader(
   inspector,
   "inspector.index",
   { output: Inspection },
-  async ({ search, url: at, host, site }, ctx) => {
-    if (!loopbackHost(host) || !OWN_SITE.has(site))
-      return err({ code: "keel.denied", message: "the inspector answers this machine's own pages only", data: {} });
+  async ({ search, url: at }, ctx) => {
     const target = search.url ?? new URL(at).origin;
     const origin = originOf(target);
     if (origin === undefined)
