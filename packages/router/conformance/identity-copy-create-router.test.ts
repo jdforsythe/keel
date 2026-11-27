@@ -1,35 +1,49 @@
 // @vitest-environment happy-dom
-// Spec: k.identity, clause "`createApp` and `createRouter` given routes in which a copy of an action, made as the first clause makes one, stands for it throw a value whose message starts `E1515` and names the route id and the member, and run nothing."
-// Seed 1337 (the copies are a fixed list). This file holds `createRouter`; `createApp` is in packages/server/conformance/identity-copy-create-app.test.ts.
-// ASSUMPTION: the spec names no way to put a copy into a route table that `manifest` already built, so the copy is written into the
-// binding object `manifest` was given, after `manifest` returned (an untyped `Reflect.set`), as k.identity's `decl.input = B` is written
-// after `action` returned. The calls are untyped (Reflect.apply) because a forged value does not type-check.
+// Spec: k.identity, clause "With `t = manifest(c, { 'p.b': { component: view, POST: a } })`, `createRouter` and `createApp` (rejecting) given as `routes` `{ ...t }`, `Object.assign({}, t)`, `JSON.parse(JSON.stringify(t))`, `structuredClone(t)` where it can be made, or `{ kind: 'keel.routeTable', contract: c, contracts: [c] }` throw a value whose message starts `E1515` and holds `routes`, and run no loader, action or guard; `routeTable({ ...t })` throws one that starts `E1515`; given `t` itself, each starts."
+// Seed 1337 (the copies are a fixed list). This file holds `createRouter` and `routeTable`; `createApp` is in packages/server/conformance/identity-copy-create-app.test.ts.
+// The calls are untyped (Reflect.apply) because a forged value does not type-check. "given `t` itself, each starts" is read as: each function, given `t`, does not throw E1515.
+// "`structuredClone(t)` where it can be made": a clone the engine cannot make is not a case, and its `it` skips.
 import { createCtx } from "@keel/ctx";
-import { action, createRouter, manifest } from "@keel/router";
+import { action, createRouter, guard, loader, manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
-import { ok, s } from "@keel/schema";
+import { err, ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { SEED, memoryHistory } from "./fixtures.ts";
 
 const A = s.object({ a: s.string() });
-const B = s.object({ b: s.string() });
-const c = contract("p", { "p.b": { path: "/b" } });
+const Page = s.object({ title: s.string() });
+const Denied = s.error("p.denied", s.object({}));
+const c = contract("p", { "p.b": { path: "/b" }, "p.login": { path: "/login" } });
 const view = () => document.createElement("main");
 
-const ownCopy = (v: object): object => {
-  const o = Object.create(Object.getPrototypeOf(v));
-  for (const k of Reflect.ownKeys(v)) {
-    const d = Object.getOwnPropertyDescriptor(v, k);
-    if (d !== undefined) Object.defineProperty(o, k, d);
-  }
-  return o;
+const ran = { loader: 0, action: 0, guard: 0 };
+const table = () => {
+  Object.assign(ran, { loader: 0, action: 0, guard: 0 });
+  const a = action(c, "p.b", { input: A }, async () => {
+    ran.action += 1;
+    return ok(null);
+  });
+  const l = loader(c, "p.b", { output: Page }, async () => {
+    ran.loader += 1;
+    return ok({ title: "b" });
+  });
+  const g = guard({ redirect: "p.login" }, async () => {
+    ran.guard += 1;
+    return err(Denied.make({}));
+  });
+  return manifest(c, { "p.b": { component: view, loader: l, guard: g, POST: a }, "p.login": { component: view } });
 };
-const copiesOf = (a: object): Array<[string, object]> => [
-  ["a spread", { ...a }],
-  ["a spread with another input", { ...a, input: B }],
-  ["Object.assign onto Object.create(Object.getPrototypeOf(a))", Object.assign(Object.create(Object.getPrototypeOf(a)), a)],
-  ["an object given every Reflect.ownKeys key with its descriptor", ownCopy(a)],
-  ["new Proxy(a, {})", new Proxy(a, {})],
+
+type Copy = readonly [string, (t: object) => unknown];
+const COPIES: readonly Copy[] = [
+  ["a spread, `{ ...t }`", (t) => ({ ...t })],
+  ["`Object.assign({}, t)`", (t) => Object.assign({}, t)],
+  ["`structuredClone(t)`", (t) => structuredClone(t)],
+  ["a JSON round trip, `JSON.parse(JSON.stringify(t))`", (t) => JSON.parse(JSON.stringify(t))],
+  [
+    "a hand-written `{ kind: 'keel.routeTable', contract: c, contracts: [c] }`",
+    () => ({ kind: "keel.routeTable", contract: c, contracts: [c] }),
+  ],
 ];
 
 const thrownOf = (fn: () => unknown): string | null => {
@@ -40,29 +54,45 @@ const thrownOf = (fn: () => unknown): string | null => {
   }
   return null;
 };
+const copyOf = (how: string, t: object): { made: true; value: unknown } | { made: false } => {
+  const make = COPIES.find(([h]) => h === how)?.[1];
+  if (make === undefined) return { made: false };
+  try {
+    return { made: true, value: make(t) };
+  } catch {
+    return { made: false };
+  }
+};
+const router = (routes: unknown) =>
+  Reflect.apply(createRouter, undefined, [
+    routes,
+    { ctx: createCtx({ mode: "sim", seed: SEED }), history: memoryHistory("/b") },
+  ]);
 
-describe("k.identity: createRouter given routes holding a copy of an action", () => {
-  for (const [how] of copiesOf(action(c, "p.b", { input: A }, async () => ok(null)))) {
-    it(`createRouter given routes in which ${how} stands for an action throws E1515 naming p.b and POST, and runs nothing`, () => {
-      let ran = 0;
-      const a = action(c, "p.b", { input: A }, async () => {
-        ran += 1;
-        return ok(null);
-      });
-      const entry = { component: view, POST: a };
-      const routes = manifest(c, { "p.b": entry });
-      const forged = copiesOf(a).find(([h]) => h === how)?.[1];
-      expect(Reflect.set(entry, "POST", forged), "the copy was written into the binding").toBe(true);
-      const message = thrownOf(() =>
-        Reflect.apply(createRouter, undefined, [
-          routes,
-          { ctx: createCtx({ mode: "sim", seed: SEED }), history: memoryHistory("/b") },
-        ]),
-      );
+describe("k.identity: a copy of a route table `manifest` returned", () => {
+  for (const [how] of COPIES) {
+    it(`createRouter given routes that are ${how} throws E1515 holding routes, and runs no loader, action or guard`, ({ skip }) => {
+      const copy = copyOf(how, table());
+      if (!copy.made) return skip();
+      const message = thrownOf(() => router(copy.value));
       expect(message?.startsWith("E1515"), String(message)).toBe(true);
-      expect(message).toContain("p.b");
-      expect(message).toContain("POST");
-      expect(ran).toBe(0);
+      expect(message).toContain("routes");
+      expect(ran).toEqual({ loader: 0, action: 0, guard: 0 });
+    });
+
+    it(`routeTable given ${how} throws E1515`, ({ skip }) => {
+      const copy = copyOf(how, table());
+      if (!copy.made) return skip();
+      const message = thrownOf(() => Reflect.apply(routeTable, undefined, [copy.value]));
+      expect(message?.startsWith("E1515"), String(message)).toBe(true);
     });
   }
+
+  it("createRouter given `t` itself does not throw E1515", () => {
+    expect(thrownOf(() => router(table()))?.startsWith("E1515") ?? false).toBe(false);
+  });
+
+  it("routeTable given `t` itself does not throw E1515", () => {
+    expect(thrownOf(() => routeTable(table()))?.startsWith("E1515") ?? false).toBe(false);
+  });
 });
