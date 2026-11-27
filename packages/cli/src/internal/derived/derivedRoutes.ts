@@ -2,7 +2,6 @@ import { join } from "node:path";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { CODE_FILE } from "../CODE_FILE.ts";
 import type { Work } from "./Work.ts";
-import { deriveEvaluated } from "./deriveEvaluated.ts";
 
 /** A project of the ledger (k.ledger-items Projects) with a `topology.ts`: the folder itself, or `apps/<a>/` and the like. */
 const PROJECT = /^((?:(?:packages|apps|examples)\/[^/]+\/)?)topology\.ts$/;
@@ -25,7 +24,7 @@ export async function derivedRoutes(cwd: string, files: readonly SourceFile[], w
       .map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const root = join(cwd, dir);
     const codes = own.filter((f) => CODE_FILE.test(f.path)).map((f) => f.path);
-    const ev = await deriveEvaluated(root, own, codes, work);
+    const ev = await (await import("@keel/cli/derive")).deriveEvaluated(root, own, codes, work);
     if (ev.problems.length === 0) derived.set(`${dir}.keel/routes.json`, ev.routes);
   }
   const out = files.map((f) => {

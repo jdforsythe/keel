@@ -27,6 +27,10 @@
     "./shell": {
       "types": "./src/shell/index.ts",
       "default": "./src/shell/index.ts"
+    },
+    "./derive": {
+      "types": "./src/derive/index.ts",
+      "default": "./src/derive/index.ts"
     }
   },
   "bin": {
@@ -60,6 +64,10 @@
       "./shell": {
         "types": "./dist/src/shell/index.d.ts",
         "default": "./dist/src/shell/index.js"
+      },
+      "./derive": {
+        "types": "./dist/src/derive/index.d.ts",
+        "default": "./dist/src/derive/index.js"
       }
     }
   },

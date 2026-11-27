@@ -14,7 +14,6 @@ import { artifactsSetupConfig } from "./artifactsSetupConfig.ts";
 import { catchingStray } from "./catchingStray.ts";
 import type { Work } from "./derived/Work.ts";
 import { frozenRun } from "./derived/frozenRun.ts";
-import { testViews } from "./derived/testViews.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { ownLibrary } from "./ownLibrary.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -136,7 +135,9 @@ export async function testCommand(
   const frozen = frozenRun(input.frozen, io.env);
   const work: Work = { evaluated: 0, cached: 0, refreshed: 0 };
   const derived =
-    runnable && own && io.load !== undefined ? await testViews(io.cwd, projectFiles(io), frozen, work) : undefined;
+    runnable && own && io.load !== undefined
+      ? await (await import("@keel/cli/derive")).testViews(io.cwd, projectFiles(io), frozen, work)
+      : undefined;
   const r = runnable ? await vitestRun(io.cwd, input.paths ?? [], own, report, derived?.a11y, frozen) : EMPTY;
   const diags = [...(derived?.diags ?? []), ...r.diagnostics.map((d) => makeDiag(d.code, d.message, d))];
   const counts = { tests: r.tests, failed: r.failed, skipped: r.skipped };

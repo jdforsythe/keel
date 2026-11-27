@@ -52,7 +52,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       // Loaded only when the command runs: it brings in typescript and the test harness.
       const { ledgerCommand } = await import("./ledgerCommand.ts");
       // Over the disk, each project's `routes.json` is its derivation, not the file (k.derived Readers).
-      const derive = io.load === undefined ? undefined : (await import("./derived/derivedRoutes.ts")).derivedRoutes;
+      const derive = io.load === undefined ? undefined : (await import("@keel/cli/derive")).derivedRoutes;
       const work = { evaluated: 0, cached: 0, refreshed: 0 };
       const seen = derive === undefined ? io : { ...io, files: await derive(io.cwd, projectFiles(io), work) };
       const map = await ledgerRules(seen);

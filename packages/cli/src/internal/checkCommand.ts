@@ -14,9 +14,7 @@ import { codeFiles } from "./codeFiles.ts";
 import { deployFreshness } from "./deployFreshness.ts";
 import type { View } from "./derived/View.ts";
 import type { Work } from "./derived/Work.ts";
-import { deriveEvaluated } from "./derived/deriveEvaluated.ts";
 import { frozenRun } from "./derived/frozenRun.ts";
-import { refreshViews } from "./derived/refreshViews.ts";
 import { libraryManifestFiles } from "./libraryManifestFiles.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
@@ -115,7 +113,7 @@ export async function checkCommand(
     );
     const rel = own.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const codes = rel.filter((f) => CODE_FILE.test(f.path)).map((f) => f.path);
-    const ev = await deriveEvaluated(join(io.cwd, dir), rel, codes, work);
+    const ev = await (await import("@keel/cli/derive")).deriveEvaluated(join(io.cwd, dir), rel, codes, work);
     holds.push(ev.held);
     // Each problem line names its file, as a build step's line does (`noteDiag`); a project's path is project-relative.
     for (const line of ev.problems) {
@@ -175,6 +173,7 @@ export async function checkCommand(
     const same = (): boolean =>
       holds.every((h) => h()) &&
       project.filter((f) => CODE_FILE.test(f.path)).every((f) => readText(join(io.cwd, f.path)) === f.source);
+    const { refreshViews } = await import("@keel/cli/derive");
     if (defer === undefined) {
       diags.push(...refreshViews(io.cwd, views, same, work));
       // A view the run wrote that its files did not hold counts as one of them, so the count is that of the tree

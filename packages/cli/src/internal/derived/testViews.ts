@@ -8,7 +8,6 @@ import { checkInputs } from "../checkInputs.ts";
 import { projectTopology } from "../projectTopology.ts";
 import type { View } from "./View.ts";
 import type { Work } from "./Work.ts";
-import { deriveEvaluated } from "./deriveEvaluated.ts";
 import { refreshViews } from "./refreshViews.ts";
 
 const readText = (file: string): string | undefined => {
@@ -44,7 +43,7 @@ export async function testViews(
   for (const [name, text] of Object.entries(compiled))
     if (typeof text === "string" && name !== "routes.json") views.push({ path: `.keel/${name}`, text, readonly: true });
   const codes = project.filter((f) => CODE_FILE.test(f.path));
-  const ev = await deriveEvaluated(
+  const ev = await (await import("@keel/cli/derive")).deriveEvaluated(
     cwd,
     project,
     codes.map((f) => f.path),

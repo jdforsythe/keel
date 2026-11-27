@@ -72,7 +72,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "build",
-    description: "Compile the project, write .keel artifacts, vite build.",
+    description: "Compile the project and vite build.",
     input: s.object({
       target: s.enum(["capacitor", "tauri"]).optional(),
       platform: s.string().optional(),
@@ -165,7 +165,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "pack",
-    description: "A library's gate: check, test and write .keel/ledger.json; --frozen writes nothing (k.library-pack).",
+    description: "A library's gate: check, test, write .keel/ledger.json; --frozen writes nothing.",
     input: s.object({ frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: [],
