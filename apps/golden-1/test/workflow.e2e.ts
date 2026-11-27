@@ -1,7 +1,8 @@
 // Crash proof for golden-1's removal workflow, built: a copy of the app whose `restore` step waits 2,000 ms on
 // `ctx.clock` with `timeoutMs: 3000`. A list is removed and undone, the api is killed with SIGKILL while the stored
 // instance shows its step running (`attempt` 1), and started again on the same data: within the bound the instance is
-// `kept` and the list is visible once. Once on SQLite (the topology's storage), once on Postgres 17 (`KEEL_TEST_POSTGRES_URL`).
+// `kept` and the list is visible once. Once on SQLite (the topology's storage), once on Postgres 17 (a database of the run's own on the server `KEEL_TEST_POSTGRES_URL` names).
+import { randomUUID } from "node:crypto";
 import { cp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,7 @@ import { store } from "@keel/store";
 import { type Served, build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
+import pg from "pg";
 import { expect, it } from "vitest";
 import { Board } from "../modules/api/Board.schema.ts";
 
@@ -40,6 +42,27 @@ function field(value: unknown, ...keys: string[]): unknown {
 async function view(app: Served): Promise<unknown> {
   const body: unknown = await (await app.fetch("/api/lists", { headers: { accept: "application/json" } })).json();
   return field(body, "results", "api.lists", "value");
+}
+
+/**
+ * A database of this run's own on the server `url` names, so a run reads only its own instances and logs; dropped at
+ * the end (its connections closed with it).
+ */
+async function freshDatabase(url: string): Promise<{ url: string; drop: () => Promise<void> }> {
+  const name = `keel_e2e_${randomUUID().replaceAll("-", "")}`;
+  const admin = async (sql: string): Promise<void> => {
+    const c = new pg.Client({ connectionString: url });
+    await c.connect();
+    try {
+      await c.query(sql);
+    } finally {
+      await c.end();
+    }
+  };
+  await admin(`CREATE DATABASE ${name}`);
+  const at = new URL(url);
+  at.pathname = `/${name}`;
+  return { url: at.href, drop: () => admin(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`) };
 }
 
 /** A copy of the app in a temporary folder with the planted step (and `postgres` storage when asked), not yet built. */
@@ -147,12 +170,14 @@ it(
     const url = process.env.KEEL_TEST_POSTGRES_URL ?? "";
     if (url === "") throw new Error("KEEL_TEST_POSTGRES_URL is not set: this test needs a Postgres 17 server");
     const tmp = await plantedCopy(true);
+    const db = await freshDatabase(url);
     try {
       const dir = join(tmp, "app");
       await build(dir);
-      const app = await serve({ project: dir, env: { KEEL_DATABASE_URL: url } });
+      const app = await serve({ project: dir, env: { KEEL_DATABASE_URL: db.url } });
       await crashInsideStep(app);
     } finally {
+      await db.drop();
       await rm(tmp, { recursive: true, force: true });
     }
   },
