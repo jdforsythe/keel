@@ -1,8 +1,8 @@
 // k.cli "One engine": `keel mcp` and `keel lsp` serve the same engine (RFC 0020). Public API only:
 // `run`, `mcp`, `lsp`, `operations` from '@keel/cli'. Seed 1337.
 // Spec: k.cli, clause "For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message)."
-// Spec: k.cli, clause "Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`."
-// The flags all commands take are `format`, `quiet`, `limit` and `verbose` (RFC 0249 D15; the clause does not name them). A tool accepts one when it validates its value: an undeclared key is ignored by an open object, a flag of a bad value is E1052.
+// Spec: k.cli, clause "Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052."
+// The flags all commands take are `format`, `quiet`, `limit` and `verbose` (k.cli names them). A tool accepts one when it validates its value: an undeclared key is ignored by an open object, a flag of a bad value is E1052.
 import { lsp, mcp, operations, run } from "@keel/cli";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -106,7 +106,7 @@ describe("k.cli surfaces", () => {
     );
   });
 
-  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: object, the fields but the shared flags, required exactly the non-optional ones, same field types", async () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: object, the fields but the shared flags, required exactly the non-optional ones, same field types", async () => {
     const out = await mcp(() => ({ cwd: CWD })).receive(`${rpc(1, "tools/list", {})}\n`);
     const list = field(records(out)[0]?.result, "tools");
     const tools = Array.isArray(list) ? list : [];
@@ -152,7 +152,7 @@ describe("k.cli surfaces", () => {
     for (const r of [bad, unknown]) expect(r).toContain('"isError":true');
   });
 
-  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: `initialize` instructions name every shared flag, and every tool still validates each of them", async () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: `initialize` instructions name every shared flag, and every tool still validates each of them", async () => {
     const server = mcp(() => ({ cwd: CWD, files: [] }));
     const init = records(await server.receive(`${rpc(1, "initialize", {})}\n`))[0];
     const text = field(field(init, "result"), "instructions");

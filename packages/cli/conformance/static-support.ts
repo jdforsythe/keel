@@ -124,7 +124,7 @@ process.once("exit", () => {
 export const freePort = (): Promise<number> =>
   new Promise((res, rej) => {
     const srv = net.createServer();
-    srv.listen(0, () => {
+    srv.listen(0, "127.0.0.1", () => {
       const a = srv.address();
       srv.close(() => (typeof a === "object" && a !== null ? res(a.port) : rej(new Error("no port"))));
     });

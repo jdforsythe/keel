@@ -20,7 +20,7 @@ const FORMS = [
   "hsl(19deg 87% 39%)",
   "oklab(0.54 0.12 0.1)",
   "oklch(54% 0.16 40)",
-  "color(display-p3 0.67 0.29 0.1)",
+  "color(display-p3 0.67 0.3 0.2)",
 ];
 const ratioIn = (message: string | undefined): number =>
   Number.parseFloat(/is (\d+\.\d\d):1/.exec(message ?? "")?.[1] ?? "NaN");

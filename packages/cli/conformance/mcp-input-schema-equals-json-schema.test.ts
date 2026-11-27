@@ -1,8 +1,8 @@
-// Spec: k.cli, clause "Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`."
+// Spec: k.cli, clause "Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052."
 // An open s.object ignores undeclared keys in parse, so its JSON Schema omits `additionalProperties: false` (k.schema, rfc:0029:
 // only closed objects add it); the schema and parse then agree on {"undeclared-extra-key":null}.
 // Seed: 1337 (every fc.assert below). Drives the real binary (packages/cli/src/bin.ts) with `keel mcp`, one `initialize` and one `tools/list` request.
-// The flags all commands take are `format`, `quiet`, `limit` and `verbose` (RFC 0249 D15; the clause does not name them): every operation's input holds them, no tool's inputSchema does, and `initialize`'s `instructions` name them.
+// The flags all commands take are `format`, `quiet`, `limit` and `verbose` (k.cli names them): every operation's input holds them, no tool's inputSchema does, and `initialize`'s `instructions` name them.
 // Equality is semantic: a small JSON Schema validator (below) throws on any keyword it does not implement, so no keyword is ignored.
 import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
@@ -153,7 +153,7 @@ const STD_RESERVED: string[] = ["session", "report"];
 const OTHERS: unknown[] = [null, true, 1.5, 7, "x", [], ["a"], {}, { a: 1 }];
 
 describe("k.cli: MCP tool input schemas (real binary)", () => {
-  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: the tools list names every operation, in order", () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: the tools list names every operation, in order", () => {
     // A repository module that depends on @keel/std-sessions fills the `session` slot (rfc:0070): it is listed after
     // the kernel operations, and its schema is checked with the others below.
     const names = tools.map((t) => String(t.name));
@@ -165,13 +165,13 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
     expect(names.slice(0, operations.length)).toEqual(operations.map((o) => o.name));
   });
 
-  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: the validator accepts only keywords it implements", () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: the validator accepts only keywords it implements", () => {
     expect(() => validate({ type: "object", pattern: "x" }, {})).toThrow(/unsupported keyword/);
     for (const t of tools) expect(() => validate(t.inputSchema, {}), String(t.name)).not.toThrow();
   });
 
   it(
-    "Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate",
+    "Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate",
     () => {
       expect(tools.filter((t) => !STD_RESERVED.includes(String(t.name))).length).toBe(operations.length);
       for (const op of operations) {
@@ -228,7 +228,7 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
     fixedTime(120_000),
   );
 
-  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: every operation's input takes the shared flags and no tool's inputSchema lists them", () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: every operation's input takes the shared flags and no tool's inputSchema lists them", () => {
     for (const op of operations) {
       for (const flag of SHARED) expect(fieldNames(op), `${op.name} takes ${flag}`).toContain(flag);
       const props = field(tools.find((t) => t.name === op.name)?.inputSchema, "properties");
@@ -241,7 +241,7 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
     }
   });
 
-  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: `initialize` states each shared flag in its `instructions`", () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: `initialize` states each shared flag in its `instructions`", () => {
     expect(instructions).not.toBe("");
     for (const flag of SHARED) {
       const hits = instructions.split(new RegExp(`\\b${flag}\\b`)).length - 1;
