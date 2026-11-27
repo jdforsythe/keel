@@ -1,12 +1,12 @@
 import { AsyncResource } from "node:async_hooks";
 import type { PGlite } from "@electric-sql/pglite";
-import { attempt } from "@keel/schema";
 import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
 import type { Held } from "./Held.ts";
 import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
 import { TypeCache } from "./TypeCache.server.ts";
+import { noErrorTakes } from "./noErrorTakes.server.ts";
 
 type Queryable = Pick<PGlite, "query">;
 
@@ -22,18 +22,47 @@ const pglite = new AsyncResource("KEEL_PGLITE");
 const apart = <T>(call: () => Promise<T>): Promise<T> => pglite.runInAsyncScope(call);
 
 /**
- * PGlite keeps no statement timer (std.postgres Modes): after a statement whose text names `statement_timeout` and that
- * left it other than `0`, the setting is put back to `0` and PGlite raises SQLSTATE `0A000`, which the caller meets as
- * the defect E2461, so a timeout is refused where it is set and never silently not kept.
+ * Each `statement_timeout` in force or kept, with the statement that puts it back: the session's, each default kept for
+ * a database or a role, each function's own setting. One query; names are compared without case, as Postgres does.
  */
-async function refuseTimeout(q: Queryable, text: string): Promise<void> {
-  if (!/statement_timeout/i.test(text)) return;
-  const now = await q.query<{ statement_timeout: string }>("show statement_timeout");
-  if (now.rows[0]?.statement_timeout === "0") return;
-  await q.query("set statement_timeout = 0");
-  await q.query(
-    "do $$ begin raise exception using errcode = '0A000', message = 'PGlite keeps no statement_timeout'; end $$",
-  );
+const TIMEOUTS = `
+select current_setting('statement_timeout') as value, 'set statement_timeout = 0' as fix
+union all
+select substr(c, strpos(c, '=') + 1),
+  case
+    when s.setrole = 0 then format('alter database %I reset statement_timeout', d.datname)
+    when s.setdatabase = 0 then format('alter role %I reset statement_timeout', r.rolname)
+    else format('alter role %I in database %I reset statement_timeout', r.rolname, d.datname)
+  end
+from pg_db_role_setting s
+cross join lateral unnest(s.setconfig) as c
+left join pg_database d on d.oid = s.setdatabase
+left join pg_roles r on r.oid = s.setrole
+where lower(split_part(c, '=', 1)) = 'statement_timeout'
+union all
+select substr(c, strpos(c, '=') + 1), format('alter function %s reset statement_timeout', p.oid::regprocedure)
+from pg_proc p
+cross join lateral unnest(p.proconfig) as c
+where p.proconfig is not null and lower(split_part(c, '=', 1)) = 'statement_timeout'`;
+
+/** A `statement_timeout` value that keeps no timer: `0` in any unit, quoted or not. */
+const ZERO = /^\s*'?\s*0+(?:\.0*)?\s*(?:us|ms|s|min|h|d)?\s*'?\s*$/i;
+
+/**
+ * PGlite keeps no statement timer (std.postgres-errors PGlite and `statement_timeout`): each `statement_timeout` in
+ * force or kept that is not `0` is put back. Judged by value, never by a statement's text. Whether anything was put
+ * back is the answer; after a statement that is the defect E2461 with `data.sqlstate` `0A000`.
+ */
+async function putBack(q: Queryable): Promise<boolean> {
+  const found = await q.query<{ value: string; fix: string }>(TIMEOUTS);
+  const fixes = found.rows.filter((r) => !ZERO.test(r.value)).map((r) => r.fix);
+  for (const fix of fixes) await q.query(fix);
+  return fixes.length > 0;
+}
+
+/** After a statement: a `statement_timeout` it left other than `0` is put back, and the statement is E2461 (`0A000`). */
+async function refuseTimeout(q: Queryable): Promise<void> {
+  if (await putBack(q)) noErrorTakes("0A000");
 }
 
 /**
@@ -46,7 +75,7 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
   const types = new TypeCache();
   const run = async (q: Queryable, text: string, params: readonly (string | null)[]): Promise<Raw> => {
     const r = await apart(() => q.query<unknown[]>(text, [...params], { rowMode: "array", parsers: types.parsers }));
-    await apart(() => refuseTimeout(q, text));
+    await apart(() => refuseTimeout(q));
     return {
       fields: r.fields.map((f) => ({ name: f.name, oid: f.dataTypeID })),
       rows: r.rows,
@@ -57,9 +86,11 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
     query: (text, params) => run(db, text, params),
     exec: async (text) => {
       await apart(() => db.exec(text));
-      await apart(() => refuseTimeout(db, text));
+      await apart(() => refuseTimeout(db));
     },
   };
+  // A timeout a folder kept from an earlier session is put back when the engine opens; no statement ran, so none fails.
+  await apart(() => putBack(db));
   await types.load(top);
   let tail: Promise<unknown> = Promise.resolve();
   /** `work` once every earlier exclusive call has finished, whether it answered or threw. */
@@ -91,14 +122,14 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
           query: (text, params) => held(() => run(db, text, params)),
           exec: async (text) => {
             await held(() => apart(() => db.exec(text)));
-            await held(() => apart(() => refuseTimeout(db, text)));
+            await held(() => apart(() => refuseTimeout(db)));
           },
         });
         await held(() => apart(() => db.exec(out.commit ? "commit" : "rollback")));
         done = true;
         return out.value;
       } finally {
-        if (!done) void (await attempt(() => held(() => apart(() => db.exec("rollback")))));
+        if (!done) await held(() => apart(() => db.exec("rollback")));
       }
     });
   return {
@@ -123,7 +154,7 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
               query: (text, params) => run(t, text, params),
               exec: async (text) => {
                 await t.exec(text);
-                await apart(() => refuseTimeout(t, text));
+                await apart(() => refuseTimeout(t));
               },
             });
             if (!out.commit) await t.rollback();

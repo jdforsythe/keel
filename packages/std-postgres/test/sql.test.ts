@@ -1,6 +1,6 @@
 // Seed 1337. Properties of `sql`, `fragment` and the parameter check (std.postgres API, E2457).
 import type { JsonValue } from "@keel/schema";
-import { s } from "@keel/schema";
+import { isDefect, s } from "@keel/schema";
 import { fragment, sql } from "@keel/std-postgres";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -57,23 +57,36 @@ test("a value that is not JSON at any depth throws E2457 naming its 1-based posi
         thrown = e;
       }
       expect(Reflect.get(Object(thrown), "code")).toBe("E2457");
-      expect(String(thrown)).toContain("parameter $3 ");
+      expect(Reflect.get(Object(Reflect.get(Object(thrown), "data")), "position")).toBe(3);
     }),
     { seed: SEED, numRuns: 100 },
   );
 });
+
+/** The `data` of the E2457 defect `run` throws. */
+function dataOf(run: () => unknown): unknown {
+  let thrown: unknown;
+  try {
+    run();
+  } catch (e) {
+    thrown = e;
+  }
+  expect(isDefect(thrown, "E2457")).toBe(true);
+  expect(thrown instanceof Error && thrown.message).toBe("E2457 std.postgres: a parameter is not a JSON value");
+  return Reflect.get(Object(thrown), "data");
+}
 
 test("a cycle is E2457, a shared value that is no cycle is not", () => {
   const shared = { a: 1 };
   expect(toParam({ x: shared, y: shared }, 1)).toEqual({ x: { a: 1 }, y: { a: 1 } });
   const loop: Record<string, unknown> = {};
   loop.self = loop;
-  expect(() => toParam(loop, 4)).toThrow(/E2457 parameter \$4 .*a cycle/);
+  expect(dataOf(() => toParam(loop, 4))).toEqual({ position: 4, kind: "a cycle" });
 });
 
 test("an object with a null prototype is plain; a sparse array's hole is undefined", () => {
   const bare = Object.assign(Object.create(null), { k: "v" });
   expect(toParam(bare, 1)).toEqual({ k: "v" });
   // biome-ignore lint/suspicious/noSparseArray: the hole is the case under test
-  expect(() => toParam([1, , 3], 2)).toThrow(/E2457 parameter \$2 is not a JSON value: undefined/);
+  expect(dataOf(() => toParam([1, , 3], 2))).toEqual({ position: 2, kind: "undefined" });
 });

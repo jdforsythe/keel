@@ -51,7 +51,7 @@ const KINDS: [unknown, string][] = [
 const nest = (v: unknown, path: boolean[]): unknown =>
   path.reduce<unknown>((x, inArray) => (inArray ? [1, x] : { k: x }), v);
 
-test("E2457 names the position and the value's kind in words, never the value, at any depth", () => {
+test("E2457's data names the position and the value's kind in words, never the value, at any depth", () => {
   fc.assert(
     fc.property(
       fc.constantFrom(...KINDS.keys()),
@@ -66,9 +66,8 @@ test("E2457 names the position and the value's kind in words, never the value, a
           thrown = e;
         }
         expect(isDefect(thrown, "E2457")).toBe(true);
-        expect(thrown instanceof Error && thrown.message).toBe(
-          `E2457 parameter $${position} is not a JSON value: ${words}`,
-        );
+        expect(thrown instanceof Error && thrown.message).toBe("E2457 std.postgres: a parameter is not a JSON value");
+        expect(Reflect.get(Object(thrown), "data")).toEqual({ position, kind: words });
       },
     ),
     { seed: SEED, numRuns: 200 },

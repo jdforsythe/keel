@@ -47,8 +47,10 @@ test("after ready(), a sim query and a transaction settle in microtask rounds wi
   const immediates = vi.spyOn(globalThis, "setImmediate");
   let done = false;
   const work = (async () => {
-    void (await db(ctx).run(sql(NoRows)`insert into ${table} values (${1}, ${"a"})`));
-    void (await db(ctx).transaction(async (tx) => tx.run(sql(NoRows)`insert into ${table} values (${2}, ${"b"})`)));
+    expect((await db(ctx).run(sql(NoRows)`insert into ${table} values (${1}, ${"a"})`)).ok).toBe(true);
+    expect(
+      (await db(ctx).transaction(async (tx) => tx.run(sql(NoRows)`insert into ${table} values (${2}, ${"b"})`))).ok,
+    ).toBe(true);
     return db(ctx).query(sql(Row)`select id, name from ${table} order by id`);
   })().then((r) => {
     done = true;
@@ -99,7 +101,8 @@ test("an expected error inside a transaction leaves it usable: the other stateme
       const db = notesOf(cap, name);
       const ctx = sim(cap);
       const r = await db(ctx).transaction(async (tx) => {
-        for (let i = 0; i < n; i++) void (await tx.run(sql(NoRows)`insert into ${table} values (${i}, ${`n${i}`})`));
+        for (let i = 0; i < n; i++)
+          expect((await tx.run(sql(NoRows)`insert into ${table} values (${i}, ${`n${i}`})`)).ok).toBe(true);
         const dup = await tx.run(sql(NoRows)`insert into ${table} values (${n}, ${"n0"})`);
         expect(dup.ok ? null : dup.error.code).toBe("postgres.constraint");
         return ok(null);
@@ -163,7 +166,9 @@ test("an applied migration whose file is gone is E2454; a new file after the app
     const one = { "./migrations/0001-a.sql": "create table ga (n int)" };
     const two = { ...one, "./migrations/0002-b.sql": "insert into ga values (1)" };
     expect(await child(url, cap, two)).toBe("ok 1");
-    expect(await child(url, cap, one)).toMatch(/^E2454 .*0002-b.* is gone/);
+    expect(await child(url, cap, one)).toMatch(
+      /^E2454 std\.postgres: an applied migration is gone from migrations .*"file":"0002-b"/,
+    );
     expect(await child(url, cap, { ...two, "./migrations/0003-c.sql": "insert into ga values (2)" })).toBe("ok 2");
   } finally {
     rmSync(dir, { recursive: true, force: true });

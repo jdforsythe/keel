@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
-import { attempt } from "@keel/schema";
 import type { PgliteModules } from "./PgliteModules.ts";
 import { compiledPglite } from "./compiledPglite.server.ts";
+import { forgetting } from "./forgetting.server.ts";
 import { installedPglite } from "./installedPglite.server.ts";
 
 /**
@@ -18,10 +18,12 @@ const KEY = Symbol.for("keel.postgres.pglite-modules");
 export function pgliteModules(): Promise<Partial<PgliteModules>> {
   const kept: unknown = Reflect.get(globalThis, KEY);
   if (kept instanceof Promise) return kept;
-  const made = compiledPglite(installedPglite(createRequire(import.meta.url).resolve));
+  const made: Promise<Partial<PgliteModules>> = forgetting(
+    () => compiledPglite(installedPglite(createRequire(import.meta.url).resolve)),
+    () => {
+      if (Reflect.get(globalThis, KEY) === made) Reflect.deleteProperty(globalThis, KEY);
+    },
+  );
   Reflect.set(globalThis, KEY, made);
-  void attempt(() => made).then((r) => {
-    if (!r.ok && Reflect.get(globalThis, KEY) === made) Reflect.deleteProperty(globalThis, KEY);
-  });
   return made;
 }

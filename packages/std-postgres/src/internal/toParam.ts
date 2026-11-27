@@ -17,13 +17,15 @@ function kind(v: unknown): string {
 
 /**
  * `v` checked as a JSON value and copied, for the parameter `$position`: a string, finite number, boolean, `null`, an
- * array of these or a plain object. Anything else, at any depth, throws E2457 naming the 1-based position and the
+ * array of these or a plain object. Anything else, at any depth, throws E2457, its `data` the 1-based position and the
  * kind of value, never the value.
  */
 export function toParam(v: unknown, position: number): JsonValue {
   const seen = new Set<object>();
   const fail = (bad: unknown, why?: string): never => {
-    return defect(`parameter $${position} is not a JSON value: ${why ?? kind(bad)}`, "E2457");
+    return defect("std.postgres: a parameter is not a JSON value", "E2457", {
+      data: { position, kind: why ?? kind(bad) },
+    });
   };
   const walk = (x: unknown): JsonValue => {
     if (x === null || typeof x === "string" || typeof x === "boolean") return x;

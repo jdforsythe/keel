@@ -5,6 +5,9 @@ import type { Engine } from "./Engine.ts";
 import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
 import { TypeCache } from "./TypeCache.server.ts";
+import { classify } from "./classify.server.ts";
+import { errors } from "./errors.server.ts";
+import { field } from "./field.server.ts";
 import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
 /** Every column arrives as Postgres's text form; `decodeValue` gives the JSON value, as for PGlite. */
@@ -61,8 +64,12 @@ export function pgEngine(url: string): Engine {
       } finally {
         if (done) client.release(false);
         else {
-          // A connection whose rollback fails is broken: released with `true`, the pool drops it.
-          const rolled = await attempt(() => client.query("rollback"));
+          // A connection whose rollback fails, by the database's answer or the connection's, is broken: released with
+          // `true`, the pool drops it.
+          const rolled = await attempt(
+            () => client.query("rollback"),
+            (x) => (classify(x) !== null || field(x, "severity") !== "" ? errors.unreachable : undefined),
+          );
           client.release(!rolled.ok);
         }
       }

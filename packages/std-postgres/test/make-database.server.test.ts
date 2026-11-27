@@ -1,7 +1,7 @@
 // Seed 1337. The database object over a scripted engine: which engine call a statement takes, savepoints, reruns,
 // the errors a driver throws as answers, type reloads, the plan's steps, and the changes a committed run delivers.
 import { createCtx } from "@keel/ctx";
-import { err, ok, s } from "@keel/schema";
+import { err, isDefect, ok, s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import fc from "fast-check";
 import { expect, test, vi } from "vitest";
@@ -99,10 +99,13 @@ function scripted(answer: Answer, opts: { pooled?: boolean; txThrows?: (attempt:
   return { log, committed, types, backend };
 }
 
+const NO = { code: "t.no", message: "no", data: null };
+const MINE = { code: "t.mine", message: "mine", data: null };
+
 const channel = {
   name: "list",
   params: {
-    parse: (input: unknown) => (typeof input === "object" && input !== null ? ok({}) : err("no")),
+    parse: (input: unknown) => (typeof input === "object" && input !== null ? ok({}) : err(NO)),
     encode: (value: unknown) => value,
   },
 };
@@ -111,9 +114,9 @@ test("allow picks the level; another allow or a missing, blank or non-string rea
   const x = scripted(() => none);
   const db = makeDatabase("t.db", x.backend);
   const fn = async () => ok(null);
-  void (await db.transaction(fn));
-  void (await db.transaction(fn, { allow: "write skew", reason: "one row" }));
-  void (await db.transaction(fn, { allow: "lost updates", reason: "a counter" }));
+  expect((await db.transaction(fn)).ok).toBe(true);
+  expect((await db.transaction(fn, { allow: "write skew", reason: "one row" })).ok).toBe(true);
+  expect((await db.transaction(fn, { allow: "lost updates", reason: "a counter" })).ok).toBe(true);
   expect(x.log.filter((l) => l.startsWith("tx "))).toEqual([
     "tx serializable",
     "tx repeatable read",
@@ -165,11 +168,17 @@ test("run's statement that returns rows is postgres.result naming each column, o
   expect(await makeDatabase("t.db", counted.backend).transaction((tx) => tx.run(q))).toEqual(ok(3));
 });
 
-test("one() of more rows than one throws naming the count; none is keel.notFound", async () => {
+test("one() of more rows than one throws, its data the count; none is keel.notFound", async () => {
   const two = scripted(() => rows([1, "a"], [2, "b"]));
-  await expect(makeDatabase("t.db", two.backend).one(sql(Row)`select 1`)).rejects.toThrow(
-    "std.postgres: one() got 2 rows",
-  );
+  const thrown = await makeDatabase("t.db", two.backend)
+    .one(sql(Row)`select 1`)
+    .then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+  expect(isDefect(thrown)).toBe(true);
+  expect(thrown instanceof Error && thrown.message).toBe("std.postgres: one() got more than one row");
+  expect(Reflect.get(Object(thrown), "data")).toEqual({ rows: 2 });
   const zero = scripted(() => rows());
   expect(await makeDatabase("t.db", zero.backend).one(sql(Row)`select 1`)).toEqual(
     err({ code: "keel.notFound", message: "No row matched", data: null }),
@@ -193,7 +202,7 @@ test("a type the cache has not seen is read again: in a read committed transacti
   expect(lone.log).toEqual(["s select v", "tx read committed", `q ${LOAD}`, "rollback"]);
   expect(lone.types.known.has(NEW_OID)).toBe(true);
   const inTx = scripted(() => fresh);
-  void (await makeDatabase("t.db", inTx.backend).transaction((tx) => tx.query(sql(V)`select v`)));
+  expect((await makeDatabase("t.db", inTx.backend).transaction((tx) => tx.query(sql(V)`select v`))).ok).toBe(true);
   expect(inTx.log).toEqual([
     "tx serializable",
     "prelude",
@@ -204,10 +213,10 @@ test("a type the cache has not seen is read again: in a read committed transacti
     "commit",
   ]);
   const unpooled = scripted(() => fresh, { pooled: false });
-  void (await makeDatabase("t.db", unpooled.backend).query(sql(V)`select v`));
+  expect((await makeDatabase("t.db", unpooled.backend).query(sql(V)`select v`)).ok).toBe(true);
   expect(unpooled.log).toEqual(["tx serializable", "prelude", "q select v", `q ${LOAD}`, "commit"]);
   const known = scripted(() => rows([1, "a"]));
-  void (await makeDatabase("t.db", known.backend).query(sql(Row)`select a`));
+  expect((await makeDatabase("t.db", known.backend).query(sql(Row)`select a`)).ok).toBe(true);
   expect(known.log).toEqual(["s select a"]);
 });
 
@@ -222,7 +231,15 @@ test("a lone statement reruns on a serialization failure or deadlock, at most 3 
       expect(r).toEqual(
         fails < 3
           ? ok([{ id: 1, name: "a" }])
-          : err({ code: "keel.conflict", message: expect.any(String), data: null }),
+          : {
+              ok: false,
+              error: {
+                code: "keel.conflict",
+                message: "A concurrent write got there first",
+                data: null,
+                cause: { code: "postgres.database", message: expect.any(String), data: { sqlstate: code } },
+              },
+            },
       );
       expect(x.log.length).toBe(Math.min(fails + 1, 3));
     }),
@@ -276,9 +293,9 @@ test("a planned conflict on a run whose fn fails returns that failure; one whose
   let runs = 0;
   const failing = await makeDatabase("t.db", x.backend, plan(1)).transaction(async () => {
     runs += 1;
-    return err("mine");
+    return err(MINE);
   });
-  expect(failing).toEqual(err("mine"));
+  expect(failing).toEqual(err(MINE));
   expect(runs).toBe(1);
   const serial = scripted(() => none, { txThrows: (n) => (n === 1 ? pgError("40001") : undefined) });
   expect(await makeDatabase("t.db", serial.backend, plan(1)).transaction(async () => ok(2))).toEqual(ok(2));
@@ -289,7 +306,16 @@ test("engine.tx throwing: a serialization failure reruns, a lost connection is u
   expect(await makeDatabase("t.db", once.backend).transaction(async () => ok("done"))).toEqual(ok("done"));
   const always = scripted(() => none, { txThrows: () => pgError("40001") });
   expect(await makeDatabase("t.db", always.backend).transaction(async () => ok("done"))).toEqual(
-    err({ code: "keel.conflict", message: "A concurrent write got there first", data: null }),
+    err({
+      code: "keel.conflict",
+      message: "A concurrent write got there first",
+      data: null,
+      cause: {
+        code: "postgres.database",
+        message: "The database ran the statement into a conflict",
+        data: { sqlstate: "40001" },
+      },
+    }),
   );
   expect(always.log).toEqual(["tx serializable", "tx serializable", "tx serializable"]);
   const lost = scripted(() => none, { txThrows: () => pgError("57P01") });
@@ -310,9 +336,18 @@ test("engine.tx throwing: a serialization failure reruns, a lost connection is u
     err({ code: "postgres.database", message: "The database refused the statement", data: { sqlstate: "22012" } }),
   );
   const other = scripted(() => none, { txThrows: () => pgError("42P01") });
-  await expect(makeDatabase("t.db", other.backend).transaction(async () => ok("done"))).rejects.toThrow(
-    "E2461 std.postgres: the database answered SQLSTATE 42P01",
+  const thrown = await makeDatabase("t.db", other.backend)
+    .transaction(async () => ok("done"))
+    .then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+  expect(isDefect(thrown, "E2461")).toBe(true);
+  expect(thrown instanceof Error && thrown.message).toBe(
+    "E2461 std.postgres: the database answered an SQLSTATE no error takes",
   );
+  expect(Reflect.get(Object(thrown), "data")).toEqual({ sqlstate: "42P01" });
+  expect(String(thrown)).not.toContain("driver");
 });
 
 test("inside a transaction each statement has a savepoint; a conflict rolls back to it and the run reruns, a lost connection ends the run", async () => {
@@ -357,10 +392,14 @@ test("inside a transaction each statement has a savepoint; a conflict rolls back
   const unique = scripted(() => {
     throw pgError("23505", { constraint: "k" });
   });
-  void (await makeDatabase("t.db", unique.backend).transaction(async (tx) => {
-    void (await tx.run(sql(NoRows)`insert a`));
-    return ok(null);
-  }));
+  expect(
+    (
+      await makeDatabase("t.db", unique.backend).transaction(async (tx) => {
+        expect((await tx.run(sql(NoRows)`insert a`)).ok).toBe(false);
+        return ok(null);
+      })
+    ).ok,
+  ).toBe(true);
   expect(unique.log).toEqual([
     "tx serializable",
     "prelude",
@@ -381,16 +420,24 @@ test("changed notifies inside the run and is delivered once it commits; a run wi
   expect(x.committed).toEqual([[text]]);
   expect(x.log).toContain("q select pg_notify('keel_changes', $1)");
   const inside = scripted(() => none);
-  void (await makeDatabase("t.db", inside.backend).transaction(async (tx) => {
-    void (await tx.changed(channel, {}));
-    return ok(null);
-  }));
+  expect(
+    (
+      await makeDatabase("t.db", inside.backend).transaction(async (tx) => {
+        expect((await tx.changed(channel, {})).ok).toBe(true);
+        return ok(null);
+      })
+    ).ok,
+  ).toBe(true);
   expect(inside.committed).toEqual([[text]]);
   const failed = scripted(() => none);
-  void (await makeDatabase("t.db", failed.backend).transaction(async (tx) => {
-    void (await tx.changed(channel, {}));
-    return err("no");
-  }));
+  expect(
+    (
+      await makeDatabase("t.db", failed.backend).transaction(async (tx) => {
+        expect((await tx.changed(channel, {})).ok).toBe(true);
+        return err(NO);
+      })
+    ).ok,
+  ).toBe(false);
   expect(failed.committed).toEqual([]);
   const lost = scripted(() => {
     throw pgError("08006");

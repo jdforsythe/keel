@@ -1,6 +1,6 @@
 import type { Clock } from "@keel/ctx";
 import { attempt, defect, err, ok } from "@keel/schema";
-import type { Result } from "@keel/schema";
+import type { KeelError, Result } from "@keel/schema";
 import type { Conflict } from "../../Conflict.ts";
 import type { ConstraintError } from "../../ConstraintError.ts";
 import type { DatabaseError } from "../../DatabaseError.ts";
@@ -26,7 +26,10 @@ import type { ValueOf } from "./ValueOf.ts";
 import { answered } from "./answered.server.ts";
 import { changeText } from "./changeText.server.ts";
 import { classify } from "./classify.server.ts";
+import { conflictOf } from "./conflictOf.server.ts";
+import { databaseError } from "./databaseError.schema.ts";
 import { errors } from "./errors.server.ts";
+import { isRerun } from "./isRerun.server.ts";
 import { payloadOf } from "./payloadOf.server.ts";
 import { rowsOf } from "./rowsOf.server.ts";
 import { toText } from "./toText.server.ts";
@@ -44,8 +47,14 @@ type Plan = { readonly steps: readonly Step[]; readonly clock: Clock };
 
 const paramsOf = (q: Query<unknown>): (string | null)[] => q.params.map(toText);
 
-/** One run of a transaction's `fn`: whether it must run again or lost its connection, and the changes it recorded. */
-type RunState = { serial: boolean; lost: boolean; readonly changes: Set<string> };
+/** A plan step `conflict` (sim): the serialization failure it stands for. */
+const PLANNED = databaseError.make({ sqlstate: "40001" }, "The database ran the statement into a conflict");
+
+/**
+ * One run of a transaction's `fn`: the serialization failure or deadlock that makes it run again, whether it lost its
+ * connection, and the changes it recorded.
+ */
+type RunState = { serial: DatabaseError | null; lost: boolean; readonly changes: Set<string> };
 
 /** A run's `tx` and, for the database object's own `changed`, the notify of a payload already checked. */
 type Run = Tx & { notify(text: string): Promise<Result<null, StatementError>> };
@@ -54,7 +63,8 @@ type Run = Tx & { notify(text: string): Promise<Result<null, StatementError>> };
 function levelOf(opts: TransactionOptions | undefined): Level {
   if (opts?.allow === undefined) return "serializable";
   const level = LEVELS.get(opts.allow);
-  if (level === undefined) return defect("std.postgres: transaction allow is not one it takes");
+  if (level === undefined)
+    return defect("std.postgres: transaction allow is not one it takes", { data: { allow: opts.allow } });
   if (typeof opts.reason !== "string" || opts.reason.trim() === "")
     return defect("std.postgres: transaction allow needs a reason");
   return level;
@@ -118,12 +128,12 @@ async function known(raw: Raw, engine: Engine, c: Conn | null): Promise<void> {
 export function makeDatabase(name: string, backend: Backend, plan?: Plan): Database {
   let taken = 0;
   /** Takes a plan step: waits its delay, then answers its fault, `null` for none. */
-  const gate = async (): Promise<Unreachable | Conflict | null> => {
+  const gate = async (): Promise<Unreachable | DatabaseError | null> => {
     if (plan === undefined) return null;
     const step = plan.steps[taken] ?? NONE;
     taken += 1;
     if (step.delay > 0) await plan.clock.after(step.delay);
-    return step.fault === "unavailable" ? errors.unreachable : step.fault === "conflict" ? errors.conflict : null;
+    return step.fault === "unavailable" ? errors.unreachable : step.fault === "conflict" ? PLANNED : null;
   };
 
   /**
@@ -134,27 +144,30 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
   const statement = async (q: Query<unknown>): Promise<{ raw: Raw; engine: Engine } | StatementError> => {
     for (let n = 1; ; n++) {
       const stop = await gate();
-      if (stop === errors.unreachable) return stop;
+      if (stop?.code === "keel.unreachable") return stop;
       const engine = await ready(backend);
       if (!("tx" in engine)) return engine;
-      const forced = stop !== null;
+      const forced = stop;
       const s = await attempt(async () => {
         const raw =
-          backend.pooled && !forced
+          backend.pooled && forced === null
             ? await engine.statement(q.text, paramsOf(q))
             : await engine.tx("serializable", async (c) => {
                 await backend.prelude(c);
                 const r = await c.query(q.text, paramsOf(q));
                 await known(r, engine, c);
-                return { value: r, commit: !forced };
+                return { value: r, commit: forced === null };
               });
-        if (!forced) await known(raw, engine, null);
+        if (forced === null) await known(raw, engine, null);
         return raw;
       }, answered);
+      let cause: DatabaseError;
       if (!s.ok) {
-        if (s.error.code !== "keel.conflict") return s.error;
-      } else if (!forced) return { raw: s.value, engine };
-      if (n >= RUNS) return errors.conflict;
+        if (s.error.code !== "postgres.database" || !isRerun(s.error)) return s.error;
+        cause = s.error;
+      } else if (forced === null) return { raw: s.value, engine };
+      else cause = forced;
+      if (n >= RUNS) return conflictOf(cause);
     }
   };
 
@@ -170,52 +183,54 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
   };
 
   /** `fn` at the level `opts` gives (serializable without), rerun on a serialization failure, as the API says. */
-  function transaction<R extends Result<unknown, unknown>>(
+  function transaction<R extends Result<unknown, KeelError<string, unknown>>>(
     fn: (tx: Tx) => Promise<R>,
     opts?: TransactionOptions,
   ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | DatabaseError | Unreachable | Conflict>>;
   async function transaction(
-    fn: (tx: Tx) => Promise<Result<unknown, unknown>>,
+    fn: (tx: Tx) => Promise<Result<unknown, KeelError<string, unknown>>>,
     opts?: TransactionOptions,
-  ): Promise<Result<unknown, unknown>> {
+  ): Promise<Result<unknown, KeelError<string, unknown>>> {
     return runs(levelOf(opts), fn);
   }
 
   /** `fn` in transaction runs at `level`, as `transaction` says; the committed run's changes are delivered after. */
-  function runs<R extends Result<unknown, unknown>>(
+  function runs<R extends Result<unknown, KeelError<string, unknown>>>(
     level: Level,
     fn: (run: Run) => Promise<R>,
   ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | DatabaseError | Unreachable | Conflict>>;
   async function runs(
     level: Level,
-    fn: (run: Run) => Promise<Result<unknown, unknown>>,
-  ): Promise<Result<unknown, unknown>> {
+    fn: (run: Run) => Promise<Result<unknown, KeelError<string, unknown>>>,
+  ): Promise<Result<unknown, KeelError<string, unknown>>> {
     for (let n = 1; ; n++) {
       const stop = await gate();
-      if (stop === errors.unreachable) return err(errors.unreachable);
+      if (stop?.code === "keel.unreachable") return err(stop);
       const engine = await ready(backend);
       if (!("tx" in engine)) return err(engine);
       // A plan step `conflict` lets the run's statements run, then fails it as a serialization failure at its commit.
-      const forced = stop !== null;
-      const state: RunState = { serial: false, lost: false, changes: new Set() };
+      const forced = stop;
+      const state: RunState = { serial: null, lost: false, changes: new Set() };
+      // `fn`'s answer travels wrapped, so `attempt` takes it as the run's value, never as its own `Result`.
       const s = await attempt(
         () =>
           engine.tx(level, async (c) => {
             await backend.prelude(c);
             const r = await fn(txOf(name, c, engine, state));
-            return { value: r, commit: r.ok && !forced && !state.serial && !state.lost };
+            return { value: { r }, commit: r.ok && forced === null && state.serial === null && !state.lost };
           }),
         answered,
       );
-      const outcome: Result<unknown, unknown> | undefined = s.ok ? s.value : undefined;
+      const outcome = s.ok ? s.value.r : undefined;
       if (!s.ok) {
-        if (s.error.code === "keel.conflict") state.serial = true;
+        if (s.error.code === "postgres.database" && isRerun(s.error)) state.serial = s.error;
         else if (s.error.code === "keel.unreachable") state.lost = true;
         else return err(s.error);
       }
       if (state.lost) return err(errors.unreachable);
-      if ((forced && outcome?.ok === true) || state.serial || outcome === undefined) {
-        if (n >= RUNS) return err(errors.conflict);
+      const cause = state.serial ?? (forced !== null && outcome?.ok === true ? forced : null);
+      if (cause !== null || outcome === undefined) {
+        if (n >= RUNS) return err(conflictOf(cause ?? PLANNED));
         continue;
       }
       if (outcome.ok && state.changes.size > 0) backend.changes().committed([...state.changes]);
@@ -239,7 +254,8 @@ export function makeDatabase(name: string, backend: Backend, plan?: Plan): Datab
 /** `one`'s answer from `query`'s: the one row, none `keel.notFound`; more than one throws. */
 function onlyRow<T>(r: Result<T[], StatementError>): Result<T, StatementError | NotFound> {
   if (!r.ok) return r;
-  if (r.value.length > 1) return defect(`std.postgres: one() got ${r.value.length} rows`);
+  if (r.value.length > 1)
+    return defect("std.postgres: one() got more than one row", { data: { rows: r.value.length } });
   for (const row of r.value) return ok(row);
   return err(errors.notFound);
 }
@@ -252,7 +268,7 @@ function onlyRow<T>(r: Result<T[], StatementError>): Result<T, StatementError | 
 function txOf(name: string, c: Conn, engine: Engine, state: RunState): Run {
   const stmt = async (q: Query<unknown>): Promise<Raw | StatementError> => {
     if (state.lost) return errors.unreachable;
-    if (state.serial) return errors.conflict;
+    if (state.serial !== null) return conflictOf(state.serial);
     await c.exec("savepoint keel_statement");
     const s = await attempt(async () => {
       const raw = await c.query(q.text, paramsOf(q));
@@ -267,7 +283,10 @@ function txOf(name: string, c: Conn, engine: Engine, state: RunState): Run {
       return a;
     }
     await c.exec("rollback to savepoint keel_statement");
-    if (a === errors.conflict) state.serial = true;
+    if (a.code === "postgres.database" && isRerun(a)) {
+      state.serial = a;
+      return conflictOf(a);
+    }
     return a;
   };
   const query = async <T>(q: Query<T>): Promise<Result<T[], StatementError>> => {

@@ -1,45 +1,44 @@
-import type { Conflict } from "../../Conflict.ts";
 import type { ConstraintError } from "../../ConstraintError.ts";
 import type { DatabaseError } from "../../DatabaseError.ts";
 import type { Unreachable } from "../../Unreachable.ts";
+import { databaseError } from "./databaseError.schema.ts";
 import { errors } from "./errors.server.ts";
 import { field } from "./field.server.ts";
-import { isSerial } from "./isSerial.server.ts";
 
 const KINDS: Readonly<Record<string, ConstraintError["data"]["kind"]>> = {
   "23505": "unique",
+  "23P01": "unique",
   "23503": "foreign",
+  "23001": "foreign",
   "23514": "check",
   "23502": "notNull",
 };
-const LOST = new Set(["57P01", "57P02", "57P03", "53300"]);
-const ACTIONABLE = /^(22|40|53|54|55|57|P0)/;
+/** No answer (std.postgres-errors): each code by itself, class `08` not by its prefix. */
+const LOST = new Set(["08000", "08001", "08003", "08006", "57P01", "57P02", "57P03", "53300"]);
+const RERUNS = new Set(["40001", "40P01"]);
+/** `postgres.database`: classes `22`, `40`, `53`, `54`, `55`, `57` and `P0` (less the codes `LOST` holds) and `08007`. */
+const DATABASE = /^(?:(?:22|40|53|54|55|57|P0)[0-9A-Z]{3}|08007)$/;
 const NET = new Set(["ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "ETIMEDOUT", "EPIPE", "EHOSTUNREACH", "EAI_AGAIN"]);
+const DROPPED =
+  /Connection terminated|connection timeout|timeout exceeded when trying to connect|Client has encountered a connection error/i;
 
 /**
- * A driver error as std.postgres answers it (Errors): a unique, foreign key, check or not-null violation is
- * `postgres.constraint`; a serialization failure or deadlock `keel.conflict`; a refused or lost connection
- * `keel.unreachable`; a database error of class `22`, `40`, `53`, `54`, `55`, `57` or `P0` `postgres.database` holding
- * its SQLSTATE only; anything else `null`, for `unexpected` to throw.
+ * A driver error as std.postgres-errors answers it: class `23` is `postgres.constraint`; a refused, reset or lost
+ * connection, `57P01` to `57P03`, `53300`, `08000`, `08001`, `08003` and `08006` are `keel.unreachable`; `40001` and
+ * `40P01` (run again by the caller), `08007` and a database error of class `22`, `40`, `53`, `54`, `55`, `57` or `P0`
+ * are `postgres.database` holding the SQLSTATE only; anything else `null`, for `unexpected` to decide.
  */
-export function classify(e: unknown): ConstraintError | DatabaseError | Unreachable | Conflict | null {
+export function classify(e: unknown): ConstraintError | DatabaseError | Unreachable | null {
   const code = field(e, "code");
-  const kind = KINDS[code];
-  if (kind !== undefined) {
+  if (code.startsWith("23")) {
     const constraint = field(e, "constraint") || field(e, "column");
+    const kind = KINDS[code] ?? "check";
     return { code: "postgres.constraint", message: "A row breaks a constraint", data: { constraint, kind } };
   }
-  if (isSerial(e)) return errors.conflict;
-  if (code.startsWith("08") || LOST.has(code) || NET.has(code)) return errors.unreachable;
-  const message = e instanceof Error ? e.message : "";
-  if (
-    code === "" &&
-    /Connection terminated|connection timeout|timeout exceeded when trying to connect|Client has encountered a connection error/i.test(
-      message,
-    )
-  )
-    return errors.unreachable;
-  if (field(e, "severity") !== "" && code.length === 5 && ACTIONABLE.test(code))
-    return { code: "postgres.database", message: "The database refused the statement", data: { sqlstate: code } };
+  if (RERUNS.has(code)) return databaseError.make({ sqlstate: code }, "The database ran the statement into a conflict");
+  if (LOST.has(code) || NET.has(code)) return errors.unreachable;
+  if (code === "" && e instanceof Error && DROPPED.test(e.message)) return errors.unreachable;
+  if (field(e, "severity") !== "" && DATABASE.test(code))
+    return databaseError.make({ sqlstate: code }, "The database refused the statement");
   return null;
 }
