@@ -41,9 +41,9 @@ export default function TodoList(props: Infer<typeof Props>) {
 - No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757), whose reason, 8 words or more, says why the escape holds (E1760). A claim that a call must not compile is a negative type test: `test/<name>.test-d.ts`, each `// @ts-expect-error <what must not compile>` one claim, imported by nothing (E1761); no `@keel/*` import with an `internal` segment (E1576). Import a `modules/` file by a relative path (E1013); code outside the project is a workspace package, never a relative path out of it (E1015).
 - A format value written in source (a store's initial value, a fixture) is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`), E1108 when it does not parse.
 
-**Commands.** `keel check` (E1005 on `.keel/` files after an edit until `keel build` runs) · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|component|store|service <name>` · `keel scaffold route <module>.<name>` (`app.about` is `/about`; `--path` sets one; a loader on a `node` deployable or with `--loader`) · `keel codemod rename|move|place`, preferred to hand edits.
+**Commands.** `keel check` (E1005 on edited `.keel/` until `keel build`) · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` (`route app.about`: `/about`) · `keel codemod rename|move|place` over hand edits.
 
-**Libraries.** A module lists a library in `deps` by scoped name (`'@acme/charts'`); `keel check` checks its files as the app's; to write one: keel-library.
+**Libraries.** A module lists one in `deps` by scoped name (`'@acme/charts'`); `keel check` checks it as the app's; to write one: keel-library.
 
 **Skills.** An example's block holds several exports; in an app each is a file.
 - keel-client: components, pages, forms, action redirects (`ok(href)`), widgets, tables, text.
