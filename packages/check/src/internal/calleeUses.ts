@@ -1,5 +1,6 @@
 import ts from "typescript";
 import { THROW_MESSAGE } from "./THROW_MESSAGE.ts";
+import { bareExpression } from "./bareExpression.ts";
 import { catchMessage } from "./catchMessage.ts";
 import { expectFindings } from "./expectFindings.ts";
 import { holdsKeelResult } from "./holdsKeelResult.ts";
@@ -132,8 +133,6 @@ type Call = {
   readonly called: boolean;
 };
 
-const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
-
 /** `n` with the parentheses around it. */
 function outer(n: ts.Node): ts.Node {
   let at = n;
@@ -157,7 +156,7 @@ function asFunction(n: ts.Node): ts.FunctionLikeDeclaration | undefined {
 
 /** Whether `opts` may make a detached scope: not an object literal, or a `detached` other than `false` (E1207). */
 function mayDetach(opts: ts.Expression): boolean {
-  const o = bare(opts);
+  const o = bareExpression(opts);
   if (!ts.isObjectLiteralExpression(o)) return true;
   for (const p of o.properties) {
     if (ts.isSpreadAssignment(p)) return true;
@@ -244,16 +243,16 @@ export function calleeUses(
   };
 
   const isReflectApply = (e: ts.Expression): boolean => {
-    const c = bare(e);
+    const c = bareExpression(e);
     if (memberName(c) !== "apply" || !(ts.isPropertyAccessExpression(c) || ts.isElementAccessExpression(c)))
       return false;
-    const o = bare(c.expression);
+    const o = bareExpression(c.expression);
     return ts.isIdentifier(o) && o.text === "Reflect" && fromLib(checker.getSymbolAtLocation(o));
   };
 
   const spread = (call: ts.CallExpression, value: ts.Expression | undefined): Call => {
     if (value === undefined) return { call, args: [], called: true };
-    const v = bare(value);
+    const v = bareExpression(value);
     return ts.isArrayLiteralExpression(v)
       ? { call, args: v.elements, holder: v, called: true }
       : { call, unread: value, called: true };
@@ -284,10 +283,10 @@ export function calleeUses(
 
   /** Whether `e` names a function as a name does: an identifier, or a member of a namespace import. */
   const nameLike = (e: ts.Expression): boolean => {
-    const b = bare(e);
+    const b = bareExpression(e);
     if (ts.isIdentifier(b)) return true;
     if (!(ts.isPropertyAccessExpression(b) || ts.isElementAccessExpression(b))) return false;
-    const o = bare(b.expression);
+    const o = bareExpression(b.expression);
     const sym = ts.isIdentifier(o) ? checker.getSymbolAtLocation(o) : undefined;
     return sym !== undefined && (resolved(sym).flags & ts.SymbolFlags.Module) !== 0;
   };
@@ -345,7 +344,7 @@ export function calleeUses(
     const decl = sym?.valueDeclaration;
     if (decl === undefined || !ts.isVariableDeclaration(decl) || decl.initializer === undefined) return undefined;
     if (aliasDecl(decl.initializer) !== decl || !isAlias(decl, 0)) return undefined;
-    const init = bare(decl.initializer);
+    const init = bareExpression(decl.initializer);
     return ownTarget(init) ?? (ts.isIdentifier(init) ? aliasTarget(init, depth + 1) : undefined);
   };
 
@@ -370,7 +369,7 @@ export function calleeUses(
     const o = outer(fn);
     const p = o.parent;
     if (!ts.isCallExpression(p) || !p.arguments.some((a) => a === o)) return false;
-    const c = bare(p.expression);
+    const c = bareExpression(p.expression);
     return (ts.isIdentifier(c) && c.text === "run") || memberName(c) === "run";
   };
 
@@ -405,14 +404,14 @@ export function calleeUses(
   const sameHome = (f: ts.SourceFile): boolean =>
     !f.fileName.includes("/node_modules/") || ownerOf(f.fileName) === ownerOf(sf.fileName);
   const made = (call: ts.CallExpression): "make" | "causedBy" | undefined => {
-    const t = ownTarget(bare(call.expression));
+    const t = ownTarget(bareExpression(call.expression));
     return t === "make" || t === "causedBy" ? t : undefined;
   };
 
   /** The string `e` folds to: a literal, a template without substitution, a `const` bound to one, `+` of those. */
   const folded = (e: ts.Expression, depth: number): string | undefined => {
     if (depth > 8) return undefined;
-    const b = bare(e);
+    const b = bareExpression(e);
     if (ts.isStringLiteral(b) || ts.isNoSubstitutionTemplateLiteral(b)) return b.text;
     if (ts.isBinaryExpression(b) && b.operatorToken.kind === ts.SyntaxKind.PlusToken) {
       const l = folded(b.left, depth + 1);
@@ -463,7 +462,12 @@ export function calleeUses(
         add("E1766", use.call, KEEL_SYMBOL, "k.realm");
     } else if (target === "ownSymbols" || target === "ownKeys") {
       const held = args[0];
-      if (!kernel && held !== undefined && ts.isIdentifier(bare(held)) && GLOBAL_OBJECT.has(bare(held).getText(sf)))
+      if (
+        !kernel &&
+        held !== undefined &&
+        ts.isIdentifier(bareExpression(held)) &&
+        GLOBAL_OBJECT.has(bareExpression(held).getText(sf))
+      )
         add("E1766", use.call, KEEL_SYMBOL, "k.realm");
     } else if (target === "attempt") {
       const expect = args[1];
@@ -497,9 +501,9 @@ export function calleeUses(
         const [message, second, third] = args;
         if (message !== undefined && !ts.isStringLiteral(message) && !ts.isNoSubstitutionTemplateLiteral(message))
           add("E1455", message, NOT_TEXT, "k.errors");
-        if (second !== undefined && !ts.isObjectLiteralExpression(bare(second))) {
+        if (second !== undefined && !ts.isObjectLiteralExpression(bareExpression(second))) {
           if (!(ts.isStringLiteral(second) && CODE.test(second.text))) add("E1455", second, NOT_LITERAL, "k.errors");
-          if (third !== undefined && !ts.isSpreadElement(third) && !ts.isObjectLiteralExpression(bare(third)))
+          if (third !== undefined && !ts.isSpreadElement(third) && !ts.isObjectLiteralExpression(bareExpression(third)))
             add("E1455", third, NOT_DETAIL, "k.errors");
         }
       }

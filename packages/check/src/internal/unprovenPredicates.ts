@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { bareExpression } from "./bareExpression.ts";
 
 /** What a claimed type holds that the body does not prove (k.identity Rules), in the rule's order. */
 type What = `property ${string}` | "a call signature" | "a type parameter" | "a type argument" | "its whole type";
@@ -18,8 +19,6 @@ const PACKAGE_DIR = /[\\/]packages[\\/]([^\\/]+)[\\/]/;
 const SET_METHODS = new Set(["has", "add", "delete"]);
 const OPEN = ts.TypeFlags.Any | ts.TypeFlags.Unknown;
 
-const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
-
 /** `e` when it is a binary expression of `op`, else `undefined`. */
 const opOf = (e: ts.Expression, op: ts.SyntaxKind): ts.BinaryExpression | undefined =>
   ts.isBinaryExpression(e) && e.operatorToken.kind === op ? e : undefined;
@@ -32,7 +31,7 @@ const sides = (e: ts.BinaryExpression): readonly (readonly [ts.Expression, ts.Ex
 
 /** The operands of an `op` chain (`&&` or `||`), parentheses aside. */
 function chainOf(e: ts.Expression, op: ts.SyntaxKind): ts.Expression[] {
-  const b = bare(e);
+  const b = bareExpression(e);
   const o = opOf(b, op);
   return o === undefined ? [b] : [...chainOf(o.left, op), ...chainOf(o.right, op)];
 }
@@ -58,7 +57,7 @@ function isDefectStatement(s: ts.Statement): boolean {
     return s.statements.length === 1 && only !== undefined && isDefectStatement(only);
   }
   if (!ts.isExpressionStatement(s)) return false;
-  const c = bare(s.expression);
+  const c = bareExpression(s.expression);
   return ts.isCallExpression(c) && ts.isIdentifier(c.expression) && c.expression.text === "defect";
 }
 
@@ -72,7 +71,7 @@ function proofOf(fn: ts.FunctionLikeDeclaration, asserts: boolean): ts.Expressio
   if (!asserts) return ts.isReturnStatement(only) ? only.expression : undefined;
   if (!ts.isIfStatement(only) || only.elseStatement !== undefined || !isDefectStatement(only.thenStatement))
     return undefined;
-  const cond = bare(only.expression);
+  const cond = bareExpression(only.expression);
   return ts.isPrefixUnaryExpression(cond) && cond.operator === ts.SyntaxKind.ExclamationToken
     ? cond.operand
     : undefined;
@@ -80,13 +79,13 @@ function proofOf(fn: ts.FunctionLikeDeclaration, asserts: boolean): ts.Expressio
 
 /** The string of a string literal or a template with no substitution, else `undefined`. */
 const textOf = (e: ts.Expression | undefined): string | undefined => {
-  const b = e === undefined ? undefined : bare(e);
+  const b = e === undefined ? undefined : bareExpression(e);
   return b !== undefined && ts.isStringLiteralLike(b) ? b.text : undefined;
 };
 
 /** Whether `e` is `Reflect.get`, `Object.hasOwn` and the like: `<object>.<member>`. */
 const isMember = (e: ts.Expression, object: string, member: string): boolean => {
-  const b = bare(e);
+  const b = bareExpression(e);
   return (
     ts.isPropertyAccessExpression(b) &&
     ts.isIdentifier(b.expression) &&
@@ -230,7 +229,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
   const ownSetMemo = new Map<ts.Symbol, readonly ts.Expression[] | undefined>();
   /** The `add` arguments of `b` when it names its file's own module-level `WeakSet` (proof 3), else `undefined`. */
   const ownSet = (b: ts.Expression, file: ts.SourceFile): readonly ts.Expression[] | undefined => {
-    const id = bare(b);
+    const id = bareExpression(b);
     const sym = ts.isIdentifier(id) ? checker.getSymbolAtLocation(id) : undefined;
     if (sym === undefined) return undefined;
     if (ownSetMemo.has(sym)) return ownSetMemo.get(sym);
@@ -245,7 +244,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
     const st = decl.parent.parent;
     if (!ts.isVariableStatement(st) || st.parent !== file) return undefined;
     if ((st.modifiers ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) return undefined;
-    const init = decl.initializer === undefined ? undefined : bare(decl.initializer);
+    const init = decl.initializer === undefined ? undefined : bareExpression(decl.initializer);
     const builtInSet =
       init !== undefined &&
       ts.isNewExpression(init) &&
@@ -295,7 +294,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
 
     /** The path of `e` from the subject (`""`, `.a`, `.a.b`), through `.p`, `['p']` and `Reflect.get(v, 'p')`. */
     const subjectOf = (e: ts.Expression): string | undefined => {
-      const b = bare(e);
+      const b = bareExpression(e);
       if (root.kind === "this" && b.kind === ts.SyntaxKind.ThisKeyword) return "";
       if (ts.isIdentifier(b))
         return root.kind === "param" && root.sym !== undefined && checker.getSymbolAtLocation(b) === root.sym
@@ -325,7 +324,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       const eq = opOf(e, ts.SyntaxKind.EqualsEqualsEqualsToken) ?? opOf(e, ts.SyntaxKind.EqualsEqualsToken);
       if (eq === undefined) return undefined;
       for (const [a, k] of sides(eq)) {
-        const ta = bare(a);
+        const ta = bareExpression(a);
         const kind = textOf(k);
         if (ts.isTypeOfExpression(ta) && kind !== undefined && on(ta.expression, s)) return kind;
       }
@@ -336,7 +335,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       const eq = opOf(e, ts.SyntaxKind.EqualsEqualsEqualsToken);
       if (eq === undefined) return undefined;
       for (const [a, l] of sides(eq)) {
-        const lit = bare(l);
+        const lit = bareExpression(l);
         const isLit =
           ts.isStringLiteralLike(lit) ||
           ts.isNumericLiteral(lit) ||
@@ -353,14 +352,17 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       return undefined;
     };
     const isUndefinedCheck = (e: ts.Expression, s: string): boolean => {
-      const lit = literalOf(bare(e), s);
+      const lit = literalOf(bareExpression(e), s);
       return (
-        typeofOf(bare(e), s) === "undefined" || (lit !== undefined && ts.isIdentifier(lit) && lit.text === "undefined")
+        typeofOf(bareExpression(e), s) === "undefined" ||
+        (lit !== undefined && ts.isIdentifier(lit) && lit.text === "undefined")
       );
     };
     const isNotNull = (e: ts.Expression, s: string): boolean => {
       const ne = opOf(e, ts.SyntaxKind.ExclamationEqualsEqualsToken) ?? opOf(e, ts.SyntaxKind.ExclamationEqualsToken);
-      return ne !== undefined && sides(ne).some(([a, n]) => on(a, s) && bare(n).kind === ts.SyntaxKind.NullKeyword);
+      return (
+        ne !== undefined && sides(ne).some(([a, n]) => on(a, s) && bareExpression(n).kind === ts.SyntaxKind.NullKeyword)
+      );
     };
     /** `'p' in <base>` or `Object.hasOwn(<base>, 'p')` for the path `sub`. */
     const isKeyed = (e: ts.Expression, sub: string): boolean => {
@@ -392,7 +394,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
     const classOf = (e: ts.Expression, s: string): ts.Type | undefined => {
       const io = opOf(e, ts.SyntaxKind.InstanceOfKeyword);
       if (io === undefined || !on(io.left, s)) return undefined;
-      const at = checker.getSymbolAtLocation(bare(io.right));
+      const at = checker.getSymbolAtLocation(bareExpression(io.right));
       const sym = at === undefined ? undefined : resolved(at);
       const decls = sym?.declarations ?? [];
       if (sym === undefined) return undefined;
@@ -411,7 +413,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
     };
     /** Whether `e` is a kernel package's record (`records.<name>`, `refusals`), a kernel guard's own proof. */
     const isRecord = (e: ts.Expression): boolean => {
-      const c = bare(e);
+      const c = bareExpression(e);
       const root = ts.isPropertyAccessExpression(c) ? c.expression : c;
       if (!ts.isIdentifier(root) || (root.text !== "records" && root.text !== "refusals")) return false;
       const at = checker.getSymbolAtLocation(root);
@@ -419,14 +421,14 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       return decls.some((d) => RECORD_FILE.test(d.getSourceFile().fileName));
     };
     const classMismatch = (c: ts.Expression, t: ts.Type): boolean => {
-      const k = classOf(bare(c), "");
+      const k = classOf(bareExpression(c), "");
       const ks = k?.getSymbol();
       return ks !== undefined && members(t).some((m) => m.getSymbol() === ks);
     };
 
     /** Whether the predicate `q` (given to `every`) proves `elem` of each element. */
     const elementProof = (q: ts.Expression, elem: ts.Type): boolean => {
-      const b = bare(q);
+      const b = bareExpression(q);
       if (ts.isArrowFunction(b) || ts.isFunctionExpression(b)) {
         const [first] = b.parameters;
         const sym = first === undefined ? undefined : checker.getSymbolAtLocation(first.name);
@@ -444,7 +446,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
 
     /** Whether `c` is an accepted predicate's call proving `<s>` an object (no primitive, no `null`). */
     const provesObject = (c: ts.Expression, s: string): boolean => {
-      const e = bare(c);
+      const e = bareExpression(c);
       if (!ts.isCallExpression(e)) return false;
       const rs = checker.getResolvedSignature(e);
       const tp = rs === undefined ? undefined : checker.getTypePredicateOfSignature(rs);
@@ -457,7 +459,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
 
     /** Whether the one conjunct `c` proves `<s>` is `t` (k.identity proofs 1 to 4, and the atoms of 5). */
     const atom = (c: ts.Expression, s: string, t: ts.Type, opt: boolean, rest: readonly ts.Expression[]): boolean => {
-      const e = bare(c);
+      const e = bareExpression(c);
       const sig = holdsSignature(t);
       const par = holdsParam(t);
       if (opOf(e, ts.SyntaxKind.BarBarToken) !== undefined)
@@ -484,7 +486,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
           rs !== undefined
         )
           return accepted(rs.getDeclaration());
-        const callee = bare(e.expression);
+        const callee = bareExpression(e.expression);
         const [arg] = e.arguments;
         if (
           ts.isPropertyAccessExpression(callee) &&
@@ -500,9 +502,9 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
         return false;
       }
       if (ts.isPropertyAccessExpression(e) && e.name.text === "ok" && !sig) {
-        const call = bare(e.expression);
+        const call = bareExpression(e.expression);
         if (!ts.isCallExpression(call) || call.arguments.length !== 1 || !on(call.arguments[0], s)) return false;
-        const callee = bare(call.expression);
+        const callee = bareExpression(call.expression);
         if (!ts.isPropertyAccessExpression(callee) || callee.name.text !== "parse") return false;
         const parse = checker.getSymbolAtLocation(callee.name);
         if (!(parse?.declarations ?? []).some((d) => SCHEMA_FILE.test(d.getSourceFile().fileName))) return false;
@@ -535,7 +537,8 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
         return undefined;
       }
       const object =
-        (conjs.some((c) => typeofOf(bare(c), s) === "object") && conjs.some((c) => isNotNull(bare(c), s))) ||
+        (conjs.some((c) => typeofOf(bareExpression(c), s) === "object") &&
+          conjs.some((c) => isNotNull(bareExpression(c), s))) ||
         conjs.some((c) => provesObject(c, s));
       if ((t.flags & ts.TypeFlags.NonPrimitive) !== 0) return object ? undefined : { prop: undefined };
       if (holdsSignature(t) || holdsParam(t) || (t.flags & ts.TypeFlags.Object) === 0) return { prop: undefined };
@@ -543,13 +546,13 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       if (checker.isArrayType(t)) {
         const elem = checker.getIndexInfosOfType(t)[0]?.type;
         const isArray = conjs.some((c) => {
-          const b = bare(c);
+          const b = bareExpression(c);
           return ts.isCallExpression(b) && isMember(b.expression, "Array", "isArray") && on(b.arguments[0], s);
         });
         if (!isArray || elem === undefined) return { prop: undefined };
         if ((elem.flags & OPEN) !== 0) return undefined;
         const every = conjs.some((c) => {
-          const b = bare(c);
+          const b = bareExpression(c);
           if (!ts.isCallExpression(b) || !ts.isPropertyAccessExpression(b.expression)) return false;
           const [q] = b.arguments;
           return (
@@ -568,7 +571,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
         const pt = checker.getTypeOfSymbol(p);
         const optional = (p.flags & ts.SymbolFlags.Optional) !== 0;
         if ((pt.flags & OPEN) !== 0) {
-          if (!optional && !conjs.some((c) => isKeyed(bare(c), sub))) return { prop: label };
+          if (!optional && !conjs.some((c) => isKeyed(bareExpression(c), sub))) return { prop: label };
           continue;
         }
         const g = chain(conjs, sub, pt, optional);

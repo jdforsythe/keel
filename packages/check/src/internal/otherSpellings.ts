@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { bareExpression } from "./bareExpression.ts";
 
 /** One finding: its code, the node it lies at, its message. */
 type Spelling = { readonly code: "E1452"; readonly at: ts.Node; readonly message: string };
@@ -18,8 +19,6 @@ const PROCESS_EVENTS: ReadonlySet<string> = new Set([
 
 const ADD: ReadonlySet<string> = new Set(["addEventListener"]);
 const PROCESS: ReadonlySet<string> = new Set(["process"]);
-
-const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
 
 /**
  * The catches k.unsafe Other spellings reports in the type pass, E1452 each: a binding pattern taking `then`, `catch`
@@ -44,7 +43,7 @@ export function otherSpellings(sf: ts.SourceFile, checker: ts.TypeChecker, progr
   };
   /** Whether identifier `id` names a global: every declaration of it is in a declaration file, or it has none. */
   const isGlobal = (id: ts.Expression, names: ReadonlySet<string>): boolean => {
-    const b = bare(id);
+    const b = bareExpression(id);
     if (!ts.isIdentifier(b) || !names.has(b.text)) return false;
     const sym = checker.getSymbolAtLocation(b);
     return (sym?.declarations ?? []).every((d) => d.getSourceFile().isDeclarationFile);
@@ -52,14 +51,14 @@ export function otherSpellings(sf: ts.SourceFile, checker: ts.TypeChecker, progr
   const literalIn = (e: ts.Expression | undefined, set: ReadonlySet<string>): boolean =>
     e !== undefined && ts.isStringLiteralLike(e) && set.has(e.text);
   const memberName = (e: ts.Expression): string | undefined => {
-    const b = bare(e);
+    const b = bareExpression(e);
     if (ts.isPropertyAccessExpression(b)) return b.name.text;
     if (ts.isElementAccessExpression(b) && ts.isStringLiteralLike(b.argumentExpression))
       return b.argumentExpression.text;
     return undefined;
   };
   const holderOf = (e: ts.Expression): ts.Expression | undefined => {
-    const b = bare(e);
+    const b = bareExpression(e);
     return ts.isPropertyAccessExpression(b) || ts.isElementAccessExpression(b) ? b.expression : undefined;
   };
 
@@ -72,7 +71,7 @@ export function otherSpellings(sf: ts.SourceFile, checker: ts.TypeChecker, progr
     } else if (ts.isElementAccessExpression(n)) {
       const key = n.argumentExpression;
       if (!ts.isStringLiteralLike(key) && !ts.isNumericLiteral(key)) {
-        const holder = bare(n.expression);
+        const holder = bareExpression(n.expression);
         const promiseCtor =
           ts.isIdentifier(holder) &&
           holder.text === "Promise" &&
@@ -97,7 +96,7 @@ export function otherSpellings(sf: ts.SourceFile, checker: ts.TypeChecker, progr
         literalIn(first, PROCESS_EVENTS);
       if (browser || node) out.push({ code: "E1452", at: n, message: LISTENER });
     } else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-      const left = bare(n.left);
+      const left = bareExpression(n.left);
       const name = ts.isIdentifier(left) ? left.text : memberName(left);
       const holder = holderOf(left);
       const target =

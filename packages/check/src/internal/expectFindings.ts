@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { bareExpression } from "./bareExpression.ts";
 
 /** One finding of an `expect`: its code, the node it lies at, its message. */
 type ExpectUse = { readonly code: "E1452" | "E1460"; readonly at: ts.Node; readonly message: string };
@@ -17,7 +18,6 @@ const LITERAL_FLAGS =
   ts.TypeFlags.EnumLiteral |
   ts.TypeFlags.BigIntLiteral;
 
-const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
 const isFn = (n: ts.Node): boolean =>
   ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n);
 
@@ -31,7 +31,7 @@ function readable(
   checker: ts.TypeChecker,
   sameHome: (f: ts.SourceFile) => boolean,
 ): Fn | undefined {
-  const a = bare(arg);
+  const a = bareExpression(arg);
   if (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) return a;
   const at = ts.isIdentifier(a)
     ? a
@@ -52,7 +52,7 @@ function readable(
   if (!ts.isVariableDeclaration(d) || d.initializer === undefined) return undefined;
   const list = d.parent;
   if (!ts.isVariableDeclarationList(list) || (list.flags & ts.NodeFlags.Const) === 0) return undefined;
-  const init = bare(d.initializer);
+  const init = bareExpression(d.initializer);
   return ts.isArrowFunction(init) || ts.isFunctionExpression(init) ? init : undefined;
 }
 
@@ -101,13 +101,13 @@ export function expectFindings(
   };
   /** Whether `e` reads the thrown value (k.expect Decides): `x`, a property of one, `Reflect.get` of one, `typeof` one. */
   function reads(e: ts.Expression): boolean {
-    const b = bare(e);
+    const b = bareExpression(e);
     if (ts.isIdentifier(b)) return readsName(b);
     if (ts.isPropertyAccessExpression(b) || ts.isElementAccessExpression(b)) return reads(b.expression);
     if (ts.isTypeOfExpression(b)) return reads(b.expression);
     if (ts.isNonNullExpression(b)) return reads(b.expression);
     if (ts.isCallExpression(b)) {
-      const c = bare(b.expression);
+      const c = bareExpression(b.expression);
       const first = b.arguments[0];
       return (
         first !== undefined &&
@@ -132,13 +132,13 @@ export function expectFindings(
   };
   /** Whether `e` is a test of the thrown value (k.expect Decides). */
   function isTest(e: ts.Expression): boolean {
-    const b = bare(e);
+    const b = bareExpression(e);
     if (ts.isPrefixUnaryExpression(b)) return b.operator === ts.SyntaxKind.ExclamationToken && isTest(b.operand);
     if (ts.isCallExpression(b)) return b.arguments.some((a) => reads(a)) && booleanOrPredicate(b);
     if (ts.isPropertyAccessExpression(b) && b.name.text === "ok") {
-      const call = bare(b.expression);
+      const call = bareExpression(b.expression);
       if (!ts.isCallExpression(call)) return false;
-      const c = bare(call.expression);
+      const c = bareExpression(call.expression);
       const first = call.arguments[0];
       return ts.isPropertyAccessExpression(c) && c.name.text === "parse" && first !== undefined && reads(first);
     }
@@ -157,7 +157,7 @@ export function expectFindings(
    * whether a test guards it; `t && e` returns `e` guarded when `t` is a test.
    */
   const leaves = (e: ts.Expression, guarded: boolean, into: { e: ts.Expression; guarded: boolean }[]): void => {
-    const b = bare(e);
+    const b = bareExpression(e);
     if (ts.isConditionalExpression(b)) {
       const t = guarded || isTest(b.condition);
       leaves(b.whenTrue, t, into);
@@ -229,7 +229,7 @@ export function expectFindings(
     if (ts.isTemplateExpression(n)) return true;
     if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.PlusToken) return true;
     if (ts.isCallExpression(n)) {
-      const c = bare(n.expression);
+      const c = bareExpression(n.expression);
       if (ts.isIdentifier(c) && c.text === "String") return true;
       if (ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.expression))
         if (c.expression.text === "JSON" && c.name.text === "stringify") return true;
@@ -237,7 +237,7 @@ export function expectFindings(
     return ts.forEachChild(n, (c) => (buildsText(c) ? true : undefined)) === true;
   };
   const judgeData = (d: ts.Expression): void => {
-    const b = bare(d);
+    const b = bareExpression(d);
     if (ts.isObjectLiteralExpression(b)) {
       for (const p of b.properties) {
         if (ts.isPropertyAssignment(p)) judgeData(p.initializer);
