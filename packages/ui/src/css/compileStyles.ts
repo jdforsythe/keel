@@ -300,9 +300,9 @@ export function compileStyles(input: { readonly tokens: Tokens; readonly usages:
 } {
   const { tokens } = input;
   const refused = valueForms(tokens)[0];
-  if (refused !== undefined) throw fail("E1807", `token ${refused.join(".")} is not in its group's form`);
+  if (refused !== undefined) throw fail("E1807", `${refused.path.join(".")}: ${refused.what}`);
   const problem = focusProblem(tokens);
-  if (problem !== null) throw fail("E1807", problem);
+  if (problem !== null) throw fail("E1807", `base.focus: ${problem}`);
   const bps = Object.entries(tokens.breakpoint ?? {});
   const rules = new Map<string, Rule>();
   const add = (

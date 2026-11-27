@@ -29,7 +29,7 @@ describe("TokenSchema", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.data.issues).toEqual([{ path: ["color", "fg", "dark"], rule: "type" }]);
-      expect(r.error.message).toBe("type at color.fg.dark");
+      expect(r.error.message).toBe("color.fg.dark: not a color value");
     }
   });
 

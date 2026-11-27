@@ -1,6 +1,7 @@
 import { err, s } from "@keel/schema";
 import type { Schema } from "@keel/schema";
 import { focusProblem } from "../internal/focusProblem.ts";
+import { shapeWhat } from "../internal/shapeWhat.ts";
 import { valueForms } from "../internal/valueForms.ts";
 import type { Tokens } from "../types/Tokens.ts";
 
@@ -121,25 +122,31 @@ const shape = s.object(
  * token values each in its group's form (k.values; rule `format` at the value's path), colors a value or a closed
  * `{ light, dark }` pair, `base` the closed role sets and
  * `focus`, `look` named style sets, overlays and `themes` as k.values Overlays and k.themes Themes give them, `schemes` one of `["light"]`, `["dark"]`, `["light", "dark"]` (rule `format`), and a `base.focus` color at 3:1 or more against `base.page`'s `bg` in each screen combination
- * (rule `format` at `base.focus`).
+ * (rule `format` at `base.focus`). The message is the first issue's `<path>: <what>` (k.themes Token errors).
  */
 export const TokenSchema: Schema<Tokens> = {
   ...shape,
   parse: (input) => {
     const r = shape.parse(input);
-    if (!r.ok) return r;
+    if (!r.ok) {
+      const first = r.error.data.issues[0];
+      const what = first === undefined ? "is no token file" : shapeWhat(first.path, first.rule);
+      return err({ ...r.error, message: `${first?.path.join(".") ?? ""}: ${what}` });
+    }
     const schemes = r.value.schemes?.join();
     if (schemes !== undefined && !SCHEMES.includes(schemes)) {
       const issues = [{ path: ["schemes"], rule: "format" as const }];
-      return err({ code: "schema.invalid", message: "format at schemes", data: { issues } });
+      return err({ code: "schema.invalid", message: `schemes: ${shapeWhat(["schemes"], "format")}`, data: { issues } });
     }
     const refused = valueForms(r.value);
-    if (refused.length > 0) {
-      const issues = refused.map((path) => ({ path, rule: "format" as const }));
-      return err({ code: "schema.invalid", message: `format at ${refused[0]?.join(".") ?? ""}`, data: { issues } });
+    const first = refused[0];
+    if (first !== undefined) {
+      const issues = refused.map((x) => ({ path: [...x.path], rule: "format" as const }));
+      return err({ code: "schema.invalid", message: `${first.path.join(".")}: ${first.what}`, data: { issues } });
     }
-    if (focusProblem(r.value) === null) return r;
+    const focus = focusProblem(r.value);
+    if (focus === null) return r;
     const issues = [{ path: ["base", "focus"], rule: "format" as const }];
-    return err({ code: "schema.invalid", message: "format at base.focus", data: { issues } });
+    return err({ code: "schema.invalid", message: `base.focus: ${focus}`, data: { issues } });
   },
 };

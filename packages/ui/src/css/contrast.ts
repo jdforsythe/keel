@@ -5,6 +5,8 @@ import { gamutMap } from "./gamutMap.ts";
 type Rgb = readonly [number, number, number];
 
 const luminance = ([r, g, b]: Rgb): number => Math.min(1, Math.max(0, 0.2126 * r + 0.7152 * g + 0.0722 * b));
+const clip = ([r, g, b]: Rgb): Rgb => [unit(r), unit(g), unit(b)];
+const unit = (v: number): number => Math.min(1, Math.max(0, v));
 const ratio = (a: number, b: number): number => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 
 const linear = (color: string): Rgb => {
@@ -16,8 +18,8 @@ const linear = (color: string): Rgb => {
 
 /**
  * WCAG 2 contrast ratio of two opaque colors in any k.values form, 1..21, symmetric (k.values Contrast): each color's
- * luminance computed exactly from its form; when either is outside the sRGB gamut, the pair is judged as given and
- * again after CSS Color 4's gamut mapping, and the lower ratio is returned. E1804 requires >= 4.5 (>= 3 at a large
+ * luminance computed exactly from its form; the pair is judged as given, after CSS Color 4's gamut mapping to sRGB and
+ * with each linear channel clipped to 0 to 1, the forms a screen may show, and the lowest ratio is returned. E1804 requires >= 4.5 (>= 3 at a large
  * size). Throws RangeError for any other value, a color with alpha among them.
  */
 export function contrast(fg: string, bg: string): number {
@@ -25,5 +27,6 @@ export function contrast(fg: string, bg: string): number {
   const b = linear(bg);
   const given = ratio(luminance(a), luminance(b));
   const mapped = ratio(luminance(gamutMap(a)), luminance(gamutMap(b)));
-  return Math.min(given, mapped);
+  const clipped = ratio(luminance(clip(a)), luminance(clip(b)));
+  return Math.min(given, mapped, clipped);
 }
