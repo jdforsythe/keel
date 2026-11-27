@@ -57,13 +57,19 @@ function readDir(dir: string, project: readonly SourceFile[]): Dir {
       .map((s) => resolve(at, s.spec))
       .filter((p): p is string => p !== undefined && !serverOnly(p));
   };
+  const entries: ReadonlySet<string> =
+    read === undefined
+      ? new Set(files.map((f) => f.path).filter((p) => !exempt(p)))
+      : new Set(clientReach(files, read.topology, resolve).entries);
+  const library = projectLibraries.get(project)?.files;
+  /** What `start` reaches through no client entry outside `node_modules/`, which reports for itself. */
   const reachFrom = (start: string): string[] => {
     const out: string[] = [];
     const seen = new Set<string>();
     const queue = [start];
     for (let i = 0; i < queue.length; i++) {
       const at = queue[i] ?? "";
-      if (seen.has(at)) continue;
+      if (seen.has(at) || (entries.has(at) && library?.has(`${dir}${at}`) !== true)) continue;
       seen.add(at);
       out.push(at);
       queue.push(...next(at));
@@ -74,10 +80,6 @@ function readDir(dir: string, project: readonly SourceFile[]): Dir {
     const program = byPath.get(p);
     return program === undefined ? undefined : valueImportSites(program).find((s) => ENTRIES.has(s.spec))?.spec;
   };
-  const entries: ReadonlySet<string> =
-    read === undefined
-      ? new Set(files.map((f) => f.path).filter((p) => !exempt(p)))
-      : new Set(clientReach(files, read.topology, resolve).entries);
   const reports = (p: string): readonly Report[] => {
     const program = byPath.get(p);
     if (program === undefined || !entries.has(p)) return [];
@@ -98,7 +100,7 @@ function readDir(dir: string, project: readonly SourceFile[]): Dir {
 /**
  * What E1818 reads of `path` (k.check-time): whether it is of an exempt kind, whether it is a client entry, and, for
  * a client entry, one report per value import and exempt-kind file importing `@keel/ui/tokens` or `@keel/ui/css`
- * that the import reaches, through no server-only file, naming the entry of that file's first such import. Client
+ * that the import reaches, through no server-only file and no client entry outside `node_modules/`, naming the entry of that file's first such import. Client
  * entries come from `clientReach` over the project's `topology.ts` directory; with none, every code file of no exempt
  * kind is one (k.boundary Reach). Undefined for a file in no project folder.
  */
