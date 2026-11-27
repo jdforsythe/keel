@@ -86,7 +86,8 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
     return fail("E1052", id, "--method is for an API route: add --api, or drop --method");
   if ((noLoader || loader === true) && api === true)
     return fail("E1052", id, "--loader and --no-loader are for a page route: an API route is its handler; drop it");
-  if (noLoader && loader === true) return fail("E1052", id, "--loader and --no-loader ask for opposite things; pass one");
+  if (noLoader && loader === true)
+    return fail("E1052", id, "--loader and --no-loader ask for opposite things; pass one");
   if (targetsGenerated(id) || (file !== undefined && targetsGenerated(file)))
     return fail("E1005", file ?? id, `${file ?? id} is a generated location`);
   const rid = routeId(id);

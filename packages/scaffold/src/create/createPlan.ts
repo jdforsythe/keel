@@ -69,14 +69,9 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
           : `--name ${fix.length > 40 ? fix.slice(0, 40).replace(/-+$/, "") : fix}`;
       return refuse("E1352", "", `project name ${cut(name)} is not [a-z][a-z0-9-]*; pass ${hint}`);
     }
-    if (name.length > 64)
-      return refuse("E1352", "", "project name is over 64 characters; pass a shorter --name");
+    if (name.length > 64) return refuse("E1352", "", "project name is over 64 characters; pass a shorter --name");
     if (LISTED.has(name))
-      return refuse(
-        "E1352",
-        "",
-        `project name ${cut(name)} is a package the project lists; pass another --name`,
-      );
+      return refuse("E1352", "", `project name ${cut(name)} is a package the project lists; pass another --name`);
   }
   const ws = workspaceOf(folder, input.ancestors ?? {}, input.cwd);
   if (ws.cli !== undefined && ws.cli !== input.version)
