@@ -17,7 +17,10 @@ export function checkStore(
 ): RaceReport {
   const txs = new Map(all.filter((t) => t.store === st).map((t) => [t.name, t]));
   for (const e of snap.log)
-    if (!txs.has(e.name)) return defect(`std.conflicts: the factory returns no transaction ${e.name} of ${st.id}`);
+    if (!txs.has(e.name))
+      return defect("std.conflicts: the factory returns no transaction of the store", {
+        data: { transaction: e.name, store: st.id },
+      });
   const log = snap.log;
   // `initial` is the state at the head before the first kept entry.
   const start = (log[0]?.id ?? 1) - 1;

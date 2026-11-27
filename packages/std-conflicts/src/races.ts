@@ -19,7 +19,10 @@ export function races(snapshot: Snapshot<unknown>, stores: StoresFactory): RaceR
     const st = made.stores.find(
       (x) => x.schema.parse(snapshot.state).ok && snapshot.log.every((e) => x.payloads.has(e.name)),
     );
-    if (st === undefined) return defect("std.conflicts: no store of the factory holds this snapshot");
+    if (st === undefined)
+      return defect("std.conflicts: no store of the factory holds this snapshot", {
+        data: { stores: made.stores.length },
+      });
     return checkStore(st, made.txs, snapshot);
   });
 }
