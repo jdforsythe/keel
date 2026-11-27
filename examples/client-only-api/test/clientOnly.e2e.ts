@@ -7,11 +7,11 @@
 // `x-keel`, `x-keel-user`, `authorization` or cookie reaches it. The same tree with no `origins` fails `keel check`
 // with E1571. No page or console error is raised (an unread one fails the test).
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { answer, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 
 const here = join(import.meta.dirname, "..");
@@ -74,7 +74,7 @@ it("the page reads GitHub's API from the browser alone: the policy names it, no 
 
 // The copy's check is the machine's own work, not a bound the test chose.
 it("the same tree with no declared origin fails keel check with E1571", { timeout: fixedTime(240_000) }, async () => {
-  const tmp = await mkdtemp(join(tmpdir(), "keel-e2e-undeclared-"));
+  const tmp = tempDir("keel-e2e-undeclared-");
   const copy = join(tmp, "app");
   try {
     await cp(here, copy, { recursive: true, filter: (src) => src === here || !SKIP.has(basename(src)) });

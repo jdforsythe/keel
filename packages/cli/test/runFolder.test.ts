@@ -10,6 +10,14 @@ import { makeRunFolder } from "../src/e2e/makeRunFolder.ts";
 import { sweepRunFolders } from "../src/e2e/sweepRunFolders.ts";
 
 const NOW = Date.parse("2026-01-02T03:04:05.000Z");
+/** The ISO start of a run `ageMs` before `NOW`. */
+const startedAgo = (ageMs: number): string => {
+  const ago = [
+    [2 * 3_600_000, "2026-01-02T01:04:05.000Z"],
+    [600_000, "2026-01-02T02:54:05.000Z"],
+  ].find(([ms]) => ms === ageMs);
+  return String(ago?.[1] ?? "");
+};
 const HOUR = 3_600_000;
 
 /** The pid of a process that ran and exited: one no process holds now. */
@@ -22,10 +30,7 @@ const folder = (outer: string, name: string, marker: { pid: number; ageMs: numbe
   const dir = join(outer, name);
   mkdirSync(dir);
   if (marker !== undefined)
-    writeFileSync(
-      join(dir, MARKER),
-      JSON.stringify({ pid: marker.pid, started: new Date(NOW - marker.ageMs).toISOString() }),
-    );
+    writeFileSync(join(dir, MARKER), JSON.stringify({ pid: marker.pid, started: startedAgo(marker.ageMs) }));
   return dir;
 };
 

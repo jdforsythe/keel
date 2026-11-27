@@ -2,12 +2,12 @@
 // whose `web` client (served by the `api` node) declares an `img` and a `connect` origin and whose `api` declares an
 // `img` origin of its own. `keel build` writes `dist/web/csp.txt` with the client's origins and not the host's; the
 // built `api` answers `/` and a client path with exactly that policy; a JSON answer keeps its closed policy.
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 
 const here = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,7 +21,7 @@ it(
   "the client's csp.txt holds its declared origins, and the api serves it on documents and a closed policy on JSON",
   { timeout: fixedTime(240_000) },
   async () => {
-    const tmp = await mkdtemp(join(tmpdir(), "keel-e2e-csp-"));
+    const tmp = tempDir("keel-e2e-csp-");
     try {
       const dir = join(tmp, "app");
       // No `test/`: the copy is built alone, and vitest resolves from the workspace root, not from the copy.

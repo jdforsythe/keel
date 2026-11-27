@@ -2,8 +2,7 @@
 // `ctx.clock` with `timeoutMs: 3000`. A list is removed and undone, the api is killed with SIGKILL while the stored
 // instance shows its step running (`attempt` 1), and started again on the same data: within the bound the instance is
 // `kept` and the list is visible once. Once on SQLite (the topology's storage), once on Postgres 17 (`KEEL_TEST_POSTGRES_URL`).
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scope } from "@keel/reactive";
@@ -11,6 +10,7 @@ import { s } from "@keel/schema";
 import { store } from "@keel/store";
 import { type Served, build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 import { Board } from "../modules/api/Board.schema.ts";
 
@@ -44,7 +44,7 @@ async function view(app: Served): Promise<unknown> {
 
 /** A copy of the app in a temporary folder with the planted step (and `postgres` storage when asked), not yet built. */
 async function plantedCopy(onPostgres: boolean): Promise<string> {
-  const tmp = await mkdtemp(join(tmpdir(), "keel-e2e-workflow-"));
+  const tmp = tempDir("keel-e2e-workflow-");
   const dir = join(tmp, "app");
   // No `test/`: the copy is built alone, and vitest resolves from the workspace root, not from the copy.
   await cp(here, dir, {

@@ -5,8 +5,7 @@
 // reader, and `keel session monitor` writes what it read.
 import { execFile } from "node:child_process";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -14,6 +13,7 @@ import { scope } from "@keel/reactive";
 import { store } from "@keel/store";
 import { type A11yNode, type Page, type Served, build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 import { Board } from "../modules/api/Board.schema.ts";
 
@@ -31,7 +31,7 @@ function field(value: unknown, ...keys: string[]): unknown {
 
 /** A copy of the app in a temporary folder whose api admits `reader`, not yet built. */
 async function copyWithReader(reader: string): Promise<string> {
-  const tmp = await mkdtemp(join(tmpdir(), "keel-e2e-monitor-"));
+  const tmp = tempDir("keel-e2e-monitor-");
   const dir = join(tmp, "app");
   // No `test/`: the copy is built alone, and vitest resolves from the workspace root, not from the copy.
   await cp(here, dir, {

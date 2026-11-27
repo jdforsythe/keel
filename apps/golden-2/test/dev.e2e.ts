@@ -15,11 +15,11 @@
 // file (twice) and to the helper.
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { appendFile, cp, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { appendFile, cp, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { type Served, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 const app = resolve(import.meta.dirname, "..");
@@ -29,7 +29,7 @@ let tmp = "";
 let dir = "";
 
 beforeAll(async () => {
-  tmp = await mkdtemp(join(tmpdir(), "keel-e2e-dev-"));
+  tmp = tempDir("keel-e2e-dev-");
   dir = join(tmp, "app");
   await cp(app, dir, { recursive: true, filter: (src) => src === app || !skipped.has(basename(src)) });
   await symlink(join(app, "node_modules"), join(dir, "node_modules"), "dir");

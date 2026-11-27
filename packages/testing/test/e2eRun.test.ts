@@ -6,21 +6,11 @@
 // the run is E1734 and every case here fails. The worked examples of the keel-testing and keel-deploy skills run in
 // the same project, as `test/skill-*.e2e.ts`, so each example is a test that passes.
 import { spawnSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -43,7 +33,7 @@ function fence(skill: string, heading: string): string {
 }
 
 beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), "keel-e2e-own-"));
+  dir = tempDir("keel-e2e-own-");
   cpSync(FIXTURE, dir, { recursive: true });
   writeFileSync(join(dir, "test", "skill-testing.e2e.ts"), fence("keel-testing", "## End to end"));
   writeFileSync(join(dir, "test", "skill-deploy.e2e.ts"), fence("keel-deploy", "**Test the built app.**"));

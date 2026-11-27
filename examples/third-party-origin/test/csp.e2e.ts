@@ -2,12 +2,12 @@
 // example that also declares a `connect` origin answers with k.security's policy and a fresh nonce, the declared
 // origins in `img-src` and `connect-src` in declaration order, and no origin it did not declare; two documents carry
 // different nonces.
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 
 const here = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,7 +21,7 @@ async function copyWith(
   origins: string,
   tile = '"https://tile.openstreetmap.org/0/0/0.png"',
 ): Promise<{ tmp: string; dir: string }> {
-  const tmp = await mkdtemp(join(tmpdir(), "keel-e2e-csp-example-"));
+  const tmp = tempDir("keel-e2e-csp-example-");
   const dir = join(tmp, "app");
   // No `test/`: the copy is built alone, and vitest resolves from the workspace root, not from the copy.
   await cp(here, dir, {

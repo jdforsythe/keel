@@ -9,11 +9,11 @@
 // running, a sign-up and a sign-in through the forms each send one POST to the identity mount answered by a 303, and the
 // sign-in page then names the account. The catalog is also loaded at 390px in en-US and de-DE: the document is no wider
 // than the viewport and the table scrolls inside its region.
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { type Page, type Served, build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 const AUTH_SECRET = "golden-2-e2e-auth-secret-of-32-characters";
@@ -24,7 +24,7 @@ let dir = "";
 
 // The pages are served, not mounted: `web` becomes a node deployable reaching `api` as its peer.
 beforeAll(async () => {
-  tmp = await mkdtemp(join(tmpdir(), "keel-e2e-resume-"));
+  tmp = tempDir("keel-e2e-resume-");
   dir = join(tmp, "app");
   await cp(app, dir, { recursive: true, filter: (src) => src === app || !skipped.has(basename(src)) });
   await symlink(join(app, "node_modules"), join(dir, "node_modules"), "dir");

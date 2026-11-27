@@ -8,11 +8,11 @@
 // place they may be: its files are checked to hold the email, so the run is known to have carried it.
 import { spawn } from "node:child_process";
 import { generateKeyPairSync } from "node:crypto";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, readdir, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { type Served, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import {
   CANARIES,
@@ -272,7 +272,7 @@ describe("the evidence bundle holds no canary", () => {
     it(`apps/${name}: written, free of canaries and verifies`, { timeout: fixedTime(600_000) }, async () => {
       const { privateKey } = generateKeyPairSync("ed25519");
       const key = privateKey.export({ type: "pkcs8", format: "pem" });
-      const out = join(await mkdtemp(join(tmpdir(), "keel-e2e-evidence-")), name);
+      const out = join(tempDir("keel-e2e-evidence-"), name);
       tmp.push(out);
       const evidence = await keel(["evidence", "--out", out], cwd, { KEEL_EVIDENCE_KEY: String(key) });
       const manifest: unknown = await readFile(join(out, "manifest.json"), "utf8").then(JSON.parse, () => null);

@@ -5,8 +5,7 @@
 // button and the input shows the 2px solid brand ring at 2px offset and a mouse click on the button shows none; the
 // Box `direction={{ base: 'column', md: 'row' }}` stacks at 390px and is a row sharing a top edge at 1024px. No page
 // or console error is raised (an unread one fails the test).
-import { cp, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
@@ -21,6 +20,7 @@ import { Box, Button, Input, Link, Text } from "@keel/ui";
 import { Home } from "./Home.schema.ts";
 import { Note } from "./Note.schema.ts";
 import { app } from "./app.contract.ts";
+import { tempDir } from "@keel/tooling/test-tmp";
 
 export const Props = s.object({ data: Home });
 
@@ -65,7 +65,7 @@ const RING_NAMES = ["outline-style", "outline-width", "outline-color", "outline-
 
 // The build of a copy is the machine's own work, not a bound the test chose.
 it("the brand's reset, focus ring and responsive Box hold in Chromium", { timeout: fixedTime(240_000) }, async () => {
-  const tmp = await mkdtemp(join(tmpdir(), "keel-e2e-brand-"));
+  const tmp = tempDir("keel-e2e-brand-");
   const dir = join(tmp, "app");
   try {
     // No `test/`: the copy is built alone, and vitest resolves from the workspace root, not from the copy.
