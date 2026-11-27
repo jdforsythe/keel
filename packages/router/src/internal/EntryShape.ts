@@ -18,4 +18,6 @@ export type EntryShape = {
   readonly errors?: Readonly<Record<string, Schema<unknown, boolean>>>;
   readonly timeout?: number;
   readonly events?: boolean;
+  /** A route of this machine alone (k.contract Local routes). */
+  readonly local?: true;
 };

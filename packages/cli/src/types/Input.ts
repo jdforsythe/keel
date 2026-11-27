@@ -43,6 +43,8 @@ export type Input = {
   readonly user?: string;
   readonly base?: string;
   readonly port?: number;
+  /** `keel dev --host <address>`: the one way to listen past loopback (k.topology Local topology). */
+  readonly host?: string;
   readonly out?: string;
   readonly audit?: string;
   readonly verify?: string;
@@ -53,4 +55,7 @@ export type Input = {
   readonly accept?: string;
   readonly reason?: string;
   readonly check?: boolean;
+  readonly e2e?: boolean;
+  readonly engine?: "chromium" | "firefox" | "webkit";
+  readonly "no-sandbox"?: boolean;
 };

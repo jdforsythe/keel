@@ -76,6 +76,8 @@ const FILES = [
   "src/index.ts",
   "src/Example.tsx",
   "test/Example.test.ts",
+  "test/Example.e2e.ts",
+  ".gitignore",
   "tokens.ts",
   "tsconfig.json",
   "tsconfig.build.json",
@@ -106,7 +108,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
   );
 
   test(
-    "Scaffold: it writes folder `<base>/` in the working directory, holding `package.json`, `module.ts`, `src/index.ts`, `src/Example.tsx`, `test/Example.test.ts`, `tokens.ts`, `tsconfig.json`, `tsconfig.build.json` and `vitest.config.ts`, and nothing outside it",
+    "Scaffold: it writes folder `<base>/` in the working directory, holding `package.json`, `module.ts`, `src/index.ts`, `src/Example.tsx`, `test/Example.test.ts`, `test/Example.e2e.ts`, `.gitignore`, `tokens.ts`, `tsconfig.json`, `tsconfig.build.json` and `vitest.config.ts`, and nothing outside it",
     () => {
       const { scratchDir, lib: dir } = lib();
       expect(Object.keys(snapshot(scratchDir))).toEqual(expect.arrayContaining([LIB_BASE]));
@@ -115,6 +117,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
         .filter(([, v]) => v !== "dir")
         .map(([p]) => p);
       for (const f of FILES) expect(written, f).toContain(f);
+      expect(readText(dir, ".gitignore")).toContain(".keel/e2e-host-*/");
       // README.md is the one file beyond the list the Package sentence allows (it names it in `files`).
       expect(written.filter((p) => !FILES.includes(p) && p !== "README.md")).toEqual([]);
     },

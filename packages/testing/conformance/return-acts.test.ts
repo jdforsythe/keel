@@ -11,8 +11,8 @@
 // ASSUMED: `fire(id, { type: "keydown", key })` carries the key; `fire(formId, { type: "submit" })` submits the Form with that id; `handle.navigate(path)` returns a promise or nothing.
 // ASSUMED: the link's own GET is answered 303 to `/` (opens nothing) unless a case says otherwise; a link not admitted sends no `net` request; documents() holds the provider URL as given.
 import { createCtx } from "@keel/ctx";
-import fc from "fast-check";
 import type { TestEvent } from "@keel/testing";
+import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { HOME_HREF, PRIVATE_HREF, START, mount, routes } from "./act-pages.ts";
 import { PROVIDER, SCHEME, SEED, closeAll, openShellOver, redirect, ticks } from "./return-support.ts";

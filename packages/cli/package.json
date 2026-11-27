@@ -20,6 +20,10 @@
       "types": "./src/docs/index.ts",
       "default": "./src/docs/index.ts"
     },
+    "./e2e": {
+      "types": "./src/e2e/index.ts",
+      "default": "./src/e2e/index.ts"
+    },
     "./review": {
       "types": "./src/review/index.ts",
       "default": "./src/review/index.ts"
@@ -52,6 +56,10 @@
       "./docs": {
         "types": "./dist/src/docs/index.d.ts",
         "default": "./dist/src/docs/index.js"
+      },
+      "./e2e": {
+        "types": "./dist/src/e2e/index.d.ts",
+        "default": "./dist/src/e2e/index.js"
       },
       "./review": {
         "types": "./dist/src/review/index.d.ts",

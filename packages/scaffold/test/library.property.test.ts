@@ -1,5 +1,5 @@
 // Seed 1337 (`SEED`). `scaffold library <name>` (k.library-pack Scaffold): a name `@<scope>/<base>` of lowercase letters,
-// digits and `-` writes the ten files under `<base>/`, `module.ts` holding the base in lowerCamel; any other name is
+// digits and `-` writes the twelve files under `<base>/`, `module.ts` holding the base in lowerCamel; any other name is
 // E1352 and an existing `<base>/` E1351, each writing nothing; equal input gives byte-equal output.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -7,11 +7,13 @@ import { scaffold } from "../src/index.ts";
 import { RUNS, SEED } from "./helpers.ts";
 
 const FILES = [
+  ".gitignore",
   "README.md",
   "module.ts",
   "package.json",
   "src/Example.tsx",
   "src/index.ts",
+  "test/Example.e2e.ts",
   "test/Example.test.ts",
   "tokens.ts",
   "tsconfig.build.json",
@@ -25,7 +27,7 @@ const camel = (segs: readonly string[]): string =>
 const codeOf = (r: ReturnType<typeof scaffold>): string | undefined => (r.ok ? undefined : r.error.data.code);
 
 describe("scaffold library", () => {
-  it("writes the ten files under <base>/, the id the base in lowerCamel, the kernel peers at the given version", () => {
+  it("writes the twelve files under <base>/, the id the base in lowerCamel, the kernel peers at the given version", () => {
     fc.assert(
       fc.property(scope, fc.array(seg, { minLength: 1, maxLength: 3 }), (sc, segs) => {
         const base = segs.join("-");
@@ -43,6 +45,18 @@ describe("scaffold library", () => {
           "@keel/schema": "^1.2.3",
           "@keel/ui": "^1.2.3",
         });
+        const dev = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "devDependencies") : undefined;
+        expect(dev).toMatchObject({
+          "@keel/compiler": "^1.2.3",
+          "@keel/router": "^1.2.3",
+          "@keel/server": "^1.2.3",
+          "@keel/testing": "^1.2.3",
+          "playwright-core": "1.65.0",
+        });
+        const e2e = r.value.files.get(`${base}/test/Example.e2e.ts`) ?? "";
+        expect(e2e).toContain(`serve({ page: "src/Example.tsx", props: { id: "lib" } })`);
+        expect(e2e).toContain("a11y()");
+        expect(r.value.files.get(`${base}/.gitignore`)).toContain(".keel/e2e-host-*/");
         const again = scaffold("library", { name: `@${sc}/${base}`, version: "1.2.3" }, new Map());
         expect(again.ok && [...again.value.files]).toEqual([...r.value.files]);
       }),

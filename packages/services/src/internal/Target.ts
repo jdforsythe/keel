@@ -11,6 +11,8 @@ export type Target = {
   readonly sign?:
     | ((method: string, url: string, user: string, body: string | Uint8Array) => string | undefined)
     | undefined;
+  /** Sent from a server, on a ctx a `createApp` bound: its requests carry `x-keel-forwarded: 1` (k.topology Calls and peers). */
+  readonly server?: true;
   /** The user a call that names none carries (k.user Testing); only with `sign`. */
   readonly user?: string | undefined;
   send(req: Request): Promise<Response>;

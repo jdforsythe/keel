@@ -37,7 +37,7 @@ export default topology({
 **Build.** `keel build` runs `keel check` first and stops on an error. It writes `dist/<name>/` per deployable: `server.mjs` and `server.mjs.map` for a `node` one, `index.html` (generated), hashed `assets/`, `keel-mark.svg` and `csp.txt` for a `client` one, and for a `static` one per route its document (`index.html` for `/`, `<path>/index.html` otherwise), `404.html`, `assets/`, `keel-mark.svg` and `csp.txt`. It always builds for production (`NODE_ENV=production`, whatever the shell or `.env` says). E1006 fails it. `dist/<name>/` holds the served modules' `migrations/`. It also writes the read-only `deploy/<name>/Dockerfile`, `deploy/compose.yaml` and the CI workflow; edit `topology.ts` instead (E1005).
 
 **Run `server.mjs`.** `node dist/<name>/server.mjs` reads these variables. A deployable with `storage: 'file'` (the default) also needs the flags `node --experimental-webstorage --localstorage-file=<path> dist/<name>/server.mjs` (without them every page that names `stores` is a 500; the generated `deploy/<name>/Dockerfile` passes them); `'sqlite'` and `'postgres'` need none.
-- `PORT` (default 8080).
+- `PORT` (default 8080); `HOST` (unset: all).
 - `KEEL_SECRET`, 32 bytes or more, the same in every `node` deployable of the app: it signs the caller cookie and the `x-keel-user` header of a `service({ contract })` call. Whoever holds it can sign a caller every deployable accepts.
 - `KEEL_ORIGIN`, the public origin (optional).
 - `KEEL_PEER_<NAME>`, an http(s) URL per other `node` deployable (`my-api` is `KEEL_PEER_MY_API`). Use `https`: a captured `x-keel-user` header replays its one request until it expires (60 s).

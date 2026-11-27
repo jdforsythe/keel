@@ -10,8 +10,8 @@ import { mount } from "@keel/runtime-dom";
 import { Host } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Points, type PointsValue, SEED, flush, frames, probe, simCtx } from "./host-support.ts";
 import { cleanup, computed, host, signal } from "./host-dom.ts";
+import { Points, type PointsValue, SEED, flush, frames, probe, simCtx } from "./host-support.ts";
 
 afterEach(() => {
   cleanup();

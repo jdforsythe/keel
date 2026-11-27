@@ -4,7 +4,7 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
 import type { Diag } from "./Diag.ts";
 import { MonitoredSchema } from "./MonitoredSchema.ts";
-import { TEST_FILE } from "./TEST_FILE.ts";
+import { isTestFile } from "./isTestFile.ts";
 import { makeDiag } from "./makeDiag.ts";
 
 const MONITORED = /(?:^|\/)\.keel\/monitored\.json$/;
@@ -67,7 +67,7 @@ export function monitoredEvidence(files: readonly SourceFile[]): {
       continue;
     }
     const dir = m.path.slice(0, m.path.length - ".keel/monitored.json".length);
-    const code = files.filter((f) => f.path.startsWith(dir) && CODE_FILE.test(f.path) && !TEST_FILE.test(f.path));
+    const code = files.filter((f) => f.path.startsWith(dir) && CODE_FILE.test(f.path) && !isTestFile(f.path));
     for (const [name, runs] of Object.entries(tally.value.tx)) {
       if (runs < 1) continue;
       const parts = name.split(".");

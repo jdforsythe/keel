@@ -4,6 +4,7 @@
  */
 export const DEPLOY_ENV_KEYS: readonly string[] = [
   "PORT",
+  "HOST",
   "KEEL_SECRET",
   "KEEL_ORIGIN",
   "KEEL_DATABASE_URL",

@@ -9,7 +9,7 @@ import { contract } from "@keel/router/contract";
 import { resumeDocument } from "@keel/testing";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { codeOf, messageOf, SEED, simCtx, thrown } from "./fixtures.ts";
+import { SEED, codeOf, messageOf, simCtx, thrown } from "./fixtures.ts";
 
 const ROUTE = "rt.page";
 const documentOf = (): string =>

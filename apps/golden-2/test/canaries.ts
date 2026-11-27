@@ -1,6 +1,6 @@
 /**
  * Canary values for every personal-data and secret field golden-2 takes: distinctive strings that occur nowhere else,
- * so finding one in a sink is a leak. `test/canary.test.ts` and `tooling/smoke/canary.mjs` enter them.
+ * so finding one in a sink is a leak. `test/canary.test.ts` and `test/canary.e2e.ts` enter them.
  */
 export const CANARY_NAME = "Qzvcanary Wendeline Orrth";
 export const CANARY_EMAIL = "qzvcanary.orrth@example.test";

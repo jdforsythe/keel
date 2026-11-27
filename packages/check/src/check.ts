@@ -27,6 +27,7 @@ import { isSqlPath } from "./internal/isSqlPath.ts";
 import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
+import { localNotLiteral } from "./internal/localNotLiteral.ts";
 import { looksDiags } from "./internal/looks/looksDiags.ts";
 import { looksOf } from "./internal/looks/looksOf.ts";
 import { projectLooks } from "./internal/looks/projectLooks.ts";
@@ -170,6 +171,8 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const placed = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
     const resolve = reachResolve(project, dir, new Set(sources.map((f) => f.path)));
     const compiled = compile(sources, placed === undefined ? { resolve } : { topology: placed, resolve });
+    // E1510: a `local` member that is not the literal `true` (k.contract Local routes).
+    out.push(...localNotLiteral(dir, sources));
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
