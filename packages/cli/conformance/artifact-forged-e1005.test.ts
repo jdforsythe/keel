@@ -251,12 +251,10 @@ describe("k.compiler: forged and stale .keel/ artifacts (real binary)", () => {
 });
 
 describe("k.compiler: forged artifacts through the library check()", () => {
-  it("a routes.json with data {r: entry} and a recomputed hash is E1005; the genuine empty routes.json is clean", () => {
+  it("a routes.json with data {r: entry} and a recomputed hash is no diagnostic of the in-memory check() without `derived`, as the genuine empty routes.json (k.derived In process)", () => {
     const withRoutes = compile([], { routes: { r: ENTRY } });
     const forgedRoutes = artifactText(withRoutes.artifacts["routes.json"], withRoutes.hashes["routes.json"]);
-    expect(check([{ path: ".keel/routes.json", source: forgedRoutes }]).diagnostics.map((d) => d.code)).toEqual([
-      "E1005",
-    ]);
+    expect(check([{ path: ".keel/routes.json", source: forgedRoutes }]).diagnostics.map((d) => d.code)).toEqual([]);
     const empty = compile([]);
     const genuine = artifactText(empty.artifacts["routes.json"], empty.hashes["routes.json"]);
     expect(check([{ path: ".keel/routes.json", source: genuine }]).diagnostics.map((d) => d.code)).toEqual([]);

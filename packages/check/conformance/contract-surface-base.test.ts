@@ -126,9 +126,9 @@ describe("E1562 over a contract's API entries (surface v2)", () => {
     ).toEqual([]);
   });
 
-  test("a changed byte of `.keel/surface.json` is E1005 (the in-memory check compares as `keel check --frozen` does)", () => {
+  test("a changed byte of `.keel/surface.json` is no diagnostic of the in-memory check(), which compares an evaluated view only with a `derived` it is given (k.derived In process); E1005 under `keel check --frozen` is asserted by the cli suite", () => {
     const file = surfaceFile(surface(add(fields("name"))));
     const edited = { ...file, source: file.source.replace('"y.add"', '"y.add" ') };
-    expect(check([edited], { types: false }).diagnostics.map((x) => x.code)).toContain("E1005");
+    expect(check([edited], { types: false }).diagnostics.filter((x) => x.path === ".keel/surface.json")).toEqual([]);
   });
 });

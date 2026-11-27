@@ -12,6 +12,7 @@ const BADGE =
 const INDEX_HTML = "<!doctype html>\n<html><body><header>Only here</header></body></html>\n";
 
 let errored = "";
+let erroredForBuild = "";
 let warned = "";
 let erroredCheck: ReturnType<typeof keelRun>;
 let erroredBuild: ReturnType<typeof keelRun>;
@@ -19,14 +20,17 @@ let warnedCheck: ReturnType<typeof keelRun>;
 let warnedBuild: ReturnType<typeof keelRun>;
 beforeAll(() => {
   errored = materialize(withFiles(nodeTree("node"), { "modules/a/Badge.tsx": BADGE }));
+  // `keel check` refreshes the views beside an error (k.derived Refresh), so the build that must write nothing runs in a tree no check has touched.
+  erroredForBuild = materialize(withFiles(nodeTree("node"), { "modules/a/Badge.tsx": BADGE }));
   warned = materialize(withFiles(nodeTree("node"), { "index.html": INDEX_HTML }));
   erroredCheck = keelRun(errored, ["check"]);
-  erroredBuild = keelRun(errored, ["build"]);
+  erroredBuild = keelRun(erroredForBuild, ["build"]);
   warnedCheck = keelRun(warned, ["check"]);
   warnedBuild = keelRun(warned, ["build"]);
 }, SLOW);
 afterAll(() => {
   cleanup(errored);
+  cleanup(erroredForBuild);
   cleanup(warned);
 });
 
@@ -52,8 +56,8 @@ describe("k.boundary: `keel build` runs `keel check` first and stops on any erro
 
   test("it writes no `dist/` and no `.keel/` file", () => {
     expect(erroredBuild.status, erroredBuild.out).toBe(1);
-    expect(existsSync(join(errored, "dist"))).toBe(false);
-    expect(existsSync(join(errored, ".keel"))).toBe(false);
+    expect(existsSync(join(erroredForBuild, "dist"))).toBe(false);
+    expect(existsSync(join(erroredForBuild, ".keel"))).toBe(false);
   });
 });
 

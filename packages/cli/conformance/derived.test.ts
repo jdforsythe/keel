@@ -29,16 +29,15 @@ import { join } from "node:path";
 // Spec: k.derived, clause "After one `keel check` of the household copy, rewriting a file of the linked `@keel/std-text` copy that the evaluation loaded, with its old modification time, makes the next `keel check` evaluate again, as a run with `node_modules/.cache/keel` deleted does."
 // Spec: k.derived, clause "After one `keel check`, re-indenting a contract file and adding a comment to it makes the next `keel check` write no file."
 // Spec: k.derived, clause "While `keel dev` serves the copy of clause 1, within 2 s of the edit `.keel/routes.json` is byte-identical to what `keel build` writes, and a `keel check` run then writes no file."
-// Spec: k.derived, clause "In a fixture with one page route `r` and a passing `renderRoute` test of it, with `.keel/` deleted, `keel test` then `keel ledger` give the same `a11y:.:r#<criterion>` items and rungs as with `.keel/` present, and a page route `s` added after `keel build` with no build since gets its `a11y:.:s#<criterion>` items."
+// Spec: k.derived, clause "In a fixture of module `m` with one page route `m.r` and a passing `renderRoute` test of it, with `.keel/` deleted, `keel test` then `keel ledger` give the same `a11y:.:m.r#<criterion>` items and rungs as with `.keel/` present, and a page route `m.s` added after `keel build` with no build since gets its `a11y:.:m.s#<criterion>` items."
 // Spec: k.derived, clause "No fixture makes `keel check` report W1005."
 // Spec: k.derived, clause "`keel scaffold project p` writes a `.gitignore` holding the lines `.keel/a11y.json`, `.keel/deps.json`, `.keel/ids.json`, `.keel/routes.json`, `.keel/std.json` and `.keel/styles.json`, and no line matching `.keel/surface.json`."
-// Spec: k.derived, clause "After `keel build` of the copy of clause 1, setting the colour its page text uses so that text falls under 4.5:1 against its background makes the next `keel check` report E1804 at that text and write no file."
+// Spec: k.derived, clause "After `keel build` of the copy of clause 1, setting the colour its page text uses (`base.page`'s `fg`) so that text falls under 4.5:1 against its background makes the next `keel check` report E1804 at that text and write no file."
 // Seed 1337 (recorded). The real binary over copies of `examples/client-only-api` and `apps/household` (derived-support.ts), built once and cloned per case.
 // Clause 1's edit adds the page route `app.about` at `/about` to the example's contract and binds it to `HomePage` (derived-support.ts `addRoute`).
 // ASSUMED: "what `keel build` writes" is read by running `keel build` in the same tree after the run under test: a view the run left stale changes.
 // ASSUMED: `--format=compact` trailer `ok check <n> files, <k> refreshed, ...`; a W1018 names the view in its `path` or its message.
 // ASSUMED: the default of `line` in the linked `@keel/std-text` is written `min ?? 1` in `line.ts` of the copy (std.text: `line({ min = 1, max })`).
-// ASSUMED: k.derived 19's page routes `r` and `s` are `m.r` and `m.s` (E1155: a route id of module `m` is `m.<name>`), their items `a11y:.:m.r#<criterion>`.
 // The page of clauses 11 and 12 renders `<Button id="p.b">` (a `@keel/ui` button, whose element is a `button`).
 import { lsp } from "@keel/cli";
 import { fixedTime } from "@keel/tooling/test-time";
@@ -774,7 +773,7 @@ describe("k.derived: other readers and writers", () => {
 // k.derived Derivations: a derivation that fails reports its codes at `keel check` as at `keel build`, and writes no view (no numbered clause; k.compat's E1006 clause is asserted in compat-0092.test.ts).
 
 describe("k.derived: tokens are evaluated by each run", () => {
-  /** `tokens.ts` whose page text takes a colour of 1.53:1 against its background (ASSUMED: the page text takes `base.page`'s `fg` on its `bg`, as `brandTokens` names them). */
+  /** `tokens.ts` whose page text takes a colour of 1.53:1 against its background (the page text takes `base.page`'s `fg` on its `bg`, as `brandTokens` names them). */
   const PALE = [
     'import { brandTokens } from "@keel/ui/brand";',
     "",

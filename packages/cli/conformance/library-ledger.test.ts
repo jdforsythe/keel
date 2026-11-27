@@ -963,7 +963,14 @@ test(
 
 /** The project of clause 16 with the committed ledger written; returns its directory. */
 function committed(): string {
-  const dir = materialize(ledgerProject([badgeEntry("example")], 0));
+  // The project of the clause names no page route, only `modules/shop/Page.tsx`; a page route with no `reports/a11y.json` is a W1733 (k.ledger-items Rules), so the fixture's route table is empty.
+  const dir = materialize({
+    ...ledgerProject([badgeEntry("example")], 0),
+    "modules/shop/shop.contract.ts":
+      "import { contract } from '@keel/router/contract'\nexport const shop = contract('shop', {})\n",
+    "modules/shop/routes.ts":
+      "import { manifest } from '@keel/router'\nimport { shop } from './shop.contract.ts'\nexport const routes = manifest(shop, {})\n",
+  });
   const out = writeLedger(dir, ".keel/ledger.json");
   expect(out.run.status).toBe(0);
   return dir;

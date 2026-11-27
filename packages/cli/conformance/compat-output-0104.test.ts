@@ -1,8 +1,8 @@
-// k.compat, Surface "`keel build` writes `.keel/surface.json`, a k.compiler artifact (E1005): for each contract (k.contract) its `module`, the modules that import it (`callers`), and each API entry's id, method, `path`, `params`, `query`, `body`, `output` and `errors`; for each store a `stores` factory creates, its `id`, state schema and each transaction's payload schema (the build runs each factory once on a sim ctx). Schemas are JSON Schema, as in `routes.json`; the file holds `version: 2`."
+// k.compat, Surface "`.keel/surface.json` is a derived file (k.derived): for each contract (k.contract) its `module`, the modules that import it (`callers`), and each API entry's id, method, `path`, `params`, `query`, `body`, `output` and `errors`; for each store a `stores` factory creates, its `id`, state schema and each transaction's payload schema (the evaluation runs each factory once on a sim ctx). Schemas are JSON Schema, as in `routes.json`; the file holds `version: 3`."
 // Spec: k.compat, clause "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none; removing a base entry is one E1562 with no fix."
-// k.compat, Rules "E1562 an entry change that a base entry with a caller in another deployable refuses, at the current entry's member, naming the id"
+// k.compat, Rules "E1562 an entry change that a base entry with a caller in another deployable refuses, at the current entry's member, its message starting with the id; fix when the change is one added required object field: make it optional; an entry gone from its method and path has no fix"
 // Seed: 1337. Real binary over a temp project (see compat-support.ts).
-// Layout: k.compat Surface (v2). `data.contracts[<module>].entries[<id>].output` holds the entry's `output` as JSON Schema; the checks look for the schema's own marks (`integer` and the field name) and not for an exact tree.
+// Layout: k.compat Surface (v3). `data.contracts[<module>].entries[<id>].output` holds the entry's `output` as JSON Schema; the checks look for the schema's own marks (`integer` and the field name) and not for an exact tree.
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
 import {
@@ -51,7 +51,7 @@ test(
         expect(field(load, "method")).toBe("GET");
         expect(field(load, "path")).toBe("/y/save");
         const file: unknown = JSON.parse(readText(dir, ".keel/surface.json"));
-        expect(field(field(file, "data"), "version")).toBe(2);
+        expect(field(field(file, "data"), "version")).toBe(3);
         expect(field(field(field(field(file, "data"), "contracts"), "y"), "callers")).toEqual(["a"]);
         expect(JSON.stringify(field(entryOf(dir, "y.add"), "output"))).toContain("null");
       }),
