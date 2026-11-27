@@ -24,7 +24,7 @@ A write that answers nothing has `output: s.object({})` and returns `ok({})`. A 
 
 A module that serves routes has one client-safe file, `modules/<id>/<id>.contract.ts`, exporting `contract('<id>', {...})` from `@keel/router/contract`, which imports `*.schema.ts` files and packages only (E1514). Each key is a route id; an API entry (`method`, `path`, `output`; optional `params`, `query`, `body`, `errors`, `timeout`, `events`) is `<module>.<name>`, one lowerCamel segment that names its client method (E1513). It answers JSON and is never in a module a `client` deployable serves (E1511). A member its kind refuses is E1510.
 
-**Static reading.** `keel check` reads the contract without running it. Keys are literal; each entry is an object whose `method`, `path`, `layout` and `events` are literals and whose `params`, `search` and `query` are schemas reached through consts and imports; other members are any expression. A spread or a call in place of the entries or of an entry (a helper that returns an entry) is W1005 and E1111. A channel's entries are written out the same way (keel-data).
+**Static reading.** `keel check` reads the contract without running it. Keys are literal; each entry is an object whose `method`, `path`, `layout` and `events` are literals and whose `params`, `search` and `query` are schemas reached through consts and imports; other members are any expression. A spread, call or name in place of the entries or of an entry (a helper that returns an entry) is E1111. A channel's entries are written out the same way (keel-data).
 
 ```ts
 // modules/api/api.contract.ts

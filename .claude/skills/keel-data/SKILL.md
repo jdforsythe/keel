@@ -5,11 +5,11 @@ description: "Durable Keel storage, app data (std-postgres), concurrent and offl
 
 # Data: storage, writes, live views, workflows
 
-Signatures: `keel docs data` and `keel docs live` list them: `keel docs k.persist`, `k.data`, `k.sync`, `std.db`, `std.postgres`, `std.postgres-changes`, `std.contracts`, `std.offline`, `std.outbox-owner`, `std.conflicts`, `std.channels`, `std.live`, `std.workflows`.
+Signatures: `keel docs data`, `keel docs live`, `keel docs k.persist`, `k.data`, `k.sync`, `std.db`, `std.postgres`, `std.postgres-changes`, `std.contracts`, `std.offline`, `std.outbox-owner`, `std.conflicts`, `std.channels`, `std.live`, `std.workflows`.
 
 ## Durable storage
 
-A `node` deployable's `storage` is `'file'`, `'sqlite'` or `'postgres'`; the app lists `@keel/std-db` in `dependencies` (E1572) and never imports it (E2151). `KEEL_DATABASE_URL`: SQLite takes a `file:` URL (default `file:/data/keel.sqlite`, Node 22.13 or later); Postgres requires a `postgres:` URL. A bad or missing value is E1560, an unopenable database E2153, a newer layout E2152. `keel check --base` reports a change that breaks stored data (E1563: make an added required field `.optional()`).
+A `node` deployable's `storage` is `'file'`, `'sqlite'` or `'postgres'`; the app lists `@keel/std-db` in `dependencies` (E1572) and never imports it (E2151). `KEEL_DATABASE_URL`: SQLite takes a `file:` URL (default `file:/data/keel.sqlite`, Node 22.13+); Postgres a `postgres:` URL. A bad or missing value is E1560, an unopenable database E2153, a newer layout E2152. `keel check --base b.json`, `b.json` from `git show origin/main:.keel/surface.json`, reports a stored-data break (E1563: make an added required field `.optional()`).
 
 Outside a request (runners, jobs) use `commitStores(ctx, factory, fn)` from `@keel/server`, in `*.server.ts`; `fn` returns a `Result`, may run 3 times, and calls transactions only.
 
