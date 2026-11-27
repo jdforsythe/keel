@@ -8,8 +8,8 @@ import { Boundary, mount } from "@keel/runtime-dom";
 import { Host } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Pick, Points, SEED, flush, frames, probe, simCtx } from "./host-support.ts";
 import { cleanup, host } from "./host-dom.ts";
+import { Pick, Points, SEED, flush, frames, probe, simCtx } from "./host-support.ts";
 
 afterEach(() => {
   cleanup();

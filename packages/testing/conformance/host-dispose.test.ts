@@ -9,8 +9,8 @@ import type { CtxEvent } from "@keel/ctx";
 import { If, mount } from "@keel/runtime-dom";
 import { Host, hostCode } from "@keel/ui";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Points, flush, frames, probe, simCtx } from "./host-support.ts";
 import { cleanup, host, signal } from "./host-dom.ts";
+import { Points, flush, frames, probe, simCtx } from "./host-support.ts";
 
 afterEach(() => {
   cleanup();

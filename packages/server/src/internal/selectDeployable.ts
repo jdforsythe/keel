@@ -9,7 +9,7 @@ import { moduleOf } from "./moduleOf.ts";
  * may be loaded by another process). E1553: a `static` deployable contains a route with params or actions.
  * E1558 (k.topology): a non-`node` deployable serves a route whose loader is live or names `stores`, or one of whose
  * actions names `stores`, checked first: a live loader is an API entry's. E1511: a non-`node` deployable serves an API
- * route (k.api). Returns the routes of the served deployable's modules.
+ * route or a `local: true` one (k.api, k.contract Local routes), which no server there answers or enforces. Returns the routes of the served deployable's modules.
  */
 export function selectDeployable(
   topology: Topology,
@@ -50,9 +50,15 @@ export function selectDeployable(
           `${dep.adapter} deployable ${picked}: route ${r.id} ${what}; serve module ${moduleOf(r.id)} from a node deployable`,
         );
     }
-  const api = served.find((r) => r.def.kind === "api");
-  if (api !== undefined && dep.adapter !== "node")
-    throw codedError("E1511", `${dep.adapter} deployable ${picked}: API route ${api.id} needs a node deployable`);
+  const unserved =
+    dep.adapter === "node" ? undefined : served.find((r) => r.def.kind === "api" || r.def.local === true);
+  if (unserved !== undefined) {
+    const what = unserved.def.local === true ? "local" : "API";
+    throw codedError(
+      "E1511",
+      `${unserved.id}: ${what} route in ${dep.adapter} deployable ${picked}, which has no server`,
+    );
+  }
   if (dep.adapter === "static")
     for (const r of served) {
       const params = r.def.params !== undefined || r.segments.some((s) => s.kind === "param");

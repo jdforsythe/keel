@@ -1,8 +1,8 @@
 import { check } from "@keel/check";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
-import { TEST_FILE } from "./TEST_FILE.ts";
 import { checkTokens } from "./checkTokens.ts";
+import { isTestFile } from "./isTestFile.ts";
 import { projectTopology } from "./projectTopology.ts";
 import { relPath } from "./relPath.ts";
 
@@ -23,7 +23,7 @@ export async function a11yFindings(
   const dirs = files.filter((f) => ROUTES.test(f.path)).map((f) => f.path.slice(0, -".keel/routes.json".length));
   if (dirs.length === 0) return [];
   const code = files.filter(
-    (f) => CODE_FILE.test(f.path) && !TEST_FILE.test(f.path) && dirs.some((d) => f.path.startsWith(`${d}modules/`)),
+    (f) => CODE_FILE.test(f.path) && !isTestFile(f.path) && dirs.some((d) => f.path.startsWith(`${d}modules/`)),
   );
   if (code.length === 0) return [];
   const topology = projectTopology(files);

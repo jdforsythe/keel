@@ -16,7 +16,8 @@ const Bearer = s.secret(s.string());
  * built: a `bearer` that is not a secret whose text is a token68 of 1 to 4,096 characters (k.api Bearer) is `format` at
  * `bearer`. A `user` is sent as `x-keel-user`, signed by the target's `sign` over the body as sent (k.user); a `user`
  * that is not a string, or one on a target with no `sign` (a ctx no `createApp` bound), is `api.input` `type` at `user`,
- * and one the signer refuses (over 256 characters) `max`. An input that names no `user` carries `fallback` (k.user Testing). A Request the platform refuses (bad URL, body on GET) is `api.network`.
+ * and one the signer refuses (over 256 characters) `max`. An input that names no `user` carries `fallback` (k.user Testing).
+ * A call a server sends (`server`) carries `x-keel-forwarded: 1`, so no `local` route answers it (k.topology Calls and peers). A Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
   e: Endpoint,
@@ -27,6 +28,7 @@ export function buildRequest(
   sign?: Target["sign"],
   fallback?: string,
   keel = true,
+  server = false,
 ): Result<Request, ApiError<never>> {
   const params = encodePart(e.params, "params", input);
   if (!params.ok) return params;
@@ -57,6 +59,7 @@ export function buildRequest(
   const headers: Record<string, string> = keel ? { accept, "x-keel": "1" } : { accept };
   if (b !== undefined) headers.authorization = `Bearer ${token}`;
   if (signed !== undefined) headers["x-keel-user"] = signed;
+  if (server) headers["x-keel-forwarded"] = "1";
   const init: RequestInit =
     json === undefined
       ? { method: e.method, headers, signal }

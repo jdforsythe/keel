@@ -7,6 +7,7 @@ type Loc = {
   readonly col?: number | undefined;
   readonly fix?: string | undefined;
   readonly see?: string | undefined;
+  readonly detail?: string | undefined;
 };
 
 /** Build a diagnostic record, keeping absent optional fields absent (exact optional properties). */
@@ -20,5 +21,6 @@ export function makeDiag(code: string, message: string, loc: Loc = {}): Diag {
     message: clipMessage(message, 89),
     ...(loc.fix === undefined ? {} : { fix: loc.fix }),
     ...(loc.see === undefined ? {} : { see: loc.see }),
+    ...(loc.detail === undefined ? {} : { detail: loc.detail }),
   };
 }

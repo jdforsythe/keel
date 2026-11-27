@@ -4,7 +4,7 @@
 // k.testing, clause "`renderRoute(id, { routes, params, search?, state?, ctx?, caller? })` ... then renders its chain; it resolves when the page is ready."
 // No conformance sentence names a `renderRoute` on a `simulate` run's ctx; the nearest text is the `simulate` example of k.sim, whose scenario awaits `renderRoute(..., { ctx })`.
 // Seed 1337 (fc.assert below; replay runs one SimRun with the seed 1337).
-import { manifest, loader } from "@keel/router";
+import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { renderRoute, simulate } from "@keel/testing";

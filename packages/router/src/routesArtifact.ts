@@ -8,8 +8,8 @@ const VERBS: readonly Verb[] = ["DELETE", "PATCH", "POST", "PUT"];
 
 /**
  * The `routes.json` content for a route table (k.compiler Artifacts): per route id, sorted, `{ actions, api?, guard,
- * layout, method?, module, params, path, search }`. `actions` lists a page's bound verbs or an API write entry's
- * `method`; an API entry has `api: true`, its `method`, and its `query` under `search`; `guard` is the guard's
+ * layout, local?, method?, module, params, path, search }`. `actions` lists a page's bound verbs or an API write entry's
+ * `method`; an API entry has `api: true`, its `method`, and its `query` under `search`; a `local: true` entry has `local: true`; `guard` is the guard's
  * `redirect`; layouts have `path: null`; schemas are JSON Schema. A module's table whose `layout` names another
  * module's layout gives its entries as they are: the layout is checked where `routeTable` joins the tables.
  */
@@ -26,6 +26,7 @@ export function routesArtifact(routes: RouteTable): RoutesArtifact {
         // The guard's `redirect`, or `null` for a guard without one.
         guard: def.guard?.redirect ?? null,
         layout: def.layout ?? null,
+        ...(def.local === true ? { local: true as const } : {}),
         ...(def.method === undefined ? {} : { method: def.method }),
         module: def.module,
         params: def.params === undefined ? null : jsonSchemaOf(def.params.node),

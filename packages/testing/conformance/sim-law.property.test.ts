@@ -1,3 +1,4 @@
+import { setImmediate, setTimeout } from "node:timers";
 // @vitest-environment happy-dom
 // Spec: k.drive-law, clause "A scenario that starts ten waiters `ctx.clock.after(Math.floor(ctx.random.float() * 1000))`, each recording its index and `ctx.clock.now()` as it resolves, then awaits `run()`: under `simulate` with `{ runs: 20, seed: 7 }` each run's record lists all ten ordered by time, ties by index, and `replay` of the `SimRun` that run received records an equal list."
 // k.drive-law, Law "The drive draws no random and reads no real time."
@@ -11,7 +12,6 @@
 import { fixedTime } from "@keel/tooling/test-time";
 import type { Schedule, SimCtx } from "@keel/ctx";
 import { observe } from "@keel/ctx";
-import { setImmediate, setTimeout } from "node:timers";
 import { simulate } from "@keel/testing";
 import fc from "fast-check";
 import { expect, test } from "vitest";

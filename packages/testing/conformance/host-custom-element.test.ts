@@ -7,8 +7,8 @@ import { If, mount } from "@keel/runtime-dom";
 import { Host, customElement } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Pick, Points, type PointsValue, SEED, flush, frames, simCtx } from "./host-support.ts";
 import { cleanup, host, signal } from "./host-dom.ts";
+import { Pick, Points, type PointsValue, SEED, flush, frames, simCtx } from "./host-support.ts";
 
 afterEach(() => {
   cleanup();

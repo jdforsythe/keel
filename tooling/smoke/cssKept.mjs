@@ -2,7 +2,7 @@
 // holding one value of each group's form used by every style prop, parses through `CSSStyleSheet.replaceSync` with
 // every emitted rule kept and each rule holding every declaration it was emitted with; and each attack value a review
 // found is refused (E1807) before any CSS is emitted; and the grammar's edge cases (`valueEdges`): each refused one is
-// refused, each accepted one takes effect by its computed value. Called by brand.mjs with its page.
+// refused, each accepted one takes effect by its computed value. Called by values.mjs with its page.
 import { brandTokens } from "../../packages/ui/src/brand/brandTokens.ts";
 import { TokenSchema } from "../../packages/ui/src/TokenSchema.ts";
 import { compileStyles } from "../../packages/ui/src/css/compileStyles.ts";

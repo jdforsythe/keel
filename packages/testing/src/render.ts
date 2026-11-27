@@ -2,6 +2,7 @@ import { type Ctx, createCtx } from "@keel/ctx";
 import { clip } from "./internal/clip.ts";
 import { fail } from "./internal/fail.ts";
 import { harnessArtifacts } from "./internal/harnessArtifacts.ts";
+import { notInE2e } from "./internal/notInE2e.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
@@ -42,6 +43,7 @@ export function render<P, A extends P = P>(
   component: Renderable<P, A>,
   options: RenderOptions<RenderProps<P, A>>,
 ): Harness<Ctx> {
+  notInE2e("render");
   const schema = component.Props;
   if (schema === undefined) throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
   // Slot and callback props are typed outside the `Props` schema (k.component): an open schema parses its own fields.

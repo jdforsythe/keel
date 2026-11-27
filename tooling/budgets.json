@@ -20,11 +20,11 @@
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "22.5kb",
+      "max": "23.2kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "39.5kb",
+      "max": "39.6kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -42,8 +42,8 @@
     "@keel/ctx": "4.7kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "14.6kb",
-    "@keel/router/contract": "3.2kb",
+    "@keel/router": "14.7kb",
+    "@keel/router/contract": "3.25kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "11kb",
@@ -57,12 +57,12 @@
     },
     "@keel/schema": "6.5kb",
     "@keel/server": {
-      "max": "30.5kb",
+      "max": "30.75kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
     "@keel/server/internal/start": {
-      "max": "2.5kb",
+      "max": "3.5kb",
       "platform": "node"
     },
     "@keel/services": "4.1kb",
@@ -204,7 +204,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "22.5kb",
+      "max": "22.6kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

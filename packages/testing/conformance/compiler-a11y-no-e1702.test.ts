@@ -1,4 +1,3 @@
-import type { Ctx } from "@keel/ctx";
 // @vitest-environment happy-dom
 // Seed 1337
 // Spec: k.compiler, clause "`<img alt=\"\">`, an unnamed `<section>`, `<td>` and `<li>` with text render with no E1702."
@@ -6,6 +5,7 @@ import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import type { A11yEntry } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
+import type { Ctx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import type { TestComponent } from "@keel/testing";

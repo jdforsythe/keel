@@ -1,5 +1,6 @@
 // Spec: k.test-run, clause "`keel test` over a project whose `test/a.test.ts` holds a passing test at line 3, a failing one at line 6 and an `it.skip` at line 9 writes `reports/tests/run.json` holding `test/a.test.ts` with the SHA-256 of its source and the tests `{ line: 3, state: 'passed' }`, `{ line: 6, state: 'failed' }` and `{ line: 9, state: 'skipped' }`, and no other file in `reports/tests/`."
 // Spec: k.test-run, clause "In a git checkout of a project whose `.keel/` files `keel build` wrote, with `reports/` ignored, `git status --porcelain` prints nothing after `keel test`."
+// Spec: k.test-run, clause "`keel test` over a project whose `reports/tests/` holds `run.json` and `e2e.json` replaces `run.json` and leaves `e2e.json` byte for byte."
 // Seed: 1337 (the one property, 4 runs). Binary runs: 1 `keel test` per case (2 for the edit case), 1 per property run, and for the git case 1 `keel build` and 1 `keel test`.
 // The real `keel` binary over temp projects (OS tmpdir; no vitest config: vitest's defaults). The git case builds golden-free `staticTree()` (static-support.ts), commits what `keel build`
 // wrote (`.keel/` tracked, `node_modules`, `dist` and `reports` ignored) and gives it one test file that imports a module page so the compiler plugin transforms app code during the run.
@@ -101,6 +102,24 @@ describe("k.test-run: a test run writes under `reports/` only", () => {
       keel(dir, ["test"]);
       expect(reportDir(dir)).toEqual(["run.json"]);
       expect(runJson(dir)).toContain("test/a.test.ts");
+    },
+    SLOW,
+  );
+
+  it(
+    "`keel test` over a project whose `reports/tests/` holds `run.json` and `e2e.json` replaces `run.json` and leaves `e2e.json` byte for byte",
+    () => {
+      // the e2e report is bytes of its own (the shape of k.test-run Run report, an arbitrary sha), written by no `keel test`
+      const e2e = `${JSON.stringify({ v: 1, files: { "test/x.e2e.ts": { sha: sha256("x"), tests: [{ line: 3, state: "passed" }] } } }, null, 2)}\n`;
+      const dir = project("test-run-keeps-e2e", {
+        "test/a.test.ts": A_TEST,
+        "reports/tests/run.json": '{ "v": 1, "files": {} }\n',
+        "reports/tests/e2e.json": e2e,
+      });
+      keel(dir, ["test"]);
+      expect(reportDir(dir)).toEqual(["e2e.json", "run.json"]);
+      expect(readFileSync(join(dir, "reports/tests/e2e.json"), "utf8")).toBe(e2e);
+      expect(runJson(dir)).toContain(sha256(A_TEST));
     },
     SLOW,
   );

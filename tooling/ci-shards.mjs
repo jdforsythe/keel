@@ -9,12 +9,16 @@
 // Usage: node tooling/ci-shards.mjs <shard>   runs that shard's test tasks through turbo, one task at a time, every
 //                                            task even after one fails, streaming turbo's output; then a line per
 //                                            task and, for each failed task, its name and its whole log
+//        node tooling/ci-shards.mjs --browser <shard>  prints `browser=true` when a package of that shard has a
+//                                            test file that drives a browser (BROWSER below), else `browser=false`,
+//                                            for $GITHUB_OUTPUT: only those shards install Chromium
 //        node tooling/ci-shards.mjs --plan    prints each shard's packages and parts and expected seconds
 //        node tooling/ci-shards.mjs --verify  fails E0013 when a test task or a part of a split one falls in no
 //                                            shard or in two, two parts of one package share a shard, the matrix
 //                                            does not count 1 to n, or SECONDS or SPLIT names a package with no
 //                                            test task
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -24,6 +28,42 @@ import { dryRunJson } from "./turbo-dry.mjs";
 const root = new URL("..", import.meta.url).pathname;
 const SKIP = new Set(["node_modules", "dist", "fixtures", "reports", "coverage"]);
 const TEST = /\.test\.[cm]?[jt]sx?$/;
+/** What a test or conformance file that drives a browser names: Playwright, the e2e entry, or `keel test --e2e`. */
+const BROWSER = /from ["']playwright|@keel\/testing\/e2e|keelE2e\(|\["test", "--e2e"/;
+
+/** The test files of the package at `dir` as its vitest lists them, relative to `dir`. */
+function testFiles(dir) {
+  const r = spawnSync("pnpm", ["exec", "vitest", "list", "--filesOnly"], {
+    cwd: path.join(root, dir),
+    encoding: "utf8",
+    env,
+  });
+  if (r.status !== 0) throw new Error(`vitest list failed in ${dir}: ${r.stderr.trim().split("\n").at(-1)}`);
+  return r.stdout
+    .split("\n")
+    .filter((l) => TEST.test(l.trim()))
+    .map((l) => l.trim());
+}
+
+/**
+ * The files part `part` of `parts` runs, as vitest's `--shard=part/parts` picks them: sorted by the SHA-1 hex of each
+ * path from the package root (with its leading `/`), then sliced into equal parts of `ceil(files / parts)`.
+ */
+function partFiles(files, part, parts) {
+  const size = Math.ceil(files.length / parts);
+  return files
+    .map((f) => ({ f, hash: createHash("sha1").update(`/${f}`).digest("hex") }))
+    .sort((a, b) => (a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0))
+    .slice(size * (part - 1), size * part)
+    .map((x) => x.f);
+}
+
+/** Whether a unit (a package, or one part of a split one) runs a test file that drives a browser. */
+function drivesBrowser(dir, unit) {
+  const files = testFiles(dir);
+  const mine = unit.parts > 1 ? partFiles(files, unit.part, unit.parts) : files;
+  return mine.some((f) => BROWSER.test(fs.readFileSync(path.join(root, dir, f), "utf8")));
+}
 const env = { ...process.env, TURBO_NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1" };
 const GB = 2 ** 30;
 /** How often a running task's process tree and the machine's free memory are sampled. */
@@ -306,6 +346,13 @@ if (arg === "--verify") {
           });
     return { diags, counts: { packages: all.length, parts: expected.length, shards: n } };
   });
+} else if (arg === "--browser") {
+  const shard = Number(process.argv[3]);
+  const tasks = testTasks();
+  const mine = deal(tasks)[shard - 1]?.units ?? [];
+  const dirs = new Map(tasks.map((t) => [t.name, t.dir]));
+  const needs = mine.some((u) => drivesBrowser(dirs.get(u.name) ?? "", u));
+  process.stdout.write(`browser=${needs}\n`);
 } else if (arg === "--plan") {
   await run("ci-shards plan", () => {
     for (const [i, s] of deal(testTasks()).entries())

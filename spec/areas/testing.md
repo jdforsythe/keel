@@ -9,3 +9,6 @@
 | k.sim | simulated clock, schedules, replicas, `simulate` and shrinking of failures |
 | k.drive | how `simulate` moves the clock, async context, seams and stalls |
 | k.drive-law | law that two runs of one `SimRun` agree, order of held work and the law check |
+| k.e2e | `keel test --e2e` files, `serve`, `build`, `answer`, library hosts and the run's report |
+| k.e2e-page | the page API over Keel ids: verbs, reads, `problems`, `log`, `resume` and waits |
+| k.e2e-run | the runner's browser, sandbox, reach, environment, run folder, teardown and errors |
