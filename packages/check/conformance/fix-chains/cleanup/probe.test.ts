@@ -5,7 +5,7 @@ import { withHandle } from "./end/withHandle.ts";
 
 test("close runs after use on success", () => {
   const log: string[] = [];
-  run({ close: () => void log.push("close") }, () => void log.push("use"));
+  withHandle({ close: () => void log.push("close") }, () => void log.push("use"));
   expect(log).toEqual(["use", "close"]);
 });
 
@@ -14,7 +14,7 @@ test("close runs after use on failure, and the failure goes on as itself", () =>
   const w = new Error("w");
   let got: unknown;
   try {
-    run({ close: () => void log.push("close") }, () => {
+    withHandle({ close: () => void log.push("close") }, () => {
       log.push("use");
       throw w;
     });
