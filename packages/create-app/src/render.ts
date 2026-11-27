@@ -17,9 +17,11 @@ function line(r: Out, pretty: boolean): string {
           ? ""
           : `${r.path}${r.line === undefined ? "" : `:${r.line}:${r.col ?? 1}`}`;
       const see = `  see: keel docs ${r.see}`;
+      // A diagnostic about several files names each on its own line under the head (docs/OUTPUT.md).
+      const each = (r.paths ?? []).map((p) => `  ${p}`);
       return pretty
-        ? [at === "" ? r.code : `${r.code}  ${at}`, `  ${clip(r.message)}`, see].join("\n")
-        : [`${r.code}${at === "" ? "" : ` ${at}`} ${clip(r.message)}`, see].join("\n");
+        ? [at === "" ? r.code : `${r.code}  ${at}`, `  ${clip(r.message)}`, ...each, see].join("\n")
+        : [`${r.code}${at === "" ? "" : ` ${at}`} ${clip(r.message)}`, ...each, see].join("\n");
     }
     case "summary": {
       const counts = Object.entries(r.counts).map(([k, n]) => `${n} ${k}`);

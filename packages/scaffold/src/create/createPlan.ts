@@ -1,5 +1,5 @@
 import { posix } from "node:path";
-import { type Result, ok } from "@keel/schema";
+import { type Result, err, ok } from "@keel/schema";
 import { fail } from "../internal/fail.ts";
 import { managerOf } from "../internal/managerOf.ts";
 import { sortedKeys } from "../internal/sortedKeys.ts";
@@ -105,10 +105,30 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
   }
   const taken = new Set(listing.map((p) => p.replace(/\/$/, "")));
   const listed = listing.filter((p) => !p.endsWith("/"));
-  for (const p of sortedKeys(files.keys())) {
-    const clash = taken.has(p) ? p : listed.find((f) => p.startsWith(`${f}/`));
-    if (clash !== undefined)
-      return refuse("E1361", at(clash), `${cut(clash, 40)} exists; move it aside, or use a new folder`);
+  const clashes = [
+    ...new Set(
+      sortedKeys(files.keys()).flatMap((p) => {
+        const clash = taken.has(p) ? p : listed.find((f) => p.startsWith(`${f}/`));
+        return clash === undefined ? [] : [clash];
+      }),
+    ),
+  ].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const [first] = clashes;
+  if (first !== undefined) {
+    const one = clashes.length === 1;
+    const message = one
+      ? `${cut(first, 40)} exists; move it aside, or use a new folder`
+      : `${clashes.length} files this writes exist; move them aside, or use a new folder`;
+    const data: ScaffoldDiag = {
+      kind: "diag",
+      code: "E1361",
+      path: at(first),
+      ...AT,
+      message,
+      see: SEE,
+      paths: clashes.map(at),
+    };
+    return err({ code: "scaffold.rejected", message: `E1361 ${message}`, data });
   }
   const records: CreateRecord[] = sortedKeys(files.keys()).map((path) => ({
     kind: "scaffold.edit",

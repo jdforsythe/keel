@@ -7,17 +7,17 @@ pnpm create @keel/app shop --adapter node
 pnpm create @keel/app charts --library @acme/charts
 ```
 
-**Package.** `@keel/create-app` has one bin, `create-app`, at `src/bin.ts` (published `dist/src/bin.js`), and depends on `@keel/scaffold` at exactly its own version. `@keel/scaffold/create` exports `createPlan`, pure; the bin reads its inputs, writes and prints:
+**Package.** `@keel/create-app` has one bin, `create-app`, at `src/bin.ts`, and depends on `@keel/scaffold` at exactly its own version. `@keel/scaffold/create` exports `createPlan`, pure; the bin reads its inputs, writes and prints:
 ```ts
 createPlan(input: {
-  version: string; nodeVersion: string; skills: readonly AgentSkill[]; // create's version, the running Node's, the skills it ships
+  version: string; nodeVersion: string; skills: readonly AgentSkill[]; // create's, the running Node's, the skills it ships
   folder?: string; name?: string; adapter?: 'client' | 'node' | 'static'; library?: string; existing?: boolean; // the flags
-  listing?: readonly string[]; // every entry under the folder, relative, '/'-separated, a folder ending in '/'
-  ancestors?: Readonly<Record<string, string>>; // Workspace's files above the folder, keyed from the working folder: '../package.json'
-  realPath?: string; gitAbove?: boolean; userAgent?: string; // the folder's real path, a `.git` at or above it, npm_config_user_agent
+  listing?: readonly string[]; // every entry under the folder, relative, a folder ending in '/'
+  ancestors?: Readonly<Record<string, string>>; // Workspace's files above the folder, keyed from the working folder
+  realPath?: string; gitAbove?: boolean; userAgent?: string; // its real path, a `.git` at or above it, npm_config_user_agent
 }): Result<{ files: Map<string, string>; records: readonly CreateRecord[] }, ScaffoldError>
 ```
-`files` are keyed from the folder; a `CreateRecord` is one of Next's, W1364 a `diag` between the edits and the `create.next` records. No `@keel/*` package depends on `@keel/create-app` and a created project does not list it. It ships `skills/<name>/SKILL.md`, byte-equal to `@keel/cli`'s skills of the same version, which it passes as `skills`; `keel scaffold project` passes the running `@keel/cli`'s. Every package of its install closure is in the closure of the project it creates.
+`files` are keyed from the folder; a `CreateRecord` is one of Next's, W1364 a `diag` between edits and `create.next` records. No `@keel/*` package depends on `@keel/create-app` and a created project does not list it. It ships `skills/<name>/SKILL.md`, byte-equal to `@keel/cli`'s skills of the same version, which it passes as `skills`; `keel scaffold project` passes the running `@keel/cli`'s. Every package of its install closure is in the closure of the project it creates.
 
 **Flags.** None is required.
 | flag | does |
@@ -55,11 +55,11 @@ No printed command fetches a package the project's install did not.
 
 **Workspace.** The workspace root is the nearest folder above the target holding `pnpm-workspace.yaml`, or a `package.json` with `workspaces`. Inside one an app has no `turbo.json`, CI workflow, `packageManager` or `.yarnrc.yml`, and the install runs at the root. A `@keel/cli` that resolves from the target's parent at another version than create's is E1363, so a workspace holds one Keel. A folder the root's package globs (`*`, `**`, `!`) do not match is W1364, and the files are written.
 
-**Folder.** A folder is empty when it holds nothing but `.git`, `.DS_Store` and `Thumbs.db`. Any other entry is E1360, unless `--existing`; with it, a path the plan writes that exists is E1361, naming it. Each file is created only where none is, and never replaced. A failed write is E1365: the files and folders this run made are removed. Writes are judged as k.scaffold Links says (E1357).
+**Folder.** A folder is empty when it holds nothing but `.git`, `.DS_Store` and `Thumbs.db`. Any other entry is E1360, unless `--existing`; with it, every path the plan writes that exists is one E1361, at the first in sorted order, naming one, or counting several and listing each in `paths` (docs/OUTPUT.md). Each file is created only where none is, and never replaced. A failed write is E1365: the files and folders this run made are removed. Writes are judged as k.scaffold Links says (E1357).
 
 **Names.** The name is `--name`, else the folder's last segment (of its real path for `.`). It is `[a-z][a-z0-9-]*`, at most 64 characters, and not a dependency the project lists, else E1352 with the fix `--name <n>`, `n` the name lowercased with each run of other characters one `-`. `--library` takes `@<scope>/<base>`, else E1352.
 
-**Not done.** It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder and reads outside it only the files Workspace names. The proof of the first two is a run under Node's permission model (Conformance) with writes granted only in the folder and no child process or worker granted (from Node 25, no network either): Node refuses each such call, and a refused call ends the run with a nonzero exit, so its exit 0 is the proof.
+**Not done.** It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder and reads outside it only the files Workspace names. Conformance proves the first two.
 
 **Next.** Each written file is a `scaffold.edit` record (`create <path>`), sorted. Then a `create.next` record per command, `{ kind, command, dir? }`, compact `next pnpm install`, `dir` the folder to run it in when it is not the working folder (`next pnpm install (in ../..)`): `cd <folder>` unless `.`; `git init` when no `.git` is at or above the folder; the install; then `keel dev`, `keel check`, `keel test`, `keel build` in the manager's form, or for a library `keel check`, `keel test`, `keel pack` (a fresh library holds no `.keel/ledger.json`, so `keel pack --check` is E1164 until `keel pack` writes it, k.library-pack). The trailer is `ok create <name> <kind> <n> created`, or `ok create --dry-run ...` with nothing written.
 
@@ -75,7 +75,7 @@ No printed command fetches a package the project's install did not.
 - A `client` or `static` project has no file named `*.server.ts`, no `deploy/` folder, and no file outside `AGENTS.md` and `.claude/` holding `KEEL_SECRET`, `createApp` or `identity`.
 - `--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`.
 - In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project.
-- With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written.
+- With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written.
 - Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was.
 - A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written.
 - `createPlan` given Node 22.14.0 returns E1362 and no file.
@@ -84,7 +84,7 @@ No printed command fetches a package the project's install did not.
 - Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project.
 - With `node_modules/@keel/cli` at another version above the target, `create-app` reports E1363 naming both versions and writes nothing.
 - `--adapter node --library @a/b`, a second folder argument and `--nope` are each E1052, exit 2, nothing written.
-- Run as `node --permission` with reads allowed, writes allowed only in the folder, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project.
+- Run as `node --permission` with reads allowed, writes granted to the folder and its contents alone, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project, and those flags refuse a write beside the folder and a child process; from Node 25 they refuse a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019).
 - In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints the same records and writes nothing.
 - `@keel/create-app`'s `skills/<name>/SKILL.md` equal `keel docs <name>` of `@keel/cli` at the same version, byte for byte.
 - From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --check`, and in each `keel docs --sync` writes nothing.

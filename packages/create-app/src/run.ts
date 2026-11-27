@@ -9,10 +9,14 @@ import { readInputs } from "./readInputs.ts";
 import { render } from "./render.ts";
 import { writePlan } from "./writePlan.ts";
 
-const diag = (code: string, message: string, path?: string): OutDiag =>
-  path === undefined || path === ""
-    ? { kind: "diag", code, message, see: "k.create" }
-    : { kind: "diag", code, path, line: 1, col: 1, message, see: "k.create" };
+const diag = (code: string, message: string, path?: string, paths?: readonly string[]): OutDiag => ({
+  kind: "diag",
+  code,
+  ...(path === undefined || path === "" ? {} : { path, line: 1, col: 1 }),
+  message,
+  ...(paths === undefined || paths.length < 2 ? {} : { paths }),
+  see: "k.create",
+});
 const failed = (d: OutDiag): Out[] => [d, { kind: "summary", name: "create", ok: false, counts: { errors: 1 } }];
 
 /**
@@ -52,7 +56,7 @@ export function run(p: Process): { readonly stdout: string; readonly code: numbe
   });
   if (!planned.ok) {
     const d = planned.error.data;
-    return print(failed(diag(d.code, d.message, d.path)), d.code === "E1052" ? 2 : 1);
+    return print(failed(diag(d.code, d.message, d.path, d.paths)), d.code === "E1052" ? 2 : 1);
   }
   const { files, records } = planned.value;
   const at = (path: string): string => (flags.folder === "." ? path : posix.join(flags.folder, path));
