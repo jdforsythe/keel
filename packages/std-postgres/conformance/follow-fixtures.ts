@@ -3,7 +3,7 @@
 // Assumption: `channel` is a plain `{ name, params }` (the spec: "any value with `name` and a `params` schema"); `key` of `follow` is the canonical JSON text of the params (keys sorted), as `changed` keys them.
 // Assumption: a follow's delivery over a socket is awaited with `vi.waitFor` (bounded); a delivery that must NOT happen is shown by a later commit on the same connection arriving (`flush`), since notifications arrive in commit order.
 import { testTime } from "@keel/tooling/test-time";
-import type { Result } from "@keel/schema";
+import type { KeelError, Result } from "@keel/schema";
 import { err, ok, s } from "@keel/schema";
 import { expect, vi } from "vitest";
 
@@ -27,11 +27,21 @@ function method(target: object, name: string): (...args: unknown[]) => unknown {
 }
 
 /** `target.changed(channel, params)` for a database object or a `tx`; a throw is a rejection. */
-export async function changed(target: object, channel: Chan, params: unknown): Promise<Result<null, unknown>> {
+export async function changed(target: object, channel: Chan, params: unknown): Promise<Result<null, KeelError<string, unknown>>> {
   const r: unknown = await method(target, "changed")(channel, params);
   if (typeof r !== "object" || r === null || typeof Reflect.get(r, "ok") !== "boolean")
     throw new Error("changed answered no Result");
-  return Reflect.get(r, "ok") === true ? ok(null) : err(Reflect.get(r, "error"));
+  if (Reflect.get(r, "ok") === true) return ok(null);
+  const e: unknown = Reflect.get(r, "error");
+  if (
+    typeof e !== "object" ||
+    e === null ||
+    typeof Reflect.get(e, "code") !== "string" ||
+    typeof Reflect.get(e, "message") !== "string" ||
+    !Object.hasOwn(e, "data")
+  )
+    throw new Error("changed answered an err that is no KeelError");
+  return err({ code: String(Reflect.get(e, "code")), message: String(Reflect.get(e, "message")), data: Reflect.get(e, "data") });
 }
 
 export interface Watch {

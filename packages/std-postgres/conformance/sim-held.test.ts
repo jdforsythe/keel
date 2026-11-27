@@ -7,7 +7,7 @@
 // Assumption: the capability's plan is `plans[<database name>]` (k.sim); the first query's migration takes no step and is held (a held call the drive waits for).
 // Assumption: "the wait for the database to be free": a lone statement started while a `transaction` is open waits behind it; it answers once the transaction's `fn` has finished, so no E1728 and no deadlock.
 import { fixedTime } from "@keel/tooling/test-time";
-import { err, ok } from "@keel/schema";
+import { err, ok, s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { ready } from "@keel/std-postgres/testing";
 import { simulate } from "@keel/testing";
@@ -132,6 +132,8 @@ test("a lone statement started while a `transaction` is open waits for the datab
   );
 });
 
+const NoReason = s.error("t.no", s.object({}));
+
 test("a `transaction` whose `fn` returns `err` rolls back with every PGlite call held and answered, the clock unmoved", async () => {
   const { cap, table } = fresh();
   const db = notesDb(cap, table);
@@ -140,7 +142,7 @@ test("a `transaction` whose `fn` returns `err` rolls back with every PGlite call
     async ({ ctx }) => {
       const r = await db(ctx).transaction(async (tx) => {
         okOf(await tx.run(sql(NoRows)`insert into ${T} values (1, 'a')`));
-        return err({ code: "t.no" });
+        return err(NoReason.make({}));
       });
       expect(r.ok).toBe(false);
       expect(ctx.clock.now()).toBe(0);
