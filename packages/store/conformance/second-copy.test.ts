@@ -1,7 +1,7 @@
 // Spec: k.realm, clause "With `@keel/schema` loaded from its package folder, importing a copy of that folder made under another path throws a value whose message starts `E1765 two copies of @keel/schema in one realm: `, then the first copy's file URL, ` and `, and the second's; `isSchema` and `isDefect` of the first copy answer as before; the same holds of `@keel/store` and `@keel/router`."
 // Seed 1337 (no generated input: one copy of the package folder). The copy keeps the package's `node_modules` by a link, so its imports resolve.
 // Assumption: the message names each copy by a file URL inside its folder, so the case asserts the first folder's URL and the second's, in that order.
-import { cpSync, rmSync, symlinkSync } from "node:fs";
+import { cpSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { tempDir } from "@keel/tooling/test-tmp";
@@ -20,13 +20,15 @@ afterAll(() => {
 async function importCopy(): Promise<unknown> {
   const dir = tempDir("keel-copy-");
   made.push(dir);
-  const copy = join(dir, "store");
+  const copy = join(realpathSync(dir), "store");
   cpSync(FIRST, copy, {
     recursive: true,
     filter: (p) =>
       !/(^|\/)(node_modules|dist|reports|conformance|test|docs|\.stryker-tmp)(\/|$)/.test(p.slice(FIRST.length)),
   });
   symlinkSync(join(FIRST, "node_modules"), join(copy, "node_modules"));
+  // The copy's own tsconfig extends a path the temp folder lacks; a minimal one lets the test runner transform it.
+  writeFileSync(join(copy, "tsconfig.json"), "{}\n");
   return import(/* @vite-ignore */ pathToFileURL(join(copy, "src", "index.ts")).href).then(
     () => undefined,
     (e: unknown) => ({ thrown: e, copy }),
