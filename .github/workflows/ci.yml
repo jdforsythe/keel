@@ -237,6 +237,8 @@ jobs:
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/brand.mjs"
       - name: "examples: check, test, build and one proof on the built output of each"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/examples.mjs"
+      - name: "a library packed and installed from its tarball into a fresh app outside the repository: its tokens and tools entries under check, test, build and dev"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/library-installed.mjs"
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
