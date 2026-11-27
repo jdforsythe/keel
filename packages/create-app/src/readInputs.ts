@@ -34,7 +34,7 @@ function listing(abs: string): string[] {
 }
 
 /**
- * What `createPlan` reads from the disk for `folder` (k.create Not done: inside the folder, and above it only the
+ * What `createPlan` reads from the disk for `folder` (k.create-folder Not done: inside the folder, and above it only the
  * files Workspace names): the folder's absolute and real paths, its listing, the Workspace files above it, and whether
  * a `.git` is at or above it.
  */

@@ -4,7 +4,7 @@ import { linkEscapes } from "@keel/scaffold/links";
 import { realOf } from "./realOf.ts";
 
 /**
- * Writes `files` (keyed from the folder) under `abs`, all or nothing (k.create Folder): every target is judged first
+ * Writes `files` (keyed from the folder) under `abs`, all or nothing (k.create-folder Folder): every target is judged first
  * as k.scaffold Links says (`{ linked }`, E1357, nothing written); then each folder is made and each file created only
  * where nothing is (`wx`), never replaced. A write that fails removes the files and folders this run made, in reverse,
  * and is returned as `{ failed }` with its path (E1365).

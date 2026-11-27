@@ -15,7 +15,7 @@ import { projectTree } from "./projectTree.ts";
 
 const SEE = "k.create";
 const AT = { line: 1, col: 1 };
-/** Entries a folder may hold and still be empty (k.create Folder). */
+/** Entries a folder may hold and still be empty (k.create-folder Folder). */
 const QUIET = new Set([".git", ".DS_Store", "Thumbs.db"]);
 const NAME = /^[a-z][a-z0-9-]*$/;
 
@@ -104,7 +104,7 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
       );
   }
   const taken = new Set(listing.map((p) => p.replace(/\/$/, "")));
-  // The folder's own README is kept: the project's is a guide, not a file the project needs (k.create Folder).
+  // The folder's own README is kept: the project's is a guide, not a file the project needs (k.create-folder Folder).
   if (input.existing === true && taken.has("README.md") && input.library === undefined) files.delete("README.md");
   const listed = listing.filter((p) => !p.endsWith("/"));
   const clashes = [

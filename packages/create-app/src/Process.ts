@@ -1,4 +1,4 @@
-/** The process as `create-app` reads it (k.create Not done): three environment values, nothing else of it. */
+/** The process as `create-app` reads it (k.create-folder Not done): three environment values, nothing else of it. */
 export type Process = {
   readonly argv: readonly string[];
   readonly cwd: string;
