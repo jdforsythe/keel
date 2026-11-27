@@ -238,7 +238,12 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
     expect(r.ok).toBe(false);
     const failure: unknown = r.ok ? undefined : r.error;
     expect(isDefect(failure)).toBe(true);
-    expect(failure instanceof Error ? failure.message : "").toMatch(/^std\.db postgres: commit failed \(57P01\)$/);
+    expect(failure instanceof Error ? failure.message : "").toBe("std.db: a storage call failed");
+    expect(Reflect.get(Object(Reflect.get(Object(failure), "cause")), "data")).toEqual({
+      driver: "postgres",
+      op: "commit",
+      code: "57P01",
+    });
     await holder.query("rollback");
     expect(await s.get("lost")).toBeNull();
     expect(await s.commit([{ key: "lost", expect: null, value: "next" }])).toBe(true);
@@ -276,9 +281,13 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
     const s = await postgres(serverUrl(), { clientFactory: () => pool });
     opened.push(s);
     armed = true;
-    await expect(s.commit([{ key: "cut", expect: null, value: "lost" }])).rejects.toThrow(
-      /^std\.db postgres: commit failed \(/,
+    const failed: unknown = await s.commit([{ key: "cut", expect: null, value: "lost" }]).then(
+      () => undefined,
+      (e: unknown) => e,
     );
+    expect(isDefect(failed)).toBe(true);
+    expect(failed instanceof Error ? failed.message : "").toBe("std.db: a storage call failed");
+    expect(Reflect.get(Object(Reflect.get(Object(Reflect.get(Object(failed), "cause")), "data")), "op")).toBe("commit");
     const r = await watch.query("select count(*)::int as n from keel_kv where key = 'cut'");
     expect(r.rows[0]?.n).toBe(0);
     expect(await s.commit([{ key: "cut", expect: null, value: "kept" }])).toBe(true);
