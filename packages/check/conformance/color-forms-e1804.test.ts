@@ -1,7 +1,7 @@
-// Spec: k.values, clause "With color tokens `a` `oklch(0.72 0.14 45)` and `b` `#141317`, `<Text fg=\"a\" bg=\"b\">x</Text>` reports no E1804, and with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1`, the ratio after mapping to sRGB, which is below the 2.59:1 of the color as given."
+// Spec: k.values, clause "With color tokens `a` `oklch(0.72 0.14 45)` and `b` `#141317`, `<Text fg=\"a\" bg=\"b\">x</Text>` reports no E1804, and with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1 in light (sRGB)`, the ratio of its sRGB form `rgb(0 0 255)`, below the 2.59:1 of its P3 form."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
-// Ratios are recomputed in the test from the formulas k.values Contrast states (support.ts `linearOf`, `lumOf`, `ratioOf`), never written as numbers; the clause's own `2.44` and `2.59` are the one stated pair. The reference matrices agree with CSS Color 4's path through XYZ to about 1e-5, so a ratio's two decimals can differ in the last place in the rare case a value sits on a rounding edge: the property compares within 0.01.
-// ASSUMPTIONS: tokens reach `check()` as `artifacts: { tokens }` (a11y-contrast-inherited.test.ts, schemes-contrast.test.ts), a `<Text fg bg>` in a component's outermost element is judged (k.a11y-static Values: the chain ends there and `bg` is the token written); the mapped ratio of a color outside sRGB is the clause's 2.44, not recomputed (the OKLCH chroma search is not restated in the test).
+// Ratios are recomputed in the test from the formulas k.values Contrast states (support.ts `linearOf`, `lumOf`, `ratioOf`), never written as numbers; the clause's own `2.44` (the sRGB form `rgb(0 0 255)`) and `2.59` (the P3 form) are the one stated pair. The reference matrices agree with CSS Color 4's path through XYZ to about 1e-5, so a ratio's two decimals can differ in the last place in the rare case a value sits on a rounding edge: the property compares within 0.01.
+// ASSUMPTIONS: tokens reach `check()` as `artifacts: { tokens }` (a11y-contrast-inherited.test.ts, schemes-contrast.test.ts), a `<Text fg bg>` in a component's outermost element is judged (k.a11y-static Values: the chain ends there and `bg` is the token written); the sRGB form's ratio of a color outside sRGB is the clause's 2.44, recomputed from `rgb(0 0 255)` and not from the OKLCH chroma search.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -37,14 +37,15 @@ describe("k.values: the contrast of every form is exact", () => {
   );
 
   test(
-    "with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1`, the ratio after mapping to sRGB, which is below the 2.59:1 of the color as given",
+    "with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1 in light (sRGB)`, the ratio of its sRGB form `rgb(0 0 255)`, below the 2.59:1 of its P3 form",
     () => {
       expect(insideSrgb("color(display-p3 0 0 1)")).toBe(false);
       expect(ratioOf("color(display-p3 0 0 1)", "#000000")).toBe("2.59");
       const d = e1804("color(display-p3 0 0 1)", "#000000");
       expect(d).toHaveLength(1);
-      expect(d[0]?.message).toContain("2.44:1");
-      expect(d[0]?.message).toBe('fg "a" on bg "b" is 2.44:1 in light, needs 4.5:1');
+      expect(ratioOf("rgb(0 0 255)", "#000000")).toBe("2.44");
+      expect(d[0]?.message).toContain("2.44:1 in light (sRGB)");
+      expect(d[0]?.message).toBe('fg "a" on bg "b" is 2.44:1 in light (sRGB), needs 4.5:1');
     },
     CHECK_CASE_BOUND,
   );
@@ -96,7 +97,7 @@ describe("k.values: the contrast of every form is exact", () => {
   );
 
   test(
-    "a color outside sRGB is judged at the lower of its own ratio and its mapped one, never above its own",
+    "a color outside sRGB is judged at the lower of its P3 form's ratio (its own) and its sRGB form's, never above its own",
     () => {
       fc.assert(
         fc.property(

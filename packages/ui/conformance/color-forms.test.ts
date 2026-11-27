@@ -1,10 +1,10 @@
 // Spec: k.values, clause "`TokenSchema` accepts as a color each of `rgb(184 66 13)`, `hsl(19deg 87% 39%)`, `oklab(0.54 0.12 0.1)`, `oklch(54% 0.16 40)` and `color(display-p3 0.67 0.3 0.2)`, each inside sRGB, and `color(display-p3 0 0 1)`, outside it, and refuses with rule `format` each of `rgb(184, 66, 13)`, `rgb(300 0 0)`, `oklch(54% 0.16 40 / 0.5)`, `white`, `oklch(none 0 0)` and `rgb(from #000 r g b)`."
 // Spec: k.values, clause "`shadow: { a: '0 1px 2px rgb(0 0 0 / 0.2)' }` and `overlay: { scrim: { value: '#1a191e99', over: ['card'] } }` with a color token `card` are accepted; `overlay: { scrim: { value: '#1a191e', over: ['card'] } }`, one with `over: []`, and one with `over: ['nope']` are each refused with rule `format`, the last at `overlay.scrim.over`."
-// Spec: k.values, clause "With color tokens `a` `oklch(0.72 0.14 45)` and `b` `#141317`, `<Text fg=\"a\" bg=\"b\">x</Text>` reports no E1804, and with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1`, the ratio after mapping to sRGB, which is below the 2.59:1 of the color as given."
+// Spec: k.values, clause "With color tokens `a` `oklch(0.72 0.14 45)` and `b` `#141317`, `<Text fg=\"a\" bg=\"b\">x</Text>` reports no E1804, and with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1 in light (sRGB)`, the ratio of its sRGB form `rgb(0 0 255)`, below the 2.59:1 of its P3 form."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
-// Expected luminances and ratios are recomputed in the test from the formulas k.values Contrast states (fixtures.ts `colorLinear`, `colorLuminance`, `colorRatio`: WCAG linearisation, CSS Color 4 `hslToRgb`, the Oklab matrices, the display-p3 transfer function and matrix), never written as numbers; the one stated number is the clause's own, 2.44 and 2.59.
+// Expected luminances and ratios are recomputed in the test from the formulas k.values Contrast states (fixtures.ts `colorLinear`, `colorLuminance`, `colorRatio`: WCAG linearisation, CSS Color 4 `hslToRgb`, the Oklab matrices, the display-p3 transfer function and matrix), never written as numbers; the stated numbers are the clause's own, 2.44 (the sRGB form `rgb(0 0 255)`) and 2.59 (the P3 form).
 // The matrices here are the Oklab reference ones and the display-p3 to sRGB one, which agree with CSS Color 4's path through XYZ to about 1e-5, so ratios are compared to 2 decimals (`toBeCloseTo(_, 2)`), the precision E1804 prints.
-// ASSUMPTIONS: `contrast(a, b)` from `@keel/ui/css` takes any `<color>` (the build plan: "`contrast` takes any `<color>`") and returns the ratio at which the pair is judged, the lower of as-given and gamut-mapped. The mapped value itself (CSS Color 4's OKLCH chroma search, JND 0.02, epsilon 0.0001) is not recomputed here: its one stated result, 2.44:1 for `color(display-p3 0 0 1)` on black, is asserted, and that no pair is judged above its as-given ratio is a property.
+// ASSUMPTIONS: `contrast(a, b)` from `@keel/ui/css` takes any `<color>` (the build plan: "`contrast` takes any `<color>`") and returns the ratio at which the pair is judged, the lower of its sRGB form's and its P3 form's (k.gamut). The sRGB form itself (CSS Color 4's OKLCH chroma search, JND 0.02, epsilon 0.0001) is not recomputed here: its one stated result, `rgb(0 0 255)` and 2.44:1 for `color(display-p3 0 0 1)` on black, is asserted by recomputing the ratio of `rgb(0 0 255)`, and that no pair is judged above its P3 form's ratio (the color as written) is a property.
 // E1804's half of #8 (`<Text fg bg>` with those tokens) is packages/check/conformance/color-forms-e1804.test.ts.
 import { contrast } from "@keel/ui/css";
 import fc from "fast-check";
@@ -276,9 +276,10 @@ describe("k.values: one luminance per form, computed exactly", () => {
     );
   });
 
-  test("With color tokens `a` `color(display-p3 0 0 1)` and `b` `#000000`, the pair is judged at 2.44:1, the ratio after mapping to sRGB, which is below the 2.59:1 of the color as given", () => {
+  test("With color tokens `a` `color(display-p3 0 0 1)` and `b` `#000000`, the pair is judged at 2.44:1, the ratio of its sRGB form `rgb(0 0 255)`, below the 2.59:1 of its P3 form", () => {
     const form = "color(display-p3 0 0 1)";
     expect(inSrgb(form)).toBe(false);
+    expect(colorRatio("rgb(0 0 255)", BLACK).toFixed(2)).toBe("2.44");
     expect(colorRatio(form, BLACK).toFixed(2)).toBe("2.59");
     expect(contrast(form, BLACK)).toBeCloseTo(2.44, 2);
     expect(contrast(BLACK, form)).toBeCloseTo(2.44, 2);

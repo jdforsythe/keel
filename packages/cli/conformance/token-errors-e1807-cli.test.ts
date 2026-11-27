@@ -1,5 +1,6 @@
 // Spec: k.themes, clause "With `tokens.ts` holding, at its line 4, column 5, the key of `light: {}` in `themes`, of `text: { light: '#000000', dark: '#ffffff' }` in the `color` of a theme `paper` with `when: 'print'`, or of `accent: 'rgb(184, 66, 13)'` in `color`, each alone, `keel check --format=json` reports one E1807 at line 4, column 5 with, in turn, message `themes.light: default, system, light and dark are reserved` and `see` `k.themes`, `themes.paper.color.text: a print theme takes one value, not a pair` and `k.themes`, and `color.accent: channels are separated by spaces, not commas` and `k.values`."
 // Spec: k.themes, clause "With `color: { ...designTokens.color, text: '#222222' }` in `tokens.ts` and `designTokens.color.ink` `'red'`, the one E1807 is at that spread's `...` with message `color.ink: a named color; write hex or a function form`; a `tokens.ts` that throws `new Error('boom')` is one E1807 at line 1, column 1 with message `tokens.ts throws: boom`; with a color token named by 80 `x`s given a pair in a `print` theme `paper`, the message is at most 89 units and ends `: a print theme takes one value, not a pair`, in compact and in `--format=json`, and an E1817 for an overlay named by 80 `s`s ends `, not in its over`."
+// Spec: k.themes, clause "With `overlay: { scrim: { value: '#1a191e99', over: ['<x>'] } }`, `<x>` 80 `x`s and no color token of that name, the one E1807's message, in compact and in `--format=json`, is at most 89 units, holds `: names no color token \"x` and ends `...\"`."
 // Paragraph k.themes Token errors (no Conformance sentence of its own): the closed list of `<what>` texts, each with the `see` of the section holding its rule; asserted below as a table, one case per entry, at the key the issue path's last segment names.
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until the build follows.
 // The binary runs `keel check` over a temp project (token-errors-support.ts): a `@@` marks the expected position. The `tokens` export is written as a plain object, so `keel check` judges it as `TokenSchema` reads it. The E1817 half of the second clause (a message through `check()`) is packages/check/conformance/theme-message-fit.test.ts.
@@ -274,6 +275,59 @@ describe("k.themes: E1807 at a spread, a throw and a long path", () => {
           const m = String(diagsOf(r, "E1807")[0]?.message);
           expect(m.length).toBeLessThanOrEqual(89);
           expect(m.endsWith(SUFFIX)).toBe(true);
+        }),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
+});
+
+describe("k.themes: a quoted name in E1807's message fits whole", () => {
+  const overSource = (n: number): string =>
+    wrap(`  color: { card: "#ffffff" },\n  overlay: { scrim: { value: "#1a191e99", over: ["${"x".repeat(n)}"] } },`);
+  const WHAT = ': names no color token "';
+
+  it(
+    "with `overlay: { scrim: { value: '#1a191e99', over: ['<x>'] } }`, `<x>` 80 `x`s and no color token of that name, the one E1807's message, in `--format=json`, is at most 89 units, holds `: names no color token \"x` and ends `...\"`",
+    () => {
+      const r = keel(project("e1807-over-80", overSource(80)), ["check"]);
+      const d = diagsOf(r, "E1807");
+      expect(d).toHaveLength(1);
+      const m = String(d[0]?.message);
+      expect(m.length).toBeLessThanOrEqual(89);
+      expect(m).toContain(`${WHAT}x`);
+      expect(m.endsWith('..."')).toBe(true);
+    },
+    T,
+  );
+
+  it(
+    "and in compact",
+    () => {
+      const lines = compact(project("e1807-over-80-compact", overSource(80))).filter((l) => l.includes("E1807"));
+      expect(lines).toHaveLength(1);
+      const m = /(\S*: names no color token ".*)$/.exec(lines[0] ?? "")?.[1] ?? "";
+      expect(m.length).toBeGreaterThan(0);
+      expect(m.length).toBeLessThanOrEqual(89);
+      expect(m).toContain(`${WHAT}x`);
+      expect(m.endsWith('..."')).toBe(true);
+    },
+    T,
+  );
+
+  it(
+    'whatever the length of the name, the message is at most 89 units, never cuts `: names no color token "`, keeps the quotes, and is whole when it fits: `overlay.scrim.over: names no color token "<x>"` for a name of up to 46 units',
+    () => {
+      fc.assert(
+        fc.property(fc.integer({ min: 1, max: 140 }), (n) => {
+          const r = keel(project("e1807-over-len", overSource(n)), ["check"]);
+          const m = String(diagsOf(r, "E1807")[0]?.message);
+          expect(m.length).toBeLessThanOrEqual(89);
+          expect(m).toContain(`${WHAT}x`);
+          if (n <= 46) expect(m).toBe(`overlay.scrim.over${WHAT}${"x".repeat(n)}"`);
+          else expect(m.endsWith('"')).toBe(true);
+          if (n >= 90) expect(m.endsWith('..."')).toBe(true);
         }),
         { seed: SEED, numRuns: 5 },
       );
