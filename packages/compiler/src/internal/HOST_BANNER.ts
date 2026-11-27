@@ -63,6 +63,11 @@ const __keelView = (name, real, members, kinds, factOf) => {
   let self;
   const member = (k) => {
     if (made.has(k)) return made.get(k);
+    if (Object.hasOwn(view, k) && (view[k] === 'refused' || __keelDescOf(real, k) !== undefined)) {
+      const own = kinds[view[k]](k, real, self, at(k));
+      made.set(k, own);
+      return own;
+    }
     const d = __keelDescOf(real, k);
     if (d === undefined) return Reflect.get(fn ? Function.prototype : Object.prototype, k);
     if (fact.has(k)) {
@@ -74,7 +79,6 @@ const __keelView = (name, real, members, kinds, factOf) => {
     }
     let v;
     if (pure.has(k)) v = Reflect.get(real, k);
-    else if (Object.hasOwn(view, k)) v = kinds[view[k]](k, real, self, at(k));
     else if (call.has(k)) v = __keelCalled(name, k, Reflect.get(real, k), real);
     else if ('value' in d && typeof d.value === 'function') v = __keelRefusedFn(at(k));
     else __keelRefuse(at(k));
