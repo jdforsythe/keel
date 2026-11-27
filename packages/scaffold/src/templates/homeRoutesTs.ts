@@ -1,5 +1,5 @@
-/** `modules/app/routes.ts` of a new project: `app.home` bound to `HomePage`, and on `node` to its loader `loadHome`. */
-export function homeRoutesTs(node: boolean): string {
+/** `modules/app/routes.ts` of a new project: `app.home` bound to `HomePage` with the project's `name` as the document title, and on `node` to its loader `loadHome`. */
+export function homeRoutesTs(node: boolean, name: string): string {
   return [
     `import { manifest } from "@keel/router";`,
     `import HomePage from "./HomePage.tsx";`,
@@ -9,6 +9,7 @@ export function homeRoutesTs(node: boolean): string {
     "export const routes = manifest(app, {",
     `  "app.home": {`,
     "    component: HomePage,",
+    `    title: () => "${name}",`,
     ...(node ? ["    loader: loadHome,"] : []),
     "  },",
     "});",

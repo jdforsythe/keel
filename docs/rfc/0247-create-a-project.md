@@ -187,6 +187,9 @@ Each within its target (docs-check's skill targets, `docs.section`): the root RE
 - `lane-r-boundary` (RFC 0251): the Node floor and the grants clause of slice 4.
 - W17's paper cuts line: `topology` from a package with no server in its name, after which A1's clause names `@keel/server` too.
 
+## Open questions
+- A `keel upgrade` command that moves every `@keel/*` pin together and runs `keel docs --sync`: a later RFC. Until then the project's `README.md` and keel-deploy give the manual steps.
+
 ## For the operator
 1. `--library` in `@keel/create-app` rather than `@keel/create-library`. Recommended: one registry package to trust and smoke. To reverse, a second thin bin over the same `createPlan`.
 2. Print the install and `git init` rather than run them. Recommended: create starts no process and its plan is pure. To reverse, a run of the printed install after the write, with its exit code in the trailer.

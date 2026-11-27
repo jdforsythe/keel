@@ -34,12 +34,12 @@ It also takes `--format`, `--quiet` and `--limit` (k.cli). It reads no standard 
 **Files.** An app is the generator `project` for the name, adapter and version, then `route` `app.home` at `/` (with `no-loader` on `client` and `static`), then the agent files (k.explain): the tree `keel scaffold project <folder> --adapter <a>` writes with a `@keel/cli` of the same version.
 | kind | files |
 | --- | --- |
-| `client` | `package.json`, `tsconfig.json`, `vite.config.ts`, `tokens.ts`, `topology.ts`, `turbo.json`, `.gitignore`, `.keel/.gitkeep`, `public/keel-mark.svg`, `.github/workflows/ci.yml`, `modules/app/` `module.ts`, `app.contract.ts`, `routes.ts`, `HomePage.tsx`, `home.route.test.ts`; `AGENTS.md`, `CLAUDE.md`, `.claude/skills/<name>/SKILL.md` per skill |
+| `client` | `package.json`, `README.md`, `tsconfig.json`, `vite.config.ts`, `tokens.ts`, `topology.ts`, `turbo.json`, `.gitignore`, `.keel/.gitkeep`, `public/keel-mark.svg`, `.github/workflows/ci.yml`, `modules/app/` `module.ts`, `app.contract.ts`, `routes.ts`, `HomePage.tsx`, `home.route.test.ts`; `AGENTS.md`, `CLAUDE.md`, `.claude/skills/<name>/SKILL.md` per skill |
 | `static` | the same, `adapter: "static"` |
 | `node` | the same, and `modules/app/loadHome.server.ts`, `deploy/web/Dockerfile`, `deploy/compose.yaml` |
 | `--library` | what `library` writes under `<base>/` (k.library-pack Scaffold), at the folder's root, then `.gitignore` and the agent files |
 
-`HomePage.tsx` renders the heading `app.home.title`, the project name, and the paragraph `app.home.next`, which names `modules/app/HomePage.tsx` and `keel docs` in the manager's form (`pnpm keel docs`). Every command a written file or a printed line names is in that form, `see:` lines included. `home.route.test.ts` renders `app.home` (with `app` on `node`, k.testing), expects that heading text and runs `a11y()`.
+`HomePage.tsx` renders the heading `app.home.title`, the project name, and the paragraph `app.home.next`, which names `modules/app/HomePage.tsx` and `keel docs` in the manager's form (`pnpm keel docs`). Every command a written file or a printed line names is in that form, `see:` lines included. The home route's `title` is the project name. `README.md` gives the commands, the dev address `http://localhost:5173`, where to edit first, how to add a page, how the kind deploys (`node`: `PORT`, `KEEL_SECRET`, `KEEL_ORIGIN`) and the upgrade steps; pretty output names that address beside `keel dev`. `home.route.test.ts` renders `app.home` (with `app` on `node`, k.testing), expects that heading text and runs `a11y()`.
 
 **Versions.** An app lists each `@keel/*` package at exactly create's version, never a range; a library at `^<version>`, as k.library-pack Scaffold says. An app's `engines.node` is `>=22.15`. A running Node older than 22.15 is E1362, before any other step.
 

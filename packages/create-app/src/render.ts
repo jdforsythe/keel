@@ -9,7 +9,7 @@ function line(r: Out, pretty: boolean, run: string): string {
       return pretty ? `create  ${r.path}` : `create ${r.path}`;
     case "create.next":
       return pretty
-        ? `  ${r.command}${r.dir === undefined ? "" : `   (in ${r.dir})`}`
+        ? `  ${r.command}${r.dir === undefined ? "" : `   (in ${r.dir})`}${r.command.endsWith(" dev") ? "   # http://localhost:5173" : ""}`
         : `next ${r.command}${r.dir === undefined ? "" : ` (in ${r.dir})`}`;
     case "diag": {
       const at =

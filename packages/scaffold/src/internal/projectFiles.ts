@@ -7,6 +7,7 @@ import { keelMarkSvg } from "../templates/keelMarkSvg.ts";
 import { loaderTs } from "../templates/loaderTs.ts";
 import { moduleTs } from "../templates/moduleTs.ts";
 import { packageJson } from "../templates/packageJson.ts";
+import { projectReadme } from "../templates/projectReadme.ts";
 import { tokensTs } from "../templates/tokensTs.ts";
 import { topologyTs } from "../templates/topologyTs.ts";
 import { tsconfigJson } from "../templates/tsconfigJson.ts";
@@ -41,9 +42,10 @@ export function projectFiles(input: {
     ["public/keel-mark.svg", keelMarkSvg()],
     ["modules/app/module.ts", moduleTs("app")],
     ["modules/app/app.contract.ts", homeContractTs()],
-    ["modules/app/routes.ts", homeRoutesTs(node)],
+    ["modules/app/routes.ts", homeRoutesTs(node, name)],
     ["modules/app/HomePage.tsx", homePageTsx(name, managerOf(manager).run)],
     ["modules/app/home.route.test.ts", homeRouteTest(name, node)],
+    ["README.md", projectReadme(name, adapter, managerOf(manager))],
     [".gitignore", GITIGNORE],
     [".keel/.gitkeep", ""],
   ]);
