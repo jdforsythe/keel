@@ -6,6 +6,7 @@ import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { Submission } from "./Submission.ts";
+import { attempted } from "./attempted.ts";
 import { caught } from "./caught.ts";
 import { devMessageOf } from "./devMessageOf.ts";
 import { documentResponse } from "./documentResponse.ts";
@@ -154,6 +155,21 @@ export async function page(
   if (r.sv.mode === "dev" && rendered.value.nothing && !r.sv.nothing.has(id)) {
     r.sv.nothing.add(id);
     diags.push({ code: "E1406", message: `${id}: a text binding renders nothing; place the node with {props.x()}` });
+  }
+  // A throw a route boundary caught is logged as any thrown value is, by its form (k.serverlog Thrown values).
+  const caughtThrow = rendered.value.thrown;
+  // A frame reader that throws on the value (a Proxy's `stack`) gives no frames, as `caught` does.
+  const framesOf = (v: unknown): readonly string[] => {
+    const read = attempted(() => r.sv.frames(v));
+    return read.ok ? read.value : [];
+  };
+  if (caughtThrow !== null) {
+    const kernel = caughtThrow.value instanceof Error && caughtThrow.value.message === E1255;
+    diags.push(
+      ...(kernel
+        ? [{ code: "E1255", message: E1255.slice(6) }]
+        : r.sv.thrown("keel.unexpected", `render ${id} threw: `, caughtThrow.value, framesOf(caughtThrow.value))),
+    );
   }
   return { response: documentResponse(r, final, rendered.value, extra, dev, head), route: id, diags };
 }
