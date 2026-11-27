@@ -12,7 +12,7 @@ export const MANIFEST = manifestFile({ id: "m", deps: [], capabilities: [], expo
 export type Diag = ReturnType<typeof check>["diagnostics"][number];
 
 /** Check one module file of module `m` (in-memory, no type pass unless `types`). */
-export const run = (source: string, opts: { path?: string; types?: boolean } = {}): Diag[] =>
+export const run = (source: string, opts: { path?: string; types?: boolean } = {}): readonly Diag[] =>
   check([MANIFEST, { path: opts.path ?? PATH, source }], { types: opts.types ?? false }).diagnostics;
 export const of = (ds: readonly Diag[], code: string): Diag[] => ds.filter((d) => d.code === code);
 
@@ -36,5 +36,5 @@ export function applyFix(files: Files, fix: string): Files {
 }
 
 /** Everything `keel check` reports on `files` with the type pass on: the type check of a fixture project is this call (E1751 is a TypeScript error). */
-export const checked = (files: Files): Diag[] => check(files, { types: true }).diagnostics;
+export const checked = (files: Files): readonly Diag[] => check(files, { types: true }).diagnostics;
 export const codesOf = (ds: readonly Diag[]): string[] => ds.map((d) => d.code);
