@@ -1143,7 +1143,8 @@ export default function (): {
       const d = deployable(q.d);
       if (d === undefined) throw new Error(noDeployable(ENTRY_PATH, topology, q.d ?? process.env.KEEL_DEPLOYABLE));
       const mode = command === "serve" ? "dev" : "production";
-      if (!d.client) return styleImports(q.d ?? d.name) + resumeEntry(q.d, mode, CSS_IMPORT);
+      if (!d.client)
+        return styleImports(q.d ?? d.name) + resumeEntry(q.d, mode, CSS_IMPORT, (await firstPaint(root)).themes);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       const targets = served ? calledByClient(all, d.modules) : {};
