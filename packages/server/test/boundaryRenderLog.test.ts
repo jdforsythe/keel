@@ -27,7 +27,7 @@ async function run(mode: "dev" | "production", thrown: () => never) {
   await app.close();
   const diags = lines
     .map((l): unknown => JSON.parse(l))
-    .filter((r) => typeof r === "object" && r !== null && Reflect.get(r, "kind") === "diag")
+    .flatMap((r) => (typeof r === "object" && r !== null && Reflect.get(r, "kind") === "diag" ? [r] : []))
     .map((r) => String(Reflect.get(r, "message")));
   return { status: res.status, diags, lines };
 }

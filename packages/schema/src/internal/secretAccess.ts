@@ -1,6 +1,6 @@
 import { Secret } from "../Secret.ts";
-import { kernelSet } from "./kernelSet.ts";
 import type { SecretReads } from "./SecretReads.ts";
+import { kernelSet } from "./kernelSet.ts";
 import { secretSlot } from "./secretSlot.ts";
 
 // Evaluating `Secret.ts` fills the slot; naming the class here makes that happen before any read.
