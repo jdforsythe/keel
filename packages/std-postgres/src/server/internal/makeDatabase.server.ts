@@ -25,9 +25,9 @@ import type { Step } from "./Step.schema.ts";
 import type { ValueOf } from "./ValueOf.ts";
 import { answered } from "./answered.server.ts";
 import { changeText } from "./changeText.server.ts";
-import { classify } from "./classify.server.ts";
 import { conflictOf } from "./conflictOf.server.ts";
 import { errors } from "./errors.server.ts";
+import { isAnswer } from "./isAnswer.server.ts";
 import { isRerun } from "./isRerun.server.ts";
 import { payloadOf } from "./payloadOf.server.ts";
 import { rowsOf } from "./rowsOf.server.ts";
@@ -103,7 +103,7 @@ const unwanted = (raw: Raw): ResultError =>
 async function ready(backend: Backend): Promise<Engine | Unreachable> {
   const s = await attempt(
     () => backend.ensure(),
-    (e) => (classify(e) === errors.unreachable ? errors.unreachable : undefined),
+    (x) => (isAnswer(x, "lost") ? errors.unreachable : undefined),
   );
   return s.ok ? s.value : s.error;
 }

@@ -14,7 +14,8 @@ import { sqlite } from "@keel/std-db/sqlite";
 import { afterEach, describe, expect, test } from "vitest";
 import { checkLayout } from "../src/internal/checkLayout.ts";
 import { distinctKeys } from "../src/internal/distinctKeys.ts";
-import { opFailed } from "../src/internal/opFailed.ts";
+import { driverCode } from "../src/internal/driverCode.ts";
+import { isDriverFailure } from "../src/internal/isDriverFailure.ts";
 import { removeDir, tempDir } from "./support.server.ts";
 
 /** The rejection of `p`; fails when `p` resolves. */
@@ -40,41 +41,33 @@ const failedOf = (e: unknown): unknown => {
 };
 const codeOf = (e: unknown): unknown => (typeof e === "object" && e !== null ? Reflect.get(e, "code") : undefined);
 
-describe("opFailed", () => {
-  test("its data names the driver, the operation and the database's own error code; its message no value", () => {
-    expect(opFailed("postgres", "commit", new Error("secret 4111")).message).toBe("std.db: a storage call failed");
-    expect(opFailed("postgres", "commit", { code: "57P01" }).data).toEqual({
-      driver: "postgres",
-      op: "commit",
-      code: "57P01",
-    });
-    expect(opFailed("sqlite", "read", { errcode: 5 }).data).toEqual({ driver: "sqlite", op: "read", code: "sqlite 5" });
-    expect(
-      opFailed("sqlite", "set", Object.assign(new Error("x"), { code: "ERR_SQLITE_ERROR", errcode: 19 })).data,
-    ).toEqual({ driver: "sqlite", op: "set", code: "sqlite 19" });
+describe("driverCode and isDriverFailure", () => {
+  test("the code names the database's own error code; an Error or a coded object is a driver failure", () => {
+    expect(driverCode({ code: "57P01" })).toBe("57P01");
+    expect(driverCode({ errcode: 5 })).toBe("sqlite 5");
+    expect(driverCode(Object.assign(new Error("x"), { code: "ERR_SQLITE_ERROR", errcode: 19 }))).toBe("sqlite 19");
+    for (const e of [new Error("secret 4111"), { code: "57P01" }, { errcode: 5 }])
+      expect(isDriverFailure(e)).toBe(true);
   });
 
   test("a code that is not a string and an errcode that is not a number are unknown", () => {
-    expect(opFailed("postgres", "set", { code: 7 }).data).toEqual({ driver: "postgres", op: "set", code: "unknown" });
-    expect(opFailed("sqlite", "get", { errcode: "5" }).data).toEqual({ driver: "sqlite", op: "get", code: "unknown" });
-    expect(opFailed("sqlite", "get", { errcode: "5", code: "C" }).data).toEqual({
-      driver: "sqlite",
-      op: "get",
-      code: "C",
-    });
-    expect(opFailed("postgres", "read", {}).data).toEqual({ driver: "postgres", op: "read", code: "unknown" });
-    expect(opFailed("postgres", "read", new Error("secret")).data).toEqual({
-      driver: "postgres",
-      op: "read",
-      code: "unknown",
-    });
+    expect(driverCode({ code: 7 })).toBe("unknown");
+    expect(driverCode({ errcode: "5" })).toBe("unknown");
+    expect(driverCode({ errcode: "5", code: "C" })).toBe("C");
+    expect(driverCode({})).toBe("unknown");
+    expect(driverCode(new Error("secret"))).toBe("unknown");
+    expect(isDriverFailure({ code: 7 })).toBe(false);
+    expect(isDriverFailure({ errcode: "5" })).toBe(false);
   });
 
-  test("a thrown value that is not an object is unknown", () => {
-    for (const e of [null, undefined, "code", "errcode", 5, true])
-      expect(opFailed("postgres", "read", e).data).toEqual({ driver: "postgres", op: "read", code: "unknown" });
+  test("a thrown value that is not an object is unknown and no driver failure", () => {
+    for (const e of [null, undefined, "code", "errcode", 5, true]) {
+      expect(driverCode(e)).toBe("unknown");
+      expect(isDriverFailure(e)).toBe(false);
+    }
     const fn = Object.assign(() => undefined, { code: "F", errcode: 3 });
-    expect(opFailed("postgres", "read", fn).data).toEqual({ driver: "postgres", op: "read", code: "unknown" });
+    expect(driverCode(fn)).toBe("unknown");
+    expect(isDriverFailure(fn)).toBe(false);
   });
 });
 
@@ -321,8 +314,6 @@ describe("postgres driver over a recording pool", () => {
       new Error("connect ECONNREFUSED 127.0.0.1:5432"),
       { code: "E2152" },
       { code: "E2153" },
-      "refused",
-      null,
     ];
     for (const failure of failures) {
       const fake = fakePool();
@@ -334,6 +325,18 @@ describe("postgres driver over a recording pool", () => {
       expect(e).toBeInstanceOf(Error);
       expect(codeOf(e)).toBe("E2153");
       expect(messageOf(e)).toBe("E2153 KEEL_DATABASE_URL: the Postgres database cannot be reached or set up");
+      expect(fake.ended).toBe(1);
+    }
+  });
+
+  test("a thrown value that is no driver failure passes on as thrown while opening, and ends the pool", async () => {
+    for (const failure of ["refused", null]) {
+      const fake = fakePool();
+      fake.answer = (c) => {
+        if (c.text.startsWith("create table")) throw failure;
+        return undefined;
+      };
+      expect(await rejection(postgres(PG_URL, { clientFactory: () => fake.pool }))).toBe(failure);
       expect(fake.ended).toBe(1);
     }
   });

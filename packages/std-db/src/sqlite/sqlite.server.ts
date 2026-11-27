@@ -2,11 +2,14 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { attempt, defect } from "@keel/schema";
 import type { DbStorage } from "../DbStorage.ts";
+import { DbFailed } from "../internal/DbFailed.schema.ts";
+import { DriverCode } from "../internal/DriverCode.schema.ts";
 import { LAYOUT } from "../internal/LAYOUT.ts";
 import { checkLayout } from "../internal/checkLayout.ts";
 import { checkText } from "../internal/checkText.ts";
 import { distinctKeys } from "../internal/distinctKeys.ts";
-import { opFailed } from "../internal/opFailed.ts";
+import { driverCode } from "../internal/driverCode.ts";
+import { isDriverFailure } from "../internal/isDriverFailure.ts";
 
 const SELECT = "select key, value from keel_kv where key in (select value from json_each(?))";
 const UPSERT = "insert into keel_kv (key, value) values (?, ?) on conflict (key) do update set value = excluded.value";
@@ -21,7 +24,12 @@ const UPSERT = "insert into keel_kv (key, value) values (?, ?) on conflict (key)
 export async function sqlite(url: URL): Promise<DbStorage> {
   const opened = attempt(
     () => new DatabaseSync(fileURLToPath(url)),
-    (x) => opFailed("sqlite", "open", x),
+    (x) => {
+      const code = DriverCode.parse(driverCode(x));
+      return code.ok && isDriverFailure(x)
+        ? DbFailed.make({ driver: "sqlite", op: "open", code: code.value }, "std.db: a storage call failed")
+        : undefined;
+    },
   );
   if (!opened.ok)
     return defect(
@@ -46,7 +54,12 @@ export async function sqlite(url: URL): Promise<DbStorage> {
             db.prepare("insert into keel_meta (name, value) values ('layout', ?)").run(String(LAYOUT));
         });
       },
-      (x) => opFailed("sqlite", "open", x),
+      (x) => {
+        const code = DriverCode.parse(driverCode(x));
+        return code.ok && isDriverFailure(x)
+          ? DbFailed.make({ driver: "sqlite", op: "open", code: code.value }, "std.db: a storage call failed")
+          : undefined;
+      },
     );
     if (!setUp.ok)
       return defect("KEEL_DATABASE_URL: SQLite cannot open or set up the database", "E2153", { cause: setUp.error });
@@ -67,7 +80,12 @@ export async function sqlite(url: URL): Promise<DbStorage> {
     if (!db.isOpen) return defect("std.db sqlite: a call after close()", { data: { op } });
     const r = attempt(
       () => ({ value: fn() }),
-      (x) => opFailed("sqlite", op, x),
+      (x) => {
+        const code = DriverCode.parse(driverCode(x));
+        return code.ok && isDriverFailure(x)
+          ? DbFailed.make({ driver: "sqlite", op: op, code: code.value }, "std.db: a storage call failed")
+          : undefined;
+      },
     );
     return r.ok ? r.value.value : defect("std.db: a storage call failed", { cause: r.error });
   };

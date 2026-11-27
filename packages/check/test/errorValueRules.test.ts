@@ -37,6 +37,11 @@ describe("type pass", { timeout: testTime(120_000) }, () => {
     expect(codesOf(src, ["E1458"])).toEqual(["E1458 7:22"]);
   });
 
+  it("of a union holding a KeelError, a literal meant as the other member is no E1458; one naming code is", () => {
+    const src = `${HEAD}type R = { raw: number; n: number } | E\nexport const a = (v: number): R => ({ raw: v, n: 1 })\nexport const b = (): R => ({ code: 'm.e', message: 'm.e', data: null })\nexport const c = (): { data: number } | E => ({ data: null })\n`;
+    expect(codesOf(src, ["E1458"])).toEqual(["E1458 8:28", "E1458 9:47"]);
+  });
+
   it("a listener for another event, and an onerror on an element, are no E1452", () => {
     const src =
       "declare const h: () => void\ndeclare const el: HTMLElement\nexport const a = () => addEventListener('click', h)\nexport const b = () => { el.onerror = h }\n";

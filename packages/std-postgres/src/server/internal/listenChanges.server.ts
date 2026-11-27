@@ -3,9 +3,8 @@ import { attempt } from "@keel/schema";
 import pg from "pg";
 import type { FollowEvent } from "../FollowEvent.ts";
 import type { Changes } from "./Changes.ts";
-import { classify } from "./classify.server.ts";
 import { errors } from "./errors.server.ts";
-import { field } from "./field.server.ts";
+import { isAnswer } from "./isAnswer.server.ts";
 import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
 const CHANNEL = "keel_changes";
@@ -73,7 +72,7 @@ function open(url: string): Listener {
           await client.connect();
           await client.query(`listen ${CHANNEL}`);
         },
-        (x) => (classify(x) !== null || field(x, "severity") !== "" ? errors.unreachable : undefined),
+        (x) => (!isAnswer(x, "thrown") ? errors.unreachable : undefined),
       );
       up = r.ok;
       return up;

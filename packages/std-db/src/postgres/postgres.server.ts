@@ -2,11 +2,14 @@ import type { StorageWrite } from "@keel/ctx";
 import { attempt, defect } from "@keel/schema";
 import pg from "pg";
 import type { DbStorage } from "../DbStorage.ts";
+import { DbFailed } from "../internal/DbFailed.schema.ts";
+import { DriverCode } from "../internal/DriverCode.schema.ts";
 import { LAYOUT } from "../internal/LAYOUT.ts";
 import { checkLayout } from "../internal/checkLayout.ts";
 import { checkText } from "../internal/checkText.ts";
 import { distinctKeys } from "../internal/distinctKeys.ts";
-import { opFailed } from "../internal/opFailed.ts";
+import { driverCode } from "../internal/driverCode.ts";
+import { isDriverFailure } from "../internal/isDriverFailure.ts";
 import type { PgClient } from "./PgClient.ts";
 import type { PgPool } from "./PgPool.ts";
 import type { PostgresOptions } from "./PostgresOptions.ts";
@@ -59,7 +62,12 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
             await c.query("insert into keel_meta (name, value) values ('layout', $1)", [String(LAYOUT)]);
           return true;
         }),
-      (x) => opFailed("postgres", "open", x),
+      (x) => {
+        const code = DriverCode.parse(driverCode(x));
+        return code.ok && isDriverFailure(x)
+          ? DbFailed.make({ driver: "postgres", op: "open", code: code.value }, "std.db: a storage call failed")
+          : undefined;
+      },
     );
     if (!opened.ok)
       return defect("KEEL_DATABASE_URL: the Postgres database cannot be reached or set up", "E2153", {
@@ -106,7 +114,15 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
           if (announced.length > 0) await c.query(NOTIFY, [notifyPayloads(token, announced)]);
           return true;
         }),
-      (x) => opFailed("postgres", check ? "commit" : "set", x),
+      (x) => {
+        const code = DriverCode.parse(driverCode(x));
+        return code.ok && isDriverFailure(x)
+          ? DbFailed.make(
+              { driver: "postgres", op: check ? "commit" : "set", code: code.value },
+              "std.db: a storage call failed",
+            )
+          : undefined;
+      },
     );
     return r.ok ? r.value : defect("std.db: a storage call failed", { cause: r.error });
   };
@@ -115,7 +131,12 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
     live("read");
     const r = await attempt(
       () => values(pool, keys),
-      (x) => opFailed("postgres", "read", x),
+      (x) => {
+        const code = DriverCode.parse(driverCode(x));
+        return code.ok && isDriverFailure(x)
+          ? DbFailed.make({ driver: "postgres", op: "read", code: code.value }, "std.db: a storage call failed")
+          : undefined;
+      },
     );
     if (!r.ok) return defect("std.db: a storage call failed", { cause: r.error });
     const found = r.value;
@@ -146,7 +167,12 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
 async function poolEnded(pool: PgPool): Promise<boolean> {
   const ended = await attempt(
     () => pool.end(),
-    (x) => opFailed("postgres", "end", x),
+    (x) => {
+      const code = DriverCode.parse(driverCode(x));
+      return code.ok && isDriverFailure(x)
+        ? DbFailed.make({ driver: "postgres", op: "end", code: code.value }, "std.db: a storage call failed")
+        : undefined;
+    },
   );
   return ended.ok;
 }
@@ -180,7 +206,12 @@ async function inTx(pool: PgPool, fn: (c: PgClient) => Promise<boolean>): Promis
       // A rollback that fails, by any answer of the driver, leaves the client broken: it is dropped.
       const rolled = await attempt(
         () => c.query("rollback"),
-        (x) => opFailed("postgres", "rollback", x),
+        (x) => {
+          const code = DriverCode.parse(driverCode(x));
+          return code.ok && isDriverFailure(x)
+            ? DbFailed.make({ driver: "postgres", op: "rollback", code: code.value }, "std.db: a storage call failed")
+            : undefined;
+        },
       );
       c.release(!rolled.ok);
     }
