@@ -8,7 +8,7 @@ status: conformance-covered
 | `check [paths]` | k.check over code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
 | `test [paths] [--e2e]` | harness, sim ctx; `--e2e` the built app (k.e2e) |
 | `build` | production build per deployable |
-| `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
+| `dev [--port N] [--host A]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560); loopback, wider only with `--host` (k.topology) |
 | `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
 | `inspect [url]` | summarize a dev app's inspect document |

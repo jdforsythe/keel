@@ -18,7 +18,7 @@
 - E1734 a missing browser, E1735 a wait that ran out, E1736 a misplaced call, E1737 a deployable that did not start, E1738 an unread browser problem.
 
 - Third part, after a breaking review:
-  - Every server Keel starts while developing or testing listens on loopback. `keel dev` refuses a wider Vite `server.host` with E1560. A production `node` deployable listens on every interface unless `HOST` names one.
+  - Every server Keel starts while developing or testing listens on loopback. `keel dev` refuses a wider Vite `server.host` with E1560. `keel dev --host <address>` is the one opt-in: it prints W1569, and `/__keel/inspect` still answers loopback connections alone. A production `node` deployable listens on every interface unless `HOST` names one.
   - The run launches its browser with the sandbox on, except as root on Linux (W1734), and with a fresh profile. Its certificate is made per run.
   - A page reaches only the served, peer and mapped origins. Anything else is refused and recorded as an `offsite` problem.
   - Served processes get an environment allowlist.
