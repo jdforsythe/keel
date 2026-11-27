@@ -9,7 +9,7 @@ import { testTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { type CreateInput, createPlan } from "../src/create/index.ts";
+import { type CreateInput, createPlan, suggestName } from "../src/create/index.ts";
 import { RUNS, SEED } from "./helpers.ts";
 
 const REPO = fileURLToPath(new URL("../../..", import.meta.url));
@@ -151,7 +151,7 @@ describe("createPlan: files per kind", () => {
 });
 
 describe("createPlan: names (property)", () => {
-  it("a name is accepted exactly when it is [a-z][a-z0-9-]*, at most 64 long and no dependency; else E1352 with the slug", () => {
+  it("a name is accepted exactly when it is [a-z][a-z0-9-]*, at most 64 long and no dependency; else E1352 with a valid suggestion or none", () => {
     const deps = new Set(["happy-dom", "typescript", "vite", "vitest"]);
     const name = fc.oneof(
       fc.stringMatching(/^[a-z][a-z0-9-]{0,70}$/),
@@ -167,9 +167,11 @@ describe("createPlan: names (property)", () => {
         else {
           expect(p.text).toContain("E1352");
           expect(p.files.size).toBe(0);
-          const slug = n.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
-          if (!/^[a-z][a-z0-9-]*$/.test(n) && /^[a-z][a-z0-9-]*$/.test(slug) && slug.length <= 40)
-            expect(p.text).toContain(`--name ${slug}`);
+          // The fix names the suggestion when it is a valid name, and no `--name <n>` otherwise (k.create Names).
+          const fix = suggestName(n);
+          if (!/^[a-z][a-z0-9-]*$/.test(n) && fix !== undefined && fix.length <= 40)
+            expect(p.text).toContain(`--name ${fix}`);
+          if (!/^[a-z][a-z0-9-]*$/.test(n) && fix === undefined) expect(p.text).not.toMatch(/pass --name [a-z]/);
         }
       }),
       cfg,

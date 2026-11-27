@@ -41,10 +41,10 @@ function build(workspace: boolean): Files {
   let files: Files = new Map();
   files = apply("project", { name: "shop", workspace }, files);
   files = apply("module", { id: "todos" }, files);
-  files = apply("route", { id: "todos.list", path: "/lists/:listId" }, files);
-  files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit" }, files);
-  files = apply("route", { id: "todos.item", path: "/items/:id" }, files);
-  files = apply("route", { id: "todos.tagged", path: "/tags/:slug" }, files);
+  files = apply("route", { id: "todos.list", path: "/lists/:listId", loader: true }, files);
+  files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit", loader: true }, files);
+  files = apply("route", { id: "todos.item", path: "/items/:id", loader: true }, files);
+  files = apply("route", { id: "todos.tagged", path: "/tags/:slug", loader: true }, files);
   files = apply("route", { id: "todos.feed", path: "/api/feed/:slug", api: true }, files);
   files = apply("component", { id: "todos/TodoRow" }, files);
   files = apply("store", { id: "todos.board" }, files);

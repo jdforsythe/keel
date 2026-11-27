@@ -17,7 +17,7 @@ function base(): Files {
   f = apply("module", { id: "orders" }, f);
   f = apply("module", { id: "users" }, f);
   f = apply("store", { id: "orders.cart" }, f);
-  f = apply("route", { id: "orders.show", path: "/orders/:id" }, f);
+  f = apply("route", { id: "orders.show", path: "/orders/:id", loader: true }, f);
   f = apply("component", { id: "orders/Panel" }, f);
   return f;
 }
@@ -75,7 +75,7 @@ describe("route rejections", () => {
       message: "path /orders/:other is already routed by orders.show",
     });
     const g = new Map(f).set("modules/orders/loadFresh.server.ts", "");
-    expect(rej("route", { id: "orders.fresh", path: "/fresh" }, g)).toEqual({
+    expect(rej("route", { id: "orders.fresh", path: "/fresh", loader: true }, g)).toEqual({
       code: "E1351",
       path: "modules/orders/loadFresh.server.ts",
       message: "modules/orders/loadFresh.server.ts already exists",
@@ -113,7 +113,7 @@ describe("route effects", () => {
   it("adds the manifest entry, loader, page and test (the root path is the project's `app.home`)", () => {
     const f = base();
     expect(rej("route", { id: "orders.list", path: "/" }, f).code).toBe("E1351");
-    const out = apply("route", { id: "orders.list", path: "/list" }, f);
+    const out = apply("route", { id: "orders.list", path: "/list", loader: true }, f);
     expect([...out.keys()].filter((p) => !f.has(p)).sort()).toEqual([
       "modules/orders/ListPage.tsx",
       "modules/orders/list.route.test.ts",
