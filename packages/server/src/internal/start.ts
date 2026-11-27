@@ -9,6 +9,7 @@ import { onUncaught } from "@keel/server/internal/onUncaught";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
 import { diagLine } from "./diagLine.ts";
+import { logThrownOpen } from "./logThrownOpen.ts";
 import { logThrownUntil } from "./logThrownUntil.ts";
 import { refusedLine } from "./refusedLine.ts";
 
@@ -26,7 +27,7 @@ const line = (text: string): void => {
  * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0, or 1 when either rejects (nothing is printed);
  * a second signal during shutdown does nothing. A coded refusal before it listens (E1596, E1552, E1555, E1560, E1765)
  * prints one `diag` with its own code, message and `see` and exits 1, with no E1577 (k.deploy Refusals at start). Every `uncaughtException` and `unhandledRejection` prints one E1577
- * `diag` with none of the thrown text (`onUncaught`, k.leave Process); the first then stops listening, lets requests in
+ * `diag`, with the scrubbed thrown text only inside the `KEEL_LOG_THROWN` window (`onUncaught`, k.leave Process); the first then stops listening, lets requests in
  * flight finish for at most 10,000 ms, awaits `close()` and the driver's `close()`, and exits 1; a later one prints its
  * record only.
  */
@@ -73,13 +74,15 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
       process.exit(fault || !a || !st ? 1 : 0);
     })();
   };
-  // The text window of an uncaught throw's record opens once the ctx clock reads the start (k.serverlog).
-  let clock: { now(): number } | undefined;
+  // The text window of an uncaught throw's record (k.serverlog): before the start is read, the throw's own reading
+  // stands for it (`logThrownOpen`); after, the throw reads before the instant.
+  let clock: { now(): number } = createCtx({ mode: "real" }).clock;
   let until: number | undefined;
+  let read = false;
   onUncaught(
     { format, write: line },
     o.dir,
-    () => clock !== undefined && until !== undefined && clock.now() < until,
+    () => (read ? until !== undefined && clock.now() < until : logThrownOpen(process.env.KEEL_LOG_THROWN, clock.now())),
     () => stop(true),
   );
   try {
@@ -119,6 +122,7 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
     const ctx = createCtx({ mode: "real", ...(opened === undefined ? {} : { drivers: { storage: opened } }) });
     until = logThrownUntil(process.env.KEEL_LOG_THROWN, ctx.clock.now());
     clock = ctx.clock;
+    read = true;
     const app = await createApp({
       topology: o.topology,
       origins: o.origins ?? {},
@@ -152,10 +156,16 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
         if (--busy === 0) idle();
       });
     });
-    // Only an error before the server listens is the bind failure.
+    // Only an error before the server listens is the bind failure. A start refusal echoes no environment value
+    // (k.deploy Refusals at start), so a set PORT is named by its key; the default is Keel's own number.
     srv.on("error", (e) => {
       if (srv.listening) return;
-      fail(`PORT ${port} fails to bind (${"code" in e ? e.code : "error"}); free it or set another PORT`);
+      const why = "code" in e ? e.code : "error";
+      fail(
+        env.value.PORT === undefined
+          ? `port 8080 fails to bind (${why}); free it or set PORT`
+          : `PORT fails to bind (${why}); free the port it names or set another`,
+      );
     });
     process.on("SIGTERM", () => stop(false));
     process.on("SIGINT", () => stop(false));
