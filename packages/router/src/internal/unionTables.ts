@@ -14,7 +14,7 @@ import { tables } from "./tables.ts";
  * E1502 one module twice, or two modules sharing a path pattern at any method; E1509 a k.prefix collision over the
  * union; E1506 a `layout` that names no entry of the union, an entry that is no layout, or closes a cycle across
  * modules (`chainOf`); E1508 a guarded page on a chain joined across modules that lacks a
- * params field of its redirect route, or carries one that does not fit (`carriedFits`). A value that is no route table throws a TypeError.
+ * params field of its redirect route, or carries one that does not fit (`carriedFits`). A value that is no route table, a copy of one among them (k.identity), throws E1515.
  */
 export function unionTables(parts: readonly RouteTable[]): Compiled & { readonly contracts: RouteTable["contracts"] } {
   const bindings = new Map<string, Bound>();
@@ -22,7 +22,7 @@ export function unionTables(parts: readonly RouteTable[]): Compiled & { readonly
   const contracts: RouteTable["contracts"][number][] = [];
   for (const [i, t] of parts.entries()) {
     const c = tables.get(t);
-    if (c === undefined) throw new TypeError(`routeTable: argument ${i + 1} is no manifest or route table`);
+    if (c === undefined) throw codedError("E1515", `routeTable: argument ${i + 1} is no manifest or route table`);
     for (const k of t.contracts) {
       if (contracts.some((o) => o.module === k.module))
         throw codedError("E1502", `${k.module}: module ${k.module} is in the route table twice`);

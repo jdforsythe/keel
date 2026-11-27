@@ -103,7 +103,7 @@ describe("bindingsOf", () => {
     expect(got.get("bo.page")?.binding).toEqual(binding);
   });
 
-  it("a TypeError for a value that is no route table", () => {
+  it("E1515 for a value that is no route table", () => {
     for (const v of [null, {}, { kind: "keel.routeTable", contracts: [] }]) {
       const thrown = (() => {
         try {
@@ -113,9 +113,9 @@ describe("bindingsOf", () => {
         }
         return null;
       })();
-      expect(thrown).toBeInstanceOf(TypeError);
+      expect(thrown).toBeInstanceOf(Error);
       expect(thrown instanceof Error ? thrown.message : "").toBe(
-        "not a route table: pass a manifest(...) or routeTable(...) value",
+        "E1515 routes: no route table manifest(...) or routeTable(...) returned; pass that value itself",
       );
     }
   });

@@ -156,7 +156,7 @@ describe("a route table's parts", () => {
     expect(messageOf(() => routeTable(xs, ys))).toBe('E1502 y.read: path pattern "/api/s" is also x.read\'s');
   });
 
-  it("a TypeError names the argument that is no manifest or route table, counted from one", () => {
+  it("E1515 names the argument that is no manifest or route table, counted from one", () => {
     const b = part("b", "/b");
     for (const [parts, n] of [
       [[{}, aRoutes], 1],
@@ -171,9 +171,9 @@ describe("a route table's parts", () => {
         }
         return null;
       })();
-      expect(thrown).toBeInstanceOf(TypeError);
+      expect(thrown).toBeInstanceOf(Error);
       expect(thrown instanceof Error ? thrown.message : "").toBe(
-        `routeTable: argument ${n} is no manifest or route table`,
+        `E1515 routeTable: argument ${n} is no manifest or route table`,
       );
     }
   });
@@ -192,7 +192,7 @@ describe("a route table's parts", () => {
 });
 
 describe("compileRoutes", () => {
-  it("a TypeError for a value that is no route table", () => {
+  it("E1515 for a value that is no route table", () => {
     for (const v of [null, {}, { kind: "keel.routeTable", contracts: [] }]) {
       const thrown = (() => {
         try {
@@ -202,11 +202,27 @@ describe("compileRoutes", () => {
         }
         return null;
       })();
-      expect(thrown).toBeInstanceOf(TypeError);
+      expect(thrown).toBeInstanceOf(Error);
       expect(thrown instanceof Error ? thrown.message : "").toBe(
-        "not a route table: pass a manifest(...) or routeTable(...) value",
+        "E1515 routes: no route table manifest(...) or routeTable(...) returned; pass that value itself",
       );
     }
+  });
+
+  it("E1515 for each copy of a table k.identity names, and none for the table itself", () => {
+    const w = contract("w", { "w.page": { path: "/w" } });
+    const t = manifest(w, { "w.page": { component: view } });
+    const copies: unknown[] = [
+      { ...t },
+      Object.assign({}, t),
+      JSON.parse(JSON.stringify(t)),
+      { kind: "keel.routeTable", contract: w, contracts: [w] },
+      new Proxy(t, {}),
+    ];
+    for (const v of copies)
+      expect(messageOf(() => Reflect.apply(compileRoutes, undefined, [v]))?.startsWith("E1515 routes: ")).toBe(true);
+    expect(messageOf(() => Reflect.apply(routeTable, undefined, [{ ...t }]))?.startsWith("E1515 ")).toBe(true);
+    expect(messageOf(() => compileRoutes(t))).toBeNull();
   });
 
   it("E1506 for a module's table whose layout is another module's, unless open is allowed", () => {
