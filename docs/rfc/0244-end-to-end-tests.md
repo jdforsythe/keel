@@ -1,6 +1,6 @@
 # RFC 0244: end-to-end tests, `keel test --e2e` over the built app
 
-Status: implemented (ADR-0267), the third part (The review's findings, below) included; that part accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.e2e, k.e2e-page and k.e2e-run (implemented). Amends k.server and k.contract (a loader's `site` and `host`, which the inspector's caller rule reads). Amends k.cli (the `test` row), k.test-run (Run report, one clause) and k.ledger-items (Run evidence, one clause), the map, `tooling/docs-owners.json` and the glossary (**end-to-end test**). New codes E1734 to E1738. From decision D187 (b) of task 0963 and the A2 end-user review (`tasks/p1/end-user-review.md`).
+Status: implemented (ADR-0267), the third part (The review's findings, below) included; the fifth part (The fourth part's review) is accepted and not yet built; that part accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.e2e, k.e2e-page and k.e2e-run (implemented). Amends k.server and k.contract (a loader's `site` and `host`, which the inspector's caller rule reads). Amends k.cli (the `test` row), k.test-run (Run report, one clause) and k.ledger-items (Run evidence, one clause), the map, `tooling/docs-owners.json` and the glossary (**end-to-end test**). New codes E1734 to E1738. From decision D187 (b) of task 0963 and the A2 end-user review (`tasks/p1/end-user-review.md`).
 
 ## For the operator
 1. **`--e2e` runs the e2e files alone, not every rung.** Recommended. A7 asks for every rung from one command. `keel test` and `keel test --e2e` share one runner, one reporter, one report folder and one ledger, and the scaffolded CI runs both. Folding e2e into plain `keel test` would make every page-test run build the app and need a browser. To reverse, `keel test --all` runs both in order.
@@ -265,6 +265,17 @@ A review attacked the second step's build. Each finding below gives the rule, th
    - Builder: the `--no-sandbox` flag and W1734 for it, the seam, and the fix text.
    - Conformance-writer: the new bullets, using the seam.
 
+### The fourth part's review (fifth part)
+A review of the fourth part's build found the design holds on a `node` deployable's own socket, and five gaps around it. Each is closed in the spec; none accepts a security declaration that does nothing.
+1. **`local: true` outside a `node` deployable.** A `client` deployable built clean with a `local` page, and its loader's content shipped in `dist/web`. Now E1511, which already refuses an API entry there for the same reason (no server to answer or enforce it): message `<id>: local route in <adapter> deployable <name>, which has no server`, no fix, the remedy `keel explain`'s. Clauses: k.api Rules; k.contract Local routes and its last bullet.
+2. **Peer forwarding.** A `local` page answered 403 from the LAN directly and 200 through `examples/compose-peers`' forwarding `web`, whose own loopback connection to the peer passed the check. A deployable now never forwards a request for a route the peer's `routes.json` marks `local`, and answers 403 `keel.denied` itself. Local routes says Keel's forwarding is covered and an outside proxy is the operator's. Clauses: k.topology Calls and peers and its last bullet.
+3. **Headers on every refusal.** `server.mjs`'s `host refused` 403 is answered before `createApp`, so it carried none of the k.security headers. Every refusal now carries them. Clauses: k.security Headers; k.contract's second-last bullet.
+4. **No `Host`.** An HTTP/1.0 request with no `Host` was 400; it is 403 `keel.denied`, as a `Host` that cannot be read is. Clause: k.contract's second-last bullet.
+5. **E1734's fix as written.** The seccomp-profile route alone left a CI user without a flag to type. The fix text now lists, safest first: the host sysctls, a seccomp profile allowing `CLONE_NEWUSER`, `docker run --security-opt seccomp=unconfined` (which lifts every syscall filter from the container), and `--no-sandbox` with W1734 last. Clauses: k.e2e-run Browser and its last bullet.
+6. **Skills.** keel-server gains a line on `local: true` and one on a harness `fetch` with no connection, held at its 2,900-token target by trimming prose. keel-testing stays at its 3,700-token ceiling.
+- Builder: E1511 for `local` entries in `apiWithoutServer` and `selectDeployable`, with its explanation; the forwarding check in `createApp` before `forward`; `start`'s error handler answering a missing or unreadable `Host` 403 through the k.security headers; the E1734 fix text in `sandboxCheck`. Under `keel dev`, a `local` route of a second `node` deployable is reached through that deployable's own `createApp` with the connection, or the rule refuses it there too: the builder confirms which, and reports it.
+- Conformance-writer: the four new bullets (Conformance diff).
+
 ### Worked case 1: a storefront
 A cart that survives a reload and a declined payment, with card data kept out of the server log (K2). The payment provider is an `answer`, and the app reaches it through its module's `env`.
 ```ts
@@ -393,10 +404,26 @@ Both cases type-check with strict `tsc` against the declarations above. `documen
   - Map: row `k.e2e-run`, and more titles shortened (For the operator 6).
   - `tooling/docs-owners.json`: k.e2e-run owned by `@keel/testing`.
   - The keel-testing skill: the new verbs and the walls line, held at its 3,700-token target.
+- Fifth part:
+  - k.contract Local routes: a missing or unreadable `Host` is 403 `keel.denied`; every refusal carries the k.security headers; Keel's forwarding is covered and an outside proxy is the operator's; `local: true` outside a `node` deployable is E1511. Rules point to E1511. Two bullets new, at the end.
+  - k.api Rules: E1511 covers a `local: true` entry, with both messages, `keel build` failing, and no fix.
+  - k.topology Calls and peers: a peer's `local` route is never forwarded; one bullet new, at the end.
+  - k.security Headers: refusals `server.mjs` answers before `createApp` carry the headers.
+  - k.e2e-run Browser: E1734's fix text, safest first, with `--security-opt seccomp=unconfined`; one bullet new, at the end.
+  - The keel-server skill: two lines, held at its 2,900-token target.
 - Map: rows `k.e2e` and `k.e2e-page`, `k.e2e` added to the E170x block, and eight titles shortened (For the operator 6). `tooling/docs-owners.json`: both sections owned by `@keel/testing`. Glossary: **end-to-end test**.
 
 ## Conformance diff
 The conformance-writer covers k.e2e's 23, k.e2e-page's 26 and k.e2e-run's 8 clauses, k.deploy #14 and k.topology #18 to #20, k.test-run's new clause and k.ledger-items' new clause, citing each word for word. Proposed files: `packages/cli/conformance/e2e-command.test.ts` (k.e2e clauses on `keel test --e2e`, E1734, E1736, the report files, time); in `packages/testing/conformance/`, `e2e-serve.test.ts` (serve, peers, static, E1737, isolation, stop and start, `until`, answered origins), `e2e-page.test.ts` (verbs, waits, E1705, E1735, hold and resume, offline, cookies, documents, style), `e2e-failure.test.ts` (E1738, the T0001 output, `reports/e2e/`, a11y E1703). k.test-run's clause goes in `packages/cli/conformance/test-run-writes.test.ts`, k.ledger-items' in `packages/cli/conformance/ledger-items-runs.test.ts`. The fixtures are small projects under `packages/testing/conformance/fixtures/e2e/`: a node deployable with one store and one action, a `static` one, a two-`node` topology, a page whose click throws, a held-input island page, and a library folder. A case that needs a browser runs under `keel test --e2e` in its fixture as a child process, bounded at 60 s or more (docs/TESTING.md). The E1734 case runs with `playwright-core` absent from the fixture's resolution, not uninstalled from the repo.
+
+The fifth part adds four clauses, each at the end of its section:
+- k.contract: `server.mjs` of a `keel build` fixture answers an HTTP/1.0 `GET /` with no `Host`, a `GET /` with `Host: [::ffff:127.0.0.1]:<port>`, and a `GET` of its `local: true` page from `127.0.0.1` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: cross-site`, each 403 `keel.denied` carrying the six k.security headers.
+- k.contract: In a fixture whose `client` deployable `web` serves module `a` with a `local: true` page `a.tools`, `keel check` and `keel build` each report one E1511 `a.tools: local route in client deployable web, which has no server` at `topology.ts`, `keel build` exits 1 and writes no `dist/web/`, and `createApp` for `web` throws E1511; with `web` a `static` deployable, one E1511 `a.tools: local route in static deployable web, which has no server`; with `a` served by a `node` deployable, none.
+- k.topology: With `x` forwarding to `y` and `y`'s `routes.json` marking page `b.tools` at `/tools` `local: true`, a `GET /tools` to `x` from `127.0.0.1` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: none` answers 403 `keel.denied` carrying the six k.security headers, and `y` receives no request.
+- k.e2e-run: In that E1734's fix text `kernel.apparmor_restrict_unprivileged_userns` comes before `CLONE_NEWUSER`, `CLONE_NEWUSER` before `--security-opt seccomp=unconfined`, and `--security-opt seccomp=unconfined` before `--no-sandbox`.
+- k.security Headers is widened with no new bullet: the k.contract bullet above checks the refusals it names.
+
+Proposed files: k.contract's two in `packages/server/conformance/` beside the local-route cases (the `server.mjs` one) and `packages/check/conformance/` (E1511); k.topology's in `packages/server/conformance/`; k.e2e-run's in `packages/cli/conformance/` beside the sandbox cases.
 
 The builder disputed seven points in the first fixtures. One was a spec sentence: the answered-origin clause's `answer` returned no `access-control-allow-origin`, so the page's cross-origin call would fail CORS before it could be "received". The clause now states the header. The other six are fixture errors the conformance-writer corrects from the spec text as it stands:
 - the fixture project links no `@types/node`, so its build is E1751;

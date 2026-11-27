@@ -32,6 +32,8 @@
 
 - Fourth part: a dev-only route declares `local: true` (k.contract), which the server enforces before any handler runs: a loopback remote address, a loopback `Host` and `Sec-Fetch-Site` `same-origin` or `none`. Loaders get no `site` or `host`. A Chromium that cannot start its sandbox fails the run with E1734 naming the settings. `--no-sandbox` is the one explicit way to run without it, with W1734 on every run. `KEEL_E2E_SANDBOX=unavailable` is the test seam.
 
+- Fifth part: `local: true` outside a `node` deployable is E1511. A forwarding deployable answers a peer's `local` route 403 itself and never forwards it. A request with no `Host`, or one `server.mjs` cannot read, is 403 `keel.denied`, and every refusal carries the k.security headers. E1734's fix lists the remedies safest first, `--security-opt seccomp=unconfined` among them and `--no-sandbox` last.
+
 **Alternatives.**
 - Document Playwright and stop there. That is a harness each developer builds, with CSS selectors, sleeps, no server lifecycle and no ledger tie.
 - `@playwright/test` as the runner. That is a second runner beside vitest, with a second report and a second set of timeouts.

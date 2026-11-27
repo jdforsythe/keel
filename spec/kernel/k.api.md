@@ -17,7 +17,7 @@ status: conformance-covered
 
 **Calling.** A contract's `href` takes page ids only, so `Link`, `navigate` and `Form action` cannot name an API entry; a guard `redirect` naming one is E1508 at the first read of the table. `matchHref` returns `null` for an API path and the client router matches none, so a link to one is a document request. Modules call an API entry through `service({ contract })` (k.services).
 
-**Rules.** E1511 an API entry in a module a `client` or `static` deployable serves (k.topology); reported from `topology.ts`, thrown by `createApp`; no fix. E1510: k.contract.
+**Rules.** E1511 an API entry, or a `local: true` entry (k.contract Local routes), in a module a `client` or `static` deployable serves (k.topology); reported from `topology.ts` at the module's id by `keel check` and `keel build` (which then fails and writes no `dist/<name>/`), thrown by `createApp`; message `<id>: API route in <adapter> deployable <name>, which has no server`, for a `local` page `<id>: local route in <adapter> deployable <name>, which has no server`; no fix: the remedy, serving the module from a `node` deployable, is `keel explain`'s. E1510: k.contract.
 
 **Conformance.**
 - An API entry bound with a `component` does not compile and `manifest()` throws E1510.

@@ -5,7 +5,7 @@ description: "Keel server state: loaders and actions over server stores, guards 
 
 # Server state and API
 
-A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs server` lists them: `k.server`, `k.store`, `k.guards`, `k.contract`, `k.api`, `k.services`, `k.openapi`, `k.user`, `k.mount`. `keel docs --for <code>` finds a code; `keel explain <code>` explains it.
+A `node` deployable owns the data; `client` ones call it. `keel docs server` lists the signatures' sections. `keel docs --for <code>` finds a code; `keel explain <code>` explains it.
 
 ## Loaders, actions, stores
 
@@ -18,13 +18,15 @@ A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs
 import { s } from '@keel/schema'
 export const Board = s.object({ todos: s.array(s.object({ id: s.id('Todo'), title: s.string() })) })
 ```
-A write that answers nothing has `output: s.object({})` and returns `ok({})`. A client view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); after a write, re-read through the service and `tx` the answer into a `hydrate` transaction in the handler. A `tx` in a component body is E1304. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
+A client view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); after a write, re-read through the service and `tx` the answer into a `hydrate` transaction in the handler. A `tx` in a component body is E1304. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
 
 ## API routes
 
 A module that serves routes has one client-safe file, `modules/<id>/<id>.contract.ts`, exporting `contract('<id>', {...})` from `@keel/router/contract`, which imports `*.schema.ts` files and packages only (E1514). Each key is a route id; an API entry (`method`, `path`, `output`; optional `params`, `query`, `body`, `errors`, `timeout`, `events`) is `<module>.<name>`, one lowerCamel segment that names its client method (E1513). It answers JSON and is never in a module a `client` deployable serves (E1511). A member its kind refuses is E1510.
 
-**Static reading.** `keel check` reads the contract without running it. Keys are literal; each entry is an object whose `method`, `path`, `layout` and `events` are literals and whose `params`, `search` and `query` are schemas reached through consts and imports; other members are any expression. A spread or a call in place of the entries or of an entry (a helper that returns an entry) is W1005 and E1111. A channel's entries are written out the same way (keel-data).
+`local: true` on a page or API entry (a dev tool) answers this machine's loopback connections alone, is never forwarded to a peer, else 403 `keel.denied`; outside a `node` deployable it is E1511.
+
+**Static reading.** `keel check` reads the contract unrun: literal keys; each entry an object whose `method`, `path`, `layout` and `events` are literals and whose `params`, `search` and `query` are schemas reached through consts and imports. A spread or a call in place of the entries or an entry is W1005 and E1111. A channel's entries are written out the same way (keel-data).
 
 ```ts
 // modules/api/api.contract.ts
@@ -125,4 +127,4 @@ export async function addOne(ctx: Ctx, token: Secret<string>) {
 
 ## Runners and tests
 
-`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores` elsewhere): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`, `std: '.keel/std.json'`, else std config is empty; see the package README) over a sim ctx (no runner runs without `runners: { <module>: runners }`), then `app.fetch(new Request(url, init))`; `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write answers the `Result` itself, `{ ok: true, value }`. See keel-testing, keel-data, keel-compliance, keel-deploy.
+`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores`): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`, `std: '.keel/std.json'`, else std config is empty; see the package README) over a sim ctx (no runner runs without `runners: { <module>: runners }`), then `app.fetch(new Request(url, init))`; a harness `fetch` with no connection is refused by a `local: true` route (403). `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write answers the `Result` itself, `{ ok: true, value }`. See keel-testing, keel-data, keel-compliance, keel-deploy.
