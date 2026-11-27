@@ -25,6 +25,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FAILURE, type Run, SUPPORT_BOARD, cleanup, keelE2e, outcome, project, reasons, suite } from "./e2e-support.ts";
 import { PAGES, nodeApp } from "./fixtures/e2e/node-app.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 const IMPORTS = [
   "import fc from 'fast-check'",
@@ -107,12 +108,13 @@ const page = await app.open('/offline')
 const gets = () => app.serverLog().filter((r) => r.kind === 'req' && r.path === '/api/a/env')
 await page.offline(true)
 await page.fire('a.offline.go', { type: 'click' })
-expect(page.problems().some((p) => p.text.includes('TypeError'))).toBe(true)
+const taken = page.problems({ kind: 'pageerror', text: 'TypeError' }, { kind: 'console', text: 'ERR_INTERNET_DISCONNECTED' })
+expect(taken.some((p) => p.text.includes('TypeError'))).toBe(true)
 expect(gets()).toHaveLength(0)
 await page.offline(false)
 await page.fire('a.offline.go', { type: 'click' })
 expect(gets().map((r) => (r.kind === 'req' ? r.status : 0))).toEqual([200])
-page.problems()`,
+expect(page.problems()).toEqual([])`,
   },
   {
     title: "cookies holds the caller cookie of a form POST with its flags and no value",
@@ -217,7 +219,7 @@ beforeAll(() => {
   runs.set("titled", keelE2e(titledDir, [], { env: { KEEL_TEST_TIME_SCALE: "1" } }));
   // `style(undefined, names)` likewise: its id parameter is typed `string` until the body form is built.
   runs.set("styled", keelE2e(styledDir, [], { env: { KEEL_TEST_TIME_SCALE: "1" } }));
-}, 3_000_000);
+}, fixedTime(3_000_000));
 afterAll(cleanup);
 
 const ok = (title: string): void => {

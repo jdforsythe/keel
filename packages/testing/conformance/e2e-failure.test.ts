@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FAILURE, type Run, cleanup, failureOf, keelE2e, listing, outcome, project, suite } from "./e2e-support.ts";
 import { PAGES, nodeApp } from "./fixtures/e2e/node-app.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 const SERVE = "import { serve } from '@keel/testing/e2e'";
 
@@ -169,19 +170,19 @@ beforeAll(() => {
   rmSync(join(dir, "reports/e2e"), { recursive: true, force: true });
   passing = keelE2e(dir, [F.until], { env: { KEEL_TEST_TIME_SCALE: "1", E2E_PASS: "1" } });
   listedAfterPass = listing(dir, "reports/e2e");
-}, 3_000_000);
+}, fixedTime(3_000_000));
 afterAll(cleanup);
 
 const lineOf = (s: { lines: Record<string, number> }, title: string): number => s.lines[title] ?? 0;
 /** The T0001 block of the test at `title` of `file` in the failing run, wherever on its lines the failing verb is. */
-function block(file: string, line: number): { text: string; line: number } {
-  const rows = failing.stdout.split("\n");
+function block(file: string, line: number, run: Run = failing): { text: string; line: number } {
+  const rows = run.stdout.split("\n");
   const at = rows.findIndex((r) => r.startsWith(`T0001 ${file}:`));
   expect(at, `no T0001 in ${file}`).toBeGreaterThanOrEqual(0);
   const head = rows[at] ?? "";
   const reported = Number(/^T0001 [^:]+:(\d+):/.exec(head)?.[1]);
   expect(reported, head).toBeGreaterThanOrEqual(line);
-  return { text: failureOf(failing.stdout, file, reported) ?? "", line: reported };
+  return { text: failureOf(run.stdout, file, reported) ?? "", line: reported };
 }
 
 describe("k.e2e-page failure output and problems", () => {
@@ -192,10 +193,8 @@ describe("k.e2e-page failure output and problems", () => {
     expect(b.text).toContain("boom");
     expect(outcome(dirArgs, F.read, lineOf(read, "a boom the test reads")), second.stdout).toBe("passed");
     // `problems()` with no argument returns it and the test still fails with E1738
-    expect(outcome(dir, F.readAll, lineOf(readAll, "a boom the test reads with no argument"), "first.json")).toBe(
-      "failed",
-    );
-    const all = block(F.readAll, lineOf(readAll, "a boom the test reads with no argument"));
+    expect(outcome(dirArgs, F.readAll, lineOf(readAll, "a boom the test reads with no argument"))).toBe("failed");
+    const all = block(F.readAll, lineOf(readAll, "a boom the test reads with no argument"), second);
     expect(all.text).toContain("E1738");
     expect(all.text).toContain("boom");
   });

@@ -33,6 +33,7 @@ import {
 import { PAGES, milkApp, nodeApp } from "./fixtures/e2e/node-app.ts";
 import { staticApp } from "./fixtures/e2e/static-app.ts";
 import { twoNodeApp } from "./fixtures/e2e/two-node.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 const CONNECT = ", origins: { connect: { 'https://api.example.com': 'payments' } }";
 
@@ -161,8 +162,8 @@ const page = await app.open('/connect')
 await page.fire('a.connect.go', { type: 'click' })
 await page.until('a.connect.text', { text: process.env.EXPECT_TEXT ?? '' })
 expect(payments.requests()).toHaveLength(Number(process.env.EXPECT_REQUESTS))
-const problems = page.problems()
-expect(problems.some((p) => p.kind === 'csp')).toBe(process.env.EXPECT_TEXT === 'blocked')`,
+const problems = page.problems({ kind: 'csp', text: /./ })
+expect(problems.length > 0).toBe(process.env.EXPECT_TEXT === 'blocked')`,
     },
     {
       title: "made by a passing test",
@@ -227,7 +228,7 @@ const page = await app.open('/pref')
 await page.fire('a.pref.go', { type: 'click' })
 await page.until('a.pref.text', { text: 'blocked' })
 expect(answered.requests().map((r) => r.method)).toEqual(['OPTIONS'])
-page.problems()`,
+expect(page.problems({ kind: 'console', text: /CORS|net::ERR/ }).length).toBeGreaterThan(0)`,
     },
   ],
 );
@@ -371,7 +372,7 @@ beforeAll(() => {
   runs.set("env", keelE2e(envDir));
   runs.set("ok", keelE2e(okDir, [], { env: { EXPECT_TEXT: "ok", EXPECT_REQUESTS: "1" } }));
   runs.set("blocked", keelE2e(blockedDir, [], { env: { EXPECT_TEXT: "blocked", EXPECT_REQUESTS: "0" } }));
-}, 3_000_000);
+}, fixedTime(3_000_000));
 afterAll(cleanup);
 
 const why = (key: string): string => reasons(runs.get(key));
