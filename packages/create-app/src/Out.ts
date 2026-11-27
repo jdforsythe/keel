@@ -1,10 +1,10 @@
 import type { CreateRecord } from "@keel/scaffold/create";
 import type { OutDiag } from "./OutDiag.ts";
 
-/** One record `create-app` prints: the plan's (a file `--dry-run` would create carries `"dry-run": true`), a refusal's diagnostic, or the trailer. */
+/** One record `create-app` prints: the plan's (each carries `"dry-run": true` in a dry run), a refusal's diagnostic, or the trailer. */
 export type Out =
   | CreateRecord
-  | { readonly kind: "scaffold.edit"; readonly action: "create"; readonly path: string; readonly "dry-run": true }
+  | (CreateRecord & { readonly "dry-run": true })
   | OutDiag
   | {
       readonly kind: "summary";

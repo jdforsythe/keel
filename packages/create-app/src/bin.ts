@@ -5,10 +5,15 @@
 import { run } from "./run.ts";
 
 const { npm_config_user_agent, KEEL_AGENT, CI } = process.env;
-// SIGINT and SIGTERM stop the writes between two files, which the run then removes (k.create-folder Folder).
+// SIGINT and SIGTERM stop the writes, even one in flight, and the run removes its files (k.create-folder Folder).
 let caught: "SIGINT" | "SIGTERM" | undefined;
+let interrupt: (signal: "SIGINT" | "SIGTERM") => void = () => undefined;
+const interrupted = new Promise<"SIGINT" | "SIGTERM">((settle) => {
+  interrupt = settle;
+});
 const stop = (signal: "SIGINT" | "SIGTERM") => () => {
-  caught = signal;
+  caught ??= signal;
+  interrupt(signal);
 };
 process.on("SIGINT", stop("SIGINT"));
 process.on("SIGTERM", stop("SIGTERM"));
@@ -18,7 +23,8 @@ const r = await run({
   nodeVersion: process.versions.node,
   tty: process.stdout.isTTY === true,
   stopped: () => caught,
+  interrupted,
   env: { npm_config_user_agent, KEEL_AGENT, CI },
 });
-process.exitCode = r.code;
-process.stdout.write(r.stdout);
+// The run is over once its output is out: an interrupted write left in flight does not hold the process.
+process.stdout.write(r.stdout, () => process.exit(r.code));

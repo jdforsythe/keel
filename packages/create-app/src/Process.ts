@@ -6,6 +6,8 @@ export type Process = {
   readonly tty: boolean;
   /** The signal the process caught, if any: the writes stop at the next file (k.create-folder Folder). */
   readonly stopped?: (() => "SIGINT" | "SIGTERM" | undefined) | undefined;
+  /** Settles with the first SIGINT or SIGTERM: a write in flight stops there (k.create-folder Folder). */
+  readonly interrupted?: Promise<"SIGINT" | "SIGTERM"> | undefined;
   readonly env: {
     readonly npm_config_user_agent?: string | undefined;
     readonly KEEL_AGENT?: string | undefined;

@@ -37,7 +37,7 @@ const failed = (d: OutDiag): Out[] => [d, { kind: "summary", name: "create", ok:
  * `create-app [folder] [flags]` (k.create): parse, read the folder and the Workspace files, plan, write all or nothing,
  * and print in docs/OUTPUT.md's format (compact when standard output is no terminal, `KEEL_AGENT=1` or `CI` is set).
  * It reads no standard input and starts no process. Exit 0 written (or planned, `--dry-run`), 1 refused, 2 E1052, 130
- * or 143 when `p.stopped` reports SIGINT or SIGTERM during the writes (E1367). `seams` stand in for the file system's
+ * or 143 when `p.interrupted` or `p.stopped` reports SIGINT or SIGTERM during the writes (E1367). `seams` stand in for the file system's
  * case (`caseless`) and observe each write (`written`), so tests reach both cases and a signal mid-write on any machine.
  */
 export async function run(
@@ -84,7 +84,11 @@ export async function run(
   const { files, records } = planned.value;
   const at = (path: string): string => (flags.folder === "." ? path : posix.join(flags.folder, path));
   if (!flags.dryRun) {
-    const wrote = await writePlan(disk.abs, files, p.stopped, seams.written);
+    const wrote = await writePlan(disk.abs, files, {
+      stopped: p.stopped,
+      interrupted: p.interrupted,
+      written: seams.written,
+    });
     if ("stopped" in wrote)
       return print(
         failed(diag("E1367", `${wrote.stopped} stopped the writes; this run's files are removed; run it again`)),
@@ -111,10 +115,8 @@ export async function run(
   const name: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "name") : undefined;
   const kind = flags.library === undefined ? (flags.adapter ?? "client") : "library";
   const label = `create${flags.dryRun ? " --dry-run" : ""} ${typeof name === "string" ? name : ""} ${kind}`;
-  // A dry run prints what it would create, under its own verb and count (k.create Next).
-  const shown: Out[] = flags.dryRun
-    ? records.map((r) => (r.kind === "scaffold.edit" ? { ...r, "dry-run": true } : r))
-    : [...records];
+  // A dry run prints what it would create, under its own verb and count; each of its records says so (k.create Next).
+  const shown: Out[] = flags.dryRun ? records.map((r) => ({ ...r, "dry-run": true })) : [...records];
   const counts = flags.dryRun ? { planned: files.size } : { created: files.size };
   return print(
     [...shown, { kind: "summary", name: label, ok: true, counts, ...(flags.dryRun ? { "dry-run": true } : {}) }],
