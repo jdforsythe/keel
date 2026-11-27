@@ -1172,11 +1172,12 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("api.server.ts", "import { notes } from './lib/notes.server.ts'\nexport const api = notes\n"),
     ],
   },
-  // k.bundle Aliases: `modules/app/sub/Deep.tsx` reaches its own module's `Page.tsx` through the symlink `node_modules/linked-app`; the fix `'../Page.tsx'` stays inside `app`, so no E1152 follows it.
+  // k.bundle Aliases: `modules/app/sub/Deep.tsx` reaches its own module's `Page.tsx` through the symlink `node_modules/linked-app`; the fix `'../Page.tsx'` stays inside `app`, so no E1152 follows it, and `app` lists no dep, so no E1165.
   E1013: {
     opts: { root: sharedRoot() },
     bad: [
-      ...BASE,
+      mod("app", [], []),
+      ...BASE.filter((b) => b.path !== "modules/app/module.ts"),
       f("modules/app/sub/Deep.tsx", "import { Page } from 'linked-app/Page.tsx'\nexport const Deep = Page\n"),
     ],
     clean: [...BASE, f("modules/app/sub/Deep.tsx", "import { Page } from '../Page.tsx'\nexport const Deep = Page\n")],
