@@ -136,3 +136,5 @@ Nothing blocks on a person now. Near the end of P1, in one sitting: a domain and
 - [ ] An outsider builds an app from the docs
 - [ ] 1.0.0 after four weeks with no kernel semantic change and no frozen section reopened
 - [ ] Tests leave temp folders behind (137,000 `keel-*` folders, 45 GB, found on one machine): fix at the shared helpers so a test's temp folders are removed at its end, and add a check that a suite leaves none.
+- [ ] A stdlib library for device capabilities behind ctx seams, each with a simulated form: clipboard, share, media queries, in-view and resize observers, image preloading. Required before public: RFC 0251's globals rule (E1763) leaves these unlisted, so without the library an ordinary modern page needs `unsafe`.
+- [ ] A static site's canonical URL: `ctx.origin` is `undefined` at prerender; decide how a prerendered page states its public origin.
