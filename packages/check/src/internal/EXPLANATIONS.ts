@@ -441,7 +441,7 @@ const ROWS: readonly Row[] = [
   [
     "E1203",
     "signal, computed, effect, resource or store after await, with no owner",
-    "",
+    "No scope runs after an await. Take const c = owner() ?? defect('no owner') before it; make the node in c.run().",
     "\n```ts\nimport { owner, signal } from '@keel/reactive'\nimport { defect } from '@keel/schema'\ndeclare const g: () => Promise<void>\nexport async function f() { const c = owner() ?? defect('no owner'); await g(); return c.run(() => signal(0)) }```",
     "k.reactive",
   ],
@@ -470,7 +470,7 @@ const ROWS: readonly Row[] = [
   [
     "E1208",
     "scope() after await, with no owner",
-    "",
+    "No scope runs after an await. Take const c = owner() ?? defect('no owner') before it; make the scope in c.run().",
     "\n```ts\nimport { owner, scope } from '@keel/reactive'\nimport { defect } from '@keel/schema'\ndeclare const g: () => Promise<void>\nexport async function f() { const c = owner() ?? defect('no owner'); await g(); return c.run(() => scope(() => 1)) }```",
     "k.reactive",
   ],
@@ -648,14 +648,14 @@ const ROWS: readonly Row[] = [
   [
     "E1451",
     "throw or a promise's reject in app code",
-    "",
+    "A failure a caller handles is err(E.make(data)) in a Result; a bug is defect('text', { data }).",
     "\n```ts\nimport { err, ok, type KeelError, type Result } from '@keel/schema'\ndeclare const T: KeelError<'m.t', null>\nconst f = (n: number): Result<1, typeof T> => (n ? ok(1) : err(T))\nexport const g = (n: number) => { const r = f(n); if (!r.ok) return r; return ok(r.value) }```\n```ts\nimport { defect } from '@keel/schema'\nexport const h = (n: number) => n || defect('no n', { data: { n } })```",
     "k.errors",
   ],
   [
     "E1452",
     "catch, or a finally that drops a throw",
-    "",
+    "Cleanup is try/finally; an expected failure is attempt(fn, expect); any other throw reaches its owner with no catch.",
     "\n```ts\ndeclare const a: () => void, b: typeof a\nexport function f() { let d = false; try { a(); d = true } finally { if (!d) b() } }```\n```ts\nimport { attempt, type KeelError } from '@keel/schema'\ndeclare const g: () => 1, T: KeelError<'m.t', null>\nexport const f = attempt(g, x => (x instanceof URIError ? T : undefined))```\n```ts\ndeclare const a: () => 1\nexport const f = () => a() + 1```",
     "k.errors",
   ],
@@ -1437,7 +1437,7 @@ const ROWS: readonly Row[] = [
   [
     "E1762",
     "a type predicate or assertion whose body is none of the five proofs",
-    "Proofs: a kernel guard, instanceof, an own WeakSet, parse(x).ok, structure.",
+    "Proofs: a kernel guard, instanceof, an own WeakSet, parse(x).ok, structure. A claim none proves moves into unsafe(), counted.",
     "\n```ts\nexport const isR = (x: unknown): x is { id: string } =>\n  typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'```\n```ts\nclass Job { id = '' }\nexport const isJob = (x: unknown): x is Job => x instanceof Job```",
     "k.identity",
   ],

@@ -13,9 +13,9 @@ export function catchMessage(kind: string): string {
   if (kind === "attempt") return "attempt needs expect: (x) => x instanceof T ? E.make(data) : undefined";
   if (kind === "expect") return "expect claims every throw: test the thrown value";
   if (kind === "catch") return `.catch()${AWAIT_IT}`;
-  if (kind === "then") return `.then() given a second argument${AWAIT_IT}`;
+  if (kind === "then") return `.then(f, g)${AWAIT_IT}`;
   if (kind === "allSettled" || kind === "any") return `Promise.${kind}${AWAIT_IT}`;
   if (kind.startsWith("value:"))
     return `${kind.slice("value:".length)} used other than as a call; check cannot follow it`;
-  return "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch";
+  return "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)";
 }

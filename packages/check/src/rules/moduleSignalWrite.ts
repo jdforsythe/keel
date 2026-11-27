@@ -17,8 +17,7 @@ const LIBRARY = /^packages\//;
  */
 export const moduleSignalWrite: RuleDef = {
   code: "E1256",
-  message: (f) =>
-    `write to module signal ${str(f.data, "name")} in server code: per-request state lives in the request's scope`,
+  message: (f) => `module signal ${str(f.data, "name")} set in server code: keep per-request state in the request scope`,
   see: "k.shared",
   check: ({ file, ast, project }) => {
     if (!isAppPath(file.path) || LIBRARY.test(file.path)) return [];

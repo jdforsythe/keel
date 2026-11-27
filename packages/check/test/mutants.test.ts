@@ -164,7 +164,7 @@ describe("E1452 noTryCatch", () => {
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
       "# rethrow, lines
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,9 +1,12 @@
@@ -184,7 +184,7 @@ describe("E1452 noTryCatch", () => {
          }
        }
       # rethrow, one line
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,3 +1,4 @@
@@ -194,7 +194,7 @@ describe("E1452 noTryCatch", () => {
       +  try { p(); done = true } finally { if (!done) { undo() } }
        }
       # rethrow, indented
-      3:5 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      3:5 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,5 +1,6 @@
@@ -206,7 +206,7 @@ describe("E1452 noTryCatch", () => {
          }
        }
       # done taken
-      3:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      3:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,5 +1,6 @@
@@ -218,7 +218,7 @@ describe("E1452 noTryCatch", () => {
          return done
        }
       # rethrow alone
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,3 +1,3 @@
@@ -227,9 +227,9 @@ describe("E1452 noTryCatch", () => {
       +  p(); p()
        }
       # rethrow alone, declares
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # top level
-      1:1 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      1:1 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1,2 @@
@@ -237,7 +237,7 @@ describe("E1452 noTryCatch", () => {
       +let done = false
       +try { go(); done = true } finally { if (!done) { undo() } }
       # own loop break
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,3 +1,4 @@
@@ -247,21 +247,21 @@ describe("E1452 noTryCatch", () => {
       +  try { for (;;) { if (p()) break } done = true } finally { if (!done) { undo() } }
        }
       # reads the error
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # return in try
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # break leaves try
-      2:14 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:14 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # not last
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # no param
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # finalizer unfixable
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # destructured param unfixable
-      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # no statement list
-      2:10 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      2:10 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)
       # promise catch
       1:44 .catch() in app code: await it; an expected failure is attempt(fn, expect)
       # computed catch ignored
@@ -339,7 +339,7 @@ describe("E1451 noThrow", () => {
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
       "# KeelError in a Result function
-      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      4:14 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,6 +1,6 @@
@@ -352,7 +352,7 @@ describe("E1451 noThrow", () => {
          return ok(n)
        }
       # async Promise of a Result
-      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      4:14 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,6 +1,6 @@
@@ -365,27 +365,27 @@ describe("E1451 noThrow", () => {
          return ok(n)
        }
       # inside a try with a catch
-      4:20 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      4:20 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       # an Error in a Result function
-      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      4:14 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       # a number function
-      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      4:14 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       # rethrow of the catch binding
 
       # rethrow in a nested function
-      2:37 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      2:37 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       # promises
-      1:26 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
-      2:36 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
-      3:30 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      1:26 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
+      2:36 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
+      3:30 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       # top level has no fix
-      1:1 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      1:1 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')
       # test file exempt
 
       # config exempt
 
       # unsafe dir read
-      1:1 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug"
+      1:1 throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')"
     `);
   });
 });

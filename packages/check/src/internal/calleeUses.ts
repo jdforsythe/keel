@@ -388,7 +388,7 @@ export function calleeUses(
       add(
         target === "scope" ? "E1208" : "E1203",
         ref,
-        `${target} after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => ${target}(...))`,
+        `${target} after await has no owner: take c = owner() before the await, then c.run(...)`,
         "k.reactive",
       );
   };

@@ -102,7 +102,7 @@ const isMember = (e: ts.Expression, object: string, member: string): boolean => 
  * every `add` is of the claimed type, a schema's `parse(x).ok`, and structure for a type with no signature and no type
  * parameter of the predicate. The body is `return P` (an arrow's expression), or for an assertion
  * `if (!(P)) defect(...)`; `P` is an `&&` chain. Each finding is at the return type, its message
- * `type predicate claims <what> its body does not prove; check it, or move the claim into unsafe()`.
+ * `type predicate claims <what> it does not prove: check it, or use unsafe()`.
  */
 export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): { at: number; message: string }[] {
   const resolved = (s: ts.Symbol): ts.Symbol =>
@@ -589,7 +589,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       if (what !== undefined)
         out.push({
           at: found.pred.getStart(sf),
-          message: `type predicate claims ${what} its body does not prove; check it, or move the claim into unsafe()`,
+          message: `type predicate claims ${what} it does not prove: check it, or use unsafe()`,
         });
     }
     ts.forEachChild(n, visit);
