@@ -92,9 +92,11 @@ const BASE = "trunk";
 async function pullRequestPath(dir, kind) {
   const git = (line) => sh(`git -c user.email=smoke@keel.invalid -c user.name=smoke ${line}`, dir);
   for (const line of [
-    `init -q -b ${BASE}`,
+    // The printed `git init -b main` may have run already; the base is renamed so no step can lean on `main`.
+    "init -q",
     "add -A",
     "commit -q -m init",
+    `branch -M ${BASE}`,
     "init -q --bare ../origin.git",
     "remote add origin ../origin.git",
     `push -q origin ${BASE}`,
