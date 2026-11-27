@@ -27,6 +27,25 @@ const shipped = (themes: string): string =>
 const HEAD = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n`;
 const appSource = (themes: string, colorTail = ""): string =>
   `${HEAD}\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color${colorTail} },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n  themes: { ${themes} },\n});\n`;
+const codeOf = (f: () => unknown): unknown => {
+  try {
+    f();
+    return null;
+  } catch (e) {
+    return e instanceof Error && "code" in e ? e.code : null;
+  }
+};
+/**
+ * A token set holding only the pair under test: `acme.ink` on `acme.accent` (the shipped `acme.badge` look) and no other
+ * color pair, look or base set, so no E1804 can come from any other token (`brandTokens` holds pairs of its own, e.g.
+ * `error` on `surface` at 6.15:1, which fail the 7:1 a `contrast` theme needs whatever the clause under test).
+ */
+const lean = (accent: string, themes: unknown, ink = "#FFFFFF") =>
+  looseTokens({
+    color: { "acme.accent": accent, "acme.ink": ink },
+    look: { "acme.badge": { bg: "acme.accent", fg: "acme.ink" } },
+    themes,
+  });
 const tokensWith = (themes: unknown, color: Record<string, string> = {}) => looseTokens({ ...composed(color), themes });
 const CONTRAST = "contrast: { color: { 'acme.accent': '#08427D' } }";
 const HC = 'hc: { when: "contrast", color: {} }';
@@ -121,8 +140,9 @@ describe("k.values: library themes", () => {
       const t = tokensWith({ slate: { color: { "acme.accent": "#3D8BD9" } } });
       expect(codesOf(f, "E1810", t)).toEqual([]);
       expect(codesOf(f, "E1813", t)).toEqual([]);
-      const typo = tokensWith({ slate: { color: { "acme.acent": "#3D8BD9" } } });
-      expect(codesOf(files(CONTRAST, 'slate: { color: { "acme.acent": "#3D8BD9" } }'), "E1813", typo)).toHaveLength(1);
+      // A theme holds only names its top-level group holds (k.themes Themes): a misspelt `acme.acent` is not one, so the
+      // tokens fail `TokenSchema` (E1807) and E1813, judged on tokens that exist (k.looks In an app), is not reached.
+      expect(codeOf(() => tokensWith({ slate: { color: { "acme.acent": "#3D8BD9" } } }))).toBe("E1807");
     },
     CHECK_CASE_BOUND,
   );
@@ -157,7 +177,9 @@ describe("k.looks: Library contrast per combination", () => {
       const mid = "#2F6FB5";
       expect(Number.parseFloat(ratioOf("#FFFFFF", mid))).toBeGreaterThanOrEqual(4.5);
       expect(Number.parseFloat(ratioOf("#FFFFFF", mid))).toBeLessThan(7);
-      const own = looseTokens({ ...composed({ "acme.accent": mid }), themes: { hc: { when: "contrast", color: {} } } });
+      const own = lean(mid, { hc: { when: "contrast", color: {} } });
+      expect(Object.keys(own.look)).toEqual(["acme.badge"]);
+      expect(Object.keys(own.color).sort()).toEqual(["acme.accent", "acme.ink"]);
       const text = appSource(
         'hc: { when: "contrast", color: { ...acmeTokens.themes.contrast.color } }',
         `, "acme.accent": "${mid}"`,
@@ -180,13 +202,14 @@ describe("k.looks: Library contrast per combination", () => {
       const themes = `slate: { color: { "acme.accent": "#3D8BD9" } },\n    hc: { when: "contrast", color: { ${hcColor} } }`;
       const text = appSource(themes);
       const files = app(text, [{ path: SHIPPED, source: shipped("contrast: { color: { 'acme.ink': '#FFFFFF' } }") }]);
-      const tokens = looseTokens({
-        ...composed(),
-        themes: {
-          slate: { color: { "acme.accent": "#3D8BD9" } },
-          hc: { when: "contrast", color: { "acme.ink": "#FFFFFF", "acme.accent": "#3D8BD9" } },
-        },
+      const tokens = lean("#0B5CAD", {
+        slate: { color: { "acme.accent": "#3D8BD9" } },
+        hc: { when: "contrast", color: { "acme.ink": "#FFFFFF", "acme.accent": "#3D8BD9" } },
       });
+      // The set's one pair, from the ratios: it clears 4.5:1 in `light` and fails 4.5:1 in `light+slate` and 7:1 in each
+      // combination with `hc` on, so the three combinations below are exactly the ones that fail.
+      expect(Number.parseFloat(ratioOf("#FFFFFF", "#0B5CAD"))).toBeGreaterThanOrEqual(4.5);
+      expect(Number.parseFloat(ratioOf("#FFFFFF", "#3D8BD9"))).toBeLessThan(4.5);
       const d = diagnosticsOf(files, tokens).filter((x) => x.code === "E1804");
       const combo = (x: { message: string }): string => /in ([a-z+]+),/.exec(x.message)?.[1] ?? "";
       expect(d.map(combo).sort()).toEqual(["light+hc", "light+slate", "light+slate+hc"]);

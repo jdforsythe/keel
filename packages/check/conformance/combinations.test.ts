@@ -25,6 +25,14 @@ const E = (source: string, tokens: unknown) =>
   }).diagnostics;
 const e1804 = (source: string, tokens: unknown) => E(source, tokens).filter((d) => d.code === "E1804");
 const hex = fc.integer({ min: 0, max: 0xffffff }).map((n) => `#${n.toString(16).padStart(6, "0")}`);
+const codeOf = (f: () => unknown): unknown => {
+  try {
+    f();
+    return null;
+  } catch (e) {
+    return e instanceof Error && "code" in e ? e.code : null;
+  }
+};
 const letters = (n: number): string[] => Array.from({ length: n }, (_, i) => `t${String.fromCharCode(97 + i)}`);
 
 describe("k.a11y-static: combinations(tokens)", () => {
@@ -79,7 +87,7 @@ describe("k.a11y-static: combinations(tokens)", () => {
   test("whatever the schemes and the `choice`, `contrast` and `print` themes within the limits, the combinations are per scheme, then `print`, each with no `choice` theme and then each in order, the `contrast` theme off and then on, at most 54", () => {
     fc.assert(
       fc.property(
-        fc.constantFrom(["light"], ["dark"], ["light", "dark"], ["dark", "light"]),
+        fc.constantFrom(["light"], ["dark"], ["light", "dark"]),
         fc.integer({ min: 0, max: 8 }),
         fc.boolean(),
         fc.boolean(),
@@ -101,6 +109,15 @@ describe("k.a11y-static: combinations(tokens)", () => {
       ),
       { seed: SEED, numRuns: 80 },
     );
+  });
+
+  test("a `schemes` other than `['light']`, `['dark']` and `['light', 'dark']` (k.schemes Schemes) is E1807, so `['dark', 'light']` has no combinations", () => {
+    for (const schemes of [["dark", "light"], [], ["light", "light"], ["sepia"]]) {
+      expect(
+        codeOf(() => looseTokens({ color: { x: "#111111" }, schemes })),
+        JSON.stringify(schemes),
+      ).toBe("E1807");
+    }
   });
 
   test("the most any tokens give is 54: both schemes, 8 `choice` themes, `contrast` and `print`", () => {
@@ -166,14 +183,6 @@ describe("k.a11y-static: combinations(tokens)", () => {
   test("with nine `choice` themes it throws E1807, as `defineTokens` does for tokens `TokenSchema` refuses, and so for a second `contrast` or `print` theme", () => {
     const plain = (themes: Record<string, unknown>): Parameters<typeof combinations>[0] =>
       JSON.parse(JSON.stringify({ color: { x: "#111111" }, themes }));
-    const codeOf = (f: () => unknown): unknown => {
-      try {
-        f();
-        return null;
-      } catch (e) {
-        return e instanceof Error && "code" in e ? e.code : null;
-      }
-    };
     const nine = Object.fromEntries(letters(9).map((n) => [n, {}]));
     expect(codeOf(() => combinations(plain(nine)))).toBe("E1807");
     expect(codeOf(() => looseTokens({ color: { x: "#111111" }, themes: nine }))).toBe("E1807");
