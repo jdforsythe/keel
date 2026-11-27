@@ -1,12 +1,12 @@
 // Spec: k.compiler, clause "A `routes.ts` whose graph reaches a `*.server.ts` file importing `node:child_process`, `node:net` and `node:dns` and calling none of their functions at import time evaluates with no E1050; that file calling `execSync('true')` at its top level makes `keel check` report one E1050 whose message starts `node:child_process.execSync` and exit 1, and `new Socket()` of `node:net` there one starting `node:net.Socket`."
 // Spec: k.compiler, clause "That `*.server.ts` file importing `./a.node` makes `keel check` report one E1050 at that file and the import's line, and exit 1."
 // Spec: k.compiler, clause "That `*.server.ts` file's top level calling `readFileSync(0)`, or `createRequire(import.meta.url)` with a name built at run time naming its sibling `c.cjs`, makes `keel check` report one E1050 and exit 1, and leaves no entry in `node_modules/.cache/keel/derived/`."
-// Also states, k.compiler Build-time evaluation: "The rest is refused with E1050: importing a `.node` addon, at the import; calling or constructing a function of `node:child_process`, `cluster`, `worker_threads`, `net`, `tls`, `dgram`, `dns`, `http`, `https`, `http2`, `vm`, `v8`, `inspector`, `wasi`, `sqlite`, `repl`, `readline` or `trace_events` (importing them is allowed); a `node:fs` write, watch or recursive listing; a read by a file descriptor the evaluation did not open; a code file named at run time; `node:module` but `createRequire`, `isBuiltin` and `builtinModules`; `process.dlopen`, `binding`, `mainModule`, `stdin`, `exit`, `chdir` or a property set; `import.meta.resolve`; `Function`, `eval`, `fetch`, `WebSocket` and `EventSource`."
-// Also states, k.compiler Rules: "E1050 a read the build-time evaluation cannot observe (Build-time evaluation), at the import for an addon, else with no location, its message starting with what it refused (`process.dlopen`)."
+// Also states, k.compiler Build-time evaluation: "The rest is refused with E1050: a member or built-in not listed, one Node adds too (a fact that moves on its own, `os.cpus()`; a stat's `atime`, which a read moves), a function at its call or construction (importing is allowed), any other value at its read; a `.node` addon, at its import; an open for writing; a read by a descriptor it did not open; a code file named at run time; `import.meta.resolve`; `WebAssembly` instantiation with imports."
+// Also states, k.compiler Rules: "E1050 a read the build-time evaluation cannot observe (Build-time evaluation), its message starting with what it refused: at the import for an addon; else at the refused call's first project-file frame, or unlocated with `at <package>/<path>:<line>` next when that frame is a package's, cut from its start to fit."
 // Seed 1337 (recorded); no random inputs. The household copy of derived-support.ts, built once and cloned per case; the `*.server.ts` file of the clauses is `modules/setup/gate.guard.ts`
 // (a server-only file of a module only a `node` deployable lists, reached from that module's `routes.ts`; k.boundary).
 // ASSUMED: the name of a computed require is the sketch's `['./c', 'cjs'].join('.')` (a bare `c.cjs` names a package, which Node resolves from `node_modules` and finds absent: E1006, not a refusal), and (for a `.json` that must load) an absolute path built the same way.
-// k.compiler Rules: a location-less E1050 carries no `path` and no `line`, and its message starts with the refused call (`process.dlopen`); a computed require or descriptor read asserts only the code and exit.
+// k.compiler Rules and Build-time evaluation, as read here: a refusal in a project file (the guard file) is located at that file and the refused call's line; a refusal in a package is unlocated, its message ending `at <package>/<path>:<line>`; every message starts with what it refused (`process.dlopen`), and a computed require or descriptor read asserts only the code and exit.
 // The `--format=compact` position of the addon case is `E1050 <path>:<line>:<col> <message>` (docs/OUTPUT.md).
 import { join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
@@ -151,12 +151,12 @@ describe("k.compiler: a `.node` addon import is E1050 at the import", () => {
   );
 });
 
-describe("k.compiler: `process.dlopen` and `process.binding` are E1050 with no location", () => {
+describe("k.compiler: `process.dlopen` and `process.binding` called in a project file are E1050 at that file and line", () => {
   test.each([
     ["dlopen", 'process.dlopen({ exports: {} }, "/nonexistent/a.node");'],
     ["binding", 'process.binding("fs");'],
   ])(
-    "`process.%s` called at the top level is one E1050 naming it, with no location, and exit 1",
+    "`process.%s` called at the top level of the guard file is one E1050 naming it, at that file and the call's line, and exit 1",
     (name, call) => {
       const t = copy();
       guardFile(t, call);
@@ -164,7 +164,8 @@ describe("k.compiler: `process.dlopen` and `process.binding` are E1050 with no l
       const found = e1050(out);
       expect(found, brief(out)).toHaveLength(1);
       expect(found[0]?.message.startsWith(`process.${name}`), found[0]?.message).toBe(true);
-      expect(found[0]?.line, brief(out)).toBeUndefined();
+      expect(found[0]?.path, brief(out)).toBe("modules/setup/gate.guard.ts");
+      expect(found[0]?.line, brief(out)).toBe(1);
       expect(out.status, brief(out)).toBe(1);
     },
     SLOW,
