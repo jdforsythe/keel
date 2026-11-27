@@ -1,8 +1,9 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
+import { attempt, s } from "@keel/schema";
 import { tx } from "@keel/store";
 import { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { Config } from "./Config.ts";
+import { Failed } from "./Failed.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
 import { flowOf } from "./flowOf.ts";
@@ -23,8 +24,11 @@ export function load(ctx: Ctx, c: Config): Promise<void> {
 }
 
 async function read(ctx: Ctx, c: Config): Promise<void> {
-  const raw = await attempt(() => ctx.storage.get(`keel.outbox.${c.id}`));
-  const json = raw.ok && raw.value !== null ? attempt((): unknown => JSON.parse(raw.value ?? "")) : undefined;
+  const raw = await attempt(
+    () => ctx.storage.get(`keel.outbox.${c.id}`),
+    (x) => (x instanceof Error ? Failed.make({}) : undefined),
+  );
+  const json = raw.ok && raw.value !== null ? s.json.parseJson(raw.value) : undefined;
   const list = json?.ok ? field(json.value, "entries") : undefined;
   let moved = false;
   for (const x of Array.isArray(list) ? list : []) {
@@ -48,5 +52,5 @@ async function read(ctx: Ctx, c: Config): Promise<void> {
     flowOf(c, ctx).held.add(next.key);
     moved ||= foreign;
   }
-  if (moved) void (await attempt(() => persist(ctx, c)));
+  if (moved) void (await persist(ctx, c));
 }

@@ -1,5 +1,4 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
 import type { Outbox } from "./Outbox.type.ts";
@@ -54,7 +53,7 @@ export async function resolve<const D extends object>(
   void tx(c.resolve, { key, resolution });
   if (resolution === "theirs") {
     flowOf(c, ctx).held.delete(key);
-    if (!(await attempt(() => persist(ctx, c))).ok) void (await attempt(() => persist(ctx, c)));
+    if (!(await persist(ctx, c)).ok) void (await persist(ctx, c));
     return true;
   }
   const error = await admit(ctx, c, key);

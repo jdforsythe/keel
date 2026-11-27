@@ -1,5 +1,4 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
 import { tx } from "@keel/store";
 import type { Config } from "./Config.ts";
 import { fault } from "./fault.ts";
@@ -20,5 +19,5 @@ export async function own(ctx: Ctx, c: Config, owner: string): Promise<void> {
   const { held } = f;
   const others = c.store.get("entries").filter((e) => held.has(e.key) && e.owner !== owner && e.state !== "failed");
   for (const e of others) void tx(c.settle, { key: e.key, state: "failed", error: fault(c, "offline.owner") });
-  if (others[0]) void (await attempt(() => persist(ctx, c)));
+  if (others[0]) void (await persist(ctx, c));
 }

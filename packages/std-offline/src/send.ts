@@ -56,7 +56,7 @@ export async function send<const D extends object, K extends keyof D & string>(
     return { state: "failed", error: { code: "offline.full", message: c.id, data } };
   }
   const added = tx(c.add, entry);
-  if (!added.ok) return defect(added.error.message);
+  if (!added.ok) return defect("outbox entry was not added", { cause: added.error });
   flowOf(c, ctx).held.add(key);
   const error = await admit(ctx, c, key);
   if (error) return { state: "failed", error };

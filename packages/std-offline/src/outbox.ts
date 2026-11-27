@@ -35,7 +35,9 @@ export function outbox<const C extends Contract>(
     const name = entry.slice(contract.module.length + 1);
     const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
-      return defect(`outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`, "E2651");
+      return defect("an outbox endpoint body holds an s.secret", "E2651", {
+        data: { outbox: id, endpoint: name, at: at || "(root)" },
+      });
     }
     api[name] = e;
   }

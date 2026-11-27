@@ -3,6 +3,7 @@ import { attempt } from "@keel/schema";
 import { tx } from "@keel/store";
 import type { OutboxResult } from "../OutboxResult.ts";
 import type { Config } from "./Config.ts";
+import { Failed } from "./Failed.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
 import { flowOf } from "./flowOf.ts";
@@ -59,7 +60,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
     const payload: unknown = { key, state, ...extra };
     void tx(c.settle, payload);
     answer = out;
-    const written = await attempt(() => persist(ctx, c));
+    const written = await persist(ctx, c);
     if (!written.ok) lost = true;
     return written.ok;
   };
@@ -114,7 +115,10 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
           const timer = new AbortController();
           f.timer = timer;
           const waiting = ctx.clock.after(f.delay, timer.signal);
-          void attempt(() => waiting).then((waited) => (waited.ok ? loop(ctx, c) : undefined));
+          void attempt(
+            () => waiting,
+            (x) => (x === timer.signal.reason ? Failed.make({}) : undefined),
+          ).then((waited) => (waited.ok ? loop(ctx, c) : undefined));
         }
         f.delay = Math.min(f.delay * 2, 60_000);
         break;
@@ -131,7 +135,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       // is written once more (best effort).
       const error = fault(c, "offline.storage");
       if (!answer) void tx(c.settle, { key, state: "failed", error });
-      void (await attempt(() => persist(ctx, c)));
+      void (await persist(ctx, c));
       done(key, answer ?? { state: "failed", error });
     }
   } finally {
