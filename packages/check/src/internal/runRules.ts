@@ -8,10 +8,10 @@ import { ruleThrew } from "./ruleThrew.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 /**
- * Codes whose messages k.errors prints word for word, longer than the 89 units of k.check Diagnostics: they are
- * kept whole, since a clipped one would drop the shape it names.
+ * Codes whose messages k.errors and k.shared print word for word, longer than the 89 units of k.check Diagnostics:
+ * they are kept whole, since a clipped one would drop the shape or the home it names.
  */
-const WHOLE: ReadonlySet<string> = new Set(["E1451", "E1452"]);
+const WHOLE: ReadonlySet<string> = new Set(["E1451", "E1452", "E1256", "E1260"]);
 
 function toDiagnostic(rule: RuleDef, f: Finding, input: RuleInput): Diagnostic {
   const text = typeof rule.message === "string" ? rule.message : rule.message(f);

@@ -504,10 +504,17 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1256",
-    "tx, restore, undo or undoWhere on a module store during a request, or in work it scheduled",
-    "Module stores are process-wide. The check follows async context, not data: a callback registered at module load is not checked.",
-    "return the rows as loader data, or name the store in the loader's stores factory",
-    "k.resume",
+    "a write to module state during a request, a defect; at check, set on a module-level signal in server code",
+    "Module state outlives the request, so a later request would read it.",
+    "\n```ts\nimport { signal } from '@keel/reactive'\nexport const load = (id: string) => { const last = signal(''); last.set(id); return last.get() }```",
+    "k.shared, k.resume",
+  ],
+  [
+    "E1260",
+    "a write to plain module state in server code",
+    "Module state outlives the request; a process cache is processSlot(name, make).",
+    "\n```ts\nexport const load = (k: string) => { const seen = new Map<string, number>(); seen.set(k, 1); return seen.size }```",
+    "k.shared",
   ],
   [
     "E1257",
@@ -1436,10 +1443,10 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1762",
-    "type predicate or assertion claiming a call signature or its own type parameter, outside unsafe()",
-    "typeof v === 'function' proves no signature and no value proves a type argument. A key guard (WeakSet.has, own Symbol.for key) is none.",
-    "(x: unknown): x is { run(n: number): string } -> move it into unsafe('...', () => ...)",
-    "k.unsafe",
+    "a type predicate or assertion whose body is none of the five proofs",
+    "Proofs: a kernel guard, instanceof, an own WeakSet, parse(x).ok, structure.",
+    "\n```ts\nexport const isR = (x: unknown): x is { id: string } =>\n  typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'```\n```ts\nclass Job { id = '' }\nexport const isJob = (x: unknown): x is Job => x instanceof Job```",
+    "k.identity",
   ],
   [
     "E1801",

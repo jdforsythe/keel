@@ -17,6 +17,8 @@ import { identityMountMissing } from "../rules/identityMountMissing.ts";
 import { libraryTokenName } from "../rules/libraryTokenName.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
+import { moduleSignalWrite } from "../rules/moduleSignalWrite.ts";
+import { moduleStateWrite } from "../rules/moduleStateWrite.ts";
 import { negativeTypeTestHome } from "../rules/negativeTypeTestHome.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noAmbientLocale } from "../rules/noAmbientLocale.ts";
@@ -108,6 +110,8 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noInternalEntry,
   noDomGlobal,
   loaderInServerFile,
+  moduleSignalWrite,
+  moduleStateWrite,
   guardInGuardFile,
   identityFile,
   slotSignature,
