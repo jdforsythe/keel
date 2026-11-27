@@ -12,7 +12,7 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { type Run, type Tree, cleanup, keel, materialize } from "./compat-support.ts";
 import { SLOW, staticTree } from "./static-support.ts";
 
-const TOKENS = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, schemes: ["light", "dark"] });\n`;
+const TOKENS = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, schemes: ["light", "dark"] });\n`;
 const SELECT_PAGE =
   "import { Box, SchemeSelect, Text } from '@keel/ui'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n" +
   '    <Box id="s.page">\n      <Text id="s.page.text">{props.data.text}</Text>\n      <SchemeSelect id="s.page.scheme" label="Scheme" labels={{ system: "System", light: "Light", dark: "Dark" }} />\n    </Box>\n  )\n}\n';
@@ -26,8 +26,8 @@ const withoutSelect = (adapter: string): Tree => ({ ...staticTree("none", undefi
 const ONE_TOKENS = `import { brandTokens } from "@keel/ui/brand";\nexport const tokens = brandTokens;\n`;
 const oneScheme = (adapter: string): Tree => ({ ...staticTree("none", undefined, adapter), "tokens.ts": ONE_TOKENS });
 
-const CHOICE_TOKENS = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, themes: { slate: { color: { surface: "#F4F7FB" } } } });\n`;
-const PRINT_TOKENS = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, themes: { paper: { when: "print", color: { surface: "#FFFFFF" } } } });\n`;
+const CHOICE_TOKENS = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, themes: { slate: { color: { surface: "#F4F7FB" } } } });\n`;
+const PRINT_TOKENS = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, themes: { paper: { when: "print", color: { surface: "#FFFFFF" } } } });\n`;
 const choiceTheme = (adapter: string): Tree => ({
   ...staticTree("none", undefined, adapter),
   "tokens.ts": CHOICE_TOKENS,

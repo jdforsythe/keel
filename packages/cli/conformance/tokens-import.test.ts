@@ -1,7 +1,7 @@
-// Spec: k.cli, clause "With `design/color.light.tokens.json` `{\"color\":{\"$type\":\"color\",\"text\":{\"$value\":\"#1a191e\"},\"surface\":{\"$value\":\"#F9F9F9\"}},\"space\":{\"$type\":\"dimension\",\"2\":{\"$value\":{\"value\":8,\"unit\":\"px\"}}}}` and `design/color.dark.tokens.json` the same with `text` `#F3F3F3`, `keel tokens import design/color.light.tokens.json design/color.dark.tokens.json` writes `tokens.design.ts` whose `designTokens` deep-equals `{ color: { text: { light: '#1a191e', dark: '#F3F3F3' }, surface: '#F9F9F9' }, space: { 2: '8px' } }` and prints `ok tokens import 3 tokens, 0 looks, 0 themes`."
-// Spec: k.cli, clause "Adding `design/brand.base.tokens.json` `{\"color\":{\"$type\":\"color\",\"accent\":{\"$value\":\"#b8420d\"}}}`, `design/brand.slate.tokens.json` with `accent` `#0B5CAD` and `design/brand.highContrast.tokens.json` with `accent` `#8B300A`, in that order, gives `color.accent` `'#b8420d'` and `themes` `{ slate: { color: { accent: '#0B5CAD' } }, highContrast: { when: 'contrast', color: { accent: '#8B300A' } } }`."
-// Spec: k.cli, clause "A token `hero` of `$type` `gradient` is one W1072 at its `$value` with message `hero: gradient has no Keel group; skipped`; a `typography` token `type.heading` `{\"fontFamily\":\"Inter\",\"fontSize\":\"28px\",\"fontWeight\":600,\"lineHeight\":1.2}` gives `font.heading` `'Inter'`, `fontSize.heading` `'28px'`, `weight.heading` `'600'`, `look.heading` `{ font: 'heading', fontSize: 'heading', weight: 'heading' }` and one W1072 `type.heading lineHeight: dropped` at its `\"lineHeight\"` key; a file `{\"a\":1}` is one E1071 and writes no file."
-// Spec: k.cli, clause "With `tokens.ts` `export const tokens = brandTokens;` and its import, the first case's import makes `tokens` `defineTokens({ ...brandTokens, color: { ...brandTokens.color, ...designTokens.color }, space: { ...brandTokens.space, ...designTokens.space } })` with `defineTokens` and `designTokens` imported, `keel check` then reports none of E1807 and E1801, and a second import leaves `tokens.ts` byte for byte as it was."
+// Spec: k.design-tokens, clause "With `design/color.light.tokens.json` `{\"color\":{\"$type\":\"color\",\"text\":{\"$value\":\"#1a191e\"},\"surface\":{\"$value\":\"#F9F9F9\"}},\"space\":{\"$type\":\"dimension\",\"2\":{\"$value\":{\"value\":8,\"unit\":\"px\"}}}}` and `design/color.dark.tokens.json` the same with `text` `#F3F3F3`, `keel tokens import design/color.light.tokens.json design/color.dark.tokens.json` writes `tokens.design.ts` whose `designTokens` deep-equals `{ color: { text: { light: '#1a191e', dark: '#F3F3F3' }, surface: '#F9F9F9' }, space: { 2: '8px' } }` and prints `ok tokens import 3 tokens, 0 looks, 0 themes`."
+// Spec: k.design-tokens, clause "Adding `design/brand.base.tokens.json` `{\"color\":{\"$type\":\"color\",\"accent\":{\"$value\":\"#b8420d\"}}}`, `design/brand.slate.tokens.json` with `accent` `#0B5CAD` and `design/brand.highContrast.tokens.json` with `accent` `#8B300A`, in that order, gives `color.accent` `'#b8420d'` and `themes` `{ slate: { color: { accent: '#0B5CAD' } }, highContrast: { when: 'contrast', color: { accent: '#8B300A' } } }`."
+// Spec: k.design-tokens, clause "A token `hero` of `$type` `gradient` is one W1072 at its `$value` with message `hero: gradient has no Keel group; skipped`; a `typography` token `type.heading` `{\"fontFamily\":\"Inter\",\"fontSize\":\"28px\",\"fontWeight\":600,\"lineHeight\":1.2}` gives `font.heading` `'Inter'`, `fontSize.heading` `'28px'`, `weight.heading` `'600'`, `look.heading` `{ font: 'heading', fontSize: 'heading', weight: 'heading' }` and one W1072 `type.heading lineHeight: dropped` at its `\"lineHeight\"` key; a file `{\"a\":1}` is one E1071 and writes no file."
+// Spec: k.design-tokens, clause "With `tokens.ts` `export const tokens = brandTokens;` and its import, the first case's import, with `surface` `#141317` in its dark file so that the focus ring clears 3:1 in both schemes (k.a11y Order and focus), makes `tokens` `defineTokens({ ...brandTokens, color: { ...brandTokens.color, ...designTokens.color }, space: { ...brandTokens.space, ...designTokens.space } })` with `defineTokens` and `designTokens` imported, `keel check` then reports none of E1807 and E1801, and a second import leaves `tokens.ts` byte for byte as it was."
 // Seed: 1337 (fixed projects; one property over the file order of a collection's modes). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
 // The design tokens files are written by the test into a temp project (`keelProject`, a11y-project-support.ts) and `keel tokens import` runs in process through `run` from `@keel/cli` with the real project directory as `cwd` (no `files`), the entry fixtures.ts documents; `keel check` runs through the real binary (`keel`, test-sim-project.ts). The generated `tokens.design.ts` is evaluated by importing it (its `designTokens` export) for the deep-equal clauses, and read as text, formatted with the repo's formatter (`biome format` under the repo's configuration, as packages/check/conformance/library-looks-support.ts `formatted` does), for the RFC's example.
 // ASSUMPTIONS: a W1072 or E1071 record is `{ kind: "diag", code, path, line, col, message }` in json, and in compact a line `<code> <path>:<line>:<col> <message>` (docs/OUTPUT.md); "at its `$value`" is the 1-based line and column of the opening quote of the `"$value"` key of the token in the file that holds it and, for a dropped field, of that field's key (`"lineHeight"`); the printed order of the W1072 lines is not stated, so they are compared as a set; `ok tokens import <n> tokens, <m> looks, <k> themes` is the line `keel tokens import` prints in compact, last. The generated file is the RFC's example text after formatting (key order as the RFC writes it: palette colors in file order, then the mode pairs). "Hand edits go after the spreads" is asserted by a key added after `...designTokens.color` in the second case of #24.
@@ -73,7 +73,7 @@ const DARK = `{"color":{"$type":"color","text":{"$value":"#F3F3F3"},"surface":{"
 const FILES = ["design/color.light.tokens.json", "design/color.dark.tokens.json"];
 const FIRST = { "design/color.light.tokens.json": LIGHT, "design/color.dark.tokens.json": DARK };
 
-describe("k.cli: tokens import", () => {
+describe("k.design-tokens: tokens import", () => {
   test(
     "With `design/color.light.tokens.json` and `design/color.dark.tokens.json`, `keel tokens import` writes `tokens.design.ts` whose `designTokens` deep-equals `{ color: { text: { light: '#1a191e', dark: '#F3F3F3' }, surface: '#F9F9F9' }, space: { 2: '8px' } }` and prints `ok tokens import 3 tokens, 0 looks, 0 themes`",
     async () => {
@@ -177,7 +177,7 @@ describe("k.cli: tokens import", () => {
   );
 });
 
-describe("k.cli: tokens import skips and drops what has no group", () => {
+describe("k.design-tokens: tokens import skips and drops what has no group", () => {
   const TYPE = `{"type":{"heading":{"$type":"typography","$value":{"fontFamily":"Inter","fontSize":"28px","fontWeight":600,"lineHeight":1.2}}},"hero":{"$type":"gradient","$value":[{"color":"#000000","position":0}]}}`;
 
   test(
@@ -273,7 +273,7 @@ describe("k.cli: tokens import skips and drops what has no group", () => {
   );
 });
 
-describe("k.cli: tokens import colors in other spaces", () => {
+describe("k.design-tokens: tokens import colors in other spaces", () => {
   test(
     "a color in a space with no form of its own is written as `oklch()` at 4 decimals with one W1072 `<token>: <space> as oklch`",
     async () => {
@@ -295,14 +295,14 @@ describe("k.cli: tokens import colors in other spaces", () => {
   );
 });
 
-describe("k.cli: tokens import and tokens.ts", () => {
+describe("k.design-tokens: tokens import and tokens.ts", () => {
   test(
-    "With `tokens.ts` `export const tokens = brandTokens;` and its import, the first case's import makes `tokens` `defineTokens({ ...brandTokens, color: { ...brandTokens.color, ...designTokens.color }, space: { ...brandTokens.space, ...designTokens.space } })` with `defineTokens` and `designTokens` imported, `keel check` then reports none of E1807 and E1801, and a second import leaves `tokens.ts` byte for byte as it was",
+    "With `tokens.ts` `export const tokens = brandTokens;` and its import, the first case's import, with `surface` `#141317` in its dark file so that the focus ring clears 3:1 in both schemes (k.a11y Order and focus), makes `tokens` `defineTokens({ ...brandTokens, color: { ...brandTokens.color, ...designTokens.color }, space: { ...brandTokens.space, ...designTokens.space } })` with `defineTokens` and `designTokens` imported, `keel check` then reports none of E1807 and E1801, and a second import leaves `tokens.ts` byte for byte as it was",
     async () => {
       const dir = project({ "tokens.ts": BRAND_TOKENS, ...FIRST });
       expect((await importCmd(dir, FILES)).code).toBe(0);
       const after = norm(read(dir, "tokens.ts"));
-      expect(after).toContain('import { defineTokens } from "@keel/ui";');
+      expect(after).toContain('import { defineTokens } from "@keel/ui/tokens";');
       expect(after).toContain('import { designTokens } from "./tokens.design.ts";');
       expect(after).toContain('import { brandTokens } from "@keel/ui/brand";');
       expect(after).toContain(
@@ -418,7 +418,7 @@ describe("k.cli: tokens import and tokens.ts", () => {
       );
       expect(lines.at(-1)).toBe("ok tokens import 14 tokens, 1 looks, 0 themes");
       const expected = `// Written by keel tokens import; edit tokens.ts.
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const designTokens = defineTokens({
   color: {

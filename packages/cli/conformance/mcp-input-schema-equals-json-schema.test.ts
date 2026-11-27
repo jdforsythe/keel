@@ -1,7 +1,8 @@
-// Spec: k.cli, clause "Each MCP tool's input schema equals the JSON Schema of its operation's input."
+// Spec: k.cli, clause "Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`."
 // An open s.object ignores undeclared keys in parse, so its JSON Schema omits `additionalProperties: false` (k.schema, rfc:0029:
 // only closed objects add it); the schema and parse then agree on {"undeclared-extra-key":null}.
-// Seed: 1337 (every fc.assert below). Drives the real binary (packages/cli/src/bin.ts) with `keel mcp`, one tools/list request.
+// Seed: 1337 (every fc.assert below). Drives the real binary (packages/cli/src/bin.ts) with `keel mcp`, one `initialize` and one `tools/list` request.
+// The flags all commands take are `format`, `quiet`, `limit` and `verbose` (RFC 0249 D15; the clause does not name them): every operation's input holds them, no tool's inputSchema does, and `initialize`'s `instructions` name them.
 // Equality is semantic: a small JSON Schema validator (below) throws on any keyword it does not implement, so no keyword is ignored.
 import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
@@ -111,6 +112,14 @@ function validate(schema: unknown, v: unknown): boolean {
 }
 
 let tools: { name: unknown; inputSchema: unknown }[] = [];
+let instructions = "";
+
+// The flags all commands take (RFC 0249 D15).
+const SHARED = ["format", "quiet", "limit", "verbose"];
+const without = (v: unknown): unknown =>
+  isDict(v) ? Object.fromEntries(Object.entries(v).filter(([k]) => !SHARED.includes(k))) : v;
+const fieldNames = (op: (typeof operations)[number]): string[] =>
+  op.input.node.kind === "object" ? Object.keys(op.input.node.fields) : [];
 
 beforeAll(() => {
   const env: Record<string, string | undefined> = {};
@@ -122,11 +131,17 @@ beforeAll(() => {
     cwd: repo,
     encoding: "utf8",
     env,
-    input: `${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} })}\n`,
+    input: `${JSON.stringify({ jsonrpc: "2.0", id: 0, method: "initialize", params: {} })}\n${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} })}\n`,
   });
-  const line = r.stdout.split("\n").find((l) => l.trim() !== "");
-  if (line === undefined) throw new Error(`keel mcp printed nothing (status ${r.status}): ${r.stderr}`);
-  const list = field(field(JSON.parse(line), "result"), "tools");
+  const replies = r.stdout
+    .split("\n")
+    .filter((l) => l.trim() !== "")
+    .map((l): unknown => JSON.parse(l));
+  if (replies.length === 0) throw new Error(`keel mcp printed nothing (status ${r.status}): ${r.stderr}`);
+  const reply = (id: number): unknown => replies.find((m) => field(m, "id") === id);
+  const text = field(field(reply(0), "result"), "instructions");
+  instructions = typeof text === "string" ? text : "";
+  const list = field(field(reply(1), "result"), "tools");
   tools = Array.isArray(list)
     ? list.map((t) => ({ name: field(t, "name"), inputSchema: field(t, "inputSchema") }))
     : [];
@@ -138,7 +153,7 @@ const STD_RESERVED: string[] = ["session", "report"];
 const OTHERS: unknown[] = [null, true, 1.5, 7, "x", [], ["a"], {}, { a: 1 }];
 
 describe("k.cli: MCP tool input schemas (real binary)", () => {
-  it("Each MCP tool's input schema equals the JSON Schema of its operation's input: the tools list names every operation, in order", () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: the tools list names every operation, in order", () => {
     // A repository module that depends on @keel/std-sessions fills the `session` slot (rfc:0070): it is listed after
     // the kernel operations, and its schema is checked with the others below.
     const names = tools.map((t) => String(t.name));
@@ -150,13 +165,13 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
     expect(names.slice(0, operations.length)).toEqual(operations.map((o) => o.name));
   });
 
-  it("Each MCP tool's input schema equals the JSON Schema of its operation's input: the validator accepts only keywords it implements", () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: the validator accepts only keywords it implements", () => {
     expect(() => validate({ type: "object", pattern: "x" }, {})).toThrow(/unsupported keyword/);
     for (const t of tools) expect(() => validate(t.inputSchema, {}), String(t.name)).not.toThrow();
   });
 
   it(
-    "Each MCP tool's input schema equals the JSON Schema of its operation's input: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate",
+    "Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: validating the tool's inputSchema agrees with parsing by the operation's input for every candidate",
     () => {
       expect(tools.filter((t) => !STD_RESERVED.includes(String(t.name))).length).toBe(operations.length);
       for (const op of operations) {
@@ -165,7 +180,7 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
         expect(schema, op.name).toBeDefined();
         const valid = gen(op.input);
         const agree = (v: unknown): void => {
-          const parsed = op.input.parse(v).ok;
+          const parsed = op.input.parse(without(v)).ok;
           const validated = validate(schema, v);
           if (parsed !== validated) {
             throw new Error(
@@ -212,4 +227,25 @@ describe("k.cli: MCP tool input schemas (real binary)", () => {
     },
     fixedTime(120_000),
   );
+
+  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: every operation's input takes the shared flags and no tool's inputSchema lists them", () => {
+    for (const op of operations) {
+      for (const flag of SHARED) expect(fieldNames(op), `${op.name} takes ${flag}`).toContain(flag);
+      const props = field(tools.find((t) => t.name === op.name)?.inputSchema, "properties");
+      const listed = isDict(props) ? Object.keys(props) : [];
+      expect(listed.sort(), op.name).toEqual(
+        fieldNames(op)
+          .filter((k) => !SHARED.includes(k))
+          .sort(),
+      );
+    }
+  });
+
+  it("Each MCP tool's input schema is its operation's input's JSON Schema but the flags all commands take, stated once by `initialize`: `initialize` states each shared flag in its `instructions`", () => {
+    expect(instructions).not.toBe("");
+    for (const flag of SHARED) {
+      const hits = instructions.split(new RegExp(`\\b${flag}\\b`)).length - 1;
+      expect(hits, `instructions name ${flag}`).toBeGreaterThanOrEqual(1);
+    }
+  });
 });

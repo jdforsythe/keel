@@ -13,7 +13,7 @@ afterAll(() => {
 });
 const MODULE = `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`;
 const tokens = (over: string): string =>
-  `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { card: "#ffffff", on: "#ffffff" }, overlay: { scrim: { value: "#1a191e99", over: [${over}] } } });\n`;
+  `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { card: "#ffffff", on: "#ffffff" }, overlay: { scrim: { value: "#1a191e99", over: [${over}] } } });\n`;
 const VIEW = `import { Text } from "@keel/ui";\nexport const V = () => <Text fg="on" bg="scrim">x</Text>;\n`;
 const run = (over: string) => {
   const dir = keelProject("overlay-over", {

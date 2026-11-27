@@ -35,7 +35,7 @@ const FILES: [string, string][] = [
   view("ReversedOne", `<Box direction="row-reverse"><Button onClick={() => {}}>A</Button></Box>`),
   view("Forward", `<Box direction="row">${BTN}</Box>`),
 ];
-const tokens = `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" } });\n`;
+const tokens = `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" } });\n`;
 const hit = (run: Run, code: string, name: string): CliRecord[] =>
   run.records.filter((r) => r.kind === "diag" && r.code === code && r.path === `modules/m/${name}.tsx`);
 

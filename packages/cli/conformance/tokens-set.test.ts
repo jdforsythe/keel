@@ -1,4 +1,4 @@
-// Spec: k.cli, clause "On that `tokens.ts`, `keel tokens set color/accent/dark '#8AB8F0'` adds `accent: { light: '#b8420d', dark: '#8AB8F0' }` after `...designTokens.color`, `keel tokens set themes/slate/radius/none 4px` adds `themes: { slate: { radius: { none: '4px' } } }`, a comment in the file stays, and `keel tokens set color/accent red` is one E1071 with message `color/accent: red fails TokenSchema` and writes nothing."
+// Spec: k.design-tokens, clause "On that `tokens.ts`, `keel tokens set color/accent/dark '#8AB8F0'` adds `accent: { light: '#b8420d', dark: '#8AB8F0' }` after `...designTokens.color`, `keel tokens set themes/slate/radius/none 4px` adds `themes: { slate: { radius: { none: '4px' } } }`, a comment in the file stays, and `keel tokens set color/accent red` is one E1071 with message `color/accent: red fails TokenSchema` and writes nothing."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
 // The project is the one the clause's fixture builds: `design/color.light.tokens.json`, `design/color.dark.tokens.json` (k.cli #21's files) and `design/brand.base.tokens.json` (`accent` `#b8420d`), imported by `keel tokens import` so `tokens.ts` spreads `designTokens.color` and `designTokens.space` and `designTokens.color.accent` is `'#b8420d'`: "that `tokens.ts`" is read as the one the first import writes (k.cli #24) for a collection of those three files, with a comment added by the test. `keel tokens set` runs in process through `run` from `@keel/cli` with the project as `cwd`; `keel check` through the real binary.
 // ASSUMPTIONS: "adds `accent: { light: '#b8420d', dark: '#8AB8F0' }` after `...designTokens.color`" is read on the file's text with quotes and layout normalised (the writer's quoting is not stated); the light value of the pair is the string value the spread gave `accent`. A refused set prints one E1071 diag record in json and exits 1.
@@ -66,7 +66,7 @@ const imported = async (dark = DARK): Promise<string> => {
   return dir;
 };
 
-describe("k.cli: tokens set", () => {
+describe("k.design-tokens: tokens set", () => {
   test(
     "On that `tokens.ts`, `keel tokens set color/accent/dark '#8AB8F0'` adds `accent: { light: '#b8420d', dark: '#8AB8F0' }` after `...designTokens.color`",
     async () => {

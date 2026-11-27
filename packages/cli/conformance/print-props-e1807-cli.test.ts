@@ -13,7 +13,7 @@ afterAll(() => {
 });
 const MODULE = `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`;
 const tokens = (breakpoint: string): string =>
-  `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, breakpoint: { ...brandTokens.breakpoint, ${breakpoint} } });\n`;
+  `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, breakpoint: { ...brandTokens.breakpoint, ${breakpoint} } });\n`;
 const diags = (breakpoint: string) => {
   const dir = keelProject("print-e1807", {
     "topology.ts": TOPOLOGY,

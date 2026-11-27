@@ -44,7 +44,7 @@ afterAll(() => {
   for (const d of created) removeProject(d);
 });
 const MODULE = `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`;
-const TOKENS = `import { defineTokens } from "@keel/ui";
+const TOKENS = `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: { low: "#787878", ok: "#111111", bg: "#ffffff", dark: "#000000" },
   fontSize: { big: "18.66px", sm: "14px" },
@@ -303,7 +303,7 @@ describe("k.a11y-static: brandTokens", () => {
 });
 
 describe("k.a11y-static: values, thresholds and schemes from the project's tokens", () => {
-  const TOK = `import { defineTokens } from "@keel/ui";
+  const TOK = `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: {
     low: "#777777", ok: "#767676", bg: "#ffffff", dark: "#000000", pale: "#bbbbbb",
@@ -385,7 +385,7 @@ export const tokens = defineTokens({
 });
 
 describe("k.a11y-static: a `fg` set by a look and overridden by a prop", () => {
-  const TOK = `import { defineTokens } from "@keel/ui";
+  const TOK = `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: { low: "#777777", ok: "#767676", bg: "#ffffff" },
   look: { weak: { fg: "low" }, firm: { fg: "ok" } },
@@ -436,7 +436,7 @@ describe("k.a11y-static: the message and its 89-unit limit", () => {
   beforeAll(() => {
     const colors = PAIRS.flatMap(({ a, b }) => [`${a}: "#ffffff"`, `${b}: "#ffffff"`]).join(", ");
     const dir = project("a11y-static-msg", {
-      "tokens.ts": `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { ${colors} } });\n`,
+      "tokens.ts": `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { ${colors} } });\n`,
       ...Object.fromEntries(PAIRS.map(({ a, b }, i) => unit(`P${i}`, `    <Text fg="${a}" bg="${b}">x</Text>`))),
     });
     run = keel(dir, ["check"]);
@@ -514,7 +514,7 @@ describe("k.a11y-static: the tokens are read on every run, never from a cache", 
     () => {
       const comp = unit("Fails", `    <Box bg="bg">\n      <Text fg="low">x</Text>\n    </Box>`);
       const tok = (low: string): string =>
-        `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
+        `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
       const dir = project("a11y-static-cache", { "tokens.ts": tok("#111111"), [comp[0]]: comp[1] });
       expect(e1804(keel(dir, ["check"]))).toEqual([]);
       writeFiles(dir, { "tokens.ts": tok("#787878") });
