@@ -838,6 +838,8 @@ const replacedBy1811 = (code: string, inLib: readonly string[]): boolean => code
 const NOT_OVER_LIBRARY = new Set(["E1106"]);
 /** "an E1804 at an element of a library file, or at a library look, is reported in `tokens.ts`" (k.a11y-static Library contrast): not at the library's path, so the library's codes at its own path hold none; the next case asserts where it is. */
 const IN_TOKENS_TS = new Set(["E1804"]);
+/** "in `node_modules/@acme/jobs/src/run.ts` of a library (`\"keel\": \"library\"`) the same call is none" (k.supervise): a `supervise` call is E1461 in app code only, so the app's E1461 is missing from the library's codes. */
+const APP_ONLY = new Set(["E1461"]);
 
 // The space is finite (every one-file fixture of the table), so each is visited once, not sampled.
 test(
@@ -854,7 +856,7 @@ test(
       if (inApplication.codes.length > 0) reportedInApp++;
       const extra = inLib.codes.filter((c) => !inApplication.codes.includes(c) && !LIBRARY_ONLY.has(c));
       const missing = inApplication.codes.filter(
-        (c) => !inLib.codes.includes(c) && !replacedBy1811(c, inLib.codes) && !IN_TOKENS_TS.has(c),
+        (c) => !inLib.codes.includes(c) && !replacedBy1811(c, inLib.codes) && !IN_TOKENS_TS.has(c) && !APP_ONLY.has(c),
       );
       if (extra.length > 0 || missing.length > 0 || inLib.fixes > 0)
         differs.push(`${code}: library [${inLib.codes}] app [${inApplication.codes}] fixes ${inLib.fixes}`);

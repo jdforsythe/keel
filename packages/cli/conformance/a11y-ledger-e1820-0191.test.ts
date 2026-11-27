@@ -54,6 +54,7 @@ const project = (prefix: string, n: 1 | 2, test: string): string => {
   const dir = makeProject(prefix, {
     "tokens.ts": TOKENS,
     "topology.ts": TOPOLOGY,
+    "modules/m/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`,
     "modules/m/m.contract.ts": CONTRACT,
     "modules/m/routes.ts": ROUTES.replace("__KEEL_N__", String(n)),
     "modules/m/test/r.test.ts": test,

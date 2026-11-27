@@ -36,6 +36,7 @@ export function moduleFiles(ids: readonly string[], styled: boolean): Record<str
     .join("\n");
   return {
     "topology.ts": TOPOLOGY,
+    "modules/m/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`,
     "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n${entries}\n});\n`,
     "modules/m/routes.ts": `import { manifest } from "@keel/router";\nimport { Text } from "@keel/ui";\nimport { m } from "./m.contract.ts";\n\nexport const routes = manifest(m, {\n${bound}\n});\n`,
   };

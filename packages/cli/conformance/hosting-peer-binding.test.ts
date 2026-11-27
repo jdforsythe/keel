@@ -48,8 +48,8 @@ import { service } from "@keel/services";
 import { Box, Text } from "@keel/ui";
 import { api as apiContract } from "../api/api.contract.ts";
 const api = service({ contract: apiContract });
-export default function Page(_props: unknown, ctx: Ctx) {
-  void api.ping({}, ctx);
+export const ping = (ctx: Ctx) => api.ping({}, ctx);
+export default function Page() {
   return <Box as="main"><Text>web</Text></Box>;
 }
 `;

@@ -782,14 +782,14 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1460: {
     bad: [
       f(
-        "src/f.ts",
-        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\ndeclare const text: string\nexport const f = E.make({}, text)\n",
+        "src/Msg.schema.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\ndeclare const text: string\nexport const Msg = E.make({}, text)\n",
       ),
     ],
     clean: [
       f(
-        "src/f.ts",
-        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\nexport const f = E.make({}, 'sign in')\n",
+        "src/Msg.schema.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\nexport const Msg = E.make({}, 'sign in')\n",
       ),
     ],
   },
@@ -798,14 +798,14 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       mod("m", [], []),
       f(
         "modules/m/a.ts",
-        "import { supervise } from '@keel/ctx'\nimport type { Ctx } from '@keel/ctx'\nimport type { KeelError } from '@keel/schema'\ndeclare const ctx: Ctx\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const r = supervise(ctx, 'm.run', f, T)\n",
+        "import { supervise } from '@keel/ctx'\nimport type { Ctx } from '@keel/ctx'\nimport type { KeelError } from '@keel/schema'\ndeclare const ctx: Ctx\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const a = supervise(ctx, 'm.run', f, T)\n",
       ),
     ],
     clean: [
       mod("m", [], []),
       f(
         "modules/m/a.ts",
-        "import { attempt } from '@keel/schema'\nimport type { KeelError } from '@keel/schema'\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const r = attempt(f, (x) => (x instanceof RangeError ? T : undefined))\n",
+        "import { attempt } from '@keel/schema'\nimport type { KeelError } from '@keel/schema'\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const a = attempt(f, (x) => (x instanceof RangeError ? T : undefined))\n",
       ),
     ],
   },
@@ -839,8 +839,8 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     ],
   },
   E1766: {
-    bad: [mod("m", [], []), f("modules/m/a.ts", "export const k = Symbol.for('keel.kernel')\n")],
-    clean: [mod("m", [], []), f("modules/m/a.ts", "export const k = Symbol.for('app.key')\n")],
+    bad: [mod("m", [], []), f("modules/m/a.ts", "export const a = Symbol.for('keel.kernel')\n")],
+    clean: [mod("m", [], []), f("modules/m/a.ts", "export const a = Symbol.for('app.key')\n")],
   },
   E1256: {
     bad: [

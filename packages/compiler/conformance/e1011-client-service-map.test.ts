@@ -33,7 +33,7 @@ const PAGES = {
     `${UIIMPORT}export default function Page() {\n${LOAD(mod)}  return <Box as="main"><Text>web</Text></Box>;\n}\n`,
   none: (): string => `${UIIMPORT}${BODY}`,
   called: (mod: string): string =>
-    `import type { Ctx } from "@keel/ctx";\nimport { service } from "@keel/services";\n${UIIMPORT}import { ${mod} as c } from "../${mod}/${mod}.contract.ts";\nconst svc = service({ contract: c });\nexport default function Page(_props: unknown, ctx: Ctx) {\n  void svc.ping({}, ctx);\n  return <Box as="main"><Text>web</Text></Box>;\n}\n`,
+    `import type { Ctx } from "@keel/ctx";\nimport { service } from "@keel/services";\n${UIIMPORT}import { ${mod} as c } from "../${mod}/${mod}.contract.ts";\nconst svc = service({ contract: c });\nexport const ping = (ctx: Ctx) => svc.ping({}, ctx);\nexport default function Page() {\n  return <Box as="main"><Text>web</Text></Box>;\n}\n`,
   beside: (mod: string): string =>
     `${UIIMPORT}import { client } from "./client.ts";\nexport default function Page() {\n${LOAD(mod)}  return <Box as="main"><Text>{client}</Text></Box>;\n}\n`,
   ping: (mod: string): string =>
