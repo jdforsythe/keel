@@ -43,7 +43,7 @@ function job(name: string, adapter: string, m: Manager): string[] {
     '          base="$RUNNER_TEMP/surface.json"',
     '          if [ -n "$BASE_REF" ]; then',
     '            git show "origin/$BASE_REF:.keel/surface.json" > "$base" || rm -f "$base"',
-    '            ${m.exec} check --base "$base"',
+    `            ${m.exec} check --base "$base"`,
     "          else",
     `            ${m.exec} check`,
     "          fi",

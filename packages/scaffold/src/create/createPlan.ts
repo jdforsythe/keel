@@ -149,7 +149,7 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
   const next = (command: string, dir?: string): CreateRecord =>
     dir === undefined ? { kind: "create.next", command } : { kind: "create.next", command, dir };
   if (folder !== ".") records.push(next(`cd ${shellPath(folder)}`));
-  if (input.gitAbove !== true) records.push(next("git init"));
+  if (input.gitAbove !== true) records.push(next("git init -b main"));
   records.push(next(m.install, ws.root));
   const steps = input.library === undefined ? ["dev", "check", "test", "build"] : ["check", "test", "pack"];
   for (const s of steps) records.push(next(`${m.run} ${s}`));

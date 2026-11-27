@@ -245,3 +245,20 @@ describe("createPlan: Node, folder and workspace", () => {
     ]);
   });
 });
+
+describe("createPlan: no template residue", () => {
+  // A `${...}` that is neither GitHub's `${{ }}` nor a shell variable (`${KEEL_SECRET:?}`) is a template literal that
+  // reached the file unsubstituted (a single-quoted line in a template).
+  const RESIDUE = /\$\{(?!\{)(?![A-Z_][A-Z0-9_]*(?::[?-][^}]*)?\})/;
+  it("no file but TypeScript (where `${` is the language's) of any kind, for any manager, in or out of a workspace, holds `${` residue", () => {
+    const ws = { "pnpm-workspace.yaml": "packages:\n  - apps/*\n" };
+    for (const ua of [undefined, "pnpm/9.12.0", "npm/10.9.0", "yarn/1.22.22", "yarn/4.5.0", "bun/1.2.0"])
+      for (const kind of [{}, { adapter: "static" as const }, { adapter: "node" as const }, { library: "@acme/charts" }])
+        for (const where of [{}, { folder: "apps/b", ancestors: ws }]) {
+          const p = plan({ userAgent: ua, ...kind, ...where });
+          expect(p.ok, p.text).toBe(true);
+          for (const [path, text] of p.files)
+            if (!path.startsWith(".claude/") && !/\.tsx?$/.test(path)) expect(RESIDUE.exec(text)?.[0], `${ua} ${path}`).toBeUndefined();
+        }
+  });
+});
