@@ -502,8 +502,8 @@ export function readJson(dir: string, rel: string): unknown {
   }
 }
 
-/** `keel pack` (or `keel pack --check`) in `dir`. */
-export const pack = (dir: string, check = false): Run => keel(dir, check ? ["pack", "--check"] : ["pack"]);
+/** `keel pack` (or `keel pack --frozen`) in `dir`. */
+export const pack = (dir: string, check = false): Run => keel(dir, check ? ["pack", "--frozen"] : ["pack"]);
 
 /** The names among `check`, `test`, `ledger` and `kind` a message holds as whole words, in that order. */
 export const stepsNamed = (message: unknown): string[] =>

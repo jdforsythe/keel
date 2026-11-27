@@ -126,7 +126,7 @@ test("a stdlib module no deployable places is not read", () => {
   expect(Object.keys(result?.routes ?? {}).filter((id) => id.startsWith("frag."))).toEqual([]);
 });
 
-test("`...x.routes` in an app binding reads nothing from the package and opens the id set (W1005 names the spread)", () => {
+test("`...x.routes` in an app binding reads nothing from the package and opens the id set (`unread` names the spread)", () => {
   buildPackage();
   const result = routeLiterals(buildApp(true), { root: tmp, topology: PLACED });
   expect(result).toBeDefined();

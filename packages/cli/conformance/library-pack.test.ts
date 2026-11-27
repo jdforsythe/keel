@@ -2,20 +2,20 @@
 // k.library-pack, Own folder: "In a folder whose `package.json` has `"keel": "library"` and a scoped name, `keel check`, `keel test` and `keel ledger` read the root `module.ts` as the manifest of the folder's one module, `src/` and `unsafe/` as that module's code, `test/` and co-located tests as its tests, and the root `tokens.ts` as its tokens. `keel check` reads the folder as an app holds the library installed: every k.library rule holds there, each diagnostic at the folder's own path, and the libraries its manifest lists are read and imported as an app's are; E1162 does not, since the folder is no app's install."
 // k.library-pack, Own folder: "`keel test` there writes no `.keel/` artifact and no `reports/a11y.json`. Its ledger file counts `unsafe` and `hostElements` over the files under `src/` and `unsafe/`, as an app counts them (k.library Ledger); its `exports` are every export of a `src/` file but tests, `Props` and `uses`, `pkg` the manifest's `id` and `file` the file's path, with rungs from its tests; its `libraries` is `{}`."
 // k.library-pack, Pack: "`keel pack`, run in a library's folder, runs five steps: `kind`, `package`, `check` (`keel check`), `test` (`keel test`) and `ledger` (`keel ledger --write .keel/ledger.json`). It stops at the first step that fails, reports that step's own diagnostics and then one E1164 whose message begins with the step's name, and writes no file. On success it prints one summary record (`docs/OUTPUT.md`) whose `counts` are `{ unsafe, hostElements, exports }` of the ledger it wrote, `exports` the number of its entries, and writes `.keel/ledger.json` alone."
-// k.library-pack, Pack: "`keel pack --check` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --check`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
+// k.library-pack, Pack: "`keel pack --frozen` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --frozen`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
 // k.library-pack, Rules: "E1164 `keel pack`: the step its message begins with failed (`kind`, `package`, `check`, `test`, `ledger`; Pack); nothing is written."
-// Spec: k.library-pack, clause "`keel scaffold library @acme/keel-charts` writes `keel-charts/` whose `package.json` has `\"keel\": \"library\"` and whose `module.ts` has `id: 'keelCharts'`; with its dependencies installed, `keel pack` there exits 0 and writes `.keel/ledger.json` with `unsafe` 0 and `hostElements` 0, after which `keel pack --check` exits 0."
+// Spec: k.library-pack, clause "`keel scaffold library @acme/keel-charts` writes `keel-charts/` whose `package.json` has `\"keel\": \"library\"` and whose `module.ts` has `id: 'keelCharts'`; with its dependencies installed, `keel pack` there exits 0 and writes `.keel/ledger.json` with `unsafe` 0 and `hostElements` 0, after which `keel pack --frozen` exits 0."
 // Spec: k.library-pack, clause "In that scaffolded library, a test made to fail makes `keel pack` report one E1164 whose message names `test`, and no `.keel/ledger.json` is written; `<text />` in `src/Example.tsx` makes it report one E1805 and one E1164 naming `check`."
-// Spec: k.library-pack, clause "In that scaffolded library, after `keel pack`, adding `Host` to `src/Example.tsx` makes `keel pack --check` report one E1164 naming `ledger` and leaves `.keel/ledger.json` unchanged; `keel pack` then writes `hostElements` 1."
+// Spec: k.library-pack, clause "In that scaffolded library, after `keel pack`, adding `Host` to `src/Example.tsx` makes `keel pack --frozen`, and `keel pack` with `CI=true`, report one E1164 naming `ledger` and leaves `.keel/ledger.json` unchanged; `keel pack` then writes `hostElements` 1."
 // Spec: k.library-pack, clause "`keel pack` in a folder whose `package.json` has no `keel` field is one E1164 naming `kind`."
 // k.library, Ledger (the app's `keel ledger` over an installed library): "Per entry of an installed library's ledger `exports` (libraries by name, entries in file order), `keel ledger` emits `{ kind: 'ledger', item: '<name>/<file>#<export>', rung, evidence: 'library <version>' }` after the project's records, `<version>` its `package.json` `version`; `--scope` keeps one whose item starts with it. None of it is the app's: the summary `counts`, the written `exports` and `rungs`, and `--diff` leave it out; a file E1162 fails adds none."
 // k.library-pack, Ledger file (E1162 from `keel check` alone): "E1162 (k.library), from `keel check` alone (`keel ledger` takes a failing file as none: its items are not shown, its counts recounted), has five messages, each whole within 89 units for a name of up to 38 units and counts of up to six digits: `<name> ships no .keel/ledger.json` (the name and 27 units: 65); `<name> .keel/ledger.json is over 262144 bytes` (39: 77), the file read no further; `<name> .keel/ledger.json is not a JSON object` (39: 77) for an empty file, text that is not JSON, or JSON other than an object (an array, `null`, a number, a string, a boolean); `<name> .keel/ledger.json fails its shape at <key>` (38 and the key, at most 12: 88), `<key>` the first of `version`, `unsafe`, `hostElements` and `exports` missing or holding a wrong value (an `exports` entry with a field missing or of another type is a wrong value); else `<name> ships <field> <shipped>, its files hold <counted>` (25, the field, at most 12, and both counts' digits: 87 at `hostElements` with a shipped 999999 and a counted 100000 to 999999; a longer count lengthens it), one per field that differs, `unsafe` at the entry's opening quote and `hostElements` a column after it, so `unsafe` sorts first."
 // Seed: 1337 (no generated input: every case is one scaffolded library and the real `keel` binary; the properties over names are in library-scaffold.test.ts). Binary runs, one folder shared:
-// the scaffold (1) and `keel pack` then `keel pack --check` (2, shared by the Conformance 1, Pack and round-trip cases); each case below copies the scaffolded folder and runs the commands it names,
-// `keel pack` or `keel pack --check` (each runs `keel check`, `keel test`, `keel ledger` inside) 1 to 2 times, `pnpm pack` (prepack: `tsc` then `keel pack --check`) 1 to 2 times (the round trip shares one tarball for its two apps), `keel check`/`keel build`/`keel ledger` in an app 1 each, shared by the cases that only read their output;
+// the scaffold (1) and `keel pack` then `keel pack --frozen` (2, shared by the Conformance 1, Pack and round-trip cases); each case below copies the scaffolded folder and runs the commands it names,
+// `keel pack` or `keel pack --frozen` (each runs `keel check`, `keel test`, `keel ledger` inside) 1 to 2 times, `pnpm pack` (prepack: `tsc` then `keel pack --frozen`) 1 to 2 times (the round trip shares one tarball for its two apps), `keel check`/`keel build`/`keel ledger` in an app 1 each, shared by the cases that only read their output;
 // the refusals are in library-pack-refusals.test.ts, the repeatability in library-pack-repeat.test.ts, the no-entry rule in library-no-entry.test.ts.
 // ASSUMPTIONS (spec silent, readings asserted):
-//  - "writes no file" is read as the folder, but its `node_modules`, byte for byte as before the run (a failing `keel pack` and `keel pack --check` both).
+//  - "writes no file" is read as the folder, but its `node_modules`, byte for byte as before the run (a failing `keel pack` and `keel pack --frozen` both).
 //  - The tarball is made by `pnpm pack` with `keel` and `tsc` on the path (shims in the scratch `node_modules/.bin`); the app installs it in pnpm's isolated layout: the files in a store folder inside `node_modules`, `@keel` linked beside them, the package linked.
 //  - A tarball "made with its scripts off" is `pnpm pack --config.ignore-scripts=true`: the public command has no flag of its own.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -66,7 +66,7 @@ function pristine(): ReturnType<typeof scaffolded> {
 }
 const fresh = (): string => cloneLibrary(pristine().lib);
 
-/** The library after `keel pack` (and `keel pack --check`): made once, its two runs and the folder around the second kept. */
+/** The library after `keel pack` (and `keel pack --frozen`): made once, its two runs and the folder around the second kept. */
 type Flow = {
   lib: string;
   pack: Run;
@@ -93,9 +93,9 @@ const ledgerIn = (lib: string): Record<string, unknown> => {
   return isRecord(j) ? j : {};
 };
 
-describe("Conformance 1: scaffold, pack, pack --check", () => {
+describe("Conformance 1: scaffold, pack, pack --frozen", () => {
   test(
-    '`keel scaffold library @acme/keel-charts` writes `keel-charts/` whose `package.json` has `"keel": "library"` and whose `module.ts` has `id: \'keelCharts\'`; with its dependencies installed, `keel pack` there exits 0 and writes `.keel/ledger.json` with `unsafe` 0 and `hostElements` 0, after which `keel pack --check` exits 0.',
+    '`keel scaffold library @acme/keel-charts` writes `keel-charts/` whose `package.json` has `"keel": "library"` and whose `module.ts` has `id: \'keelCharts\'`; with its dependencies installed, `keel pack` there exits 0 and writes `.keel/ledger.json` with `unsafe` 0 and `hostElements` 0, after which `keel pack --frozen` exits 0.',
     () => {
       const { lib, run } = pristine();
       expect(run.status).toBe(0);
@@ -159,7 +159,7 @@ describe("Conformance 1: scaffold, pack, pack --check", () => {
   );
 
   test(
-    "Pack: `keel pack --check` runs the same steps, exits 0 when the ledger agrees, and writes nothing",
+    "Pack: `keel pack --frozen` runs the same steps, exits 0 when the ledger agrees, and writes nothing",
     () => {
       const f = packed();
       expect(f.check.status).toBe(0);
@@ -375,9 +375,9 @@ describe("Conformance 3: keel pack refuses", () => {
   }
 });
 
-describe("Conformance 4: keel pack --check", () => {
+describe("Conformance 4: keel pack --frozen", () => {
   test(
-    "In that scaffolded library, after `keel pack`, adding `Host` to `src/Example.tsx` makes `keel pack --check` report one E1164 naming `ledger` and leaves `.keel/ledger.json` unchanged; `keel pack` then writes `hostElements` 1",
+    "In that scaffolded library, after `keel pack`, adding `Host` to `src/Example.tsx` makes `keel pack --frozen` report one E1164 naming `ledger` and leaves `.keel/ledger.json` unchanged; `keel pack` then writes `hostElements` 1",
     () => {
       const lib = packedCopy();
       const shipped = readText(lib, ".keel/ledger.json");
@@ -385,6 +385,10 @@ describe("Conformance 4: keel pack --check", () => {
       const r = pack(lib, true);
       expect(namesOnly(r, "ledger"), JSON.stringify(r.records).slice(0, 800)).toBe(true);
       expect(r.status).toBe(1);
+      expect(readText(lib, ".keel/ledger.json")).toBe(shipped);
+      const ci = keel(lib, ["pack"], { CI: "true" });
+      expect(namesOnly(ci, "ledger"), JSON.stringify(ci.records).slice(0, 800)).toBe(true);
+      expect(ci.status).toBe(1);
       expect(readText(lib, ".keel/ledger.json")).toBe(shipped);
       const w = pack(lib);
       expect(w.status, JSON.stringify(w.records).slice(0, 800)).toBe(0);
@@ -396,7 +400,7 @@ describe("Conformance 4: keel pack --check", () => {
   );
 
   test(
-    "Pack: `keel pack --check` is E1164 naming `ledger` when `.keel/ledger.json` is missing, and writes nothing",
+    "Pack: `keel pack --frozen` is E1164 naming `ledger` when `.keel/ledger.json` is missing, and writes nothing",
     () => {
       const lib = fresh();
       const before = snapshot(lib);
@@ -414,7 +418,7 @@ describe("Conformance 4: keel pack --check", () => {
   ];
   for (const [field, value] of tampered) {
     test(
-      `Pack: \`keel pack --check\` is E1164 naming \`ledger\` when the shipped \`${field}\` differs from the one \`keel ledger --write\` would write`,
+      `Pack: \`keel pack --frozen\` is E1164 naming \`ledger\` when the shipped \`${field}\` differs from the one \`keel ledger --write\` would write`,
       () => {
         const lib = packedCopy();
         const j = ledgerIn(lib);
@@ -430,7 +434,7 @@ describe("Conformance 4: keel pack --check", () => {
   }
 
   test(
-    "Pack: a library whose files change after `keel ledger` (an `unsafe(...)` call added to `unsafe/raw.ts`) fails `keel pack --check` naming `ledger`",
+    "Pack: a library whose files change after `keel ledger` (an `unsafe(...)` call added to `unsafe/raw.ts`) fails `keel pack --frozen` naming `ledger`",
     () => {
       const lib = packedCopy();
       mkdirSync(join(lib, "unsafe"), { recursive: true });
@@ -448,7 +452,7 @@ describe("Conformance 4: keel pack --check", () => {
   );
 
   test(
-    "Pack: a library whose files change after `keel ledger` (a second public export) fails `keel pack --check` naming `ledger`",
+    "Pack: a library whose files change after `keel ledger` (a second public export) fails `keel pack --frozen` naming `ledger`",
     () => {
       const lib = packedCopy();
       writeFileSync(
@@ -470,7 +474,7 @@ describe("Conformance 4: keel pack --check", () => {
   );
 
   test(
-    "Pack: `keel pack --check` judges `unsafe`, `hostElements` and `exports` alone: other keys of the shipped file may differ",
+    "Pack: `keel pack --frozen` judges `unsafe`, `hostElements` and `exports` alone: other keys of the shipped file may differ",
     () => {
       const lib = packedCopy();
       const j = ledgerIn(lib);
@@ -513,7 +517,7 @@ describe("Conformance 5: the folder is no library", () => {
   );
 
   test(
-    "Pack: `keel pack --check` run outside a library's folder is one E1164 naming `kind`, and so is a folder with no `package.json`",
+    "Pack: `keel pack --frozen` run outside a library's folder is one E1164 naming `kind`, and so is a folder with no `package.json`",
     () => {
       const dir = NOT_A_LIBRARY();
       const before = snapshot(dir);
@@ -563,7 +567,7 @@ describe("Package: what a tarball carries and what an app does with it", () => {
   );
 
   test(
-    "Pack: a tarball is made by the package manager, whose `prepack` runs `keel pack --check`: a library whose ledger is stale (`Host` added after `keel pack`) makes no tarball",
+    "Pack: a tarball is made by the package manager, whose `prepack` runs `keel pack --frozen`: a library whose ledger is stale (`Host` added after `keel pack`) makes no tarball",
     () => {
       const lib = packedCopy();
       exampleWithHost(lib, 1);

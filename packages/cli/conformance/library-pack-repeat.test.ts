@@ -1,6 +1,6 @@
-// k.library-pack, Pack (`--check`): "`keel pack --check` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --check`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
-// Seed: 1337 (no generated input; the one property is the same run ten times). A gate that fails now and then is a defect: `keel pack --check` on one unchanged library gives one outcome and one output every time.
-// Binary runs: 1 scaffold, 1 `keel pack`, then 10 `keel pack --check` on the scaffolded library, and 10 on `examples/library-charts` (its folder is read in place, not edited: `--check` writes nothing but under `node_modules/`).
+// k.library-pack, Pack (`--frozen`): "`keel pack --frozen` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --frozen`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
+// Seed: 1337 (no generated input; the one property is the same run ten times). A gate that fails now and then is a defect: `keel pack --frozen` on one unchanged library gives one outcome and one output every time.
+// Binary runs: 1 scaffold, 1 `keel pack`, then 10 `keel pack --frozen` on the scaffolded library, and 10 on `examples/library-charts` (its folder is read in place, not edited: `--frozen` writes nothing but under `node_modules/`).
 // ASSUMPTIONS (spec silent): "the same outcome" is the exit status and every record of the output, byte for byte as the real binary prints it.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -17,7 +17,7 @@ afterAll(() => {
 const outcome = (r: Run): string => JSON.stringify({ status: r.status, records: r.records });
 
 test(
-  "`keel pack --check` on one unchanged scaffolded library gives ten identical outcomes and outputs, each exit 0",
+  "`keel pack --frozen` on one unchanged scaffolded library gives ten identical outcomes and outputs, each exit 0",
   () => {
     const base = scaffolded();
     made.push(base.scratchDir);
@@ -36,7 +36,7 @@ test(
 );
 
 test(
-  "`keel pack --check` on `examples/library-charts`, unchanged, gives ten identical outcomes and outputs",
+  "`keel pack --frozen` on `examples/library-charts`, unchanged, gives ten identical outcomes and outputs",
   () => {
     const dir = join(REPO, "examples/library-charts");
     expect(existsSync(join(dir, "package.json"))).toBe(true);

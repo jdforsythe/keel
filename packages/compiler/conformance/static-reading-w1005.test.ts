@@ -1,6 +1,6 @@
-// k.contract, Static reading "Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is W1005 and E1111 at it; the entries beside it are read."
-// k.compiler, Rules "W1005 `routes.json` parts not literal in a contract or `routes.ts` (k.contract Static reading), named; builds rewrite it, warning if it differs"
-// This file covers the compiler's reading (W1005 names each part `routeLiterals` leaves unread); the E1111 half is in @keel/check's conformance.
+// k.contract, Static reading "Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is E1111 at it; the entries beside it are read."
+// k.compiler, Rules "W1005 reserved: no command reports it": the compiler's reading still names each part it leaves unread (`unread`), which E1111 reports.
+// This file covers the compiler's reading (`unread` names each part `routeLiterals` leaves unread); the E1111 half is in @keel/check's conformance.
 // Examples only: fixed projects. No random inputs (a fast-check seed would be 1337).
 import fs from "node:fs";
 import path from "node:path";
@@ -36,8 +36,8 @@ function read(contractTs: string, extra: Record<string, string> = {}) {
   return routeLiterals(sources, { root: tmp });
 }
 
-describe("k.contract Static reading, W1005 from the compiler's reading", () => {
-  test("a spread in place of a contract's entries is one W1005 naming the spread, with the entries beside it still read", () => {
+describe("k.contract Static reading, the compiler's unread parts", () => {
+  test("a spread in place of a contract's entries is one unread part naming the spread, with the entries beside it still read", () => {
     const r = read(
       `${HEAD}declare const more: () => Record<string, never>;\nexport const m = contract("m", { ...more(), "m.home": { path: "/" } });\n`,
     );
@@ -47,7 +47,7 @@ describe("k.contract Static reading, W1005 from the compiler's reading", () => {
     expect(r?.routes["m.home"]).toMatchObject({ path: "/" });
   });
 
-  test("a call in place of a contract's entries is one W1005 naming the call", () => {
+  test("a call in place of a contract's entries is one unread part naming the call", () => {
     const r = read(
       `${HEAD}declare const entries: () => Record<string, never>;\nexport const m = contract("m", entries());\n`,
     );
@@ -56,7 +56,7 @@ describe("k.contract Static reading, W1005 from the compiler's reading", () => {
     expect(r?.unread[0]).toContain("entries()");
   });
 
-  test("a spread in place of one entry is one W1005 naming the spread, with the other entries still read", () => {
+  test("a spread in place of one entry is one unread part naming the spread, with the other entries still read", () => {
     const r = read(
       `${HEAD}const base = { method: "GET" } as const;\nexport const m = contract("m", { "m.a": { ...base, path: "/a" }, "m.b": { path: "/b" } });\n`,
     );
@@ -66,7 +66,7 @@ describe("k.contract Static reading, W1005 from the compiler's reading", () => {
     expect(r?.routes["m.b"]).toMatchObject({ path: "/b" });
   });
 
-  test("a call in place of one entry is one W1005 naming the call, with the other entries still read", () => {
+  test("a call in place of one entry is one unread part naming the call, with the other entries still read", () => {
     const r = read(
       `${HEAD}declare const mk: () => { path: string };\nexport const m = contract("m", { "m.a": mk(), "m.b": { path: "/b" } });\n`,
     );
@@ -76,7 +76,7 @@ describe("k.contract Static reading, W1005 from the compiler's reading", () => {
     expect(r?.routes["m.b"]).toMatchObject({ path: "/b" });
   });
 
-  test("an entry whose `path` is not a literal is one W1005 naming it, with the other entries still read", () => {
+  test("an entry whose `path` is not a literal is one unread part naming it, with the other entries still read", () => {
     const r = read(
       `${HEAD}const base = "/a";\nexport const m = contract("m", { "m.a": { method: "GET", path: base + "/x", output: s.object({}) }, "m.b": { path: "/b" } });\n`,
     );
@@ -85,7 +85,7 @@ describe("k.contract Static reading, W1005 from the compiler's reading", () => {
     expect(r?.routes["m.b"]).toMatchObject({ path: "/b" });
   });
 
-  test("an entry whose `method` is not a literal is one W1005 naming it, with the other entries still read", () => {
+  test("an entry whose `method` is not a literal is one unread part naming it, with the other entries still read", () => {
     const r = read(
       `${HEAD}declare const verb: "GET" | "POST";\nexport const m = contract("m", { "m.a": { method: verb, path: "/a", output: s.object({}) }, "m.b": { path: "/b" } });\n`,
     );

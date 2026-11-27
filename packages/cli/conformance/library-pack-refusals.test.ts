@@ -1,14 +1,14 @@
 // k.library-pack, Pack (the five steps): "`keel pack`, run in a library's folder, runs five steps: `kind`, `package`, `check` (`keel check`), `test` (`keel test`) and `ledger` (`keel ledger --write .keel/ledger.json`). It stops at the first step that fails, reports that step's own diagnostics and then one E1164 whose message begins with the step's name, and writes no file. On success it prints one summary record (`docs/OUTPUT.md`) whose `counts` are `{ unsafe, hostElements, exports }` of the ledger it wrote, `exports` the number of its entries, and writes `.keel/ledger.json` alone."
-// k.library-pack, Pack (`--check`): "`keel pack --check` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --check`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
+// k.library-pack, Pack (`--frozen`): "`keel pack --frozen` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --frozen`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
 // k.library-pack, Pack (what an E1164 is): "By one rule, a library an app could not read, check or trust as its folder is read does not pack. Each E1164, whole within 89 units for a path, key or name of up to 28 units (40 for `kind`'s name), is at `package.json` for a field, its line and a column at the start of its value, at the file for a file, and nowhere for a step:"
 // k.library-pack, Pack: "- `kind`: no `package.json` (`kind: no package.json here, so no library`, nowhere); one that is no JSON (`kind: package.json is not JSON`, at line 1); no `"keel": "library"` (`kind: package.json has no "keel": "library"`, at `keel`, else line 1); a name that is no scoped package name (k.library Kind: `kind: name "<name>" is no scoped package name`, at `name`)."
 // k.library-pack, Pack: "`package`, the first in this order, at the field: no root `module.ts` (`package has no root module.ts, the library's manifest`, at `keel`); an `exports` whose `"."` entry lists no `keel` condition first (`package exports "." lists no keel condition first`), an entry holding `keel` under another condition at any depth (`package exports "<key>" nests keel under another condition`, read at the top level alone), another entry listing `keel` after another condition (`package exports "<key>" lists keel after another`; resolvers take the first matching condition, and `default` matches all, so `keel` leads or the compiler reads the built file), or a `keel` target that is no `.ts` or `.tsx` file under `src/` or `unsafe/` (`package exports "<key>" keel is no file under src/ or unsafe/`), at `exports`; no `files` (`package lists no files, so a tarball would hold everything`, at `keel`); a `files` that does not select `module.ts`, then `.keel/ledger.json`, then a file under `src/`, then `unsafe/`, sorted by path (`package files omits <path>`), or an `exports` target, entries and conditions in the order written (`package files omits <path>, exports "<key>"`), at `files`, `<path>` package-relative with no `./` (`src/Badge.tsx`, `dist/src/index.d.ts`); a `@keel/*` package the files import, or the compiler's output of a `.tsx` file imports, that `dependencies` lists (`package dependencies lists <name>; a peer resolves to the app's`, at `dependencies`) or `peerDependencies` omits (`package peerDependencies omits <name>`, at `peerDependencies`, else `keel`); a tarball holding a `.env` file, whose secrets would leave with it (`package files ships <path>, a secret's file`), or the root `tokens.ts`, the library's own check fixture where an app reads its own (`package files ships tokens.ts; an app checks the library against its own`), at `files`. A `node_modules` folder is not judged: the package manager never packs one."
 // k.library-pack, Pack: "- `check`: `check: <n> errors; nothing packed` (`1 error`), nowhere, after the check's diagnostics."
 // k.library-pack, Pack: "`test`: `test: <f> of <n> tests failed; nothing packed` (`1 test`), counted as `keel test` counts them, a test file that fails to load one failed test; or `test: the run did not pass; nothing packed` when none failed and the run still failed (an error outside any test, such as an unhandled rejection); nowhere, after the test's diagnostics."
-// k.library-pack, Pack: "- `ledger`: `ledger: .keel is not a folder` (at `.keel`) or `ledger: .keel/ledger.json cannot be written here` (at the file) when it cannot write; under `--check`, `ledger: .keel/ledger.json is missing; keel pack writes it` (nowhere), `ledger: .keel/ledger.json fails its shape; keel pack writes it again` and `ledger: .keel/ledger.json is stale at <field>; keel pack writes it again`, `<field>` the first of `unsafe`, `hostElements` and `exports` that differs (at the file, line 1)."
+// k.library-pack, Pack: "- `ledger`: `ledger: .keel is not a folder` (at `.keel`) or `ledger: .keel/ledger.json cannot be written here` (at the file) when it cannot write; frozen, `ledger: .keel/ledger.json is missing; keel pack writes it` (nowhere), `ledger: .keel/ledger.json fails its shape; keel pack writes it again` and `ledger: .keel/ledger.json is stale at <field>; keel pack writes it again`, `<field>` the first of `unsafe`, `hostElements` and `exports` that differs (at the file, line 1)."
 // k.library-pack, Rules: "E1164 `keel pack`: the step its message begins with failed (`kind`, `package`, `check`, `test`, `ledger`; Pack); nothing is written."
 // Seed: 1337 (the order property over pairs of `package` refusals and the nested-`keel` property; every other case is an example). Binary runs: 1 scaffold and 1 `keel pack` shared by the cases that copy the folder;
-// each `package` and `kind` refusal runs `keel pack` then `keel pack --check` once (they stop before `keel check`: about 1 s each); each `check`, `test` and `ledger` refusal runs the steps up to its own once.
+// each `package` and `kind` refusal runs `keel pack` then `keel pack --frozen` once (they stop before `keel check`: about 1 s each); each `check`, `test` and `ledger` refusal runs the steps up to its own once.
 // ASSUMPTIONS (spec silent, readings asserted):
 //  - an entry holding `keel` under another condition is refused whether or not it also lists a correct top-level `keel`; a `.` entry with only a nested `keel` is refused by one of the two `.` messages.
 //  - "at the file" is `path` the file's repository path, and a "column at the start of its value" the 1-based column after `"<key>": ` on the key's line, `package.json` written as `JSON.stringify(value, null, 2)` (keys at two spaces).
@@ -135,7 +135,7 @@ describe("kind: the folder is no library", () => {
   for (const [what, files, message, where] of cases)
     for (const check of [false, true])
       test(
-        `kind: \`keel pack${check ? " --check" : ""}\` in a folder with ${what} is one E1164, \`${message}\`, and writes no file`,
+        `kind: \`keel pack${check ? " --frozen" : ""}\` in a folder with ${what} is one E1164, \`${message}\`, and writes no file`,
         () => {
           const d = dir(files);
           const before = snapshot(d);
@@ -281,7 +281,7 @@ describe("package: a library an app could not read, check or trust does not pack
   for (const d of defects)
     for (const check of [false, true])
       test(
-        `package: ${d.name} is one E1164 \`${d.message}\` at \`${d.at}\`, and \`keel pack${check ? " --check" : ""}\` writes no file`,
+        `package: ${d.name} is one E1164 \`${d.message}\` at \`${d.at}\`, and \`keel pack${check ? " --frozen" : ""}\` writes no file`,
         () => {
           const { lib, text } = broken([d]);
           const before = snapshot(lib);
@@ -791,7 +791,7 @@ describe("test: the step's own diagnostics, then `test: <f> of <n> tests failed;
   );
 });
 
-describe("ledger: when the file cannot be written, and under --check", () => {
+describe("ledger: when the file cannot be written, and frozen", () => {
   test(
     "ledger: a `.keel` that is not a folder is `ledger: .keel is not a folder` at `.keel`",
     () => {
@@ -822,7 +822,7 @@ describe("ledger: when the file cannot be written, and under --check", () => {
   );
 
   test(
-    "ledger: under `--check` a missing `.keel/ledger.json` is `ledger: .keel/ledger.json is missing; keel pack writes it`, nowhere",
+    "ledger: frozen a missing `.keel/ledger.json` is `ledger: .keel/ledger.json is missing; keel pack writes it`, nowhere",
     () => {
       const lib = fresh();
       const before = snapshot(lib);
@@ -846,7 +846,7 @@ describe("ledger: when the file cannot be written, and under --check", () => {
   ];
   for (const [what, text] of misshapen)
     test(
-      `ledger: under \`--check\` a shipped file that is ${what} fails its shape: \`ledger: .keel/ledger.json fails its shape; keel pack writes it again\` at the file, line 1`,
+      `ledger: under \`--frozen\` a shipped file that is ${what} fails its shape: \`ledger: .keel/ledger.json fails its shape; keel pack writes it again\` at the file, line 1`,
       () => {
         const lib = packedCopy();
         writeFileSync(join(lib, ".keel/ledger.json"), text);
@@ -874,7 +874,7 @@ describe("ledger: when the file cannot be written, and under --check", () => {
   ];
   for (const [what, over, field] of stale)
     test(
-      `ledger: under \`--check\` a shipped file that differs at ${what} is \`ledger: .keel/ledger.json is stale at ${field}; keel pack writes it again\` at the file, line 1`,
+      `ledger: under \`--frozen\` a shipped file that differs at ${what} is \`ledger: .keel/ledger.json is stale at ${field}; keel pack writes it again\` at the file, line 1`,
       () => {
         const lib = packedCopy();
         const j = readJson(lib, ".keel/ledger.json");
@@ -895,7 +895,7 @@ describe("ledger: when the file cannot be written, and under --check", () => {
     );
 
   test(
-    "ledger: a source file edited after `keel pack` (a `Host` added to `src/Example.tsx`) makes `keel pack --check` stale at `hostElements`",
+    "ledger: a source file edited after `keel pack` (a `Host` added to `src/Example.tsx`) makes `keel pack --frozen` stale at `hostElements`",
     () => {
       const lib = packedCopy();
       exampleWithHost(lib, 1);
@@ -915,7 +915,7 @@ describe("ledger: when the file cannot be written, and under --check", () => {
   );
 
   test(
-    "Pack: `keel pack --check` changes nothing in the folder but under `node_modules/`: a passing run and a refused one leave every file byte for byte",
+    "Pack: `keel pack --frozen` changes nothing in the folder but under `node_modules/`: a passing run and a refused one leave every file byte for byte",
     () => {
       const lib = packedCopy();
       const before = snapshot(lib);
