@@ -246,24 +246,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/cli/conformance/review-r1015.test.ts",
-    "line": 25,
-    "text": "120_000",
-    "needs": "fixedTime"
-  },
-  {
-    "path": "packages/cli/conformance/review-r1015.test.ts",
-    "line": 30,
-    "text": "120_000",
-    "needs": "fixedTime"
-  },
-  {
-    "path": "packages/cli/conformance/review-r1015.test.ts",
-    "line": 68,
-    "text": "240_000",
-    "needs": "fixedTime"
-  },
-  {
     "path": "packages/cli/conformance/schema-format-json-schema.test.ts",
     "line": 12,
     "text": "180_000",
