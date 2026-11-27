@@ -74,7 +74,7 @@ const endsWith = (p: readonly string[], tail: readonly string[]): boolean =>
  * `formatToParts()` with no date (its instance followed through a same-file `const`; rfc:0058);
  * also through `globalThis`/`window`/`self`, literal computed keys, and same-file aliases and destructuring,
  * names bound by lexical scope (`globalRefs`, rfc:0053). An unexported alias is reported at its uses, not at
- * its initializer. Fix: the `ctx` equivalent where exact.
+ * its initializer. Fix: the `ctx` equivalent where exact, offered only where a binding named `ctx` is in scope.
  */
 export const noAmbientCapability: RuleDef = {
   code: "E1601",
@@ -94,9 +94,16 @@ export const noAmbientCapability: RuleDef = {
     };
     const out: Finding[] = [];
     const handled = new Set<number>();
+    /** Whether a binding named `ctx` is in scope at `at`: a name with none resolves to the global `ctx`. */
+    const ctxIn = (at: number): boolean => {
+      const p = g.resolveName("ctx", at);
+      return !(p !== null && p.length === 1 && p[0] === "ctx");
+    };
+    // The fix writes `ctx`, so it is offered only where that name binds; the message names the equivalent either way.
     const report = (at: number, what: string, start: number, end: number, use: string): void => {
       handled.add(at);
-      out.push(findingAt(file, at, { what, start, end, use }));
+      const fixed = start >= 0 && ctxIn(at);
+      out.push(findingAt(file, at, { what, start: fixed ? start : -1, end: fixed ? end : -1, use }));
     };
     const typeofArgs = new Set<number>();
     /** Objects of a member (`WebSocket` in `WebSocket.OPEN`) and `instanceof` right operands, as `start:end`. */

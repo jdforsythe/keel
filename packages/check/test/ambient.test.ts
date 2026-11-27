@@ -47,12 +47,28 @@ describe("E1601 ambient effects", () => {
     const fix = (src: string): string | undefined =>
       check([{ path: "modules/app/a.ts", source: src }], { types: false }).diagnostics.find((d) => d.code === "E1601")
         ?.fix;
-    expect(fix("export const a = (): number => globalThis.Date.now();")).toContain(
-      "+export const a = (): number => ctx.clock.now();",
+    expect(fix("export const a = (ctx: Ctx): number => globalThis.Date.now();")).toContain(
+      "+export const a = (ctx: Ctx): number => ctx.clock.now();",
     );
-    expect(fix("export const a = (): number => Math['random']();")).toContain("ctx.random.float()");
-    expect(fix("export const a = (): unknown => globalThis.fetch('/x');")).toContain("ctx.net.fetch('/x')");
-    expect(fix("export const a = (): number => performance.now();")).toBeUndefined();
+    expect(fix("export const a = (ctx: Ctx): number => Math['random']();")).toContain("ctx.random.float()");
+    expect(fix("export const a = ({ ctx }: P): unknown => globalThis.fetch('/x');")).toContain("ctx.net.fetch('/x')");
+    expect(fix("export const a = (ctx: Ctx): Date => new Date();")).toContain("new Date(ctx.clock.now())");
+    expect(fix("export const a = (ctx: Ctx): number => performance.now();")).toBeUndefined();
+  });
+
+  it("offers no fix where no binding named ctx is in scope, and still names the equivalent", () => {
+    const first = (src: string) =>
+      check([{ path: "modules/app/a.ts", source: src }], { types: false }).diagnostics.find((d) => d.code === "E1601");
+    for (const src of [
+      "export const a = (): unknown => fetch('/x');",
+      "export const a = (): number => Date.now();",
+      "export const a = (c: Ctx): Date => new Date();",
+      "const f = (ctx: Ctx) => ctx;\nexport const a = (): number => Math.random();",
+    ]) {
+      const d = first(src);
+      expect(d?.fix, src).toBeUndefined();
+      expect(d?.message ?? "", src).toMatch(/; use (ctx\.|new Date\(ctx)/);
+    }
   });
 });
 
