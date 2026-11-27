@@ -174,8 +174,8 @@ const GOOD: readonly Case[] = [
     code: "(() => { const r = resource(typedResult); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
   },
   {
-    name: "resource<Result<number, string>>(async () => ok(1)) is Resource<number>",
-    code: "(() => { const r = resource<Result<number, string>>(async () => ok(1)); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
+    name: "resource<Result<number, E0>>(async () => ok(1)) is Resource<number>",
+    code: "(() => { const r = resource<Result<number, E0>>(async () => ok(1)); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
   },
   {
     name: "a fetcher typed () => Promise<{ ok: boolean; value?: string }> is Resource<{ ok: boolean; value?: string }>",
