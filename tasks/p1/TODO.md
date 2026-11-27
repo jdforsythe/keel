@@ -141,3 +141,4 @@ Nothing blocks on a person now. Near the end of P1, in one sitting: a domain and
 - [ ] RFC 0256 built: the device libraries (std-device, std-share, std-screen), seven slices, after RFC 0251 merges.
 - [ ] RFC 0257: a head API (the canonical link, social cards, per-page head). Owed before public.
 - [ ] RFC 0258: images (lazy loading, priority, decode, sizes). Owed before public.
+- [ ] An installed library's `./tokens` entry fails the app's `keel test` (E1807: Node does not strip types under `node_modules`) though check and build pass: RFC 0243's path for a library installed from a tarball. Found by the `pnpm create` review.

@@ -1,7 +1,5 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import type { TokensResult } from "./TokensResult.ts";
 import { shippedTokensPlugin } from "./shippedTokensPlugin.ts";
@@ -34,8 +32,11 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> => typeof 
  * The `tokens` export of `<root>/tokens.ts`, parsed by the project's `TokenSchema` (k.a11y-static Tokens), with
  * its color schemes (`schemesOf`, k.schemes), or
  * undefined when the file is absent. The file and everything it imports are bundled with esbuild (Node's conditions
- * and `keel`, as `evaluateProject`, so a library's `./tokens` entry is its source, k.looks) and imported from a fresh temporary file on every call, so a long-lived process never judges
- * a stale token. A throw, a bundle error, no `tokens` export or a `TokenSchema` failure gives the reason, worded as
+ * and `keel`, as `evaluateProject`; a listed library's `./tokens` is the module `shippedTokensPlugin` makes from its literal, so
+ * no library's tokens file runs, k.looks) into one self-contained module, imported as a `data:` URL: Node's own loader
+ * runs it whatever loader the caller runs under (a test runner's included), it needs no file, and a changed `tokens.ts`
+ * gives a new module, so a long-lived process never judges a stale token. `keel check`, `keel build`, `keel test`'s
+ * setup and the evidence's contrast table all evaluate `tokens.ts` here. A throw, a bundle error, no `tokens` export or a `TokenSchema` failure gives the reason, worded as
  * the render harness words it.
  */
 export async function projectTokens(root: string): Promise<TokensResult | undefined> {
@@ -60,11 +61,10 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
     const reason = isRecord(first) && typeof first.text === "string" ? first.text : String(e);
     return { ok: false, reason: `tokens.ts failed to evaluate: ${reason}` };
   }
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-tokens-"));
   try {
-    const file = path.join(dir, "tokens.mjs");
-    fs.writeFileSync(file, text);
-    const mod: unknown = await import(pathToFileURL(file).href);
+    const mod: unknown = await import(
+      /* @vite-ignore */ `data:text/javascript;base64,${Buffer.from(text).toString("base64")}`
+    );
     const result = isRecord(mod) ? mod.result : undefined;
     if (isRecord(result) && result.ok === true) {
       const schemes = Array.isArray(result.schemes) ? result.schemes.filter((x) => typeof x === "string") : ["light"];
@@ -74,7 +74,5 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
     return { ok: false, reason: "tokens.ts failed to evaluate" };
   } catch (e) {
     return { ok: false, reason: `tokens.ts failed to evaluate: ${e instanceof Error ? e.message : String(e)}` };
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
   }
 }

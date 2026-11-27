@@ -4,7 +4,7 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2676,
+    "example": 2678,
     "probabilistic": 464,
     "exhaustive": 21,
     "proven": 92,
@@ -5166,6 +5166,10 @@
       "rung": "example"
     },
     {
+      "item": "k.entries#974865cc",
+      "rung": "example"
+    },
+    {
       "item": "k.errors#3f4e7e6f",
       "rung": "probabilistic"
     },
@@ -6043,6 +6047,10 @@
     },
     {
       "item": "k.looks#b5a23548",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#5a129582",
       "rung": "example"
     },
     {
