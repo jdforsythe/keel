@@ -85,7 +85,8 @@ describe("start output", () => {
     await vi.waitFor(() => expect(exits).toEqual([1]));
     write.mockRestore();
     busy.close();
-    expect(out).toEqual([`E1560 PORT ${port} fails to bind (EADDRINUSE); free it or set another PORT\n`]);
+    expect(out).toEqual(["E1560 PORT fails to bind (EADDRINUSE); free the port it names or set another\n"]);
+    expect(out.join("")).not.toContain(String(port));
   });
 
   it("with KEEL_FORMAT=json a busy port is one diag record", async () => {
@@ -110,7 +111,9 @@ describe("start output", () => {
     expect(out).toHaveLength(1);
     const rec: unknown = JSON.parse(out.join(""));
     expect(rec).toMatchObject({ kind: "diag", code: "E1560" });
-    expect(String(Reflect.get(Object(rec), "message"))).toContain(`PORT ${port} fails to bind (EADDRINUSE)`);
+    expect(String(Reflect.get(Object(rec), "message"))).toBe(
+      "PORT fails to bind (EADDRINUSE); free the port it names or set another",
+    );
   });
 
   it("an error after the server is listening prints no bind failure and does not exit", async () => {
