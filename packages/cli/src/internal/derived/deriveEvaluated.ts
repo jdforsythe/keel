@@ -21,6 +21,8 @@ const artifactText = (data: unknown): string => `${canonicalJson({ data, hash: h
 const EMPTY_SURFACE = { version: 3, contracts: {}, stores: {} };
 /** A bundling error's first line: `<path>:<line>:<col>: ERROR: <text>`, the column 0-based. */
 const LOCATED = /^([^\s:]+):(\d+):(\d+): (?:ERROR: )?(.*)$/;
+/** A message carrying its own code: `<code> <text>`. */
+const CODED = /^(E\d{4}) (.*)$/;
 
 /** The surface data with each contract's `callers` read statically from the project's files (`contractCallers`). */
 function withCallers(surface: Readonly<Record<string, unknown>>, files: readonly SourceFile[]): unknown {
@@ -83,15 +85,17 @@ export async function deriveEvaluated(
       const lines = (thrown instanceof Error ? thrown.message : String(thrown))
         .split("\n")
         .filter((l) => l.trim() !== "");
-      // A located one (`<path>:<line>:<col>: ERROR: <text>`) is E1049 at that file and line, its column 1-based.
+      // A located one (`<path>:<line>:<col>: ERROR: <text>`) is at that file and line, its column 1-based: with the
+      // code its text starts with (E1050, a refused import), else E1049.
       const line = lines[0]?.startsWith("Build failed") === true ? (lines[1] ?? lines[0]) : lines[0];
       const text = (line ?? "build-time evaluation failed").trim();
       const at = LOCATED.exec(text);
+      const own = at === null ? null : CODED.exec(at[4] ?? "");
       const problem = /^E\d{4} /.test(text)
         ? text
         : at === null
           ? `E1049 build-time evaluation: ${text}`
-          : `E1049 ${at[1] ?? ""}:${at[2] ?? ""}:${String(Number(at[3] ?? "0") + 1)} ${at[4] ?? ""}`;
+          : `${own?.[1] ?? "E1049"} ${at[1] ?? ""}:${at[2] ?? ""}:${String(Number(at[3] ?? "0") + 1)} ${own?.[2] ?? at[4] ?? ""}`;
       return {
         routes: artifactText({}),
         surface: artifactText(EMPTY_SURFACE),

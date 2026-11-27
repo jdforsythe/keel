@@ -5,9 +5,10 @@ import { probeAnswer } from "./probeAnswer.ts";
 
 /**
  * The recorded probes of an evaluation (k.derived Derivation cache), each answered now (`probeAnswer`), sorted: every
- * question its code asked of the file system (each `node_modules/<name>` link its bare imports resolved through a
- * `realpath` one), each file it read that cannot be read (an `exists` one), each `process.env` name it read with the
- * value it saw, and the environment's names when it listed them.
+ * question its code asked of the file system (each symbolic link on a path to a file it loaded or read, and each
+ * `node_modules/<name>` its bare imports resolved through, a `realpath` one), each file it read that cannot be read
+ * (an `exists` one), each `process.env` name it read with the value it saw, and the environment's names when it
+ * listed them.
  */
 export function cacheProbes(e: Evaluation): CacheProbe[] {
   const out = new Map<string, CacheProbe>();

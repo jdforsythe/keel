@@ -16,14 +16,11 @@ import { contractOf } from "./contractOf.ts";
 import { internalFailure } from "./internalFailure.ts";
 import { observePlugin } from "./observePlugin.ts";
 import { observedOf } from "./observedOf.ts";
-import { resolvedLinks } from "./resolvedLinks.ts";
+import { pathLinks } from "./pathLinks.ts";
 
 // Build-time only (D24): the bundle below is resolved from the app root, which depends on these packages.
 const UI_CSS = "@keel/ui/css";
 const ROUTER = "@keel/router";
-
-const REQUIRE_BANNER =
-  "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
 
 const SERVER_ENV = JSON.stringify({ BASE_URL: "/", MODE: "production", DEV: false, PROD: true, SSR: true });
 
@@ -175,8 +172,9 @@ export async function evaluateProject(input: {
   /** The absolute path of every file the bundle loaded (esbuild's inputs), sorted; none when nothing was bundled. */
   inputs?: string[];
   /**
-   * What the bundle's code has asked so far of the file system and the environment (`Observed`), each `node_modules/<name>`
-   * link a bare import resolved through among its `realpath` probes; read after the last of its code has run.
+   * What the bundle's code has asked so far of the file system and the environment (`Observed`), each symbolic link on the
+   * path to a file it loaded or read, and each `node_modules/<name>` a bare import resolved through, among its `realpath`
+   * probes (`pathLinks`); read after the last of its code has run.
    */
   observe?: () => Observed;
   /** With `surface`: the module's `surface` export, live (contracts, route tables and the two internals). */
@@ -210,12 +208,17 @@ export async function evaluateProject(input: {
     absWorkingDir: root,
     format: "esm",
     platform: "node",
-    // As the server build: a package's CommonJS `require` of a Node built-in (`pg` requires `events`) gets a real one.
-    // The record of what the code reads (k.derived Derivation cache) is the bundle's own: `__keelObserved`.
-    banner: { js: `${REQUIRE_BANNER}\n${OBSERVE_BANNER}` },
+    // As the server build: a package's CommonJS `require` of a Node built-in (`pg` requires `events`) gets one, here
+    // the bundle's own (`OBSERVE_BANNER`), which with its views records what the code reads in `__keelObserved`.
+    banner: { js: OBSERVE_BANNER },
     // As the server build: `import.meta.env` holds Vite's built-in values only (the plugin's `envPrefix` admits none).
-    // Every free `process` is the bundle's recording view of it.
-    define: { "import.meta.env": SERVER_ENV, process: "__keelProcess" },
+    // Every free `process`, `globalThis` and `global` is the bundle's recording view of it.
+    define: {
+      "import.meta.env": SERVER_ENV,
+      process: "__keelProcess",
+      globalThis: "__keelGlobal",
+      global: "__keelGlobal",
+    },
     // Node's own conditions (`node`, `import`, `default`), without esbuild's `module`: the file a package's `exports`
     // gives here is the one Node imports and the one `routeLiterals` reads; `keel` first gives a library's source.
     conditions: ["keel"],
@@ -306,11 +309,10 @@ export async function evaluateProject(input: {
   const looks = isRecord(json.looks) ? json.looks : {};
   const schemes = Array.isArray(json.schemes) ? json.schemes.filter((x) => x === "light" || x === "dark") : ["light"];
   const problems = json.problems.filter((p) => typeof p === "string");
-  const links = resolvedLinks(root, result.metafile);
   const observe = (): Observed => {
     const o = observedOf(observed);
     const link = (l: string): readonly ["realpath", string] => ["realpath", l];
-    return { ...o, probes: [...o.probes, ...links.map(link)] };
+    return { ...o, probes: [...o.probes, ...pathLinks(root, result.metafile, o.reads).map(link)] };
   };
   return { css: json.css, looks, schemes, routes, problems, inputs, observe, ...(none ? {} : { surface }) };
 }

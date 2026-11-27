@@ -326,3 +326,92 @@ describe("evaluateProject observes its own reads (k.derived Derivation cache)", 
     },
   );
 });
+
+describe("evaluateProject observes what it reads by another way, and refuses what it cannot observe", () => {
+  const tokensWith = (head: string, n: string): string =>
+    `${head}\nimport { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111" }, space: { 1: \`\${${n}}px\` } });`;
+  const run = (file: string) => evaluateProject({ root, tokensFile: file, routesFiles: [], usages: [] });
+
+  it(
+    "records process.env read through globalThis, global and an alias, a computed require of a .json file and of node:fs, and a file it opened",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("n.json", '{"n":3}');
+      write("o.txt", "1");
+      write(
+        "tokens6.ts",
+        tokensWith(
+          `import { createRequire } from "node:module";\nimport { openSync, readSync, closeSync } from "node:fs";\nconst g = globalThis;\nconst { env } = g.process;\nconst req = createRequire(import.meta.url);\nconst name = ["n", "json"].join(".");\nconst fd = openSync(${JSON.stringify(path.join(root, "o.txt"))});\nreadSync(fd, new Uint8Array(1));\ncloseSync(fd);\nconst n = req(${JSON.stringify(`${root}/`)} + name).n + Number(env.KEEL_EVAL_A ?? "0") + Number(global.process.env.KEEL_EVAL_B ?? "0") + (req(["node", "fs"].join(":")).existsSync("absent2.txt") ? 1 : 0);`,
+          "n",
+        ),
+      );
+      const seen = (await run("tokens6.ts")).observe?.();
+      expect(seen?.env).toContainEqual(["KEEL_EVAL_A", null]);
+      expect(seen?.env).toContainEqual(["KEEL_EVAL_B", null]);
+      expect(seen?.reads).toContain(fs.realpathSync(path.join(root, "n.json")));
+      expect(seen?.reads).toContain(path.join(root, "o.txt"));
+      expect(seen?.probes).toContainEqual(["exists", path.resolve("absent2.txt")]);
+    },
+  );
+
+  it(
+    "records a link inside a package on the path to a file it loaded as a realpath probe",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("node_modules/p/package.json", '{"name":"p","type":"module","exports":{".":"./index.js"}}');
+      write("node_modules/p/real.js", "export const n = 2;");
+      fs.symlinkSync("real.js", path.join(root, "node_modules", "p", "index.js"));
+      write("tokens7.ts", tokensWith('import { n } from "p";', "n"));
+      const seen = (await run("tokens7.ts")).observe?.();
+      expect(seen?.probes).toContainEqual(["realpath", path.join(root, "node_modules", "p")]);
+      expect(seen?.probes).toContainEqual(["realpath", path.join(root, "node_modules", "p", "index.js")]);
+    },
+  );
+
+  it(
+    "imports node:child_process, node:net and node:dns, refuses a call of their functions with E1050, and refuses a .node addon at its import",
+    { timeout: fixedTime(30000) },
+    async () => {
+      const head =
+        'import { execSync } from "node:child_process";\nimport net from "node:net";\nimport * as dns from "node:dns";';
+      write(
+        "tokens8.ts",
+        tokensWith(
+          `${head}\nconst n = typeof execSync + typeof net.Socket + typeof dns.lookup === "functionfunctionfunction" ? 1 : 0;`,
+          "n",
+        ),
+      );
+      expect((await run("tokens8.ts")).problems).toEqual([]);
+      write("tokens11.ts", tokensWith(`${head}\nconst n = String(execSync("true")).length;`, "n"));
+      expect((await run("tokens11.ts")).problems.join("\n")).toMatch(
+        /^E1050 node:child_process\.execSync at build time/,
+      );
+      write("tokens12.ts", tokensWith(`${head}\nconst n = new net.Socket() ? 1 : 0;`, "n"));
+      expect((await run("tokens12.ts")).problems.join("\n")).toMatch(/^E1050 node:net\.Socket at build time/);
+      write("a.node", "");
+      write("tokens13.ts", tokensWith('import a from "./a.node";\nconst n = a;', "n"));
+      await expect(run("tokens13.ts")).rejects.toThrow(/tokens13\.ts:1:\d+: ERROR: E1050 the native addon \.\/a\.node/);
+    },
+  );
+
+  it(
+    "refuses a computed require of a code file, and a read by a descriptor it did not open, with E1050",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("c.cjs", "module.exports = 1;");
+      write(
+        "tokens9.ts",
+        tokensWith(
+          `import { createRequire } from "node:module";\nconst n = createRequire(import.meta.url)(${JSON.stringify(root)} + "/c.cjs");`,
+          "n",
+        ),
+      );
+      expect((await run("tokens9.ts")).problems.join("\n")).toMatch(/^E1050 require\(".*c\.cjs"\) of a file/);
+      write(
+        "tokens10.ts",
+        tokensWith('import { readFileSync } from "node:fs";\nconst n = readFileSync(0).length;', "n"),
+      );
+      expect((await run("tokens10.ts")).problems.join("\n")).toMatch(/^E1050 a read by file descriptor 0/);
+    },
+  );
+});

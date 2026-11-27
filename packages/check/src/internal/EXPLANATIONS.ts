@@ -137,6 +137,13 @@ const ROWS: readonly Row[] = [
     "k.compiler",
   ],
   [
+    "E1050",
+    "build-time evaluation refuses what it cannot observe: node:child_process, cluster, worker_threads, a .node addon, a computed require of a code file, a read by an unopened file descriptor",
+    "A cached derivation must be the one a fresh evaluation gives, so the evaluation runs only reads it can record.",
+    "move the import into a handler, which runs at request time",
+    "k.compiler",
+  ],
+  [
     "E1051",
     "unknown command",
     "`session` and `report` need their stdlib modules.",

@@ -1,112 +1,63 @@
 import fs from "node:fs";
+import nodeModule from "node:module";
 import type { Plugin } from "esbuild";
+import { REFUSED_BUILTINS } from "./REFUSED_BUILTINS.ts";
 
 const NS = "keel-observe";
-/** The Node modules whose imports in a build-time evaluation bundle go through a recording view. */
-const OBSERVED = /^(?:node:)?(?:fs|fs\/promises|process)$/;
+/** The Node modules whose imports in a build-time evaluation bundle go through the bundle's own view. */
+const OBSERVED = /^(?:node:)?(?:fs|fs\/promises|process|module)$/;
 const IDENT = /^[A-Za-z_$][\w$]*$/;
-
-/** What each wrapped function records of its first argument: a read file, or a probe of one kind. */
-const FS_NOTES: Readonly<Record<string, string>> = {
-  readFileSync: "read",
-  readFile: "read",
-  createReadStream: "read",
-  openSync: "read",
-  open: "read",
-  existsSync: "exists",
-  exists: "exists",
-  statSync: "exists",
-  stat: "exists",
-  lstatSync: "exists",
-  lstat: "exists",
-  accessSync: "exists",
-  access: "exists",
-  realpathSync: "realpath",
-  realpath: "realpath",
-  readdirSync: "list",
-  readdir: "list",
-  opendirSync: "list",
-  opendir: "list",
-};
-const PROMISE_NOTES: Readonly<Record<string, string>> = {
-  readFile: "read",
-  open: "read",
-  stat: "exists",
-  lstat: "exists",
-  access: "exists",
-  realpath: "realpath",
-  readdir: "list",
-  opendir: "list",
+const escaped = REFUSED_BUILTINS.map((m) => m.replace("/", "\\/")).join("|");
+/** The built-ins whose imports get a view that refuses each call (`REFUSED_BUILTINS`). */
+const REFUSED = new RegExp(`^(?:node:)?(?:${escaped})$`);
+/** A native addon, whose import fails the bundle (E1050). */
+const ADDON = /\.node$/;
+const nodeRequire = nodeModule.createRequire(import.meta.url);
+/** The names a module exports, for its view's named exports. */
+const namesOf = (name: string): readonly string[] => {
+  const m: unknown = nodeRequire(name);
+  return typeof m === "object" && m !== null ? Object.keys(m) : [];
 };
 
-/** The shared head of a view module: the path a first argument names, and the wrapper that records it. */
-const HEAD = [
-  'import { resolve as keelResolve } from "node:path";',
-  'import { fileURLToPath as keelFileUrl } from "node:url";',
-  "const keelAt = (x) => {",
-  "  if (typeof x === 'string') return keelResolve(x);",
-  "  if (x instanceof URL) return x.protocol === 'file:' ? keelFileUrl(x) : undefined;",
-  "  if (x instanceof Uint8Array) return keelResolve(Buffer.from(x).toString('utf8'));",
-  "  return undefined;",
-  "};",
-  "const keelNote = (kind, x) => { const f = keelAt(x); if (f === undefined) return; if (kind === 'read') __keelObserved.reads.push(f); else __keelObserved.probes.push([kind, f]); };",
-  "const keelWrap = (fn, kind) => {",
-  "  if (typeof fn !== 'function') return fn;",
-  "  const w = function (...a) { keelNote(kind, a[0]); return fn.apply(this, a); };",
-  "  for (const k of Object.keys(fn)) w[k] = typeof fn[k] === 'function' ? keelWrap(fn[k], kind) : fn[k];",
-  "  return w;",
-  "};",
-].join("\n");
+/** The view each observed module's imports get, a binding of `OBSERVE_BANNER`, and the names it exports. */
+const VIEWS: Readonly<Record<string, readonly [string, readonly string[]]>> = {
+  fs: ["__keelFs.fs", Object.keys(fs)],
+  "fs/promises": ["__keelFs.promises", Object.keys(fs.promises)],
+  process: ["__keelProcess", Object.keys(process)],
+  module: ["__keelModule", Object.keys(nodeModule)],
+};
 
-/** `export const <k> = view.<k>;` for each name of `names` that is an identifier, and `view` as the default. */
-const exportsOf = (names: readonly string[]): string =>
-  [
+/** The source of the view module of `name`: `export const <k> = view.<k>;` for each name, and the view as the default. */
+function viewSource(name: string): string {
+  const [view, names] = VIEWS[name] ?? [`__keelRefusedView(${JSON.stringify(name)})`, namesOf(name)];
+  return [
+    `const keelView = ${view};`,
     ...names.filter((k) => IDENT.test(k) && k !== "default").map((k) => `export const ${k} = keelView.${k};`),
     "export default keelView;",
-  ].join("\n");
-
-/** `{ ...real, <name>: keelWrap(real.<name>, <kind>) ... }` for the names `notes` gives. */
-const viewOf = (real: string, notes: Readonly<Record<string, string>>): string =>
-  `{ ...${real}, ${Object.entries(notes)
-    .map(([k, kind]) => `${k}: keelWrap(${real}.${k}, ${JSON.stringify(kind)})`)
-    .join(", ")} }`;
-
-/** The source of the view module of `name` (`fs`, `fs/promises` or `process`). */
-function viewSource(name: string): string {
-  if (name === "process") return `const keelView = __keelProcess;\n${exportsOf(Object.keys(process))}`;
-  const promises = viewOf("keelRealPromises", PROMISE_NOTES);
-  if (name === "fs/promises")
-    return [
-      'import keelRealPromises from "node:fs/promises";',
-      HEAD,
-      `const keelView = ${promises};`,
-      exportsOf(Object.keys(fs.promises)),
-    ].join("\n");
-  return [
-    'import keelRealFs from "node:fs";',
-    'import keelRealPromises from "node:fs/promises";',
-    HEAD,
-    `const keelView = { ...${viewOf("keelRealFs", FS_NOTES)}, promises: ${promises} };`,
-    exportsOf(Object.keys(fs)),
   ].join("\n");
 }
 
 /**
  * The esbuild plugin of a build-time evaluation bundle that observes its reads (k.derived Derivation cache): each
- * import of `node:fs`, `node:fs/promises` or `node:process` (with or without `node:`), static or a literal `require`,
- * gets a view module of the bundle's own whose functions record their first argument in `__keelObserved`
- * (`OBSERVE_BANNER`) and then call the real ones; the views import the real modules. Reads not seen: a computed
- * `require`, a file descriptor's path, a native addon's or a child process's reads, and `globalThis.process.env`.
+ * import of `node:fs`, `node:fs/promises`, `node:process` or `node:module` (with or without `node:`), static, a literal
+ * `require` or a literal `import()`, gets a module of the bundle's own that re-exports its view (`OBSERVE_BANNER`).
+ * An import of a built-in of `REFUSED_BUILTINS` gets the view whose every call is refused; an import of a `.node`
+ * addon fails the bundle at that import; both with E1050 (k.compiler Build-time evaluation).
  */
 export function observePlugin(): Plugin {
   return {
     name: "keel-observe",
     setup(b) {
-      b.onResolve({ filter: OBSERVED }, (args) =>
-        args.namespace === NS
-          ? { path: args.path.startsWith("node:") ? args.path : `node:${args.path}`, external: true }
-          : { path: args.path.replace(/^node:/, ""), namespace: NS },
-      );
+      b.onResolve({ filter: ADDON }, (args) => ({
+        errors: [
+          {
+            text: `E1050 the native addon ${args.path} at build time: Keel cannot see what it reads, so a build-time evaluation does not run it`,
+          },
+        ],
+      }));
+      const view = (args: { path: string }) => ({ path: args.path.replace(/^node:/, ""), namespace: NS });
+      b.onResolve({ filter: OBSERVED }, view);
+      b.onResolve({ filter: REFUSED }, view);
       b.onLoad({ filter: /.*/, namespace: NS }, (args) => ({
         contents: viewSource(args.path),
         loader: "js",
