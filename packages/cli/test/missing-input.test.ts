@@ -44,5 +44,6 @@ describe("E1052 for a missing input", () => {
     expect(e.result.code).toBe(2);
     expect(e.result.stdout).toContain("move needs --to <module>, as in pnpm keel codemod move OrderCard --to catalog");
     expect(e.result.stdout).not.toContain("pnpm pnpm");
+    expect(e.result.stdout).not.toContain("move:1:1");
   });
 });

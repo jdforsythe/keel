@@ -43,7 +43,8 @@ const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
 
 const refusal = (d: ScaffoldDiag, into: string, op: Op): OutRecord[] => [
   makeDiag(d.code, d.missing === undefined ? d.message : missingInput(op, d.missing), {
-    path: d.path === undefined ? undefined : `${into}${d.path}`,
+    // A missing input is no file's: the diagnostic names the flag, not a path.
+    path: d.path === undefined || d.missing !== undefined ? undefined : `${into}${d.path}`,
     line: d.line,
     col: d.col,
     see: d.see,
