@@ -1,5 +1,5 @@
 // The minimal examples under examples/: for each one `keel check`, `keel test` and `keel build` (a library's
-// `keel pack --check`) in its folder, then one assertion on the output that proves the feature the example shows. Usage:
+// `keel pack --frozen`) in its folder, then one assertion on the output that proves the feature the example shows. Usage:
 // node tooling/smoke/examples.mjs [name ...]. One line per step, then the trailer; a missing proof is a failed step.
 // Every server it starts is stopped in a `finally`; nothing is written outside the examples' own build folders.
 import { execFile, spawn } from "node:child_process";
@@ -654,12 +654,12 @@ async function shellPage(dir, file, needle, heading) {
 const { step, finish } = recorder();
 for (const name of names) {
   const dir = join(root, "examples", name);
-  // A library (k.library-pack) is checked, tested and judged by `keel pack --check`; an app is built.
+  // A library (k.library-pack) is checked, tested and judged by `keel pack --frozen`; an app is built.
   const library = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).keel === "library";
   const runs = [
     ["check", ["check"]],
     ["test", ["test"]],
-    library ? ["pack --check", ["pack", "--check"]] : ["build", ["build"]],
+    library ? ["pack --frozen", ["pack", "--frozen"]] : ["build", ["build"]],
   ];
   let built = true;
   for (const [label, args] of runs) {
