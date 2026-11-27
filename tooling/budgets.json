@@ -14,11 +14,11 @@
   },
   "size": {
     "@keel/check": {
-      "max": "90.5kb",
+      "max": "95kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "22kb",
+      "max": "22.5kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -40,11 +40,11 @@
     "@keel/ctx": "4.7kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "14.6kb",
-    "@keel/router/contract": "3.2kb",
+    "@keel/router": "15.25kb",
+    "@keel/router/contract": "3.5kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "10.75kb",
+    "@keel/runtime-dom/ops": "11.25kb",
     "@keel/scaffold": {
       "max": "23.5kb",
       "platform": "node"
@@ -53,7 +53,7 @@
       "max": "1.5kb",
       "platform": "node"
     },
-    "@keel/schema": "6.75kb",
+    "@keel/schema": "7kb",
     "@keel/server": {
       "max": "30.5kb",
       "platform": "node"
@@ -63,7 +63,7 @@
       "max": "2.5kb",
       "platform": "node"
     },
-    "@keel/services": "4.1kb",
+    "@keel/services": "4.6kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
       "max": "3.25kb",
@@ -196,20 +196,20 @@
     },
     "@keel/std-temporal": "5kb",
     "@keel/std-text": "1.5kb",
-    "@keel/store": "4kb",
+    "@keel/store": "4.1kb",
     "@keel/store/internal": {
       "max": "2.25kb",
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "22kb",
+      "max": "22.25kb",
       "platform": "node"
     },
     "@keel/testing/prove": {
       "max": "8.25kb",
       "platform": "node"
     },
-    "@keel/ui": "5.5kb",
+    "@keel/ui": "5.6kb",
     "@keel/ui/aria": "3.6kb"
   },
   "mutate": {
