@@ -1,5 +1,5 @@
 # std.postgres-errors: Errors of app data on Postgres
-status: proposed
+status: implemented
 
 **By SQLSTATE.** What a caller of std.postgres gets for each thing the database or the connection can answer. A failure a caller can act on is a value; the rest is a defect (k.defects).
 

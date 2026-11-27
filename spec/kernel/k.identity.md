@@ -1,5 +1,5 @@
 # k.identity: Identity and proven predicates
-status: proposed
+status: implemented
 
 **Identity.** What proves that a value is a loader, an action, a guard, a route table, a server-only stub, a schema, a store, a transaction, a `Secret` or a defect is the kernel's own record of what its makers made: a `WeakSet`, or a `WeakMap` where the maker records more, kept in the realm's kernel record, one per realm, shared by every copy of a kernel package loaded in it and exported by no entry. No property of the value carries identity: nothing a caller can write, copy, spread or enumerate.
 - The guards: `isSchema`, `isObjectSchema`, `isDefect` (`@keel/schema`), `isStore`, `isTransaction` (`@keel/store`), `isRouteTable` (`@keel/router`). Each is true only of a value its maker returned in this realm.

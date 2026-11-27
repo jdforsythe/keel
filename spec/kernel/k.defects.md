@@ -1,5 +1,5 @@
 # k.defects: Defects
-status: proposed
+status: implemented
 
 **Defect.** A defect is a failure no caller is meant to handle: a bug in the calling code, a broken invariant, stored state that fails its own shape, or a fault under a contract whose callers handle every rejection alike (a storage driver, k.persist). Code held to the rules raises one only with `defect` (`@keel/schema`), which throws and returns `never`, so it stands where a value is expected (`x ?? defect('no row')`). Where a section says app or library code throws or rejects, it raises a defect; an `async` function's rejects.
 

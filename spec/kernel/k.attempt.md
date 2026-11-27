@@ -1,5 +1,5 @@
 # k.attempt: Failures in types
-status: proposed
+status: implemented
 
 **Kinds.** Code meets a failure in one of two forms. An expected failure is a `KeelError` value in a `Result`: a code, typed data, an optional cause. Everything thrown is unexpected: a defect (k.defects), or a throw of the platform or of a plain npm package, which stays unexpected until an `expect` claims it. A failure keeps its identity from where it is made to the owner that reports it: no step turns a throw into a value without naming its code, none nests one `Result` in another, and none turns a code or data into text.
 

@@ -1,5 +1,5 @@
 # k.fixes: Fixes that are right
-status: proposed
+status: implemented
 
 **Purpose.** An agent applies the first fix a diagnostic offers and runs check again until it is clean. That path ends in correct code or it is not offered: a clean check over wrong code is the one outcome worse than no fix.
 
