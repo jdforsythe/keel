@@ -1,4 +1,4 @@
-import { clipMessage } from "@keel/schema/internal";
+import { clipMessage } from "./clipMessage.ts";
 
 /** The shortest a clipped name gets: one unit and `...`. */
 const LEAST = 4;

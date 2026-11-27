@@ -1,7 +1,7 @@
 import type { JSXOpeningElement, ObjectProperty } from "oxc-parser";
 import { dropThemeSelect } from "../internal/dropThemeSelect.ts";
 import { findingAt } from "../internal/findingAt.ts";
-import { fitNames } from "../internal/fitNames.ts";
+import { fitNames } from "@keel/schema/internal";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { keyName } from "../internal/keyName.ts";
 import { num } from "../internal/num.ts";
@@ -13,9 +13,14 @@ import type { RuleDef } from "../types/RuleDef.ts";
 type Rec = Readonly<Record<string, unknown>>;
 const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null;
 
-/** An element's `labels={{ ... }}` literal: its properties by key and where a new one goes; undefined when absent, computed or spread. */
+/**
+ * An element's `labels={{ ... }}` literal: its literal properties by key with their place among all its members,
+ * whether it holds a spread, and where a new property goes; undefined when absent or a key is computed.
+ */
 type Labels = {
-  readonly props: readonly (readonly [string, ObjectProperty])[];
+  readonly props: readonly (readonly [string, ObjectProperty, number])[];
+  readonly members: readonly { readonly start: number; readonly end: number }[];
+  readonly spread: boolean;
   readonly addAt: number;
   readonly first: boolean;
 };
@@ -26,24 +31,29 @@ function labelsOf(el: JSXOpeningElement | undefined): Labels | undefined {
     if (a.type !== "JSXAttribute" || a.name.type !== "JSXIdentifier" || a.name.name !== "labels") continue;
     const v = a.value;
     if (v?.type !== "JSXExpressionContainer" || v.expression.type !== "ObjectExpression") return undefined;
-    const props: [string, ObjectProperty][] = [];
-    for (const p of v.expression.properties) {
-      if (p.type !== "Property") return undefined;
+    const props: [string, ObjectProperty, number][] = [];
+    const members = v.expression.properties;
+    let spread = false;
+    for (const [i, p] of members.entries()) {
+      if (p.type !== "Property") {
+        spread = true;
+        continue;
+      }
       const k = keyName(p);
       if (k === null) return undefined;
-      props.push([k, p]);
+      props.push([k, p, i]);
     }
-    const last = props.at(-1)?.[1];
-    return { props, addAt: last?.end ?? v.expression.start + 1, first: last === undefined };
+    const last = members.at(-1);
+    return { props, members, spread, addAt: last?.end ?? v.expression.start + 1, first: last === undefined };
   }
   return undefined;
 }
 
-/** The range deleting property `i` of `props` and one comma beside it. */
-function dropRange(props: Labels["props"], i: number): { from: number; to: number } {
-  const p = props[i]?.[1];
-  const next = props[i + 1]?.[1];
-  const prev = props[i - 1]?.[1];
+/** The range deleting member `i` of `members` and one comma beside it. */
+function dropRange(members: Labels["members"], i: number): { from: number; to: number } {
+  const p = members[i];
+  const next = members[i + 1];
+  const prev = members[i - 1];
   if (p === undefined) return { from: 0, to: 0 };
   if (next !== undefined) return { from: p.start, to: next.start };
   return { from: prev?.end ?? p.start, to: p.end };
@@ -53,7 +63,8 @@ function dropRange(props: Labels["props"], i: number): { from: number; to: numbe
  * E1816 (k.schemes Checks): a `ThemeSelect` of `@keel/ui` in an app or library file (with the type pass on, the ones the checker
  * resolves to it; without, `uiElementSites`: imports, re-exports, namespace members) in a project whose tokens have no `choice` theme (a theme with no `when` or
  * `when: 'choice'`), at the element or call; or whose `labels` literal has a key other than `default` and the `choice`
- * themes (`ThemeSelect labels name no theme <key>`), or lacks a `choice` theme (`ThemeSelect labels lack <name>`). A
+ * themes (`ThemeSelect labels name no theme <key>`), or, holding no spread, lacks a `choice` theme
+ * (`ThemeSelect labels lack <name>`); a literal holding a spread is judged by its literal keys only. A
  * project whose `tokens.ts` gave no tokens judges none; with no `tokens.ts` the tokens have no theme. The message fits
  * 89 units by clipping the name (`fitNames`). Fixes (k.themes Fixes): `<name>: "<name>"` added after the last property
  * of `labels`; the extra property and its comma deleted; for no choice theme, at a JSX element, `dropThemeSelect`.
@@ -92,14 +103,14 @@ export const themeSelectChoice: RuleDef = {
       const labels = labelsOf(site.element);
       if (labels === undefined) continue;
       const keys = labels.props.map(([k]) => k);
-      for (const name of choice)
+      for (const name of labels.spread ? [] : choice)
         if (!keys.includes(name))
           out.push(findingAt(file, site.at, { kind: "lack", name, addAt: labels.addAt, first: labels.first ? 1 : 0 }));
-      labels.props.forEach(([name], i) => {
-        if (name === "default" || choice.includes(name)) return;
-        const { from, to } = dropRange(labels.props, i);
+      for (const [name, , i] of labels.props) {
+        if (name === "default" || choice.includes(name)) continue;
+        const { from, to } = dropRange(labels.members, i);
         out.push(findingAt(file, site.at, { kind: "extra", name, from, to }));
-      });
+      }
     }
     return out;
   },

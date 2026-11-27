@@ -1,4 +1,4 @@
-import type { Expression, ObjectExpression } from "oxc-parser";
+import type { Expression, ObjectExpression, TSAsExpression } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { keyName } from "./keyName.ts";
@@ -31,9 +31,19 @@ function member(o: ObjectExpression | undefined, name: string): Expression | und
   return found;
 }
 
+/** Whether `node` is `<expression> as const`. */
+function isAsConst(node: Expression | undefined): node is TSAsExpression {
+  return (
+    node?.type === "TSAsExpression" &&
+    node.typeAnnotation.type === "TSTypeReference" &&
+    node.typeAnnotation.typeName.type === "Identifier" &&
+    node.typeAnnotation.typeName.name === "const"
+  );
+}
+
 /**
  * The E1817 fix (k.themes Fixes) as a unified diff over the project's `tokens.ts`: `"<backdrop>"` added after the last
- * element of `overlay.<overlay>.over` when that is an array literal of fewer than 8 names; undefined otherwise.
+ * element of `overlay.<overlay>.over` when that is an array literal, bare or with `as const`, of fewer than 8 names; undefined otherwise.
  */
 export function overAddFix(project: readonly SourceFile[], overlay: string, backdrop: string): string | undefined {
   const file = project.find(
@@ -45,7 +55,8 @@ export function overAddFix(project: readonly SourceFile[], overlay: string, back
   const root = literalOf(tokensInit(parsed.program)?.init);
   const groups = member(root, "overlay");
   const entry = groups?.type === "ObjectExpression" ? member(groups, overlay) : undefined;
-  const over = entry?.type === "ObjectExpression" ? member(entry, "over") : undefined;
+  const written = entry?.type === "ObjectExpression" ? member(entry, "over") : undefined;
+  const over = isAsConst(written) ? written.expression : written;
   if (over?.type !== "ArrayExpression" || over.elements.length >= MOST) return undefined;
   if (over.elements.some((e) => e === null || e.type === "SpreadElement")) return undefined;
   const last = over.elements.at(-1);
