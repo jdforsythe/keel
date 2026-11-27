@@ -15,12 +15,14 @@ import { SERVER_ENV } from "./SERVER_ENV.ts";
 import { UNRESOLVED_MARK } from "./UNRESOLVED_MARK.ts";
 import { bundleFailure } from "./bundleFailure.ts";
 import { contractOf } from "./contractOf.ts";
+import { globalDefines } from "./globalDefines.ts";
 import { importMetaPlugin } from "./importMetaPlugin.ts";
 import { internalFailure } from "./internalFailure.ts";
 import { isNodeBuiltin } from "./isNodeBuiltin.ts";
 import { observePlugin } from "./observePlugin.ts";
 import { observedOf } from "./observedOf.ts";
 import { pathLinks } from "./pathLinks.ts";
+import { placeRefusals } from "./placeRefusals.ts";
 import { withImportMeta } from "./withImportMeta.ts";
 
 // Build-time only (D24): the bundle below is resolved from the app root, which depends on these packages.
@@ -216,23 +218,17 @@ export async function evaluateProject(input: {
     // the bundle's own (`OBSERVE_BANNER`), which with its views records what the code reads in `__keelObserved`.
     banner: { js: OBSERVE_BANNER },
     // As the server build: `import.meta.env` holds Vite's built-in values only (the plugin's `envPrefix` admits none).
-    // Every other `import.meta` is its module's own (`withImportMeta`); every free `process`, `globalThis`, `global`
-    // `console` and `navigator` is the bundle's view of it, and `Function`, `eval`, `fetch`, `WebSocket` and
-    // `EventSource` refused views (`OBSERVE_BANNER`).
+    // Every other `import.meta` is its module's own (`withImportMeta`); every free `globalThis` and `global`, and every
+    // free name of a global that is not pure, reads through the bundle's global view (`globalDefines`).
     define: {
+      ...globalDefines(),
       "import.meta.env": JSON.stringify(SERVER_ENV),
       "import.meta": "__keelMeta",
-      process: "__keelProcess",
-      globalThis: "__keelGlobal",
-      global: "__keelGlobal",
-      console: "__keelConsole",
-      Function: "__keelFunction",
-      eval: "__keelEval",
-      fetch: "__keelFetch",
-      WebSocket: "__keelWebSocket",
-      EventSource: "__keelEventSource",
-      navigator: "__keelNavigator",
     },
+    // The map places an E1050 at the refused call's own file and line (`placeRefusals`).
+    sourcemap: "external",
+    sourcesContent: false,
+    outfile: path.join(root, "keel-evaluate.mjs"),
     // A literal `import()` is bundled; a computed one becomes the bundle's own `require` (`OBSERVE_BANNER`), never
     // Node's loader.
     supported: { "dynamic-import": false },
@@ -307,7 +303,9 @@ export async function evaluateProject(input: {
       ),
     ),
   ].sort();
-  const text = (result.outputFiles[0]?.text ?? "").replace(UNRESOLVED_MARK, () => JSON.stringify(unresolved));
+  const js = result.outputFiles.find((f) => f.path.endsWith(".mjs"));
+  const map = (): string | undefined => result.outputFiles.find((f) => f.path.endsWith(".map"))?.text;
+  const text = (js?.text ?? "").replace(UNRESOLVED_MARK, () => JSON.stringify(unresolved));
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evaluate-"));
   const file = path.join(dir, "evaluate.mjs");
   let json: unknown;
@@ -339,7 +337,11 @@ export async function evaluateProject(input: {
   }
   const looks = isRecord(json.looks) ? json.looks : {};
   const schemes = Array.isArray(json.schemes) ? json.schemes.filter((x) => x === "light" || x === "dark") : ["light"];
-  const problems = json.problems.filter((p) => typeof p === "string");
+  const problems = placeRefusals(
+    json.problems.filter((p) => typeof p === "string"),
+    map,
+    root,
+  );
   const observe = (): Observed => {
     const o = observedOf(observed);
     const asked = pathLinks(root, result.metafile, o.reads);

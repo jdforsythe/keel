@@ -1,188 +1,38 @@
-import { RECORDED_BUILTINS } from "./RECORDED_BUILTINS.ts";
-import { REFUSED_BUILTINS } from "./REFUSED_BUILTINS.ts";
+import { HOST_BANNER } from "./HOST_BANNER.ts";
+import { HOST_VIEWS } from "./HOST_VIEWS.ts";
 import { RESOLVE_BANNER } from "./RESOLVE_BANNER.ts";
 import { SERVER_ENV } from "./SERVER_ENV.ts";
 import { UNRESOLVED_MARK } from "./UNRESOLVED_MARK.ts";
 
 /**
  * The head of a build-time evaluation bundle (k.derived Derivation cache, k.compiler Build-time evaluation):
- * `__keelObserved`, the record of what the bundle's code asks (`Observed`, with the process's working folder always
- * among its probes), and the bundle's own views of what it reaches, which record each question and then ask the real
- * module, or refuse it with E1050:
- * - `__keelFs`: `node:fs` and `node:fs/promises`; reads, opens, existence tests, stats (kind, size and mode, never
- *   times), real paths and listings recorded; a read by a file descriptor the views did not open, a recursive listing
- *   and every other function (writes, watches, globs) refused.
- * - `__keelProcess`, which every free `process` names: `env` a view recording each name read (`get`, `in`, a property
- *   descriptor, the value before a first write) and a listing of the names; the process's facts (`argv`, `pid`,
- *   `version`, `cwd()`, ...) recorded when read; `getBuiltinModule` giving these views; `stdout` and `stderr`
- *   writing nowhere, listeners, events and warnings dropped; native addons and bindings, `mainModule`, `stdin`,
- *   `exit`, `chdir`, `send` and setting a property refused.
- * - `__keelModule`, `node:module`: `createRequire` gives `__keelRequireFor`, `isBuiltin` and `builtinModules` are
- *   Node's, every other member (`_load`, `Module`, `register`, `_cache`, ...) refused.
- * - `__keelRequireFor(base)`: a `require` whose names resolve from `base`'s folder through the bundle's own resolver
- *   (`RESOLVE_BANNER`): a Node built-in through these views, a `.json` file a recorded read, an absent one Node's
- *   not-found error with its questions recorded, any other file refused; `resolve` the same lookup, and `cache`,
- *   `extensions` and `main` its own, empty. The bundle's free `require`, which a computed `import()` becomes, knows no
- *   file: it takes a built-in, an absolute path, or a name the bundle left unresolved (`__keelUnresolved`, whose
- *   questions `pathLinks` recorded at the importer), and refuses any other name.
+ * `__keelObserved`, the record of what the bundle's code asks (`Observed`; the process's working folder, Node's
+ * version and the default locale and time zone always among its probes), `__keelHost`, the allowlist `HOST_VIEWS`, and
+ * the bundle's own views of what it reaches (`HOST_BANNER`): `__keelGlobal`, which every free `globalThis` and
+ * `global` names and every free name of a global that is not pure reads through, `__keelProcess`, `__keelBuiltin(id)`
+ * for each Node built-in, `node:fs` and `node:fs/promises` recording each read, open, existence test, stat (with each
+ * field of the result the code reads), real path and listing. Besides them:
+ * - `__keelRequireFor(base)`, `node:module`'s `createRequire`: a `require` whose names resolve from `base`'s folder
+ *   through the bundle's own resolver (`RESOLVE_BANNER`): a Node built-in through these views, a `.json` file a
+ *   recorded read, an absent one Node's not-found error with its questions recorded, any other file refused; `resolve`
+ *   the same lookup, and `cache`, `extensions` and `main` its own, empty. The bundle's free `require`, which a computed
+ *   `import()` becomes, knows no file: it takes a built-in, an absolute path, or a name the bundle left unresolved
+ *   (`__keelUnresolved`, whose questions `pathLinks` recorded at the importer), and refuses any other name.
  * - `__keelMetaFor(url)`: a module's `import.meta`, its own `url`, `filename` and `dirname`, `resolve` refused.
- * - `__keelGlobal`, which every free `globalThis` and `global` names: the global object with these views, `console`
- *   writing nowhere, `navigator` recording each property read as a fact, and `Function`, `eval`, `fetch`, `WebSocket`
- *   and `EventSource` refused (each also a free name's view); `__keelRefusedView` is a built-in of `REFUSED_BUILTINS` whose every function is refused, and
- *   `__keelRecordedView` one of `RECORDED_BUILTINS` whose every call is recorded with its arguments.
  * All are the bundle's own bindings: nothing global changes, so another evaluation in the process sees its own record
  * only.
  */
 export const OBSERVE_BANNER = [
   'import __keelFsReal from "node:fs";',
   'import __keelFsPromisesReal from "node:fs/promises";',
-  'import __keelModuleReal, { createRequire as __keelCreateRequire, isBuiltin as __keelIsBuiltin } from "node:module";',
+  'import { createRequire as __keelCreateRequire, isBuiltin as __keelIsBuiltin } from "node:module";',
   'import __keelPathReal from "node:path";',
   'import { fileURLToPath as __keelFileUrl } from "node:url";',
   "const __keelPathResolve = __keelPathReal.resolve;",
-  "const __keelObserved = { reads: [], probes: [['process', 'cwd']], env: [], envListed: false };",
+  "const __keelObserved = { reads: [], probes: [['process', 'cwd'], ['process', 'version'], ['process', 'Intl.locale'], ['process', 'Intl.timeZone']], env: [], envListed: false };",
   `const __keelUnresolved = new Set(${UNRESOLVED_MARK});`,
-  `const __keelRefused = new Set(${JSON.stringify(REFUSED_BUILTINS)});`,
-  `const __keelRecorded = new Set(${JSON.stringify(RECORDED_BUILTINS)});`,
-  "const __keelRefuse = (what) => { const e = new Error(`${what} at build time: Keel cannot see what it reads, so a build-time evaluation does not run it`); e.code = 'E1050'; throw e; };",
-  "const __keelRefusedFn = (f, what) => new Proxy(f, { apply() { __keelRefuse(what); }, construct() { __keelRefuse(what); } });",
-  "const __keelRefusedObj = (what) => { const no = () => __keelRefuse(what); return new Proxy(Object.create(null), { get: no, set: no, has: no, ownKeys: no, getOwnPropertyDescriptor: no, defineProperty: no, deleteProperty: no }); };",
-  "const __keelFixed = (t, k) => { const d = Reflect.getOwnPropertyDescriptor(t, k); return d !== undefined && d.configurable === false && ('value' in d ? d.writable === false : d.get === undefined); };",
-  "const __keelFs = (() => {",
-  "  const at = (x) => {",
-  "    if (typeof x === 'string') return __keelPathResolve(x);",
-  "    if (x instanceof URL) return x.protocol === 'file:' ? __keelFileUrl(x) : undefined;",
-  "    if (x instanceof Uint8Array) return __keelPathResolve(Buffer.from(x).toString('utf8'));",
-  "    return undefined;",
-  "  };",
-  "  const fds = new Set();",
-  "  const mine = (fd) => { if (typeof fd === 'number' && !fds.has(fd)) __keelRefuse(`a read by file descriptor ${fd}, which the evaluation did not open,`); };",
-  "  const note = (kind, a) => {",
-  "    if (kind === 'fd') return mine(a[0]);",
-  "    if (kind === 'list' && a[1] !== null && typeof a[1] === 'object' && a[1].recursive === true) __keelRefuse('a recursive folder listing');",
-  "    const o = kind === 'stream' && a[1] !== null && typeof a[1] === 'object' ? a[1].fd : undefined;",
-  "    if (o !== undefined && o !== null) return mine(typeof o === 'object' ? o.fd : o);",
-  "    if (typeof a[0] === 'number') return mine(a[0]);",
-  "    const f = at(a[0]);",
-  "    if (f === undefined) return;",
-  "    if (kind === 'read' || kind === 'open' || kind === 'stream') __keelObserved.reads.push(f); else __keelObserved.probes.push([kind, f]);",
-  "  };",
-  "  const opened = (v) => { if (typeof v === 'number') fds.add(v); else if (v !== null && typeof v === 'object' && typeof v.fd === 'number') fds.add(v.fd); return v; };",
-  "  const wrap = (fn, kind, inner) => {",
-  "    const w = function (...a) {",
-  "      note(kind, a);",
-  "      if (kind !== 'open') return fn.apply(this, a);",
-  "      const last = a.length - 1;",
-  "      if (last >= 0 && typeof a[last] === 'function') { const done = a[last]; a[last] = function (err, fd) { if (!err) opened(fd); return done.apply(this, arguments); }; }",
-  "      const r = fn.apply(this, a);",
-  "      return r !== null && typeof r === 'object' && typeof r.then === 'function' ? r.then(opened) : opened(r);",
-  "    };",
-  "    for (const k of Reflect.ownKeys(fn)) {",
-  "      if (k === 'length' || k === 'name' || k === 'prototype' || k === 'arguments' || k === 'caller') continue;",
-  "      const d = Reflect.getOwnPropertyDescriptor(fn, k);",
-  "      if (d === undefined) continue;",
-  "      if (typeof d.value === 'function' && inner !== true) d.value = d.value === fn ? w : wrap(d.value, kind, true);",
-  "      Reflect.defineProperty(w, k, d);",
-  "    }",
-  "    return w;",
-  "  };",
-  "  const PASS = new Set(['Stats', 'StatsFs', 'Dirent', 'Dir']);",
-  "  const view = (real, notes, name) => {",
-  "    const v = {};",
-  "    for (const k of Object.keys(real)) {",
-  "      const x = real[k];",
-  "      v[k] = typeof x !== 'function' ? x : Object.hasOwn(notes, k) ? wrap(x, notes[k]) : PASS.has(k) ? x : __keelRefusedFn(x, `${name}.${k}`);",
-  "    }",
-  "    return v;",
-  "  };",
-  "  const promises = view(__keelFsPromisesReal, { readFile: 'read', open: 'open', stat: 'stat', lstat: 'lstat', access: 'stat', realpath: 'realpath', readlink: 'realpath', readdir: 'list', opendir: 'list' }, 'node:fs/promises');",
-  "  const fs = view(__keelFsReal, {",
-  "    readFileSync: 'read', readFile: 'read', openAsBlob: 'read', openSync: 'open', open: 'open', createReadStream: 'stream',",
-  "    readSync: 'fd', read: 'fd', readvSync: 'fd', readv: 'fd', fstatSync: 'fd', fstat: 'fd', closeSync: 'fd', close: 'fd',",
-  "    existsSync: 'exists', exists: 'exists', statSync: 'stat', stat: 'stat', lstatSync: 'lstat', lstat: 'lstat', accessSync: 'stat', access: 'stat',",
-  "    realpathSync: 'realpath', realpath: 'realpath', readlinkSync: 'realpath', readlink: 'realpath',",
-  "    readdirSync: 'list', readdir: 'list', opendirSync: 'list', opendir: 'list',",
-  "  }, 'node:fs');",
-  "  return { fs: { ...fs, promises }, promises };",
-  "})();",
-  "const __keelStream = { write() { return true; }, end() { return this; }, on() { return this; }, once() { return this; }, off() { return this; }, removeListener() { return this; }, emit() { return false; }, hasColors() { return false; }, getColorDepth() { return 1; }, isTTY: false, writable: true };",
-  "const __keelConsole = Object.fromEntries(Object.keys(console).map((k) => [k, typeof console[k] === 'function' ? function () {} : console[k]]));",
-  "const __keelProcess = (() => {",
-  "  const real = globalThis.process;",
-  "  const seen = new Set();",
-  "  const note = (t, k) => { if (typeof k !== 'string' || seen.has(k)) return; seen.add(k); const v = Reflect.get(t, k); __keelObserved.env.push([k, v === undefined ? null : String(v)]); };",
-  "  const env = new Proxy(real.env, {",
-  "    get(t, k) { note(t, k); return Reflect.get(t, k); },",
-  "    has(t, k) { note(t, k); return Reflect.has(t, k); },",
-  "    set(t, k, v) { note(t, k); return Reflect.set(t, k, v); },",
-  "    deleteProperty(t, k) { note(t, k); return Reflect.deleteProperty(t, k); },",
-  "    getOwnPropertyDescriptor(t, k) { note(t, k); return Reflect.getOwnPropertyDescriptor(t, k); },",
-  "    ownKeys(t) { __keelObserved.envListed = true; const keys = Reflect.ownKeys(t); for (const k of keys) note(t, k); return keys; },",
-  "  });",
-  "  const fact = (k) => __keelObserved.probes.push(['process', k]);",
-  "  const FACTS = new Set(['argv', 'argv0', 'execArgv', 'execPath', 'pid', 'ppid', 'title', 'version', 'versions', 'platform', 'arch', 'release', 'config', 'features', 'debugPort']);",
-  "  const CALLED = new Set(['cwd', 'umask', 'getuid', 'geteuid', 'getgid', 'getegid', 'getgroups']);",
-  "  const REFUSED = new Set(['dlopen', 'binding', '_linkedBinding', 'exit', 'reallyExit', 'abort', 'kill', '_kill', 'chdir', 'setuid', 'seteuid', 'setgid', 'setegid', 'setgroups', 'initgroups', 'loadEnvFile', 'setUncaughtExceptionCaptureCallback', 'setSourceMapsEnabled', '_debugProcess', '_rawDebug', 'send', 'disconnect']);",
-  "  const QUIET = new Set(['on', 'once', 'addListener', 'prependListener', 'prependOnceListener', 'off', 'removeListener', 'removeAllListeners', 'setMaxListeners', 'emitWarning', 'emit']);",
-  "  const made = new Map();",
-  "  const own = (k, make) => { if (!made.has(k)) made.set(k, make()); return made.get(k); };",
-  "  const no = (k) => () => __keelRefuse(`setting process.${String(k)}`);",
-  "  const view = new Proxy(real, {",
-  "    get(t, k) {",
-  "      if (typeof k !== 'string' || __keelFixed(t, k)) return Reflect.get(t, k);",
-  "      if (k === 'env') return env;",
-  "      if (k === 'getBuiltinModule') return own(k, () => (id) => __keelBuiltin(id));",
-  "      if (k === 'stdout' || k === 'stderr') return __keelStream;",
-  "      if (k === 'stdin' || k === 'mainModule') return own(k, () => __keelRefusedObj(`process.${k}`));",
-  "      if (REFUSED.has(k)) return own(k, () => __keelRefusedFn(function () {}, `process.${k}`));",
-  "      if (QUIET.has(k)) return own(k, () => function () { return k === 'emitWarning' ? undefined : k === 'emit' ? false : view; });",
-  "      if (FACTS.has(k)) { fact(k); return Reflect.get(t, k); }",
-  "      const v = Reflect.get(t, k);",
-  "      if (CALLED.has(k) && typeof v === 'function') return own(k, () => (...a) => { fact(k); return v.apply(t, a); });",
-  "      return v;",
-  "    },",
-  "    set(t, k) { no(k)(); }, defineProperty(t, k) { no(k)(); }, deleteProperty(t, k) { no(k)(); },",
-  "  });",
-  "  return view;",
-  "})();",
-  "const __keelRefusedViews = new Map();",
-  "const __keelRefusedView = (name) => {",
-  "  if (__keelRefusedViews.has(name)) return __keelRefusedViews.get(name);",
-  "  const obj = (o, at) => new Proxy(o, { get(t, k) {",
-  "    const v = Reflect.get(t, k);",
-  "    if (typeof k !== 'string' || __keelFixed(t, k)) return v;",
-  "    if (typeof v === 'function') return __keelRefusedFn(v, `${at}.${k}`);",
-  "    return v !== null && typeof v === 'object' && at.split('.').length < 3 ? obj(v, `${at}.${k}`) : v;",
-  "  } });",
-  "  const view = obj(__keelCreateRequire(import.meta.url)(`node:${name}`), `node:${name}`);",
-  "  __keelRefusedViews.set(name, view);",
-  "  return view;",
-  "};",
-  "const __keelRecordedViews = new Map();",
-  "const __keelRecordedView = (name) => {",
-  "  if (__keelRecordedViews.has(name)) return __keelRecordedViews.get(name);",
-  "  const real = __keelCreateRequire(import.meta.url)(`node:${name}`);",
-  "  const view = new Proxy(real, { get(t, k) {",
-  "    const v = Reflect.get(t, k);",
-  "    if (typeof k !== 'string' || typeof v !== 'function' || __keelFixed(t, k)) return v;",
-  "    return new Proxy(v, {",
-  "      apply(f, self, a) { let args; try { args = JSON.stringify(a); } catch { args = undefined; } if (args === undefined) __keelRefuse(`node:${name}.${k} with arguments that are not data`); __keelObserved.probes.push(['call', `${name}.${k}:${args}`]); return Reflect.apply(f, t, a); },",
-  "      construct() { __keelRefuse(`new node:${name}.${k}`); },",
-  "    });",
-  "  } });",
-  "  __keelRecordedViews.set(name, view);",
-  "  return view;",
-  "};",
-  "const __keelBuiltin = (id) => {",
-  "  const name = String(id).replace(/^node:/, '');",
-  "  if (__keelRefused.has(name)) return __keelRefusedView(name);",
-  "  if (__keelRecorded.has(name)) return __keelRecordedView(name);",
-  "  if (name === 'fs') return __keelFs.fs;",
-  "  if (name === 'fs/promises') return __keelFs.promises;",
-  "  if (name === 'process') return __keelProcess;",
-  "  if (name === 'module') return __keelModule;",
-  "  return __keelCreateRequire(import.meta.url)(id);",
-  "};",
+  `const __keelHost = ${JSON.stringify(HOST_VIEWS)};`,
+  HOST_BANNER,
   RESOLVE_BANNER,
   "const __keelNotFound = (id) => { const e = new Error(`Cannot find module '${id}'`); e.code = 'MODULE_NOT_FOUND'; throw e; };",
   "const __keelJson = new Map();",
@@ -206,34 +56,7 @@ export const OBSERVE_BANNER = [
   "  const resolve = function resolve(id) { return typeof id === 'string' && __keelIsBuiltin(id) ? id : file(String(id)); };",
   "  return Object.assign(req, { resolve, cache: Object.create(null), extensions: Object.create(null), main: undefined });",
   "};",
-  "const __keelModule = (() => {",
-  "  const PASS = new Set(['builtinModules', 'isBuiltin']);",
-  "  const made = new Map();",
-  "  const no = (k) => () => __keelRefuse(`node:module.${String(k)}`);",
-  "  const view = new Proxy(__keelModuleReal, {",
-  "    apply: no('Module'), construct: no('Module'), set(t, k) { no(k)(); }, defineProperty(t, k) { no(k)(); }, deleteProperty(t, k) { no(k)(); },",
-  "    get(t, k) {",
-  "      if (typeof k !== 'string' || PASS.has(k) || __keelFixed(t, k)) return Reflect.get(t, k);",
-  "      if (k === 'createRequire') return __keelRequireFor;",
-  "      if (k === 'Module' || k === 'default') return view;",
-  "      if (!made.has(k)) {",
-  "        const v = Reflect.get(t, k);",
-  "        made.set(k, typeof v === 'function' ? __keelRefusedFn(v, `node:module.${k}`) : v !== null && typeof v === 'object' ? __keelRefusedObj(`node:module.${k}`) : v);",
-  "      }",
-  "      return made.get(k);",
-  "    },",
-  "  });",
-  "  return view;",
-  "})();",
   `const __keelServerEnv = ${JSON.stringify(SERVER_ENV)};`,
-  "const __keelMetaFor = (url) => { const filename = __keelFileUrl(url); return { url, filename, dirname: __keelPathReal.dirname(filename), main: false, env: __keelServerEnv, resolve: __keelRefusedFn(function resolve() {}, 'import.meta.resolve') }; };",
-  "const __keelFunction = __keelRefusedFn(Function, 'Function');",
-  "const __keelEval = __keelRefusedFn(eval, 'eval');",
-  "const __keelFetch = __keelRefusedFn(function fetch() {}, 'fetch');",
-  "const __keelWebSocket = __keelRefusedFn(function WebSocket() {}, 'WebSocket');",
-  "const __keelEventSource = __keelRefusedFn(function EventSource() {}, 'EventSource');",
-  "const __keelNavigator = globalThis.navigator === undefined ? undefined : new Proxy(globalThis.navigator, { get(t, k) { if (typeof k === 'string') __keelObserved.probes.push(['process', `navigator.${k}`]); return Reflect.get(t, k); } });",
-  "const __keelGlobals = { process: __keelProcess, console: __keelConsole, Function: __keelFunction, eval: __keelEval, fetch: __keelFetch, WebSocket: __keelWebSocket, EventSource: __keelEventSource, navigator: __keelNavigator };",
-  "const __keelGlobal = new Proxy(globalThis, { get(t, k) { if (k === 'global' || k === 'globalThis') return __keelGlobal; if (typeof k === 'string' && Object.hasOwn(__keelGlobals, k) && !__keelFixed(t, k)) return __keelGlobals[k]; return Reflect.get(t, k); } });",
+  "const __keelMetaFor = (url) => { const filename = __keelFileUrl(url); return { url, filename, dirname: __keelPathReal.dirname(filename), main: false, env: __keelServerEnv, resolve: __keelRefusedFn('import.meta.resolve') }; };",
   "const require = __keelRequireFor(undefined);",
 ].join("\n");

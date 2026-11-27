@@ -1,17 +1,13 @@
 import { existsSync, lstatSync, readdirSync, realpathSync, statSync } from "node:fs";
-import os from "node:os";
-import tty from "node:tty";
 import { isRecord } from "../isRecord.ts";
 import { sha256Hex } from "../sha256Hex.ts";
 import type { CacheProbe } from "./CacheProbe.ts";
 
 const hash = (names: readonly string[]): string => sha256Hex(new TextEncoder().encode([...names].sort().join("\n")));
-/** The process's facts an evaluation calls rather than reads (`OBSERVE_BANNER` of `@keel/compiler`). */
-const CALLED = new Set(["cwd", "umask", "getuid", "geteuid", "getgid", "getegid", "getgroups"]);
-/** The built-ins whose calls an evaluation records (`RECORDED_BUILTINS` of `@keel/compiler`). */
-const RECORDED: Readonly<Record<string, unknown>> = { os, tty };
 /** `<module>.<function>:<JSON arguments>`. */
-const CALL = /^([a-z]+)\.([A-Za-z_$][\w$]*):(.*)$/s;
+const CALL = /^([a-z_/]+)\.([A-Za-z_$][\w$]*):(.*)$/s;
+/** `<stat|lstat> <field> <path>`. */
+const FIELD = /^(stat|lstat) ([A-Za-z]+) (.*)$/s;
 
 type Stat = {
   isFile(): boolean;
@@ -36,18 +32,34 @@ const json = (v: unknown): string | null => JSON.stringify(v) ?? null;
 function called(path: string): string | null {
   const m = CALL.exec(path);
   if (m === null) return null;
-  const mod = RECORDED[m[1] ?? ""];
+  const mod: unknown = process.getBuiltinModule(`node:${m[1] ?? ""}`);
   const fn = isRecord(mod) ? mod[m[2] ?? ""] : undefined;
   const args: unknown = JSON.parse(m[3] ?? "null");
   return typeof fn === "function" && Array.isArray(args) ? json(Reflect.apply(fn, mod, args)) : null;
 }
 
-/** The answer of a fact of the process (`process`; `navigator.<name>` a property of the global `navigator`), read again. */
+/** The answer of a field of a stat result (`field`), read again from the `bigint` stat. */
+function field(path: string): string | null {
+  const m = FIELD.exec(path);
+  if (m === null) return null;
+  const s = (m[1] === "lstat" ? lstatSync : statSync)(m[3] ?? "", { bigint: true });
+  const v: unknown = Reflect.get(s, m[2] ?? "");
+  return typeof v === "bigint" || typeof v === "number" ? String(v) : null;
+}
+
+/**
+ * The answer of a fact of the process (`process`; `navigator.<name>` a property of the global `navigator`;
+ * `Intl.locale` and `Intl.timeZone` the default locale and time zone), read again.
+ */
 function fact(name: string): string | null {
+  if (name === "Intl.locale" || name === "Intl.timeZone") {
+    const o = new Intl.DateTimeFormat().resolvedOptions();
+    return name === "Intl.locale" ? o.locale : o.timeZone;
+  }
   const nav = name.startsWith("navigator.") ? Reflect.get(globalThis, "navigator") : undefined;
   if (nav !== undefined) return isRecord(nav) ? json(Reflect.get(nav, name.slice("navigator.".length))) : null;
   const v: unknown = Reflect.get(process, name);
-  return json(CALLED.has(name) && typeof v === "function" ? Reflect.apply(v, process, []) : v);
+  return json(typeof v === "function" ? Reflect.apply(v, process, []) : v);
 }
 
 /**
@@ -68,6 +80,7 @@ export function probeAnswer(kind: CacheProbe["kind"], path: string): string | nu
       );
     if (kind === "process") return fact(path);
     if (kind === "call") return called(path);
+    if (kind === "field") return field(path);
     if (kind === "env") return process.env[path] ?? null;
     return hash(Object.keys(process.env));
   } catch {

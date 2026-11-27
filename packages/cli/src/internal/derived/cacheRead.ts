@@ -15,6 +15,7 @@ const KINDS: readonly CacheProbe["kind"][] = [
   "list",
   "process",
   "call",
+  "field",
   "env",
   "env-names",
 ];
