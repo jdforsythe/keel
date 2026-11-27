@@ -3,7 +3,7 @@
 // Paragraph k.themes Token errors (no Conformance sentence of its own): the closed list of `<what>` texts, each with the `see` of the section holding its rule; asserted below as a table, one case per entry, at the key the issue path's last segment names.
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until the build follows.
 // The binary runs `keel check` over a temp project (token-errors-support.ts): a `@@` marks the expected position. The `tokens` export is written as a plain object, so `keel check` judges it as `TokenSchema` reads it. The E1817 half of the second clause (a message through `check()`) is packages/check/conformance/theme-message-fit.test.ts.
-// ASSUMED: a diagnostic record is `{ kind: "diag", code, path, line, col, message, see }`; a path's last segment is the key a message is at; for `<group> takes no theme` the path ends at the group's key, for `not a top-level <group> token` at the token's key; the `under 3:1` case writes `base.focus` as a color.
+// ASSUMED: a diagnostic record is `{ kind: "diag", code, path, line, col, message, see }`; a path's last segment is the key a message is at; for `<group> takes no theme` the path ends at the group's key, for `not a top-level <group> token` at the token's key; the `under 3:1` case writes `base.focus` as the name of a color token (k.ui: `focus`, a color token).
 // Untestable here: the E1810 theme message, E1816 and E1817 "each name in them, the longest first, keeps its first units and `...`" for names of mixed lengths: only the one-name case the clause gives is asserted (check package).
 import { afterAll, describe, expect, it } from "vitest";
 import fc from "fast-check";
@@ -163,7 +163,7 @@ describe("k.themes: every message of the closed list, at its key, with its `see`
     () => {
       const { m, run: r } = run(
         wrap(
-          `  color: { text: "#111111", bg: "#ffffff" },\n  base: { page: { fg: "text", bg: "bg" },\n    @@focus: "#f5f5f5" },`,
+          `  color: { text: "#111111", bg: "#ffffff", pale: "#f5f5f5" },\n  base: { page: { fg: "text", bg: "bg" },\n    @@focus: "pale" },`,
         ),
       );
       const d = diagsOf(r, "E1807");
@@ -177,8 +177,11 @@ describe("k.themes: every message of the closed list, at its key, with its `see`
   it(
     "E1807 reports the first issue in `TokenSchema`'s order: with two refused values only one E1807 is reported",
     () => {
-      const { run: r } = run(wrap(`  color: {\n    a: "red", b: "oops" },`));
-      expect(diagsOf(r, "E1807")).toHaveLength(1);
+      const { m, run: r } = run(wrap(`  color: {\n    @@a: "red", b: "oops" },`));
+      const d = diagsOf(r, "E1807");
+      expect(d).toHaveLength(1);
+      expect(d[0]).toMatchObject({ path: "tokens.ts", line: m.line, col: m.col });
+      expect(String(d[0]?.message).startsWith("color.a: ")).toBe(true);
     },
     T,
   );

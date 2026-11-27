@@ -1,6 +1,7 @@
 // Spec: k.schemes, clause "With `brandTokens`, a `ThemeSelect` is one E1816 with message `ThemeSelect needs a choice theme; the tokens have none`; with a theme `slate` and `labels={{ default: 'Keel', forest: 'Forest' }}` it is two, `ThemeSelect labels lack slate` and `ThemeSelect labels name no theme forest`."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
 // ASSUMPTIONS (as schemes-contrast.test.ts for E1814): tokens reach `check()` as `artifacts: { tokens }` and the project also holds `tokens.ts` as source text; "at the element" is a position on the `<ThemeSelect` line; the two messages of the second case come in the order the clause lists them (`lack` first, then `name no theme`), the order a theme missing from `labels` and a key naming no theme are met in the clause.
+// The fix of each E1816 here exists (k.themes Fixes: "E1816 (k.schemes Rules), with `labels` an object literal: for `labels lack <name>` the fix adds `<name>: \"<name>\"` after its last property; for `labels name no theme <key>` it deletes that property and its comma. For `needs a choice theme`, at a JSX element, it deletes the element"); what the fixes do is theme-fixes.test.ts.
 // AMBIGUOUS (k.schemes Checks): where a `labels` finding sits (the element, or the key) is not said; the cases assert the path and the element's line only. Only `choice` themes count: `ThemeSelect needs a choice theme` holds for an app whose only themes are `contrast` and `print`.
 import { check } from "@keel/check";
 import { brandTokens } from "@keel/ui/brand";
@@ -30,7 +31,7 @@ describe("k.schemes: E1816 ThemeSelect without a theme or with other labels", ()
       expect(d[0]?.message).toBe("ThemeSelect needs a choice theme; the tokens have none");
       expect(d[0]?.path).toBe("C.tsx");
       expect(atText(page()[0]?.source ?? "", "<ThemeSelect", d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
-      expect(d[0]?.fix).toBeUndefined();
+      expect(d[0]?.fix).toBeDefined(); // k.themes Fixes: for `needs a choice theme`, at a JSX element, the fix deletes the element
     },
     CHECK_CASE_BOUND,
   );
@@ -46,7 +47,7 @@ describe("k.schemes: E1816 ThemeSelect without a theme or with other labels", ()
       for (const x of d) {
         expect(x.path).toBe("C.tsx");
         expect(x.line).toBe(2);
-        expect(x.fix).toBeUndefined();
+        expect(x.fix).toBeDefined(); // k.themes Fixes: with `labels` an object literal, `lack` adds a property and `name no theme` deletes one
       }
     },
     CHECK_CASE_BOUND,

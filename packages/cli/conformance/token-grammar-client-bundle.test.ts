@@ -1,9 +1,9 @@
 // Spec: k.values, clause "`keel build`'s client JavaScript for a project with `brandTokens`, one scheme and no library holds none of the strings `safe-area-inset`, `cqmin`, `revert-layer` and `[aria-pressed=\"true\"]`."
 // Spec text (k.values): "**Stylesheet.** Each value a form admits gives a declaration the browser keeps and computes to a value other than the property's initial one, unless it is written as that value (`0`, `normal`). No part of the value forms ships in a client bundle: they run under Node, in `@keel/ui/tokens` and `@keel/ui/css` (k.themes Check-time entries)."
-// Spec: k.ui, clause "`keel build`'s client JavaScript for a `static` and a `client` project whose `tokens.ts` calls `defineTokens` and whose page imports `Box` and `brandTokens` holds none of the string literal values of 6 or more units, at least 20, that `vite build` of that project (no `keel check`, so no E1818) puts in its client JavaScript with a page importing `Box` and rendering `Object.keys(defineTokens({})).length` and not with a page importing `Box` alone."
+// Spec: k.ui, clause "`keel build`'s client JavaScript for a `static` and a `client` project whose `tokens.ts` calls `defineTokens` and whose page imports `Box` and `brandTokens` holds none of the string and template literal values of 6 or more units, at least 20, that `vite build` of the `client` project (no `keel check`) ships with a page importing `Box` and rendering `Object.keys(defineTokens({})).length` and not with one importing `Box` and `brandTokens`."
 // Seed: 1337 (no generated input: spawned builds per adapter).
 // The real binary builds staticTree's project (static-support.ts) once for a `static` and once for a `client` deployable. The k.values case uses `brandTokens` (one scheme) as `tokens.ts` and no library; every `.js` file under an `assets/` folder of `dist/` is the client JavaScript.
-// The k.ui case: the control is `vite build` (no `keel check`) of the same project with the control page (`Box` and `defineTokens`, rendering `Object.keys(defineTokens({})).length`) and again with the `Box`-only page; the strings are the string literal values of 6 or more units (JSON-decoded literals of the minified JavaScript, double or single quoted) in the first and not in the second, and there are at least 20. `keel build` of the project whose `tokens.ts` calls `defineTokens` over `brandTokens` and whose page imports `Box` and `brandTokens` holds none of them. No name, number or identifier is written in the test.
+// The k.ui case: the control is `vite build` (no `keel check`) of the `client` project with the control page (`Box` and `defineTokens`, rendering `Object.keys(defineTokens({})).length`) and the baseline is `vite build` of the same project with the page importing `Box` and `brandTokens`; the values are the string and template literal values of 6 or more units (as the TypeScript parser reads the minified JavaScript) in the control and not in the baseline, and there are at least 20. `keel build` of the `static` and of the `client` project whose `tokens.ts` calls `defineTokens` over `brandTokens` and whose page imports `Box` and `brandTokens` holds none of them. No name, number or identifier is written in the test.
 // The cases are not vacuous: every build exits 0 and every client JavaScript is not empty.
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -27,11 +27,6 @@ const PAGE_CONTROL = `import { Box } from "@keel/ui";
 import { defineTokens } from "@keel/ui/tokens";
 export default function Page() {
   return <Box id="s.page">{Object.keys(defineTokens({})).length}</Box>;
-}
-`;
-const PAGE_BOX_ONLY = `import { Box } from "@keel/ui";
-export default function Page() {
-  return <Box id="s.page">x</Box>;
 }
 `;
 const tree = (adapter: string, tokens = TOKENS, page?: string): Tree => ({
@@ -67,9 +62,9 @@ beforeAll(() => {
   const control = materialize(tree("client", DEFINED, PAGE_CONTROL));
   dirs.set("client:control", control);
   vite.set("client:control", viteBuild(control));
-  const boxOnly = materialize(tree("client", DEFINED, PAGE_BOX_ONLY));
-  dirs.set("client:box", boxOnly);
-  vite.set("client:box", viteBuild(boxOnly));
+  const baseline = materialize(tree("client", DEFINED, PAGE_UNDER_TEST));
+  dirs.set("client:base", baseline);
+  vite.set("client:base", viteBuild(baseline));
 }, SLOW * 6);
 afterAll(() => {
   for (const d of dirs.values()) cleanup(d);
@@ -89,7 +84,7 @@ const clientJs = (dir: string): string => {
   walk(join(dir, "dist"), false);
   return out.join("\n");
 };
-/** The values of the string literals of 6 or more units in `js`: string literals and the text of each template literal chunk, as the TypeScript parser reads them. */
+/** The string and template literal values of 6 or more units in `js`: string literals and the text of each template literal chunk, as the TypeScript parser reads them. */
 const literals = (js: string): Set<string> => {
   const found = new Set<string>();
   const walk = (n: ts.Node): void => {
@@ -105,11 +100,11 @@ const literals = (js: string): Set<string> => {
   walk(ts.createSourceFile("client.js", js, ts.ScriptTarget.ESNext, true));
   return found;
 };
-/** The literals of the control build and not of the `Box`-only build: the control's is `vite build` of the `client` project (a `static` project has no `index.html` for `vite build` alone). */
+/** The literals of the control build and not of the baseline build (the page importing `Box` and `brandTokens`): the control's is `vite build` of the `client` project (a `static` project has no `index.html` for `vite build` alone). */
 const controlOnly = (): string[] => {
   const control = literals(clientJs(dirs.get("client:control") ?? ""));
-  const boxOnly = literals(clientJs(dirs.get("client:box") ?? ""));
-  return [...control].filter((v) => !boxOnly.has(v));
+  const baseline = literals(clientJs(dirs.get("client:base") ?? ""));
+  return [...control].filter((v) => !baseline.has(v));
 };
 
 for (const adapter of ADAPTERS) {
@@ -127,10 +122,10 @@ for (const adapter of ADAPTERS) {
 }
 
 test(
-  "the string literal values of 6 or more units that `vite build` puts in the client JavaScript of a project with a page importing `Box` and rendering `Object.keys(defineTokens({})).length` and not with a page importing `Box` alone are at least 20",
+  "the string and template literal values of 6 or more units that `vite build` of the `client` project ships with a page importing `Box` and rendering `Object.keys(defineTokens({})).length` and not with one importing `Box` and `brandTokens` are at least 20",
   () => {
     expect(vite.get("client:control")).toBe(0);
-    expect(vite.get("client:box")).toBe(0);
+    expect(vite.get("client:base")).toBe(0);
     expect(controlOnly().length).toBeGreaterThanOrEqual(20);
   },
   SLOW,
@@ -138,7 +133,7 @@ test(
 
 for (const adapter of ADAPTERS) {
   test(
-    `\`keel build\`'s client JavaScript for a \`${adapter}\` project whose \`tokens.ts\` calls \`defineTokens\` and whose page imports \`Box\` and \`brandTokens\` holds none of those string literal values`,
+    `\`keel build\`'s client JavaScript for a \`${adapter}\` project whose \`tokens.ts\` calls \`defineTokens\` and whose page imports \`Box\` and \`brandTokens\` holds none of those string and template literal values`,
     () => {
       const only = controlOnly();
       expect(only.length).toBeGreaterThanOrEqual(20);

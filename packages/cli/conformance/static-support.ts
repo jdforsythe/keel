@@ -3,9 +3,10 @@
 // ASSUMPTIONS (spec names no fixture layout): module `s` serves routes `/` and `/about` whose loaders return `{ text }`
 // and whose page shows `props.data.text` beside a button with a handler (an island); a deployable `site` has adapter `static`; a failing loader returns `err` of a `keel.notFound` error.
 import { testTime } from "@keel/tooling/test-time";
-import { type ChildProcess, spawn, spawnSync } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
+import { networkInterfaces } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { setTimeout as pause } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -135,24 +136,23 @@ export const freePort = (bind: "dev" | "all" = "dev"): Promise<number> =>
     if (bind === "all") srv.listen(0, done);
     else srv.listen(0, "127.0.0.1", done);
   });
-/**
- * The addresses a TCP listener on `port` is bound to, as `lsof` names them (`127.0.0.1`, `[::1]`, or `*` for every address); empty when nothing listens.
- * ASSUMED: `lsof` is on the machine (the spec gives no other way to read a bound address from outside the process).
- */
-export function listeningOn(port: number): string[] {
-  const r = spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-Fn"], {
-    encoding: "utf8",
-    timeout: testTime(20_000),
+/** A non-loopback IPv4 address of this machine (its LAN address), or `undefined` when it has none. */
+export const lanAddress = (): string | undefined =>
+  Object.values(networkInterfaces())
+    .flatMap((list) => list ?? [])
+    .find((i) => i.family === "IPv4" && !i.internal)?.address;
+/** Whether a TCP connect to `host:port` succeeds (a refusal, an error or no answer in a bounded time is `false`); no external program. */
+export const connects = (host: string, port: number): Promise<boolean> =>
+  new Promise((res) => {
+    const sock = net.connect({ host, port });
+    const end = (ok: boolean): void => {
+      sock.destroy();
+      res(ok);
+    };
+    sock.setTimeout(testTime(5_000), () => end(false));
+    sock.once("connect", () => end(true));
+    sock.once("error", () => end(false));
   });
-  return [
-    ...new Set(
-      r.stdout
-        .split("\n")
-        .filter((l) => l.startsWith("n"))
-        .map((l) => l.slice(1).replace(new RegExp(`:${port}$`), "")),
-    ),
-  ];
-}
 export type Reply = { readonly status: number; readonly body: string };
 export const get = (port: number, path: string): Promise<Reply | null> =>
   new Promise((done) => {
