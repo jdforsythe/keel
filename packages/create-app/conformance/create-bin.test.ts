@@ -9,7 +9,7 @@
 // Spec: k.create, clause "`--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`."
 // Spec: k.create, clause "In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project."
 // Spec: k.create, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written."
-// Spec: k.create, clause "With `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was."
+// Spec: k.create, clause "Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was."
 // Spec: k.create, clause "A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written."
 // Spec: k.create, clause "With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: \"npm@10.9.0\"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`."
 // Spec: k.create, clause "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project."
@@ -18,8 +18,8 @@
 // Spec: k.create, clause "Run as `node --permission` with reads allowed, writes allowed only in the folder, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project."
 // Spec: k.create, clause "In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints the same records and writes nothing."
 // Spec: k.create, clause "`@keel/create-app`'s `skills/<name>/SKILL.md` equal `keel docs <name>` of `@keel/cli` at the same version, byte for byte."
-// Spec: k.create, clause "From the packed tarballs, in an empty folder, each of `client`, `static`, `node` and `--library` after its install passes `keel check`, `keel test` and `keel build` (`keel pack --check` for the library), and `keel docs --sync` writes nothing."
-// k.create, Not done "It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder and reads outside it only the files Workspace names."
+// Spec: k.create, clause "From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --check`, and in each `keel docs --sync` writes nothing."
+// k.create, Not done "It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder and reads outside it only the files Workspace names. The proof of the first two is a run under Node's permission model (Conformance) with writes granted only in the folder and no child process or worker granted (from Node 25, no network either): Node refuses each such call, and a refused call ends the run with a nonzero exit, so its exit 0 is the proof."
 // k.create, Rules "E1360 the folder holds files (fix: name a new folder, or add `--existing`)"
 // k.create, Rules "E1361 `--existing` and a file the project writes exists (fix: move it aside, or use a new folder)"
 // k.create, Rules "E1363 the workspace has `@keel/cli` at another version (fix: `pnpm create @keel/app@<that version>`)"
@@ -29,13 +29,13 @@
 // - "starts no process", "opens no connection": the spec states one seam, Node's permission model (the permission-model clause: no child process or worker granted). The
 //   Node 25 network grant is not named in the spec, so no case withholds it separately; the same run is what a Node 25 permission run without `--allow-net` is. What else can be asserted is
 //   asserted: no `node_modules`, no `.git`, no lockfile after a run, and nothing written beside the folder. "reads no environment value but ..." and "reads outside it only the files Workspace names" are untestable from outside (no seam names them).
-// - The CLAUSE 22 text is cut across two files: the packed-tarball half is tooling/smoke/create.mjs (a smoke, it needs the packed kit). Here each kind is created beside a `node_modules` linked to the repo
-//   (create's version and the cli's are both the repo's), then `keel check`, `keel test`, `keel build` (apps) and `keel docs --sync` run over it. For the library the clause says `keel pack --check`, which k.library-pack
-//   says is E1164 until `keel pack` writes the ledger: read here as `keel pack` then `keel pack --check`, both exit 0 (a contradiction to settle in the spec).
+// - The clause 22 text is cut across two files: the packed-tarball half is tooling/smoke/create.mjs (a smoke, it needs the packed kit). Here each kind is created beside a `node_modules` linked to the repo
+//   (create's version and the cli's are both the repo's), then `keel check`, `keel test`, `keel build` (apps) and `keel docs --sync` run over it. For the library the clause runs `keel pack` and then `keel pack --check`, both exit 0 (k.library-pack:
+//   `keel pack --check` is E1164 until `keel pack` writes the ledger).
 // - E1365 needs a write that fails: the folder holds an empty `public/` with mode 0555 (a user that bypasses file modes, such as root, cannot fail it).
 // - compact has no ANSI escape: the output holds no ESC (U+001B) character.
 // - `create <path>` lines are sorted by plain string order of the path.
-import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
@@ -318,7 +318,7 @@ describe("create-app: the folder", () => {
   );
 
   it(
-    "With `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was.",
+    "Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was.",
     async () => {
       const cwd = sandbox();
       const shop = join(cwd, "shop");
@@ -488,11 +488,29 @@ describe("create-app: what it does not do", () => {
   it(
     "Run as `node --permission` with reads allowed, writes allowed only in the folder, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project.",
     async () => {
-      const cwd = sandbox();
+      const cwd = realpathSync(sandbox());
       const shop = join(cwd, "shop");
-      const r = await run(["shop"], cwd, {
-        nodeArgs: ["--permission", "--allow-fs-read=*", `--allow-fs-write=${shop}`, "--allow-addons"],
-      });
+      // Node's `--allow-fs-write=<path>` grants that path alone; the folder's contents are granted by `<path>/*`. The folder is not made yet, so both are given.
+      const grant = [
+        "--permission",
+        "--allow-fs-read=*",
+        `--allow-fs-write=${shop}`,
+        `--allow-fs-write=${shop}/*`,
+        "--allow-addons",
+      ];
+      // The grant is as tight as the clause says: the same flags refuse a write beside the folder and a child process.
+      const probe = spawnSync(
+        process.execPath,
+        [
+          ...grant,
+          "-e",
+          `const fs=require("node:fs");const cp=require("node:child_process");const code=(f)=>{try{f();return "allowed"}catch(e){return e.code}};` +
+            `console.log(JSON.stringify([code(()=>fs.writeFileSync(${JSON.stringify(join(cwd, "beside.txt"))},"x")),code(()=>cp.spawnSync("true"))]));`,
+        ],
+        { encoding: "utf8", cwd },
+      );
+      expect(probe.stdout.trim(), probe.stderr).toBe(JSON.stringify(["ERR_ACCESS_DENIED", "ERR_ACCESS_DENIED"]));
+      const r = await run(["shop"], cwd, { nodeArgs: grant });
       expect(r.status, r.out).toBe(0);
       expect(keys(tree(shop))).toEqual(clientSet());
       expect(entries(cwd).filter((p) => !p.startsWith("shop"))).toEqual([]);
@@ -607,7 +625,7 @@ describe("create-app: a fresh project", () => {
   ];
   for (const [kind, flags] of kinds) {
     it(
-      `From the packed tarballs, in an empty folder, each of \`client\`, \`static\`, \`node\` and \`--library\` after its install passes \`keel check\`, \`keel test\` and \`keel build\` (\`keel pack --check\` for the library), and \`keel docs --sync\` writes nothing: the ${kind} project`,
+      `From the packed tarballs, in an empty folder, \`client\`, \`static\` and \`node\` each after its install pass \`keel check\`, \`keel test\` and \`keel build\`, \`--library\` passes \`keel check\`, \`keel test\`, \`keel pack\` and then \`keel pack --check\`, and in each \`keel docs --sync\` writes nothing: the ${kind} project`,
       async () => {
         const cwd = sandbox();
         link(cwd);

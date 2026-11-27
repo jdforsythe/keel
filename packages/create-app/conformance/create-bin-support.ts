@@ -85,7 +85,7 @@ export function tree(dir: string): Map<string, string> {
   return out;
 }
 
-/** Every entry (files and folders, folders with a trailing "/") under `dir`: what "left as it was" compares. */
+/** Every entry (files and folders, folders with a trailing "/"; a link is listed as itself, never followed) under `dir`: what "left as it was" compares. */
 export function entries(dir: string): string[] {
   const out: string[] = [];
   const walk = (rel: string): void => {
@@ -97,7 +97,7 @@ export function entries(dir: string): string[] {
     }
     for (const n of names) {
       const p = rel === "" ? n : `${rel}/${n}`;
-      if (statSync(join(dir, p)).isDirectory()) {
+      if (lstatSync(join(dir, p)).isDirectory()) {
         out.push(`${p}/`);
         walk(p);
       } else out.push(p);
