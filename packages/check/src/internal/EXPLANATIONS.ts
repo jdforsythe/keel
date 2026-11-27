@@ -510,13 +510,6 @@ const ROWS: readonly Row[] = [
     "k.shared, k.resume",
   ],
   [
-    "E1260",
-    "a write to plain module state in server code",
-    "Module state outlives the request; a process cache is processSlot(name, make).",
-    "\n```ts\nexport const load = (k: string) => { const seen = new Map<string, number>(); seen.set(k, 1); return seen.size }```",
-    "k.shared",
-  ],
-  [
     "E1257",
     "an element placed by an op that started after it was made, in a served render",
     "createApp logs it once per route and serves the page; in the browser that island re-renders (E1253).",
