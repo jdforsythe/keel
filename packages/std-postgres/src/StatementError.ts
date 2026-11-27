@@ -1,6 +1,6 @@
 import type { Conflict } from "./Conflict.ts";
 import type { ConstraintError } from "./ConstraintError.ts";
-import type { DatabaseError } from "./DatabaseError.ts";
+import type { DatabaseError } from "./DatabaseError.schema.ts";
 import type { ResultError } from "./ResultError.ts";
 import type { Unreachable } from "./Unreachable.ts";
 

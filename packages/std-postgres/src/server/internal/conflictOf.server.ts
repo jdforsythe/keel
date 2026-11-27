@@ -1,5 +1,5 @@
 import type { Conflict } from "../../Conflict.ts";
-import type { DatabaseError } from "../../DatabaseError.ts";
+import type { DatabaseError } from "../../DatabaseError.schema.ts";
 
 /**
  * `keel.conflict` whose `cause` is the `postgres.database` error of the last run (std.postgres-errors): `40001` or

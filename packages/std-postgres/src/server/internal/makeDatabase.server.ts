@@ -3,7 +3,7 @@ import { attempt, defect, err, ok } from "@keel/schema";
 import type { KeelError, Result } from "@keel/schema";
 import type { Conflict } from "../../Conflict.ts";
 import type { ConstraintError } from "../../ConstraintError.ts";
-import type { DatabaseError } from "../../DatabaseError.ts";
+import { DatabaseError } from "../../DatabaseError.schema.ts";
 import { NoRows } from "../../NoRows.schema.ts";
 import type { NotFound } from "../../NotFound.ts";
 import type { Query } from "../../Query.ts";
@@ -27,7 +27,6 @@ import { answered } from "./answered.server.ts";
 import { changeText } from "./changeText.server.ts";
 import { classify } from "./classify.server.ts";
 import { conflictOf } from "./conflictOf.server.ts";
-import { databaseError } from "./databaseError.schema.ts";
 import { errors } from "./errors.server.ts";
 import { isRerun } from "./isRerun.server.ts";
 import { payloadOf } from "./payloadOf.server.ts";
@@ -48,7 +47,7 @@ type Plan = { readonly steps: readonly Step[]; readonly clock: Clock };
 const paramsOf = (q: Query<unknown>): (string | null)[] => q.params.map(toText);
 
 /** A plan step `conflict` (sim): the serialization failure it stands for. */
-const PLANNED = databaseError.make({ sqlstate: "40001" }, "The database ran the statement into a conflict");
+const PLANNED = DatabaseError.make({ sqlstate: "40001" }, "The database ran the statement into a conflict");
 
 /**
  * One run of a transaction's `fn`: the serialization failure or deadlock that makes it run again, whether it lost its

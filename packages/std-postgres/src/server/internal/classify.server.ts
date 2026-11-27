@@ -1,7 +1,6 @@
 import type { ConstraintError } from "../../ConstraintError.ts";
-import type { DatabaseError } from "../../DatabaseError.ts";
+import { DatabaseError } from "../../DatabaseError.schema.ts";
 import type { Unreachable } from "../../Unreachable.ts";
-import { databaseError } from "./databaseError.schema.ts";
 import { errors } from "./errors.server.ts";
 import { field } from "./field.server.ts";
 
@@ -35,10 +34,10 @@ export function classify(e: unknown): ConstraintError | DatabaseError | Unreacha
     const kind = KINDS[code] ?? "check";
     return { code: "postgres.constraint", message: "A row breaks a constraint", data: { constraint, kind } };
   }
-  if (RERUNS.has(code)) return databaseError.make({ sqlstate: code }, "The database ran the statement into a conflict");
+  if (RERUNS.has(code)) return DatabaseError.make({ sqlstate: code }, "The database ran the statement into a conflict");
   if (LOST.has(code) || NET.has(code)) return errors.unreachable;
   if (code === "" && e instanceof Error && DROPPED.test(e.message)) return errors.unreachable;
   if (field(e, "severity") !== "" && DATABASE.test(code))
-    return databaseError.make({ sqlstate: code }, "The database refused the statement");
+    return DatabaseError.make({ sqlstate: code }, "The database refused the statement");
   return null;
 }

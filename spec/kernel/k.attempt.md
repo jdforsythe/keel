@@ -6,7 +6,7 @@ status: implemented
 **Values.**
 - `KeelError<C, D>` is `{ code: C, message: string, data: D, cause?: KeelError<string, unknown> }`, plain JSON. `Result<T, E>` requires `E extends KeelError<string, unknown>`.
 - `err(e)` takes a `KeelError` and nothing else. Any other value (an `Error`, a string, an object without a string `code`, a string `message` and an own `data`) is E1458 at check and, at run time, the defect E1458.
-- `X.make(data, message?)` builds one of the error `X = s.error(code, data)`. `X.causedBy(cause, data, message?)` builds one whose `cause` is the `KeelError` `cause`. `X.in(e)` gives the first error with `X`'s code on `e`'s cause chain, `e` first, at most 8 steps, typed as `X`'s, else `undefined`. So a wrapped failure is still the failure it wraps: `Database.in(r.error)?.data.sqlstate === '40P01'` holds three callers above the query, however often the error was wrapped.
+- `X.make(data, message?)` builds one of the error `X = s.error(code, data)`. `X.causedBy(cause, data, message?)` builds one whose `cause` is the `KeelError` `cause`. `X.in(e)` gives the first error with `X`'s code on `e`'s cause chain, `e` first, at most 8 steps, typed as `X`'s, else `undefined`. So a wrapped failure is still the failure it wraps: `DatabaseError.in(r.error)?.data.sqlstate === '40P01'` holds three callers above the query, however often the error was wrapped.
 - `message` is the developer's text and defaults to the code. What a person or a log is shown is the code and the data, whose schema carries the `.pii()` and `s.secret` marks (k.privacy).
 
 **`attempt(fn, expect)`** (`@keel/schema`) is the one catch. It runs `fn` and settles by what `fn` does; when `fn` returns a promise it settles the same way in a promise.
