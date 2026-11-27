@@ -11,6 +11,7 @@ import fc from "fast-check";
 import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, test } from "vitest";
 import { TOPOLOGY, keelProject } from "./a11y-project-support.ts";
+import { DARK_SURFACE, focusRatios } from "./tokens-focus-support.ts";
 import { keel, removeProject } from "./test-sim-project.ts";
 
 const SLOW = fixedTime(180_000);
@@ -46,13 +47,13 @@ const diags = (stdout: string): Record<string, unknown>[] =>
     })
     .filter((r) => r.kind === "diag");
 /** A project after `keel tokens import` of the three files, its `tokens.ts` holding a comment. */
-const imported = async (): Promise<string> => {
+const imported = async (dark = DARK): Promise<string> => {
   const dir = keelProject("tokens-set", {
     "topology.ts": TOPOLOGY,
     "modules/m/module.ts": MODULE,
     "tokens.ts": BRAND_TOKENS,
     "design/color.light.tokens.json": LIGHT,
-    "design/color.dark.tokens.json": DARK,
+    "design/color.dark.tokens.json": dark,
     "design/brand.base.tokens.json": BASE,
   });
   created.push(dir);
@@ -92,7 +93,14 @@ describe("k.cli: tokens set", () => {
   test(
     "a comment in the file stays, and every other property stays, after each set",
     async () => {
-      const dir = await imported();
+      // The check below runs with a dark `surface` the focus ring clears (tokens-focus-support.ts): the clause's files give the
+      // ring `#F3F3F3` on `#F9F9F9` in dark, which k.a11y Order and focus refuses as E1807.
+      expect(focusRatios.darkOnLightSurface).toBeLessThan(3);
+      expect(focusRatios.light).toBeGreaterThanOrEqual(3);
+      expect(focusRatios.dark).toBeGreaterThanOrEqual(3);
+      const dir = await imported(
+        DARK.replace('"surface":{"$value":"#F9F9F9"}', `"surface":{"$value":"${DARK_SURFACE}"}`),
+      );
       await cmd(dir, ["set", "color/accent/dark", "#8AB8F0"]);
       await cmd(dir, ["set", "themes/slate/radius/none", "4px"]);
       const after = read(dir);

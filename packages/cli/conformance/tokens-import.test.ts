@@ -16,6 +16,7 @@ import fc from "fast-check";
 import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, test } from "vitest";
 import { TOPOLOGY, keelProject } from "./a11y-project-support.ts";
+import { DARK_SURFACE, focusRatios } from "./tokens-focus-support.ts";
 import { keel, removeProject, root } from "./test-sim-project.ts";
 
 const SLOW = fixedTime(180_000);
@@ -307,7 +308,21 @@ describe("k.cli: tokens import and tokens.ts", () => {
       expect(after).toContain(
         "export const tokens = defineTokens({ ...brandTokens, color: { ...brandTokens.color, ...designTokens.color }, space: { ...brandTokens.space, ...designTokens.space } });",
       );
-      const c = keel(dir, ["check"]);
+      // The check half runs on the same import with a dark `surface` the focus ring clears (tokens-focus-support.ts): with the
+      // clause's files the ring is `#F3F3F3` on `#F9F9F9` in dark, which k.a11y Order and focus refuses as E1807.
+      expect(focusRatios.darkOnLightSurface).toBeLessThan(3);
+      expect(focusRatios.light).toBeGreaterThanOrEqual(3);
+      expect(focusRatios.dark).toBeGreaterThanOrEqual(3);
+      const ok = project({
+        "tokens.ts": BRAND_TOKENS,
+        "design/color.light.tokens.json": LIGHT,
+        "design/color.dark.tokens.json": DARK.replace(
+          '"surface":{"$value":"#F9F9F9"}',
+          `"surface":{"$value":"${DARK_SURFACE}"}`,
+        ),
+      });
+      expect((await importCmd(ok, FILES)).code).toBe(0);
+      const c = keel(ok, ["check"]);
       expect(c.records.filter((r) => r.kind === "diag" && (r.code === "E1807" || r.code === "E1801"))).toEqual([]);
       const before = read(dir, "tokens.ts");
       expect((await importCmd(dir, FILES)).code).toBe(0);
