@@ -693,7 +693,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [
       f(
         "src/f.ts",
-        "import { err, ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) throw locked\n  return ok(1)\n}\nexport const g = () => err(locked)\n",
+        "import { ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) throw locked\n  return ok(1)\n}\n",
       ),
     ],
     clean: [
@@ -722,13 +722,13 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nsave()\n",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.locked', null>> => ok(1)\nsave()\n",
       ),
     ],
     clean: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nconst r = save()\nvoid r\n",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.locked', null>> => ok(1)\nconst r = save()\nvoid r\n",
       ),
     ],
   },
@@ -1533,7 +1533,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [
       f(
         "src/isRow.ts",
-        "export const isRow = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null\n",
+        "export const isRow = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'\n",
       ),
     ],
   },
