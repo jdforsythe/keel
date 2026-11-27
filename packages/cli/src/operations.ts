@@ -42,6 +42,7 @@ const structural = {
   file: s.string().optional(),
   api: s.boolean().optional(),
   method: s.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
+  loader: s.boolean().optional(),
   "no-loader": s.boolean().optional(),
   openapi: s.string().optional(),
   base: s.string().optional(),
@@ -56,7 +57,7 @@ const structural = {
 export const operations: readonly Operation[] = [
   {
     name: "check",
-    description: "Run k.check over the project or given paths.",
+    description: "k.check over the project or given paths.",
     input: s.object({ paths, base: s.string().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
@@ -64,7 +65,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "test",
-    description: "Run the test harness under a sim ctx (k.testing).",
+    description: "The test harness under a sim ctx (k.testing).",
     input: s.object({
       paths,
       e2e: s.boolean().optional(),
@@ -99,7 +100,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "docs",
-    description: "Installed docs: areas, an area, a section or skill; --for a code, block, name or term; --sync.",
+    description: "Installed docs: areas, an area, section or skill; --for a code, block, name or term; --sync.",
     input: s.object({ id: s.string().optional(), for: s.string().optional(), sync: s.boolean().optional(), ...common }),
     output: outputOf(
       DocsAreaSchema,
@@ -133,7 +134,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "render",
-    description: "The a11y tree of one route or component render.",
+    description: "A11y tree of one route or component render.",
     input: s.object({ target: s.string().optional(), props: s.string().optional(), ...common }),
     output: outputOf(A11ySchema),
     positional: ["target"],
@@ -178,7 +179,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "evidence",
-    description: "Write a signed evidence bundle, or --verify one by --key <keyId>.",
+    description: "A signed evidence bundle, or --verify one by --key <keyId>.",
     input: s.object({
       out: s.string().optional(),
       audit: s.string().optional(),
@@ -192,7 +193,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "review",
-    description: "Escapes from Keel's protections by danger and novelty, over a git range or --all.",
+    description: "Escapes from Keel's protections by danger, novelty: a git range or --all.",
     input: s.object({
       paths,
       all: s.boolean().optional(),

@@ -340,7 +340,7 @@ describe("runAction", () => {
       ingest: {
         code: 1,
         records: [
-          { kind: "diag", code: "E1056", message: "session ingest target answered 302", see: "k.cli" },
+          { kind: "diag", code: "E1056", message: "session ingest target answered 302", see: "k.inspect" },
           summary(false, "session ingest"),
         ],
       },
@@ -348,7 +348,7 @@ describe("runAction", () => {
     const r = await runAction(w.io);
     expect(r.code).toBe(1);
     expect(r.stdout).toBe(
-      "E1056 session ingest target answered 302\n  see: k.cli\nfail session action 0 fingerprints, 0 created, 0 updated, 0 commented\n",
+      "E1056 session ingest target answered 302\n  see: k.inspect\nfail session action 0 fingerprints, 0 created, 0 updated, 0 commented\n",
     );
     expect(w.runs).toHaveLength(1);
     expect(w.calls).toEqual([]);

@@ -30,6 +30,7 @@ export const JOBS = {
   },
   ledger: { run: true },
   "built-smokes": { run: true },
+  "create-kit": { run: true },
   build: { run: true },
   budgets: { run: true },
   "golden-1-images": { run: true, requires: "registry" },

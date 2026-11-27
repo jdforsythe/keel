@@ -621,6 +621,7 @@ describe("kernelFormatters", () => {
       "inspect.store",
       "inspect.section",
       "scaffold.edit",
+      "scaffold.note",
     ]);
   });
 

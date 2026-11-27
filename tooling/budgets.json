@@ -20,11 +20,11 @@
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "23.2kb",
+      "max": "23.9kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "39.6kb",
+      "max": "41.6kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -48,11 +48,11 @@
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "11kb",
     "@keel/scaffold": {
-      "max": "23.5kb",
+      "max": "26.5kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {
-      "max": "1.5kb",
+      "max": "2.35kb",
       "platform": "node"
     },
     "@keel/schema": "6.5kb",

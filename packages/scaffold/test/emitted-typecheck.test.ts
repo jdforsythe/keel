@@ -55,7 +55,8 @@ const CONSUMER: ReadonlyMap<string, string> = new Map([
 ]);
 
 function scaffolded(): Files {
-  let files: Files = apply("project", { name: "shop" }, new Map());
+  // A `node` project: an API route needs a node deployable (k.scaffold-needs).
+  let files: Files = apply("project", { name: "shop", adapter: "node" }, new Map());
   files = apply("module", { id: "orders" }, files);
   files = apply("route", { id: "orders.list", path: "/orders" }, files);
   files = apply("route", { id: "orders.tag", path: "/tags/:slug" }, files);

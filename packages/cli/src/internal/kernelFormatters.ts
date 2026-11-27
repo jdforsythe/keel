@@ -16,6 +16,7 @@ import { InspectSectionSchema } from "./InspectSectionSchema.ts";
 import { InspectStoreSchema } from "./InspectStoreSchema.ts";
 import { LedgerMutationSchema } from "./LedgerMutationSchema.ts";
 import { LedgerSchema } from "./LedgerSchema.ts";
+import { NoteSchema } from "./NoteSchema.ts";
 import { ReqSchema } from "./ReqSchema.ts";
 import { ReviewSchema } from "./ReviewSchema.ts";
 import { SummarySchema } from "./SummarySchema.ts";
@@ -43,7 +44,7 @@ const clip = (s: string): string => (s.length > VALUE_MAX ? `${s.slice(0, VALUE_
 /**
  * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, a11y, evidence, and k.ledger's ledger and
  * ledger.mutation.
- * The cli's own record kinds (docs.area, docs.entry, docs.section, docs.skill, docs.cite, docs.code, docs.term, docs.hit, explain.text, scaffold.edit, inspect.store, inspect.section) go through the same extension point.
+ * The cli's own record kinds (docs.area, docs.entry, docs.section, docs.skill, docs.cite, docs.code, docs.term, docs.hit, explain.text, scaffold.edit, scaffold.note, inspect.store, inspect.section) go through the same extension point.
  */
 export const kernelFormatters: readonly (readonly [string, Entry])[] = [
   ["diag", entryOf({ schema: DiagSchema, compact: diagCompact, pretty: diagPretty })],
@@ -200,6 +201,14 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
       schema: EditSchema,
       compact: (r) => r.diff ?? `${r.action} ${r.path}`,
       pretty: (r) => (r.diff === undefined ? `${r.action.padEnd(6)} ${r.path}` : `${r.action} ${r.path}\n${r.diff}`),
+    }),
+  ],
+  [
+    "scaffold.note",
+    entryOf({
+      schema: NoteSchema,
+      compact: (r) => `note ${r.path} ${r.note}`,
+      pretty: (r) => `note   ${r.path}: ${r.note}`,
     }),
   ],
 ];

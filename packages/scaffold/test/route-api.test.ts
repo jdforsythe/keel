@@ -19,7 +19,7 @@ describe("scaffold route --api", () => {
     expect(routes).not.toContain("component");
     expect(f.get("modules/orders/loadList.server.ts")).toContain(`loader(orders, "orders.list", {}, `);
     expect(f.has("modules/orders/loadList.server.ts")).toBe(true);
-    expect([...f.keys()].filter((p) => p.endsWith(".tsx"))).toEqual([]);
+    expect([...f.keys()].filter((p) => p.startsWith("modules/orders/") && p.endsWith(".tsx"))).toEqual([]);
   });
 
   it("an API write is an entry with its method, bound to an action named after the verb", () => {

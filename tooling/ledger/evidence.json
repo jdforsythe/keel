@@ -1,5 +1,5 @@
 {
-  "commit": "e676fbee32b94e625c99e7636f0fbcaf025208b8",
+  "commit": "edc926c79d8a0a76c714d8e5abb8c08ac35bd2e2",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -203,6 +203,16 @@
           "pct": 92.79,
           "total": 4233
         }
+      },
+      "packages/create-app": {
+        "branches": null,
+        "commit": null,
+        "dirty": null,
+        "functions": null,
+        "lines": null,
+        "measuredAt": null,
+        "reason": "not measured",
+        "statements": null
       },
       "packages/ctx": {
         "branches": {
@@ -1178,7 +1188,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-27T21:06:11.405Z",
+  "generatedAt": "2026-11-27T22:17:47.509Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1412,10 +1422,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 1309,
+        "example": 1354,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 2,
+        "none": 4,
         "probabilistic": 259,
         "proven": 53
       },
@@ -1552,7 +1562,7 @@
         },
         "k.cli": {
           "byRung": {
-            "example": 20,
+            "example": 16,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1560,8 +1570,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 20,
-          "verified": 20
+          "total": 16,
+          "verified": 16
         },
         "k.compat": {
           "byRung": {
@@ -1614,6 +1624,45 @@
           "status": "conformance-covered",
           "total": 25,
           "verified": 25
+        },
+        "k.create": {
+          "byRung": {
+            "example": 21,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 1,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "implemented",
+          "total": 22,
+          "verified": 21
+        },
+        "k.create-folder": {
+          "byRung": {
+            "example": 6,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 1,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "implemented",
+          "total": 7,
+          "verified": 6
+        },
+        "k.create-manager": {
+          "byRung": {
+            "example": 0,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "implemented",
+          "total": 0,
+          "verified": 0
         },
         "k.ctx": {
           "byRung": {
@@ -1799,7 +1848,7 @@
         },
         "k.explain": {
           "byRung": {
-            "example": 4,
+            "example": 8,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1807,8 +1856,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 4,
-          "verified": 4
+          "total": 8,
+          "verified": 8
         },
         "k.formats": {
           "byRung": {
@@ -1913,6 +1962,19 @@
           "status": "conformance-covered",
           "total": 9,
           "verified": 9
+        },
+        "k.inspect": {
+          "byRung": {
+            "example": 7,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "conformance-covered",
+          "total": 7,
+          "verified": 7
         },
         "k.leave": {
           "byRung": {
@@ -2332,7 +2394,7 @@
         },
         "k.scaffold": {
           "byRung": {
-            "example": 20,
+            "example": 24,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2340,8 +2402,21 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 20,
-          "verified": 20
+          "total": 24,
+          "verified": 24
+        },
+        "k.scaffold-needs": {
+          "byRung": {
+            "example": 7,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "implemented",
+          "total": 7,
+          "verified": 7
         },
         "k.scaffold-service": {
           "byRung": {
@@ -3111,23 +3186,23 @@
           "verified": 9
         }
       },
-      "total": 1629,
-      "verified": 1627
+      "total": 1676,
+      "verified": 1672
     },
     "evidenceByRung": {
-      "example": 2765,
+      "example": 2813,
       "exhaustive": 21,
       "monitored": 8,
-      "probabilistic": 465,
+      "probabilistic": 467,
       "proven": 92
     },
     "exports": {
       "byRung": {
-        "example": 378,
+        "example": 379,
         "exhaustive": 5,
         "monitored": 0,
-        "none": 55,
-        "probabilistic": 165,
+        "none": 60,
+        "probabilistic": 167,
         "proven": 39
       },
       "packages": {
@@ -3166,6 +3241,18 @@
           },
           "total": 11,
           "verified": 11
+        },
+        "create-app": {
+          "byRung": {
+            "example": 1,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 5,
+            "probabilistic": 2,
+            "proven": 0
+          },
+          "total": 8,
+          "verified": 3
         },
         "ctx": {
           "byRung": {
@@ -3684,13 +3771,13 @@
           "verified": 5
         }
       },
-      "total": 642,
-      "verified": 587
+      "total": 650,
+      "verified": 590
     },
-    "items": 2951,
+    "items": 3006,
     "negativeTypes": 90,
     "unsafe": 33,
-    "verified": 2894
+    "verified": 2942
   },
   "mutation": {
     "packages": {
@@ -3783,6 +3870,16 @@
         "scoreJustified": 74.14,
         "stale": 16,
         "threshold": 70
+      },
+      "packages/create-app": {
+        "claims": 0,
+        "justified": null,
+        "reason": "no mutation run",
+        "reportDate": null,
+        "score": null,
+        "scoreJustified": null,
+        "stale": null,
+        "threshold": null
       },
       "packages/ctx": {
         "claims": 50,
@@ -4269,18 +4366,18 @@
         "unitFiles": 92
       },
       "packages/cli": {
-        "conformanceCases": 1104,
-        "conformanceFiles": 251,
+        "conformanceCases": 1121,
+        "conformanceFiles": 258,
         "exploreFiles": 1,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 217,
+        "propertyCalls": 218,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 14,
-        "unitCases": 872,
-        "unitFiles": 126
+        "unitCases": 879,
+        "unitFiles": 128
       },
       "packages/compiler": {
         "conformanceCases": 187,
@@ -4295,6 +4392,20 @@
         "skipTodo": 0,
         "unitCases": 762,
         "unitFiles": 103
+      },
+      "packages/create-app": {
+        "conformanceCases": 41,
+        "conformanceFiles": 4,
+        "exploreFiles": 0,
+        "fails": 0,
+        "otherCases": 0,
+        "otherFiles": 0,
+        "propertyCalls": 4,
+        "proveFiles": 0,
+        "simulateFiles": 0,
+        "skipTodo": 1,
+        "unitCases": 15,
+        "unitFiles": 3
       },
       "packages/ctx": {
         "conformanceCases": 171,
@@ -4367,18 +4478,18 @@
         "unitFiles": 42
       },
       "packages/scaffold": {
-        "conformanceCases": 254,
-        "conformanceFiles": 59,
+        "conformanceCases": 330,
+        "conformanceFiles": 66,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 97,
+        "propertyCalls": 120,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 141,
-        "unitFiles": 26
+        "unitCases": 169,
+        "unitFiles": 30
       },
       "packages/schema": {
         "conformanceCases": 224,
@@ -4633,13 +4744,13 @@
         "unitFiles": 17
       },
       "packages/std-report": {
-        "conformanceCases": 31,
-        "conformanceFiles": 17,
+        "conformanceCases": 33,
+        "conformanceFiles": 18,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 18,
+        "propertyCalls": 19,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
@@ -4661,8 +4772,8 @@
         "unitFiles": 7
       },
       "packages/std-sessions": {
-        "conformanceCases": 196,
-        "conformanceFiles": 49,
+        "conformanceCases": 197,
+        "conformanceFiles": 50,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
@@ -4830,18 +4941,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 7342,
-      "conformanceFiles": 1587,
+      "conformanceCases": 7479,
+      "conformanceFiles": 1607,
       "exploreFiles": 21,
       "fails": 3,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 3139,
+      "propertyCalls": 3168,
       "proveFiles": 24,
       "simulateFiles": 32,
-      "skipTodo": 25,
-      "unitCases": 7161,
-      "unitFiles": 1179
+      "skipTodo": 26,
+      "unitCases": 7211,
+      "unitFiles": 1188
     }
   },
   "tool": {

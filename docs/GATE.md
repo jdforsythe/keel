@@ -18,7 +18,7 @@ Actions are not run. Checkout, pnpm, node and `actions/cache` are the steps abov
 | `test-shard` 1 to 6 | runs, one instance per shard |
 | `test` | runs |
 | `postgres` | runs with docker: the `postgres:17` service as `keel-gate-pg` and the ssl container as `keel-gate-pg-ssl`, each on a free port |
-| `built-smokes`, `build`, `budgets` | runs |
+| `built-smokes`, `create-kit`, `build`, `budgets` | runs |
 | `golden-1-images` | runs with docker, when its credential helper answers within 10 seconds (a locked one hangs every pull) |
 | `slow-shards` | runs with docker, after every other job: the six test shards in a Linux `node:22` container limited to 2 CPUs and 7,700 MB, at time scale 1 (see Slow machine) |
 | `changes` | skipped: it only decides whether the shell jobs run on a pull request |

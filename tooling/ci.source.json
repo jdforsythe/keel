@@ -386,6 +386,18 @@
         "KEEL_TEST_POSTGRES_URL": "postgres://postgres:keel-ci-throwaway@127.0.0.1:5432/postgres"
       }
     },
+    "create-kit": {
+      "needs": "check",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 40,
+      "steps": [
+        "$setup",
+        {
+          "name": "pnpm create @keel/app from the packed kit: each kind created in an empty folder, installed, checked, tested and built",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/create.mjs"
+        }
+      ]
+    },
     "changes": {
       "runs-on": "ubuntu-latest",
       "timeout-minutes": 5,

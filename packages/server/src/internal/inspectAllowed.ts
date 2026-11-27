@@ -2,7 +2,7 @@ import { LOOPBACK } from "@keel/compiler/inspect/LOOPBACK";
 import { originListed } from "@keel/compiler/inspect/originListed";
 
 /**
- * Whether the dev inspect endpoint answers `raw` (k.cli Inspect): the request's own host is loopback or
+ * Whether the dev inspect endpoint answers `raw` (k.inspect): the request's own host is loopback or
  * listed in `origins` (no DNS rebinding), and its `Origin` is the request's own origin or listed. An absent `Origin`
  * is admitted for a GET (a same-origin navigation or a non-browser client) and refused for any other method.
  * `allow` is the origin to echo for a cross-origin read.
