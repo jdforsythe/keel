@@ -54,6 +54,26 @@ ${LIFT}unsafe("the fixture rejects a promise at module scope on purpose", () => 
 });
 export const rejectOnLoad = true;
 `,
+  "Pii.schema.ts": `import { s } from "@keel/schema";
+export const Pii = s.object({ email: s.string().pii("contact") });
+`,
+  "unsafe/throwWith.ts": `${LIFT}export const throwWith = (text: string): void =>
+  unsafe("the fixture schedules an uncaught throw on purpose", () => {
+    ${TIMER}(() => {
+      AbortSignal.abort(new Error(text)).throwIfAborted();
+    }, 30);
+  });
+`,
+  "pii.server.ts": `import { action } from "@keel/router";
+import { app } from "./app.contract.ts";
+import { ok } from "@keel/schema";
+import { Pii } from "./Pii.schema.ts";
+import { throwWith } from "./unsafe/throwWith.ts";
+export const pii = action(app, "app.pii", { input: Pii }, ({ email }) => {
+  throwWith(\`user \${email} failed\`);
+  return Promise.resolve(ok(null));
+});
+`,
   "late.server.ts": `import { loader } from "@keel/router";
 import { app } from "./app.contract.ts";
 import { ok } from "@keel/schema";
@@ -110,6 +130,7 @@ export const quiet = loader(app, "app.home", { output: Data }, () => Promise.res
 `,
   "app.contract.ts": `import { contract } from "@keel/router/contract";
 export const app = contract("app", {
+  "app.pii": { path: "/pii" },
   "app.home": { path: "/" },
   "app.late": { path: "/late" },
   "app.twice": { path: "/twice" },
@@ -122,12 +143,14 @@ import { app } from "./app.contract.ts";
 import Home from "./Home.tsx";
 import { hang } from "./hang.server.ts";
 import { late } from "./late.server.ts";
+import { pii } from "./pii.server.ts";
 import { quiet } from "./quiet.server.ts";
 import { slow } from "./slow.server.ts";
 import { twice } from "./twice.server.ts";
 export const routes = manifest(app, {
   "app.home": { component: Home, loader: quiet },
   "app.late": { component: Home, loader: late },
+  "app.pii": { component: Home, POST: pii },
   "app.twice": { component: Home, loader: twice },
   "app.slow": { component: Home, loader: slow },
   "app.hang": { component: Home, loader: hang },
