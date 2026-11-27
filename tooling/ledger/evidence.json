@@ -1,5 +1,5 @@
 {
-  "commit": "34326ec0b52424e53d9f22600224c0e44b665701",
+  "commit": "e676fbee32b94e625c99e7636f0fbcaf025208b8",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-27T19:51:25.529Z",
+  "generatedAt": "2026-11-27T21:06:11.405Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3115,7 +3115,7 @@
       "verified": 1627
     },
     "evidenceByRung": {
-      "example": 2764,
+      "example": 2765,
       "exhaustive": 21,
       "monitored": 8,
       "probabilistic": 465,
