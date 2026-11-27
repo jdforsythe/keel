@@ -1,5 +1,5 @@
 // Spec: k.schema, clause "`isSchema(s.string())` and `isSchema(s.object({ a: s.int() }))` are true; `isSchema({ parse: () => ok(1) })` and `isSchema(null)` are false."
-// k.schema, Guard "`isSchema(x)` (`@keel/schema`) is true only of a schema `s` built, a key guard on `Symbol.for('keel.schema')` (k.unsafe Type predicates)."
+// k.schema, Guard "`isSchema(x)` (`@keel/schema`) is true only of a schema `s` built, and `isObjectSchema(x)` of one `s.object` built, by the kernel's own record (k.identity)."
 // Seed 1337.
 import { isSchema, ok, s } from "@keel/schema";
 import fc from "fast-check";

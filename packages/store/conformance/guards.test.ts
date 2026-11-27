@@ -1,5 +1,5 @@
 // Spec: k.store, clause "`isStore(cart)` and `isTransaction(addItem)` are true, `isStore(addItem)`, `isTransaction(cart)` and `isStore({ id: 'cart', get() {}, snapshot() {}, restore() {}, head() {} })` false."
-// k.store, Guards "`isStore(x)` and `isTransaction(x)` (`@keel/store`) are true only of a value `store` or `transaction` made, which each marks with an own, non-enumerable property keyed by `Symbol.for('keel.store')` or `Symbol.for('keel.transaction')`: a key guard (k.unsafe Type predicates), so code that holds an `unknown` narrows it to `Store<unknown>` or `Transaction<unknown, unknown>` with no cast."
+// k.store, Guards "`isStore(x)` and `isTransaction(x)` (`@keel/store`) are true only of a value `store` or `transaction` made, by the kernel's own record of them and no property of the value (k.identity), so code that holds an `unknown` narrows it to `Store<unknown>` or `Transaction<unknown, unknown>` with no cast."
 // Seed 1337 (fixtures.ts).
 import { isStore, isTransaction } from "@keel/store";
 import fc from "fast-check";
@@ -50,15 +50,23 @@ describe("k.store: guards", () => {
     );
   });
 
-  it("a store holds an own, non-enumerable property keyed by `Symbol.for('keel.store')`, and a transaction one keyed by `Symbol.for('keel.transaction')`", () => {
+  it("a copy of a store or a transaction is neither: a spread, an object given every own key and descriptor, and one declaring Symbol.for('keel.store') or Symbol.for('keel.transaction')", () => {
     const { cart, add } = makeCart();
-    const s = Object.getOwnPropertyDescriptor(cart, Symbol.for("keel.store"));
-    const t = Object.getOwnPropertyDescriptor(add, Symbol.for("keel.transaction"));
-    expect(s).toBeDefined();
-    expect(s?.enumerable).toBe(false);
-    expect(t).toBeDefined();
-    expect(t?.enumerable).toBe(false);
-    expect(Object.getOwnPropertyDescriptor(cart, Symbol.for("keel.transaction"))).toBeUndefined();
-    expect(Object.getOwnPropertyDescriptor(add, Symbol.for("keel.store"))).toBeUndefined();
+    const clone = (v: object): object => {
+      const o = Object.create(Object.getPrototypeOf(v));
+      for (const k of Reflect.ownKeys(v)) {
+        const d = Object.getOwnPropertyDescriptor(v, k);
+        if (d !== undefined) Object.defineProperty(o, k, d);
+      }
+      return o;
+    };
+    for (const v of [cart, add]) {
+      for (const c of [{ ...v }, clone(v), Object.assign(() => 0, v)]) {
+        expect(isStore(c)).toBe(false);
+        expect(isTransaction(c)).toBe(false);
+      }
+    }
+    expect(isStore({ [Symbol.for("keel.store")]: true })).toBe(false);
+    expect(isTransaction({ [Symbol.for("keel.transaction")]: true })).toBe(false);
   });
 });
