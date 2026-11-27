@@ -61,9 +61,9 @@ const ROWS: readonly Row[] = [
   [
     "E1007",
     "server code in a browser build (names the chain)",
-    "Reasons: server-only file, node built-in, handler, environment config (a project envPrefix or define), environment value (a KEEL_* value in an emitted file), css config (a cssMinify or css.transformer that rewrites colors). Workers count.",
-    "move it to a *.server.ts file; drop envPrefix, define and cssMinify, read browser values through clientStd",
-    "k.boundary, k.bundle, k.gamut",
+    "Reasons: server-only file, node built-in, handler, environment config (a project envPrefix or define), environment value (a KEEL_* value in an emitted file). Workers count.",
+    "move it to a *.server.ts file; drop envPrefix and define, read browser values through clientStd",
+    "k.boundary, k.bundle",
   ],
   ["E1008", "a stub of a server-only export called", "", "call it from a loader, action or guard", "k.boundary"],
   [
@@ -1526,6 +1526,13 @@ const ROWS: readonly Row[] = [
     "They run under Node only. Client code names tokens; brandTokens is in @keel/ui/brand. Free in server-only, test and *.config.* files, tokens.ts and its imports, a library's src/<id>Tokens.ts, while no client entry reaches them; then at the entry's import.",
     "import { contrast } from '@keel/ui/css' in a page -> drop it and use token names; no fix",
     "k.check-time",
+  ],
+  [
+    "E1819",
+    "keel build: the built CSS writes a color token's custom property other than as Keel compiled and judged it",
+    "After every plugin ran, each --k-color-*, --k-overlay-* and color-holding --k-* declaration must sit where Keel wrote it, with its value (numbers compared as numbers), no @supports around it, each P3 block after its sRGB one. Usually build.cssMinify (Lightning CSS), css.transformer or a PostCSS config rewrote a color. A failed build leaves no dist/<name>/.",
+    "a CSS minifier or PostCSS plugin rewrote it: unset cssMinify, css.transformer, PostCSS",
+    "k.gamut",
   ],
   [
     "E1815",

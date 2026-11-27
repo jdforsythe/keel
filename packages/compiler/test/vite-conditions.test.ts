@@ -1,5 +1,5 @@
 // k.library In an app: every Vite environment resolves with the `keel` condition beside its own conditions.
-// k.gamut CSS: a browser environment minifies CSS with esbuild's minifier, which keeps each color as compiled.
+// k.gamut CSS: a browser environment that sets no CSS minifier gets esbuild's, which keeps each color as compiled.
 import { expect, it } from "vitest";
 import keel from "../src/vite.ts";
 
@@ -27,8 +27,11 @@ it("an environment with no conditions gets Vite's defaults and `keel`; one with 
   expect(p.configEnvironment("client", { resolve: { conditions: ["keel", "browser"] } })).toEqual(CSS);
 });
 
-it("a project's own `cssMinify: false` is kept: nothing is minified, so no color is rewritten", () => {
+it("a browser environment's own `cssMinify`, or `minify: false`, is kept: the built CSS is verified instead", () => {
   const p = keel();
-  p.config({ root: "/nowhere", build: { cssMinify: false } }, { command: "serve" });
-  expect(p.configEnvironment("client", {})).toMatchObject({ build: { cssMinify: false } });
+  for (const build of [{ cssMinify: false }, { cssMinify: "lightningcss" }, { minify: false }])
+    expect(p.configEnvironment("client", { resolve: { conditions: ["keel"] }, build })).toBeNull();
+  expect(p.configEnvironment("client", { build: { cssMinify: "lightningcss" } })).toEqual({
+    resolve: { conditions: ["keel", "module", "browser", "development|production"] },
+  });
 });

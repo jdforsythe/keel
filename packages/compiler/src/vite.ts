@@ -21,6 +21,7 @@ import { addSchemeScript } from "./internal/addSchemeScript.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
 import { browserStub } from "./internal/browserStub.ts";
+import { builtCssProblem } from "./internal/builtCssProblem.ts";
 import { bundledFiles } from "./internal/bundledFiles.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
@@ -260,34 +261,12 @@ type Config = {
   optimizeDeps: { exclude: string[] };
 } & (BuildConfig | ClientConfig | Record<never, never>);
 /** What the plugin reads of the project's config before Vite resolves it. */
-type UserConfig = {
-  root?: string;
-  envPrefix?: unknown;
-  define?: unknown;
-  build?: unknown;
-  css?: unknown;
-  environments?: unknown;
-};
+type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
 /**
- * The CSS minifier of a browser build (k.gamut CSS): esbuild's keeps each custom property's value as written, whatever
- * the `cssTarget`, so the built CSS holds the colors Keel compiled; `false` (a project's own choice) minifies nothing.
- * Lightning CSS, Vite's default, rewrites colors and adds `@supports` branches whatever its targets.
+ * The CSS minifier a browser build gets when the project sets none (k.gamut CSS): esbuild's keeps each custom
+ * property's value as written, whatever the `cssTarget`. Whatever minifies, `keel build` verifies the built CSS.
  */
-type CssMinify = "esbuild" | false;
-const isRecord = (v: unknown): v is Readonly<Record<string, unknown>> => typeof v === "object" && v !== null;
-/** A project's `cssMinify` (top level or an environment's), or `css.transformer`, that would rewrite colors. */
-function cssOwned(user: UserConfig): boolean {
-  const minify = (b: unknown): boolean => {
-    const v = isRecord(b) ? b.cssMinify : undefined;
-    return v !== undefined && v !== "esbuild" && v !== false;
-  };
-  const envs = isRecord(user.environments) ? Object.values(user.environments) : [];
-  return (
-    minify(user.build) ||
-    envs.some((e) => isRecord(e) && minify(e.build)) ||
-    (isRecord(user.css) && user.css.transformer === "lightningcss")
-  );
-}
+type CssMinify = "esbuild";
 
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
@@ -328,15 +307,17 @@ export default function (): {
   config: (user: UserConfig, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
   configEnvironment: (
     name: string,
-    env: { consumer?: "client" | "server"; resolve?: { conditions?: string[] } },
+    env: {
+      consumer?: "client" | "server";
+      resolve?: { conditions?: string[] };
+      build?: { cssMinify?: unknown; minify?: unknown };
+    },
   ) => { resolve?: { conditions: string[] }; build?: { cssMinify: CssMinify } } | null;
   configResolved: (config: {
     root: string;
     command?: "build" | "serve";
     configFile?: string | undefined;
     envPrefix?: string | readonly string[];
-    css?: { transformer?: unknown };
-    environments?: Readonly<Record<string, { consumer?: string; build?: { cssMinify?: unknown } }>>;
   }) => void;
   configureServer: (server: DevServer) => void;
   configurePreviewServer: (server: { middlewares: Middlewares }) => void;
@@ -409,9 +390,9 @@ export default function (): {
   const urlEdges = new Map<string, Set<string>>();
   /** Whether the project's own config sets `envPrefix` or `define` (k.bundle Environment), and whether this is an SSR build. */
   let projectEnv = false;
-  /** Whether the project's own config sets a CSS minifier or transformer that rewrites colors (k.gamut CSS), and whether it turns CSS minifying off. */
-  let projectCss = false;
-  let cssMinify: CssMinify = "esbuild";
+  /** A browser build's emitted stylesheets, by absolute path, that `closeBundle` verifies (k.gamut CSS), and its folder. */
+  const builtCss: string[] = [];
+  let builtOut = "";
   let ssrBuild = false;
   /** Each file's path as its name on disk has it (`realpath`), and the root's, for the name tests and E1010. */
   const disk = new Map<string, string>();
@@ -918,8 +899,6 @@ export default function (): {
       const name = process.env.KEEL_DEPLOYABLE;
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
       projectEnv = user.envPrefix !== undefined || user.define !== undefined;
-      projectCss = cssOwned(user);
-      cssMinify = isRecord(user.build) && user.build.cssMinify === false ? false : "esbuild";
       ssrBuild = env.isSsrBuild === true;
       libraries = appLibraries(path.resolve(user.root ?? process.cwd()));
       const names = libraries.map((l) => l.name);
@@ -1052,12 +1031,14 @@ export default function (): {
     },
     // Every environment (dev, build, test) resolves with the `keel` condition beside its own, so a library's entry is
     // its source (k.library In an app); one that sets none gets Vite's defaults with it.
-    // A browser environment minifies CSS with esbuild's minifier, which keeps every color as compiled (k.gamut CSS).
+    // A browser environment that sets no CSS minifier gets esbuild's, which keeps every color as compiled (k.gamut CSS).
     configEnvironment(name, env) {
       const own = env.resolve?.conditions;
       const client = env.consumer === "client" || (env.consumer === undefined && name === "client");
-      const build = client ? { build: { cssMinify } } : {};
-      if (own?.includes("keel") === true) return client ? build : null;
+      const unset = env.build?.cssMinify === undefined && env.build?.minify !== false;
+      const cssMinify: CssMinify = "esbuild";
+      const build = client && unset ? { build: { cssMinify } } : {};
+      if (own?.includes("keel") === true) return client && unset ? build : null;
       return {
         resolve: {
           conditions: ["keel", ...(own === undefined ? (client ? CLIENT_CONDITIONS : SERVER_CONDITIONS) : [])],
@@ -1079,14 +1060,6 @@ export default function (): {
       const configName = config.configFile === undefined ? "vite.config.ts" : show(config.configFile);
       if (command === "build" && !ssrBuild && (projectEnv || !locked))
         throw new Error(`E1007 server code in browser build: environment config: ${configName}`);
-      // The plugin owns the CSS minifier too (k.gamut CSS): a project's, or another plugin's, that rewrites colors fails
-      // a browser build before bundling.
-      const browsers = Object.values(config.environments ?? {}).filter((e) => e.consumer === "client");
-      const rewrites =
-        config.css?.transformer === "lightningcss" ||
-        browsers.some((e) => e.build?.cssMinify !== "esbuild" && e.build?.cssMinify !== false);
-      if (command === "build" && !ssrBuild && (projectCss || rewrites))
-        throw new Error(`E1007 server code in browser build: css config: ${configName}`);
       readTopology();
     },
     configureServer(s) {
@@ -1270,6 +1243,9 @@ export default function (): {
       // After bundling, no emitted browser file holds a `KEEL_*` value of 8 characters or more (k.bundle Environment).
       handler(_options, bundle) {
         if (command !== "build" || this?.environment?.config.consumer !== "client") return;
+        const at = path.resolve(root, this.environment.config.build?.outDir ?? "dist");
+        builtOut = at;
+        for (const f of Object.values(bundle)) if (f.fileName.endsWith(".css")) builtCss.push(path.join(at, f.fileName));
         const values = Object.entries(process.env).filter(
           (e): e is [string, string] => e[0].startsWith("KEEL_") && !PUBLIC_ENV.test(e[0]) && (e[1] ?? "").length >= 8,
         );
@@ -1292,6 +1268,16 @@ export default function (): {
       if (command === "build" && problems.length > 0) throw evaluationFailed(problems);
     },
     async closeBundle() {
+      // The built CSS holds, for each color, a value check judged (k.gamut CSS): read as written, after every plugin's
+      // hooks; a difference fails the build and leaves nothing for the deployable.
+      const files = builtCss.splice(0).filter((f) => fs.existsSync(f));
+      const problem = files.length === 0 ? undefined : builtCssProblem(css, files.map((f) => fs.readFileSync(f, "utf8")));
+      if (problem !== undefined) {
+        const name = process.env.KEEL_DEPLOYABLE;
+        const out = name === undefined ? builtOut : path.join(root, "dist", name);
+        fs.rmSync(out, { recursive: true, force: true });
+        throw evaluationFailed([`E1819 ${problem}`]);
+      }
       // A `client` document loads the first-paint scheme script when the app has both schemes (k.schemes First paint).
       const index = path.join(root, "dist", hosting ?? "", "index.html");
       if (hosting !== undefined && shellOf() === undefined && fs.existsSync(index) && (await offersScheme(root)))
