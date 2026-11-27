@@ -8,7 +8,7 @@ import path from "node:path";
 import { REPO, deployEnv } from "./topology-build-fixture.ts";
 
 export const SEED = 1337;
-/** The text a thrown error carries; no record may hold it. */
+/** The text a defect raised by the fixture carries; no record may hold it. The fixture raises defects, the one way app code fails (k.errors Defects). */
 export const THROWN = "planted-thrown-text";
 /** What the fixture's own timers are called, spelled so the fixture's source is data here. */
 const TIMER = ["set", "Timeout"].join("");
@@ -26,9 +26,10 @@ export default function Home() {
   return Text({ children: "home" });
 }
 `,
-  "unsafe/throwLater.ts": `${LIFT}export const throwLater = (...delays: number[]): void =>
+  "unsafe/throwLater.ts": `import { defect } from "@keel/schema";
+${LIFT}export const throwLater = (...delays: number[]): void =>
   unsafe("the fixture schedules an uncaught throw on purpose", () => {
-    for (const ms of delays) ${TIMER}(() => { throw new Error(${JSON.stringify(THROWN)}); }, ms);
+    for (const ms of delays) ${TIMER}(() => { defect(${JSON.stringify(THROWN)}); }, ms);
   });
 `,
   "unsafe/later.ts": `${LIFT}export const later = (ms: number, work: () => void): void =>
@@ -41,8 +42,9 @@ export default function Home() {
     process.stdout.write(text);
   });
 `,
-  "unsafe/rejectOnLoad.ts": `${LIFT}unsafe("the fixture rejects a promise at module scope on purpose", () => {
-  if (process.env.LEAVE_MODE === "reject") void Promise.reject(new Error(${JSON.stringify(THROWN)}));
+  "unsafe/rejectOnLoad.ts": `import { defect } from "@keel/schema";
+${LIFT}unsafe("the fixture rejects a promise at module scope on purpose", () => {
+  if (process.env.LEAVE_MODE === "reject") void (async () => defect(${JSON.stringify(THROWN)}))();
 });
 export const rejectOnLoad = true;
 `,

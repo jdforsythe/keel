@@ -11,7 +11,7 @@ import { type Run, keel, plainVitest, root, summaryOf, writeFiles } from "./test
 
 // The docblock is spelled in two pieces so vitest does not read it as this file's own environment.
 const ENV = ["// @vitest", "-environment happy-dom"].join("");
-const PACKAGES = ["ctx", "schema", "testing", "router", "compiler", "server"];
+const PACKAGES = ["ctx", "schema", "reactive", "testing", "router", "compiler", "server"];
 const EXTERNAL = ["vitest", "vite", "fast-check", "happy-dom", "typescript"];
 
 const FILES: Readonly<Record<string, string>> = {
