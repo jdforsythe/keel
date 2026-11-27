@@ -55,6 +55,14 @@ const liveContract = contract("app", {
   "app.live": { method: "GET", path: "/api/live", events: true, output: Nothing },
 });
 const diagsOf = (lines: readonly string[]): string[] => lines.filter((l) => kind(l) === "diag");
+/** The first diag of a throw: it carries the `frames`; the second quotes the text and carries none. */
+const firstOf = (lines: readonly string[]): string => diagsOf(lines)[0] ?? "";
+/** In dev a throw logs two diags: the fingerprint form, then the full text (k.serverlog Thrown values); the second is the one that quotes thrown text. */
+const fullText = (lines: readonly string[]): string[] => {
+  const all = diagsOf(lines);
+  expect(all).toHaveLength(2);
+  return all.slice(1);
+};
 
 interface Parts {
   readonly loader?: ReturnType<typeof loader>;
@@ -203,7 +211,7 @@ describe("k.privacy secret reach", () => {
           body: '{"v":"ab\\ud800cd"}',
         });
         await (await t.app.fetch(req)).text();
-        expect(diagsOf(t.lines)).toHaveLength(1);
+        expect(diagsOf(t.lines)).toHaveLength(2);
         expect(spy).not.toHaveBeenCalled();
       } finally {
         spy.mockRestore();
@@ -518,7 +526,7 @@ describe("k.privacy secret reach", () => {
     await flush();
     const diags = diagsOf(lines);
     expect(diags.length).toBeGreaterThan(0);
-    expect(fieldOf(diags[0] ?? "{}", "message")).toBe("runner rejected, rerun in 1000 ms: [secret]");
+    expect(fieldOf(diags[diags.length - 1] ?? "{}", "message")).toBe("runner rejected, rerun in 1000 ms: [secret]");
     for (const line of lines) expect(line).not.toContain("refused 7");
     await app.close?.();
   });
@@ -552,11 +560,10 @@ describe("k.privacy secret reach", () => {
       async () => {
         const t = await boot(mode, { act: keysAction, artifacts });
         await (await t.app.fetch(sendKeys(2000))).text();
-        const diags = diagsOf(t.lines);
-        expect(diags).toHaveLength(1);
+        const diags = fullText(t.lines);
         for (const line of diags) {
           expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
-          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+          expect(framesOf(firstOf(t.lines))).toEqual(["[secret]", "[secret]"]);
         }
         for (const line of t.lines) expect(line).not.toContain("@@@@");
       },
@@ -566,11 +573,10 @@ describe("k.privacy secret reach", () => {
     it(`Under 65,536 bytes of a scope's distinct values (a secret's), the \`diag\` message is \`refused [secret]\` and the frames keep their file paths, in ${mode}.`, async () => {
       const t = await boot(mode, { act: keysAction, artifacts });
       await (await t.app.fetch(sendKeys(10))).text();
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
+      const diags = fullText(t.lines);
       for (const line of diags) {
         expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
-        const frames = framesOf(line);
+        const frames = framesOf(firstOf(t.lines));
         expect(frames).toEqual(["modules/app/save.server.ts:10:4", "modules/app/other.ts:3:1"]);
       }
       for (const line of t.lines) expect(line).not.toContain("@@@@");
@@ -613,11 +619,10 @@ describe("k.privacy secret reach", () => {
       async () => {
         const t = await boot(mode, { act: withFlagAction, artifacts });
         await (await t.app.fetch(sendNotes({ flag: true, notes: manyKeys(2000) }))).text();
-        const diags = diagsOf(t.lines);
-        expect(diags).toHaveLength(1);
+        const diags = fullText(t.lines);
         for (const line of diags) {
           expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
-          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+          expect(framesOf(firstOf(t.lines))).toEqual(["[secret]", "[secret]"]);
         }
         for (const line of t.lines) expect(line).not.toContain("@@@@");
       },
@@ -629,11 +634,10 @@ describe("k.privacy secret reach", () => {
       async () => {
         const t = await boot(mode, { act: notesOnlyAction, artifacts });
         await (await t.app.fetch(sendNotes({ notes: manyKeys(2000) }))).text();
-        const diags = diagsOf(t.lines);
-        expect(diags).toHaveLength(1);
+        const diags = fullText(t.lines);
         for (const line of diags) {
           expect(fieldOf(line, "message")).toBe("action app.a threw: [pii]");
-          expect(framesOf(line)).toEqual(["[pii]", "[pii]"]);
+          expect(framesOf(firstOf(t.lines))).toEqual(["[pii]", "[pii]"]);
         }
         for (const line of t.lines) expect(line).not.toContain("@@@@");
       },
@@ -699,11 +703,10 @@ describe("k.privacy secret reach", () => {
       async () => {
         const t = await boot(mode, { loader: countedLoader(8_193), artifacts });
         const body = await (await t.app.fetch(get("/a"))).text();
-        const diags = diagsOf(t.lines);
-        expect(diags).toHaveLength(1);
+        const diags = fullText(t.lines);
         for (const line of diags) {
           expect(fieldOf(line, "message")).toBe("loader app.a threw: [secret]");
-          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+          expect(framesOf(firstOf(t.lines))).toEqual(["[secret]", "[secret]"]);
         }
         for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
         if (mode === "dev") {
@@ -719,8 +722,7 @@ describe("k.privacy secret reach", () => {
       async () => {
         const t = await boot(mode, { loader: countedLoader(8_192), artifacts });
         await (await t.app.fetch(get("/a"))).text();
-        const diags = diagsOf(t.lines);
-        expect(diags).toHaveLength(1);
+        const diags = fullText(t.lines);
         for (const line of diags) {
           expect(String(fieldOf(line, "message")).startsWith("loader app.a threw: ")).toBe(true);
           expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
@@ -736,11 +738,10 @@ describe("k.privacy secret reach", () => {
         const text = (
           await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16)
         ).join("");
-        const diags = diagsOf(t.lines);
-        expect(diags).toHaveLength(1);
+        const diags = fullText(t.lines);
         for (const line of diags) {
           expect(fieldOf(line, "message")).toBe("loader app.live threw: [secret]");
-          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+          expect(framesOf(firstOf(t.lines))).toEqual(["[secret]", "[secret]"]);
         }
         for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
         if (mode === "dev") {
@@ -761,8 +762,7 @@ describe("k.privacy secret reach", () => {
       async () => {
         const t = await boot(mode, { live: countedLive(8_192), artifacts });
         await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16);
-        const diags = diagsOf(t.lines);
-        expect(diags).toHaveLength(1);
+        const diags = fullText(t.lines);
         for (const line of diags) {
           expect(String(fieldOf(line, "message")).startsWith("loader app.live threw: ")).toBe(true);
           expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
