@@ -44,11 +44,14 @@ async function settle(fetcher: () => Promise<unknown>): Promise<Settled> {
 describe(`k.reactive: ${CLAUSE_A}`, () => {
   it(`${CLAUSE_A} err(e) settles error with e`, async () => {
     await fc.assert(
-      fc.asyncProperty(fc.anything(), async (e) => {
+      fc.asyncProperty(
+        fc.record({ code: fc.string(), message: fc.string(), data: fc.anything() }),
+        async (e) => {
         const s = await settle(() => Promise.resolve(err(e)));
         expect(s.state).toBe("error");
         expect(Object.is(s.error, e)).toBe(true);
-      }),
+        },
+      ),
       RUNS,
     );
   });

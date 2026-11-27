@@ -1,4 +1,4 @@
-import { err, ok, s } from "@keel/schema";
+import { type KeelError, err, ok, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 // Spec: k.errors, clause "`ok(v)` is `{ ok: true, value: v }`; `err(e)` is `{ ok: false, error: e }`."
@@ -10,6 +10,11 @@ import { RUNS, SEED } from "./fixtures";
 const OrderId = s.id("Order");
 const OrderLocked = s.error("orders.locked", s.object({ id: OrderId }));
 const Res = s.result(s.string(), OrderLocked);
+const keelError: fc.Arbitrary<KeelError<string, unknown>> = fc.record({
+  code: fc.string(),
+  message: fc.string(),
+  data: fc.jsonValue(),
+});
 const opts = { seed: SEED, numRuns: RUNS };
 
 describe("k.errors: ok and err", () => {
@@ -24,7 +29,7 @@ describe("k.errors: ok and err", () => {
 
   it("err(e) is { ok: false, error: e }", () => {
     fc.assert(
-      fc.property(fc.jsonValue(), (e) => {
+      fc.property(keelError, (e) => {
         expect(err(e)).toEqual({ ok: false, error: e });
       }),
       opts,
