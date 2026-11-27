@@ -4,7 +4,7 @@ export type { CreateInput } from "../types/CreateInput.ts";
 export type { CreatePlan } from "../types/CreatePlan.ts";
 export type { CreateRecord } from "../types/CreateRecord.ts";
 export { ancestorKeys } from "./ancestorKeys.ts";
-export { createPlan } from "./createPlan.ts";
+export { MARKER, createPlan, suggestName, validName } from "./createPlan.ts";
 export { libraryTree } from "./libraryTree.ts";
 export { projectTree } from "./projectTree.ts";
 export { managerWord } from "./managerWord.ts";

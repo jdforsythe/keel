@@ -33,6 +33,20 @@ function listing(abs: string): string[] {
   return out;
 }
 
+/** `name` with each letter's case swapped (`Modules` -> `mODULES`). */
+const swapped = (name: string): string =>
+  [...name].map((c) => (c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase())).join("");
+
+/**
+ * Whether the file system at `abs` ignores case (k.create-folder Folder): one of its own entries whose name has a cased
+ * letter, stat'd under the other case, exists though no entry is spelled so. A folder with no such entry cannot hold a
+ * name that differs from the plan's in case alone, so false.
+ */
+export function caselessAt(abs: string, names: readonly string[]): boolean {
+  const probe = names.find((n) => swapped(n) !== n && !names.includes(swapped(n)));
+  return probe !== undefined && existsSync(join(abs, swapped(probe)));
+}
+
 /**
  * What `createPlan` reads from the disk for `folder` (k.create-folder Not done: inside the folder, and above it only the
  * files Workspace names): the folder's absolute and real paths, its listing, the Workspace files above it, and whether
@@ -47,6 +61,7 @@ export function readInputs(
   readonly listing: readonly string[];
   readonly ancestors: Readonly<Record<string, string>>;
   readonly gitAbove: boolean;
+  readonly caseless: boolean;
 } {
   const abs = resolve(cwd, folder);
   const depth = resolve(cwd)
@@ -68,5 +83,14 @@ export function readInputs(
   }
   const here = existsSync(abs);
   // A folder that does not exist yet has no listing, and its name is the one typed: nothing above it is read for it.
-  return { abs, realPath: here ? realOf(abs) : abs, listing: here ? listing(abs) : [], ancestors, gitAbove };
+  const entries = here ? listing(abs) : [];
+  const top = entries.filter((p) => !p.slice(0, -1).includes("/")).map((p) => p.replace(/\/$/, ""));
+  return {
+    abs,
+    realPath: here ? realOf(abs) : abs,
+    listing: entries,
+    ancestors,
+    gitAbove,
+    caseless: here && caselessAt(abs, top),
+  };
 }

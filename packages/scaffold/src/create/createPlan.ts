@@ -4,6 +4,7 @@ import { fail } from "../internal/fail.ts";
 import { managerOf } from "../internal/managerOf.ts";
 import { sortedKeys } from "../internal/sortedKeys.ts";
 import { workspaceOf } from "../internal/workspaceOf.ts";
+import { packageJson } from "../templates/packageJson.ts";
 import type { CreateInput } from "../types/CreateInput.ts";
 import type { CreatePlan } from "../types/CreatePlan.ts";
 import type { CreateRecord } from "../types/CreateRecord.ts";
@@ -18,9 +19,44 @@ const AT = { line: 1, col: 1 };
 /** Entries a folder may hold and still be empty (k.create-folder Folder). */
 const QUIET = new Set([".git", ".DS_Store", "Thumbs.db"]);
 const NAME = /^[a-z][a-z0-9-]*$/;
+/** The file a run creates first and removes last; a folder holding it was left by a run that was stopped (E1366). */
+export const MARKER = ".keel-create";
+/** The packages an app's `package.json` lists, which its own name may not be. */
+const LISTED: ReadonlySet<string> = (() => {
+  const pkg: unknown = JSON.parse(packageJson("x"));
+  const keys = (k: string): string[] => {
+    const v: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, k) : undefined;
+    return typeof v === "object" && v !== null ? Object.keys(v) : [];
+  };
+  return new Set([...keys("dependencies"), ...keys("devDependencies")]);
+})();
+/** Letters NFKD leaves whole, by the ASCII a person writes for them (k.create Names). */
+const FOLD: Readonly<Record<string, string>> = { ß: "ss", æ: "ae", œ: "oe", ø: "o", đ: "d", ł: "l", þ: "th", ð: "d" };
 
-const refuse = (code: string, path: string, message: string): Result<never, ScaffoldError> =>
-  fail(code, path, message, undefined, AT, SEE);
+/** Whether `n` passes the app name rule (k.create Names). */
+export const validName = (n: string): boolean => NAME.test(n) && n.length <= 64 && !LISTED.has(n);
+
+/**
+ * The name E1352's fix names for `name`, or undefined when none is valid: marks dropped (`é` -> `e`), the letters `FOLD`
+ * lists spelled out, lowercased, each run of other characters one `-`, none at either end.
+ */
+export function suggestName(name: string): string | undefined {
+  const n = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[ßæœøđłþð]/g, (c) => FOLD[c] ?? c)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return validName(n) ? n : undefined;
+}
+
+const refuse = (
+  code: string,
+  path: string,
+  message: string,
+  see: "k.create" | "k.create-folder" = code === "E1360" || code === "E1366" ? "k.create-folder" : SEE,
+): Result<never, ScaffoldError> => fail(code, path, message, undefined, AT, see);
 const cut = (s: string, n = 24): string => (s.length > n ? `${s.slice(0, n - 3)}...` : s);
 /** A path a person can paste after `cd`: quoted when it holds anything but letters, digits and `._/-`. */
 const shellPath = (p: string): string => (/^[A-Za-z0-9._/-]+$/.test(p) ? p : `'${p.replaceAll("'", "'\\''")}'`);
@@ -56,12 +92,21 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
   const name = input.name ?? leaf;
   if (input.library === undefined) {
     if (!NAME.test(name)) {
-      const fix = name.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
-      const hint = NAME.test(fix) && fix.length <= 64 ? `--name ${cut(fix, 40)}` : "a --name of a-z, 0-9 and -";
+      const fix = suggestName(name);
+      const hint =
+        fix === undefined
+          ? "a --name of a-z, 0-9 and -"
+          : `--name ${fix.length > 40 ? fix.slice(0, 40).replace(/-+$/, "") : fix}`;
       return refuse("E1352", "package.json", `project name ${cut(name)} is not [a-z][a-z0-9-]*; pass ${hint}`);
     }
     if (name.length > 64)
       return refuse("E1352", "package.json", "project name is over 64 characters; pass a shorter --name");
+    if (LISTED.has(name))
+      return refuse(
+        "E1352",
+        "package.json",
+        `project name ${cut(name)} is a package the project lists; pass another --name`,
+      );
   }
   const ws = workspaceOf(folder, input.ancestors ?? {}, input.cwd);
   if (ws.cli !== undefined && ws.cli !== input.version)
@@ -71,6 +116,12 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
       `@keel/cli ${cut(ws.cli, 16)} is above, create is ${cut(input.version, 16)}; run ${m.name} create @keel/app@${cut(ws.cli, 16)}`,
     );
   const listing = input.listing ?? [];
+  if (listing.includes(MARKER))
+    return refuse(
+      "E1366",
+      at(MARKER),
+      "a stopped create-app run left this; remove the files it lists and it, or the folder",
+    );
   if (input.existing !== true) {
     const busy = listing.find((p) => !QUIET.has(p.split("/")[0] ?? ""));
     if (busy !== undefined)
@@ -87,47 +138,54 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
           member,
           skills: input.skills,
         })
-      : libraryTree({ name: input.library, version: input.version, skills: input.skills });
+      : libraryTree({
+          name: input.library,
+          version: input.version,
+          skills: input.skills,
+          packageManager: member ? undefined : word.packageManager,
+        });
   if (!tree.ok) return refuse(tree.error.data.code, at(tree.error.data.path), tree.error.data.message);
   const files = tree.value;
-  if (input.library === undefined) {
-    const pkg: unknown = JSON.parse(files.get("package.json") ?? "{}");
-    const deps =
-      typeof pkg === "object" && pkg !== null
-        ? [Reflect.get(pkg, "dependencies"), Reflect.get(pkg, "devDependencies")]
-        : [];
-    if (deps.some((d) => typeof d === "object" && d !== null && Object.hasOwn(d, name)))
-      return refuse(
-        "E1352",
-        "package.json",
-        `project name ${cut(name)} is a package the project lists; pass another --name`,
-      );
-  }
-  const taken = new Set(listing.map((p) => p.replace(/\/$/, "")));
+  // Where the file system ignores case, `agents.md` is `AGENTS.md` and `Modules/` is `modules/` (k.create-folder Folder).
+  const key = (p: string): string => (input.caseless === true ? p.toLowerCase() : p);
+  const spelled = new Map(listing.map((p) => [key(p.replace(/\/$/, "")), p]));
   // The folder's own README is kept: the project's is a guide, not a file the project needs (k.create-folder Folder).
-  if (input.existing === true && taken.has("README.md") && input.library === undefined) files.delete("README.md");
-  const listed = listing.filter((p) => !p.endsWith("/"));
-  const clashes = [
-    ...new Set(
-      sortedKeys(files.keys()).flatMap((p) => {
-        const clash = taken.has(p) ? p : listed.find((f) => p.startsWith(`${f}/`));
-        return clash === undefined ? [] : [clash];
-      }),
-    ),
-  ].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  if (input.existing === true && spelled.has(key("README.md")) && input.library === undefined)
+    files.delete("README.md");
+  const found = new Set<string>();
+  let caseOnly = false;
+  for (const p of sortedKeys(files.keys())) {
+    const segs = p.split("/");
+    for (let i = 1; i <= segs.length; i += 1) {
+      const here = segs.slice(0, i).join("/");
+      const had = spelled.get(key(here));
+      if (had === undefined) continue;
+      const leaf = i === segs.length;
+      const other = had.replace(/\/$/, "") !== here;
+      // A file at a path the plan writes, a file where a folder goes, or a folder spelled another way.
+      if (leaf || !had.endsWith("/") || other) found.add(had);
+      if (other) {
+        found.add(leaf ? here : `${here}/`);
+        caseOnly = true;
+      }
+    }
+  }
+  const clashes = [...found].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   const [first] = clashes;
   if (first !== undefined) {
     const one = clashes.length === 1;
-    const message = one
-      ? `${cut(first, 40)} exists; move it aside, or use a new folder`
-      : `${clashes.length} files this writes exist; move them aside, or use a new folder`;
+    const message = caseOnly
+      ? `${clashes.length} names clash, as this file system ignores case; move them aside, or use a new folder`
+      : one
+        ? `${cut(first, 40)} exists; move it aside, or use a new folder`
+        : `${clashes.length} files this writes exist; move them aside, or use a new folder`;
     const data: ScaffoldDiag = {
       kind: "diag",
       code: "E1361",
       path: at(first),
       ...AT,
       message,
-      see: SEE,
+      see: "k.create-folder",
       paths: clashes.map(at),
     };
     return err({ code: "scaffold.rejected", message: `E1361 ${message}`, data });

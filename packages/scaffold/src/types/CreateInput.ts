@@ -23,4 +23,6 @@ export type CreateInput = {
   readonly userAgent?: string | undefined;
   /** The working folder's real path, which names the folders above it for the workspace's globs. */
   readonly cwd?: string | undefined;
+  /** The folder's file system compares names ignoring case, so `agents.md` collides with `AGENTS.md` (E1361). */
+  readonly caseless?: boolean | undefined;
 };

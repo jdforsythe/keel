@@ -25,6 +25,7 @@ const NAME = /^@[a-z0-9][a-z0-9-]*\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)$/;
 export function libraryFiles(
   name: string,
   version: string,
+  packageManager: string | undefined = undefined,
 ): Result<{ readonly base: string; readonly files: Map<string, string> }, ScaffoldError> {
   const base = NAME.exec(name)?.[1];
   if (base === undefined)
@@ -33,7 +34,7 @@ export function libraryFiles(
   return ok({
     base,
     files: new Map([
-      ["package.json", libraryPackageJson(name, version)],
+      ["package.json", libraryPackageJson(name, version, packageManager)],
       ["module.ts", libraryModuleTs(id)],
       ["src/index.ts", libraryIndexTs()],
       ["src/Example.tsx", libraryExampleTsx()],

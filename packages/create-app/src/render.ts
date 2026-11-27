@@ -5,8 +5,10 @@ const clip = (m: string): string => (m.length > 89 ? `${m.slice(0, 86)}...` : m)
 
 function line(r: Out, pretty: boolean, run: string): string {
   switch (r.kind) {
-    case "scaffold.edit":
-      return pretty ? `create  ${r.path}` : `create ${r.path}`;
+    case "scaffold.edit": {
+      const verb = "dry-run" in r ? "would create" : "create";
+      return pretty ? `${verb}  ${r.path}` : `${verb} ${r.path}`;
+    }
     case "create.next":
       return pretty
         ? `  ${r.command}${r.command.endsWith(" dev") ? "   # http://localhost:5173" : ""}`
@@ -32,7 +34,7 @@ function line(r: Out, pretty: boolean, run: string): string {
 
 /**
  * The records in a docs/OUTPUT.md format, the trailer last. `json`: one record per line, uncapped unless `limit`.
- * `compact`: `create <path>`, `next <command>`, the diagnostic with `see`, then `ok create ...`.
+ * `compact`: `create <path>` (`would create <path>` in a dry run), `next <command>`, the diagnostic with `see`, then `ok create ...`.
  * A `see` line names `keel docs` in the project's form `run` (`pnpm keel docs k.create`), which works once the
  * printed install has run. `pretty`: the same, the next commands under a `Next:` line, indented to copy. `quiet` keeps the trailer; `limit`
  * caps each kind, saying how many it left out.
