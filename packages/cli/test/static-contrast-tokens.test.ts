@@ -130,21 +130,26 @@ describe("k.a11y-static Build: keel build refuses a static a11y error", () => {
 
 describe("k.a11y-static: a tokens.ts that gives no tokens is E1807", () => {
   it.each([
-    ["exports no tokens", "export const other = {};\n"],
-    ["throws", 'throw new Error("boom");\nexport const tokens = {};\n'],
+    ["exports no tokens", "export const other = {};\n", 1, 1],
+    ["throws", 'throw new Error("boom");\nexport const tokens = {};\n', 1, 1],
     [
       "fails TokenSchema",
       'import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = { color: { fg: 5 } };\n',
+      2,
+      34,
     ],
-  ])("a tokens.ts that %s is one E1807 at tokens.ts 1:1, with no E1804", (_, source) => {
-    const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": LOW, "tokens.ts": source });
-    const r = keel(dir, ["check"]);
-    const d = r.records.filter((x) => x.kind === "diag" && x.code === "E1807");
-    expect(d).toEqual([expect.objectContaining({ path: "tokens.ts", line: 1, col: 1 })]);
-    expect(String(d[0]?.message).length).toBeLessThanOrEqual(89);
-    expect(coded(r.records, "E1804")).toEqual([]);
-    expect(r.status).toBe(1);
-  });
+  ])(
+    "a tokens.ts that %s is one E1807 at tokens.ts, at 1:1 or the refused key, with no E1804",
+    (_, source, line, col) => {
+      const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": LOW, "tokens.ts": source });
+      const r = keel(dir, ["check"]);
+      const d = r.records.filter((x) => x.kind === "diag" && x.code === "E1807");
+      expect(d).toEqual([expect.objectContaining({ path: "tokens.ts", line, col })]);
+      expect(String(d[0]?.message).length).toBeLessThanOrEqual(89);
+      expect(coded(r.records, "E1804")).toEqual([]);
+      expect(r.status).toBe(1);
+    },
+  );
 
   it("no tokens.ts is neither E1807 nor E1804", () => {
     const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": LOW });
