@@ -1,6 +1,7 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export type { Defect } from "./types/Defect.ts";
 export type { DefectCode } from "./DefectCode.ts";
+export type { DefectDetail } from "./DefectDetail.ts";
 export type { Format } from "./Format.ts";
 export type { Id } from "./Id.ts";
 export type { Infer } from "./Infer.ts";
@@ -19,6 +20,7 @@ export { defect } from "./defect.ts";
 export { err } from "./err.ts";
 export { isDefect } from "./isDefect.ts";
 export { isSchema } from "./isSchema.ts";
+export { isObjectSchema } from "./isObjectSchema.ts";
 export { formatLiteral } from "./formatLiteral.ts";
 export { ok } from "./ok.ts";
 export { s } from "./s.ts";

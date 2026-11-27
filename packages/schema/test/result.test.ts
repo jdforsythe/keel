@@ -15,9 +15,10 @@ describe("ok / err", () => {
       }),
     );
   });
-  it("err wraps any error by reference with ok: false", () => {
+  it("err wraps any KeelError by reference with ok: false", () => {
     fc.assert(
-      fc.property(fc.anything(), (e) => {
+      fc.property(fc.string(), fc.jsonValue(), (code, data) => {
+        const e = { code, message: code, data };
         const r = err(e);
         expect(r.ok).toBe(false);
         if (!r.ok) expect(r.error).toBe(e);

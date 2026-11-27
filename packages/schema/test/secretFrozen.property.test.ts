@@ -2,8 +2,8 @@
 // caller's own object. Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { Secret } from "../src/Secret.ts";
 import { reveal, s } from "../src/index.ts";
+import { secretAccess } from "../src/internal/secretAccess.ts";
 
 const SEED = 1337;
 const isObj = (v: unknown): v is object => typeof v === "object" && v !== null;
@@ -14,7 +14,7 @@ const reachable = (v: unknown, out: object[] = []): object[] => {
   return out;
 };
 
-describe("Secret.of freezes deep", () => {
+describe("secretAccess.of freezes deep", () => {
   it("leaves nothing reachable from a revealed value writable, for any nested json value", () => {
     const Free = s.secret(s.json());
     fc.assert(
@@ -107,8 +107,8 @@ describe("a secret schema's parse on values the freeze cannot walk", () => {
         const before = reachable(raw).map((o) => Object.isFrozen(o));
         const r = schema.parse(raw);
         if (r.ok) {
-          for (const sec of reachable(r.value).filter((o) => Secret.is(o)))
-            for (const o of reachable(Secret.open(sec))) expect(Object.isFrozen(o)).toBe(true);
+          for (const sec of reachable(r.value).filter((o) => secretAccess.is(o)))
+            for (const o of reachable(secretAccess.open(sec))) expect(Object.isFrozen(o)).toBe(true);
         } else expect(reachable(raw).map((o) => Object.isFrozen(o))).toEqual(before);
       }),
       { seed: SEED, numRuns: 300 },

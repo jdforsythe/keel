@@ -3,24 +3,26 @@
 import { inspect } from "node:util";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { Secret } from "../src/Secret.ts";
+import type { Secret } from "../src/Secret.ts";
 import { gen } from "../src/gen.ts";
 import { reveal, s } from "../src/index.ts";
 import type { Node } from "../src/internal/Node.ts";
+import { SECRET_MARKER } from "../src/internal/SECRET_MARKER.ts";
 import { hasSecret } from "../src/internal/hasSecret.ts";
 import { seal } from "../src/internal/seal.ts";
+import { secretAccess } from "../src/internal/secretAccess.ts";
 import { toJson } from "../src/internal/toJson.ts";
 
 fc.configureGlobal({ seed: 1337, numRuns: 100 });
 
 const secretNode: Node = { kind: "secret", inner: { kind: "string", min: 0, max: undefined } };
 const str: Node = { kind: "string", min: 0, max: undefined };
-const revealed = (x: unknown): unknown => (Secret.is(x) ? reveal(x) : "not a secret");
+const revealed = (x: unknown): unknown => (secretAccess.is(x) ? reveal(x) : "not a secret");
 
 describe("Secret", () => {
   it("prints only the marker through every conversion", () => {
-    const v = Secret.of("hunter2", str);
-    expect(Secret.marker).toBe("[secret]");
+    const v = secretAccess.of("hunter2", str);
+    expect(SECRET_MARKER).toBe("[secret]");
     expect([String(v), `${v}`, `${v.toString()}`, v.toJSON(), inspect(v), inspect({ v })]).toEqual([
       "[secret]",
       "[secret]",
@@ -43,10 +45,10 @@ describe("Secret", () => {
       1,
       {},
       { toJSON: () => "[secret]" },
-      structuredClone(Secret.of(1, str)),
+      structuredClone(secretAccess.of(1, str)),
     ])
-      expect(Secret.is(x)).toBe(false);
-    expect(Secret.is(Secret.of(null, str))).toBe(true);
+      expect(secretAccess.is(x)).toBe(false);
+    expect(secretAccess.is(secretAccess.of(null, str))).toBe(true);
   });
 });
 
@@ -78,7 +80,7 @@ describe("hasSecret", () => {
 
 describe("seal", () => {
   it("wraps raw values, keeps secrets, the marker and null", () => {
-    const kept = Secret.of("a", str);
+    const kept = secretAccess.of("a", str);
     expect(seal(secretNode, kept)).toBe(kept);
     expect(seal(secretNode, "[secret]")).toBe("[secret]");
     expect(revealed(seal(secretNode, "a"))).toBe("a");
@@ -118,7 +120,7 @@ describe("s.secret", () => {
     const r = Pw.parse("pw");
     expect(r.ok && reveal(r.value)).toBe("pw");
     expect(Pw.parse("").ok).toBe(false);
-    const bad = Pw.parse(Secret.of("", str));
+    const bad = Pw.parse(secretAccess.of("", str));
     expect(!bad.ok && bad.error.data.issues).toEqual([{ path: [], rule: "required" }]);
     const wrong = Pw.parse(5);
     expect(!wrong.ok && wrong.error.data.issues).toEqual([{ path: [], rule: "type" }]);
@@ -136,9 +138,9 @@ describe("s.secret", () => {
   });
   it("encode gives the marker for raw and sealed values; toJson never reads the value", () => {
     expect(Pw.encode("raw")).toBe("[secret]");
-    expect(Pw.encode(Secret.of("sealed", str))).toBe("[secret]");
-    expect(toJson(secretNode, Secret.of("x", str))).toBe("[secret]");
-    expect(() => Pw.encode(Secret.of("", str))).toThrow();
+    expect(Pw.encode(secretAccess.of("sealed", str))).toBe("[secret]");
+    expect(toJson(secretNode, secretAccess.of("x", str))).toBe("[secret]");
+    expect(() => Pw.encode(secretAccess.of("", str))).toThrow();
   });
   it("decodeStrings reads the inner type, including inside records of secrets", () => {
     const F = s.object({
@@ -158,7 +160,7 @@ describe("s.secret", () => {
     const S = s.secret(s.int({ min: 0, max: 9 }));
     fc.assert(
       fc.property(gen(S), (v) => {
-        expect(Secret.is(v)).toBe(true);
+        expect(secretAccess.is(v)).toBe(true);
         const n = reveal(v);
         expect(n >= 0 && n <= 9).toBe(true);
         expect(S.parse(v)).toEqual({ ok: true, value: v });

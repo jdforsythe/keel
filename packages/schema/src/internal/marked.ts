@@ -1,7 +1,7 @@
-import { SCHEMA_KEY } from "./SCHEMA_KEY.ts";
+import { kernelSet } from "./kernelSet.ts";
 
-/** `schema`, marked as one `s` built (`isSchema`) and frozen. */
+/** `schema`, recorded as one `s` built (k.identity, `isSchema`) and frozen. */
 export function marked<S extends object>(schema: S): Readonly<S> {
-  Object.defineProperty(schema, SCHEMA_KEY, { value: true });
+  kernelSet("schema").add(schema);
   return Object.freeze(schema);
 }

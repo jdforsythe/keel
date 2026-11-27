@@ -1,15 +1,26 @@
 import type { DefectCode } from "./DefectCode.ts";
-import { DEFECT_KEY } from "./internal/DEFECT_KEY.ts";
+import type { DefectDetail } from "./DefectDetail.ts";
 import { DefectError } from "./internal/DefectError.ts";
+import { kernelSet } from "./internal/kernelSet.ts";
 
 /**
- * Throw a defect (k.errors Defects): a failure no caller is meant to handle, a bug in the calling code or a broken
- * invariant. The message is `<code> <message>` when a code is given, and `code` is then a non-enumerable own property.
- * Returns `never`, so it stands where a value is expected (`x ?? defect(...)`, `c ? v : defect(...)`).
+ * Throw a defect (k.defects): a failure no caller is meant to handle. `message` is the code's own words, never a
+ * value; values go in `detail.data`, the failure that led here in `detail.cause`. The message is `<code> <message>`
+ * when a code is given; `code` and `data` are own non-enumerable properties. Returns `never`, so it stands where a
+ * value is expected (`x ?? defect('no row')`).
  */
-export function defect(message: string, code?: DefectCode): never {
-  const e = new DefectError(code === undefined ? message : `${code} ${message}`);
+export function defect(message: string, detail?: DefectDetail): never;
+export function defect(message: string, code: DefectCode, detail?: DefectDetail): never;
+export function defect(message: string, second?: DefectCode | DefectDetail, third?: DefectDetail): never {
+  const code = typeof second === "string" ? second : undefined;
+  const detail = typeof second === "object" ? second : third;
+  const text = code === undefined ? message : `${code} ${message}`;
+  const e =
+    detail !== undefined && Object.hasOwn(detail, "cause")
+      ? new DefectError(text, { cause: detail.cause })
+      : new DefectError(text);
   if (code !== undefined) Object.defineProperty(e, "code", { value: code });
-  Object.defineProperty(e, DEFECT_KEY, { value: true });
+  if (detail?.data !== undefined) Object.defineProperty(e, "data", { value: detail.data });
+  kernelSet("defect").add(e);
   throw e;
 }

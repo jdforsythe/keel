@@ -8,12 +8,6 @@ const opts = { seed: 1337, numRuns: 100 };
 type Seen = KeelError<"t.seen", number>;
 const seen = (n: number): Seen => ({ code: "t.seen", message: "t.seen", data: n });
 
-const caught = (fn: () => unknown): { threw: boolean; value: unknown } => {
-  const r = attempt(fn);
-  if (r.ok) return { threw: false, value: r.value };
-  return { threw: true, value: r.error };
-};
-
 /** Run `fn` under `depth` nested `attempt(..., expect)` calls, each counting the values it is handed. */
 const nested = (fn: () => unknown, depth: number, calls: { n: number }, recognize: (x: unknown) => boolean) => {
   let run: () => unknown = fn;
@@ -52,12 +46,20 @@ describe("defect", () => {
     );
   });
 
-  it("is a throw: attempt without expect turns it into keel.unexpected naming Defect and its message", () => {
+  it("is a throw: attempt passes it on, even to an expect that claims everything", () => {
     fc.assert(
       fc.property(fc.string(), (m) => {
-        const r = caught(() => defect(m));
-        expect(r.threw).toBe(true);
-        expect(r.value).toMatchObject({ code: "keel.unexpected", data: { cause: `Defect: ${m}` } });
+        let out: unknown;
+        try {
+          attempt(
+            () => defect(m),
+            (x) => (x === undefined ? undefined : seen(0)),
+          );
+        } catch (e) {
+          out = e;
+        }
+        expect(isDefect(out)).toBe(true);
+        expect(out instanceof Error && out.message).toBe(m);
       }),
       opts,
     );

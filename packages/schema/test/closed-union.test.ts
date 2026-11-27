@@ -2,7 +2,6 @@
 // and member unions (anyOf: check, seal, toJson, fromStrings, gen, hasSecret). fast-check seed 1337.
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { Secret } from "../src/Secret.ts";
 import { gen } from "../src/gen.ts";
 import { reveal, s } from "../src/index.ts";
 import type { Node } from "../src/internal/Node.ts";
@@ -10,6 +9,7 @@ import { fits } from "../src/internal/fits.ts";
 import { fromStrings } from "../src/internal/fromStrings.ts";
 import { hasSecret } from "../src/internal/hasSecret.ts";
 import { seal } from "../src/internal/seal.ts";
+import { secretAccess } from "../src/internal/secretAccess.ts";
 import { toJson } from "../src/internal/toJson.ts";
 import { typeText } from "../src/internal/typeText.ts";
 
@@ -110,7 +110,7 @@ describe("member unions (anyOf)", () => {
     const n = Mixed.parse(3);
     expect(n.ok && n.value).toBe(3);
     const pw = Mixed.parse("pw");
-    expect(pw.ok && Secret.is(pw.value) && reveal(pw.value)).toBe("pw");
+    expect(pw.ok && secretAccess.is(pw.value) && reveal(pw.value)).toBe("pw");
     expect(Mixed.parse({ a: true }).ok).toBe(true);
     expect(seal(Mixed.node, "")).toBe("");
     expect(issuesOf(Mixed.parse(""))).toEqual([{ path: [], rule: "type" }]);
@@ -118,7 +118,7 @@ describe("member unions (anyOf)", () => {
 
   it("encodes through the first accepting member", () => {
     expect(Mixed.encode(3)).toBe(3);
-    expect(Mixed.encode(Secret.of("pw", { kind: "string", min: 0, max: undefined }))).toBe("[secret]");
+    expect(Mixed.encode(secretAccess.of("pw", { kind: "string", min: 0, max: undefined }))).toBe("[secret]");
     expect(Mixed.encode({ a: false, extra: 1 })).toEqual({ a: false });
     expect(toJson(s.union([s.object({ a: s.int() }), s.object({ b: s.int() })]).node, { a: 1, b: 2 })).toEqual({
       a: 1,

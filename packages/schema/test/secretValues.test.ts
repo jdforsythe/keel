@@ -1,9 +1,10 @@
 // Seed 1337. The internal read @keel/server takes of a decoded action input: each Secret under it, revealed, as text.
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Secret } from "../src/Secret.ts";
+import type { Secret } from "../src/Secret.ts";
 import { s } from "../src/index.ts";
 import type { Node } from "../src/internal/Node.ts";
+import { secretAccess } from "../src/internal/secretAccess.ts";
 import { secretValues } from "../src/internal/secretValues.ts";
 
 const parsed = (schema: { parse(x: unknown): { ok: true; value: unknown } | { ok: false } }, x: unknown): unknown => {
@@ -67,12 +68,12 @@ test("a secret holding an object or an array gives each string and number in it,
 test("a json secret holding a value that holds itself is read once, keys included", () => {
   const loop: { k: string; self?: unknown } = { k: "inside" };
   loop.self = loop;
-  expect(secretValues(Secret.of(loop, json))).toEqual(["k", "inside", "self"]);
+  expect(secretValues(secretAccess.of(loop, json))).toEqual(["k", "inside", "self"]);
 });
 
 test("a huge secret is read up to 1,000,000 values and the read ends", () => {
   const many = Array.from({ length: 1_100_000 }, (_, i) => `v${i}`);
-  const got = secretValues(Secret.of(many, json));
+  const got = secretValues(secretAccess.of(many, json));
   expect(got.length).toBe(999_999);
   expect(got[0]).toBe("v0");
 });
@@ -80,7 +81,7 @@ test("a huge secret is read up to 1,000,000 values and the read ends", () => {
 test("a deeply nested secret does not overflow the stack", () => {
   let deep: unknown = "bottom";
   for (let i = 0; i < 200_000; i++) deep = [deep];
-  expect(secretValues(Secret.of(deep, json))).toEqual(["bottom"]);
+  expect(secretValues(secretAccess.of(deep, json))).toEqual(["bottom"]);
 });
 
 test("a value that holds itself is read once", () => {

@@ -1,11 +1,12 @@
-// Seed 1337. `reveal` calls the one listener slot (`onSecret`) with the `Secret` it opens, before it opens it, as
-// `Secret.of` does with each `Secret` it makes; the listener gets the `Secret`, never its value. `secretWalk`, which
-// opens secrets through `Secret.open`, calls nothing. With no listener held, `reveal` returns the value.
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { gen } from "../src/gen.ts";
 import { type Secret, reveal, s } from "../src/index.ts";
 import { onSecret, secretWalk } from "../src/internal/index.ts";
+// Seed 1337. `reveal` calls the one listener slot (`onSecret`) with the `Secret` it opens, before it opens it, as
+// `secretAccess.of` does with each `Secret` it makes; the listener gets the `Secret`, never its value. `secretWalk`, which
+// opens secrets through `secretAccess.open`, calls nothing. With no listener held, `reveal` returns the value.
+import { secretAccess } from "../src/internal/secretAccess.ts";
 
 const SEED = 1337;
 const clears: (() => void)[] = [];

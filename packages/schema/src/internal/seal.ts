@@ -1,8 +1,10 @@
-import { Secret } from "../Secret.ts";
+import type { Secret } from "../Secret.ts";
 import type { Node } from "./Node.ts";
+import { SECRET_MARKER } from "./SECRET_MARKER.ts";
 import { fits } from "./fits.ts";
 import { plainEntries } from "./plainEntries.ts";
 import { plainItems } from "./plainItems.ts";
+import { secretAccess } from "./secretAccess.ts";
 import { variantOf } from "./variantOf.ts";
 
 /**
@@ -16,10 +18,10 @@ import { variantOf } from "./variantOf.ts";
 export function seal(node: Node, x: unknown, made: unknown[] = [], copies: Set<object> = new Set()): unknown {
   switch (node.kind) {
     case "secret": {
-      if (Secret.is(x) || x === Secret.marker) return x;
+      if (secretAccess.is(x) || x === SECRET_MARKER) return x;
       const v = seal(node.inner, x, made, copies);
       made.push(v);
-      return Secret.of(v, node.inner);
+      return secretAccess.of(v, node.inner);
     }
     case "optional":
     case "nullable":

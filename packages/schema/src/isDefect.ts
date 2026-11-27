@@ -1,11 +1,11 @@
-import { DEFECT_KEY } from "./internal/DEFECT_KEY.ts";
+import { kernelSet } from "./internal/kernelSet.ts";
 import type { Defect } from "./types/Defect.ts";
 
 /**
- * Whether `x` is a defect (k.errors Defects): an object holding the own key `Symbol.for('keel.defect')`, so a defect of
- * any copy of `@keel/schema` is one, and with `code`, whether it carries that code.
+ * Whether `x` is a value `defect` made in this realm (k.defects), read from the kernel's record (k.identity), and with
+ * `code`, whether it was made with that code. No property of the value proves it.
  */
 export function isDefect(x: unknown, code?: string): x is Defect {
-  if (typeof x !== "object" || x === null || !Object.hasOwn(x, DEFECT_KEY)) return false;
+  if (typeof x !== "object" || x === null || !kernelSet("defect").has(x)) return false;
   return code === undefined || Object.getOwnPropertyDescriptor(x, "code")?.value === code;
 }

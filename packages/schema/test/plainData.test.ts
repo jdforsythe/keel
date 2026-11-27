@@ -11,9 +11,9 @@ const paths = (r: Parsed) => (r.ok ? [] : r.error.data.issues.map((i) => [i.path
 
 describe("plain data", () => {
   it("a Result from ok or err parses and encodes under s.result: its brand is no key", () => {
-    const R = s.result(s.int(), s.string());
+    const R = s.result(s.int(), s.error("t.e", s.object({})));
     expect(R.parse(ok(1)).ok).toBe(true);
-    expect(R.parse(err("e")).ok).toBe(true);
+    expect(R.parse(err({ code: "t.e", message: "t.e", data: {} })).ok).toBe(true);
     expect(R.encode(ok(1))).toEqual({ ok: true, value: 1 });
   });
 

@@ -52,10 +52,20 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       return err(invalid([{ path: [], rule: "type" }]));
     }
   };
+  const parseJson = (text: string): Result<T, SchemaError> => {
+    let input: unknown;
+    try {
+      input = JSON.parse(text);
+    } catch {
+      return err(invalid([{ path: [], rule: "json" }]));
+    }
+    return parse(input);
+  };
   const schema: Schema<T, O> = {
     node,
     isOptional,
     parse,
+    parseJson,
     encode(value) {
       if (!is(value)) throw new Error(issueText(issues));
       return toJson(node, value);
