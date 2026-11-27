@@ -28,7 +28,7 @@ export function agentsBlock(skills: readonly AgentSkill[]): string {
     "Rules every Keel file follows:",
     "- One export per file, named as the file.",
     "- Schemas live in `*.schema.ts`, server work in `*.server.ts`.",
-    "- No `throw` or `try`: return a `Result`. No `Date.now`, `Math.random`, `fetch` or DOM globals: use `ctx`.",
+    "- No `throw` or `catch`: return a `Result`; a bug is `defect('text')`, a throwing call `attempt(fn, expect)`. No `Date.now`, `Math.random`, `fetch` or DOM globals: use `ctx`.",
     "- No `any`, casts, `!` or `@ts-ignore`. Never import a `@keel/*` internal path.",
     "- Add modules, routes, components and stores with `keel scaffold`; rename and move with `keel codemod`. Generated files are read-only.",
     "- Stop only when `keel check` and `keel test` are clean.",
