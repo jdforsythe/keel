@@ -30,7 +30,9 @@ describe("k.realm One copy: check", () => {
         const message = ds[0]?.message ?? "";
         expect(message.length).toBeLessThanOrEqual(89);
         expect(message.startsWith(`two copies of ${name} in one realm: `)).toBe(true);
-        const [first = "", second = "", ...more] = message.slice(`two copies of ${name} in one realm: `.length).split(" and ");
+        const [first = "", second = "", ...more] = message
+          .slice(`two copies of ${name} in one realm: `.length)
+          .split(" and ");
         expect(more).toEqual([]);
         expect(first.endsWith(`/${name.slice("@keel/".length)}`), message).toBe(true);
         expect(first).not.toContain("dep");

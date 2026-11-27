@@ -17,7 +17,7 @@ const SUPERVISE =
   "import { supervise } from '@keel/ctx';\nimport type { Ctx } from '@keel/ctx';\ndeclare const ctx: Ctx;\ndeclare const f: () => number;\ndeclare const T: { code: 'm.t'; message: string; data: null };\nexport const r = supervise(ctx, 'jobs.run', f, T);\n";
 
 test(
-  "R1018 is one finding for `supervise(ctx, 'jobs.run', f, T)` in a library's file (a file of a `\"keel\": \"library\"` package, k.library)",
+  'R1018 is one finding for `supervise(ctx, \'jobs.run\', f, T)` in a library\'s file (a file of a `"keel": "library"` package, k.library)',
   () => {
     const h = hits({ ...LIB, "libs/jobs/src/run.ts": SUPERVISE }, "R1018");
     expect(h).toHaveLength(1);

@@ -38,7 +38,9 @@ describe("k.realm One copy: keel check and keel build", () => {
         expect(lines[0]).toContain("two copies of @keel/schema in one realm: ");
         const message = /"message":"([^"]*)"/.exec(lines[0] ?? "")?.[1] ?? "";
         expect(message.length).toBeLessThanOrEqual(89);
-        const [first = "", second = ""] = message.slice("two copies of @keel/schema in one realm: ".length).split(" and ");
+        const [first = "", second = ""] = message
+          .slice("two copies of @keel/schema in one realm: ".length)
+          .split(" and ");
         expect(first.endsWith("/schema"), message).toBe(true);
         expect(first).not.toContain("dep");
         expect(second.endsWith("node_modules/@keel/schema"), message).toBe(true);

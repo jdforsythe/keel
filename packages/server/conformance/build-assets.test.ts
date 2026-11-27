@@ -112,7 +112,7 @@ beforeAll(() => {
   write(
     fixture,
     "modules/app/module.ts",
-    "import { module } from \"@keel/compiler\";\nexport default module({ id: \"app\", deps: [], capabilities: [], public: { exports: [] } });\n",
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     fixture,

@@ -49,23 +49,33 @@ describe("k.identity: nothing reaches the kernel's records", () => {
     "no own symbol key of `globalThis` holds a maker's record; the census there is a `Map` of names to URLs",
     async () => {
       for (const p of PACKAGES) await entriesOf(p);
-      const has = (c: WeakSet<object> | WeakMap<object, unknown>, v: object): boolean => Reflect.apply(Reflect.get(c, "has"), c, [v]);
+      const has = (c: WeakSet<object> | WeakMap<object, unknown>, v: object): boolean =>
+        Reflect.apply(Reflect.get(c, "has"), c, [v]);
       const made: object[] = [
         s.object({ a: s.int() }),
         s.string(),
         contract("q", { "q.a": { path: "/a" } }),
-        action(contract("r", { "r.a": { path: "/a" } }), "r.a", { input: s.object({ a: s.int() }) }, async () => ok(null)),
+        action(contract("r", { "r.a": { path: "/a" } }), "r.a", { input: s.object({ a: s.int() }) }, async () =>
+          ok(null),
+        ),
       ];
-      const slots = Object.getOwnPropertySymbols(globalThis).filter((k) => Symbol.keyFor(k)?.startsWith("keel.") === true);
+      const slots = Object.getOwnPropertySymbols(globalThis).filter(
+        (k) => Symbol.keyFor(k)?.startsWith("keel.") === true,
+      );
       expect(slots.map((k) => Symbol.keyFor(k))).toContain("keel.census");
       const containers = (v: unknown): (WeakSet<object> | WeakMap<object, unknown>)[] =>
-        v instanceof WeakSet || v instanceof WeakMap ? [v] : v instanceof Map ? [...v.values(), ...v.keys()].flatMap(containers) : [];
+        v instanceof WeakSet || v instanceof WeakMap
+          ? [v]
+          : v instanceof Map
+            ? [...v.values(), ...v.keys()].flatMap(containers)
+            : [];
       for (const key of slots) {
         const value = Reflect.get(globalThis, key);
         for (const c of containers(value)) for (const m of made) expect(has(c, m), String(key)).toBe(false);
         if (value instanceof Map) {
           const census = Symbol.keyFor(key) === "keel.census";
-          for (const [k, v] of value) expect(census ? typeof k === "string" && typeof v === "string" : true, String(key)).toBe(true);
+          for (const [k, v] of value)
+            expect(census ? typeof k === "string" && typeof v === "string" : true, String(key)).toBe(true);
           if (census) expect(value.size).toBeGreaterThan(0);
         }
       }
