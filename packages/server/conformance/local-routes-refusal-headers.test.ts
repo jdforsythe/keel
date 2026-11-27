@@ -7,8 +7,8 @@
 // ASSUMED: (1) a 403 `keel.denied` answer's body holds the text `keel.denied` (JSON or HTML); (2) the headers are compared case-insensitively by name, exactly by value; (3) a body is read to the end of the connection (HTTP/1.0 closes it).
 // An HTTP/1.1 request with no `Host` is written over a raw socket too; an empty `Host:` is a header line with no value.
 import net from "node:net";
-import fc from "fast-check";
 import { fixedTime } from "@keel/tooling/test-time";
+import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { REMOVE, type Running, SEED, ask, buildFixture, counts, good, startServer } from "./local-routes-support.ts";
 
