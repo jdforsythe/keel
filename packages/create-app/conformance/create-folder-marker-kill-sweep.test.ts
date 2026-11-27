@@ -1,5 +1,5 @@
 // Spec: k.create-folder, clause "A run's `.keel-create` lists each file of the plan, then each folder the run makes inside the folder, `/`-ended, deepest first. After a `kill -9` at any moment of the writes, in a new folder and with `--existing` in one holding files and an empty folder, removing each listed path that exists, in order (`rm` a file, `rmdir` a folder), then `.keel-create`, leaves the folder with the entries and bytes it had before the run (none, for a new folder), and a second run exits 0."
-// Seed 1337 (recorded; the delays are a fixed list, not drawn). SIGKILL is sent at each of a spread of delays after the process is spawned (a blocking `Atomics.wait`, no timer API).
+// Seed 1337 (recorded; the stages are a fixed list, not drawn). SIGKILL is sent once `.keel-create` exists and N further entries exist in the folder, for several N (polled with a blocking `Atomics.wait`, no timer API), so each counted run is killed mid-write by construction, whatever the machine's speed. The poll is bounded by MAX_POLLS.
 // Only runs killed mid-write count: the process died of SIGKILL and left a `.keel-create`. A run that finished first, or died before it wrote the marker, is not judged here.
 // ASSUMED (the spec gives the marker's content, not its syntax): one path per line, relative to the folder, a folder ending in `/`, `.keel-create` itself not listed.
 import { type ChildProcess, spawn } from "node:child_process";
@@ -7,20 +7,28 @@ import { existsSync, readFileSync, rmSync, rmdirSync } from "node:fs";
 import { join } from "node:path";
 import { testTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, it } from "vitest";
-import { BIN, PNPM, SEED, cleanAll, entries, envOf, put, run, sandbox, tree } from "./create-bin-support.ts";
+import {
+  BIN,
+  PNPM,
+  SEED,
+  cleanAll,
+  entries,
+  envOf,
+  put,
+  run,
+  sandbox,
+  tree,
+  waitForWrites,
+} from "./create-bin-support.ts";
 
 void SEED;
 const T = testTime(110_000);
-// 0 to 160 ms in steps of 4: the bin starts in about 40 ms and finishes in about 130 ms, so the writes fall inside.
-const DELAYS: number[] = Array.from({ length: 41 }, (_, i) => i * 4);
+// Entries that must exist beside the marker before the kill: 0 is right after the marker is written, the rest at later points of the writes.
+const STAGES: number[] = [0, 1, 2, 3, 4, 6, 8, 12];
 const MIN_KILLED = 3;
 
-const sleep = (ms: number): void => {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-};
-
 type Ended = { status: number | null; signal: NodeJS.Signals | null };
-function runKilled(args: string[], cwd: string, delayMs: number): Promise<Ended> {
+function runKilled(args: string[], cwd: string, before: readonly string[], stage: number): Promise<Ended> {
   return new Promise((resolve) => {
     const child: ChildProcess = spawn(process.execPath, [BIN, ...args], {
       cwd,
@@ -32,7 +40,7 @@ function runKilled(args: string[], cwd: string, delayMs: number): Promise<Ended>
     });
     child.on("error", () => resolve({ status: null, signal: null }));
     child.on("close", (status, signal) => resolve({ status, signal }));
-    sleep(delayMs);
+    waitForWrites(join(cwd, "shop"), before, stage);
     child.kill("SIGKILL");
   });
 }
@@ -72,11 +80,11 @@ describe("k.create-folder: `.keel-create` after a kill -9", () => {
     "after a `kill -9` at any moment of the writes in a new folder, removing each listed path that exists, in order, then `.keel-create`, leaves the folder with no entries, and a second run exits 0",
     async () => {
       let killed = 0;
-      for (const delay of DELAYS) {
+      for (const stage of STAGES) {
         const cwd = sandbox();
         const folder = join(cwd, "shop");
-        const r = await runKilled(["shop"], cwd, delay);
-        const where = `kill -9 at ${delay} ms: status ${String(r.status)} signal ${String(r.signal)}`;
+        const r = await runKilled(["shop"], cwd, [], stage);
+        const where = `kill -9 after the marker and ${stage} entries: status ${String(r.status)} signal ${String(r.signal)}`;
         if (r.signal !== "SIGKILL" || !existsSync(join(folder, ".keel-create"))) continue;
         killed += 1;
         const paths = listed(folder);
@@ -100,7 +108,7 @@ describe("k.create-folder: `.keel-create` after a kill -9", () => {
     "after a `kill -9` at any moment of the writes with `--existing` in a folder holding files and an empty folder, removing each listed path that exists, in order, then `.keel-create`, leaves the entries and bytes it had before the run, and a second run exits 0",
     async () => {
       let killed = 0;
-      for (const delay of DELAYS) {
+      for (const stage of STAGES) {
         const cwd = sandbox();
         const folder = join(cwd, "shop");
         put(cwd, "shop/notes.txt", "keep\n");
@@ -110,8 +118,8 @@ describe("k.create-folder: `.keel-create` after a kill -9", () => {
         const beforeEntries = entries(folder);
         const beforeTree = tree(folder);
         expect(beforeEntries).toContain("public/");
-        const r = await runKilled(["shop", "--existing"], cwd, delay);
-        const where = `kill -9 at ${delay} ms: status ${String(r.status)} signal ${String(r.signal)}`;
+        const r = await runKilled(["shop", "--existing"], cwd, beforeEntries, stage);
+        const where = `kill -9 after the marker and ${stage} entries: status ${String(r.status)} signal ${String(r.signal)}`;
         if (r.signal !== "SIGKILL" || !existsSync(join(folder, ".keel-create"))) continue;
         killed += 1;
         const paths = listed(folder);

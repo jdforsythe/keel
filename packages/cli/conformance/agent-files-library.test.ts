@@ -1,3 +1,6 @@
+// Spec: k.explain, clause "`keel scaffold library @acme/charts` writes in `charts/` `.gitignore`, `AGENTS.md`, `CLAUDE.md` holding `@AGENTS.md` and one `.claude/skills/<name>/SKILL.md` per skill `keel docs` lists, each equal to `keel docs <name>`."
+// Spec: k.explain, clause "In that library the block's first sentence holds `Keel library` and the first skill path it lists is `keel-library`'s; the block of `keel scaffold project` holds no `Keel library`; each block is at most 600 tokens."
+// Spec: k.explain, clause "In that library `keel check` reports no W1356; an edited skill copy or block is one W1356, `keel docs --sync` restores it and keeps the text outside the block, and a second `--sync` writes nothing."
 // k.explain, Agent files "In a folder whose `package.json` has `\"keel\": \"library\"` the block says it is a Keel library and lists `keel-library` first; `keel scaffold library` writes the same files in `<base>/` (k.create)."
 // k.explain, Agent files "Where `AGENTS.md` has the block, `keel check` reports W1356 for it or any copy `--sync` would change."
 // Seed: none (examples; each case spawns the real `keel`). `keel scaffold library @acme/charts` writes `charts/` (k.library-pack Scaffold: folder `<base>/`).

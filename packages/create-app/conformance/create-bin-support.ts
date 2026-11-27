@@ -298,3 +298,25 @@ export function runHeld(args: string[], cwd: string, userAgent: string = PNPM): 
     if (existsSync(flag)) settle(true);
   });
 }
+
+const pause = (ms: number): void => {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+};
+/** Polls (a blocking 1 ms wait, no timer API) until `.keel-create` exists in `folder` and at least `atEntries` entries not in `before` exist beside it, so the caller acts during the writes whatever the machine's speed. It also returns when the marker was seen and is gone (the run finished), and after `MAX_POLLS` polls. */
+export const MAX_POLLS = 30_000;
+export function waitForWrites(folder: string, before: readonly string[], atEntries: number): void {
+  let seen = false;
+  for (let i = 0; i < MAX_POLLS; i++) {
+    if (existsSync(join(folder, ".keel-create"))) {
+      seen = true;
+      let made = 0;
+      try {
+        made = entries(folder).filter((e) => e !== ".keel-create" && !before.includes(e)).length;
+      } catch {
+        // an entry vanished while it was listed: count again on the next poll
+      }
+      if (made >= atEntries) return;
+    } else if (seen) return;
+    pause(1);
+  }
+}
