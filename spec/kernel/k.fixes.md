@@ -16,7 +16,7 @@ Otherwise the diagnostic carries no fix, and its message names the shape to writ
 | the `throw` rule | the statement is `throw <e>` whose expression's type is a `KeelError`, directly in a function whose return type, declared or inferred, takes `Result<never, E>` (a function given to `attempt` does) | `return err(<e>)`, and the `err` import |
 | the `catch` rule, E1452 | the statement is `try { A } catch (e) { B; throw e }`: no `finally`, `e` a plain name `B` never mentions, the `throw e` last, and `A` holding no `return`, `break`, `continue` or `yield` that leaves the `try` | `let done = false; try { A; done = true } finally { if (!done) { B } }`, `done` a name free in the function; with `B` empty, `A`'s statements alone |
 | E1455 | the call is `defect(message)` or `defect(message, code)` where `r`, a plain name of a `Result`, is known not ok | the detail `{ cause: r.error }` |
-| E1452 in any other form, E1453, E1457, E1458, E1203, E1208, E1256, E1762 | never | none |
+| E1452 in any other form, E1453, E1457 to E1461, E1203, E1208, E1256, E1762, E1765, E1766 | never | none |
 
 So a `catch` that reads, tests or wraps what it caught has no fix: only its author knows which thrown values it expects, and `attempt(fn, expect)` asks for exactly that. A `throw` of anything but a `KeelError` has none: whether a caller can act on the failure decides between a `Result` and a defect.
 
