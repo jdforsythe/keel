@@ -1,4 +1,4 @@
-import type { Ctx } from "@keel/ctx";
+import { type Ctx, supervise } from "@keel/ctx";
 import { attempt } from "@keel/schema";
 import { Rejected } from "../../internal/Rejected.schema.ts";
 import type { FollowReport } from "./FollowReport.ts";
@@ -10,7 +10,8 @@ const LISTEN_MS = 5_000;
 /**
  * Follows `channel` at `key` on each of `follows` for `ctx`, reporting to `on`. Resolves the stop of them all once
  * every one is listening, or `undefined` when one refused or was not listening within 5,000 ms on `ctx.clock` (each
- * that did listen is stopped then).
+ * that did listen is stopped then). The following is supervised as `channels.follow` (k.supervise): a capability
+ * that throws or rejects with any value is reported once and is a refusal.
  */
 export async function followAll(
   ctx: Ctx,
@@ -38,10 +39,7 @@ export async function followAll(
     (x) => (x === timer.signal.reason ? Rejected.make({}) : undefined),
   ).then(() => "late" as const);
   const won = await Promise.race([
-    attempt(
-      () => listening,
-      (x) => (x instanceof Error ? Rejected.make({}) : undefined),
-    ).then((r) => (r.ok ? "on" : "refused")),
+    supervise(ctx, "channels.follow", () => listening, Rejected.make({})).then((r) => (r.ok ? "on" : "refused")),
     timeout,
   ]);
   timer.abort();

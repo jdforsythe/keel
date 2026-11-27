@@ -1,4 +1,4 @@
-import type { Ctx } from "@keel/ctx";
+import { type Ctx, supervise } from "@keel/ctx";
 import { computed, owner, signal } from "@keel/reactive";
 import { type KeelError, type Result, attempt, defect } from "@keel/schema";
 import { type Channel, subscribe } from "@keel/std-channels";
@@ -65,10 +65,13 @@ export function live<C extends Ctx, T, P, Q, M, E extends KeelError<string, unkn
     ).then((w) => {
       if (w.ok) s.abort();
     });
-    // The read's `Result` rides in an object so `attempt` hands it back whole, not as its own.
-    const pending = attempt(
+    // The read's `Result` rides in an object so `supervise` hands it back whole, not as its own. A throw of any value,
+    // a defect among them, is reported once and is a failed read (k.supervise `live.read`).
+    const pending = supervise(
+      ctx,
+      "live.read",
       async () => ({ got: await opts.read(ctx, s.signal) }),
-      (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+      Rejected.make({}),
     );
     const r = await Promise.race([pending, bounded]);
     b.abort();

@@ -99,6 +99,29 @@ function hasMember(e: Expression, names: ReadonlySet<string>): boolean {
   return hasMember(e.object, names);
 }
 
+/** A callee that is `name`, bare or as a non-computed member. */
+const calls = (c: Expression, name: string): boolean =>
+  (c.type === "Identifier" && c.name === name) ||
+  (c.type === "MemberExpression" && !c.computed && c.property.type === "Identifier" && c.property.name === name);
+
+/** A callee `object.member`, both by name. */
+const isMember = (c: Expression, object: string, member: string): boolean =>
+  c.type === "MemberExpression" &&
+  !c.computed &&
+  c.object.type === "Identifier" &&
+  c.object.name === object &&
+  c.property.type === "Identifier" &&
+  c.property.name === member;
+
+const WINDOWS = ["globalThis", "window", "self"];
+const PROCESS_LISTEN = ["on", "once", "addListener", "prependListener"];
+
+/** A callee that can register a listener for uncaught throws (R1020): `addEventListener`, bare or on a global, or `process.on` and its kin. */
+const listensUncaught = (c: Expression): boolean =>
+  (c.type === "Identifier" && c.name === "addEventListener") ||
+  WINDOWS.some((w) => isMember(c, w, "addEventListener")) ||
+  PROCESS_LISTEN.some((m) => isMember(c, "process", m));
+
 /** `process.env`, by name or literal key. */
 const isProcessEnv = (e: Expression): boolean =>
   e.type === "MemberExpression" &&
@@ -266,6 +289,9 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
           c.property.type === "Identifier" &&
           c.property.name === "attempt");
       if (attempted && wideExpect(parsed.program, n.arguments[1])) add("R1017", n.start, n.end);
+      if (calls(c, "supervise")) add("R1018", n.start, n.end);
+      if (isMember(c, "Symbol", "for") && (arg === undefined || foldString(arg) === null)) add("R1019", n.start, n.end);
+      if (listensUncaught(c) && (arg === undefined || foldString(arg) === null)) add("R1020", n.start, n.end);
       if (c.type === "Identifier") {
         if (c.name === "unsafe") {
           unsafeCalls++;

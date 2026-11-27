@@ -1,8 +1,8 @@
 import { stdConfig } from "@keel/compiler/std/stdConfig";
-import type { Ctx } from "@keel/ctx";
+import { type Ctx, supervise } from "@keel/ctx";
 import { action, loader } from "@keel/router";
 import type { Contract } from "@keel/router/contract";
-import { type KeelError, attempt, defect, err, ok } from "@keel/schema";
+import { type KeelError, defect, err, ok } from "@keel/schema";
 import { holds } from "../../unsafe/holds.ts";
 import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
@@ -128,7 +128,7 @@ export function channelRoute<P, M, S>(
   const live = loader(streams, id, decl, async function* ({ search, caller, user, stores, signal, currentUser }, ctx) {
     // `member` before the caps: a non-member learns nothing about them; it runs once per open as it does below them.
     const at = { caller, user, params: search, stores };
-    if (!allowed(member, at)) {
+    if (!allowed(ctx, member, at)) {
       yield closed("denied");
       return;
     }
@@ -168,11 +168,7 @@ export function channelRoute<P, M, S>(
           if (!isMember) return verdict(event, false);
           if (checked !== undefined && ctx.clock.now() - checked < STANDS_MS) return verdict(event, true);
           return (async (): Promise<void> => {
-            const asked = currentUser();
-            const now = await attempt(
-              () => asked,
-              (x) => (x instanceof Error ? Rejected.make({}) : undefined),
-            );
+            const now = await supervise(ctx, "channels.member", () => currentUser(), Rejected.make({}));
             if (!now.ok) {
               verdict(event, false);
               return;
@@ -184,20 +180,14 @@ export function channelRoute<P, M, S>(
     /** `event` after `member` and, when there is one to judge, the user check; a member check that fails is a denial. */
     const deliver = (event: Event, member: () => Promise<boolean> | boolean): Step => {
       if (out) return;
-      // The wrapper object keeps a returned promise from being awaited by `attempt`: only a synchronous throw is caught.
-      const asked = attempt(
-        () => ({ answer: member() }),
-        (x) => (x instanceof Error ? Rejected.make({}) : undefined),
-      );
+      // The wrapper object keeps a returned promise from being awaited by `supervise`: only a synchronous throw is taken.
+      const asked = supervise(ctx, "channels.member", () => ({ answer: member() }), Rejected.make({}));
       if (!asked.ok) return verdict(event, false);
       const m = asked.value.answer;
       return typeof m === "boolean"
         ? judge(event, m)
         : (async (): Promise<void> => {
-            const isMember = await attempt(
-              () => m,
-              (x) => (x instanceof Error ? Rejected.make({}) : undefined),
-            );
+            const isMember = await supervise(ctx, "channels.member", () => m, Rejected.make({}));
             if (!isMember.ok) {
               verdict(event, false);
               return;
@@ -222,18 +212,18 @@ export function channelRoute<P, M, S>(
         delivered.set(store, head);
         // A head below the last delivered: the store's count restarted (its storage was replaced), so the client re-reads.
         if (head < last) {
-          chain = chain.then(() => deliver({ kind: "reset" }, () => allowed(member, at)));
+          chain = chain.then(() => deliver({ kind: "reset" }, () => allowed(ctx, member, at)));
           return;
         }
         chain = chain.then(() =>
-          deliver({ kind: "saved", store, head }, async () => (await reread(list, read)) && allowed(member, at)),
+          deliver({ kind: "saved", store, head }, async () => (await reread(list, read)) && allowed(ctx, member, at)),
         );
       },
     });
     // A `lost` report or a follow not listening in time ends the stream as a drop: no `closed`, so the client reopens.
     const drop = new AbortController();
     const recheck = (): void => {
-      chain = chain.then(() => deliver({ kind: "changed" }, () => allowed(member, at)));
+      chain = chain.then(() => deliver({ kind: "changed" }, () => allowed(ctx, member, at)));
     };
     // Heads a stream delivered, per store: local and remote saves of one store reach it as one rising sequence.
     const delivered = new Map<string, number>();
@@ -269,7 +259,7 @@ export function channelRoute<P, M, S>(
     decl,
     (body, { url, caller, user, stores }, ctx) => {
       const p = paramsOf(channel.params, url);
-      if (!p.ok || !allowed(member, { caller, user, params: p.value.value, stores })) return err(denied);
+      if (!p.ok || !allowed(ctx, member, { caller, user, params: p.value.value, stores })) return err(denied);
       const key = instance(p.value.key);
       for (const sk of hubOf(ctx).sinks) if (sk.key === key) sk.post(body.message);
       return ok({});

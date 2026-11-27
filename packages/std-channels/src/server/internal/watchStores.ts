@@ -1,4 +1,4 @@
-import type { Ctx } from "@keel/ctx";
+import { type Ctx, supervise } from "@keel/ctx";
 import { attempt } from "@keel/schema";
 import { Rejected } from "../../internal/Rejected.schema.ts";
 import type { Hub } from "./Hub.ts";
@@ -12,7 +12,8 @@ const LISTEN_MS = 5_000;
  * Holds the hub's one watch on `ctx.storage` (k.persist Watch) for a stream of a route with `stores`, starting it with the
  * first holder: resolves the release once it is listening, which stops the watch with the last; `lost` runs when the watch
  * reports `lost` or a read of a reported key fails. Resolves a no-op release when the storage has no `watch`, and `undefined`
- * when the watch refused or was not listening within 5,000 ms on `ctx.clock`.
+ * when the watch refused or was not listening within 5,000 ms on `ctx.clock`. Starting the watch is supervised as
+ * `channels.storage` (k.supervise): a rejection of any value is reported once and is a refusal.
  */
 export async function watchStores(ctx: Ctx, hub: Hub, lost: () => void): Promise<(() => void) | undefined> {
   const { storage } = ctx;
@@ -35,10 +36,7 @@ export async function watchStores(ctx: Ctx, hub: Hub, lost: () => void): Promise
       holders.clear();
       for (const f of gone) f();
     });
-    made.ready = attempt(
-      () => started,
-      (x) => (x instanceof Error ? Rejected.make({}) : undefined),
-    ).then((got) => {
+    made.ready = supervise(ctx, "channels.storage", () => started, Rejected.make({})).then((got) => {
       if (!got.ok) return false;
       made.stop = got.value;
       return true;

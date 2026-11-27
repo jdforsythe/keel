@@ -1,21 +1,22 @@
-import type { Ctx } from "@keel/ctx";
-import { attempt, s } from "@keel/schema";
+import { type Ctx, supervise } from "@keel/ctx";
+import { s } from "@keel/schema";
 import { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { Config } from "./Config.ts";
+import { Failed } from "./Failed.schema.ts";
 import { apply } from "./apply.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
 import { flowOf } from "./flowOf.ts";
 import { full } from "./full.ts";
 import { rewrite } from "./rewrite.ts";
-import { storageFailed } from "./storageFailed.ts";
 
 /**
  * Loads the outbox stored in `ctx.storage` once per ctx, entry by entry: adds, in order, each entry the store lacks
  * (`sending` as `queued`), which the ctx then holds, while the entries stay within `limit` and `maxBytes`; the rest are not loaded, nor is an
  * entry that is not an `OutboxEntry`. A stored entry that holds an `origin`, or no string `owner`, loads `failed` with
  * `offline.owner`, owner `""` and no `origin`, and the outbox is then written back once. A value that is not JSON, or
- * whose `entries` is not an array, loads nothing.
+ * whose `entries` is not an array, loads nothing, as does a read that throws or rejects with any value: it is supervised
+ * as `offline.storage` (k.supervise) and reported once.
  */
 export function load(ctx: Ctx, c: Config): Promise<void> {
   const p = c.loads.get(ctx) ?? read(ctx, c);
@@ -24,7 +25,7 @@ export function load(ctx: Ctx, c: Config): Promise<void> {
 }
 
 async function read(ctx: Ctx, c: Config): Promise<void> {
-  const raw = await attempt(() => ctx.storage.get(`keel.outbox.${c.id}`), storageFailed);
+  const raw = await supervise(ctx, "offline.storage", () => ctx.storage.get(`keel.outbox.${c.id}`), Failed.make({}));
   const json = raw.ok && raw.value !== null ? s.json.parseJson(raw.value) : undefined;
   const list = json?.ok ? field(json.value, "entries") : undefined;
   let moved = false;
