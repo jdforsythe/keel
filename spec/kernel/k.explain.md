@@ -19,3 +19,6 @@ The text `keel explain` prints (k.check **explain and docs**) lives in an entry 
 - A rule registered with `defineRule` imported from `@keel/check` is explained by `explain` from `@keel/check/explain`: its message, its `explain` text and its `see`.
 - The `@keel/check` entry bundled alone (esbuild, minified esm, dependencies external) contains no reason line and no fix example of any kernel code's explanation; the `@keel/check/explain` entry bundled alone contains every one.
 - `tooling/budgets.json` has a size line for `@keel/check` and one for `@keel/check/explain`.
+- `keel scaffold library @acme/charts` writes in `charts/` `.gitignore`, `AGENTS.md`, `CLAUDE.md` holding `@AGENTS.md` and one `.claude/skills/<name>/SKILL.md` per skill `keel docs` lists, each equal to `keel docs <name>`.
+- In that library the block's first sentence holds `Keel library` and the first skill path it lists is `keel-library`'s; the block of `keel scaffold project` holds no `Keel library`; each block is at most 600 tokens.
+- In that library `keel check` reports no W1356; an edited skill copy or block is one W1356, `keel docs --sync` restores it and keeps the text outside the block, and a second `--sync` writes nothing.
