@@ -14,13 +14,13 @@ import { guard } from "../src/guard.ts";
 import { afterNavigate } from "../src/internal/afterNavigate.ts";
 import { defaultError } from "../src/internal/defaultError.ts";
 import { formHandle } from "../src/internal/formHandle.ts";
-import { isHref } from "../src/internal/isHref.ts";
 import { renderChildren } from "../src/internal/renderChildren.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import type { FormHandle } from "../src/types/FormHandle.ts";
 import type { Href } from "../src/types/Href.ts";
 import type { RouteTable } from "../src/types/RouteTable.ts";
+import { isHref } from "../unsafe/isHref.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 
 const ctx = createCtx({ mode: "sim", seed: 1337 });

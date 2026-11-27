@@ -6,9 +6,9 @@ import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createRouter } from "../src/createRouter.ts";
-import { isHref } from "../src/internal/isHref.ts";
 import { manifest } from "../src/manifest.ts";
 import type { Href } from "../src/types/Href.ts";
+import { isHref } from "../unsafe/isHref.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 
 const opts = { seed: 1337, numRuns: 60 };

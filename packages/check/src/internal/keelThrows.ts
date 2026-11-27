@@ -12,12 +12,15 @@ function isKeelError(t: ts.Type, checker: ts.TypeChecker): boolean {
   return text(code) && text(message);
 }
 
-const isFunction = (n: ts.Node): n is ts.FunctionLikeDeclaration =>
+/** `n` when it is a function declaration, expression, arrow function, method or getter, else `undefined`. */
+const functionOf = (n: ts.Node): ts.FunctionLikeDeclaration | undefined =>
   ts.isFunctionDeclaration(n) ||
   ts.isFunctionExpression(n) ||
   ts.isArrowFunction(n) ||
   ts.isMethodDeclaration(n) ||
-  ts.isGetAccessorDeclaration(n);
+  ts.isGetAccessorDeclaration(n)
+    ? n
+    : undefined;
 
 /** Whether `fn` is the first argument of a call of `@keel/schema`'s `attempt`. */
 function givenToAttempt(fn: ts.Node, checker: ts.TypeChecker, ownerOf: Owner): boolean {
@@ -56,10 +59,8 @@ export function keelThrows(sf: ts.SourceFile, checker: ts.TypeChecker, ownerOf: 
     for (let at: ts.Node = n; !ts.isSourceFile(at.parent); at = at.parent) {
       const p = at.parent;
       if (ts.isTryStatement(p) && p.tryBlock === at && p.catchClause !== undefined) return;
-      if (isFunction(p)) {
-        fn = p;
-        break;
-      }
+      fn = functionOf(p);
+      if (fn !== undefined) break;
     }
     if (fn === undefined) return;
     const thrown = checker.getTypeAtLocation(n.expression);

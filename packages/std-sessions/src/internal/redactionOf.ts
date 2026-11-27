@@ -2,6 +2,7 @@ import { type JsonValue, type KeelError, type Schema, piiPaths, piiValues, s } f
 import { redact } from "../redact.ts";
 import type { JsonObject } from "./JsonObject.ts";
 import type { Redaction } from "./Redaction.ts";
+import { fieldsOf } from "./fieldsOf.ts";
 import { hrefOf } from "./hrefOf.ts";
 import { jsonOf } from "./jsonOf.ts";
 import { objectOf } from "./objectOf.ts";
@@ -10,9 +11,6 @@ import { parseRedactEntry } from "./parseRedactEntry.ts";
 const json = s.json();
 /** How many distinct matched values a redaction remembers to scrub from later errors (the newest are kept). */
 const REMEMBERED = 256;
-
-const isObject = (v: JsonValue): v is { readonly [k: string]: JsonValue } =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
 
 /**
  * `v` with each string (and number, as text) passed through `fn`, depth first, and with `keys` each object key too;
@@ -106,12 +104,13 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
       return e.type === "keydown" && e.key.length === 1 ? { ...event, event: { type: "keydown", key: "x" } } : event;
     },
     blind(error) {
-      const where = isObject(error.data) ? error.data.at : undefined;
+      const where = fieldsOf(error.data)?.at;
       const out = each(error.data, (x) => "x".repeat(x.length));
+      const fields = fieldsOf(out);
       return {
         ...error,
         message: error.code,
-        data: isObject(out) && typeof where === "string" ? { ...out, at: where } : out,
+        data: fields !== undefined && typeof where === "string" ? { ...fields, at: where } : out,
       };
     },
     remember: (value) => found(value),
@@ -123,11 +122,12 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
       const data = at.length === 0 ? error.data : apply(json, error.data, `error:${error.code}`, at);
       const out = each(data, scrub, true);
       // `data.at` names where the error fired and feeds the fingerprint: only an `error:` entry masks it.
-      const where = isObject(data) ? data.at : undefined;
+      const where = fieldsOf(data)?.at;
+      const fields = fieldsOf(out);
       return {
         ...error,
         message: scrub(error.message),
-        data: isObject(out) && typeof where === "string" ? { ...out, at: where } : out,
+        data: fields !== undefined && typeof where === "string" ? { ...fields, at: where } : out,
       };
     },
   };

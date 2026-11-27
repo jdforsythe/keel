@@ -15,7 +15,7 @@ export { fixedUser } from "./fixedUser.ts";
 export { formHandle } from "./formHandle.ts";
 export { guardLoop } from "./guardLoop.ts";
 export { guardNext } from "./guardNext.ts";
-export { isHref } from "./isHref.ts";
+export { isHref } from "../../unsafe/isHref.ts";
 export { judgedUser } from "./judgedUser.ts";
 export { matchUrl } from "./matchUrl.ts";
 export { mountRequests } from "./mountRequests.ts";

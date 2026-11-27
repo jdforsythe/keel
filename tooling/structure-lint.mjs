@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.identity) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding and no type predicate E1762 reports, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.identity) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
@@ -227,15 +227,19 @@ function inLibrary(p) {
 /**
  * S0014 (k.unsafe): in a kernel package only E1757 of the lifted codes is enforced, so `unsafe/` holds type-system
  * escapes; in a library's package the app's reading enforces every lifted code, so a finding of any of them counts.
+ * A type predicate E1762 reports inside the range (`predicates`, offsets from the S0019 pass) is an escape in either.
  * An `unsafe(` call whose lifted range holds no such finding (or that has no range) escapes nothing checked.
  */
-function s0014(file) {
+function s0014(file, predicates) {
   const parsed = parseFile(file);
   if (!parsed.ok) return;
   const starts = [0];
   for (let i = 0; i < file.source.length; i++) if (file.source[i] === "\n") starts.push(i + 1);
   const at = (f) => (starts[f.line - 1] ?? 0) + f.col - 1;
-  const escapes = noUnsafeSyntax.check({ file, ast: parsed.program, artifacts: {}, project: [file] }).map(at);
+  const escapes = [
+    ...noUnsafeSyntax.check({ file, ast: parsed.program, artifacts: {}, project: [file] }).map(at),
+    ...predicates,
+  ];
   if (file.source.includes("unsafe(") && inLibrary(file.path)) {
     // The app's reading of the file, its `unsafe/` segments renamed so no lifted range drops a finding.
     const seen = { path: file.path.replace(/(^|\/)unsafe\//g, "$1lifted/"), source: file.source };
@@ -253,7 +257,7 @@ function s0014(file) {
         path.join(root, file.path),
         line + 1,
         n.start - (starts[line] ?? 0) + 1,
-        "unsafe() call holds no cast, !, any or ts-suppression; make it ordinary code in src/",
+        "unsafe() call holds no cast, !, any, ts-suppression or unproven type predicate; make it ordinary code in src/",
       );
     },
   }).visit(parsed.program);
@@ -265,7 +269,6 @@ const ALIAS = { E1757: "S0004", E1754: "S0005" };
 const PASS = new Set(["E1756", "E1760", "E1761"]);
 const SRC = /^packages\/[^/]+\/src\//;
 const sources = files.map((f) => ({ path: rel(root, f), source: fs.readFileSync(f, "utf8") }));
-for (const f of sources) if (f.path.startsWith("packages/")) s0014(f);
 
 /** The 1-based line and column of offset `at` in `source`. */
 function lineColOf(source, at) {
@@ -288,14 +291,17 @@ for (const f of sources) {
 
 // S0019 (k.identity Rules E1762): a type predicate or assertion function whose body is none of the five proofs, in
 // every package's `src/`, read through the package's own tsconfig; a finding inside a lifted `unsafe(` range is not one.
+// The same judgement over `unsafe/` feeds S0014: a finding inside a lifted range is the escape that call holds.
 const TS_EXT = /\.(?:ts|tsx|mts|cts)$/;
-const SRC_FILE = /^packages\/([^/]+)\/src\//;
+const OWN_FILE = /^packages\/([^/]+)\/(src|unsafe)\//;
 const byPackage = new Map();
 for (const f of sources) {
-  const m = SRC_FILE.exec(f.path);
+  const m = OWN_FILE.exec(f.path);
   if (!m?.[1] || !TS_EXT.test(f.path)) continue;
   byPackage.set(m[1], [...(byPackage.get(m[1]) ?? []), f]);
 }
+/** Per file path (relative to the root), the offsets of E1762 findings inside a lifted `unsafe(` range. */
+const liftedPredicates = new Map();
 for (const [pkg, own] of byPackage) {
   const tsconfig = path.join(root, "packages", pkg, "tsconfig.json");
   if (!fs.existsSync(tsconfig)) continue;
@@ -309,11 +315,17 @@ for (const [pkg, own] of byPackage) {
       const starts = [0];
       for (let i = 0; i < hit.file.source.length; i++) if (hit.file.source[i] === "\n") starts.push(i + 1);
       const at = (starts[d.line - 1] ?? 0) + d.col - 1;
-      if (hit.ranges.some(([a, b]) => at >= a && at < b)) continue;
+      if (hit.ranges.some(([a, b]) => at >= a && at < b)) {
+        liftedPredicates.set(hit.file.path, [...(liftedPredicates.get(hit.file.path) ?? []), at]);
+        continue;
+      }
     }
-    add("S0019", d.file, d.line, d.col, d.message);
+    if (OWN_FILE.exec(path.relative(root, d.file).split(path.sep).join("/"))?.[2] === "src")
+      add("S0019", d.file, d.line, d.col, d.message);
   }
 }
+for (const f of sources) if (f.path.startsWith("packages/")) s0014(f, liftedPredicates.get(f.path) ?? []);
+
 const result = check(sources, { types: false, root });
 for (const d of result.diagnostics) {
   const { fix: _fix, see: _see, ...rest } = d;

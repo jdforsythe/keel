@@ -1,8 +1,8 @@
 import type { Ctx, FireEvent } from "@keel/ctx";
+import { isHref } from "../../unsafe/isHref.ts";
 import { absoluteUrl } from "./absoluteUrl.ts";
 import { findRouter } from "./findRouter.ts";
 import { formSeams } from "./formSeams.ts";
-import { isHref } from "./isHref.ts";
 import { personActs } from "./personActs.ts";
 import { returnOpenings } from "./returnOpenings.ts";
 import { shells } from "./shells.ts";

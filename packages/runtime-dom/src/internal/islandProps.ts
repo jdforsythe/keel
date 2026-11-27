@@ -8,7 +8,8 @@ export function islandProps(
   id: string,
   warnings: string[],
 ): Record<string, unknown> {
-  const props = typeof component === "function" ? Object.getOwnPropertyDescriptor(component, "Props")?.value : undefined;
+  const props =
+    typeof component === "function" ? Object.getOwnPropertyDescriptor(component, "Props")?.value : undefined;
   if (!isSchema(props)) return isRecord(json) ? json : {};
   const r = props.parse(json ?? {});
   if (r.ok && isRecord(r.value)) return r.value;
