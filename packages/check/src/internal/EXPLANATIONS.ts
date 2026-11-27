@@ -731,8 +731,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1510",
-    "contract entry of no kind or with a member its kind refuses, or a binding member its entry refuses",
-    "A page, layout and API entry each take their own members.",
+    "contract entry of no kind or with a member its kind refuses, a binding member its entry refuses, or a local member that is not the literal true",
+    "A page, layout and API entry each take their own members. `local` is read without running the file, so only the literal `true` declares a local route.",
     "{ method: 'GET', path, output, search } -> { method: 'GET', path, output, query }",
     "k.contract",
   ],
