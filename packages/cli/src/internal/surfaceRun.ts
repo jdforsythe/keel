@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { join, relative } from "node:path";
+import { extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
 import { sourceHash } from "@keel/compiler/internal";
@@ -19,9 +19,11 @@ import { surfaceOf } from "./surfaceOf.ts";
 
 const CONTRACT = /^modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
+/** This package's JSON Schema writer, loaded in the evaluation's graph: `.ts` in the source, `.js` as built. */
+const TO_JSON_SCHEMA = fileURLToPath(
+  new URL(`./toJsonSchema${extname(fileURLToPath(import.meta.url))}`, import.meta.url),
+);
 /** A kernel internal the evaluation loads: the project's package, else the CLI's own dependency (`entryDependency`). */
-/** This package's JSON Schema writer, loaded in the evaluation's graph. */
-const TO_JSON_SCHEMA = fileURLToPath(new URL("./toJsonSchema.ts", import.meta.url));
 const kernel = (id: string, root: string): string => entryDependency(id, root, import.meta.url) ?? id;
 const firstLine = (e: unknown): string => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "";
 /** An E code a thrown value carries (`{ code: "E1502" }`), kept as k.compiler Build-time evaluation keeps it. */
