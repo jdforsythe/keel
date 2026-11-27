@@ -3,6 +3,7 @@ import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
 import { STYLES_PATH } from "@keel/compiler/internal/entry/STYLES_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
+import { onSupervised } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import { routeTable } from "@keel/router";
 import { allowAt, compileRoutes, matchUrl } from "@keel/router/internal";
@@ -374,6 +375,11 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     const records = sv.thrown("keel.unexpected", "runner rejected, rerun in 1000 ms: ", thrown, frames);
     for (const d of records) log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
   };
+  // A throw `supervise` takes on the served ctx is one record by the same rules (k.supervise Report).
+  const unsupervise = onSupervised(sv.ctx, (id, thrown) => {
+    for (const d of sv.thrown("keel.unexpected", `supervised ${id} threw: `, thrown, sv.frames(thrown)))
+      log?.write(diagLine(log.format, scrubbedDiag(d, { secrets: new Set(), pii: new Set() })));
+  });
   const app: ServerApp = {
     fetch: async (req) => {
       const r = await attempted(() => hono.fetch(req));
@@ -382,6 +388,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     close: async () => {
       sv.lifecycle.abort();
       unbind();
+      unsupervise();
       await Promise.all(await running);
     },
   };

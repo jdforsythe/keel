@@ -10,6 +10,7 @@ import { appLibraries } from "../std/appLibraries.ts";
 import { libraryRel } from "../std/libraryRel.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
+import { censusPlugin } from "./censusPlugin.ts";
 import { contractOf } from "./contractOf.ts";
 import { internalFailure } from "./internalFailure.ts";
 
@@ -169,6 +170,7 @@ export async function evaluateProject(input: {
     loader: { ".css": "empty" },
     plugins: [
       shippedTokensPlugin(root),
+      censusPlugin(),
       {
         name: "keel-jsx",
         setup(b) {

@@ -25,6 +25,7 @@ import { browserStub } from "./internal/browserStub.ts";
 import { bundledFiles } from "./internal/bundledFiles.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
+import { censusSource } from "./internal/censusSource.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
@@ -1238,7 +1239,11 @@ export default function (): {
         liftedLibraries !== undefined && command === "build" && options?.ssr === true
           ? rewriteLiftedReads(id, code, liftedLibraries)
           : null;
-      const kept = lifted === null ? null : { code: lifted, map: null };
+      // A census module in the server bundle names its own file, so two copies inlined from two folders differ
+      // (k.realm One copy).
+      const census = command === "build" && options?.ssr === true ? censusSource(id, lifted ?? code) : undefined;
+      const kept =
+        census !== undefined ? { code: census, map: null } : lifted === null ? null : { code: lifted, map: null };
       const rel = relOf(id);
       if (rel === null || stubbed.has(id) || (devStubbed.has(id) && forBrowser(this, options))) return kept;
       const entry = compileModule(rel, lifted ?? code);

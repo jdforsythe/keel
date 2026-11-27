@@ -1,4 +1,5 @@
-import { type KeelError, type Result, err, ok } from "@keel/schema";
+import { type KeelError, type Result, err } from "@keel/schema";
+import { passed } from "@keel/schema/internal";
 import { unexpectedOf } from "./unexpectedOf.ts";
 
 type Unexpected = KeelError<"keel.unexpected", { readonly cause: string }>;
@@ -21,8 +22,8 @@ export function attempted<T>(fn: () => T): Attempted<T>;
 export function attempted(fn: () => unknown): Result<unknown, Unexpected> | Promise<Result<unknown, Unexpected>> {
   try {
     const value = fn();
-    if (!isThenable(value)) return ok(value);
-    return Promise.resolve(value).then(ok, (thrown: unknown) => err(unexpectedOf(thrown)));
+    if (!isThenable(value)) return passed(value);
+    return Promise.resolve(value).then(passed, (thrown: unknown) => err(unexpectedOf(thrown)));
   } catch (thrown) {
     return err(unexpectedOf(thrown));
   }

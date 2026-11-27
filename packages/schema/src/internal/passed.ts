@@ -3,7 +3,8 @@ import { resultBrand } from "./resultBrand.ts";
 
 /**
  * `ok(value)` without `ok`'s refusal of a `Result`: what a schema's `parse` returns, since a value `s.result` accepts
- * is a `Result` by its schema (k.schema). The result carries the keel brand.
+ * is a `Result` by its schema (k.schema), and what a kernel wrapper that tells a throw from a returned `Result` gives.
+ * The result carries the keel brand.
  */
 export function passed<T>(value: T): Result<T, never> {
   const r: Result<T, never> = { ok: true, value };

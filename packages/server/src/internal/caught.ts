@@ -1,4 +1,5 @@
-import { err, ok } from "@keel/schema";
+import { err } from "@keel/schema";
+import { passed } from "@keel/schema/internal";
 import type { CaughtRun } from "./CaughtRun.ts";
 import { unexpectedOf } from "./unexpectedOf.ts";
 
@@ -14,7 +15,7 @@ export async function caught<T>(
   frames: (thrown: unknown) => readonly string[],
 ): Promise<CaughtRun<T>> {
   try {
-    return { result: ok(await fn()), frames: [], thrown: undefined };
+    return { result: passed(await fn()), frames: [], thrown: undefined };
   } catch (thrown) {
     let read: readonly string[] = [];
     try {
