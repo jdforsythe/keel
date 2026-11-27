@@ -1,14 +1,14 @@
 # Freeze review (G3)
 
-Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`; six more skip unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, five in `std-postgres/conformance`).
+Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Every clause but k.parity's 5 and 6 is cited in a conformance header; `conformance-covered` is the status a section's `status:` line states, and a section whose clauses all have a rung stays `implemented` until that line is raised. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`. Others skip by machine: six unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, five in `std-postgres/conformance`); four with no non-loopback IPv4 address (`cli/conformance/dev-bind.test.ts`, three in `server/conformance/local-routes-remote-address.test.ts`); one with no IPv6 loopback (`server/conformance/local-routes-answered.test.ts`); of the k.e2e-run sandbox cases (`cli/conformance/e2e-sandbox-*.test.ts`, `testing/conformance/e2e-run.test.ts`), thirteen skip as root and two run only as root on Linux.
 
 ## 1. Per section
 
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
 | k.schema | 21 | **conformance-covered** | none |
-| k.formats | 8 | **conformance-covered** | none |
-| k.reactive | 20 | **conformance-covered** | none |
+| k.formats | 10 | **conformance-covered** | none |
+| k.reactive | 21 | implemented | none; status not raised |
 | k.store | 25 | **conformance-covered** | none |
 | k.ctx | 24 | **conformance-covered** | none |
 | k.errors | 14 | **conformance-covered** | none |
@@ -21,27 +21,27 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.head | 11 | **conformance-covered** | none |
 | k.forms | 19 | **conformance-covered** | none |
 | k.server | 19 | **conformance-covered** | none |
-| k.topology | 17 | **conformance-covered** | none |
+| k.topology | 24 | **conformance-covered** | none |
 | k.compat | 15 | **conformance-covered** | none |
-| k.api | 14 | **conformance-covered** | none |
+| k.api | 15 | **conformance-covered** | none |
 | k.services | 17 | **conformance-covered** | none |
 | k.check | 23 | **conformance-covered** | none |
 | k.check-cache | 13 | **conformance-covered** | none |
 | k.cli | 20 | **conformance-covered** | none |
-| k.module | 22 | **conformance-covered** | none |
+| k.module | 23 | implemented | none; status not raised |
 | k.scaffold | 20 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
 | k.testing | 28 | **conformance-covered** | none |
-| k.test-run | 11 | implemented | not yet covered by conformance |
+| k.test-run | 12 | implemented | none; status not raised |
 | k.requests | 4 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 14 | **conformance-covered** | none |
 | k.drive | 23 | **conformance-covered** | none |
 | k.drive-law | 11 | **conformance-covered** | none |
-| k.ledger | 19 | implemented | not yet covered by conformance |
+| k.ledger | 19 | implemented | none; status not raised |
 | k.sync | 14 | **conformance-covered** | none |
-| k.deploy | 13 | **conformance-covered** | none |
+| k.deploy | 14 | **conformance-covered** | none |
 | k.review | 8 | **conformance-covered** | none |
 | k.escapes | 9 | **conformance-covered** | none |
 | k.bundle | 13 | **conformance-covered** | none |
@@ -51,11 +51,11 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.hosting | 9 | **conformance-covered** | none |
 | k.openapi | 3 | **conformance-covered** | none |
 | k.a11y | 23 | **conformance-covered** | none |
-| k.security | 13 | **conformance-covered** | none |
+| k.security | 14 | **conformance-covered** | none |
 | k.privacy | 15 | **conformance-covered** | none |
 | k.privacy-reads | 6 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
-| k.aria | 13 | **conformance-covered** | none |
+| k.aria | 13 | implemented | none; status not raised |
 | k.guards | 11 | **conformance-covered** | none |
 | k.persist | 16 | **conformance-covered** | none |
 | k.data | 10 | **conformance-covered** | none |
@@ -65,7 +65,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.claim | 9 | **conformance-covered** | none |
 | k.defaults | 6 | **conformance-covered** | none |
 | k.host | 5 | **conformance-covered** | none |
-| k.leave | 14 | **conformance-covered** | none |
+| k.leave | 19 | implemented | none; status not raised |
 | k.mount | 13 | **conformance-covered** | none |
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
@@ -105,33 +105,37 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.text | 11 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 16 | **conformance-covered** | none |
-| std.workflows | 8 | **conformance-covered** | none |
-| k.contract | 11 | **conformance-covered** | none |
-| k.docs | 13 | **conformance-covered** | none |
-| k.host-code | 6 | **conformance-covered** | the Chromium clause: no browser test |
+| std.workflows | 9 | implemented | none; status not raised |
+| k.contract | 25 | **conformance-covered** | none |
+| k.docs | 19 | implemented | none; status not raised |
+| k.host-code | 6 | **conformance-covered** | the Chromium clause: no browser test, only its policy header asserted |
 | k.host-element | 11 | **conformance-covered** | none |
 | k.links | 12 | **conformance-covered** | none |
 | k.mount-scope | 1 | **conformance-covered** | none |
 | k.origins | 12 | **conformance-covered** | none |
 | k.parity | 6 | proposed | clauses 5 and 6: no test; S0013, the kind gates, is not built |
-| k.roles | 14 | **conformance-covered** | none |
+| k.roles | 15 | implemented | none; status not raised |
 | k.looks | 15 | proposed | none |
-| k.schemes | 13 | proposed | none; the first paint and the system preference are owed to an end-to-end runner |
-| k.values | 5 | proposed | none; the Chromium clause runs in tooling/smoke/brand.mjs |
+| k.schemes | 13 | proposed | none; the first paint and the system preference have no end-to-end test |
+| k.values | 9 | proposed | none; the two Chromium clauses run in `tooling/smoke/values.mjs` |
 | k.routes | 10 | **conformance-covered** | none |
 | std.capacitor | 11 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | k.unsafe | 9 | **conformance-covered** | none |
-| k.a11y-static | 10 | **conformance-covered** | none |
+| k.a11y-static | 11 | implemented | none; status not raised |
 | std.channels-limits | 4 | **conformance-covered** | none |
 | std.sessions-redact | 1 | **conformance-covered** | none |
-| k.ledger-items | 14 | implemented | not yet covered by conformance |
-| k.library | 18 | proposed | not yet covered by conformance |
-| k.library-pack | 5 | implemented | not yet covered by conformance |
-| k.server-deps | 11 | implemented | not yet covered by conformance |
-| **total** | **1474** | 115 of 122 covered | |
+| k.ledger-items | 15 | implemented | none; status not raised |
+| k.library | 18 | proposed | none |
+| k.library-pack | 5 | implemented | none; status not raised |
+| k.server-deps | 11 | implemented | none; status not raised |
+| k.e2e | 23 | implemented | none; status not raised |
+| k.e2e-page | 26 | implemented | none; status not raised |
+| k.e2e-run | 12 | implemented | none; status not raised |
+| k.entries | 4 | proposed | none |
+| **total** | **1629** | 107 of 129 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -174,11 +178,11 @@ Each point has a stdlib user, so the G3 criterion is 6 of 6.
 
 ## Other G3 criteria
 
-Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/results/2026-11-18-golden-1-api-none.json`, `2026-11-18-golden-2-none.json`); `apps/inspector` and `apps/sessions` are not eval-built. Converged runs are recorded on 2026-11-06, 2026-11-07, 2026-11-10, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-14, 2026-11-16, 2026-11-17 and 2026-11-18; `golden-2-catalog` converged on 2026-11-17 and 2026-11-18. `golden-1` and `golden-3` did not converge on 2026-11-17.
+Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/results/2026-11-19-golden-1-api-none.json`, `2026-11-19-golden-2-none.json`); `apps/inspector`, `apps/sessions`, `apps/household` and `apps/evenly` are not eval-built. Converged runs are recorded on 2026-11-06, 2026-11-07, 2026-11-10, 2026-11-11, 2026-11-12, 2026-11-13, 2026-11-14, 2026-11-16, 2026-11-17, 2026-11-18 and 2026-11-19; `golden-2-catalog` converged on 2026-11-17, 2026-11-18 and 2026-11-19. `golden-1` and `golden-3` did not converge on 2026-11-17, nor `golden-3` with `claude-sonnet-5-5` on 2026-11-25.
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). 7 of 122 sections are not `conformance-covered`: k.parity (clauses 5 and 6 at `none`) and k.library are `proposed`; k.test-run, k.ledger, k.ledger-items, k.library-pack and k.server-deps are `implemented`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). 22 of 129 sections are not `conformance-covered`. `proposed`: k.parity (clauses 5 and 6 at `none`), k.library, k.looks, k.schemes, k.values and k.entries. `implemented`, every clause cited: k.reactive, k.module, k.test-run, k.ledger, k.aria, k.leave, k.roles, k.docs, k.a11y-static, k.ledger-items, k.library-pack, k.server-deps, k.e2e, k.e2e-page, k.e2e-run and std.workflows. Every commit to `spec/` and `packages/*/conformance/` after `e9fc92e26` up to the verified commit, 105 of them, carries an RFC (0218, 0241, 0243, 0244, 0246) but two, neither a rule change: the status lines of k.a11y-static, k.testing and k.ui, and a k.testing a11y sentence trimmed to its token budget.
 
 subject: spec/ packages/*/conformance/
-verified: e9fc92e26772816eb68ea6f538a771381efc460d
+verified: fd82246959b7aa19dc4c3ccfc3cf2529aef98b88
