@@ -3,7 +3,7 @@ status: implemented
 
 **Purpose.** Identity is a record each kernel package holds in its own module (k.identity), so it is only as sound as three things: that a realm holds one copy of the package, that the record's built-ins are the platform's, and that no name leads to kernel state. This section states each, and what stays open to code written on purpose to get around them.
 
-**One copy.** Each kernel package that makes identities (`@keel/schema`, `@keel/store`, `@keel/router`, `@keel/server`) enters its name and the URL of its file, less query and hash, in the realm's census while its module is evaluated. A bundle writes that URL as the file it inlined, so two folders inlined differ (a browser bundle: the path from the project).
+**One copy.** Each kernel package that makes identities (`@keel/schema`, `@keel/store`, `@keel/router`, `@keel/server`) enters its name and the URL of its file, less query and hash, in the realm's census while its module is evaluated. A bundle names the file it inlined by a path, never by a folder of the machine that built it, so two folders inlined differ and two machines build the same bytes: a browser bundle by the path from the project, a server bundle by the path from its own file, resolved against the bundle's URL as it runs, so E1765 names file URLs of the machine that starts it.
 - A second copy of a name from another file is E1765 at that evaluation: it throws a coded refusal (k.deploy Refusals at start) whose message is `two copies of <name> in one realm: <first url> and <second url>`, and nothing more of the second copy runs. Two copies never disagree in silence about what a schema, a defect or an action is.
 - `keel check` and `keel build` report E1765 at the project's `package.json` when its dependencies resolve one of those names to two folders, with the same message and the folders' paths relative to the project: the one the project resolves first, then the one under a dependency, cut from the front to fit 89 units (k.check Diagnostics).
 - An evaluation from the same file again (a dev reload, a test's module reset) is no second copy. It has a record of its own: a value an earlier evaluation made fails its guards.
@@ -11,7 +11,15 @@ status: implemented
 
 **Built-ins.** A kernel package reads `WeakSet`, `WeakMap` and each of their methods it calls once, while its module is evaluated, and calls only those. The generated entries (k.deploy, k.topology) import the kernel before any app or library module. So a later write to `WeakSet.prototype.has`, `WeakMap.prototype.get` or `globalThis.WeakSet` changes no guard.
 
-**The `keel.` names.** A registered symbol whose key starts `keel.` is the kernel's: the census, and the slots its dev tools and entries keep on `globalThis`. In app code and a library's files:
+**The `keel.` names.** A registered symbol whose key starts `keel.` is the kernel's. The kernel keeps state on `globalThis` under one only where two module graphs or two packages must share it without importing each other: a test's fresh module graph evaluates a package again in the realm, and `@keel/services` reads what `@keel/server`, a browser entry and `@keel/testing` write. None holds a maker's record (k.identity): writing one changes what that state says, never what a guard answers. The slots, each `keel.<name>`:
+- `census`: a `Map` of package name to URL (One copy).
+- `ctxMeta`, `ctxHubs`, `simStorageShared`, `driven` (`@keel/ctx`): `WeakMap`s from a ctx to its mode, seed and plans, from a ctx to its observers, from a sim storage object to its data, and from a sim clock to what `simulate` drives.
+- `modules`: a `WeakMap` from a served ctx to a `Map` of module id to a peer's URL or app, and `keel.user` to the `x-keel-user` signer (k.topology). `users`: a `WeakMap` from a ctx to its test user (k.user Testing).
+- `errorCodes`: a `Set` of the codes `s.error` declared. `harnessCtx`: a `WeakSet` of the ctxs a test harness renders with.
+- On a page, resume's: `resumed` (a `WeakSet` of islands), `waitingSnapshots` (a `Map` of store id to snapshot), `resumeWarnings` (strings), `trustedTypes` (the `keel` policy).
+- `dev.registrations` (`keel dev`: a `Map` of capability to stack), `server.onUncaught.remove` (a function).
+
+In app code and a library's files:
 - `Symbol.for` given a string that folds to one starting `keel.` (a literal, a template without substitution, a `const` bound to either, or `+` of those) is E1766 at the call;
 - `Object.getOwnPropertySymbols` and `Reflect.ownKeys` given `globalThis`, `window`, `self` or `global` are E1766 at the call: they list what `Symbol.for` would name;
 - a `Symbol.for` whose argument does not fold to a string is R1019 in `keel review`, and a non-literal key on the global object is R1056 (k.escapes). Check cannot read either name.
