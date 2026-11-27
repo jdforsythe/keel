@@ -1,8 +1,8 @@
 import { err, s } from "@keel/schema";
 import type { Schema } from "@keel/schema";
-import { focusProblem } from "./internal/focusProblem.ts";
-import { valueForms } from "./internal/valueForms.ts";
-import type { Tokens } from "./types/Tokens.ts";
+import { focusProblem } from "../internal/focusProblem.ts";
+import { valueForms } from "../internal/valueForms.ts";
+import type { Tokens } from "../types/Tokens.ts";
 
 const scale = s.record(s.string()).optional();
 const pair = s.object({ light: s.string(), dark: s.string() }, { closed: true });

@@ -1,5 +1,5 @@
 import { TokenSchema } from "./TokenSchema.ts";
-import type { Tokens } from "./types/Tokens.ts";
+import type { Tokens } from "../types/Tokens.ts";
 
 /**
  * Declare the app's tokens (`tokens.ts`). Returns them unchanged with literal names preserved;

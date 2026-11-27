@@ -1,6 +1,6 @@
 # k.ui: Tokens and styling
 status: conformance-covered
-**Tokens.** `tokens.ts` at the project root, validated by `TokenSchema` from `@keel/ui`:
+**Tokens.** `tokens.ts` at the project root, validated by `TokenSchema`; `defineTokens` and `TokenSchema` come from `@keel/ui/tokens`, which runs at check and build time, never in a client bundle:
 ```ts
 export const tokens = defineTokens({
   color: { fg: { light: '#111', dark: '#eee' }, bg: { light: '#fff', dark: '#111' }, accent: '#0a5' },
