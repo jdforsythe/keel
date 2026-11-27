@@ -1,16 +1,50 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { isRecord } from "../isRecord.ts";
+import type { CacheInput } from "./CacheInput.ts";
+import type { CacheProbe } from "./CacheProbe.ts";
 import type { Evaluation } from "./Evaluation.ts";
+import { cacheHeld } from "./cacheHeld.ts";
 import { cacheKey } from "./cacheKey.ts";
-import { hashFile } from "./hashFile.ts";
+
+const KINDS: readonly CacheProbe["kind"][] = ["exists", "realpath", "list", "env", "env-names"];
+
+/** The recorded inputs of an entry, or undefined when one is out of shape. */
+function inputsOf(v: unknown): CacheInput[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: CacheInput[] = [];
+  for (const i of v) {
+    if (!isRecord(i) || typeof i.path !== "string" || typeof i.file !== "string" || typeof i.sha256 !== "string")
+      return undefined;
+    out.push({ path: i.path, file: i.file, sha256: i.sha256 });
+  }
+  return out;
+}
+
+/** The recorded probes of an entry, or undefined when one is out of shape. */
+function probesOf(v: unknown): CacheProbe[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: CacheProbe[] = [];
+  for (const p of v) {
+    const kind = isRecord(p) ? KINDS.find((k) => k === p.kind) : undefined;
+    if (!isRecord(p) || kind === undefined || typeof p.path !== "string") return undefined;
+    if (p.answer !== null && typeof p.answer !== "string") return undefined;
+    out.push({ kind, path: p.path, answer: p.answer });
+  }
+  return out;
+}
 
 /**
- * The evaluation the cache folder `dir` holds for the project at real path `root` whose code file paths are `paths`, or undefined (k.derived
- * Derivation cache): an entry is used only when its key is this one and every recorded input, read again, has the
- * same SHA-256; modification times are never read. An entry that cannot be read or lacks the shape is a miss.
+ * The evaluation the cache folder `dir` holds for the project at real path `root` whose code file paths are `paths`,
+ * with the inputs and probes its entry recorded, or undefined (k.derived Derivation cache): an entry is used only when
+ * its key is this one and every recorded input and probe gets the same answer again (`cacheHeld`). An entry that
+ * cannot be read or lacks the shape is a miss.
  */
-export function cacheRead(dir: string, root: string, paths: readonly string[]): Evaluation | undefined {
+export function cacheRead(
+  dir: string,
+  root: string,
+  paths: readonly string[],
+): { e: Evaluation; inputs: CacheInput[]; probes: CacheProbe[] } | undefined {
   if (!existsSync(dir)) return undefined;
   const key = cacheKey(root, paths);
   for (const name of readdirSync(dir)
@@ -22,21 +56,24 @@ export function cacheRead(dir: string, root: string, paths: readonly string[]): 
     } catch {
       continue;
     }
-    if (!isRecord(v) || v.key !== key || !Array.isArray(v.inputs) || !isRecord(v.evaluation)) continue;
-    const files: string[] = [];
-    let held = true;
-    for (const i of v.inputs) {
-      const file: unknown = isRecord(i) ? i.file : undefined;
-      if (!isRecord(i) || typeof file !== "string" || i.sha256 !== hashFile(file)) {
-        held = false;
-        break;
-      }
-      files.push(file);
-    }
+    if (!isRecord(v) || v.key !== key || !isRecord(v.evaluation)) continue;
+    const inputs = inputsOf(v.inputs);
+    const probes = probesOf(v.probes);
     const e = v.evaluation;
-    if (!held || !isRecord(e.routes) || !isRecord(e.surface) || !Array.isArray(e.problems)) continue;
+    if (inputs === undefined || probes === undefined || !isRecord(e.routes) || !isRecord(e.surface)) continue;
+    if (!Array.isArray(e.problems) || !cacheHeld(inputs, probes)) continue;
     const problems = e.problems.filter((p) => typeof p === "string");
-    return { routes: e.routes, surface: e.surface, problems, inputs: files };
+    const evaluation: Evaluation = {
+      routes: e.routes,
+      surface: e.surface,
+      problems,
+      inputs: [],
+      reads: [],
+      probes: [],
+      env: [],
+      envListed: false,
+    };
+    return { e: evaluation, inputs, probes };
   }
   return undefined;
 }

@@ -8,4 +8,12 @@ export type Evaluation = {
   readonly problems: readonly string[];
   /** The absolute path of every file the evaluation loaded, sorted. */
   readonly inputs: readonly string[];
+  /** The absolute path of every file its code read through `node:fs` or `node:fs/promises`, as the code named it. */
+  readonly reads: readonly string[];
+  /** Its code's other questions of the file system, each with an absolute path. */
+  readonly probes: readonly (readonly ["exists" | "realpath" | "list", string])[];
+  /** Each `process.env` name its code read, with the value it saw (`null`: absent). */
+  readonly env: readonly (readonly [string, string | null])[];
+  /** Whether its code listed `process.env`'s names. */
+  readonly envListed: boolean;
 };

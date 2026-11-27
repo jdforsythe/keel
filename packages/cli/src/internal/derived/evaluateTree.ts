@@ -34,7 +34,8 @@ function chainsOf(byId: ReadonlyMap<string, Readonly<Record<string, unknown>>>):
 /**
  * The one evaluation of a project's evaluated views (k.derived Derivations), returned as data only: `routes.json`'s
  * entries, the surface without its callers (k.compat Surface: `contracts` with `callers` empty, `stores`), the
- * Keel-coded problem lines (E1000, E1006, E1550, ...) and the absolute path of every file it loaded. One esbuild bundle
+ * Keel-coded problem lines (E1000, E1006, E1550, ...), the absolute path of every file it loaded, and what its code
+ * asked of the file system and `process.env` while it ran, the store factories included (`observe`). One esbuild bundle
  * of the contracts, route tables and store factories is imported once (`evaluateViews` of `@keel/compiler/routes`,
  * loaded only here); the bindings are read with the bundle's own `@keel/router/internal` and the stores with its
  * `@keel/store/internal`, each `stores` factory run once on a sim ctx (`storeShapes`, `storeIdClashes` for E1550).
@@ -74,5 +75,15 @@ export async function evaluateTree(root: string): Promise<Evaluation> {
   const shapes = store.storeShapes;
   const storesOf = (factory: unknown): unknown => (typeof shapes === "function" ? shapes(factory) : undefined);
   const surface = surfaceOf({ contracts, bindings, callers: {}, storesOf });
-  return { routes: r.routes, surface, problems: [...new Set(problems)], inputs: r.inputs };
+  const asked = r.observe();
+  return {
+    routes: r.routes,
+    surface,
+    problems: [...new Set(problems)],
+    inputs: r.inputs,
+    reads: asked.reads,
+    probes: asked.probes,
+    env: asked.env,
+    envListed: asked.envListed,
+  };
 }

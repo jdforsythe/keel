@@ -61,6 +61,9 @@ export async function viteServer(cwd: string, port: number | undefined): Promise
   const printUrls = method(server, "printUrls");
   const shortcuts =
     typeof field(server, "bindCLIShortcuts") === "function" ? method(server, "bindCLIShortcuts") : undefined;
+  const watcher = field(server, "watcher");
+  const on = method(watcher, "on");
+  const add = method(watcher, "add");
   return {
     version: typeof version === "string" ? version : "",
     port: field(field(config, "server"), "port"),
@@ -74,6 +77,14 @@ export async function viteServer(cwd: string, port: number | undefined): Promise
     },
     shortcuts: () => {
       shortcuts?.({ print: true });
+    },
+    onChange: (listener) => {
+      on("all", (event: unknown, file: unknown) => {
+        if (typeof event === "string" && typeof file === "string") listener(event, file);
+      });
+    },
+    watch: (files) => {
+      if (files.length > 0) add([...files]);
     },
   };
 }

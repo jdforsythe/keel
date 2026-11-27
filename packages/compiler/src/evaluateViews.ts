@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { Observed } from "./internal/Observed.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { listSources } from "./internal/listSources.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
@@ -17,7 +18,8 @@ const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
  * values (k.compat Surface), from each app `modules/<m>/<m>.contract.ts` and `modules/<m>/routes.ts`, and each placed
  * stdlib module's package `./contract` and `./routes`. One esbuild bundle (`evaluateProject`) is imported once;
  * `internals` are the specifiers of `@keel/router/internal` and `@keel/store/internal` it reads bindings and store
- * shapes with (none: no surface is evaluated). `inputs` is every file the bundle loaded, absolute. `problems` are Keel-coded lines (E1000, E1006,
+ * shapes with (none: no surface is evaluated). `inputs` is every file the bundle loaded, absolute; `observe()` what its
+ * code asked of the file system and the environment so far (`Observed`). `problems` are Keel-coded lines (E1000, E1006,
  * E1807, ...). Rejects when the evaluator itself fails (E1049).
  */
 export async function evaluateViews(
@@ -27,6 +29,7 @@ export async function evaluateViews(
   routes: Record<string, RouteEntry>;
   problems: string[];
   inputs: string[];
+  observe: () => Observed;
   surface: unknown;
 }> {
   const topologyFile = path.join(root, "topology.ts");
@@ -54,5 +57,12 @@ export async function evaluateViews(
           ...internals,
         };
   const r = await evaluateProject({ root, tokensFile: undefined, routesFiles, usages: [], surface });
-  return { routes: r.routes, problems: r.problems, inputs: r.inputs ?? [], surface: r.surface };
+  const none: Observed = { reads: [], probes: [], env: [], envListed: false };
+  return {
+    routes: r.routes,
+    problems: r.problems,
+    inputs: r.inputs ?? [],
+    observe: r.observe ?? (() => none),
+    surface: r.surface,
+  };
 }

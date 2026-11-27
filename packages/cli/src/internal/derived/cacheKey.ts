@@ -6,7 +6,7 @@ import { sha256Hex } from "../sha256Hex.ts";
 import { hashFile } from "./hashFile.ts";
 
 /** The entry format; a change of it is a miss for every older entry. */
-const FORMAT = 1;
+const FORMAT = 2;
 let keel: string | undefined;
 
 /** The SHA-256 of the evaluator's own code: the CLI's version and each file that evaluates (k.derived Derivation cache). */

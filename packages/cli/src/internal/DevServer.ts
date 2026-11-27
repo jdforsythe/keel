@@ -11,4 +11,8 @@ export type DevServer = {
   info(message: string): void;
   /** Vite's terminal shortcuts (a no-op when the server has none or stdin is not a TTY). */
   shortcuts(): void;
+  /** Calls `listener` with the event (`add`, `change`, `unlink`, ...) and absolute path of each change its watcher sees. */
+  onChange(listener: (event: string, file: string) => void): void;
+  /** Adds files to its watcher (a linked package's, outside the root). */
+  watch(files: readonly string[]): void;
 };

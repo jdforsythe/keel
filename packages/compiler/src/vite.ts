@@ -174,6 +174,7 @@ type DevServer = {
   reloadModule(module: ModuleNode): Promise<void>;
   ssrLoadModule?(id: string): Promise<Record<string, unknown>>;
   middlewares: Middlewares;
+  watcher?: { add(paths: string | readonly string[]): unknown };
 };
 type DevApp = {
   readonly name: string;
@@ -398,6 +399,11 @@ export default function (): {
     .map((o) => o.trim())
     .filter((o) => o !== "");
   const written = new Map<string, string>();
+  /**
+   * The real path of each file the last evaluation loaded or its code read (k.derived Refresh): a change to one
+   * evaluates again, a contract file the route tables import included.
+   */
+  let evaluatedFiles: ReadonlySet<string> = new Set();
   let devApps: DevApp[] = [];
   /** Whether this dev server answers for `node` or `static` deployables (`keel dev` of a topology that has one). */
   let hasNode = false;
@@ -868,6 +874,11 @@ export default function (): {
     });
     for (const p of r.problems) warn(`keel: ${p}`);
     problems = r.problems;
+    const files = [...(r.inputs ?? []), ...(r.observe?.().reads ?? [])].map(onDisk);
+    evaluatedFiles = new Set(files);
+    // A file outside the root (a linked package's) is watched too, so its change reaches `watchChange`.
+    const outside = files.filter((f) => path.relative(root, f).startsWith(".."));
+    if (outside.length > 0) server?.watcher?.add(outside);
     css = r.css;
     looks = r.looks;
     schemes = r.schemes;
@@ -1304,7 +1315,10 @@ export default function (): {
           })
           .catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
       }
-      if (rel === null || !PROJECT_FILE.test(rel)) return;
+      // A file the last evaluation read, or a code file created or deleted (the code file paths), evaluates again.
+      const read = evaluatedFiles.has(onDisk(id)) || evaluatedFiles.has(id);
+      const paths = change.event !== "update" && rel !== null;
+      if (!read && !paths && (rel === null || !PROJECT_FILE.test(rel))) return;
       if (rel === "topology.ts") {
         readTopology();
         for (const [k, e] of [...modules]) {

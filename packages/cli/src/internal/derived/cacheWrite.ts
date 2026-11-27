@@ -2,6 +2,7 @@ import { mkdirSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } f
 import { join } from "node:path";
 import { sha256Hex } from "../sha256Hex.ts";
 import type { CacheInput } from "./CacheInput.ts";
+import type { CacheProbe } from "./CacheProbe.ts";
 import type { Evaluation } from "./Evaluation.ts";
 import { cacheKey } from "./cacheKey.ts";
 
@@ -9,8 +10,8 @@ import { cacheKey } from "./cacheKey.ts";
 const KEEP = 4;
 
 /**
- * Store `e` in the cache folder `dir` with its recorded `inputs`, for a project whose code file paths are `paths`
- * (k.derived Derivation cache): one JSON file named by the SHA-256 of its key and inputs, holding them and the
+ * Store `e` in the cache folder `dir` with its recorded `inputs` and `probes`, for a project whose code file paths are
+ * `paths` (k.derived Derivation cache): one JSON file named by the SHA-256 of its key, inputs and probes, holding them and the
  * evaluation, written to `<name>.<pid>.tmp` and renamed into place. Entries beyond `KEEP`, least recently written
  * first, and other `*.tmp` files are removed. A failed write is ignored.
  */
@@ -19,15 +20,19 @@ export function cacheWrite(
   root: string,
   paths: readonly string[],
   inputs: readonly CacheInput[],
+  probes: readonly CacheProbe[],
   e: Evaluation,
 ): void {
   const key = cacheKey(root, paths);
   const { routes, surface, problems } = e;
-  const name = `${sha256Hex(new TextEncoder().encode(JSON.stringify({ key, inputs })))}.json`;
+  const name = `${sha256Hex(new TextEncoder().encode(JSON.stringify({ key, inputs, probes })))}.json`;
   const own = `${name}.${process.pid}.tmp`;
   try {
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, own), `${JSON.stringify({ key, inputs, evaluation: { routes, surface, problems } })}\n`);
+    writeFileSync(
+      join(dir, own),
+      `${JSON.stringify({ key, inputs, probes, evaluation: { routes, surface, problems } })}\n`,
+    );
     renameSync(join(dir, own), join(dir, name));
     const entries = readdirSync(dir);
     for (const n of entries) if (n.endsWith(".tmp") && n !== own) rmSync(join(dir, n), { force: true });

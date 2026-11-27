@@ -9,8 +9,14 @@ import { appLibraries } from "../std/appLibraries.ts";
 import { libraryRel } from "../std/libraryRel.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
+import { OBSERVE_BANNER } from "./OBSERVE_BANNER.ts";
+import type { Observed } from "./Observed.ts";
+import { bundleFailure } from "./bundleFailure.ts";
 import { contractOf } from "./contractOf.ts";
 import { internalFailure } from "./internalFailure.ts";
+import { observePlugin } from "./observePlugin.ts";
+import { observedOf } from "./observedOf.ts";
+import { resolvedLinks } from "./resolvedLinks.ts";
 
 // Build-time only (D24): the bundle below is resolved from the app root, which depends on these packages.
 const UI_CSS = "@keel/ui/css";
@@ -136,6 +142,7 @@ function entrySource(
     );
   lines.push(
     `const routes = Object.assign({}, ${routesFiles.map(([f, c]) => `await manifest(${q(f)}, () => import(${spec(f)}), ${c === undefined ? "undefined, undefined" : `${q(c)}, () => import(${spec(c)})`})`).join(", ")});`,
+    "export const observed = __keelObserved;",
     "export default JSON.stringify({ css, looks, schemes, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
   );
   return lines.join("\n");
@@ -165,8 +172,13 @@ export async function evaluateProject(input: {
   schemes: readonly string[];
   routes: Record<string, RouteEntry>;
   problems: string[];
-  /** With `surface`: the absolute path of every file the bundle loaded (esbuild's inputs), sorted. */
+  /** The absolute path of every file the bundle loaded (esbuild's inputs), sorted; none when nothing was bundled. */
   inputs?: string[];
+  /**
+   * What the bundle's code has asked so far of the file system and the environment (`Observed`), each `node_modules/<name>`
+   * link a bare import resolved through among its `realpath` probes; read after the last of its code has run.
+   */
+  observe?: () => Observed;
   /** With `surface`: the module's `surface` export, live (contracts, route tables and the two internals). */
   surface?: unknown;
 }> {
@@ -199,9 +211,11 @@ export async function evaluateProject(input: {
     format: "esm",
     platform: "node",
     // As the server build: a package's CommonJS `require` of a Node built-in (`pg` requires `events`) gets a real one.
-    banner: { js: REQUIRE_BANNER },
+    // The record of what the code reads (k.derived Derivation cache) is the bundle's own: `__keelObserved`.
+    banner: { js: `${REQUIRE_BANNER}\n${OBSERVE_BANNER}` },
     // As the server build: `import.meta.env` holds Vite's built-in values only (the plugin's `envPrefix` admits none).
-    define: { "import.meta.env": SERVER_ENV },
+    // Every free `process` is the bundle's recording view of it.
+    define: { "import.meta.env": SERVER_ENV, process: "__keelProcess" },
     // Node's own conditions (`node`, `import`, `default`), without esbuild's `module`: the file a package's `exports`
     // gives here is the one Node imports and the one `routeLiterals` reads; `keel` first gives a library's source.
     conditions: ["keel"],
@@ -210,6 +224,7 @@ export async function evaluateProject(input: {
     // A stylesheet a host element code file imports (k.host-code) is the browser build's asset: here it is nothing.
     loader: { ".css": "empty" },
     plugins: [
+      observePlugin(),
       shippedTokensPlugin(root),
       {
         name: "keel-jsx",
@@ -244,7 +259,7 @@ export async function evaluateProject(input: {
   });
   const result = await bundled.catch((e: unknown) => {
     if (syntax.length > 0) return undefined;
-    throw e;
+    throw bundleFailure(e, root);
   });
   if (result === undefined)
     return { css: "", looks: {}, schemes: ["light"], routes: {}, problems: [...new Set(syntax)] };
@@ -263,11 +278,13 @@ export async function evaluateProject(input: {
   const file = path.join(dir, "evaluate.mjs");
   let json: unknown;
   let surface: unknown;
+  let observed: unknown;
   try {
     fs.writeFileSync(file, text);
     const mod: unknown = await import(pathToFileURL(file).href);
     json = isRecord(mod) && typeof mod.default === "string" ? JSON.parse(mod.default) : undefined;
     surface = isRecord(mod) ? mod.surface : undefined;
+    observed = isRecord(mod) ? mod.observed : undefined;
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -289,5 +306,11 @@ export async function evaluateProject(input: {
   const looks = isRecord(json.looks) ? json.looks : {};
   const schemes = Array.isArray(json.schemes) ? json.schemes.filter((x) => x === "light" || x === "dark") : ["light"];
   const problems = json.problems.filter((p) => typeof p === "string");
-  return { css: json.css, looks, schemes, routes, problems, ...(none ? {} : { surface, inputs }) };
+  const links = resolvedLinks(root, result.metafile);
+  const observe = (): Observed => {
+    const o = observedOf(observed);
+    const link = (l: string): readonly ["realpath", string] => ["realpath", l];
+    return { ...o, probes: [...o.probes, ...links.map(link)] };
+  };
+  return { css: json.css, looks, schemes, routes, problems, inputs, observe, ...(none ? {} : { surface }) };
 }

@@ -2,5 +2,6 @@
 // command over the disk derives or refreshes them (`@keel/cli` size budget)
 export { deriveEvaluated } from "../internal/derived/deriveEvaluated.ts";
 export { derivedRoutes } from "../internal/derived/derivedRoutes.ts";
+export { devViews } from "../internal/derived/devViews.ts";
 export { refreshViews } from "../internal/derived/refreshViews.ts";
 export { testViews } from "../internal/derived/testViews.ts";
