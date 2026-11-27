@@ -83,7 +83,7 @@ const routeOf = (url: string): URL | undefined => {
  */
 export const command: StdOperation = {
   name: "report",
-  description: "Print the tallies of a dev app's inspect sections, or of a route url answering them (std.report).",
+  description: "Tallies of a dev app's inspect sections, or of a route url's (std.report).",
   input: s.object({
     url: s.string().optional(),
     format: s.enum(["compact", "json", "pretty"]).optional(),

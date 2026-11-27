@@ -17,7 +17,7 @@ const OPS = ["capture", "ingest", "replay", "minimize", "to-test", "monitor"] as
  */
 export const command: StdOperation = {
   name: "session",
-  description: "Capture, ingest, replay, minimize, or turn into a test a recorded session (std.sessions).",
+  description: "Capture, ingest, replay, minimize or make a test of a recorded session (std.sessions).",
   input: s.object({
     op: s.enum(OPS),
     target: s.string().optional(),
