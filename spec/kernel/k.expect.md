@@ -1,5 +1,5 @@
 # k.expect: What `expect` claims and an error carries
-status: proposed
+status: conformance-covered
 
 **Purpose.** A thrown value becomes a value at `attempt`'s `expect` (k.attempt), and that value then travels to callers, a response and a log. Two things can go wrong there while every type holds: an `expect` can claim every throw while it seems to test, and it can copy the thrown value's text into the error. This section says what an `expect` does with its parameter, what an error may be built from, and where code that must take every throw goes (k.supervise).
 

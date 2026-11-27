@@ -1,5 +1,5 @@
 # k.shared: Module state on a server
-status: proposed
+status: implemented
 
 **Rule.** State a module owns outlives a request, so on a server every request the process serves can read it. Reactive module state is held to that at run time: no request writes it. Plain module state (a `let`, a `Map`, an array, an object's property) is not: nothing refuses a request's write to it today (Not refused). An author picks by lifetime:
 

@@ -1,5 +1,5 @@
 # k.supervise: Supervised work
-status: proposed
+status: conformance-covered
 
 **Purpose.** Some code runs other code and must outlive whatever that code throws: a job runner and its jobs, a channel route and its `member`, a live view and its `read`, an outbox and its storage driver. Such code is an owner of those throws, as a `Boundary` and the server's request are (k.errors): it reports each one and goes on. `attempt` cannot say this: its `expect` names the values it expects and never sees a defect (k.attempt, k.expect). `supervise` is the one form that takes every throw, and it is written so that it cannot stand in for a catch.
 

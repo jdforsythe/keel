@@ -1,5 +1,5 @@
 # k.realm: One kernel per realm
-status: proposed
+status: implemented
 
 **Purpose.** Identity is a record each kernel package holds in its own module (k.identity), so it is only as sound as three things: that a realm holds one copy of the package, that the record's built-ins are the platform's, and that no name leads to kernel state. This section states each, and what stays open to code written on purpose to get around them.
 
