@@ -1,4 +1,4 @@
-// k.create, Names "E1352 names no path: the name is in no file yet." (Names) (no Conformance bullet of the section holds it yet, so this is a plain comment and not a `// Spec:` line)
+// Spec: k.create, clause "`create-app "My Site"`, `create-app shop --name vite` and `create-app shop --library charts` are each E1352 with no path: in compact the line starts `E1352 ` followed by the message, with no `path:line:col`."
 // RFC 0247, Conformance (after the second review): `create-app "My Site"`, `create-app shop --name vite` and `create-app shop --library charts` are each E1352 with no path (compact: the line starts `E1352 ` followed by the message, no `path:line:col`).
 // seed 1337 (property over names that break the name rule). The bin as a child process (create-bin-support.ts).
 // ASSUMED: "no path" in json is a diag record whose `path` is absent or empty; `--format=json` is accepted by the bin as `keel` accepts it.
