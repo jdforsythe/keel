@@ -1,13 +1,12 @@
 // Spec: k.attempt, clause "With `d` a defect, `attempt(() => { throw new Error('w', { cause: d }) }, spy)` and `attempt(() => Promise.any([Promise.reject(d)]), spy)` throw or reject with the wrapping value itself and never call `spy`."
-// Spec: k.defects, clause "A value made by `defect('x', 'E2801')` under one copy of `@keel/schema` is `isDefect(v, 'E2801')` under a second copy loaded from another path in the same realm; `structuredClone(v)` and the value a worker receives by `postMessage(v)` are not `isDefect`."
-// Seed 1337.
-// Assumption: "a second copy loaded from another path" is a second evaluation of the package, `vi.resetModules()` then a dynamic import; a copy of the build under a temporary path would also do but needs the build.
+// Spec: k.defects, clause "For `v` a value made by `defect('x', 'E2801')`, `structuredClone(v)` and the value a worker receives by `postMessage(v)` are not `isDefect`; a second copy of `@keel/schema` does not load beside the first (k.realm)."
+// Seed 1337. The clause's last half (a second copy of `@keel/schema` does not load beside the first) is asserted in second-copy.test.ts (k.realm).
 // Assumption: "at most 8 steps" counts each `cause` or `errors` member followed as one step: a wrapper holding the defect is 1 step, so 8 wrappers skip `expect` and 9 do not.
 import { Worker } from "node:worker_threads";
 import { attempt, defect, isDefect } from "@keel/schema";
 import type { KeelError } from "@keel/schema";
 import fc from "fast-check";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { RUNS, SEED } from "./fixtures";
 
 const opts = { seed: SEED, numRuns: RUNS };
@@ -157,13 +156,6 @@ describe("k.errors: attempt's expect never sees a value wrapping a defect", () =
   });
 });
 
-/** A second evaluation of `@keel/schema`: its module state is not the first's. */
-async function secondCopy(): Promise<{ defect: typeof defect; isDefect: typeof isDefect }> {
-  vi.resetModules();
-  const copy = await import("@keel/schema");
-  return { defect: copy.defect, isDefect: copy.isDefect };
-}
-
 const WORKER_ECHO = `
 const { parentPort } = require('node:worker_threads')
 parentPort.once('message', (m) => parentPort.postMessage(m))
@@ -178,41 +170,7 @@ const viaWorker = (value: unknown): Promise<unknown> =>
     w.postMessage(value);
   });
 
-describe("k.errors: the defect mark is shared by every copy of @keel/schema and lost by every copy of the value", () => {
-  it("a value made by `defect('x', 'E2801')` is `isDefect(v, 'E2801')` under a second copy of @keel/schema", async () => {
-    const v = made("x", "E2801");
-    const two = await secondCopy();
-    expect(two.isDefect).not.toBe(isDefect);
-    expect(two.isDefect(v, "E2801")).toBe(true);
-    expect(two.isDefect(v)).toBe(true);
-    expect(two.isDefect(v, "E2802")).toBe(false);
-  });
-
-  it("a defect made by the second copy is a defect to the first", async () => {
-    const two = await secondCopy();
-    let v: unknown;
-    try {
-      two.defect("x", "E2801");
-    } catch (e) {
-      v = e;
-    }
-    expect(isDefect(v, "E2801")).toBe(true);
-  });
-
-  it("property: for any message and code, a defect of one copy is `isDefect` of the same code and of no other under the other", async () => {
-    const two = await secondCopy();
-    fc.assert(
-      fc.property(fc.string(), code, code, (message, c, other) => {
-        const v = made(message, c);
-        expect(two.isDefect(v, c)).toBe(true);
-        expect(two.isDefect(v, other)).toBe(other === c);
-        const bare = made(message);
-        expect(two.isDefect(bare)).toBe(true);
-      }),
-      opts,
-    );
-  });
-
+describe("k.defects: the defect mark is lost by every copy of the value", () => {
   it("`structuredClone(v)` is not `isDefect`", () => {
     fc.assert(
       fc.property(fc.string(), code, (message, c) => {

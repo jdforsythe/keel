@@ -1,3 +1,4 @@
+// Spec: k.identity, clause "`isSchema(S)`, `isStore(st)`, `isTransaction(tx)` and `isRouteTable(routes)` are true of what `s.object`, `store`, `transaction` and `manifest` returned; each is false of `{ ...v }`, of an object given every own key and descriptor of `v`, and of a function or object declaring `Symbol.for('keel.schema')`, `Symbol.for('keel.store')` or `Symbol.for('keel.action')` as an own key."
 // Spec: k.store, clause "`isStore(cart)` and `isTransaction(addItem)` are true, `isStore(addItem)`, `isTransaction(cart)` and `isStore({ id: 'cart', get() {}, snapshot() {}, restore() {}, head() {} })` false."
 // k.store, Guards "`isStore(x)` and `isTransaction(x)` (`@keel/store`) are true only of a value `store` or `transaction` made, by the kernel's own record of them and no property of the value (k.identity), so code that holds an `unknown` narrows it to `Store<unknown>` or `Transaction<unknown, unknown>` with no cast."
 // Seed 1337 (fixtures.ts).

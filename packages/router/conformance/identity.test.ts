@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.identity, clause "With `a = action(c, 'p.b', { input: A }, run)` and `A`, `B` object schemas: `Object.isFrozen(a)` is true, and `manifest` given `{ ...a }`, `{ ...a, input: B }`, `Object.assign(Object.create(Object.getPrototypeOf(a)), a)`, an object given every `Reflect.ownKeys(a)` key with its descriptor, or `new Proxy(a, {})` in `a`'s place throws a value whose message starts `E1515` and names `p.b`, and runs nothing; the same holds of a `loader`'s and a `guard`'s copies."
-// Spec: k.identity, clause "`isSchema(S)`, `isStore(st)`, `isTransaction(tx)` and `isRouteTable(routes)` are true of what `s.object`, `store`, `transaction` and `manifest` returned, also under a second copy of the guard's package loaded from another path; each is false of `{ ...v }`, of an object given every own key and descriptor of `v`, and of a function or object declaring `Symbol.for('keel.schema')`, `Symbol.for('keel.store')` or `Symbol.for('keel.action')` as an own key."
+// Spec: k.identity, clause "`isSchema(S)`, `isStore(st)`, `isTransaction(tx)` and `isRouteTable(routes)` are true of what `s.object`, `store`, `transaction` and `manifest` returned; each is false of `{ ...v }`, of an object given every own key and descriptor of `v`, and of a function or object declaring `Symbol.for('keel.schema')`, `Symbol.for('keel.store')` or `Symbol.for('keel.action')` as an own key."
 // k.identity, Identity "A made value is frozen. A copy is not that thing: a spread, `Object.assign`, `structuredClone`, a `Proxy` over it, and an object given each of its own keys and descriptors, symbol keys among them, fail every guard."
 // k.identity, Identity "Where the kernel binds a handler (`manifest`, `createApp`, `createRouter`), a value no maker made is E1515, naming the route id and the member; nothing runs it."
 // Seed 1337. The store, transaction and schema guards are asserted in packages/store and packages/schema; here only the router's `isRouteTable`.
@@ -10,7 +10,7 @@ import { guard, isRouteTable, loader, manifest, action } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { SEED, thrown } from "./contract-support.ts";
 
 const A = s.object({ a: s.string() });
@@ -130,13 +130,10 @@ describe("k.identity in the router", () => {
     );
   });
 
-  it("isRouteTable is true of what manifest returned, also under a second copy of @keel/router, and false of copies of it and of an object declaring a keel symbol key", async () => {
+  it("isRouteTable is true of what manifest returned, and false of copies of it and of an object declaring a keel symbol key", () => {
     const routes = Reflect.apply(manifest, undefined, [c, bindWith("action", act)]);
     expect(isRouteTable(routes)).toBe(true);
     expect(Object.isFrozen(routes)).toBe(true);
-    vi.resetModules();
-    const second = await import("@keel/router");
-    expect(second.isRouteTable(routes)).toBe(true);
     expect(isRouteTable({ ...routes })).toBe(false);
     expect(isRouteTable(ownCopy(routes))).toBe(false);
     expect(isRouteTable(new Proxy(routes, {}))).toBe(false);
