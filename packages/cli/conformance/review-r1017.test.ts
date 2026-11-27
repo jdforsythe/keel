@@ -1,4 +1,5 @@
 // Spec: k.escapes, clause "R1017 is one finding each for `attempt(f, (x) => (x instanceof Error ? T : undefined))` and `attempt(f, (x) => (x ? T : undefined))` in `modules/m/a.ts`, and none for `attempt(f, (x) => (x instanceof RangeError ? T : undefined))` or `attempt(f, (x) => (x instanceof Error && x.name === 'CardError' ? T : undefined))`."
+// Spec: k.escapes, clause "R1017 is one finding each for `attempt(f, (x) => (x instanceof Object ? T : undefined))`, `attempt(f, (x) => (typeof x !== 'bigint' ? T : undefined))`, `attempt(f, (x) => (x !== 1 ? T : undefined))`, `attempt(f, (x) => (x instanceof RangeError ? undefined : T))` and `attempt(f, (x) => (any(x) ? T : undefined))` with `const any = (x: unknown) => true` in the file, in `modules/m/a.ts`; none for `attempt(f, (x) => (isUnique(x) ? T : undefined))` with `const isUnique = (x: unknown) => typeof x === 'object' && x !== null && Reflect.get(x, 'code') === '23505'` in the file."
 // k.escapes, Codes "R1017 | medium | an `attempt` whose `expect` returns an error for a value tested only by `instanceof Error`, or by no class or property of it (k.attempt)"
 // Seed 1337 (the property); the forms are source text. The property writes all its files into one repository and reads one review.
 import { testTime } from "@keel/tooling/test-time";
@@ -89,4 +90,35 @@ test(
     });
   },
   testTime(240_000),
+);
+
+const WIDE: readonly (readonly [string, string])[] = [
+  ["attempt(f, (x) => (x instanceof Object ? T : undefined))", ""],
+  ["attempt(f, (x) => (typeof x !== 'bigint' ? T : undefined))", ""],
+  ["attempt(f, (x) => (x !== 1 ? T : undefined))", ""],
+  ["attempt(f, (x) => (x instanceof RangeError ? undefined : T))", ""],
+  ["attempt(f, (x) => (any(x) ? T : undefined))", "const any = (x: unknown) => true;\n"],
+];
+for (const [form, decl] of WIDE) {
+  test(
+    `R1017 is one finding for \`${form}\` in \`modules/m/a.ts\``,
+    () => {
+      const hits = hitsFor(`${decl}export const r = ${form}`);
+      expect(hits).toHaveLength(1);
+      expect(hits[0]?.path).toBe("modules/m/a.ts");
+    },
+    testTime(120_000),
+  );
+}
+
+test(
+  "R1017 is none for `attempt(f, (x) => (isUnique(x) ? T : undefined))` with `const isUnique = (x: unknown) => typeof x === 'object' && x !== null && Reflect.get(x, 'code') === '23505'` in the file",
+  () => {
+    expect(
+      hitsFor(
+        "const isUnique = (x: unknown) => typeof x === 'object' && x !== null && Reflect.get(x, 'code') === '23505';\nexport const r = attempt(f, (x) => (isUnique(x) ? T : undefined))",
+      ),
+    ).toEqual([]);
+  },
+  testTime(120_000),
 );
