@@ -1,6 +1,6 @@
 # RFC 0242: k.errors and k.reactive: `defect`, `attempt`'s `expect`, module roots; no `unsafe` throws, catches or detached scopes
 
-Status: D1 to D40 implemented (ADR-0264), but E1260, which waits for RFC 0251's `processSlot` (the plan's D226). A third review tried to break the build and found the error model wrong at its root: D21 to D40 restate it (Third review, below); where they differ from an earlier decision or section of this RFC they replace it. For the operator to confirm. Under the plan's D191 and D192. Amends k.errors (Split, API, Rules, Layers), k.reactive (Static), k.unsafe (Type predicates, One path, E1762), k.escapes (R1015, R1017), k.serverlog (Thrown values, E1596), k.store (Guards), k.schema (Guard, `parseJson`, rule `json`), std.postgres (Errors). New sections: k.attempt, k.defects, k.fixes, k.identity, k.shared, std.postgres-errors. Glossary: **defect**, **module root**, **kernel-held identity** (in place of key guard, which this RFC introduced and no release held), **fix chain**.
+Status: D1 to D40 implemented (ADR-0264), but E1260, which waits for RFC 0251's `processSlot` (the plan's D226). A breaking review passed the model at its root and failed it at its edges: D41 to D56 settle those (Breaking review, below), written to `spec/` and not yet built; where they differ from an earlier decision or section of this RFC they replace it. A third review tried to break the build and found the error model wrong at its root: D21 to D40 restate it (Third review, below); where they differ from an earlier decision or section of this RFC they replace it. For the operator to confirm. Under the plan's D191 and D192. Amends k.errors (Split, API, Rules, Layers), k.reactive (Static), k.unsafe (Type predicates, One path, E1762), k.escapes (R1015, R1017), k.serverlog (Thrown values, E1596), k.store (Guards), k.schema (Guard, `parseJson`, rule `json`), std.postgres (Errors). New sections: k.attempt, k.defects, k.fixes, k.identity, k.shared, std.postgres-errors; after the breaking review k.supervise, k.expect, k.realm. Glossary: **defect**, **module root**, **kernel-held identity** (in place of key guard, which this RFC introduced and no release held), **fix chain**, **supervisor**, **coded refusal**.
 
 ## Decisions
 - D1: `defect(message: string, code?: DefectCode): never` and `isDefect(x: unknown, code?: string): x is Defect`, in `@keel/schema` beside `ok`, `err` and `attempt`. A defect is an `Error` named `Defect`, its message `<code> <message>` when a code is given, its `code` a non-enumerable own property. `DefectCode` is `` `E${number}` ``; E1455 holds a given code to a literal `E` and four digits.
@@ -45,6 +45,22 @@ Status: D1 to D40 implemented (ADR-0264), but E1260, which waits for RFC 0251's 
 - D38: each minor finding has a home (The minors, below).
 - D39: the guarantee is stated in layers (k.errors Layers), as RFC 0245 states its own.
 - D40: six new sections, since k.errors, k.unsafe, k.leave and std.postgres are at their limits. `tooling/budgets.mjs` reports no token line over with them; `keel docs --for E1451` stays within its 400 by naming the code in fewer lines. This replaces D16's "no new section".
+- D41 (breaking review): code that runs other code and must survive its throws calls `supervise(ctx, id, fn, failed)` (`@keel/ctx`, k.supervise). Every throw, a defect among them, is reported once as the throw it is (a `supervised <id> threw:` record by k.serverlog's rules, an `error` event to observers) and the call gives `err(failed)`, `failed` a value made before `fn` runs. Kernel packages and a library's files may call it, each call listed by review (R1018); in app code it is E1461.
+- D42: an `expect` is a function check can read, and it claims only in a branch a test of the thrown value selects, with `undefined` in its return type (k.expect Readable, Decides; E1452). Truthiness, a self-comparison, `void x` and a value used only in the error are no test. What cannot be proven narrow is review's (R1017, widened).
+- D43: an `expect` carries a number, a boolean or a literal union out of the thrown value, never text (k.expect Carries, E1460). A `make` or `causedBy` message is a literal (E1460).
+- D44: a `KeelError` is made by `make` or `causedBy` only; an object literal where one is expected is E1458. The kernel's codes an author returns are `keelError.denied`, `.notFound`, `.conflict`, `.unreachable`, `.busy` and `.fields` (`@keel/schema`).
+- D45: no `Result` in a `Result`. `ok` given one is E1459 in check's type pass and a defect at run time; `ok`'s TypeScript signature stays `ok<T>(value: T)`, since a type that refused a `Result` would refuse every `ok(v)` over a type parameter.
+- D46: identity is held in a binding of the maker's own package, under no key (k.identity). This replaces D32's realm record and D14's reason for it. A realm holds one copy of each kernel package: a second copy is E1765 at its evaluation, naming both file URLs, and at check and build (k.realm).
+- D47: the `keel.` registered symbols are the kernel's: naming one, or listing the global object's symbol keys, in app or library code is E1766; a `Symbol.for` check cannot fold is R1019. The kernel reads `WeakSet`, `WeakMap` and their methods once at evaluation.
+- D48: a coded refusal at start is printed with its own code, message and `see`, in production too, and exits 1; E1577 is for a value Keel did not raise (k.deploy Refusals at start). An unknown module in `topology.ts` is E1552 at `keel check` and `keel build` (k.topology).
+- D49: an E1577 record is one record; with full text on (dev, or before `KEEL_LOG_THROWN`'s instant) the scrubbed text follows its form in that record (k.serverlog, k.leave).
+- D50: E1260 and `processSlot` leave k.shared until the RFC that builds them: nothing refuses a request's write to plain module state today, and k.shared, k.resume and the keel-server skill say so and say where a config value, a pool and a cache go. A section's Rules names only codes that have an explanation row, whatever its status (k.explain).
+- D51: catches and throws under other spellings: a promise's `then`, `catch` or `finally` taken by a binding pattern, a promise member under a computed key, a generator's `throw`, and a listener for uncaught throws are refused by check (k.unsafe Other spellings); a listener whose event name is no literal is R1020.
+- D52: a getter or `Proxy` that throws while `attempt` searches for a defect ends the search; `expect` gets the first thrown value. `err` refuses `data` that is `undefined` or a function. The production site is the source line, read through the map.
+- D53: `explain`'s `see` is printed whole; E1457's message names `Prefs.parseJson(text)`, so a schema's method is not read as `s.json`'s.
+- D54: the guarantees whose cases the migration dropped are stated as clauses: a dev page for E1256 names the store (k.shared #9), and the scrub holds in production mode inside the window (k.serverlog #18).
+- D55: the three wall-test patterns (retry, rollback, wrapping an SDK) do not fit a skill: each published skill sits at its token target, and a target is not raised in a lane. The keel skill points to `keel explain E1452`; the block is in this RFC for the operator's re-base.
+- D56: three new sections (k.supervise, k.expect, k.realm), since k.attempt, k.errors, k.identity and k.leave are at their limits.
 
 
 ## Problem
@@ -343,6 +359,202 @@ This RFC merges first, and RFC 0245 (k.failures, on `lane-server-up`) cites its 
 - F2 and L1 to L4: a library holds identity the way the kernel does (the module's own set, proof 3), wraps an SDK with `attempt(fn, expect)`, and its module state is under E1256 with no declaration. L3's question (does the app see what a service library reaches) gains: its failures arrive as codes with typed data.
 - L6 (plain npm package): its throws are unexpected until an `expect` names them; its text never reaches a production log.
 
+## Breaking review: the edges
+A reviewer tried to break the build of D21 to D40. The verdict: merge after fixes; the model holds at its root (two kinds of failure, one catch that names what it expects, a defect that passes through, identity apart from the value) and fails at its edges. Each finding was reproduced. D41 to D56 are the design for them; the personas each touches are named where it changes what they write.
+
+### Supervising code (finding 1, blocking)
+`attempt`'s `expect` is right for code that knows its callee. It is wrong for code that runs someone else's: std-jobs' runner, std-channels' `member`, std-live's `read`, std-offline's storage driver. Those wrote `(x) => (x instanceof Error ? Thrown.make({}) : undefined)`, the nearest thing to "everything" that check accepts, and it is not everything: a job that calls `defect()` or throws a string rejects out of the runner, and in production the unhandled rejection is E1577 and the process ends. A stream hung with no denial; a live view stayed `connecting` with no retry. Meanwhile app code could write the total claim in disguise.
+
+The two needs are different and get different forms.
+
+```ts
+// packages/std-jobs/src/internal/runOnce.ts
+const ran = await supervise(ctx, 'jobs.run', () => j.fn(parsed.value, ctx, a.signal), Thrown.make({}))
+if (!ran.ok) return ran.error.code // 'jobs.thrown', or the job's own err code
+```
+`supervise` is an owner of throws, as a `Boundary` and the server's request already are. What makes it honest and not a second catch:
+- `failed` is a value, made before `fn` runs. Nothing of the thrown value can reach it, so there is no reading, branching or wrapping: the caller learns "it threw".
+- Every throw is reported as a throw: on a server one `diag` `supervised jobs.run threw: Defect E2801 #9f3c21ab at modules/p/send.server.ts:12`, by the same rules as a loader's; to observers one `keel.unexpected` with `data.at` the id. A defect is recorded once, as a defect.
+- It never rejects for a throw of `fn`, so no supervised path ends the process or hangs.
+- Kernel packages and a library's files may call it, and review lists each call (R1018). App code may not (E1461).
+
+Why not in app code: the agent form of A2 takes the shortest path to a clean check, and a catch-all one import away is that path for every E1452. An app that does run code it does not own (plug-ins, a customer's script) writes that runner as a library package in its workspace, where the call is listed. F2's question (could a third party have built std-jobs?) is yes: `supervise` is public to every library. A3: R1018 is where a team sees a dependency take over its throws.
+
+The disguised total `expect`, per form the reviewer wrote:
+
+| Form | Refused by |
+| --- | --- |
+| `(x) => (void x, T)` | Decides 1: no `undefined` in the return type (E1452) |
+| `(x) => (x === x ? T : undefined)` | Decides 2: a comparison whose both sides read the thrown value is no test (E1452) |
+| an imported `(_x) => T` | Readable: read by symbol at its declaration, then Decides 1 (E1452); unreadable is E1452 too |
+| `(x) => T.make({}, typeof x)` | Decides 1 (E1452), and the message is no literal (E1460) |
+| std-offline's `storageFailed` | Decides 1 (E1452); it becomes `supervise(ctx, 'offline.storage', …)` |
+
+Where static proof ends: a test that nearly every value passes (`x instanceof Object`, `typeof x !== 'bigint'`, `x !== 1`, an error in the branch where the test fails, a predicate that returns `true`). Check cannot decide narrowness, so R1017 lists each of those forms, and a predicate is trusted only when its body, in the project, tests a class or a property.
+
+### Start refusals (finding 2, blocking)
+`server.mjs` printed `E1577 uncaught exception in work of route -: Error #57bd6d8f` for Keel's own E1596, E1552 and a bad `KEEL_ORIGIN`: the rule that hides thrown text hid Keel's own message from the operator (A8: "what do they have to know that the build did not tell them?"). A coded refusal is Keel's text, not an app's: it is kernel-held (k.identity), its message holds names the app declared and never an environment value, and the entry prints it with its own code and `see` and exits 1. E1577 keeps one meaning: a value Keel did not raise. E1552's case, a deployable naming a module that does not exist, is now found where the operator is not: `keel check` and `keel build`, at the id in `topology.ts`.
+
+### E1577 inside the window (finding 3)
+k.leave and k.serverlog disagreed. Decided: the record that ends the process is the one an operator most needs to read, so with full text on (dev, or production before `KEEL_LOG_THROWN`'s instant) the scrubbed, cut text follows the form in that same record; otherwise it ends at the fingerprint or the site. It stays one record, since the process may not live to write a second.
+
+### Identity under no name (finding 4)
+`Reflect.get(globalThis, Symbol.for('keel.kernel')).get('router.action').add(forged)` passed check with no `unsafe`. The record was reachable by a key anyone can spell, because D32 wanted two copies of a kernel package to agree. That goal is dropped for a stronger one: a realm holds one copy.
+- Each maker's package holds its record in a binding of its own module. No entry exports it or a function that adds to it; it is no property of anything.
+- A second copy of `@keel/schema`, `@keel/store`, `@keel/router` or `@keel/server` from another file throws E1765 naming both URLs as it is evaluated, which at start is a coded refusal the operator reads; check and build find the same in the dependency tree. Silent disagreement cannot happen.
+- The census that detects a second copy lives under `Symbol.for('keel.census')` and holds names and URLs only. Tampering with it can raise or hide E1765; a hidden copy's values fail the first copy's guards. It forges nothing.
+- The kernel captures `WeakSet`, `WeakMap` and their methods at evaluation, and the entries import the kernel first, so patching a prototype later changes no guard.
+- Check refuses the spellings it can see: `Symbol.for` of a `keel.` string, and listing the global object's symbol keys (E1766). Review lists a `Symbol.for` it cannot fold (R1019) and a non-literal global key (R1056).
+
+What remains reachable only by code written on purpose: replacing a built-in before the kernel loads (a hand-written entry, `node --import`, a loader hook), the inspector, `node:vm`.
+
+### What an error carries (finding 5)
+`(x) => (x instanceof Error ? W.make({ why: x.message }) : undefined)` answered `{"why":"dup key SECRET-CODE"}`. The data schema said `string`, and a string is where text hides. k.expect Carries: a value read from the thrown value enters the error only as a `number`, a `boolean` or a union of literals, and never through `message`, `stack`, `cause`, `errors`, `String`, `toString`, `JSON.stringify`, a template or `+`. An SDK's open `code: string` is mapped to the error's closed set (`reasonOf`), which is what k.attempt's `charge` already does. `` T.make({}, `user ${email}`) ``: a message is a literal (E1460), as a defect's is. And a `KeelError` written by hand had no schema at all, so it is made by `make` only (E1458), with `keelError` for the kernel's codes.
+
+The connection to k.privacy, stated without overclaiming: a mark lives on a schema node and types carry none. A value under a marked node of an error's `data` is treated by its mark at every sink. A marked value copied to an unmarked node is found by value where a sink reads text (the log's full-text record, a session's recorded error), and is not held in a response, which carries `data` as its schema encodes it.
+
+### No `Result` in a `Result` (finding 6)
+`ok(err(T))` compiled. A parameter type that refuses a `Result` (`T & ([Extract<T, AnyResult>] extends [never] ? unknown : never)`) was tried against `tsc`: it refuses the concrete cases and also `function wrap<V>(v: V) { return ok(v) }`, every generic caller in the kernel and in any library. So the refusal is check's, over the same types (E1459 at the `ok` argument and at a written `Result<Result<…>, E>`), and the run time's for what types cannot see: `ok` given a keel `Result` raises the defect E1459. `err` already refuses by type; `attempt` already flattens.
+
+### Module state today (finding 7)
+E1260 and `processSlot` are not built, and k.shared described both in the present tense. Now it says what is: reactive module state is refused at run time (E1256) and, for a signal's `set`, at check; a request's write to a module-level `let`, `Map`, array or object is refused by nothing and leaks. Where things go today: a config value and a connection pool are module-level `const`s made at evaluation; per-request state is made in the handler; a cache a request fills is durable storage or is not kept. The keel-server skill teaches it in one sentence. `explain-and-fixture-per-code` is decidable: a section's Rules, `proposed` or not, names only codes with an explanation row, so E1260 is out of k.shared's Rules until its RFC builds it.
+
+### The wall-test patterns for a skill (finding 8, D55)
+Not placed: every published skill is at its token target. For the operator's re-base of the keel skill (about 450 tokens), the block:
+```ts
+import type { Ctx } from '@keel/ctx'
+import { attempt, err, ok, s, type Result } from '@keel/schema'
+
+export const HttpFailed = s.error('feed.http', s.object({ status: s.int() }))
+export const Unreachable = s.error('feed.unreachable', s.object({}))
+export const CardDeclined = s.error('pay.declined', s.object({ reason: s.enum(['funds', 'other']) }))
+type FeedError = s.infer<typeof HttpFailed> | s.infer<typeof Unreachable>
+type Feed = { get(url: string): Promise<{ ok: boolean; status: number; text: string }> }
+
+const once = (feed: Feed, url: string) =>
+  attempt(async () => {
+    const res = await feed.get(url)
+    return res.ok ? ok(res.text) : err(HttpFailed.make({ status: res.status }))
+  }, (x) => (x instanceof TypeError ? Unreachable.make({}) : undefined))
+
+export async function fetchRetry(ctx: Ctx, feed: Feed, url: string, tries: number): Promise<Result<string, FeedError>> {
+  for (let i = 0; ; i++) {
+    const r = await once(feed, url)
+    if (r.ok || i === tries - 1 || (r.error.code === 'feed.http' && r.error.data.status < 500)) return r
+    await ctx.clock.after(2 ** i * 100)
+  }
+}
+
+export async function inTx(db: { query(sql: string): Promise<void> }, work: () => Promise<void>): Promise<void> {
+  await db.query('begin')
+  let done = false
+  try {
+    await work()
+    await db.query('commit')
+    done = true
+  } finally {
+    if (!done) await db.query('rollback')
+  }
+}
+
+const reasonOf = (x: Error): 'funds' | 'other' => (Reflect.get(x, 'code') === 'insufficient_funds' ? 'funds' : 'other')
+export const charge = (sdk: { charge(cents: number): Promise<string> }, cents: number) =>
+  attempt(
+    () => sdk.charge(cents),
+    (x) => (x instanceof Error && x.name === 'CardError' ? CardDeclined.make({ reason: reasonOf(x) }) : undefined),
+  )
+```
+Placed in the keel skill, this block raised no type diagnostic from `tooling/docs-check.mjs`; only the size target failed.
+
+### Spec diff (breaking review)
+Written to `spec/` in this change; new sections `proposed`.
+- New: k.supervise (10 clauses), k.expect (8), k.realm (8). Areas: state (k.expect, k.supervise), security (k.realm). `tooling/docs-owners.json`: the three owners.
+- k.attempt: `err`'s `data`; no `Result` in a `Result` and E1459; `expect` points to k.expect and k.supervise; the defect search lets no throw out; E1457's JSON row and message; clauses #12 to #15.
+- k.errors: Rules (a generator's `throw`; pointers for E1459 to E1461 and the other spellings); Layers, all three lists.
+- k.unsafe: One path's code list; **Other spellings**; clause #14.
+- k.identity: Identity (held in the maker's package, under no key; a coded refusal is one); clause #5 loses its second-copy half; clause #11.
+- k.defects: Where it goes (supervised work); clause #4 (no second copy).
+- k.serverlog: the `supervised` owner; the site line; E1577's text in its one record; what "in dev and production" means; clauses #16 to #18. k.leave: Process and E1577's rule. k.deploy: **Refusals at start**, E1560 for `KEEL_ORIGIN`; clauses #14, #15. k.topology: an unknown module at check and build; clause #18.
+- k.shared: the lifetime table, **Not refused**, Rules without E1260; clause #8 rewritten, #9 new. k.resume: Stores and E1256's rule. k.explain: `see` whole, Rules name registered codes; clauses #5, #6.
+- k.escapes: R1017 widened; R1018, R1019, R1020; clauses #13, #14. k.fixes: the no-fix row names the new codes. k.ctx: the `error` event's third source.
+- std.jobs, std.live, std.channels, std.outbox: a throw of any value takes the failure path (k.supervise).
+- Codes: E1459, E1460, E1461, E1765, E1766; R1018, R1019, R1020.
+
+### Conformance diff (breaking review)
+By the `conformance-writer`, from the spec text only. One bullet per new or changed clause, with the file and a fixture sketch. A case that needs a std package lives in that package's `conformance/`.
+- k.supervise #1, `packages/ctx/conformance/supervise.test.ts`: a sim ctx, `supervise` over `() => 1`, `() => err(U)` and their `async` twins; an observer array stays empty.
+- k.supervise #2, same file: a table of six thrown values (an `Error`, a string, `undefined`, an object, a defect, an `Error` whose `cause` is a defect), sync and `async`; each result deep-equals `err(T)`; no call throws or rejects.
+- k.supervise #3, same file: `observe(ctx, push)` gets one `error` event per throw with the exact `KeelError`; a second observer that throws does not change the result.
+- k.supervise #4, `packages/server/conformance/supervised-log.test.ts`: `createApp` in production mode with a runner that supervises a `defect` holding an email in `data`; read the log lines; match the regular expression; assert no `jane`, no E1577; repeat with `mode: 'dev'` for the second record.
+- k.supervise #5, `packages/check/conformance/supervise-rules.test.ts`: `check()` on `modules/m/a.ts` (one E1461 at the callee, no fix), on a library fixture under `node_modules/@acme/jobs/` (none), and there with a `const` id (one at the id).
+- k.supervise #6, `packages/cli/conformance/` k.escapes table test: an R1018 fixture and its clean twin.
+- k.supervise #7, `packages/std-jobs/conformance/supervised-job.test.ts`: three jobs (`defect`, a thrown string, `Promise.reject(undefined)`), `attempts: 2`, a sim clock driven past both waits; read `failed`, the log, and a `process` `unhandledRejection` counter.
+- k.supervise #8, `packages/std-channels/conformance/member-throws.test.ts`: a route whose `member` raises a defect, then one that throws a string; open a stream, collect events, advance 1,000 ms; publish and read the status.
+- k.supervise #9, `packages/std-live/conformance/read-throws.test.ts`: a `read` that throws on its first call and returns `ok` on its second; `status()` after each; the clock advanced 1 s.
+- k.supervise #10, `packages/std-offline/conformance/storage-rejects-any.test.ts`: a storage driver whose writes reject with a string, then with a defect; `send`; the entry's state; an `unhandledRejection` counter.
+- k.expect #1, `packages/check/conformance/expect-decides.test.ts`: five `attempt` calls in `modules/m/a.ts`, one of them importing `taken` from `./taken.ts`; one E1452 each at the second argument.
+- k.expect #2, same file: six clean forms, one importing `named` from `./named.ts`; no E1452.
+- k.expect #3, same file: three unreadable arguments; the `not readable` message.
+- k.expect #4, `packages/check/conformance/expect-carries.test.ts`: `W` with a `string` field; four copies of text and one `build(x)`; E1460 at the property value or at `build(x)`.
+- k.expect #5, same file and `packages/schema/conformance/expect-carries-run.test.ts`: the `HttpError` form is clean, and run with a thrown `HttpError` gives data `{ status: 503, kind: 'a' }`.
+- k.expect #6, `packages/check/conformance/error-message-literal.test.ts`: three non-literal messages, two literal ones.
+- k.expect #7, `packages/check/conformance/keel-error-by-hand.test.ts`: `err({ … })` and an annotated `const`; E1458 at the literal; the `keelError` form clean.
+- k.expect #8, `packages/schema/conformance/keel-error-makers.test.ts` and `packages/server/conformance/keel-error-status.test.ts`: each maker's value; a guard and an action on a node server answering 403 and 422.
+- k.attempt #12, `packages/check/conformance/result-in-result.test.ts`: five E1459 forms, three clean, types on.
+- k.attempt #13, `packages/schema/conformance/result-in-result-run.test.ts`: untyped calls (the file imports `ok` through an `unknown`-typed binding); `isDefect(v, 'E1459')`; the `async` nest rejects.
+- k.attempt #14, `packages/schema/conformance/attempt-cause-getter.test.ts`: an `Error` with `Object.defineProperty(v, 'cause', { get() { throw g } })` and a `Proxy` whose `get` throws; a spy `expect`.
+- k.attempt #15, `packages/schema/conformance/err-keel-error.test.ts`: three refused `data` forms, `null` accepted.
+- k.unsafe #14, `packages/check/conformance/other-spellings.test.ts`: one file with the six reported lines and the three clean ones, types on.
+- k.realm #1, `packages/schema/conformance/second-copy.test.ts` (and its twins in store and router): copy the package folder to a temp folder, `import()` it by file URL, assert the message's start and both URLs.
+- k.realm #2, `packages/server/conformance/second-copy-start.test.ts`: a built fixture whose bundle imports a copied `@keel/schema`; spawn `server.mjs`; read stdout and the exit code.
+- k.realm #3, `packages/check/conformance/two-copies.test.ts` and `packages/cli/conformance/build-two-copies.test.ts`: a fixture `node_modules` with `@keel/schema` at the top and nested under a dependency.
+- k.realm #4, `packages/schema/conformance/same-file-again.test.ts`: `vi.resetModules()`, import again, compare guards.
+- k.realm #5, `packages/router/conformance/builtins-patched.test.ts`: a module imported after the kernel sets the three prototype members (restored in `afterEach`); the four guards and `manifest`.
+- k.realm #6, `packages/schema/conformance/census.test.ts`: delete the census entry, load the copy, compare guards.
+- k.realm #7, `packages/check/conformance/keel-symbols.test.ts`: five E1766 lines, three clean.
+- k.realm #8, `packages/cli/conformance/` k.escapes table test: R1019's fixture and twin.
+- k.identity #5 (changed), `packages/schema/conformance/is-schema.test.ts`, `packages/store/conformance/guards.test.ts`: the second-copy assertion goes; the rest stands.
+- k.identity #11, `packages/router/conformance/identity-unreachable.test.ts`: walk `Object.getOwnPropertySymbols(globalThis)` and every export of each entry listed in the three packages' `exports`; assert no `WeakSet`, `WeakMap` or `Map` of one.
+- k.defects #4 (changed), `packages/schema/conformance/defect-key.test.ts`: the clone and worker halves stand; the second-copy half moves to k.realm #1.
+- k.serverlog #16, `packages/server/conformance/thrown-log.test.ts`: the `/late` fixture started with `KEEL_LOG_THROWN` one hour ahead on a sim clock; the one E1577 line before and after the instant; a `.pii()` input value marked.
+- k.serverlog #17, `packages/cli/conformance/build-site-line.test.ts`: a `keel build` fixture with the `defect` call on line 12; the message's end.
+- k.serverlog #18, `packages/server/conformance/privacy-diag-scrub.test.ts` lines 69 and 120: the loop runs `"dev"` and production with the window open, as it did before the migration.
+- k.deploy #14, `packages/cli/conformance/start-refusals.test.ts`: spawn `server.mjs` three times with one bad value each; one `diag`, its code, no value, no `E1577`, no `#`, exit 1.
+- k.deploy #15, same file: a fixture whose dependency throws at module scope; the E1577 line; no `hunter2`.
+- k.topology #18, `packages/check/conformance/topology-unknown-module.test.ts` and `packages/cli/conformance/build-unknown-module.test.ts`: `ghost` with and without its folder; a library whose root manifest id is `ghost`.
+- k.shared #8 (changed), `packages/check/conformance/module-state-rules.test.ts` and `packages/server/conformance/module-state.test.ts`: the five writes give no diagnostic (the skipped E1260 cases go); two requests in turn show the leak.
+- k.shared #9, `packages/server/conformance/leave-module-stores.test.ts`, `resume-module-store-e1256.test.ts`: the dev page holds the message and the store id; `data` is `{ node, kind: 'store' }`; production holds neither.
+- k.explain #5 and #6, `packages/check/conformance/explain-see.test.ts`: `explain('E1762')`'s last line; every kernel code's `see` line; every section's Rules codes against `explain`.
+- k.escapes #13 and #14, `packages/cli/conformance/` k.escapes table test: five R1017 forms and one clean; R1018, R1019 and R1020 fixtures with twins.
+
+### The builder, in order (breaking review)
+Conformance first, then:
+1. `@keel/schema`: each record a module binding (`internal/kernelSet.ts` and `Symbol.for('keel.kernel')` go; `./internal` exports no set and no adder); the census and E1765; built-ins captured at evaluation; `ok` raises E1459 for a keel `Result`; `err` refuses `data` `undefined` or a function; `wrapsDefect` survives a throwing getter; `keelError`.
+2. `@keel/store`, `@keel/router`, `@keel/reactive`, `@keel/server`: own records and census entries (reactive raises E1203 and E1208 through `defect`; `internal/kernelDefects.ts` goes); the two `codedError.ts` record what they make and export a guard to the kernel only.
+3. `@keel/ctx`: `supervise`, and the kernel-only listener the server registers on each ctx it serves with; `@keel/server` writes the `supervised <id> threw:` record.
+4. `@keel/server` start: a coded refusal printed with its own code, message and `see`, exit 1, no E1577 (E1596, E1552, E1555, E1560, E1765; `KEEL_ORIGIN` checked as an origin); E1577's text inside the window in its one record; the site read through `server.mjs.map`.
+5. `@keel/check`: `expect` Readable and Decides in place of the parameter-use test; E1458's object literal; E1459; E1460; E1461; E1766; E1765 over the dependency tree; Other spellings; E1552 for an unknown module in `topologyReadProblems` (check) and `hostingDiags` (build); the E1260 rule and dead `isSlot` out of `internal/moduleState.ts`; the E1451 site finder made one (`internal/keelThrows.ts` and `internal/spelledKeelThrows.ts`, about 7 KB); `EXPLANATIONS.ts` (the new codes, E1457's message, `see` never cut) and `PIPELINE_CODES.ts`.
+6. `@keel/cli`: R1017 widened, R1018, R1019, R1020 in `review/ESCAPES.ts`.
+7. The stdlib's supervisors: std-jobs `runOnce.ts`; std-channels `allowed.ts`, `channelRoute.server.ts` (three calls), `remoteSaves.ts`, `watchStores.ts`, `followAll.ts`, `reread.ts`, each either `supervise` or an `expect` that names what its call throws; std-live `live.ts`'s `read`; std-offline `storageFailed.ts` gone, `load.ts` and `persist.ts` on `supervise`. No `x instanceof Error ? E : undefined` is left in `packages/std-*/src`.
+8. Apps, examples, the scaffold's templates and the guide: each hand-written `KeelError` (about 45, most of them `keel.denied`, `keel.notFound` and `keel.fields`) becomes `keelError.<name>.make(…)` or an `s.error`'s `make`; then the keel-server and keel-client skills' two `err({ code, … })` examples, which `docs-check` type-checks against the build.
+9. `fix-universal` seed 1337 path 86: E1509's fix yields a new E1503, a main-line bug this lane's property surfaced; fix it in `@keel/check` on this lane.
+10. Size budgets re-based by the orchestrator; the ledger's new rows listed, not regenerated here.
+
+### Not held (the whole list after the breaking review)
+- An `expect` whose test nearly every value passes; a predicate in another package that is true of everything (R1017 lists the forms it can read).
+- A number an `expect` copies that encodes text; a helper a copy calls that reads `message` and returns a number.
+- A library that wraps its own code in `supervise` (R1018 lists each call).
+- A defect raised for a failure a caller could have handled (R1013).
+- A marked value copied to an unmarked node of an error's `data`, in a response; a personal value in `data` whose schema has no mark.
+- A request's write to plain module state: nothing refuses it (k.shared Not refused).
+- A throw of a function called in a `finally`; a throwing call check has no row for; a `Result` kept in a binding nothing reads.
+- Code that replaces a built-in before the kernel loads, the inspector protocol, `node:vm` (k.realm). The realm record of D32 is gone, and with it "a forged identity through the realm record".
+- A `message` or an `expect` in code check does not read (a plain npm package).
+
+### Token impact (breaking review)
+Characters over four, as `tooling/budgets.mjs` counts, against 3,100: k.attempt 3,098; k.errors 3,089; k.leave 3,099; k.unsafe 2,994; k.serverlog 2,957; k.identity 2,683; k.topology 2,509; k.escapes 2,347; k.expect 2,325; k.deploy 2,329; k.fixes 2,146; k.ctx 2,123; k.supervise 1,871; k.defects 1,608; k.resume 1,562; k.shared 1,552; k.realm 1,369; k.explain 862; std.channels 3,023; std.jobs 1,472; std.outbox 1,363; std.live 1,301. No limit is raised. `keel docs --for E1451` stays within 400 by naming the code in no new line. Skills: keel 1,330 of 1,330, keel-server 2,896 of 2,900.
+
+
 ## Alternatives
 - **Leave it as `unsafe`.** Twenty-odd files with one reason, "a bug, never an expected failure a Result would carry", counted as escapes. The count then measures how many packages exist, not how much code steps outside the rules; reviewers learn to skip R1001 for these; a third-party library author meets the same wall and writes the same wrapper. D191 and D192 rule it out.
 - **`invariant(cond, message): asserts cond`.** Reads well for a guard but not for `?? fail` or `return fail` in an expression, and a second form beside `defect` would be two ways. `if (!c) return defect(...)` and `x ?? defect(...)` cover both.
@@ -500,3 +712,18 @@ After the third review (characters over four, as `tooling/budgets.mjs` counts): 
 14. **RFC 0245's two `catch` fixes are withdrawn for k.fixes** (What RFC 0245 takes). Recommended: each ends clean and wrong on a wall-test case.
 15. **E1457 is an error, not a warning.** Recommended: the shortest way to a clean check is then the total form.
 16. **Six new sections.** The token gates pass with them as measured on this lane; if the owner's correction of `spec.map` and `docs.map` lands lower, the rows of the four areas are what to trim.
+
+After the breaking review (D41 to D56), each a change to what an author writes or an operator reads:
+17. **App code cannot call `supervise` (E1461); a library can, and review lists each call.** Recommended: a catch-all in app code is the shortest way past E1452. An app that runs code it does not own keeps that runner in a workspace library. Reverse by allowing it in `*.server.ts` files with R1018 at high.
+18. **An `expect` must be readable by check and must claim in a branch a test selects.** An `expect` taken from a parameter or built by a call is refused; so are `(x) => (x ? T : undefined)` and a function that returns an error on every path. Recommended.
+19. **An `expect` copies only a number, a boolean or a closed code out of what was thrown.** An SDK's string code is mapped to the error's own enum by a small function. Recommended: a `string` field is where the review's leak went.
+20. **A `make` message is a literal, and a `KeelError` is never written by hand; `keelError.denied.make({})` and its five siblings are new exports of `@keel/schema`.** About 45 hand-written kernel errors in the apps, examples, scaffold and guide change. Recommended: one way to make an error, and every error then has a schema. Reverse by keeping the object literal legal and refusing only its non-literal `message`.
+21. **`ok(result)` is refused by check (E1459) and at run time, not by `ok`'s TypeScript type.** A type that refuses it also refuses `ok(v)` in every generic function. Recommended.
+22. **Two copies of a kernel package in one process are a start error (E1765) in place of a shared record.** A monorepo that resolves `@keel/schema` twice must dedupe; check and build say so before start. Recommended: the shared record was the forgery's door.
+23. **`Symbol.for('keel.…')`, and listing the global object's symbol keys, are refused in app and library code (E1766).** Recommended.
+24. **A listener for uncaught throws (`unhandledrejection`, `window.onerror`, `process.on('uncaughtException')`) is E1452 in app and library code.** An error-reporting library reads the ctx's `error` events and the server log. Recommended; reverse for libraries only if a reporting library needs the raw event.
+25. **A start refusal prints its own code and message in production.** Its message holds names the app declared (a deployable, a module, an environment key), never a value. Recommended.
+26. **Inside the `KEEL_LOG_THROWN` window the E1577 record holds the scrubbed text.** Recommended.
+27. **Nothing refuses a module-level `let` or `Map` written by a request today, and the spec and skill say so.** E1260 returns to k.shared with the RFC that builds `processSlot`. Recommended over describing a rule that does not run.
+28. **The keel skill needs about 450 more tokens for the three wall-test patterns, or a tenth skill for failures.** Not done here: a skill's target is not raised in a lane. Recommended: re-base the keel skill.
+29. **A marked value copied into an unmarked `data` field of an error still reaches a response.** Check cannot see a mark through a type. Recommended next step, its own RFC: a `.pii()` brand in the inferred type, so the copy fails to compile.
