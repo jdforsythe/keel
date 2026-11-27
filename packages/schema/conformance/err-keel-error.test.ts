@@ -1,4 +1,3 @@
-// Spec: k.attempt, clause "`err(e)` takes a `KeelError` and nothing else. Any other value (an `Error`, a string, an object without a string `code`, a string `message` and an own `data`) is E1458 at check and, at run time, the defect E1458."
 // Spec: k.attempt, clause "In `modules/m/a.ts`, `err(new Error('x'))`, `err('x')` and `err({ code: 'a.b' })` are one E1458 each at the argument; `err(T)` is none; called untyped, `err('x')` throws a value `isDefect(v, 'E1458')` accepts."
 // Seed 1337. The compile-time half is attempt-types.test-d.ts; the check half is packages/check/conformance/attempt-rules.test.ts.
 import { err, isDefect } from "@keel/schema";

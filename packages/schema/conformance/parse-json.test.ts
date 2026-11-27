@@ -1,4 +1,4 @@
-// Spec: k.attempt, clause "With `S = s.object({ n: s.int() })`: `S.parseJson('{"n":1}')` is `ok({ n: 1 })`, `S.parseJson('{')` is `err` `schema.invalid` whose one issue is `{ path: [], rule: 'json' }`, `S.parseJson('{"n":"x"}')` is `err` with the issues `S.parse({ n: 'x' })` gives, and none of them throws."
+// Spec: k.attempt, clause "With `S = s.object({ n: s.int() })`: `S.parseJson('{\"n\":1}')` is `ok({ n: 1 })`, `S.parseJson('{')` is `err` `schema.invalid` whose one issue is `{ path: [], rule: 'json' }`, `S.parseJson('{\"n\":\"x\"}')` is `err` with the issues `S.parse({ n: 'x' })` gives, and none of them throws."
 // Seed 1337.
 import { s } from "@keel/schema";
 import fc from "fast-check";
