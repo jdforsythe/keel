@@ -26,5 +26,5 @@ const r = await run({
   interrupted,
   env: { npm_config_user_agent, KEEL_AGENT, CI },
 });
-// `run` settles only after an interrupted run's cleanup is done, so the process exits once its output is out.
+// `run` settles only after an interrupted run removed its files, so the process exits once its output is out.
 process.stdout.write(r.stdout, () => process.exit(r.code));

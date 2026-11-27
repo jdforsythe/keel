@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, rmSync, rmdirSync } from "node:fs";
-import { type FileHandle, open } from "node:fs/promises";
+import { closeSync, existsSync, mkdirSync, openSync, rmSync, rmdirSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { MARKER } from "@keel/scaffold/create";
 import { linkEscapes } from "@keel/scaffold/links";
@@ -17,9 +17,10 @@ const codeOf = (e: unknown): string =>
  * listing every path, each folder is made and each file created only where nothing is (`wx`), never replaced, and the
  * marker is removed last. The writes are asynchronous, so a signal is handled while one is in flight. A write that
  * fails (`{ failed }`, E1365), or a signal (`{ stopped }`, E1367) that `interrupted` settles with during a write or
- * `stopped` reports between two, first waits for the write in flight to settle, then removes the files this run made,
- * then the folders it made inside the folder, then the marker, then the folder and the folders above it that it made;
- * the promise settles only once all of that is done, so a caller that exits then leaves nothing behind. A kill no
+ * `stopped` reports between two, removes the files this run made, then the folders it made inside the folder, then
+ * the marker, then the folder and the folders above it that it made, all synchronously before the promise settles; a
+ * file is created synchronously before its text is written, and that write cannot create it again, so a caller that
+ * exits then leaves nothing behind, whether or not the write in flight ever settles. A kill no
  * handler sees leaves the marker, which the next run names (E1366). `written` is told each path after its write (a
  * test seam).
  */
@@ -93,16 +94,15 @@ export async function writePlan(
   ];
   const never = new Promise<never>(() => {});
   const interrupted = (seams.interrupted ?? never).then((stop) => ({ stop }));
-  /** Creates `target` only where nothing is and writes `text`; the file is this run's from the moment it exists. */
-  const create = async (target: string, text: string): Promise<void> => {
-    let handle: FileHandle | undefined;
-    try {
-      handle = await open(target, "wx");
-      madeFiles.push(target);
-      await handle.writeFile(text);
-    } finally {
-      await handle?.close();
-    }
+  /**
+   * Creates `target` only where nothing is, at once (`wx`, synchronous), so the file is in `madeFiles` before any
+   * signal can be handled; then writes `text` into it asynchronously with `r+`, which never creates a file. A write
+   * still in flight at a signal can therefore leave nothing once the undo removed the path.
+   */
+  const create = (target: string, text: string): Promise<void> => {
+    closeSync(openSync(target, "wx"));
+    madeFiles.push(target);
+    return writeFile(target, text, { flag: "r+" });
   };
   for (const [p, target, text] of steps) {
     let writing: Promise<void>;
@@ -121,11 +121,7 @@ export async function writePlan(
       interrupted,
     ]);
     if ("stop" in outcome) {
-      // The creation in flight settles first, so the file it may have made is in `madeFiles` before the undo.
-      await writing.then(
-        () => undefined,
-        () => undefined,
-      );
+      // The file in flight is already in `madeFiles`, and its write can no longer create it (`create`).
       undo();
       return { stopped: outcome.stop };
     }
