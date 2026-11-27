@@ -1,6 +1,8 @@
 // @vitest-environment node
-// No spec clause states these rules (they are an app's: RFC 0244 The review's findings 1; `spec/` holds no section for `apps/inspector`), so no `Spec:` line is cited and the cases do not enter the ledger: reported as a gap.
-// Rule: the inspector takes `?url=` only when that is an origin and builds `origin + '/__keel/inspect'` itself, so nothing of the caller's string survives; it answers only a request whose `Host` is a loopback name with a port and whose `Sec-Fetch-Site` is `same-origin` or `none`, any other is 403 `keel.denied` with nothing fetched;
+// Spec: k.contract, clause "A `GET` of a `local: true` page from `127.0.0.1` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: none` answers the page, and its loader runs once."
+// Spec: k.contract, clause "The same `GET` with `Sec-Fetch-Site: cross-site`, with no `Sec-Fetch-Site`, or with `Host: example.com`, answers 403 `keel.denied` and its loader does not run."
+// k.contract Local routes: "Any other request, one with no `Sec-Fetch-Site` among them, is 403 `keel.denied` and runs nothing." The inspector's page `inspector.index` is a `local: true` page (RFC 0244), so these cases are the clauses' own, over the built app: an allowed caller (`Host` `127.0.0.1:<port>`, `Sec-Fetch-Site: none`) is answered, a foreign `Host` and a cross-site caller are 403 `keel.denied` with nothing fetched.
+// No spec clause states the rest (an app's own rules, RFC 0244 The review's findings 1; `spec/` holds no section for `apps/inspector`), so the cases of it do not enter the ledger: reported as a gap. Rule: the inspector takes `?url=` only when that is an origin and builds `origin + '/__keel/inspect'` itself, so nothing of the caller's string survives;
 // every fetch failure is one answer, `inspector.unreachable` `no inspect document at <origin>`.
 // Seed: n/a (no generated input). Method: as e2e-serve.test.ts: the e2e file copies `apps/inspector` to a temp folder, builds it (`build(copy)`, RFC 0244 Migration) and serves it; a stand-in server of the test (`answer`) records what the inspector sent it. Requests go through `node:http` so `Host` and `Sec-Fetch-Site` are the test's.
 // The cases need Chromium for the runner (e2e-support.ts); none skips. ASSUMED: (1) the page for `/?url=<origin>` is served at `/` and its body, text of the failure included, is in the response document; (2) a request with no `Sec-Fetch-Site` is not asserted either way: every allowed case sends `none`;
@@ -109,7 +111,7 @@ beforeAll(() => {
 }, testTime(3_000_000));
 afterAll(cleanup);
 
-describe("apps/inspector loader (RFC 0244 finding 1; no spec clause)", () => {
+describe("apps/inspector: a `local: true` page and its loader (RFC 0244 finding 1)", () => {
   it("the inspector asked for an origin plus a path or a query sends only GET /__keel/inspect, answers a foreign Host or a cross-site caller 403 keel.denied with nothing fetched, and gives one failure text", () => {
     passedJob(
       ran,
