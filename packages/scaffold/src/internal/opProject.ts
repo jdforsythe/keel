@@ -20,8 +20,14 @@ import { commit } from "./commit.ts";
 import { fail } from "./fail.ts";
 import { inputs } from "./inputs.ts";
 
-/** `.gitignore` of a project: build and tool output, and recorded user sessions (`.keel/sessions/`). `.keel/` is generated, deterministic and hash-checked (E1005), so it is committed, not ignored. */
-const GITIGNORE = "node_modules\ndist\n.turbo\ncoverage\nreports\n.stryker-tmp\n.keel-dev/\n.keel/sessions/\n";
+/**
+ * `.gitignore` of a project: build and tool output, recorded user sessions (`.keel/sessions/`), and the derived views
+ * every `keel` command rewrites from the tree (k.derived Version control); `.keel/surface.json` and the deploy files
+ * are committed, so a reviewer reads a change to them in the diff.
+ */
+const GITIGNORE =
+  "node_modules\ndist\n.turbo\ncoverage\nreports\n.stryker-tmp\n.keel-dev/\n.keel/sessions/\n" +
+  ".keel/a11y.json\n.keel/deps.json\n.keel/ids.json\n.keel/routes.json\n.keel/schemes.json\n.keel/std.json\n.keel/styles.json\n";
 
 /** `scaffold project <name> [--adapter client|node|static] [--workspace]` (default `client`): root config, tokens, topology, module `app`, generated turbo, CI and deploy files (a `workspace` app, inside the Keel monorepo, gets `vitest.config.ts` and a first test, `test/app.test.ts`, instead, and no turbo, CI, deploy files or `.keel/`); no `index.html`, since Keel writes every document. */
 export function opProject(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {

@@ -1,12 +1,10 @@
-// The committed `.keel/` artifacts of the golden apps are what `keel build` writes (a stale surface is E1005 under
-// `keel check`), and `keel test` leaves every one of them as committed (k.test-run Run report, k.compat Surface).
+// The committed derived files of the golden apps are their derivation (k.derived Frozen, Version control): `keel check
+// --frozen` in the app finds no E1005 and writes nothing, and a frozen `keel test` leaves `.keel/` as it was.
 import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
-import { afterAll, describe, expect, it } from "vitest";
-import { run } from "../src/index.ts";
-import { linkedProject } from "./support/linkedProject.ts";
+import { describe, expect, it } from "vitest";
 
 // Repo root via a workspace link, so this also holds in Stryker's sandbox copy (where ../../.. is not the repo root).
 const PACKAGES = dirname(realpathSync(join(import.meta.dirname, "..", "node_modules", "@keel", "schema")));
@@ -20,42 +18,42 @@ const artifacts = (dir: string): [string, string][] =>
     .map((e): [string, string] => [e.name, readFileSync(join(dir, ".keel", e.name), "utf8")])
     .sort(([a], [b]) => a.localeCompare(b));
 
-const sources = (dir: string): { path: string; source: string }[] => {
-  const walk = (at: string, rel: string): { path: string; source: string }[] =>
-    readdirSync(at, { withFileTypes: true }).flatMap((e) => {
-      const abs = join(at, e.name);
-      const path = rel === "" ? e.name : `${rel}/${e.name}`;
-      if (e.isDirectory())
-        return ["node_modules", "dist", ".keel", "coverage", "reports"].includes(e.name) ? [] : walk(abs, path);
-      const code = /\.[cm]?[jt]sx?$/.test(e.name) && !/^(?:vite|vitest|stryker)\.config\./.test(e.name);
-      return code ? [{ path, source: readFileSync(abs, "utf8") }] : [];
-    });
-  return walk(dir, "");
+/** A child's end and its last lines, on one line (the reporter prints a message's first line). */
+const ending = (r: ReturnType<typeof spawnSync>): string => {
+  const out = `${String(r.stdout)}\n${String(r.stderr)}`
+    .split("\n")
+    .filter((l) => l.trim() !== "")
+    .join(" | ");
+  return `child exit ${r.status} signal ${r.signal}: ${out.length > 440 ? `...${out.slice(-440)}` : out}`;
 };
 
-describe.each(APPS)("apps/%s .keel artifacts", (name) => {
+describe.each(APPS)("apps/%s derived files", (name) => {
   const app = join(PACKAGES, "..", "apps", name);
-  const project = linkedProject(app);
-  afterAll(project.remove);
 
-  it("`keel check` finds the committed surface current (no E1005)", async () => {
-    const r = await run(["check", "--format=json"], { cwd: project.root, files: sources(app) });
-    expect(r.stdout.split("\n").filter((l) => l.includes('"E1005"'))).toEqual([]);
-  });
+  it(
+    "`keel check --frozen` finds the committed surface and deploy files current (no E1005) and writes nothing",
+    () => {
+      const before = artifacts(app);
+      const r = spawnSync(process.execPath, [BIN, "check", "--frozen", "--format=json"], {
+        cwd: app,
+        encoding: "utf8",
+      });
+      expect(
+        r.stdout.split("\n").filter((l) => l.includes('"E1005"')),
+        ending(r),
+      ).toEqual([]);
+      expect(artifacts(app)).toEqual(before);
+    },
+    fixedTime(240_000),
+  );
 
   // A whole `keel test` of a golden app takes about 17 s alone: 480 s is 48 s at scale 0.1, under three times that.
   it(
-    "`keel test` leaves the committed `.keel/` files as they are",
+    "a frozen `keel test` leaves `.keel/` as it was",
     () => {
       const before = artifacts(app);
-      const r = spawnSync(process.execPath, [BIN, "test"], { cwd: app, encoding: "utf8" });
-      // A failed child says how it ended and its last lines, on one line (the reporter prints a message's first line).
-      const out = `${r.stdout}\n${r.stderr}`
-        .split("\n")
-        .filter((l) => l.trim() !== "")
-        .join(" | ");
-      const end = `child exit ${r.status} signal ${r.signal}: ${out.length > 440 ? `...${out.slice(-440)}` : out}`;
-      expect(r.status, end).toBe(0);
+      const r = spawnSync(process.execPath, [BIN, "test", "--frozen"], { cwd: app, encoding: "utf8" });
+      expect(r.status, ending(r)).toBe(0);
       expect(artifacts(app)).toEqual(before);
     },
     fixedTime(480_000),

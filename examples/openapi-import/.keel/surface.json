@@ -1,1 +1,1 @@
-{"data":{"contracts":{},"sources":{"modules/app/AppApi.schema.ts":"fnv1a:48929549","modules/app/Home.schema.ts":"fnv1a:20b649e3","modules/app/HomePage.tsx":"fnv1a:a077e63f","modules/app/api.server.ts":"fnv1a:f0026006","modules/app/app.contract.ts":"fnv1a:d272ed51","modules/app/loadHome.server.ts":"fnv1a:cdc6f2c9","modules/app/routes.ts":"fnv1a:cf2cacf1"},"stores":{},"version":2},"hash":"fnv1a:5a64f5de"}
+{"data":{"contracts":{},"stores":{},"version":3},"hash":"fnv1a:aef53677"}

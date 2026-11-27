@@ -11,6 +11,14 @@ packages/*/test/.tmp-*
 packages/*/conformance/.tmp-*
 .fixtures
 .keel/sessions/
+# The derived views every keel command rewrites from the tree (k.derived Version control); surface.json is committed.
+**/.keel/a11y.json
+**/.keel/deps.json
+**/.keel/ids.json
+**/.keel/routes.json
+**/.keel/schemes.json
+**/.keel/std.json
+**/.keel/styles.json
 packages/*/.keel/
 .keel-dev/
 .DS_Store
