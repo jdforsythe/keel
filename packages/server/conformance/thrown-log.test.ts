@@ -16,6 +16,7 @@ import { defect, ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import { describe, expect, it } from "vitest";
 import { SEED, createApp, get } from "./fixtures.ts";
+import { isoOfEpochMs } from "./iso-instant.ts";
 import { createAppLoose, flush, pageManifest } from "./topology-fixtures.ts";
 
 type Format = "compact" | "json";
@@ -23,11 +24,8 @@ const Nothing = s.object({});
 const Input = s.object({ email: s.string().pii("contact") });
 const Gone = s.error("shop.gone", s.object({}));
 const FORMATS: readonly Format[] = ["compact", "json"];
-/** The ISO instant `ms` after the injected sim clock's now: a format of the sim clock's reading, not a read of the real one. */
-const isoAfter = (ctx: ReturnType<typeof createCtx>, ms: number): string => {
-  const d: unknown = Reflect.construct(Date, [Number(ctx.clock.now()) + ms]);
-  return d instanceof Date ? d.toISOString() : "";
-};
+/** The ISO instant `ms` after the injected sim clock's now: a format of the sim clock's reading, by arithmetic (iso-instant.ts). */
+const isoAfter = (ctx: ReturnType<typeof createCtx>, ms: number): string => isoOfEpochMs(Number(ctx.clock.now()) + ms);
 const PATTERN = /^loader p\.def threw: (Error|value|Defect) #[0-9a-f]{8}( at \S+:\d+)?$/;
 
 const withEnv = async <T>(vars: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> => {
@@ -291,5 +289,29 @@ describe("k.serverlog: dev mode and KEEL_LOG_THROWN print the text", () => {
     const text = String(got instanceof Error ? got.message : got);
     expect(text).toMatch(/^E1596/);
     expect(text).not.toContain(instant);
+  });
+
+  it("KEEL_LOG_THROWN an instant exactly 24 hours after start is taken, and one millisecond more is E1596", async () => {
+    const ctx = createCtx({ mode: "sim", seed: SEED });
+    const taken = await withEnv({ KEEL_LOG_THROWN: isoAfter(ctx, 24 * 3_600_000) }, () =>
+      throwFromLoader("production", "json", () => new Error("x"), 1, ctx).then(
+        () => "served",
+        (e: unknown) => String(e instanceof Error ? e.message : e),
+      ),
+    );
+    expect(taken).toBe("served");
+    const over = await withEnv({ KEEL_LOG_THROWN: isoAfter(ctx, 24 * 3_600_000 + 1) }, () =>
+      throwFromLoader("production", "json", () => new Error("x"), 1, ctx).then(
+        () => "served",
+        (e: unknown) => String(e instanceof Error ? e.message : e),
+      ),
+    );
+    expect(over).toMatch(/^E1596/);
+  });
+
+  it("the instant format of the sim clock's reading round-trips known days", () => {
+    expect(isoOfEpochMs(0)).toBe("1970-01-01T00:00:00.000Z");
+    expect(isoOfEpochMs(951_782_400_000 + 86_399_999)).toBe("2000-02-29T23:59:59.999Z");
+    expect(isoOfEpochMs(1_700_000_000_000)).toBe("2023-11-14T22:13:20.000Z");
   });
 });
