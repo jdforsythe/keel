@@ -11,15 +11,18 @@ export const Props = s.object({});
 
 type State = ResourceState<Suggestion[]>;
 
-const messageOf = (e: unknown): string => (e instanceof Error ? e.message : "Suggestions failed");
+/** `api.status` names the HTTP status, which the defect carries in its `data`; any other failure only that it failed. */
+const messageOf = (e: unknown): string => {
+  const status: unknown = e instanceof Error ? Reflect.get(Object(Reflect.get(e, "data")), "status") : undefined;
+  return typeof status === "number" ? `Suggestions failed (${status})` : "Suggestions failed";
+};
 
-/** `api.status` names the HTTP status; any other ApiError (network, timeout, decode) only that it failed. */
-const failure = (e: ApiError): string =>
-  e.code === "api.status" ? `Suggestions failed (${e.data.status})` : "Suggestions failed";
+const statusOf = (e: ApiError): { readonly status: number } | undefined =>
+  e.code === "api.status" ? { status: e.data.status } : undefined;
 
 async function fetchSuggestions(ctx: Ctx): Promise<Suggestion[]> {
   const r = await todosApi.suggestions({}, ctx);
-  return r.ok ? r.value : defect(failure(r.error));
+  return r.ok ? r.value : defect("Suggestions failed", { data: statusOf(r.error) ?? {}, cause: r.error });
 }
 
 /** Suggested titles from `GET /api/suggestions` through the typed `api` client, shown by resource state. */

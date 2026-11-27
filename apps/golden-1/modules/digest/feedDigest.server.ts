@@ -1,6 +1,7 @@
 import { loader } from "@keel/router";
 import { attempt, ok } from "@keel/schema";
 import { digest } from "./digest.contract.ts";
+import { FeedClosed } from "./FeedClosed.schema.ts";
 import { readLatest } from "./readLatest.ts";
 
 /** How often the feed reads the stored digest, in `ctx.clock` ms. */
@@ -14,7 +15,10 @@ export const feedDigest = loader(digest, "digest.feed", {}, async function* ({ s
   let last = await readLatest(ctx);
   yield ok(last);
   while (!signal.aborted) {
-    const waited = await attempt(() => ctx.clock.after(POLL_MS, signal));
+    const waited = await attempt(
+      () => ctx.clock.after(POLL_MS, signal),
+      (x) => (signal.aborted && x === signal.reason ? FeedClosed.make({}) : undefined),
+    );
     if (!waited.ok) return;
     const now = await readLatest(ctx);
     if (now.at !== last.at || now.open !== last.open || now.done !== last.done) {

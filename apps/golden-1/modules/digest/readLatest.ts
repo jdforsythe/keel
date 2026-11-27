@@ -1,5 +1,4 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
 import { Digest } from "./Digest.schema.ts";
 import { LATEST_KEY } from "./LATEST_KEY.ts";
 
@@ -13,7 +12,6 @@ const NONE: Digest = { open: 0, done: 0, at: 0 };
 export async function readLatest(ctx: Ctx): Promise<Digest> {
   const raw = await ctx.storage.get(LATEST_KEY);
   if (raw === null) return NONE;
-  const json = attempt((): unknown => JSON.parse(raw));
-  const parsed = json.ok ? Digest.parse(json.value) : undefined;
-  return parsed?.ok ? parsed.value : NONE;
+  const parsed = Digest.parseJson(raw);
+  return parsed.ok ? parsed.value : NONE;
 }
