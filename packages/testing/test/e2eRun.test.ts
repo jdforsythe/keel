@@ -3,8 +3,8 @@
 // with `@keel/*`, `@types/node`, vitest, vite, typescript and playwright-core linked, `keel test --e2e` run on it once,
 // and each of its tests' outcome read from `reports/tests/e2e.json`; the failing ones' T0001 lines and files under
 // `reports/e2e/` read from the run's compact output. Needs Chromium (`playwright-core install chromium`): without it
-// the run is E1734 and every case here fails. The worked examples of the keel-testing and keel-deploy skills run in
-// the same project, as `test/skill-*.e2e.ts`, so each example is a test that passes.
+// the run is E1734 and every case here fails. The worked example of the keel-e2e skill runs in the same project, as
+// `test/skill-e2e.e2e.ts`, so the example is a test that passes.
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -35,8 +35,7 @@ function fence(skill: string, heading: string): string {
 beforeAll(() => {
   dir = tempDir("keel-e2e-own-");
   cpSync(FIXTURE, dir, { recursive: true });
-  writeFileSync(join(dir, "test", "skill-testing.e2e.ts"), fence("keel-testing", "## End to end"));
-  writeFileSync(join(dir, "test", "skill-deploy.e2e.ts"), fence("keel-deploy", "**Test the built app.**"));
+  writeFileSync(join(dir, "test", "skill-e2e.e2e.ts"), fence("keel-e2e", "# End to end"));
   mkdirSync(join(dir, "node_modules", "@keel"), { recursive: true });
   mkdirSync(join(dir, "node_modules", "@types"), { recursive: true });
   for (const pkg of readdirSync(join(REPO, "packages")))
@@ -117,7 +116,7 @@ describe("@keel/testing/e2e on a built app", () => {
     expect(states("test/page.e2e.ts").get(lineOf("test/page.e2e.ts", title)), out.slice(-3000)).toBe("passed");
   });
 
-  it.each(["skill-testing", "skill-deploy"])("the %s example passes", (name) => {
+  it.each(["skill-e2e"])("the %s example passes", (name) => {
     const tests = [...states(`test/${name}.e2e.ts`).values()];
     expect(tests, out.slice(-3000)).toEqual(["passed"]);
   });

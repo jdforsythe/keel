@@ -65,7 +65,8 @@ it("a boom the test reads", async () => {
   const app = await serve();
   const page = await app.open("/boom");
   await page.fire("a.boom.go", { type: "click" });
-  const problems = page.problems();
+  // Taken by what it matches: one left at the end is E1738 (k.e2e-page).
+  const problems = page.problems({ kind: "pageerror", text: "boom" });
   expect(problems.some((p) => p.text.includes("boom"))).toBe(true);
   expect(page.problems()).toEqual([]);
 });

@@ -697,7 +697,7 @@
     },
     "mutate-pr": {
       "if": "github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'mutate')",
-      "needs": ["test", "postgres"],
+      "needs": ["test", "postgres", "built-smokes"],
       "runs-on": "ubuntu-latest",
       "steps": [
         "$setup",
