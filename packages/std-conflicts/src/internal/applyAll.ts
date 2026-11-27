@@ -6,7 +6,9 @@ import { canonical } from "./canonical.ts";
 
 /**
  * Restore `st` to `state` with an empty log, then apply `entries` in order, each with its own transaction, invariants
- * and schema. The resulting encoded state, or `undefined` when an entry fails (refused, or its transaction throws).
+ * and schema. The resulting encoded state, or `undefined` when an entry fails: refused, or its transaction function
+ * raised a TypeError or RangeError, as a reducer does that reads a state its author did not expect. A transaction
+ * function held to the rules throws nothing else but a defect; a defect and any other thrown value pass on.
  */
 export function applyAll(
   st: Store<unknown>,
@@ -21,7 +23,7 @@ export function applyAll(
     if (t === undefined || payload === undefined || !payload.ok) return undefined;
     const applied = attempt(
       () => tx(t, payload.value).ok,
-      (x) => (x instanceof Error ? Threw.make({}) : undefined),
+      (x) => (x instanceof TypeError || x instanceof RangeError ? Threw.make({}) : undefined),
     );
     if (!applied.ok || !applied.value) return undefined;
   }
