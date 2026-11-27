@@ -135,14 +135,17 @@ export const app = contract("app", { "app.home": { path: "/" } });
 `,
   "modules/app/HomePage.tsx": `import { Example } from "@acme/kit";
 import { s } from "@keel/schema";
-import { Box } from "@keel/ui";
+import { Box, Heading } from "@keel/ui";
 
 export const Props = s.object({});
 
-/** The home page: the kit's example. */
+/** The home page: the scaffold's heading, which its own route test reads, and the kit's example. */
 export default function HomePage() {
   return (
     <Box id="app.home" as="main">
+      <Heading id="app.home.title" level={1}>
+        shop
+      </Heading>
       <Example id="app.example" />
     </Box>
   );
