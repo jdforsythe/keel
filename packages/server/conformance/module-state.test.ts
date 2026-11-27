@@ -4,6 +4,7 @@
 // Spec: k.shared, clause "`last.set('boot')` at the module's top level, and inside a `setInterval` callback registered there, changes `last` with no E1256, also while a request is being served."
 // Spec: k.shared, clause "A library's maker built on `signal` (`counter(id)` returning `{ get, add }`), declared at a module's top level in an app that lists the library: an action calling its `add` fails with the E1256 defect; the same maker called inside a loader gives each of two concurrent requests its own count."
 // Spec: k.shared, clause "A maker that makes its store on first use, declared at a module's top level and first used in a loader, fails that loader with the E1256 defect whose `data.kind` is `root`; first used at the top level, it serves requests that read it."
+// Spec: k.shared, clause "In `modules/p/load.server.ts`, inside a function, `count++` and `count = 1` (`let count = 0` at the top level), `cache.set(k, v)` (`const cache = new Map()`), `seen.push(x)` (`const seen: string[] = []`) and `conf.mode = 'x'` (`const conf = { mode: '' }`) give no diagnostic from `keel check`; on a node server two requests in turn whose loader runs `seen.push(params.id)` and returns `seen` answer `['a']` and then `['a', 'b']`."
 // Seed 1337 (no random input). The module root of a compiled top-level statement is `moduleRoot` from `@keel/reactive/internal` (test files are not compiled); the "timer" of the second clause is a promise the test settles, since no real timer is allowed; the `setInterval` callback of the third is a callback made at the top level and called while a request is held open.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
@@ -189,5 +190,33 @@ describe("k.shared: a request never writes module state", () => {
     const read = loader(c, "p.read", {}, async () => ok({ seen: String(lazy().get()) }));
     const { app } = await boot({ "p.read": read });
     expect(await textOf(await app.fetch(json("/api/p/a")))).toContain('"7"');
+  });
+});
+
+describe("k.shared Not refused: a request's write to plain module state leaks", () => {
+  const Seen = s.object({ seen: s.array(s.string()) });
+  const cs = contract("p", {
+    "p.seen": { method: "GET", path: "/api/seen/:id", params: s.object({ id: s.string() }), output: Seen },
+  });
+  const seen: string[] = [];
+  it("on a node server two requests in turn whose loader runs `seen.push(params.id)` and returns `seen` answer `['a']` and then `['a', 'b']`", async () => {
+    seen.length = 0;
+    const read = loader(cs, "p.seen", {}, async ({ params }) => {
+      seen.push(params.id);
+      return ok({ seen: [...seen] });
+    });
+    const routes = Reflect.apply(manifest, undefined, [cs, { "p.seen": { loader: read } }]);
+    const app = await createApp({
+      topology: topology({ web: { modules: ["p"], adapter: "node" } }),
+      routes,
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+      mode: "dev",
+    });
+    const first = await app.fetch(json("/api/seen/a"));
+    expect(first.status).toBe(200);
+    expect(await textOf(first)).toMatch(/"seen":\s*\["a"\]/);
+    const second = await app.fetch(json("/api/seen/b"));
+    expect(second.status).toBe(200);
+    expect(await textOf(second)).toMatch(/"seen":\s*\["a",\s*"b"\]/);
   });
 });
