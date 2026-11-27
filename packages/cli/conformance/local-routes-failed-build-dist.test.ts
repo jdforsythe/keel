@@ -1,6 +1,5 @@
-// Rule text (not a Conformance bullet, so not a citation): "A `keel build` that fails with E1511 or E1510 leaves no `dist/<name>/` of the deployable serving the entry: not one an earlier build wrote, nor one this run wrote in part." (k.api Rules)
-// The Conformance bullet of k.contract that states the `dist/` outcome ("one that then fails with that E1510 leaves no `dist/api/`") covers one deployable and one served module only; this file covers the sentence for a project of several deployables
-// and a module no deployable serves, and is the case its bullet lacks. Seed: n/a (the forms and folders are the whole space).
+// Spec: k.api, clause "With `node` deployables `p` serving module `a` and `q` serving `b`, and module `c` served by none, after a `keel build` that succeeds, one that fails with E1510 on an entry of `a` leaves no `dist/p/` and `dist/q/` byte-identical, one that fails on an entry of `b` no `dist/q/` and `dist/p/` byte-identical, and one that fails on an entry of `c` both byte-identical."
+// Seed: n/a (the forms and folders are the whole space).
 // Method: compat-support.ts's `keel` over a temp project (`materialize`) with the config files of static-support.ts's `staticTree`; node deployables `p` serving module `a` and `q` serving module `b`; module `c` in `modules/c/` is in no deployable's `modules`.
 // Each module holds the page `<id>.tools` with `local: true`; a successful build writes `dist/p/` and `dist/q/`, then one contract is changed to `local: !0` (E1510) and the build runs again; every file under each `dist/<name>/` is read before and after.
 // ASSUMED: "byte-identical" is every file of `dist/<name>/` present with the same bytes; a build failing on an entry of module `c` reports E1510 for it though no deployable serves it.
