@@ -31,7 +31,7 @@ import { staticTree } from "./static-support.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
-const SLOW = 600_000;
+const SLOW = fixedTime(600_000);
 const made: string[] = [];
 afterAll(() => {
   for (const d of made) cleanup(d);

@@ -8,12 +8,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { built, cleanup, materialize, nodeTree } from "./boundary-support.ts";
 import { LAN, accepts, exitCode, start, stopAll, up } from "./bind-support.ts";
 import { join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
 
 let dir = "";
 beforeAll(() => {
   dir = realpathSync(materialize({ ...nodeTree("node") }));
   expect(built(dir).status).toBe(0);
-}, 600_000);
+}, fixedTime(600_000));
 afterAll(() => cleanup(dir));
 afterEach(stopAll);
 
@@ -25,22 +26,26 @@ const server = (host: string | undefined) =>
   });
 
 describe("k.deploy HOST", () => {
-  it("`server.mjs` with `HOST` unset accepts a connection on `127.0.0.1` and on the machine's other addresses; with `HOST=127.0.0.1` it refuses one on the other addresses; with `HOST=nope` it prints one E1560 line naming `HOST` and exits 1.", async () => {
-    const open = await server(undefined);
-    await up(open);
-    expect(await accepts("127.0.0.1", open.port)).toBe(true);
-    if (LAN !== undefined) expect(await accepts(LAN, open.port), `connect ${LAN}`).toBe(true);
-    const closed = await server("127.0.0.1");
-    await up(closed);
-    expect(await accepts("127.0.0.1", closed.port)).toBe(true);
-    if (LAN !== undefined) expect(await accepts(LAN, closed.port), `connect ${LAN}`).toBe(false);
-    const bad = await server("nope");
-    expect(await exitCode(bad), bad.out()).toBe(1);
-    const e = bad
-      .out()
-      .split("\n")
-      .filter((l) => l.includes("E1560"));
-    expect(e).toHaveLength(1);
-    expect(e[0]).toContain("HOST");
-  }, 600_000);
+  it(
+    "`server.mjs` with `HOST` unset accepts a connection on `127.0.0.1` and on the machine's other addresses; with `HOST=127.0.0.1` it refuses one on the other addresses; with `HOST=nope` it prints one E1560 line naming `HOST` and exits 1.",
+    async () => {
+      const open = await server(undefined);
+      await up(open);
+      expect(await accepts("127.0.0.1", open.port)).toBe(true);
+      if (LAN !== undefined) expect(await accepts(LAN, open.port), `connect ${LAN}`).toBe(true);
+      const closed = await server("127.0.0.1");
+      await up(closed);
+      expect(await accepts("127.0.0.1", closed.port)).toBe(true);
+      if (LAN !== undefined) expect(await accepts(LAN, closed.port), `connect ${LAN}`).toBe(false);
+      const bad = await server("nope");
+      expect(await exitCode(bad), bad.out()).toBe(1);
+      const e = bad
+        .out()
+        .split("\n")
+        .filter((l) => l.includes("E1560"));
+      expect(e).toHaveLength(1);
+      expect(e[0]).toContain("HOST");
+    },
+    fixedTime(600_000),
+  );
 });

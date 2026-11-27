@@ -10,6 +10,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { write } from "./compat-support.ts";
 import { cleanup, materialize, nodeTree } from "./boundary-support.ts";
 import { BIN, LAN, accepts, exitCode, get, start, stopAll, up } from "./bind-support.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 let plain = "";
 let wide = "";
@@ -32,20 +33,24 @@ const dev = (cwd: string, extra: string[] = []) =>
 const lines = (out: string, code: string): string[] => out.split("\n").filter((l) => l.includes(code));
 
 describe("k.topology dev listens on loopback", () => {
-  it("`keel dev` accepts a connection on `127.0.0.1` and refuses one on the machine's other addresses; with `server.host: true` in the Vite config it prints one E1560 line naming `server.host`, listens on no port and exits 1.", async () => {
-    const p = await dev(plain);
-    await up(p);
-    expect(await accepts("127.0.0.1", p.port)).toBe(true);
-    if (LAN !== undefined) expect(await accepts(LAN, p.port), `connect ${LAN}`).toBe(false);
-    expect(lines(p.out(), "W1569")).toEqual([]);
-    const w = await dev(wide);
-    expect(await exitCode(w), w.out()).toBe(1);
-    const e = lines(w.out(), "E1560");
-    expect(e).toHaveLength(1);
-    expect(e[0]).toContain("server.host");
-    expect(await accepts("127.0.0.1", w.port)).toBe(false);
-    if (LAN !== undefined) expect(await accepts(LAN, w.port)).toBe(false);
-  }, 600_000);
+  it(
+    "`keel dev` accepts a connection on `127.0.0.1` and refuses one on the machine's other addresses; with `server.host: true` in the Vite config it prints one E1560 line naming `server.host`, listens on no port and exits 1.",
+    async () => {
+      const p = await dev(plain);
+      await up(p);
+      expect(await accepts("127.0.0.1", p.port)).toBe(true);
+      if (LAN !== undefined) expect(await accepts(LAN, p.port), `connect ${LAN}`).toBe(false);
+      expect(lines(p.out(), "W1569")).toEqual([]);
+      const w = await dev(wide);
+      expect(await exitCode(w), w.out()).toBe(1);
+      const e = lines(w.out(), "E1560");
+      expect(e).toHaveLength(1);
+      expect(e[0]).toContain("server.host");
+      expect(await accepts("127.0.0.1", w.port)).toBe(false);
+      if (LAN !== undefined) expect(await accepts(LAN, w.port)).toBe(false);
+    },
+    fixedTime(600_000),
+  );
 
   it.skipIf(LAN === undefined)(
     "`keel dev --host 0.0.0.0` accepts a page request on the machine's LAN address and prints one W1569 line naming the addresses it listens on; `GET /__keel/inspect` from the LAN address answers 403 `keel.denied` with `Host: localhost:<port>` too, and from `127.0.0.1` answers the inspect document.",
@@ -66,18 +71,22 @@ describe("k.topology dev listens on loopback", () => {
       expect(viaLoopback?.status).toBe(200);
       expect(viaLoopback?.body).toContain("graph");
     },
-    600_000,
+    fixedTime(600_000),
   );
 
-  it("`keel dev --host nope` prints one E1560 line naming `--host`, listens on no port and exits 1; `keel dev` without `--host` prints no W1569.", async () => {
-    const p = await dev(plain, ["--host", "nope"]);
-    expect(await exitCode(p), p.out()).toBe(1);
-    const e = lines(p.out(), "E1560");
-    expect(e).toHaveLength(1);
-    expect(e[0]).toContain("--host");
-    expect(await accepts("127.0.0.1", p.port)).toBe(false);
-    const plainRun = await dev(plain);
-    await up(plainRun);
-    expect(lines(plainRun.out(), "W1569")).toEqual([]);
-  }, 600_000);
+  it(
+    "`keel dev --host nope` prints one E1560 line naming `--host`, listens on no port and exits 1; `keel dev` without `--host` prints no W1569.",
+    async () => {
+      const p = await dev(plain, ["--host", "nope"]);
+      expect(await exitCode(p), p.out()).toBe(1);
+      const e = lines(p.out(), "E1560");
+      expect(e).toHaveLength(1);
+      expect(e[0]).toContain("--host");
+      expect(await accepts("127.0.0.1", p.port)).toBe(false);
+      const plainRun = await dev(plain);
+      await up(plainRun);
+      expect(lines(plainRun.out(), "W1569")).toEqual([]);
+    },
+    fixedTime(600_000),
+  );
 });

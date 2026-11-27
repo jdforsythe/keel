@@ -117,7 +117,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
         .filter(([, v]) => v !== "dir")
         .map(([p]) => p);
       for (const f of FILES) expect(written, f).toContain(f);
-      expect(readText(dir, ".gitignore")).toContain(".keel/e2e-host/");
+      expect(readText(dir, ".gitignore")).toContain(".keel/e2e-host-*/");
       // README.md is the one file beyond the list the Package sentence allows (it names it in `files`).
       expect(written.filter((p) => !FILES.includes(p) && p !== "README.md")).toEqual([]);
     },
