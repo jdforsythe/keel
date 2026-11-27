@@ -52,8 +52,8 @@ async function thrower(mode: Mode, format: Format) {
       current = text;
       await (await app.fetch(post("/orders/open", {}, { accept: "application/json" }))).text();
       const diags = lines.filter((l) => (format === "json" ? record(l).get("kind") === "diag" : !isReq(l)));
-      expect(diags).toHaveLength(1);
-      const [diag = ""] = diags;
+      expect(diags).toHaveLength(2);
+      const diag = diags[1] ?? "";
       const message = format === "json" ? record(diag).get("message") : diag.slice(diag.indexOf(" ") + 1);
       return { lines: [...lines], message: typeof message === "string" ? message : "" };
     },
