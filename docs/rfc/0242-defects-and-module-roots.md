@@ -424,6 +424,12 @@ After the third review, by the `conformance-writer` from the new text only:
 - `packages/std-postgres/conformance/`: `errors-by-sqlstate.test.ts` (std.postgres-errors #1, #2), `pglite-timeout.test.ts` (#3 to #6), and std.postgres' two edited clauses.
 - Every case citing k.errors #15 to #23 by number moves its `// Spec:` header to the clause's new section and position.
 
+Settled before the breaking review (D235), by the `conformance-writer` from the new text:
+- `packages/check/conformance/`: every case quoting E1451's, E1452's (`try`/`catch`, and the `.then(f, g)` form), the Static E1203 and E1208, E1762's, E1256's static and E1260's message takes the shortened text; each fits 89 units with its longest fixture input (k.check Diagnostics), and what each dropped is in its explanation.
+- `packages/router/conformance/identity-copy-create-router.test.ts`, `packages/server/conformance/identity-copy-create-app.test.ts`: k.identity's rewritten third clause, a copy of the route table (a spread, `Object.assign`, a JSON round trip, `structuredClone`, a hand-written `{ kind, contract, contracts }`) given as `routes`, refused with E1515 naming `routes`.
+- `packages/server/conformance/thrown-log.test.ts`: k.serverlog's frames bullet (no thrown value and no mark standing for one without full text) and the dev-only page bullet; k.defects Where it goes.
+- E1260 leaves `fixtures-by-code.ts`, `explain-examples.test.ts`'s `PER_CODE`, `fix-diffs.test.ts`'s `NO_FIX` and `fix-universal.test.ts`'s no-fix list, and `module-state-rules.test.ts`'s E1260 cases are `test.skip` until RFC 0251's `processSlot` lands, as a code whose rule is not built is held elsewhere.
+
 ## Migration
 Nothing is released; no migration notes. The sites, by package (the builder):
 - `@keel/schema`: `src/defect.ts`, `src/isDefect.ts`, `src/Defect.ts` (type), `src/DefectCode.ts` (type); `attempt.ts` gains the `expect` overload (a defect rethrown before `expect`); `index.ts` exports them. `toUnexpected` unchanged.
