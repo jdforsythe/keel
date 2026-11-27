@@ -270,8 +270,6 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     const matched = inspecting ? null : matchUrl(served, path, mountPath).route;
     if (matched !== null) routeOf.set(raw, matched.id);
     const at = peer === undefined || matched !== null ? undefined : peers[peer.deployable];
-    // A peer's `local` route is never forwarded, from any address (k.topology Calls and peers): this server refuses it.
-    const peerLocal = at !== undefined && peer?.local === true;
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // An allowed origin (k.hosting): granted on API routes only, by exact match of its serialized origin.
     const from = raw.headers.get("origin") ?? "";
@@ -321,21 +319,16 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
         ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
         : path === CSP_PATH
           ? await attempted(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
-          : peerLocal
-            ? {
-                ok: true as const,
-                value: { response: denied("local route of a peer refused"), route: undefined, diags: [] },
-              }
-            : at !== undefined
-              ? await attempted(() => forward(raw, at, sv))
-              : gate === undefined || (gate.ok && raw.method !== "GET")
-                ? await routed()
-                : await attempted(() =>
-                    (gate.ok
-                      ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
-                      : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
-                    ).then((r) => ({ ...r, route: undefined })),
-                  );
+          : at !== undefined
+            ? await attempted(() => forward(raw, at, sv))
+            : gate === undefined || (gate.ok && raw.method !== "GET")
+              ? await routed()
+              : await attempted(() =>
+                  (gate.ok
+                    ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
+                    : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
+                  ).then((r) => ({ ...r, route: undefined })),
+                );
     // A server bug's thrown text is scrubbed whole before it is clipped for the dev body (`scrubbedCause`).
     const h = ran.ok ? ran.value : crashed(sv.mode, scrubbedCause(ran.error, { secrets, pii }));
     // Every API-route response varies by origin once any origin is allowed, so a shared cache keeps them apart.

@@ -14,9 +14,16 @@ const loopbackHost = (host: string): boolean => {
 /**
  * Whether a `local: true` route answers `raw` over a connection from `remote` (k.contract Local routes): `remote` is a
  * loopback address (an IPv4-mapped one too; undefined, no connection, is not), the `Host` is a loopback name with a
- * port, and `Sec-Fetch-Site` is `same-origin` or `none` (absent is refused). No forwarding header is read.
+ * port, `Sec-Fetch-Site` is `same-origin` or `none` (absent is refused), and it carries no `x-keel-forwarded`, any
+ * value: every request a deployable forwards or a server's `service` call sends carries it (k.topology Calls and
+ * peers). No forwarding header (`X-Forwarded-For`, `Forwarded`) is read.
  */
 export function localAllowed(raw: Request, remote: string | undefined): boolean {
   const host = raw.headers.get("host") ?? new URL(raw.url).host;
-  return loopbackPeer(remote) && loopbackHost(host) && OWN_SITE.has(raw.headers.get("sec-fetch-site") ?? "");
+  return (
+    !raw.headers.has("x-keel-forwarded") &&
+    loopbackPeer(remote) &&
+    loopbackHost(host) &&
+    OWN_SITE.has(raw.headers.get("sec-fetch-site") ?? "")
+  );
 }

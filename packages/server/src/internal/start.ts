@@ -9,6 +9,8 @@ import { onUncaught } from "@keel/server/internal/onUncaught";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
 import { diagLine } from "./diagLine.ts";
+import { parserRefusal } from "./parserRefusal.ts";
+import { readableHost } from "./readableHost.ts";
 import { startRefusal } from "./startRefusal.ts";
 
 const line = (text: string): void => {
@@ -143,10 +145,12 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
         https,
       ),
   });
-  // A request with no `Host`, or an empty one, over HTTP/1.0 or HTTP/1.1, reaches no route: 403 `keel.denied`, never
-  // 400 (k.contract Local routes). Node's own 400 for an HTTP/1.1 one is turned off so this answers it.
+  // A request with no `Host` or an empty one, over HTTP/1.0 or HTTP/1.1, more than one, or one it cannot read as a host
+  // and optional port reaches no route: 403 `keel.denied`, never 400 (k.contract Local routes, `readableHost`). Node's
+  // own 400 for an HTTP/1.1 one is turned off so this answers it. A request the parser rejects is 400 with the
+  // k.security headers and no handler run (`parserRefusal`).
   const srv = createServer({ requireHostHeader: false }, (req, res) => {
-    if ((req.headers.host ?? "") !== "") return listener(req, res);
+    if (readableHost(req.rawHeaders) !== undefined) return listener(req, res);
     const r = startRefusal("host refused", https);
     return r.text().then((body) => {
       res.writeHead(r.status, Object.fromEntries(r.headers));
@@ -159,6 +163,10 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
     line(json ? JSON.stringify({ kind: "summary", name: "listen", port: at }) : `ok listening on port ${at}`);
   });
   live.server = srv;
+  srv.on("clientError", (e, socket) => {
+    const code: unknown = Reflect.get(e, "code");
+    parserRefusal(typeof code === "string" ? code : undefined, socket, https);
+  });
   srv.on("request", (_q, res) => {
     busy++;
     res.on("close", () => {
