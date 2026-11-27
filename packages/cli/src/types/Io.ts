@@ -16,6 +16,8 @@ import type { Write } from "./Write.ts";
  * half up to the bundles, for a scaffold in a built project (k.scaffold Refresh): `routes.json` and `surface.json`,
  * no Vite build, nothing under `dist/`. `shell` loads what
  * `build --target` needs of the host (k.shell Build; absent: every tool is missing and no shell step runs).
+ * `discard` removes folders under `cwd`, whole: a `keel build` failing with E1510 or E1511 leaves no `dist/<name>/` of
+ * the deployable serving the entry (k.api Rules).
  */
 export type Io = {
   readonly cwd: string;
@@ -35,4 +37,5 @@ export type Io = {
     | ((cwd: string) => Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }>)
     | undefined;
   readonly shell?: (() => Promise<ShellHost>) | undefined;
+  readonly discard?: ((dirs: readonly string[]) => void) | undefined;
 };
