@@ -61,16 +61,14 @@ describe("k.scaffold-needs", () => {
     expect(scaffold("transaction", { id: "app.cart.addItem" }, withStore).ok).toBe(true);
   });
 
-  it("a shell with no client deployable is E1359 naming the place line, which then lets it through", () => {
-    for (const adapter of ["static", "node"] as const) {
-      const files = project(adapter);
-      const r = scaffold("shell", { shell: "tauri", id: "com.acme.shop" }, files);
-      expect(r.ok ? "" : r.error.data.code).toBe("E1359");
-      const message = r.ok ? "" : r.error.data.message;
-      expect(message).toBe("no client deployable; first: keel codemod place app --to app --adapter client");
-      const placed = apply("place", { module: "app", to: "app", adapter: "client" }, files);
-      expect(scaffold("shell", { shell: "tauri", id: "com.acme.shop" }, placed).ok).toBe(true);
-    }
+  it("a shell with no client deployable is E1359 naming the need, with no line and k.topology's see", () => {
+    for (const adapter of ["static", "node"] as const)
+      for (const shell of ["tauri", "capacitor"] as const) {
+        const r = scaffold("shell", { shell, id: "com.acme.shop" }, project(adapter));
+        expect(r.ok ? "" : r.error.data.code).toBe("E1359");
+        expect(r.ok ? "" : r.error.data.message).toBe(`no client deployable; a ${shell} shell needs one`);
+        expect(r.ok ? "" : r.error.data.see).toBe("k.topology");
+      }
   });
 
   it("yarn's .gitignore adds yarn's list after the shared one; other managers get the shared one alone", () => {

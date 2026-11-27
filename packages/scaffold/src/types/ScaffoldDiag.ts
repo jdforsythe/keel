@@ -16,7 +16,8 @@ export type ScaffoldDiag = {
     | "k.scaffold-shell"
     | "k.create"
     | "k.create-folder"
-    | "k.library-pack";
+    | "k.library-pack"
+    | "k.topology";
   readonly paths?: readonly string[];
   readonly missing?: string;
   readonly cause?: { readonly code: string; readonly path: string; readonly line: number; readonly message: string };

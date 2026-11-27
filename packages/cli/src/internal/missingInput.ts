@@ -30,6 +30,12 @@ const modulesOf = (files: ReadonlyMap<string, string>): string[] =>
 /** A command line (`keel` bare, for the Command form to spell) and the input it passes to `@keel/scaffold`. */
 type Line = { readonly text: string; readonly op: Op; readonly input: Readonly<Record<string, unknown>> };
 
+/** A need no line meets by adding to the project (k.scaffold-needs First): named in words, with its `see`. */
+type Need = { readonly message: string; readonly see: "k.topology" };
+const NO_CLIENT: { readonly need: Need } = {
+  need: { message: "shell needs a client deployable, and this project has none", see: "k.topology" },
+};
+
 /** Whether `line`, run in the project of `files`, is not refused for a name the project already holds (E1351). */
 const free = (line: Line, files: ReadonlyMap<string, string>): boolean => {
   const r = scaffold(line.op, line.input, files);
@@ -46,9 +52,13 @@ const firstFree = (make: (n: string) => Line, files: ReadonlyMap<string, string>
  * makes what the project lacks for it. A generator that takes a module id names the first module in sorted order
  * (`app` without one) and a new name it does not hold (`about`, else `about2`, ...); `transaction` that module's first
  * store, or `first` the line making one; `service` a `--reason` where its module's `client` deployable asks for one
- * (E1358); `shell` `--to` the first `client` deployable when there are several, or `first` the `place` that makes one.
+ * (E1358); `shell` `--to` the first `client` deployable when there are several, or, with none, `need`: no line only
+ * adds one, so the need is named in words with its section.
  */
-const lineOf = (op: Op, files: ReadonlyMap<string, string>): { readonly example: Line } | { readonly first: Line } => {
+const lineOf = (
+  op: Op,
+  files: ReadonlyMap<string, string>,
+): { readonly example: Line } | { readonly first: Line } | { readonly need: Need } => {
   const mod = modulesOf(files)[0] ?? "app";
   const store = [...files.keys()]
     .map((p) =>
@@ -98,11 +108,9 @@ const lineOf = (op: Op, files: ReadonlyMap<string, string>): { readonly example:
         const input = { shell: kind, id: "com.acme.shop", ...(to === "" ? {} : { to: clients[0] }) };
         return gen(op, `${kind} --id com.acme.shop${to}`, input);
       }, files);
-      // With no `client` deployable to take a shell, E1359 names the line that makes one (k.scaffold-shell).
+      // No line only adds a `client` deployable (k.scaffold-needs First): with none, the need is named in words.
       const probe = scaffold(op, shell.input, files);
-      const make = probe.ok || probe.error.data.code !== "E1359" ? [] : probe.error.data.message.split("; first: ");
-      const [, text] = make;
-      return text === undefined ? { example: shell } : { first: { text, op: "place", input: {} } };
+      return !probe.ok && probe.error.data.see === "k.topology" ? NO_CLIENT : { example: shell };
     }
     case "library":
       return { example: gen(op, "@acme/charts", { name: "@acme/charts" }) };
@@ -119,12 +127,17 @@ const lineOf = (op: Op, files: ReadonlyMap<string, string>): { readonly example:
 
 /**
  * The E1052 message for an input field `op` lacks (k.cli Rules): the argument or flag as written (`<id>`,
- * `--to <module>`) and a command line that passes it, formed from the project's own `files` (`lineOf`).
+ * `--to <module>`) and a command line that passes it, formed from the project's own `files` (`lineOf`); `see` when
+ * the message names a need no line meets, the section that explains it.
  */
-export function missingInput(op: Op, field: string, files: ReadonlyMap<string, string> = new Map()): string {
+export function missingInput(
+  op: Op,
+  field: string,
+  files: ReadonlyMap<string, string> = new Map(),
+): { readonly message: string; readonly see?: "k.topology" } {
   const shown = ARGS[op].includes(field) ? `<${field}>` : `--${field} <${VALUE[`${op}.${field}`] ?? field}>`;
   const line = lineOf(op, files);
-  if ("first" in line)
-    return `${op} needs ${op === "shell" ? "a client deployable" : "a store"} first: ${line.first.text}`;
-  return `${op} needs ${shown}${op === "service" ? ":" : ", as in"} ${line.example.text}`;
+  if ("need" in line) return line.need;
+  if ("first" in line) return { message: `${op} needs a store first: ${line.first.text}` };
+  return { message: `${op} needs ${shown}${op === "service" ? ":" : ", as in"} ${line.example.text}` };
 }

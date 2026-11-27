@@ -89,11 +89,16 @@ export function opShell(input: unknown, files: ReadonlyMap<string, string>): Res
     const first = unread[0];
     if (first !== undefined) return refuse("E1052", "topology.ts", `${literal(first)}; pass --to`);
     const [one, two] = clients;
-    // The first module in sorted order moves to a new `client` deployable: the one line that makes what a shell needs.
-    const placed = ast.deployables.flatMap((d) => d.modules).sort()[0];
-    const fresh = names.includes("app") ? "native" : "app";
-    const make = placed === undefined ? "" : `; first: keel codemod place ${placed} --to ${fresh} --adapter client`;
-    if (one === undefined) return refuse("E1359", "topology.ts", `no client deployable${make}`);
+    // No line only adds a `client` deployable: each module is in one deployable, and `place` moves it (k.scaffold-needs).
+    if (one === undefined)
+      return fail(
+        "E1359",
+        "topology.ts",
+        `no client deployable; a ${shell} shell needs one`,
+        undefined,
+        AT,
+        "k.topology",
+      );
     if (two !== undefined)
       return refuse(
         "E1359",

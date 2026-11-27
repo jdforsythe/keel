@@ -41,18 +41,21 @@ const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   dotted: ["store", "route"],
 };
 
-const refusal = (d: ScaffoldDiag, into: string, op: Op, files: ReadonlyMap<string, string>): OutRecord[] => [
-  makeDiag(d.code, d.missing === undefined ? d.message : missingInput(op, d.missing, files), {
-    // A missing input is no file's: the diagnostic names the flag, not a path.
-    path: d.path === undefined || d.missing !== undefined ? undefined : `${into}${d.path}`,
-    line: d.line,
-    col: d.col,
-    see: d.see,
-  }),
-  ...(d.cause === undefined
-    ? []
-    : [makeDiag(d.cause.code, d.cause.message, { path: d.cause.path, line: d.cause.line, col: 1, see: "k.check" })]),
-];
+const refusal = (d: ScaffoldDiag, into: string, op: Op, files: ReadonlyMap<string, string>): OutRecord[] => {
+  const missing = d.missing === undefined ? undefined : missingInput(op, d.missing, files);
+  return [
+    makeDiag(d.code, missing?.message ?? d.message, {
+      // A missing input is no file's: the diagnostic names the flag, not a path.
+      path: d.path === undefined || d.missing !== undefined ? undefined : `${into}${d.path}`,
+      line: d.line,
+      col: d.col,
+      see: missing?.see ?? d.see,
+    }),
+    ...(d.cause === undefined
+      ? []
+      : [makeDiag(d.cause.code, d.cause.message, { path: d.cause.path, line: d.cause.line, col: 1, see: "k.check" })]),
+  ];
+};
 
 /**
  * `keel scaffold <op> ...` / `keel codemod <op> ...` over `io.files` through `@keel/scaffold`, which is pure, so
