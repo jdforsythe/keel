@@ -1,4 +1,6 @@
 import type { Scope } from "@keel/reactive";
+import { heldMap } from "@keel/schema/internal";
+import type { WeakMapOf } from "@keel/schema/internal";
 import type { Store } from "../types/Store.ts";
 
 /**
@@ -7,5 +9,5 @@ import type { Store } from "../types/Store.ts";
  */
 export const registries: {
   readonly shared: Map<string, Store<unknown>>;
-  readonly own: WeakMap<Scope, Map<string, Store<unknown>>>;
-} = { shared: new Map(), own: new WeakMap() };
+  readonly own: WeakMapOf<Scope, Map<string, Store<unknown>>>;
+} = { shared: new Map(), own: heldMap() };

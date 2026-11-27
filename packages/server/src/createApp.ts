@@ -6,6 +6,7 @@ import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
 import { routeTable } from "@keel/router";
 import { allowAt, compileRoutes, matchUrl } from "@keel/router/internal";
+import { heldMap } from "@keel/schema/internal";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { CSP_PATH } from "./internal/CSP_PATH.ts";
@@ -259,7 +260,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   const warned = new Set<string>();
   const hono = new Hono();
   // The route id each request matched, for the last resort's record.
-  const routeOf = new WeakMap<Request, string>();
+  const routeOf = heldMap<Request, string>();
   // The last resort: a throw past every guard of the handler (the app's `log.write`, say) is a bare 500 and one fixed
   // `diag` naming the matched route id when there is one; nothing of the thrown value is read, so none of it reaches a
   // response, the log or stderr. When that `diag` cannot be written either, `logUnwritable` writes its one fixed record

@@ -70,12 +70,15 @@ describe("matchUrl", () => {
 
   it("ranks the same for a router loaded afresh", async () => {
     vi.resetModules();
+    const { s: fs } = await import("@keel/schema");
     const fresh = {
       ...(await import("../src/internal/index.ts")),
       ...(await import("../src/contract/contract.ts")),
       ...(await import("../src/manifest.ts")),
     };
-    const f = fresh.contract("f", { "f.ax": { path: "/:a/x", params: A }, "f.yb": { path: "/y/:b", params: B } });
+    const FA = fs.object({ a: fs.string() });
+    const FB = fs.object({ b: fs.string() });
+    const f = fresh.contract("f", { "f.ax": { path: "/:a/x", params: FA }, "f.yb": { path: "/y/:b", params: FB } });
     const located = fresh.compileRoutes(
       fresh.manifest(f, { "f.ax": { component: view }, "f.yb": { component: view } }),
     ).located;
@@ -117,12 +120,13 @@ describe("matchUrl with a prefix param", () => {
 describe("href", () => {
   it("writes search keys sorted, whatever order they are given in", async () => {
     vi.resetModules();
+    const { s: fs } = await import("@keel/schema");
     const fresh = await import("../src/contract/contract.ts");
-    const Search = s.object({
-      b: s.string().optional(),
-      a: s.string().optional(),
-      c: s.string().optional(),
-      aa: s.string().optional(),
+    const Search = fs.object({
+      b: fs.string().optional(),
+      a: fs.string().optional(),
+      c: fs.string().optional(),
+      aa: fs.string().optional(),
     });
     const c = fresh.contract("q", { "q.page": { path: "/q", search: Search } });
     fc.assert(

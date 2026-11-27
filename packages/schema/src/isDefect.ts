@@ -1,4 +1,4 @@
-import { kernelSet } from "./internal/kernelSet.ts";
+import { records } from "./internal/records.ts";
 import type { Defect } from "./types/Defect.ts";
 
 /**
@@ -9,7 +9,7 @@ export function isDefect(x: unknown, code?: string): x is Defect {
   return (
     typeof x === "object" &&
     x !== null &&
-    kernelSet("defect").has(x) &&
+    records.defect.has(x) &&
     (code === undefined || Object.getOwnPropertyDescriptor(x, "code")?.value === code)
   );
 }

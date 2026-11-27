@@ -52,12 +52,13 @@ describe("E1503", () => {
 
   it("checks param names the same for a contract loaded afresh", async () => {
     vi.resetModules();
+    const { s: fs } = await import("@keel/schema");
     const fresh = await import("../src/contract/contract.ts");
     const fresh1 = (path: string, params: unknown): string | null =>
       messageOf(() => Reflect.apply(fresh.contract, undefined, ["t", { "t.x": { path, params } }]));
-    expect(fresh1("/x/:id", Id)).toBeNull();
-    expect(fresh1("/x/:_a1", s.object({ _a1: s.string() }))).toBeNull();
-    expect(fresh1("/x/:A", s.object({ A: s.string() }))).toBeNull();
+    expect(fresh1("/x/:id", fs.object({ id: fs.string() }))).toBeNull();
+    expect(fresh1("/x/:_a1", fs.object({ _a1: fs.string() }))).toBeNull();
+    expect(fresh1("/x/:A", fs.object({ A: fs.string() }))).toBeNull();
     for (const text of [":1a", ":a-b", ":-a", ":a!"])
       expect(fresh1(`/x/${text}`, undefined)).toBe(`E1503 t.x: bad param name "${text}" in "/x/${text}"`);
   });

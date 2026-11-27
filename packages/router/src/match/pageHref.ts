@@ -1,4 +1,5 @@
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
+import { heldMap } from "@keel/schema/internal";
 import { bindingsOf } from "../internal/bindingsOf.ts";
 import { compileRoutes } from "../internal/compileRoutes.ts";
 import { encodeHref } from "../internal/encodeHref.ts";
@@ -12,7 +13,7 @@ const NOT_A_PAGE: KeelError<"keel.notFound", null> = { code: "keel.notFound", me
 const refused = (): Result<never, KeelError<"keel.notFound", null>> => err(NOT_A_PAGE);
 
 /** Per route table, the ids that are some guard's `redirect` route. */
-const redirects = new WeakMap<object, ReadonlySet<string>>();
+const redirects = heldMap<object, ReadonlySet<string>>();
 
 function redirectsOf(routes: RouteTable): ReadonlySet<string> {
   let set = redirects.get(routes);

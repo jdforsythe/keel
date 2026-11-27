@@ -1,4 +1,5 @@
 import type { Schema } from "@keel/schema";
+import { heldMap } from "@keel/schema/internal";
 
 type Node = Schema<unknown>["node"];
 
@@ -25,7 +26,7 @@ const childrenOf = (n: Node): readonly Node[] => {
       return [];
   }
 };
-const held = new WeakMap<Node, boolean>();
+const held = heldMap<Node, boolean>();
 /** True when the subtree holds an `s.secret` node; decided once per schema node. */
 const holds = (n: Node): boolean => {
   let v = held.get(n);

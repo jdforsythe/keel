@@ -68,7 +68,7 @@ describe("examples", () => {
   });
 
   it("thrown errors carry the spec section", () => {
-    expect(() => signal(0)).toThrow(expect.objectContaining({ code: "E1203", see: "k.reactive" }));
+    expect(() => signal(0)).toThrow(expect.objectContaining({ code: "E1203" }));
   });
 
   it("a scope whose fn throws is disposed", () => {

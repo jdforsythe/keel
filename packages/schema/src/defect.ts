@@ -1,7 +1,7 @@
 import type { DefectCode } from "./DefectCode.ts";
 import type { DefectDetail } from "./DefectDetail.ts";
 import { DefectError } from "./internal/DefectError.ts";
-import { kernelSet } from "./internal/kernelSet.ts";
+import { records } from "./internal/records.ts";
 
 /**
  * Throw a defect (k.defects): a failure no caller is meant to handle. `message` is the code's own words, never a
@@ -21,6 +21,6 @@ export function defect(message: string, second?: DefectCode | DefectDetail, thir
       : new DefectError(text);
   if (code !== undefined) Object.defineProperty(e, "code", { value: code });
   if (detail?.data !== undefined) Object.defineProperty(e, "data", { value: detail.data });
-  kernelSet("defect").add(e);
+  records.defect.add(e);
   throw e;
 }

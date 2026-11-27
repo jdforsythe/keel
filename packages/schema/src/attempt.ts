@@ -2,8 +2,7 @@ import type { KeelError } from "./KeelError.ts";
 import type { Result } from "./Result.ts";
 import { defect } from "./defect.ts";
 import { err } from "./err.ts";
-import { isKeelError } from "./internal/isKeelError.ts";
-import { resultBrand } from "./internal/resultBrand.ts";
+import { isResult } from "./internal/isResult.ts";
 import { wrapsDefect } from "./internal/wrapsDefect.ts";
 import { ok } from "./ok.ts";
 
@@ -27,17 +26,7 @@ const isThenable = (x: unknown): boolean =>
   (typeof x === "object" || typeof x === "function") && x !== null && typeof Reflect.get(x, "then") === "function";
 
 /** A keel `Result` (one `ok` or `err` made) is the call's own; any other value is its `ok`. */
-const settled = (v: unknown): Result<unknown, Failure> =>
-  typeof v === "object" && v !== null && Object.hasOwn(v, resultBrand) && isResult(v) ? v : ok(v);
-
-function isResult(v: object): v is Result<unknown, Failure> {
-  return (
-    typeof v === "object" &&
-    v !== null &&
-    ((Reflect.get(v, "ok") === true && Object.hasOwn(v, "value")) ||
-      (Reflect.get(v, "ok") === false && isKeelError(Reflect.get(v, "error"))))
-  );
-}
+const settled = (v: unknown): Result<unknown, Failure> => (isResult(v) ? v : ok(v));
 
 /**
  * The one catch (k.attempt). Runs `fn`: a value is `ok`, a keel `Result` it returns is the call's own (never nested),

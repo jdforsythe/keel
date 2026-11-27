@@ -1,7 +1,7 @@
-import { kernelSet } from "@keel/schema/internal";
 import type { ServerStub } from "./ServerStub.ts";
+import { records } from "./records.ts";
 
-/** Whether `v` is a stub `serverOnly` made in this realm (k.boundary, k.identity), read from the kernel's record. */
+/** Whether `v` is a stub `serverOnly` made in this realm (k.boundary, k.identity), read from the router's record. */
 export function isStub(v: unknown): v is ServerStub {
-  return typeof v === "function" && kernelSet("router.serverOnly").has(v);
+  return typeof v === "function" && records.serverOnly.has(v);
 }

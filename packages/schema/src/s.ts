@@ -16,11 +16,11 @@ import { declaredCodes } from "./internal/declaredCodes.ts";
 import { formats } from "./internal/formats.ts";
 import { fromStrings } from "./internal/fromStrings.ts";
 import { invalid } from "./internal/invalid.ts";
-import { kernelSet } from "./internal/kernelSet.ts";
 import { make } from "./internal/make.ts";
 import { mark } from "./internal/mark.ts";
 import { marked } from "./internal/marked.ts";
 import { protoPaths } from "./internal/protoPaths.ts";
+import { records } from "./internal/records.ts";
 import { registry } from "./internal/registry.ts";
 import { stringEntries } from "./internal/stringEntries.ts";
 
@@ -95,7 +95,7 @@ function objectOf<T>(node: Node): ObjectSchema<T> {
     },
     pii: (cls) => objectOf<T>(mark(node, cls)),
   };
-  kernelSet("objectSchema").add(schema);
+  records.objectSchema.add(schema);
   return marked(schema);
 }
 

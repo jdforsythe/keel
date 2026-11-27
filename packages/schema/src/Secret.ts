@@ -1,14 +1,13 @@
 import { defect } from "./defect.ts";
 import type { Node } from "./internal/Node.ts";
 import { SECRET_MARKER } from "./internal/SECRET_MARKER.ts";
-import { kernelSet } from "./internal/kernelSet.ts";
 import { listening } from "./internal/listening.ts";
+import { records } from "./internal/records.ts";
 import { secretSlot } from "./internal/secretSlot.ts";
 
 const INSPECT = Symbol.for("nodejs.util.inspect.custom");
 /** Only this module holds it, so only `@keel/schema` makes a secret; any other `new` is the defect E1764. */
 const TOKEN: object = Object.freeze({});
-const made = (): WeakSet<object> => kernelSet("secret");
 
 /**
  * The parsed value of `s.secret(inner)` (k.privacy Secrets). The value lives in a private field: JSON, `String()`,
@@ -23,7 +22,7 @@ export class Secret<T> {
     if (token !== TOKEN) defect("Secret made outside @keel/schema", "E1764");
     this.#value = value;
     this.#inner = inner;
-    made().add(this);
+    records.secret.add(this);
     Object.freeze(this);
   }
 
@@ -34,7 +33,7 @@ export class Secret<T> {
         listening.current?.(secret);
         return secret;
       },
-      is: (x: unknown): x is Secret<unknown> => typeof x === "object" && x !== null && kernelSet("secret").has(x),
+      is: (x: unknown): x is Secret<unknown> => typeof x === "object" && x !== null && records.secret.has(x),
       open: <V>(secret: Secret<V>): V => secret.#value,
       innerOf: (secret: Secret<unknown>): Node => secret.#inner,
     });

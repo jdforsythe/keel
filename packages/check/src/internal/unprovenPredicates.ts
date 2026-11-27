@@ -8,9 +8,8 @@ type Gap = { readonly prop: string | undefined };
 
 /** The kernel guards (k.identity Identity): each is true only of a value its maker returned in this realm. */
 const KERNEL_GUARDS = new Set(["isSchema", "isObjectSchema", "isDefect", "isStore", "isTransaction", "isRouteTable"]);
-/** The readers of the realm's kernel record (k.identity), whose sets only the kernel's makers fill. */
-const KERNEL_RECORDS = new Set(["kernelSet", "kernelDefects"]);
-const RECORD_FILE = /[\\/](?:packages|@keel)[\\/](?:schema|reactive)[\\/]/;
+/** A kernel package's record of what its makers made (k.identity): the `records` binding of its `internal/records.ts`. */
+const RECORD_FILE = /[\\/](?:packages|@keel)[\\/](?:schema|store|router|server)[\\/](?:src|dist[\\/]src)[\\/]internal[\\/]records\.(?:ts|d\.ts|js)$/;
 const KERNEL_FILE = /[\\/](?:packages|@keel)[\\/](?:schema|store|router)[\\/]/;
 const SCHEMA_FILE = /[\\/](?:packages|@keel)[\\/]schema[\\/]/;
 const NODE_TYPES = /[\\/]@types[\\/]node[\\/]/;
@@ -409,10 +408,10 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       if (!owned && !decls.some(isBuiltIn)) return undefined;
       return checker.getDeclaredTypeOfSymbol(sym);
     };
-    /** Whether `e` is a read of the realm's kernel record (`kernelSet(name)`), a kernel guard's own proof. */
+    /** Whether `e` is a kernel package's record (`records.<name>`), a kernel guard's own proof. */
     const isRecord = (e: ts.Expression): boolean => {
       const c = bare(e);
-      if (!ts.isCallExpression(c) || !ts.isIdentifier(c.expression) || !KERNEL_RECORDS.has(c.expression.text))
+      if (!ts.isPropertyAccessExpression(c) || !ts.isIdentifier(c.expression) || c.expression.text !== "records")
         return false;
       const at = checker.getSymbolAtLocation(c.expression);
       const decls = at === undefined ? [] : (resolved(at).declarations ?? []);

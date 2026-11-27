@@ -1,3 +1,4 @@
+import { heldMap } from "@keel/schema/internal";
 import type { Located } from "../internal/Located.ts";
 import { compileRoutes } from "../internal/compileRoutes.ts";
 import { matchUrl } from "../internal/matchUrl.ts";
@@ -5,7 +6,7 @@ import type { RouteTable } from "../types/RouteTable.ts";
 import type { RouteMatch } from "./RouteMatch.ts";
 
 /** Per route table, its pages for matching. */
-const lists = new WeakMap<object, readonly Located[]>();
+const lists = heldMap<object, readonly Located[]>();
 
 /**
  * Match `href` against route table `routes` as a navigation does (k.router `@keel/router/match`): static segments

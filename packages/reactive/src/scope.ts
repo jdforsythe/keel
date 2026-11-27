@@ -1,3 +1,4 @@
+import { defect } from "@keel/schema";
 import { createNode } from "./internal/createNode.ts";
 import { dispose } from "./internal/dispose.ts";
 import { disposeOwned } from "./internal/disposeOwned.ts";
@@ -26,9 +27,9 @@ export function scope(
 ): Scope {
   const detached = options?.detached === true;
   if (!detached && rt.owner === null)
-    throw fail(
-      "E1208",
+    defect(
       "scope() with no owner outside a module root; nest it, run it in a captured scope, or in a test pass detached: true",
+      "E1208",
     );
   const outer = { owner: rt.owner, reaction: rt.reaction };
   if (detached) rt.owner = null;
