@@ -76,9 +76,9 @@ describe("the sweep of stale run roots", () => {
 
   it("removes run roots untouched for a day and keeps a newer one, other folders and files", () => {
     const outer = tempDir("keel-sweep-outer-");
-    const stale = fs.mkdtempSync(path.join(outer, "keel-run-"));
-    const live = fs.mkdtempSync(path.join(outer, "keel-run-"));
-    const other = fs.mkdtempSync(path.join(outer, "keel-other-"));
+    const stale = tempDir("keel-run-", outer);
+    const live = tempDir("keel-run-", outer);
+    const other = tempDir("keel-other-", outer);
     const file = path.join(outer, "keel-run-abcdef");
     fs.writeFileSync(file, "x");
     fs.writeFileSync(path.join(stale, "f"), "x");
@@ -102,7 +102,7 @@ describe("the sweep of stale run roots", () => {
 
   it("removes at most SWEEP_LIMIT roots in one run and a missing folder is not an error", () => {
     const outer = tempDir("keel-sweep-outer-");
-    for (let i = 0; i < SWEEP_LIMIT + 3; i++) age(fs.mkdtempSync(path.join(outer, "keel-run-")), STALE_MS + 60_000);
+    for (let i = 0; i < SWEEP_LIMIT + 3; i++) age(tempDir("keel-run-", outer), STALE_MS + 60_000);
     expect(sweepStaleRoots(outer)).toBe(SWEEP_LIMIT);
     expect(fs.readdirSync(outer)).toHaveLength(3);
     expect(sweepStaleRoots(path.join(outer, "missing"))).toBe(0);
@@ -110,7 +110,7 @@ describe("the sweep of stale run roots", () => {
 
   it("runs at the start of a run, so a killed run's root is gone after the next run begins", () => {
     const outer = tempDir("keel-sweep-outer-");
-    const stale = fs.mkdtempSync(path.join(outer, "keel-run-"));
+    const stale = tempDir("keel-run-", outer);
     age(stale, STALE_MS + 60_000);
     const before = process.env.TMPDIR;
     process.env.TMPDIR = outer;
