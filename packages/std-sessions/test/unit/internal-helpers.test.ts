@@ -86,7 +86,7 @@ describe("sessionDiag", () => {
     expect(see("E2010")).toBe("std.monitor");
     expect(see("E2001")).toBe("std.sessions");
     expect(see("E2004")).toBe("std.sessions");
-    expect(see("E1056")).toBe("k.cli");
+    expect(see("E1056")).toBe("k.inspect");
     expect(see("E1052")).toBe("k.cli");
     expect(see("I1055")).toBe("k.cli");
     expect(see("XE20")).toBe("k.cli");
