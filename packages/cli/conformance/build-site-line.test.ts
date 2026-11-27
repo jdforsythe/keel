@@ -1,6 +1,7 @@
 // Spec: k.serverlog, clause "A loader of a `keel build` fixture whose `defect('x')` call stands on line 12 of `modules/p/def.server.ts`, run from `node dist/<name>/server.mjs` in production mode, logs a `diag` whose message ends ` at modules/p/def.server.ts:12`; a thrown string logs no ` at `."
 // Seed 1337 (no generated input: one fixture, two requests). The real binary builds a `node` project; `dist/api/server.mjs` runs in production mode (no `KEEL_LOG_THROWN`, so the record ends at the fingerprint or the site).
 // The `defect('x')` call is on line 12 of `modules/p/def.server.ts` (the file is padded with comment lines); the thrown string comes from a plain npm package (`boomer`), since app code has no `throw`.
+// The readiness probe requests `/ready`, which no route owns, so each case logs only its own request.
 import { type ChildProcess, spawn } from "node:child_process";
 import net from "node:net";
 import { join } from "node:path";
@@ -64,7 +65,7 @@ async function messages(path: string): Promise<string[]> {
   child.stdout?.on("data", (d: Buffer) => void (text += d.toString()));
   child.stderr?.on("data", (d: Buffer) => void (text += d.toString()));
   for (let i = 0; i < 4000; i++) {
-    const up = await send(port, "GET", "/def", { accept: "application/json" }).then(
+    const up = await send(port, "GET", "/ready", { accept: "application/json" }).then(
       () => true,
       () => false,
     );
