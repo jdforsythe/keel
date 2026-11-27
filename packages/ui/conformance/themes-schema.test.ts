@@ -1,7 +1,7 @@
 // Spec: k.themes, clause "`themes: { slate: { color: { text: '#222222' } } }` is accepted with a color token `text`; each of `themes: { light: {} }`, `themes: { a: { when: 'hover' } }`, `themes: { a: { color: { nope: '#000000' } } }`, `themes: { a: { breakpoint: { md: '1px' } } }`, `themes: { a: { look: {} } }`, `themes: { a: { when: 'print', color: { text: { light: '#000000', dark: '#ffffff' } } } }`, two themes with `when: 'print'` and nine themes with no `when` fails `TokenSchema`, each one E1807 in `tokens.ts`."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
 // ASSUMPTIONS: "fails `TokenSchema`, each one E1807 in `tokens.ts`" is read as `defineTokens` throwing code E1807 (as schemes-css.test.ts reads it for `schemes`) and `TokenSchema.parse` returning an error. A valid tokens object is written through `withGroups` (base-support.ts), which passes plain data so `themes` type-checks before `Tokens` names it. Group names a theme may hold are the ten k.values Themes lists; the spec's name rule "a letter from `a` to `z` then up to 23 letters and digits" is read as lowercase letters first and letters of either case and digits after.
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { codeOf, withGroups } from "./base-support.ts";

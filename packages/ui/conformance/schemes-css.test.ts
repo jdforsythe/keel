@@ -4,7 +4,7 @@
 // Spec: k.schemes, clause "With `brandTokens` composing a library's color `acme.x` `{ light: '#111111', dark: '#eeeeee' }` (k.looks) and no `schemes`, the CSS holds no `prefers-color-scheme`."
 // Seed: 1337 (fc.assert below). The E1807 half reads `defineTokens` and `TokenSchema.parse`, as rules-e1801-e1807-codes-0065.test.ts does for the other E1807 causes.
 // ASSUMPTIONS: a "block" is read in the whitespace-normal form of fixtures.ts `norm`; the `:root` block is the first `:root{...}` rule outside every `@media`; "holds no `prefers-color-scheme`" is the substring test on the whole CSS.
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { compileStyles } from "@keel/ui/css";
 import fc from "fast-check";

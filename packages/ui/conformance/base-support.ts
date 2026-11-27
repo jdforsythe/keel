@@ -1,7 +1,7 @@
 // Helpers for the base and look conformance (not a test file). Public API only. Property seed: 1337.
 // The `base` and `look` token groups are written through JSON so a fixture the author could write in `tokens.ts` type-checks
 // before `Tokens` names the groups; when it does, a builder may pass the literals to `defineTokens` directly.
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { compileStyles } from "@keel/ui/css";
 import { norm, tokens } from "./fixtures.ts";
 

@@ -6,7 +6,8 @@ import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { Text, defineTokens } from "@keel/ui";
+import { Text } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const SEED = 1337;
 

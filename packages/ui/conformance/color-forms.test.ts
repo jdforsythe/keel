@@ -11,7 +11,7 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { codeOf, withGroups } from "./base-support.ts";
 import { SEED, colorLinear, colorLuminance, colorRatio, inSrgb } from "./fixtures.ts";
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 
 const issuesOf = (tokens: unknown): { path: (string | number)[]; rule: string }[] | null => {
   const r = TokenSchema.parse(tokens);
