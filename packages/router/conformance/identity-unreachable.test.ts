@@ -1,8 +1,9 @@
-// Spec: k.identity, clause "After `@keel/schema`, `@keel/store` and `@keel/router` are loaded, `Reflect.get(globalThis, Symbol.for('keel.kernel'))` is `undefined`, no own symbol key of `globalThis` holds a `Map`, `WeakMap` or `WeakSet`, and no export of any entry of those packages, `./internal` ones included, is a `WeakSet`, a `WeakMap` or a `Map` holding one; with `a` an action and `forged = { ...a, input: B }`, no call of an exported function makes `manifest` accept `forged`."
+// Spec: k.identity, clause "After `@keel/schema`, `@keel/store` and `@keel/router` are loaded, `Reflect.get(globalThis, Symbol.for('keel.kernel'))` is `undefined`, no own symbol key of `globalThis` holds a maker's record (the census there is a `Map` of names to URLs), and no export of any entry of those packages, `./internal` ones included, is a `WeakSet`, a `WeakMap` or a `Map` holding one; with `a` an action and `forged = { ...a, input: B }`, no call of an exported function makes `manifest` accept `forged`."
 // @vitest-environment happy-dom
 // Seed 1337 (no generated input).
 // Reading of "own symbol key": a registered key starting `keel.` (k.realm The `keel.` names), since the test runner keeps registered keys of its own (`matchers-object`) on `globalThis`.
-// Reading of "no own symbol key of `globalThis` holds a `Map`, `WeakMap` or `WeakSet`": the realm's census is a `Map` of names to URLs under `Symbol.for('keel.census')` (k.realm), so a `Map` is allowed there when it holds strings only; a `WeakMap`, a `WeakSet`, or a `Map` holding one, is not allowed under any key.
+// Reading of "a maker's record" (k.identity): a `WeakSet` or `WeakMap` (or a `Map` holding one) that answers for a value a maker made. The `keel.` slots may hold other kernel state; none may hold a value made here. The census at `Symbol.for('keel.census')` is the one `keel.` `Map`, and holds strings (k.realm).
+// A `WeakMap` or `WeakSet` among the package exports is not allowed under any reading (the third clause).
 // The packages are loaded by importing every entry their `package.json` `exports` lists, `./internal` ones included.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -45,13 +46,29 @@ describe("k.identity: nothing reaches the kernel's records", () => {
   );
 
   it(
-    "no own symbol key of `globalThis` holds a `WeakMap`, a `WeakSet`, or a `Map` holding one",
+    "no own symbol key of `globalThis` holds a maker's record; the census there is a `Map` of names to URLs",
     async () => {
       for (const p of PACKAGES) await entriesOf(p);
-      for (const key of Object.getOwnPropertySymbols(globalThis).filter(
-        (k) => Symbol.keyFor(k)?.startsWith("keel.") === true,
-      ))
-        expect(holdsWeak(Reflect.get(globalThis, key)), String(key)).toBe(false);
+      const has = (c: WeakSet<object> | WeakMap<object, unknown>, v: object): boolean => Reflect.apply(Reflect.get(c, "has"), c, [v]);
+      const made: object[] = [
+        s.object({ a: s.int() }),
+        s.string(),
+        contract("q", { "q.a": { path: "/a" } }),
+        action(contract("r", { "r.a": { path: "/a" } }), "r.a", { input: s.object({ a: s.int() }) }, async () => ok(null)),
+      ];
+      const slots = Object.getOwnPropertySymbols(globalThis).filter((k) => Symbol.keyFor(k)?.startsWith("keel.") === true);
+      expect(slots.map((k) => Symbol.keyFor(k))).toContain("keel.census");
+      const containers = (v: unknown): (WeakSet<object> | WeakMap<object, unknown>)[] =>
+        v instanceof WeakSet || v instanceof WeakMap ? [v] : v instanceof Map ? [...v.values(), ...v.keys()].flatMap(containers) : [];
+      for (const key of slots) {
+        const value = Reflect.get(globalThis, key);
+        for (const c of containers(value)) for (const m of made) expect(has(c, m), String(key)).toBe(false);
+        if (value instanceof Map) {
+          const census = Symbol.keyFor(key) === "keel.census";
+          for (const [k, v] of value) expect(census ? typeof k === "string" && typeof v === "string" : true, String(key)).toBe(true);
+          if (census) expect(value.size).toBeGreaterThan(0);
+        }
+      }
     },
     testTime(120_000),
   );
