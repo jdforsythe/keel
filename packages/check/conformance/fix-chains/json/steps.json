@@ -1,0 +1,11 @@
+{
+  "module": "prefs",
+  "steps": [
+    {
+      "code": "E1452",
+      "fix": false,
+      "message": "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch"
+    },
+    { "code": "E1457", "fix": false, "message": "JSON.parse throws on bad text: use S.parseJson(text)" }
+  ]
+}

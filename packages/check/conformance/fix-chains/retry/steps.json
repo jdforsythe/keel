@@ -1,0 +1,15 @@
+{
+  "module": "feed",
+  "steps": [
+    {
+      "code": "E1452",
+      "fix": false,
+      "message": "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch"
+    },
+    {
+      "code": "E1451",
+      "fix": false,
+      "message": "throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug"
+    }
+  ]
+}

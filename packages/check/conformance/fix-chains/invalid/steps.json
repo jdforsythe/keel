@@ -1,0 +1,10 @@
+{
+  "module": "orders",
+  "steps": [
+    {
+      "code": "E1451",
+      "fix": false,
+      "message": "throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug"
+    }
+  ]
+}
