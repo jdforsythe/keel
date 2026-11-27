@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "node:path";
 import { type Program, parseSync } from "oxc-parser";
 import { compile } from "./compile.ts";
@@ -966,16 +967,21 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             const bundled = await b.build(b.environments.ssr);
+            // `std.json` is the derivation of the manifests this build compiled, never the file in `.keel/` (k.derived
+            // Readers): a frozen build writes no view, and the bundle is the same.
+            const stdText = artifactText(stdArtifact(manifests()).data);
             if (built) {
-              const std = path.join(at, ".keel", "std.json");
+              const held = fs.mkdtempSync(path.join(os.tmpdir(), "keel-std-"));
+              const std = path.join(held, "std.json");
+              fs.writeFileSync(std, stdText);
               const failed = await writeStatic(
                 path.join(at, out),
                 path.join(at, ssrOut, "server.mjs"),
                 name,
                 top,
                 process.env,
-                fs.existsSync(std) ? std : undefined,
-              );
+                std,
+              ).finally(() => fs.rmSync(held, { recursive: true, force: true }));
               if (failed.length > 0) throw evaluationFailed(failed);
               if (await offersScheme(at)) addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
               return;
@@ -1002,8 +1008,7 @@ export default function (): {
             if (table.problems.length > 0) throw evaluationFailed(table.problems);
             copyMigrations(at, path.join(at, out), top[name]?.modules ?? []);
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
-            if (fs.existsSync(path.join(at, ".keel", "std.json")))
-              fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
+            fs.writeFileSync(path.join(at, out, "std.json"), stdText);
             fs.writeFileSync(path.join(at, out, "schemes.json"), `${JSON.stringify({ schemes: table.schemes })}\n`);
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);

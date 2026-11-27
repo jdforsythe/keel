@@ -6,6 +6,8 @@ import keel from "@keel/compiler/vite";
 import { fixedTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { artifactText } from "../src/internal/artifactText.ts";
+import { stdArtifact } from "../src/stdArtifact.ts";
 
 // Real packages dir via a workspace link, so this also holds in Stryker's sandbox copy (where ../.. is not packages/).
 const packages = path.dirname(fs.realpathSync(path.join(import.meta.dirname, "..", "node_modules", "@keel", "schema")));
@@ -50,6 +52,7 @@ beforeEach(() => {
     write(`modules/${m}/${m}.contract.ts`, contractOf(m));
     write(`modules/${m}/routes.ts`, routesOf(m));
   }
+  // A `.keel/std.json` on disk is not what the build reads (k.derived Readers): `dist/<name>/std.json` is derived.
   write(".keel/std.json", '{"data":{},"hash":"x"}\n');
   // The project build's table: the `client` deployable's routes alone.
   write(".keel/routes.json", '{"data":{"w.show":{"module":"w","path":"/w"}},"hash":"x"}\n');
@@ -62,7 +65,7 @@ afterEach(() => {
 
 describe("@keel/compiler/vite node deployable build", () => {
   it(
-    "writes dist/<name>/routes.json with every module's routes and copies std.json",
+    "writes dist/<name>/routes.json with every module's routes and the derived std.json",
     { timeout: fixedTime(30000) },
     async () => {
       process.env.KEEL_DEPLOYABLE = "api";
@@ -82,7 +85,9 @@ describe("@keel/compiler/vite node deployable build", () => {
       expect(Object.keys(routes).sort()).toEqual(["a.show", "b.show", "w.show"]);
       expect(Reflect.get(routes["b.show"] ?? {}, "path")).toBe("/b");
       expect(Reflect.get(routes["b.show"] ?? {}, "module")).toBe("b");
-      expect(fs.readFileSync(path.join(root, "dist", "api", "std.json"), "utf8")).toBe('{"data":{},"hash":"x"}\n');
+      expect(fs.readFileSync(path.join(root, "dist", "api", "std.json"), "utf8")).toBe(
+        artifactText(stdArtifact([]).data),
+      );
     },
   );
 });
