@@ -261,7 +261,10 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
       for (const a of n.arguments) if (a.type !== "SpreadElement") evalRef(a);
       const attempted =
         (c.type === "Identifier" && c.name === "attempt") ||
-        (c.type === "MemberExpression" && !c.computed && c.property.type === "Identifier" && c.property.name === "attempt");
+        (c.type === "MemberExpression" &&
+          !c.computed &&
+          c.property.type === "Identifier" &&
+          c.property.name === "attempt");
       if (attempted && wideExpect(parsed.program, n.arguments[1])) add("R1017", n.start, n.end);
       if (c.type === "Identifier") {
         if (c.name === "unsafe") {

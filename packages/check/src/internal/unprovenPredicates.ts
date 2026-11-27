@@ -449,7 +449,9 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       const rs = checker.getResolvedSignature(e);
       const tp = rs === undefined ? undefined : checker.getTypePredicateOfSignature(rs);
       if (tp?.kind !== ts.TypePredicateKind.Identifier || !on(e.arguments[tp.parameterIndex], s)) return false;
-      const objects = members(tp.type).every((m) => (m.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive)) !== 0);
+      const objects = members(tp.type).every(
+        (m) => (m.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive)) !== 0,
+      );
       return objects && rs !== undefined && accepted(rs.getDeclaration());
     };
 
@@ -460,7 +462,9 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       const par = holdsParam(t);
       if (opOf(e, ts.SyntaxKind.BarBarToken) !== undefined)
         return ors(e).every(
-          (d) => (opt && isUndefinedCheck(d, s)) || chain([...ands(d), ...rest.filter((r) => r !== c)], s, t, opt) === undefined,
+          (d) =>
+            (opt && isUndefinedCheck(d, s)) ||
+            chain([...ands(d), ...rest.filter((r) => r !== c)], s, t, opt) === undefined,
         );
       const kind = typeofOf(e, s);
       if (kind !== undefined) {
@@ -491,7 +495,7 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
           return true;
         if (ts.isPropertyAccessExpression(callee) && callee.name.text === "has" && on(arg, s) && !par) {
           const adds = ownSet(callee.expression, file);
-          return adds !== undefined && adds.every((v) => assignable(checker.getTypeAtLocation(v), t));
+          return adds?.every((v) => assignable(checker.getTypeAtLocation(v), t)) === true;
         }
         return false;
       }

@@ -1,10 +1,9 @@
 /// <reference lib="es2023.intl" />
 // es2023.intl types `Intl.NumberFormat#format` over a decimal string (`StringNumericLiteral`), which every runtime runs.
 import type { Locale } from "@keel/std-i18n";
-import type { Money } from "./Money.ts";
 import { asDecimal } from "../unsafe/asDecimal.ts";
+import type { Money } from "./Money.ts";
 import { EXPONENT } from "./internal/EXPONENT.ts";
-
 
 /** The exact decimal string of `amount` at exponent `e` (`-5`, 2 gives `-0.05`): string arithmetic, no float. */
 function decimal(amount: number, e: number): string {

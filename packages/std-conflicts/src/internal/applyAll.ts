@@ -1,7 +1,7 @@
 import { attempt } from "@keel/schema";
 import type { LogEntry, Store, Transaction } from "@keel/store";
 import { tx } from "@keel/store";
-import { Threw } from "./Threw.ts";
+import { Threw } from "./Threw.schema.ts";
 import { canonical } from "./canonical.ts";
 
 /**

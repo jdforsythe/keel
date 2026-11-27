@@ -216,11 +216,10 @@ export function compileStyles(input: { readonly tokens: Tokens; readonly usages:
     const set = looks.get(u.look);
     if (set === undefined) throw fail("E1801", `look=${JSON.stringify(u.look).slice(0, 40)} is not a look token`);
     const own = new Set(
-      Object.keys(u.props)
-        .flatMap((k) => {
-          const p = stylePropOf(k);
-          return p === undefined ? [] : [`${u.state ?? ""}:${p}`];
-        }),
+      Object.keys(u.props).flatMap((k) => {
+        const p = stylePropOf(k);
+        return p === undefined ? [] : [`${u.state ?? ""}:${p}`];
+      }),
     );
     const fromLook = set
       .filter((l) => !own.has(`${l.state ?? ""}:${l.prop}`))

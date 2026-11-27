@@ -1,10 +1,10 @@
 import path from "node:path";
 import {
+  type ArrowFunctionExpression,
   type BindingPattern,
   type BindingRestElement,
   type Expression,
   type Function as FunctionNode,
-  type ArrowFunctionExpression,
   type Program,
   type TSType,
   Visitor,
@@ -151,9 +151,7 @@ export function moduleState(file: SourceFile, ast: Program, project: readonly So
     },
   }).visit(ast);
   for (const d of declared) {
-    const inner = scopes
-      .filter((s) => d.at > s.start && d.at < s.end)
-      .sort((a, b) => b.start - a.start)[0];
+    const inner = scopes.filter((s) => d.at > s.start && d.at < s.end).sort((a, b) => b.start - a.start)[0];
     inner?.names.add(d.name);
   }
   const inFunction = (at: number): boolean => scopes.some((s) => at > s.start && at < s.end);
@@ -186,7 +184,7 @@ export function moduleState(file: SourceFile, ast: Program, project: readonly So
     const parsed = from === undefined ? undefined : parseFile(from);
     if (parsed === undefined || !parsed.ok) return false;
     const there = topBindings(parsed.program).get(b.imported);
-    return there !== undefined && there.exported && there.kind === "const" && isSignal(there, parsed.program);
+    return there?.exported === true && there.kind === "const" && isSignal(there, parsed.program);
   };
   /** Whether the top-level binding's initializer is `processSlot(...)` of `@keel/ctx`, a named process slot. */
   const isSlot = (b: TopBinding): boolean => callOf(b.init, importedAs(ast, "processSlot", "@keel/ctx"));

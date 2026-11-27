@@ -10,7 +10,6 @@ import { coverage } from "./coverage.ts";
 import { patternIdents } from "./patternIdents.ts";
 import { patternNames } from "./patternNames.ts";
 
-
 function isIntrinsic(name: string): name is IntrinsicKind {
   return name === "If" || name === "For" || name === "Match" || name === "Case" || name === "Boundary";
 }
