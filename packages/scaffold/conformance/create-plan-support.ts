@@ -26,6 +26,7 @@ export type PlanInput = {
   version?: string;
   gitAbove?: boolean;
   realPath?: string;
+  caseless?: boolean;
   skills?: readonly AgentSkill[];
 };
 
@@ -94,6 +95,7 @@ export const cliVersion = (): string => {
 /** The `client` row of k.create Files, with the agent files; the base of every app kind. */
 export const CLIENT_FILES: string[] = [
   "package.json",
+  "README.md",
   "tsconfig.json",
   "vite.config.ts",
   "tokens.ts",

@@ -3,6 +3,7 @@
 // The bin is run as a child process in folders under the OS temp folder with a minimal environment (`PATH`, `TMPDIR`, `npm_config_user_agent`).
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -13,10 +14,11 @@ import {
   writeFileSync,
   chmodSync,
   lstatSync,
+  watch,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const REPO = fileURLToPath(new URL("../../..", import.meta.url));
 export const BIN = fileURLToPath(new URL("../src/bin.ts", import.meta.url));
@@ -205,6 +207,7 @@ export const skillPaths = (): string[] => skillNames().map((n) => `.claude/skill
 
 export const CLIENT_FILES = [
   "package.json",
+  "README.md",
   "tsconfig.json",
   "vite.config.ts",
   "tokens.ts",
@@ -245,4 +248,53 @@ export function keel(cwd: string, args: string[]): KeelRun {
   }
   const r = spawnSync(process.execPath, [KEEL_BIN, ...args, "--format=json"], { cwd, encoding: "utf8", env });
   return { status: r.status, records: records(r.stdout), out: `${r.stdout}${r.stderr}` };
+}
+
+const HOLD = pathToFileURL(fileURLToPath(new URL("./stall-after-first-write.ts", import.meta.url))).href;
+export type Held = { stalled: boolean; finish: (signal: NodeJS.Signals) => Promise<Run> };
+
+/** Runs the bin with its second project write held (stall-after-first-write.ts); resolves once it is held or has exited. `finish` signals it and resolves with its end. */
+export function runHeld(args: string[], cwd: string, userAgent: string = PNPM): Promise<Held> {
+  const flag = join(sandbox(), "ready");
+  const child: ChildProcess = spawn(process.execPath, ["--import", HOLD, BIN, ...args], {
+    cwd,
+    env: envOf(userAgent, { KEEL_CONFORMANCE_READY: flag }),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+  child.stdout?.setEncoding("utf8").on("data", (d: string) => {
+    stdout += d;
+  });
+  child.stderr?.setEncoding("utf8").on("data", (d: string) => {
+    stderr += d;
+  });
+  child.stdin?.on("error", () => {
+    // the child may exit before a pipe is closed
+  });
+  const ended = new Promise<Run>((resolve) => {
+    child.on("close", (status) => {
+      resolve({ status, stdout, stderr, out: `${stdout}${stderr}` });
+    });
+  });
+  return new Promise<Held>((resolve) => {
+    const watcher = watch(dirname(flag), () => {
+      if (existsSync(flag)) settle(true);
+    });
+    let done = false;
+    const settle = (stalled: boolean): void => {
+      if (done) return;
+      done = true;
+      watcher.close();
+      resolve({
+        stalled,
+        finish: (signal) => {
+          child.kill(signal);
+          return ended;
+        },
+      });
+    };
+    child.on("exit", () => settle(false));
+    if (existsSync(flag)) settle(true);
+  });
 }

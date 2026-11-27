@@ -7,24 +7,27 @@
 // Spec: k.create, clause "Every `@keel/*` entry of an app's `package.json` is create's version with no range, and `engines.node` is `>=22.15`."
 // Spec: k.create, clause "A `client` or `static` project has no file named `*.server.ts`, no `deploy/` folder, and no file outside `AGENTS.md` and `.claude/` holding `KEEL_SECRET`, `createApp` or `identity`."
 // Spec: k.create, clause "`--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`."
-// Spec: k.create, clause "In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project."
-// Spec: k.create, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written."
-// Spec: k.create, clause "Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was."
+// Spec: k.create-folder, clause "In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project."
+// Spec: k.create-folder, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written."
+// Spec: k.create-folder, clause "Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was."
 // Spec: k.create, clause "A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written."
 // Spec: k.create, clause "With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: \"npm@10.9.0\"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`."
-// Spec: k.create, clause "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project."
+// Spec: k.create, clause "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and prints `next pnpm install`; `create-app b` run in `apps/` there reports no W1364; `create-app tools/b` reports W1364 and writes the project."
 // Spec: k.create, clause "With `node_modules/@keel/cli` at another version above the target, `create-app` reports E1363 naming both versions and writes nothing."
 // Spec: k.create, clause "`--adapter node --library @a/b`, a second folder argument and `--nope` are each E1052, exit 2, nothing written."
-// Spec: k.create, clause "Run as `node --permission` with reads allowed, writes granted to the folder and its contents alone, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project, and those flags refuse a write beside the folder and a child process; from Node 25 they refuse a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019)."
-// Spec: k.create, clause "In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints the same records and writes nothing."
+// Spec: k.create-folder, clause "Run as `node --permission` with reads granted to its own package, the folder and its contents, and in each folder above the folder `package.json`, `pnpm-workspace.yaml`, `node_modules/@keel/cli/package.json` and `.git`; writes to the folder and its contents; no addon, child process or worker: `create-app shop` exits 0 and writes the project, for each kind and inside a workspace, and those flags refuse a write beside the folder and a child process; from Node 25 a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019)."
+// Spec: k.create, clause "In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints `would create <path>` per file and `ok create --dry-run shop client <n> planned`, json records carry `"dry-run": true`, and nothing is written."
 // Spec: k.create, clause "`@keel/create-app`'s `skills/<name>/SKILL.md` equal `keel docs <name>` of `@keel/cli` at the same version, byte for byte."
 // Spec: k.create, clause "From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --check`, and in each `keel docs --sync` writes nothing."
-// k.create, Not done "It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder and reads outside it only the files Workspace names. The proof of the first two is a run under Node's permission model (Conformance) with writes granted only in the folder and no child process or worker granted (from Node 25, no network either): Node refuses each such call, and a refused call ends the run with a nonzero exit, so its exit 0 is the proof."
-// k.create, Rules "E1360 the folder holds files (fix: name a new folder, or add `--existing`)"
-// k.create, Rules "E1361 `--existing` and a file the project writes exists (fix: move it aside, or use a new folder)"
+// k.create-folder, Not done "It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder (and the folders above it that it makes), and reads outside it only its own package and, in each folder above it, `package.json`, `pnpm-workspace.yaml`, `node_modules/@keel/cli/package.json` (Workspace) and whether `.git` exists (for `git init -b main`)."
+// Spec: k.create-folder, clause "A folder holding `.keel-create` is E1366 naming it, with or without `--existing`; a SIGTERM delivered after the first file is written leaves the folder as it was, exit 143."
+// k.create-folder, Rules "E1360 the folder holds files (fix: name a new folder, or add `--existing`)"
+// k.create-folder, Rules "E1361 `--existing` and a file the project writes exists (fix: move it aside, or use a new folder)"
 // k.create, Rules "E1363 the workspace has `@keel/cli` at another version (fix: `pnpm create @keel/app@<that version>`)"
-// k.create, Rules "W1364 the workspace's package globs leave the folder out (fix: add it to them)"
-// k.create, Rules "E1365 a write failed; this run's files are removed (fix: free the path or its permission). Names are E1352, flags E1052 (`--adapter` with `--library`, a second folder, an unknown flag), links E1357."
+// k.create, Rules "W1364 the workspace's package globs leave the folder out (fix: add it to them)."
+// k.create-folder, Rules "E1365 a write failed; this run's files are removed (fix by its cause: the folder's permission, disk space, or the path)"
+// k.create-folder, Rules "E1366 `.keel-create` left by a stopped run lists its paths (fix: remove them and it, or the folder)"
+// k.create-folder, Rules "E1367 interrupted; this run's files are removed (fix: run it again)."
 // ASSUMPTIONS and limits (spec silent or untestable, readings asserted):
 // - "starts no process", "opens no connection": the spec states one seam, Node's permission model (the permission-model clause: no child process or worker granted). The
 //   Node 25 network grant is not named in the spec, so no case withholds it separately; the same run is what a Node 25 permission run without `--allow-net` is. What else can be asserted is
@@ -36,7 +39,7 @@
 // - compact has no ANSI escape: the output holds no ESC (U+001B) character.
 // - `create <path>` lines are sorted by plain string order of the path.
 import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { testTime } from "@keel/tooling/test-time";
@@ -58,6 +61,7 @@ import {
   readJson,
   records,
   run,
+  runHeld,
   sandbox,
   skillNames,
   skillPaths,
@@ -68,6 +72,8 @@ import { spawnSync } from "node:child_process";
 
 afterAll(cleanAll);
 const T = testTime(60_000);
+const perm =
+  "Run as `node --permission` with reads granted to its own package, the folder and its contents, and in each folder above the folder `package.json`, `pnpm-workspace.yaml`, `node_modules/@keel/cli/package.json` and `.git`; writes to the folder and its contents; no addon, child process or worker: `create-app shop` exits 0 and writes the project, for each kind and inside a workspace, and those flags refuse a write beside the folder and a child process; from Node 25 a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019).";
 const SLOW = testTime(300_000);
 const keys = (m: Map<string, string>): string[] => sorted([...m.keys()]);
 
@@ -303,7 +309,7 @@ describe("create-app: the folder", () => {
       expect(r.status, r.out).toBe(0);
       const t = tree(join(cwd, "shop"));
       expect(t.get("README.md")).toBe("mine\n");
-      expect(keys(t).filter((p) => p !== "README.md")).toEqual(clientSet());
+      expect(keys(t)).toEqual(clientSet());
       const other = sandbox();
       put(other, "shop/package.json", '{"name":"mine"}\n');
       const before = entries(join(other, "shop"));
@@ -356,6 +362,141 @@ describe("create-app: the folder", () => {
         expect(entries(shop)).toEqual(before);
       } finally {
         chmodSync(join(shop, "public"), 0o755);
+      }
+    },
+    T,
+  );
+
+  it(
+    "A folder holding `.keel-create` is E1366 naming it, with or without `--existing`",
+    async () => {
+      for (const flags of [[], ["--existing"]]) {
+        const cwd = sandbox();
+        put(cwd, "shop/.keel-create", "package.json\n");
+        const before = entries(join(cwd, "shop"));
+        const r = await run(["shop", ...flags], cwd);
+        expect(r.status, `${flags.join(" ")} ${r.out}`).toBe(1);
+        expect(r.out).toContain("E1366");
+        expect(r.out).toContain(".keel-create");
+        expect(entries(join(cwd, "shop"))).toEqual(before);
+      }
+    },
+    T,
+  );
+
+  it(
+    "a run killed mid-write leaves a folder E1366 names: `.keel-create` lists every path the run writes and a run writes it first",
+    async () => {
+      const cwd = sandbox();
+      const held = await runHeld(["shop"], cwd);
+      expect(held.stalled, "the bin never reached a second file write the preload could hold").toBe(true);
+      const marker = tree(join(cwd, "shop")).get(".keel-create") ?? "";
+      for (const path of clientSet()) expect(marker, path).toContain(path);
+      const ended = await held.finish("SIGKILL");
+      expect(ended.status).not.toBe(0);
+      const left = entries(join(cwd, "shop"));
+      expect(left).toContain(".keel-create");
+      const again = await run(["shop"], cwd);
+      expect(again.status).toBe(1);
+      expect(again.out).toContain("E1366");
+      expect(again.out).toContain(".keel-create");
+      const existing = await run(["shop", "--existing"], cwd);
+      expect(existing.status).toBe(1);
+      expect(existing.out).toContain("E1366");
+      expect(entries(join(cwd, "shop"))).toEqual(left);
+    },
+    T,
+  );
+
+  it(
+    "a SIGTERM delivered after the first file is written leaves the folder as it was, exit 143",
+    async () => {
+      for (const made of [false, true]) {
+        const cwd = sandbox();
+        if (made) mkdirSync(join(cwd, "shop"));
+        const before = entries(cwd);
+        const held = await runHeld(["shop"], cwd);
+        expect(held.stalled, "the bin never reached a second file write the preload could hold").toBe(true);
+        expect(entries(join(cwd, "shop")).length).toBeGreaterThan(0);
+        const r = await held.finish("SIGTERM");
+        expect(r.status, r.out).toBe(143);
+        expect(r.out).toContain("E1367");
+        expect(entries(cwd), `folder made by the run: ${!made}`).toEqual(before);
+      }
+    },
+    T,
+  );
+
+  it(
+    "E1367 interrupted; this run's files are removed (fix: run it again): a SIGINT is exit 130 and the folder is as it was",
+    async () => {
+      const cwd = sandbox();
+      mkdirSync(join(cwd, "shop"));
+      const before = entries(cwd);
+      const held = await runHeld(["shop"], cwd);
+      expect(held.stalled, "the bin never reached a second file write the preload could hold").toBe(true);
+      const r = await held.finish("SIGINT");
+      expect(r.status, r.out).toBe(130);
+      expect(r.out).toContain("E1367");
+      expect(r.out).toMatch(/run it again/);
+      expect(entries(cwd)).toEqual(before);
+    },
+    T,
+  );
+
+  it(
+    "an interruption removes only this run's files: with `--existing`, the files the folder held stay",
+    async () => {
+      const cwd = sandbox();
+      put(cwd, "shop/README.md", "mine\n");
+      put(cwd, "shop/notes.txt", "keep\n");
+      const before = entries(join(cwd, "shop"));
+      const held = await runHeld(["shop", "--existing"], cwd);
+      expect(held.stalled, "the bin never reached a second file write the preload could hold").toBe(true);
+      const r = await held.finish("SIGTERM");
+      expect(r.status, r.out).toBe(143);
+      expect(entries(join(cwd, "shop"))).toEqual(before);
+      expect(tree(join(cwd, "shop")).get("README.md")).toBe("mine\n");
+    },
+    T,
+  );
+
+  it(
+    "a run removes `.keel-create` last: a finished run leaves none",
+    async () => {
+      const cwd = sandbox();
+      const r = await run(["shop"], cwd);
+      expect(r.status, r.out).toBe(0);
+      expect(entries(join(cwd, "shop"))).not.toContain(".keel-create");
+    },
+    T,
+  );
+
+  it(
+    "where the folder's file system ignores case, `agents.md` or `Modules/` collides with `AGENTS.md` or `modules/` and E1361's `paths` holds both spellings",
+    async () => {
+      const probe = sandbox();
+      put(probe, "Probe.txt", "x");
+      const caseless = existsSync(join(probe, "probe.txt"));
+      for (const [entry, a, b] of [
+        ["agents.md", "AGENTS.md", "agents.md"],
+        ["Modules/x.txt", "Modules/", "modules/"],
+      ] as const) {
+        const cwd = sandbox();
+        put(cwd, `shop/${entry}`, "mine\n");
+        const r = await run(["shop", "--existing", "--format=json"], cwd);
+        const e1361 = records(r.stdout).filter((x) => x.code === "E1361");
+        if (!caseless) {
+          expect(r.status, `${entry} ${r.out}`).toBe(0);
+          expect(e1361).toHaveLength(0);
+          continue;
+        }
+        expect(r.status, `${entry} ${r.out}`).toBe(1);
+        expect(e1361).toHaveLength(1);
+        const paths = Array.isArray(e1361[0]?.paths)
+          ? e1361[0]?.paths.map((x) => String(x).replace(/^shop\//, ""))
+          : [];
+        expect(paths).toEqual(expect.arrayContaining([a, b]));
       }
     },
     T,
@@ -447,7 +588,7 @@ describe("create-app: package manager and workspace", () => {
   );
 
   it(
-    "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project.",
+    "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and prints `next pnpm install`; `create-app b` run in `apps/` there reports no W1364; `create-app tools/b` reports W1364 and writes the project.",
     async () => {
       const cwd = sandbox();
       put(cwd, "pnpm-workspace.yaml", "packages:\n  - apps/*\n");
@@ -457,10 +598,11 @@ describe("create-app: package manager and workspace", () => {
       expect(t.has("turbo.json")).toBe(false);
       expect(keys(t).some((p) => p.startsWith(".github/"))).toBe(false);
       expect(readJson(t.get("package.json"))).not.toHaveProperty("packageManager");
-      expect(r.stdout.split("\n")).toContain("next pnpm install (in ../..)");
-      const j = await run(["apps/c", "--format=json"], cwd);
-      const install = records(j.stdout).find((x) => x.kind === "create.next" && x.command === "pnpm install");
-      expect(install?.dir).toBe("../..");
+      expect(r.stdout.split("\n")).toContain("next pnpm install");
+      const inApps = await run(["c"], join(cwd, "apps"));
+      expect(inApps.status, inApps.out).toBe(0);
+      expect(inApps.out).not.toContain("W1364");
+      expect(tree(join(cwd, "apps/c")).has("package.json")).toBe(true);
       const o = await run(["tools/b"], cwd);
       expect(o.status, o.out).toBe(0);
       expect(o.out).toContain("W1364");
@@ -508,42 +650,74 @@ describe("create-app: usage errors", () => {
 });
 
 describe("create-app: what it does not do", () => {
+  /** The clause's grants for a project written to `<cwd>/<folder>`: reads of the bin's own package (the repo's `packages/` and `node_modules/`, since a source run has no bundle), of the folder and its contents, and in each folder above it `package.json`, `pnpm-workspace.yaml`, `node_modules/@keel/cli/package.json` and `.git`; writes to the folder and its contents; no addon, child process or worker. */
+  const grantFor = (cwd: string, folder: string): string[] => {
+    const target = join(cwd, folder);
+    const grant = [
+      "--permission",
+      `--allow-fs-read=${join(REPO, "packages")}`,
+      `--allow-fs-read=${join(REPO, "packages")}/*`,
+      `--allow-fs-read=${join(REPO, "node_modules")}`,
+      `--allow-fs-read=${join(REPO, "node_modules")}/*`,
+      `--allow-fs-read=${target}`,
+      `--allow-fs-read=${target}/*`,
+      `--allow-fs-write=${target}`,
+      `--allow-fs-write=${target}/*`,
+    ];
+    for (let dir = dirname(target); ; dir = dirname(dir)) {
+      for (const f of ["package.json", "pnpm-workspace.yaml", "node_modules/@keel/cli/package.json", ".git"])
+        grant.push(`--allow-fs-read=${join(dir, f)}`);
+      if (dirname(dir) === dir) break;
+    }
+    return grant;
+  };
+
   it(
-    "Run as `node --permission` with reads allowed, writes granted to the folder and its contents alone, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project, and those flags refuse a write beside the folder and a child process; from Node 25 they refuse a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019).",
+    perm,
     async () => {
       const cwd = realpathSync(sandbox());
-      const shop = join(cwd, "shop");
-      // Node's `--allow-fs-write=<path>` grants that path alone; the folder's contents are granted by `<path>/*`. The folder is not made yet, so both are given.
-      const grant = [
-        "--permission",
-        "--allow-fs-read=*",
-        `--allow-fs-write=${shop}`,
-        `--allow-fs-write=${shop}/*`,
-        "--allow-addons",
-      ];
-      // The grant is as tight as the clause says: the same flags refuse a write beside the folder and a child process.
+      const grant = grantFor(cwd, "shop");
+      // The grant is as tight as the clause says: the same flags refuse a write beside the folder, a read beside it and a child process.
       const probe = spawnSync(
         process.execPath,
         [
           ...grant,
           "-e",
           `const fs=require("node:fs");const cp=require("node:child_process");const code=(f)=>{try{f();return "allowed"}catch(e){return e.code}};` +
-            `console.log(JSON.stringify([code(()=>fs.writeFileSync(${JSON.stringify(join(cwd, "beside.txt"))},"x")),code(()=>cp.spawnSync("true"))]));`,
+            `console.log(JSON.stringify([code(()=>fs.writeFileSync(${JSON.stringify(join(cwd, "beside.txt"))},"x")),code(()=>fs.readFileSync(${JSON.stringify(join(cwd, "other.txt"))})),code(()=>cp.spawnSync("true"))]));`,
         ],
         { encoding: "utf8", cwd },
       );
-      expect(probe.stdout.trim(), probe.stderr).toBe(JSON.stringify(["ERR_ACCESS_DENIED", "ERR_ACCESS_DENIED"]));
-      const r = await run(["shop"], cwd, { nodeArgs: grant });
-      expect(r.status, r.out).toBe(0);
-      expect(keys(tree(shop))).toEqual(clientSet());
-      expect(entries(cwd).filter((p) => !p.startsWith("shop"))).toEqual([]);
+      expect(probe.stdout.trim(), probe.stderr).toBe(
+        JSON.stringify(["ERR_ACCESS_DENIED", "ERR_ACCESS_DENIED", "ERR_ACCESS_DENIED"]),
+      );
+      for (const [name, flags, expected] of [
+        ["shop", [], clientSet()],
+        ["site", ["--adapter", "static"], clientSet()],
+        ["web", ["--adapter", "node"], nodeSet()],
+      ] as const) {
+        const r = await run([name, ...flags], cwd, { nodeArgs: grantFor(cwd, name) });
+        expect(r.status, `${name} ${r.out}`).toBe(0);
+        expect(keys(tree(join(cwd, name)))).toEqual(expected);
+      }
+      const lib = await run(["charts", "--library", "@acme/charts"], cwd, { nodeArgs: grantFor(cwd, "charts") });
+      expect(lib.status, lib.out).toBe(0);
+      expect(readJson(tree(join(cwd, "charts")).get("package.json")).name).toBe("@acme/charts");
+      // inside a workspace
+      put(cwd, "pnpm-workspace.yaml", "packages:\n  - apps/*\n");
+      const ws = await run(["apps/b"], cwd, { nodeArgs: grantFor(cwd, "apps/b") });
+      expect(ws.status, ws.out).toBe(0);
+      expect(tree(join(cwd, "apps/b")).has("package.json")).toBe(true);
+      expect(entries(cwd).filter((p) => !/^(shop|site|web|charts|apps|pnpm-workspace\.yaml)(\/|$)/.test(p))).toEqual(
+        [],
+      );
     },
-    T,
+    SLOW,
   );
 
   // The connection half of the clause needs Node 25: older Node's permission model has no network grant to withhold, so `net.connect` is allowed there.
   it.skipIf(Number(process.versions.node.split(".")[0]) < 25)(
-    "Run as `node --permission` with reads allowed, writes granted to the folder and its contents alone, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project, and those flags refuse a write beside the folder and a child process; from Node 25 they refuse a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019): the connection half.",
+    `${perm}: the connection half`,
     () => {
       const cwd = realpathSync(sandbox());
       const shop = join(cwd, "shop");
@@ -551,10 +725,8 @@ describe("create-app: what it does not do", () => {
         process.execPath,
         [
           "--permission",
-          "--allow-fs-read=*",
           `--allow-fs-write=${shop}`,
           `--allow-fs-write=${shop}/*`,
-          "--allow-addons",
           "-e",
           `const net=require("node:net");let c;try{const s=net.connect(9,"127.0.0.1");s.on("error",()=>{});s.destroy();c="allowed"}catch(e){c=e.code}console.log(c)`,
         ],
@@ -593,7 +765,7 @@ describe("create-app: output", () => {
   const compactLines = (s: string): string[] => s.split("\n").filter((l) => l !== "");
 
   it(
-    "In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints the same records and writes nothing.",
+    'In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints `would create <path>` per file and `ok create --dry-run shop client <n> planned`, json records carry `"dry-run": true`, and nothing is written.',
     async () => {
       const cwd = sandbox();
       const r = await run(["shop", "--format=compact"], cwd);
@@ -631,13 +803,15 @@ describe("create-app: output", () => {
       expect(d.status, d.out).toBe(0);
       expect(entries(dcwd)).toEqual([]);
       const dr = records(d.stdout);
-      expect(dr.slice(0, -1)).toEqual(recs.slice(0, -1));
+      expect(dr.slice(0, -1)).toEqual(recs.slice(0, -1).map((x) => ({ ...x, "dry-run": true })));
       expect(dr.at(-1)?.kind).toBe("summary");
+      expect(dr.every((x) => x["dry-run"] === true)).toBe(true);
+      expect(recs.some((x) => "dry-run" in x)).toBe(false);
       const dc = await run(["shop", "--dry-run", "--format=compact"], dcwd);
       expect(entries(dcwd)).toEqual([]);
       const dlines = compactLines(dc.stdout);
-      expect(dlines.slice(0, -1)).toEqual(lines.slice(0, -1));
-      expect(dlines.at(-1)).toMatch(/^ok create --dry-run /);
+      expect(dlines.slice(0, written.length)).toEqual(written.map((p) => `would create ${p}`));
+      expect(dlines.at(-1)).toBe(`ok create --dry-run shop client ${written.length} planned`);
     },
     T,
   );

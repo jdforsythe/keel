@@ -5,23 +5,28 @@
 // Spec: k.create, clause "Every `@keel/*` entry of an app's `package.json` is create's version with no range, and `engines.node` is `>=22.15`."
 // Spec: k.create, clause "A `client` or `static` project has no file named `*.server.ts`, no `deploy/` folder, and no file outside `AGENTS.md` and `.claude/` holding `KEEL_SECRET`, `createApp` or `identity`."
 // Spec: k.create, clause "`--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`."
-// Spec: k.create, clause "In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project."
-// Spec: k.create, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written."
+// Spec: k.create-folder, clause "In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project."
+// Spec: k.create-folder, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written."
 // Spec: k.create, clause "A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written."
 // Spec: k.create, clause "`createPlan` given Node 22.14.0 returns E1362 and no file."
 // Spec: k.create, clause "With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: \"npm@10.9.0\"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`."
 // Spec: k.create, clause "With `yarn/4.5.0`, `.yarnrc.yml` holds `nodeLinker: node-modules`; with no user agent, `package.json` has no `packageManager` and the commands are pnpm's."
-// Spec: k.create, clause "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project."
+// Spec: k.create, clause "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and prints `next pnpm install`; `create-app b` run in `apps/` there reports no W1364; `create-app tools/b` reports W1364 and writes the project."
 // Spec: k.create, clause "With `node_modules/@keel/cli` at another version above the target, `create-app` reports E1363 naming both versions and writes nothing."
 // Spec: k.create, clause "`--adapter node --library @a/b`, a second folder argument and `--nope` are each E1052, exit 2, nothing written."
-// k.create, Rules "E1360 the folder holds files (fix: name a new folder, or add `--existing`)"
-// k.create, Rules "E1361 `--existing` and a file the project writes exists (fix: move it aside, or use a new folder)"
+// Spec: k.create-folder, clause "`createPlan` with `caseless` and a listing holding `agents.md` is E1361 whose `paths` are `AGENTS.md` and `agents.md`, and one holding `Modules/` E1361 whose `paths` are `Modules/` and `modules/`; without `caseless`, neither collides."
+// Spec: k.create-folder, clause "A folder holding `.keel-create` is E1366 naming it, with or without `--existing`; a SIGTERM delivered after the first file is written leaves the folder as it was, exit 143."
+// Spec: k.create, clause "`--name café` is E1352 holding `--name cafe`, `--name 123` one naming no `--name <n>`; every name a fix names passes the name rule."
+// k.create-folder, Rules "E1360 the folder holds files (fix: name a new folder, or add `--existing`)"
+// k.create-folder, Rules "E1361 `--existing` and a file the project writes exists (fix: move it aside, or use a new folder)"
 // k.create, Rules "E1362 Node older than 22.15 (fix: install Node 22.15 or later)"
 // k.create, Rules "E1363 the workspace has `@keel/cli` at another version (fix: `pnpm create @keel/app@<that version>`)"
-// k.create, Rules "W1364 the workspace's package globs leave the folder out (fix: add it to them)"
-// k.create, Rules "E1365 a write failed; this run's files are removed (fix: free the path or its permission). Names are E1352, flags E1052 (`--adapter` with `--library`, a second folder, an unknown flag), links E1357."
+// k.create, Rules "W1364 the workspace's package globs leave the folder out (fix: add it to them)."
+// k.create-folder, Rules "E1365 a write failed; this run's files are removed (fix by its cause: the folder's permission, disk space, or the path)"
+// k.create-folder, Rules "E1366 `.keel-create` left by a stopped run lists its paths (fix: remove them and it, or the folder)"
+// k.create-folder, Rules "E1367 interrupted; this run's files are removed (fix: run it again)."
 // Seed 1337 (properties over names, versions, listings, Node versions). Untestable here, tested in packages/create-app/conformance/create-bin.test.ts:
-// E1365 (a write failing is the bin's), E1357 (a link is the bin's real path), the standard-input, permission-model and output-format clauses.
+// E1365 and E1367 (a write failing, a signal: the bin's), E1366's signal half, E1357 (a link is the bin's real path), the standard-input, permission-model and output-format clauses.
 // ASSUMPTIONS (spec silent, readings asserted):
 // - "the tree equals ... `keel scaffold project`": run with the tmp folder `shop`, the same `npm_config_user_agent`, `version` the cli's, `nodeVersion` the running Node's.
 // - An unrecognised manager word (`deno/2.0.0`): the commands are pnpm's (spec says `pnpm` otherwise); `packageManager` for it is not asserted ("`<name>@<version>` from that word" does not say which name).
@@ -237,7 +242,7 @@ describe("k.create createPlan: folder", () => {
     const ok = plan({ existing: true, listing: ["README.md"] });
     expect(ok.ok, ok.text).toBe(true);
     expect(ok.files.has("README.md")).toBe(false);
-    expect(paths(ok)).toEqual(clientSet());
+    expect(paths(ok)).toEqual(clientSet().filter((f) => f !== "README.md"));
     const bad = plan({ existing: true, listing: ["package.json"] });
     expect(bad.ok).toBe(false);
     expect(bad.text).toContain("E1361");
@@ -251,7 +256,7 @@ describe("k.create createPlan: folder", () => {
   });
 
   it("Each file is created only where none is, and never replaced: for any path the plan writes, listing it with `--existing` is E1361 naming it and writes nothing.", () => {
-    const writes = clientSet();
+    const writes = clientSet().filter((f) => f !== "README.md");
     fc.assert(
       fc.property(fc.constantFrom(...writes), fc.array(fc.constantFrom(...writes), { maxLength: 3 }), (hit, more) => {
         const p = plan({ existing: true, listing: [hit, ...more, "README.md"] });
@@ -264,6 +269,41 @@ describe("k.create createPlan: folder", () => {
       }),
       cfg,
     );
+  });
+
+  it("`createPlan` with `caseless` and a listing holding `agents.md` is E1361 whose `paths` are `AGENTS.md` and `agents.md`, and one holding `Modules/` E1361 whose `paths` are `Modules/` and `modules/`; without `caseless`, neither collides.", () => {
+    const a = plan({ existing: true, caseless: true, listing: ["agents.md"] });
+    expect(a.ok).toBe(false);
+    expect(a.text).toContain("E1361");
+    expect(pathsOf(a.text)).toEqual(["AGENTS.md", "agents.md"]);
+    const m = plan({ existing: true, caseless: true, listing: ["Modules/"] });
+    expect(m.ok).toBe(false);
+    expect(m.text).toContain("E1361");
+    expect(pathsOf(m.text)).toEqual(["Modules/", "modules/"]);
+    for (const listing of [["agents.md"], ["Modules/"]]) {
+      const p = plan({ existing: true, listing });
+      expect(p.ok, listing.join()).toBe(true);
+      expect(p.text).not.toContain("E1361");
+      const q = plan({ existing: true, caseless: false, listing });
+      expect(q.ok, listing.join()).toBe(true);
+    }
+  });
+
+  it("A folder holding `.keel-create` is E1366 naming it, with or without `--existing`", () => {
+    for (const existing of [false, true]) {
+      const p = plan({ existing, listing: [".keel-create"] });
+      expect(p.ok, `existing ${existing}`).toBe(false);
+      expect(p.text).toContain("E1366");
+      expect(p.text).toContain(".keel-create");
+      expect(p.files.size).toBe(0);
+    }
+  });
+
+  it("E1366 `.keel-create` left by a stopped run lists its paths (fix: remove them and it, or the folder)", () => {
+    const p = plan({ listing: [".keel-create", ".keel/.gitkeep"] });
+    expect(p.text).toContain("E1366");
+    expect(p.text).toMatch(/remove/);
+    expect(p.text).toMatch(/folder/);
   });
 });
 
@@ -283,31 +323,65 @@ describe("k.create createPlan: names", () => {
     expect(vite.files.size + lib.files.size).toBe(0);
   });
 
-  it("The name is `[a-z][a-z0-9-]*`, at most 64 characters: any `--name` is accepted exactly when it fits, else E1352 with the fix `--name <n>`, `n` the name lowercased with each run of other characters one `-`.", () => {
+  it("The name is `[a-z][a-z0-9-]*`, at most 64 characters: any `--name` is accepted exactly when it fits, else E1352 with the fix `--name <n>`, `n` the name with each letter's marks dropped, lowercased, each run of other characters one `-`, none at either end; when that is not a valid name, no fix is named but `--name`.", () => {
+    const seg = fc.stringMatching(/^[A-Za-z0-9éßæøÉ]{1,6}$/);
+    const sep = fc.constantFrom(" ", "_", ".", "  ", "!", "-");
     const anyName = fc.oneof(
       goodName,
-      fc.stringMatching(/^[A-Za-z][A-Za-z0-9 _.-]{0,30}$/),
-      fc.stringMatching(/^[0-9_ .][A-Za-z0-9 _.-]{0,10}$/),
+      fc.tuple(fc.array(seg, { minLength: 1, maxLength: 4 }), sep).map(([segs, sp]) => segs.join(sp)),
+      fc.tuple(sep, seg, sep).map(([a, b, c]) => `${a}${b}${c}`),
     );
+    const fold = (name: string): string =>
+      name
+        .replace(/ß/g, "ss")
+        .replace(/æ/g, "ae")
+        .replace(/ø/g, "o")
+        .replace(/Æ/g, "AE")
+        .replace(/Ø/g, "O")
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    const reserved = ["vite", "vitest", "typescript", "react"];
+    const valid = (n: string): boolean => /^[a-z][a-z0-9-]*$/.test(n) && n.length <= 64 && !reserved.includes(n);
     fc.assert(
       fc.property(anyName, (name) => {
-        const fits =
-          /^[a-z][a-z0-9-]*$/.test(name) &&
-          name.length <= 64 &&
-          !["vite", "vitest", "typescript", "react"].includes(name);
         const p = plan({ name });
-        expect(p.ok, `${name} ${p.text}`).toBe(fits);
-        if (fits) {
+        expect(p.ok, `${name} ${p.text}`).toBe(valid(name));
+        if (valid(name)) {
           expect(json(p, "package.json").name).toBe(name);
           return;
         }
         expect(p.text).toContain("E1352");
         expect(p.files.size).toBe(0);
-        const slug = name.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
-        if (/^[a-z][a-z0-9-]*$/.test(slug) && slug.length <= 64) expect(p.text).toContain(`--name ${slug}`);
+        const fix = fold(name);
+        if (valid(fix) && !/[^\x00-\x7f]/.test(fix)) expect(p.text).toContain(`--name ${fix}`);
+        else if (fix !== "") expect(p.text).not.toContain(`--name ${fix}`);
       }),
       cfg,
     );
+  });
+
+  it("`--name café` is E1352 holding `--name cafe`, `--name 123` one naming no `--name <n>`; every name a fix names passes the name rule.", () => {
+    const cafe = plan({ name: "café" });
+    expect(cafe.ok).toBe(false);
+    expect(cafe.text).toContain("E1352");
+    expect(cafe.text).toContain("--name cafe");
+    const digits = plan({ name: "123" });
+    expect(digits.ok).toBe(false);
+    expect(digits.text).toContain("E1352");
+    expect(digits.text).not.toContain("--name 123");
+    for (const [name, fix] of [
+      ["straße", "strasse"],
+      ["Ærø", "aero"],
+      ["My  Site!", "my-site"],
+      ["__x__", "x"],
+    ] as const) {
+      const p = plan({ name });
+      expect(p.text, name).toContain(`--name ${fix}`);
+      expect(plan({ name: fix }).ok, fix).toBe(true);
+    }
   });
 
   it("A name over 64 characters is E1352; 64 is accepted.", () => {
@@ -449,15 +523,15 @@ describe("k.create createPlan: package manager", () => {
 describe("k.create createPlan: workspace", () => {
   const ws = { "pnpm-workspace.yaml": "packages:\n  - apps/*\n" };
 
-  it("Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project.", () => {
+  // `create-app b` run in `apps/` is the bin's (it needs a working folder: create-bin.test.ts); here the folder is judged from the working folder as the root.
+  it("Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and prints `next pnpm install`; `create-app b` run in `apps/` there reports no W1364; `create-app tools/b` reports W1364 and writes the project.", () => {
     const inside = plan({ folder: "apps/b", ancestors: ws, userAgent: PNPM });
     expect(inside.ok, inside.text).toBe(true);
     expect(inside.files.has("turbo.json")).toBe(false);
     expect([...inside.files.keys()].some((f) => f.startsWith(".github/"))).toBe(false);
     expect(json(inside, "package.json")).not.toHaveProperty("packageManager");
     expect(inside.text).not.toContain("W1364");
-    const install = inside.records.find((r) => r.kind === "create.next" && r.command === "pnpm install");
-    expect(install?.dir).toBe("../..");
+    expect(commands(inside)).toContain("pnpm install");
     const outside = plan({ folder: "tools/b", ancestors: ws, userAgent: PNPM });
     expect(outside.ok, outside.text).toBe(true);
     expect(outside.text).toContain("W1364");
@@ -530,14 +604,14 @@ describe("k.create createPlan: flags", () => {
 });
 
 describe("k.create createPlan: next records", () => {
-  it("Each written file is a `scaffold.edit` record (`create <path>`), sorted; then the `create.next` records: `cd <folder>`, `git init`, the install, `keel dev`, `check`, `test`, `build`.", () => {
+  it("Each written file is a `scaffold.edit` record (`create <path>`), sorted; then the `create.next` records: `cd <folder>`, `git init -b main`, the install, `keel dev`, `check`, `test`, `build`.", () => {
     const p = plan({ folder: "shop", userAgent: PNPM });
     const edits = p.records.filter((r) => r.kind === "scaffold.edit");
     expect(edits.map((r) => `${r.action} ${r.path}`)).toEqual(clientSet().map((f) => `create ${f}`));
     expect(p.records.slice(0, edits.length)).toEqual(edits);
     expect(commands(p)).toEqual([
       "cd shop",
-      "git init",
+      "git init -b main",
       "pnpm install",
       "pnpm keel dev",
       "pnpm keel check",
@@ -549,7 +623,7 @@ describe("k.create createPlan: next records", () => {
 
   it("There is no `cd` for `.`, no `git init` when a `.git` is at or above the folder, and a library ends `keel check`, `keel test`, `keel pack`.", () => {
     const dot = plan({ folder: ".", realPath: "/w/shop", userAgent: PNPM });
-    expect(commands(dot)[0]).toBe("git init");
+    expect(commands(dot)[0]).toBe("git init -b main");
     const git = plan({ folder: "shop", gitAbove: true, userAgent: PNPM });
     expect(commands(git)).toEqual([
       "cd shop",
@@ -615,7 +689,7 @@ describe("k.create createPlan: rule codes and their fixes", () => {
     expect(p.text).toMatch(/add it to/i);
   });
 
-  it("E1365, E1352, E1052 and E1357: the write failure and the link refusal belong to the bin (create-bin.test.ts); the name and flag codes are asserted above.", () => {
+  it("E1365, E1367, E1352, E1052 and E1357: the write failure, the interruption and the link refusal belong to the bin (create-bin.test.ts); the name and flag codes are asserted above.", () => {
     // Untestable on a pure plan: a write failing and a link carrying a write out of the folder need a file system.
     expect(plan({ name: "Bad Name" }).text).toContain("E1352");
     expect(plan({ adapter: "node", library: "@a/b" }).text).toContain("E1052");
