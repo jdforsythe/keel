@@ -141,7 +141,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "scaffold",
-    description: "Structural generator: project, module, route, component, store, shell (k.scaffold).",
+    description: "Generate a project, module, route, component, store or shell (k.scaffold).",
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],
@@ -149,7 +149,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "codemod",
-    description: "Structural codemod: rename, move, add-field, place (k.scaffold).",
+    description: "Codemods: rename, move, add-field, place (k.scaffold).",
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],
