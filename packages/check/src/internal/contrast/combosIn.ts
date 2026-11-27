@@ -1,4 +1,5 @@
-import { type Theme, TokenSchema, type Tokens } from "@keel/ui";
+import type { Theme, Tokens } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import { combinations } from "@keel/ui/css";
 import type { Combo } from "./Combo.ts";
 

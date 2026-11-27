@@ -1,4 +1,5 @@
-import { TokenSchema, tokenGroups as groupOrder } from "@keel/ui";
+import { tokenGroups as groupOrder } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import { tokenGroups } from "@keel/ui/css";
 import type { Expression, ObjectExpression, Program } from "oxc-parser";
 import { keyName } from "../keyName.ts";
@@ -10,7 +11,7 @@ const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null && !
 
 /**
  * Read `<id>Tokens.ts` as text, never running it (k.looks Shipped tokens): one `import { defineTokens } from
- * '@keel/ui'` and `export const <id>Tokens = defineTokens({ ... })`, the argument an object literal of identifier or
+ * '@keel/ui/tokens'` and `export const <id>Tokens = defineTokens({ ... })`, the argument an object literal of identifier or
  * string keys and string or object literal values. The first node out of form, in source order, is the problem: a
  * top-level `base` or `schemes` key before its value is judged, then another import or statement, a spread, a type
  * assertion (`as`, `satisfies`), a computed key or value, a name without `<id>.`, a `themes` key other than `contrast` and `print`, a theme holding `when`; once in form, a look naming a token the object lacks, then `TokenSchema`.
@@ -129,7 +130,7 @@ export function readShipped(program: Program, id: string): Shipped {
       const ok =
         main === undefined &&
         st.importKind !== "type" &&
-        st.source.value === "@keel/ui" &&
+        st.source.value === "@keel/ui/tokens" &&
         only?.type === "ImportSpecifier" &&
         only.imported.type === "Identifier" &&
         only.imported.name === "defineTokens" &&

@@ -19,7 +19,7 @@ const isRow = (r: unknown): r is Row =>
 
 /**
  * Binary only: `a11y.json` (k.evidence, k.a11y Claims): each claim with the rules mapped to its criterion (render and
- * static), the WCAG 2.2 A and AA criteria no rule maps to (`WCAG_CRITERIA` of `@keel/testing/a11y`), for a person, and `contrastTable(tokens)` of `@keel/ui` over the project's `tokens.ts` (empty without one).
+ * static), the WCAG 2.2 A and AA criteria no rule maps to (`WCAG_CRITERIA` of `@keel/testing/a11y`), for a person, and `contrastTable(tokens)` of `@keel/ui/css` over the project's `tokens.ts` (empty without one).
  */
 export async function a11yReport(
   cwd: string,
@@ -31,7 +31,7 @@ export async function a11yReport(
     const m = map.get(c);
     return m === undefined ? [] : [...m.render, ...m.static].sort();
   };
-  const ui = hasTokens ? await keelModule(cwd, "@keel/ui") : undefined;
+  const ui = hasTokens ? await keelModule(cwd, "@keel/ui/css") : undefined;
   const mod = hasTokens ? await projectFileModule(cwd, "tokens.ts") : undefined;
   const tokens = mod?.tokens ?? mod?.default;
   const table = ui?.contrastTable;

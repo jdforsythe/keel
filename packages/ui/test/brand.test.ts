@@ -1,7 +1,7 @@
 // @keel/ui/brand and @keel/ui/fonts (docs/BRAND.md 2-4, 6). Seed 1337.
 import fs from "node:fs";
 import path from "node:path";
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { compileStyles, contrast } from "@keel/ui/css";
 import * as fc from "fast-check";

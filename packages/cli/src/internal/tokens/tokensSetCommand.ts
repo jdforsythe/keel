@@ -27,9 +27,9 @@ const refusal = (message: string): Outcome => {
   return { records: [d, summary(NAME, [d], {})], writes: [] };
 };
 
-/** Whether `fragment` passes the project's `TokenSchema`; undefined when `@keel/ui` does not load. */
+/** Whether `fragment` passes the project's `TokenSchema`; undefined when `@keel/ui/tokens` does not load. */
 async function passes(cwd: string, fragment: unknown): Promise<boolean | undefined> {
-  const schema = (await keelModule(cwd, "@keel/ui"))?.TokenSchema;
+  const schema = (await keelModule(cwd, "@keel/ui/tokens"))?.TokenSchema;
   const parse = isRecord(schema) ? schema.parse : undefined;
   if (typeof parse !== "function") return undefined;
   const result: unknown = parse.call(schema, fragment);
@@ -72,7 +72,7 @@ export async function tokensSetCommand(input: Input, io: Io): Promise<Outcome> {
   const { group, name, scheme } = parsed;
   const entry = scheme === undefined ? value : { light: value, dark: value };
   const ok = await passes(io.cwd, { [group]: { [name]: entry } });
-  if (ok === undefined) return refusal(`${path}: @keel/ui does not load here`);
+  if (ok === undefined) return refusal(`${path}: @keel/ui/tokens does not load here`);
   if (!ok || (scheme !== undefined && group !== "color")) return refusal(`${path}: ${value} fails TokenSchema`);
   const source = readText(io.cwd, TOKENS);
   if (source === undefined) return refusal(`${TOKENS} is missing`);

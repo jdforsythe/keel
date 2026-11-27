@@ -83,11 +83,11 @@ export function setEdits(
       : descend(shape.literal, chain);
   if (edits === undefined) return undefined;
   const imports = importFacts(program);
-  if (shape.literal === undefined && imports.from.get("defineTokens") !== "@keel/ui#defineTokens")
+  if (shape.literal === undefined && imports.from.get("defineTokens") !== "@keel/ui/tokens#defineTokens")
     edits.push({
       start: imports.firstStart,
       end: imports.firstStart,
-      text: 'import { defineTokens } from "@keel/ui";\n',
+      text: 'import { defineTokens } from "@keel/ui/tokens";\n',
     });
   return edits;
 }

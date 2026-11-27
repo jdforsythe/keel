@@ -1,5 +1,5 @@
 import { acmeTokens } from "@example/library-looks/tokens";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 
 export const tokens = defineTokens({

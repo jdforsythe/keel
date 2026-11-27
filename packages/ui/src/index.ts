@@ -1,10 +1,7 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
-export { contrastTable } from "./contrastTable.ts";
 export { customElement } from "./customElement.ts";
 export { appearance } from "./appearance.ts";
-export { defineTokens } from "./defineTokens.ts";
 export { hostCode } from "./hostCode.ts";
-export { TokenSchema } from "./TokenSchema.ts";
 export { tokenGroups } from "./internal/tokenGroups.ts";
 export { Box } from "./elements/Box.ts";
 export { Button } from "./elements/Button.ts";

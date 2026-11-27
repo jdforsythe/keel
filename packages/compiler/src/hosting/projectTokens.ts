@@ -8,7 +8,7 @@ import { shippedTokensPlugin } from "./shippedTokensPlugin.ts";
 
 // Resolved from the project root, which a project with `tokens.ts` depends on (its `defineTokens` or `brandTokens`).
 const UI_CSS = "@keel/ui/css";
-const ENTRY = `import { TokenSchema } from "@keel/ui";
+const ENTRY = `import { TokenSchema } from "@keel/ui/tokens";
 import { schemesOf } from ${JSON.stringify(UI_CSS)};
 const message = (e) => (e && typeof e === "object" && "message" in e ? String(e.message) : String(e));
 let result;

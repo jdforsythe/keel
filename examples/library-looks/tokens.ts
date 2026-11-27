@@ -1,4 +1,4 @@
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { acmeTokens } from "./src/acmeTokens.ts";
 

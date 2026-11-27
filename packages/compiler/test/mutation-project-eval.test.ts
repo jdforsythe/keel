@@ -20,8 +20,8 @@ beforeEach(() => {
     if (fs.existsSync(path.join(packages, p, "package.json")))
       fs.symlinkSync(path.join(packages, p), path.join(root, "node_modules", "@keel", p));
   const body = `{ color: { fg: "#111", bg: "#fff" }, space: { 1: "4px", 2: "8px" }, breakpoint: { md: "768px" } }`;
-  write("tokens.ts", `import { defineTokens } from "@keel/ui";\nexport default defineTokens(${body});`);
-  write("tokens2.ts", `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens(${body});`);
+  write("tokens.ts", `import { defineTokens } from "@keel/ui/tokens";\nexport default defineTokens(${body});`);
+  write("tokens2.ts", `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens(${body});`);
   write("tokens3.ts", `export const tokens = { color: { fg: "#1}11" }, space: { 1: "4px" } };`);
   write("tokens4.ts", "export const other = 1;");
 });

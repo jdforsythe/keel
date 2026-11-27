@@ -50,7 +50,7 @@ export function renderDesignTokens(a: Assembled): string {
   }
   return [
     "// Written by keel tokens import; edit tokens.ts.\n",
-    'import { defineTokens } from "@keel/ui";\n\n',
+    'import { defineTokens } from "@keel/ui/tokens";\n\n',
     `export const designTokens = defineTokens({\n${body.join("")}});\n`,
   ].join("");
 }

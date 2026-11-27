@@ -50,11 +50,11 @@ export function designSpreadEdits(
       text: `defineTokens({ ...${alias ?? ""}${added.map((a) => `, ${a}`).join("")} })`,
     });
   } else if (added.length > 0) edits.push(appendProperty(literal, added.join(", ")));
-  if (imports.from.get("defineTokens") !== "@keel/ui#defineTokens")
+  if (imports.from.get("defineTokens") !== "@keel/ui/tokens#defineTokens")
     edits.push({
       start: imports.firstStart,
       end: imports.firstStart,
-      text: 'import { defineTokens } from "@keel/ui";\n',
+      text: 'import { defineTokens } from "@keel/ui/tokens";\n',
     });
   const eol = source.indexOf("\n", imports.lastEnd);
   const at = imports.lastEnd === 0 ? 0 : eol < 0 ? source.length : eol;

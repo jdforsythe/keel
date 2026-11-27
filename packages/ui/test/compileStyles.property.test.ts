@@ -1,5 +1,5 @@
 // Properties of compileStyles: determinism, dedupe, order independence, injective class names. Seed 1337.
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import type { StyleState } from "@keel/ui";
 import { compileStyles } from "@keel/ui/css";
 import type { StyleUsage } from "@keel/ui/css";

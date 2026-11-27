@@ -1,4 +1,4 @@
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const acmeTokens = defineTokens({
   color: {

@@ -1,4 +1,4 @@
-import { defineTokens } from "../defineTokens.ts";
+import { defineTokens } from "../tokens/defineTokens.ts";
 
 /**
  * The Keel brand as tokens (docs/BRAND.md): parchment surface, charcoal text, ISO Ochre `accent` reserved for

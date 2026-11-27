@@ -1,5 +1,5 @@
 // TokenSchema and defineTokens beyond conformance. Seed 1337.
-import { TokenSchema, defineTokens } from "@keel/ui";
+import { TokenSchema, defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 

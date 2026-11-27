@@ -1,4 +1,4 @@
-import { TokenSchema } from "../TokenSchema.ts";
+import { TokenSchema } from "../tokens/TokenSchema.ts";
 import { combine } from "../internal/combine.ts";
 import type { Combination } from "../types/Combination.ts";
 import type { Tokens } from "../types/Tokens.ts";

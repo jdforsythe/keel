@@ -5,7 +5,7 @@ import { importsOf } from "./importsOf.ts";
 /**
  * The edits of `tokens.ts` that import `local` from `<name>/tokens` on a new line after the last import's line (or,
  * when a block comment begins on that line and ends on a later one, after the line that comment ends on: no comment
- * moves) and `defineTokens` from `@keel/ui` before the first import, each only when the file lacks it.
+ * moves) and `defineTokens` from `@keel/ui/tokens` before the first import, each only when the file lacks it.
  */
 export function importEdits(source: string, program: Program, local: string, name: string): Edit[] {
   const { from, lastEnd: end } = importsOf(program);
@@ -21,10 +21,10 @@ export function importEdits(source: string, program: Program, local: string, nam
   }
   const lastEnd = end === 0 ? 0 : lineEnd;
   const edits: Edit[] = [];
-  if (from.get("defineTokens") !== "@keel/ui#defineTokens") {
+  if (from.get("defineTokens") !== "@keel/ui/tokens#defineTokens") {
     const first = program.body.find((s) => s.type === "ImportDeclaration");
     const at = first?.start ?? 0;
-    edits.push({ start: at, end: at, text: 'import { defineTokens } from "@keel/ui";\n' });
+    edits.push({ start: at, end: at, text: 'import { defineTokens } from "@keel/ui/tokens";\n' });
   }
   if (!from.has(local))
     edits.push({

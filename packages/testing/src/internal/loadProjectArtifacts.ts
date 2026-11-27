@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import type { HarnessArtifacts } from "../types/HarnessArtifacts.ts";
 import type { ProjectArtifacts } from "./ProjectArtifacts.ts";
 import { a11yEntries } from "./a11yEntries.ts";
