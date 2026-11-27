@@ -170,6 +170,18 @@ describe("surfaceRun", () => {
   );
 
   test(
+    "a routes.ts throwing a value whose message starts with its own E code writes the code once",
+    async () => {
+      const dir = project({
+        "modules/m/m.contract.ts": contractTs("/api/feed"),
+        "modules/m/routes.ts": 'throw Object.assign(new Error("E1765 two copies"), { code: "E1765" });\n',
+      });
+      expect(await surfaceRun(dir)).toEqual({ code: 1, notes: ["E1765 two copies\n"] });
+    },
+    SLOW,
+  );
+
+  test(
     "a placed stdlib module whose ./routes throws is E1006 naming its real file; code 1",
     async () => {
       const dir = project({
