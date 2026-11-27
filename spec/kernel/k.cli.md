@@ -44,7 +44,7 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 
 **Conformance.**
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
-- Each MCP tool's input schema equals the JSON Schema of its operation's input.
+- Each MCP tool's input schema equals the JSON Schema of its operation's input less the shared flags (`format`, `quiet`, `limit`, `verbose`), stated once in `initialize`'s `instructions`.
 - A clean `keel check` in compact prints exactly one line.
 - `keel check apps/a` at a workspace root and `keel check` in `apps/a` report the same diagnostics.
 - Compact and json output contain no ANSI escapes, no carriage returns, and no absolute paths.
