@@ -98,16 +98,17 @@ test("a predicate that only looks like a key guard is E1762: an exported set, a 
   for (const body of cases) expect(e1762(`${HEAD}${body}\nvoid isStore\n`), body).toHaveLength(1);
 });
 
+// Function and construct types are parenthesised so that `${t}[]` and a union member read as the type meant, not as a function returning an array.
 // A call or construct signature with a parameter, or with a return type other than void, unknown or any, read through
 // properties, array elements and union members to any depth.
 const SIGNATURES = [
-  "(n: number) => void",
-  "() => number",
-  "() => string",
-  "(n: number) => string",
+  "((n: number) => void)",
+  "(() => number)",
+  "(() => string)",
+  "((n: number) => string)",
   "{ run(n: number): string }",
-  "new () => Box<number>",
-  "new (n: number) => void",
+  "(new () => Box<number>)",
+  "(new (n: number) => void)",
 ];
 const WRAPS: readonly ((t: string) => string)[] = [
   (t) => t,
@@ -117,7 +118,14 @@ const WRAPS: readonly ((t: string) => string)[] = [
   (t) => `{ k: 'a' } | ${t}`,
   (t) => `{ a: { b: { c: ${t}[] } } }`,
 ];
-const HARMLESS = ["() => void", "() => unknown", "() => any", "{ id: string }", "string[]", "{ a: { b: number } }"];
+const HARMLESS = [
+  "(() => void)",
+  "(() => unknown)",
+  "(() => any)",
+  "{ id: string }",
+  "string[]",
+  "{ a: { b: number } }",
+];
 
 test("property: a claimed type holding a call or construct signature with a parameter or a return other than `void`, `unknown` or `any`, at any depth through properties, array elements and union members, is one E1762", () => {
   fc.assert(
