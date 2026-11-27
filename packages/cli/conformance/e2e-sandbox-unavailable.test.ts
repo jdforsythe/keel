@@ -46,7 +46,8 @@ describe("k.e2e-run: a sandbox that cannot start", () => {
       expect(out.status).toBe(1);
       const lines = out.stdout.split("\n");
       expect(lines.filter((l) => l.includes("E1734"))).toHaveLength(1);
-      expect(lines.filter((l) => l.includes("W1734"))).toEqual([]);
+      // The E1734 fix text names W1734 as written (k.e2e-run Browser: "an unsandboxed browser with W1734 on every run"), so only a diagnostic line that begins with W1734 is a warning.
+      expect(lines.filter((l) => l.startsWith("W1734"))).toEqual([]);
       expect(lines.some((l) => l.includes("chromium cannot start its sandbox here"))).toBe(true);
       expect(ran(dir)).toBe(false);
     },

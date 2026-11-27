@@ -1,10 +1,11 @@
 // @vitest-environment node
 // Spec: k.contract, clause "`server.mjs` of a `keel build` fixture answers an HTTP/1.0 `GET /` with no `Host`, a `GET /` with `Host: [::ffff:127.0.0.1]:<port>`, and a `GET` of its `local: true` page from `127.0.0.1` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: cross-site`, each 403 `keel.denied` carrying the six k.security headers."
-// k.contract Local routes: "A request to `server.mjs` with no `Host` (HTTP/1.0), or with one it cannot read back (`[::ffff:127.0.0.1]:<port>`), reaches no route, `local` or not, and is 403 `keel.denied` like a foreign `Host`, never 400. Every refusal here, that one and a forwarding deployable's (k.topology Calls and peers) included, carries the k.security headers."
+// k.contract Local routes: "A request to `server.mjs` with no `Host` (HTTP/1.0) or an empty one, in any HTTP version, or with one it cannot read back (`[::ffff:127.0.0.1]:<port>`), reaches no route, `local` or not, and is 403 `keel.denied` like a foreign `Host`, never 400. Every refusal here, that one and a forwarding deployable's (k.topology Calls and peers) included, carries the k.security headers."
 // k.security Headers: "Every `createApp` response (documents, JSON, event streams, assets, redirects, errors) and every refusal `server.mjs` answers before it (a `Host` it cannot read, or none: k.contract Local routes) carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, `X-Frame-Options: DENY` and `Permissions-Policy: camera=(), microphone=(), payment=(), usb=()`; on https (the cookie's rule below) also `Strict-Transport-Security: max-age=63072000`."
+// Spec: k.contract, clause "`server.mjs` of a `keel build` fixture answers an HTTP/1.1 `GET /` with no `Host` header and a `GET /` with an empty `Host:`, each 403 `keel.denied` carrying the six k.security headers."
 // Seed 1337 (fast-check: unreadable `Host` values, routes). Method: local-routes-support.ts (real `keel build`, then `node dist/web/server.mjs` on a free port); a request with no `Host` is written over a raw socket as HTTP/1.0, because an HTTP client adds one.
 // ASSUMED: (1) a 403 `keel.denied` answer's body holds the text `keel.denied` (JSON or HTML); (2) the headers are compared case-insensitively by name, exactly by value; (3) a body is read to the end of the connection (HTTP/1.0 closes it).
-// SILENT (not asserted): what an HTTP/1.1 request with no `Host` gets; the spec's parenthesis names HTTP/1.0 only.
+// An HTTP/1.1 request with no `Host` is written over a raw socket too; an empty `Host:` is a header line with no value.
 import net from "node:net";
 import fc from "fast-check";
 import { fixedTime } from "@keel/tooling/test-time";
@@ -173,6 +174,40 @@ describe("k.contract Local routes: every refusal carries the k.security headers"
         }),
         { seed: SEED, numRuns: 25 },
       );
+      expect(await counts(port)).toEqual(before);
+    },
+    T,
+  );
+
+  it(
+    "`server.mjs` of a `keel build` fixture answers an HTTP/1.1 `GET /` with no `Host` header 403 `keel.denied` carrying the six k.security headers",
+    async () => {
+      const { port } = up();
+      const before = await counts(port);
+      for (const target of ["/", "/panel", "/api/probe", "/nowhere"]) {
+        const r = await raw(port, `GET ${target} HTTP/1.1\r\nConnection: close\r\n\r\n`);
+        expect(r.status, target).toBe(403);
+        expect(r.body, target).toContain("keel.denied");
+        sixHeaders(r.headers, `HTTP/1.1 no Host ${target}`);
+      }
+      expect(await counts(port)).toEqual(before);
+    },
+    T,
+  );
+
+  it(
+    "`server.mjs` of a `keel build` fixture answers a `GET /` with an empty `Host:` 403 `keel.denied` carrying the six k.security headers",
+    async () => {
+      const { port } = up();
+      const before = await counts(port);
+      for (const version of ["HTTP/1.1", "HTTP/1.0"]) {
+        for (const target of ["/", "/panel", "/api/probe"]) {
+          const r = await raw(port, `GET ${target} ${version}\r\nHost:\r\nConnection: close\r\n\r\n`);
+          expect(r.status, `${version} ${target}`).toBe(403);
+          expect(r.body, `${version} ${target}`).toContain("keel.denied");
+          sixHeaders(r.headers, `${version} empty Host ${target}`);
+        }
+      }
       expect(await counts(port)).toEqual(before);
     },
     T,

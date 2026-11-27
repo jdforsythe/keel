@@ -1,5 +1,5 @@
 // Spec: k.contract, clause "In a fixture whose `client` deployable `web` serves module `a` with a `local: true` page `a.tools`, `keel check` and `keel build` each report one E1511 `a.tools: local route in client deployable web, which has no server` at `topology.ts`, `keel build` exits 1 and writes no `dist/web/`, and `createApp` for `web` throws E1511; with `web` a `static` deployable, one E1511 `a.tools: local route in static deployable web, which has no server`; with `a` served by a `node` deployable, none."
-// Spec: k.api Rules: "E1511 an API entry, or a `local: true` entry (k.contract Local routes), in a module a `client` or `static` deployable serves (k.topology); reported from `topology.ts` at the module's id by `keel check` and `keel build` (which then fails and writes no `dist/<name>/`), thrown by `createApp`; message `<id>: API route in <adapter> deployable <name>, which has no server`, for a `local` page `<id>: local route in <adapter> deployable <name>, which has no server`; no fix: the remedy, serving the module from a `node` deployable, is `keel explain`'s."
+// Rule text (not a Conformance bullet, so not a citation): E1511 an API entry, or a `local: true` entry (k.contract Local routes), in a module a `client` or `static` deployable serves (k.topology); reported from `topology.ts` at the module's id by `keel check` and `keel build` (which then fails and writes no `dist/<name>/`), thrown by `createApp`; message `<id>: API route in <adapter> deployable <name>, which has no server`, for a `local` page `<id>: local route in <adapter> deployable <name>, which has no server`; no fix: the remedy, serving the module from a `node` deployable, is `keel explain`'s.
 // This file covers the `keel check` half (`check()` of `@keel/check`, in-memory project, the topology as an option as fixtures-by-code.ts passes it). Seed 1337 (the page's path).
 // ASSUMED: "at `topology.ts`" is the diagnostic's `path`; an API entry's message (`<id>: API route in ...`) is asserted for the same fixture with an API entry.
 import { check } from "@keel/check";
@@ -48,7 +48,7 @@ describe("k.contract Local routes: `keel check` and a `local` route with no serv
     fc.assert(
       fc.property(
         fc.array(seg, { minLength: 1, maxLength: 3 }),
-        fc.constantFrom("client", "static"),
+        fc.constantFrom("client" as const, "static" as const),
         (segs, adapter) => {
           const d = e1511(tools(`/${segs.join("/")}`), adapter);
           expect(d).toHaveLength(1);
