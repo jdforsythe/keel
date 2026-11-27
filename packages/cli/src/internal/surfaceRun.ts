@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { join, relative } from "node:path";
+import { isAbsolute, join, relative } from "node:path";
+import { pathToFileURL } from "node:url";
 import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
 import { sourceHash } from "@keel/compiler/internal";
 import { entryDependency } from "@keel/compiler/internal/entry/entryDependency";
@@ -17,8 +18,12 @@ import { surfaceOf } from "./surfaceOf.ts";
 
 const CONTRACT = /^modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
+/** The kernel packages the evaluation imports natively, as this process does. */
+const KERNEL = ["@keel/schema", "@keel/reactive", "@keel/store", "@keel/router", "@keel/ctx"] as const;
 /** A kernel internal the evaluation loads: the project's package, else the CLI's own dependency (`entryDependency`). */
 const kernel = (id: string, root: string): string => entryDependency(id, root, import.meta.url) ?? id;
+/** What `import()` takes for `kernel`'s answer: a file's URL, or the bare id this process resolves. */
+const native = (spec: string): string => (isAbsolute(spec) ? pathToFileURL(spec).href : spec);
 const firstLine = (e: unknown): string => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "";
 /** An E code a thrown value carries (`{ code: "E1502" }`), kept as k.compiler Build-time evaluation keeps it. */
 const codeOf = (e: unknown): string | undefined => {
@@ -140,6 +145,9 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
             ssr: {
               resolve: { conditions: ["keel", "module", "node", "development|production"] },
               noExternal: libraries.map((l) => l.name),
+              // The kernel packages that keep identity load once, natively, so a schema, a store and a route table
+              // the app's modules make are the ones this process's guards know (k.identity, k.realm).
+              external: [...KERNEL],
             },
             plugins: [
               {
@@ -178,7 +186,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         if (isRecord(m) && isRecord(m.routes) && m.routes.kind === "keel.routeTable") tables.push(m.routes);
       }
       const internal: unknown =
-        tables.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/router/internal", root));
+        tables.length === 0 ? undefined : await import(native(kernel("@keel/router/internal", root)));
       const bindingsOf = isRecord(internal) ? internal.bindingsOf : undefined;
       for (const t of tables) {
         const cs = isRecord(t) && Array.isArray(t.contracts) ? t.contracts : [];
@@ -198,7 +206,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
             }
       }
       const kept: unknown =
-        bindings.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/store/internal", root));
+        bindings.length === 0 ? undefined : await import(native(kernel("@keel/store/internal", root)));
       shapes = isRecord(kept) ? kept.storeShapes : undefined;
       const clashes = isRecord(kept) ? kept.storeIdClashes : undefined;
       if (typeof clashes === "function")
