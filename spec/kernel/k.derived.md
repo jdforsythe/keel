@@ -21,30 +21,30 @@ A derived file is one Keel computes from a project's tree: the k.compiler artifa
 **Rules.** E1005 (k.compiler) frozen, a view that differs from its derivation; frozen or not, a file in `.keel/` that no derivation writes and no section names, never removed · W1018 a view not written: the reason (read-only file system, no permission) and the path; the run judged from the derivation. W1018 is a command code (k.check Codes): `keel check`, `keel test`, `keel build`, `keel dev` and `keel scaffold` print it, `check()` never reports it, `reportedCodes()` does not list it, and clause 8 is its fixture.
 
 **Conformance.**
-1. In a copy of `examples/client-only-api` after `keel build`, adding a page route `app.about` at `/about` to its contract and binding it to `HomePage`, then `keel check`, reports no E1005, exits 0, prints `1 refreshed` in its trailer, and leaves `.keel/routes.json` byte-identical to what `keel build` of that tree writes.
-2. In that copy, after renaming an element id in a page component, `keel check` reports no E1005 and leaves `.keel/ids.json` and `.keel/a11y.json` byte-identical to what `keel build` writes.
-3. A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, its compact trailer holds no `refreshed`, and its json summary's `counts.refreshed` is 0.
-4. After the edit of clause 1, `keel check --frozen` exits 1 with one E1005, at `.keel/routes.json`, and no file in `.keel/` changes.
-5. After the edit of clause 1, `keel check` with `CI=true` gives the output of clause 4, and with `CI=false` the output of clause 1.
-6. Changing one byte of `.keel/ids.json` makes `keel check` rewrite it with `1 refreshed` and exit 0, and makes `keel check --frozen` report one E1005 at that file.
-7. A file `.keel/x.json` is one E1005 under `keel check` and under `keel check --frozen`, and is still there after both.
-8. With the copy's `.keel/` folder at mode 0555 and the edit of clause 1, `keel check` exits 0 with one W1018 per differing view and no E1005, and `keel test` runs every test with one W1018 per differing view and no T0001.
-9. In a copy of `apps/household` whose `@keel/std-text` is a linked copy, after `keel build`, changing `line`'s default `min` from 1 to 2 in that copy makes `keel check --base <the surface keel build wrote>` report one E1563 at `modules/setup/Household.schema.ts`, and makes `keel check` without `--base` print `1 refreshed`.
-10. In a copy of `apps/household` with `.keel/` deleted, giving the `setup.household` store's state a required field makes `keel check --base <the committed surface>` report one E1563 naming that field.
-11. In a fixture whose page renders `<button id="p.b">` and whose test renders it with `renderRoute`, replacing `.keel/a11y.json` with one giving `p.b` role `link` leaves `keel test` passing.
-12. In that fixture with `.keel/` deleted, a passing `renderRoute` under `keel test` records a run whose `rules` hold E1702.
-13. `keel lsp` diagnostics for an unsaved buffer adding the page route of clause 1 write no file in `.keel/`.
-14. Two `keel check` processes started together after the edit of clause 1 both exit 0, and afterwards each `.keel/` file is byte-identical to what `keel build` writes and no `*.tmp` file is left.
-15. After one `keel check`, replacing each entry in `node_modules/.cache/keel/derived/` with `{}` or its first 40 bytes leaves the next `keel check` printing the same stdout bytes and writing the same files as a run with the folder deleted.
-16. After one `keel check` of the household copy, rewriting a file of the linked `@keel/std-text` copy that the evaluation loaded, with its old modification time, makes the next `keel check` evaluate again, as a run with `node_modules/.cache/keel` deleted does.
-17. After one `keel check`, re-indenting a contract file and adding a comment to it makes the next `keel check` write no file.
-18. While `keel dev` serves the copy of clause 1, within 2 s of the edit `.keel/routes.json` is byte-identical to what `keel build` writes, and a `keel check` run then writes no file.
-19. In a fixture with one page route `r` and a passing `renderRoute` test of it, with `.keel/` deleted, `keel test` then `keel ledger` give the same `a11y:.:r#<criterion>` items and rungs as with `.keel/` present, and a page route `s` added after `keel build` with no build since gets its `a11y:.:s#<criterion>` items.
-20. No fixture makes `keel check` report W1005.
-21. `keel scaffold project p` writes a `.gitignore` holding the lines `.keel/a11y.json`, `.keel/deps.json`, `.keel/ids.json`, `.keel/routes.json`, `.keel/std.json` and `.keel/styles.json`, and no line matching `.keel/surface.json`.
-22. In the copy of clause 1, after one `keel check`, a second with no file changed has json `counts.evaluated` 0 and `counts.cached` 1.
-23. In that copy after one `keel check`, editing `test/` files only gives `counts.evaluated` 0, and editing the contract gives `counts.evaluated` 1.
-24. After the contract edit of clause 23, the one entry written in `node_modules/.cache/keel/derived/` has `inputs` holding the contract, `routes.ts` and each project file `routes.ts` imports, directly or through others, no test file, and only paths that exist.
-25. In that copy with `node_modules/.cache` removed and `node_modules` kept, `keel check` has `counts.evaluated` 1 and `counts.cached` 0.
-26. After `keel build` of the copy of clause 1, setting the colour its page text uses so that text falls under 4.5:1 against its background makes the next `keel check` report E1804 at that text and write no file.
-27. `check()` given a project's files and a `.keel/ids.json` that differs from their compile reports one E1005 at that file and writes nothing; given a `.keel/routes.json` and no `derived`, it reports no diagnostic at that file.
+- In a copy of `examples/client-only-api` after `keel build`, adding a page route `app.about` at `/about` to its contract and binding it to `HomePage`, then `keel check`, reports no E1005, exits 0, prints `1 refreshed` in its trailer, and leaves `.keel/routes.json` byte-identical to what `keel build` of that tree writes.
+- In that copy, after renaming an element id in a page component, `keel check` reports no E1005 and leaves `.keel/ids.json` and `.keel/a11y.json` byte-identical to what `keel build` writes.
+- A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, its compact trailer holds no `refreshed`, and its json summary's `counts.refreshed` is 0.
+- After the edit of clause 1, `keel check --frozen` exits 1 with one E1005, at `.keel/routes.json`, and no file in `.keel/` changes.
+- After the edit of clause 1, `keel check` with `CI=true` gives the output of clause 4, and with `CI=false` the output of clause 1.
+- Changing one byte of `.keel/ids.json` makes `keel check` rewrite it with `1 refreshed` and exit 0, and makes `keel check --frozen` report one E1005 at that file.
+- A file `.keel/x.json` is one E1005 under `keel check` and under `keel check --frozen`, and is still there after both.
+- With the copy's `.keel/` folder at mode 0555 and the edit of clause 1, `keel check` exits 0 with one W1018 per differing view and no E1005, and `keel test` runs every test with one W1018 per differing view and no T0001.
+- In a copy of `apps/household` whose `@keel/std-text` is a linked copy, after `keel build`, changing `line`'s default `min` from 1 to 2 in that copy makes `keel check --base <the surface keel build wrote>` report one E1563 at `modules/setup/Household.schema.ts`, and makes `keel check` without `--base` print `1 refreshed`.
+- In a copy of `apps/household` with `.keel/` deleted, giving the `setup.household` store's state a required field makes `keel check --base <the committed surface>` report one E1563 naming that field.
+- In a fixture whose page renders `<button id="p.b">` and whose test renders it with `renderRoute`, replacing `.keel/a11y.json` with one giving `p.b` role `link` leaves `keel test` passing.
+- In that fixture with `.keel/` deleted, a passing `renderRoute` under `keel test` records a run whose `rules` hold E1702.
+- `keel lsp` diagnostics for an unsaved buffer adding the page route of clause 1 write no file in `.keel/`.
+- Two `keel check` processes started together after the edit of clause 1 both exit 0, and afterwards each `.keel/` file is byte-identical to what `keel build` writes and no `*.tmp` file is left.
+- After one `keel check`, replacing each entry in `node_modules/.cache/keel/derived/` with `{}` or its first 40 bytes leaves the next `keel check` printing the same stdout bytes and writing the same files as a run with the folder deleted.
+- After one `keel check` of the household copy, rewriting a file of the linked `@keel/std-text` copy that the evaluation loaded, with its old modification time, makes the next `keel check` evaluate again, as a run with `node_modules/.cache/keel` deleted does.
+- After one `keel check`, re-indenting a contract file and adding a comment to it makes the next `keel check` write no file.
+- While `keel dev` serves the copy of clause 1, within 2 s of the edit `.keel/routes.json` is byte-identical to what `keel build` writes, and a `keel check` run then writes no file.
+- In a fixture with one page route `r` and a passing `renderRoute` test of it, with `.keel/` deleted, `keel test` then `keel ledger` give the same `a11y:.:r#<criterion>` items and rungs as with `.keel/` present, and a page route `s` added after `keel build` with no build since gets its `a11y:.:s#<criterion>` items.
+- No fixture makes `keel check` report W1005.
+- `keel scaffold project p` writes a `.gitignore` holding the lines `.keel/a11y.json`, `.keel/deps.json`, `.keel/ids.json`, `.keel/routes.json`, `.keel/std.json` and `.keel/styles.json`, and no line matching `.keel/surface.json`.
+- In the copy of clause 1, after one `keel check`, a second with no file changed has json `counts.evaluated` 0 and `counts.cached` 1.
+- In that copy after one `keel check`, editing `test/` files only gives `counts.evaluated` 0, and editing the contract gives `counts.evaluated` 1.
+- After the contract edit of clause 23, the one entry written in `node_modules/.cache/keel/derived/` has `inputs` holding the contract, `routes.ts` and each project file `routes.ts` imports, directly or through others, no test file, and only paths that exist.
+- In that copy with `node_modules/.cache` removed and `node_modules` kept, `keel check` has `counts.evaluated` 1 and `counts.cached` 0.
+- After `keel build` of the copy of clause 1, setting the colour its page text uses so that text falls under 4.5:1 against its background makes the next `keel check` report E1804 at that text and write no file.
+- `check()` given a project's files and a `.keel/ids.json` that differs from their compile reports one E1005 at that file and writes nothing; given a `.keel/routes.json` and no `derived`, it reports no diagnostic at that file.
