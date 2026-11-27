@@ -6,6 +6,8 @@ import { sameCssValue } from "./sameCssValue.ts";
 const COLOR = /#[0-9a-fA-F]{3,8}(?![\w-])|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/;
 /** The custom properties of color and overlay tokens, whatever their value. */
 const COLOR_PROP = /^--k-(?:color|overlay)-/;
+/** A `--k-*` declaration written anywhere in a text: its property and its value up to `;`, `}`, a quote or a line end. */
+const DECL_IN_TEXT = /(--k-[A-Za-z0-9_-]+)\s*:\s*([^;{}"'`\\\n]*)/g;
 const P3 = "(color-gamut:p3)";
 const ROOM = 89;
 
@@ -24,11 +26,11 @@ const condKey = (c: string): string =>
     .replace(/\s+/g, " ")
     .replace(/\s*([()])\s*/g, "$1")
     .replace(/\s*:\s*/g, ":");
-const keyOf = (r: CssRule, supports = true): string =>
+const keyOf = (r: CssRule, wrappers = true): string =>
   JSON.stringify([
     r.layers.map((l) => l.trim()),
     r.media.map(condKey),
-    supports ? r.supports.map(condKey) : [],
+    wrappers ? r.wrappers.map(condKey) : [],
     selectorKey(r.selector),
   ]);
 
@@ -43,21 +45,27 @@ function fit(say: (found: string, expected: string) => string, found: string, ex
 }
 
 /**
- * The first way the built CSS `files` (each a stylesheet's text, in emit order) differ from what `compiled` (the CSS
- * `compileStyles` wrote, which check judged) says of colors, as an E1819 message, else undefined (k.gamut CSS).
- * Verified: each declaration of a `--k-color-*` or `--k-overlay-*` custom property, and of any other `--k-*` one whose
- * value holds a color here or in `compiled` (a `border` or `shadow` token's). Each must sit in a style rule of the
- * same selector, `@layer` names and `@media` conditions as a rule of `compiled` declaring it, under no `@supports`,
- * and hold a value `sameCssValue` finds equal to one `compiled` declares there; each rule `compiled` writes under
- * `(color-gamut: p3)` must follow at once the rule `compiled` writes before it; and once the files declare any `--k-*`
- * property, each declaration `compiled` makes must be in them. Any other CSS is not read.
+ * The first way a deployable's built output differs from what `compiled` (the CSS `compileStyles` wrote, which check
+ * judged) says of Keel's custom properties, as an E1819 message, else undefined (k.gamut CSS). `files` are the
+ * output's text files as written, each by its path under the output folder, in path order.
+ *
+ * In a `.css` file, each `--k-*` declaration must sit in a style rule whose selector, `@layer` names, `@media`
+ * conditions and every other at-rule around it (`cssRules`) are those of a rule of `compiled` declaring that
+ * property; a color one (a `--k-color-*` or `--k-overlay-*` property, or another `--k-*` one whose value holds a color
+ * here or in `compiled`) must also hold a value `sameCssValue` finds equal to one `compiled` declares there, and each
+ * P3 block must follow at once the rule `compiled` writes before it. Each color declaration of `compiled` must be
+ * found so: when `compiled` declares none (an app with no color tokens) there is nothing to find. In any other file
+ * (JavaScript, HTML, SVG) a color declaration is refused wherever it is: Keel's CSS ships in `.css` files.
  */
-export function builtCssProblem(compiled: string, files: readonly string[]): string | undefined {
+export function builtCssProblem(
+  compiled: string,
+  files: readonly { readonly path: string; readonly text: string }[],
+): string | undefined {
   const own = cssRules(compiled);
   const expected = new Map<string, Map<string, string[]>>();
   const colorProps = new Set<string>();
   const p3After = new Map<string, string>();
-  const verified = (prop: string, value: string): boolean =>
+  const isColor = (prop: string, value: string): boolean =>
     prop.startsWith("--k-") && (COLOR_PROP.test(prop) || colorProps.has(prop) || COLOR.test(value));
   for (const r of own)
     for (const d of r.decls)
@@ -65,7 +73,7 @@ export function builtCssProblem(compiled: string, files: readonly string[]): str
   own.forEach((r, k) => {
     const key = keyOf(r);
     for (const d of r.decls) {
-      if (!colorProps.has(d.prop)) continue;
+      if (!d.prop.startsWith("--k-")) continue;
       const at = expected.get(key) ?? new Map<string, string[]>();
       at.set(d.prop, [...(at.get(d.prop) ?? []), d.value]);
       expected.set(key, at);
@@ -79,20 +87,31 @@ export function builtCssProblem(compiled: string, files: readonly string[]): str
       p3After.set(key, keyOf(before));
   });
   const seen = new Set<string>();
-  let declares = false;
-  for (const text of files) {
-    const rules = cssRules(text);
+  for (const file of files) {
+    if (!file.path.endsWith(".css")) {
+      for (const m of file.text.matchAll(DECL_IN_TEXT)) {
+        const prop = m[1] ?? "";
+        const value = (m[2] ?? "").trim();
+        if (isColor(prop, value))
+          return fit((f) => `${prop} is ${f} in ${file.path}; Keel's CSS ships in .css files`, value, "");
+      }
+      continue;
+    }
+    const rules = cssRules(file.text);
     for (const [k, r] of rules.entries()) {
       const key = keyOf(r);
       for (const d of r.decls) {
-        if (d.prop.startsWith("--k-")) declares = true;
-        if (!verified(d.prop, d.value)) continue;
-        if (r.supports.length > 0)
-          return fit((f) => `${d.prop} is ${f} under @supports in the built CSS, expected none`, d.value, "");
+        if (!d.prop.startsWith("--k-")) continue;
         const want = expected.get(key)?.get(d.prop);
-        if (want === undefined)
+        if (want === undefined) {
+          const bare = expected.get(keyOf(r, false))?.has(d.prop) === true;
+          const extra = r.wrappers.find((w) => !own.some((o) => o.wrappers.some((x) => condKey(x) === condKey(w))));
+          const name = /^@[\w-]+/.exec(extra ?? r.wrappers[0] ?? "")?.[0];
+          if (name !== undefined && (bare || extra !== undefined))
+            return fit((f) => `${d.prop} is ${f} under ${name} in the built CSS, expected none`, d.value, "");
           return fit((f) => `${d.prop} is ${f} in the built CSS where Keel declares none`, d.value, "");
-        if (!want.some((w) => sameCssValue(w, d.value)))
+        }
+        if (isColor(d.prop, d.value) && !want.some((w) => sameCssValue(w, d.value)))
           return fit((f, e) => `${d.prop} is ${f} in the built CSS, expected ${e}`, d.value, want[0] ?? "");
         seen.add(JSON.stringify([key, d.prop]));
       }
@@ -103,10 +122,9 @@ export function builtCssProblem(compiled: string, files: readonly string[]): str
         return `${first.prop}'s P3 block does not follow its sRGB block in the built CSS`.slice(0, ROOM);
     }
   }
-  if (!declares) return undefined;
   for (const [key, props] of expected)
     for (const [prop, values] of props)
-      if (!seen.has(JSON.stringify([key, prop])))
+      if (colorProps.has(prop) && !seen.has(JSON.stringify([key, prop])))
         return fit((_, e) => `${prop} is missing from the built CSS, expected ${e}`, "", values[0] ?? "");
   return undefined;
 }

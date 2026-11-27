@@ -22,6 +22,9 @@ import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
 import { browserStub } from "./internal/browserStub.ts";
 import { builtCssProblem } from "./internal/builtCssProblem.ts";
+import { builtTextFiles } from "./internal/builtTextFiles.ts";
+import { guardP3 } from "./internal/guardP3.ts";
+import { lacksColorFunction } from "./internal/lacksColorFunction.ts";
 import { bundledFiles } from "./internal/bundledFiles.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
@@ -99,6 +102,12 @@ const shellOf = (
   return { kind, origin: given, id, connect };
 };
 const CSS_IMPORT = "virtual:keel.css";
+/**
+ * The CSS each browser build loaded (`keel.css`, its P3 blocks guarded for an old `cssTarget`), by its output folder:
+ * what that output must hold (k.gamut CSS). Module-wide, since a deployable's `buildApp` runs in a plugin instance
+ * other than the one its client environment loads through.
+ */
+const SHIPPED = new Map<string, string>();
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
 const PG_BANNER =
   "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
@@ -328,7 +337,7 @@ export default function (): {
   buildEnd: (this: Ctx, error?: Error) => void;
   renderStart: () => void;
   generateBundle: { order: "post"; handler: (this: Ctx, options: unknown, bundle: Record<string, Emitted>) => void };
-  closeBundle: () => void;
+  closeBundle: { order: "post"; handler: () => Promise<void> };
   transform: (code: string, id: string, options?: HookOptions) => { code: string; map: null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
@@ -390,9 +399,12 @@ export default function (): {
   const urlEdges = new Map<string, Set<string>>();
   /** Whether the project's own config sets `envPrefix` or `define` (k.bundle Environment), and whether this is an SSR build. */
   let projectEnv = false;
-  /** A browser build's emitted stylesheets, by absolute path, that `closeBundle` verifies (k.gamut CSS), and its folder. */
-  const builtCss: string[] = [];
+  /**
+   * A browser build's output folder, set when its bundle is generated, that `closeBundle` verifies once written (k.gamut
+   * CSS); a `node` or `static` deployable's whole folder is verified by its `buildApp` instead (`appVerifies`).
+   */
   let builtOut = "";
+  let appVerifies = false;
   let ssrBuild = false;
   /** Each file's path as its name on disk has it (`realpath`), and the root's, for the name tests and E1010. */
   const disk = new Map<string, string>();
@@ -860,6 +872,19 @@ export default function (): {
     return parts.join("\n");
   };
 
+  /**
+   * Built output folder `out` against the CSS its browser build loaded (`builtCssProblem`, k.gamut CSS): a difference
+   * removes `drop` and fails the build with E1819. A build that loaded none is read against the evaluated CSS.
+   */
+  const verifyBuilt = async (out: string, drop: string): Promise<void> => {
+    const shipped = SHIPPED.get(out);
+    if (shipped === undefined && stale) await refresh();
+    const problem = builtCssProblem(shipped ?? css, builtTextFiles(out));
+    if (problem === undefined) return;
+    fs.rmSync(drop, { recursive: true, force: true });
+    throw evaluationFailed([`E1819 ${problem}`]);
+  };
+
   /** Every compiled module's style usages, merged. */
   const styleUsages = (): readonly StyleUsage[] =>
     mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts["styles.json"].usages;
@@ -934,6 +959,7 @@ export default function (): {
       const adapter = top[name]?.adapter;
       if (adapter !== "node" && adapter !== "static") return own;
       clientBuild = true;
+      appVerifies = true;
       const built = adapter === "static";
       const pg = !built && top[name]?.storage === "postgres";
       const at = path.resolve(user.root ?? process.cwd());
@@ -993,6 +1019,7 @@ export default function (): {
               );
               if (failed.length > 0) throw evaluationFailed(failed);
               if (await offersScheme(at)) addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
+              await verifyBuilt(path.join(at, out), path.join(at, out));
               return;
             }
             // The files bundled package files read beside themselves (k.server-deps); a problem fails the build, which
@@ -1023,6 +1050,8 @@ export default function (): {
               path.join(at, out, "schemes.json"),
               `${JSON.stringify({ schemes: table.schemes, themes: table.themes })}\n`,
             );
+            // Before the `client` deployables it serves join it: each was verified by its own build.
+            await verifyBuilt(path.join(at, out), path.join(at, out));
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
@@ -1135,7 +1164,16 @@ export default function (): {
       if (shown !== undefined) return indexHtml(shown, ENTRY_PATH);
       if (id === CSS_ID) {
         if (stale) await refresh();
-        return css;
+        const config = Object(Reflect.get(Object(Reflect.get(Object(this), "environment")), "config"));
+        if (command !== "build" || Reflect.get(config, "consumer") !== "client") return css;
+        // A target older than `color()` gets each P3 block under `@supports` (k.gamut CSS).
+        const target = Reflect.get(Object(Reflect.get(config, "build")), "cssTarget");
+        const shipped = lacksColorFunction(target) ? guardP3(css) : css;
+        SHIPPED.set(
+          path.resolve(root, String(Reflect.get(Object(Reflect.get(config, "build")), "outDir") ?? "dist")),
+          shipped,
+        );
+        return shipped;
       }
       const q = keyed(id);
       if (q?.path === ISLANDS_PATH)
@@ -1245,8 +1283,6 @@ export default function (): {
         if (command !== "build" || this?.environment?.config.consumer !== "client") return;
         const at = path.resolve(root, this.environment.config.build?.outDir ?? "dist");
         builtOut = at;
-        for (const f of Object.values(bundle))
-          if (f.fileName.endsWith(".css")) builtCss.push(path.join(at, f.fileName));
         const values = Object.entries(process.env).filter(
           (e): e is [string, string] => e[0].startsWith("KEEL_") && !PUBLIC_ENV.test(e[0]) && (e[1] ?? "").length >= 8,
         );
@@ -1268,31 +1304,25 @@ export default function (): {
       // keeps serving (k.compiler Build-time evaluation).
       if (command === "build" && problems.length > 0) throw evaluationFailed(problems);
     },
-    async closeBundle() {
-      // The built CSS holds, for each color, a value check judged (k.gamut CSS): read as written, after every plugin's
-      // hooks; a difference fails the build and leaves nothing for the deployable.
-      const files = builtCss.splice(0).filter((f) => fs.existsSync(f));
-      const problem =
-        files.length === 0
-          ? undefined
-          : builtCssProblem(
-              css,
-              files.map((f) => fs.readFileSync(f, "utf8")),
-            );
-      if (problem !== undefined) {
+    closeBundle: {
+      order: "post",
+      async handler() {
+        // A browser build's output, as written once every plugin's hooks have run, holds Keel's CSS as compiled (k.gamut
+        // CSS); a `node` or `static` deployable's is verified whole when its `buildApp` has written everything.
+        const built = builtOut;
+        builtOut = "";
         const name = process.env.KEEL_DEPLOYABLE;
-        const out = name === undefined ? builtOut : path.join(root, "dist", name);
-        fs.rmSync(out, { recursive: true, force: true });
-        throw evaluationFailed([`E1819 ${problem}`]);
-      }
-      // A `client` document loads the first-paint scheme script when the app has both schemes (k.schemes First paint).
-      const index = path.join(root, "dist", hosting ?? "", "index.html");
-      if (hosting !== undefined && shellOf() === undefined && fs.existsSync(index) && (await offersScheme(root)))
-        addSchemeScript(path.dirname(index), ["index.html"]);
-      const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
-      // A failed build wrote no `dist/<name>/`, and gets no mark either.
-      if (hosting !== undefined && fs.existsSync(path.dirname(mark)) && !fs.existsSync(mark))
-        fs.writeFileSync(mark, keelMark());
+        if (built !== "" && !appVerifies)
+          await verifyBuilt(built, name === undefined ? built : path.join(root, "dist", name));
+        // A `client` document loads the first-paint scheme script when the app has both schemes (k.schemes First paint).
+        const index = path.join(root, "dist", hosting ?? "", "index.html");
+        if (hosting !== undefined && shellOf() === undefined && fs.existsSync(index) && (await offersScheme(root)))
+          addSchemeScript(path.dirname(index), ["index.html"]);
+        const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
+        // A failed build wrote no `dist/<name>/`, and gets no mark either.
+        if (hosting !== undefined && fs.existsSync(path.dirname(mark)) && !fs.existsSync(mark))
+          fs.writeFileSync(mark, keelMark());
+      },
     },
     transform(this: unknown, code, id, options) {
       if (options?.ssr === false) note(code, id);

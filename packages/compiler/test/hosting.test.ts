@@ -275,10 +275,10 @@ describe("client build", () => {
     p.config({ root }, { command: "build" });
     p.configResolved({ root, command: "build" });
     fs.mkdirSync(path.join(root, "dist", "web"), { recursive: true });
-    p.closeBundle();
+    p.closeBundle.handler();
     expect(fs.readFileSync(path.join(root, "dist", "web", "keel-mark.svg"), "utf8")).toBe(keelMark());
     fs.writeFileSync(path.join(root, "dist", "web", "keel-mark.svg"), "<svg/>");
-    p.closeBundle();
+    p.closeBundle.handler();
     expect(fs.readFileSync(path.join(root, "dist", "web", "keel-mark.svg"), "utf8")).toBe("<svg/>");
   });
 
@@ -288,7 +288,7 @@ describe("client build", () => {
     const p = keel();
     p.configResolved({ root, command: "build" });
     expect(p.transformIndexHtml()).toEqual([]);
-    p.closeBundle();
+    p.closeBundle.handler();
     expect(fs.existsSync(path.join(root, "dist"))).toBe(false);
   });
 

@@ -314,7 +314,7 @@ function colorWhat(group: string, v: string): string {
   if (v.includes("(") && v.includes(",")) return "channels are separated by spaces, not commas";
   if (/^[A-Za-z]+$/.test(v)) return "a named color; write hex or a function form";
   if (group === "color" && isAlpha(v)) return "alpha is for an overlay or a shadow";
-  return `not a ${group} value`;
+  return group === "overlay" ? "not an overlay value" : `not a ${group} value`;
 }
 
 /**

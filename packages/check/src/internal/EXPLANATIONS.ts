@@ -1529,9 +1529,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1819",
-    "keel build: the built CSS writes a Keel color property other than as compiled and judged",
-    "Each --k-color-*, --k-overlay-* or color-holding --k-* declaration keeps its place and value (numbers as numbers), no @supports, P3 after sRGB. Usually Lightning CSS or a PostCSS plugin. No dist/<name>/ is left.",
-    "a CSS minifier or PostCSS plugin rewrote it: unset cssMinify, css.transformer, PostCSS",
+    "keel build: the built output holds Keel's CSS other than as compiled and judged, or outside .css files",
+    "Each --k-* declaration keeps its rule and at-rules, a color one its value: even #000000 as #000 is refused. All are found, P3 after sRGB, none in JS or HTML: Keel's CSS ships as CSS files. No dist/<name>/ is left.",
+    "a minifier or PostCSS plugin rewrote it, or a plugin moved Keel's CSS out of its file: unset that cssMinify, css.transformer or plugin",
     "k.gamut",
   ],
   [

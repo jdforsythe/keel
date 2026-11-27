@@ -1,18 +1,18 @@
 import type { CssRule } from "../types/CssRule.ts";
 
-/** At-rules whose block holds rules; any other at-rule's block (`@font-face`, `@keyframes`, `@property`) is skipped. */
-const GROUPING = new Set(["media", "layer", "supports", "container", "scope", "document", "starting-style"]);
-
 type Context = {
   readonly layers: readonly string[];
   readonly media: readonly string[];
-  readonly supports: readonly string[];
+  readonly wrappers: readonly string[];
 };
 
 /**
  * The style rules of `text` that declare something, in document order, nested at-rules and nested style rules
- * flattened (a nested rule's selector is its parent's, a space, and its own; it follows its parent). Comments are
- * dropped and strings kept whole; an unclosed block ends at the end of the text.
+ * flattened (a nested rule's selector is its parent's, a space, and its own; it follows its parent). Every at-rule
+ * with a block is read, none skipped: `@media` and `@layer` go to their lists, any other (`@supports`, `@container`,
+ * `@scope`, `@starting-style`, `@keyframes`, one this reader does not know) to `wrappers`, and declarations an
+ * at-rule holds outside any style rule (`@font-face`) form a rule of selector `""`. Comments are dropped and strings
+ * kept whole; an unclosed block ends at the end of the text.
  */
 export function cssRules(text: string): CssRule[] {
   const src = text.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, "");
@@ -36,17 +36,6 @@ export function cssRules(text: string): CssRule[] {
     return src.slice(from, i);
   };
 
-  /** Past a block whose `{` was read, nested blocks included. */
-  const skip = (): void => {
-    let depth = 1;
-    while (i < src.length && depth > 0) {
-      until("{}");
-      if (src[i] === "{") depth++;
-      else if (src[i] === "}") depth--;
-      i++;
-    }
-  };
-
   /** A block's contents up to its `}` (or the text's end): rules, and declarations when `selector` is set. */
   const block = (ctx: Context, selector: string | undefined): void => {
     const slot = slots.length;
@@ -60,12 +49,11 @@ export function cssRules(text: string): CssRule[] {
         const at = head.trim();
         const name = at.startsWith("@") ? (/^@([\w-]+)/.exec(at)?.[1] ?? "").toLowerCase() : undefined;
         const prelude = name === undefined ? "" : at.slice(name.length + 1).trim();
-        if (name === undefined) block(ctx, selector === undefined ? at : `${selector} ${at}`);
-        else if (!GROUPING.has(name)) skip();
-        else if (name === "media") block({ ...ctx, media: [...ctx.media, prelude] }, selector);
-        else if (name === "layer") block({ ...ctx, layers: [...ctx.layers, prelude] }, selector);
-        else if (name === "supports") block({ ...ctx, supports: [...ctx.supports, prelude] }, selector);
-        else block(ctx, selector);
+        const within = selector ?? "";
+        if (name === undefined) block(ctx, within === "" ? at : `${within} ${at}`);
+        else if (name === "media") block({ ...ctx, media: [...ctx.media, prelude] }, within);
+        else if (name === "layer") block({ ...ctx, layers: [...ctx.layers, prelude] }, within);
+        else block({ ...ctx, wrappers: [...ctx.wrappers, `@${name} ${prelude}`.trim()] }, within);
         continue;
       }
       const colon = head.indexOf(":");
@@ -78,6 +66,6 @@ export function cssRules(text: string): CssRule[] {
     if (selector !== undefined && decls.length > 0) slots[slot] = { selector, ...ctx, decls };
   };
 
-  while (i < src.length) block({ layers: [], media: [], supports: [] }, undefined);
+  while (i < src.length) block({ layers: [], media: [], wrappers: [] }, undefined);
   return slots.filter((r): r is CssRule => r !== undefined);
 }

@@ -1,5 +1,7 @@
 /** The groups that take no theme (k.themes Themes). */
 const NO_THEME = ["breakpoint", "motion", "base", "look"];
+/** `not a <group> value`, `an` before a vowel (`not an overlay value`). */
+const notA = (g: string): string => `not ${/^[aeiou]/.test(g) ? "an" : "a"} ${g} value`;
 
 /**
  * Why `TokenSchema`'s closed shape refuses the value at `path` with `rule` (k.themes Token errors): an unknown key,
@@ -15,6 +17,6 @@ export function shapeWhat(path: readonly (string | number)[], rule: string): str
     return "is no key here";
   }
   if (top === "themes" && path.length === 3 && group === "when") return "when is choice, contrast or print";
-  if (top === "themes" && group !== undefined) return `not a ${group} value`;
-  return `not a ${top ?? "token"} value`;
+  if (top === "themes" && group !== undefined) return notA(group);
+  return notA(top ?? "token");
 }
