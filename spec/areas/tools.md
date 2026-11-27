@@ -9,8 +9,8 @@
 | k.docs | `keel docs` over installed packages: packed files, areas, forms and resolution |
 | k.scaffold | scaffold generators, codemods, edit sets and the clean check guarantee |
 | k.scaffold-service | `keel scaffold service` for services no module serves, inputs, edits and E1358 |
-| k.create | `pnpm create @keel/app`: flags, files per kind, versions, names, next steps, E1362 and E1352 |
-| k.create-folder | the folder a new project is written into: empty, case, all or nothing, reads, E1360 to E1367 |
+| k.create | `pnpm create @keel/app`: flags, files per kind, versions, names, next steps, E1362 |
+| k.create-folder | the folder a new project goes into: empty, case, all or nothing, reads, E1360 to E1367 |
 | k.create-manager | a new project's manager, its commands and CI install, its workspace (E1363, W1364) |
 | std.report | tally report API, formatter extension point and how a report reaches a person |
 | std.timings | `timings.recent` inspect section and its recorded API |
