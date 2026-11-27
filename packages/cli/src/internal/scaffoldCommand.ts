@@ -12,6 +12,7 @@ import { isError } from "./isError.ts";
 import { isRecord } from "./isRecord.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { missingInput } from "./missingInput.ts";
 import { openapiInput } from "./openapiInput.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectOptions } from "./projectOptions.ts";
@@ -40,8 +41,8 @@ const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   dotted: ["store", "route"],
 };
 
-const refusal = (d: ScaffoldDiag, into: string): OutRecord[] => [
-  makeDiag(d.code, d.message, {
+const refusal = (d: ScaffoldDiag, into: string, op: Op): OutRecord[] => [
+  makeDiag(d.code, d.missing === undefined ? d.message : missingInput(op, d.missing), {
     path: d.path === undefined ? undefined : `${into}${d.path}`,
     line: d.line,
     col: d.col,
@@ -126,7 +127,7 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   }
   const label = `${name} ${op}`;
   if (!result.ok) {
-    const rs = refusal(result.error.data, into);
+    const rs = refusal(result.error.data, into, op);
     return { records: [...rs, summary(label, rs, {})], writes: [] };
   }
   const edit =

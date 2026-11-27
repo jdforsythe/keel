@@ -31,6 +31,14 @@ const SEGMENT = /^(?::[a-z][a-zA-Z0-9]*|[a-z0-9][a-z0-9-]*)$/;
 /** `/a/:id` -> pattern `/a/:` (param names do not distinguish routes, E1502). */
 const pattern = (path: string): string => path.replace(/:[^/]+/g, ":");
 
+/** The path a route id gives without `--path`: `/` and its segments after the module in kebab case (`orders.orderHistory` -> `/order-history`). */
+const derivedPath = (id: string): string =>
+  `/${id
+    .split(".")
+    .slice(1)
+    .map((seg) => seg.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`))
+    .join("/")}`;
+
 /** True when `src` imports the binding `s` from @keel/schema. */
 function importsS(src: string): boolean {
   return /^import\s*\{[^}]*(?<![\w$])s(?![\w$])[^}]*\}\s*from\s*['"]@keel\/schema['"]/m.test(src);
@@ -59,26 +67,33 @@ function addEntry(path: string, src: string, fn: string, entry: string, imports:
 }
 
 /**
- * `scaffold route <module>.<name> --path <path> [--file <page.tsx>] [--no-loader] [--api [--method <verb>]]`: an entry
- * in the module's `<module>.contract.ts` and its binding in `routes.ts`, a `*.server.ts` handler naming the entry (a
- * loader; an action for an API write), a page component, and a route test. `no-loader` writes no handler file and binds
- * the page's `component` alone. `api` (k.api) writes an API entry (`method`, default `GET`; `output`) and a JSON
+ * `scaffold route <module>.<name> [--path <path>] [--file <page.tsx>] [--loader|--no-loader] [--api [--method <verb>]]`:
+ * an entry in the module's `<module>.contract.ts` and its binding in `routes.ts`, a page component, a route test, and a
+ * `*.server.ts` handler naming the entry (a loader; an action for an API write). A page route has a loader when a `node`
+ * deployable lists the module or `loader` asks for one; otherwise it binds the page's `component` alone. Without `path`
+ * the path comes from the id (`derivedPath`); one another route holds is E1351 naming `--path`. `api` (k.api) writes an API entry (`method`, default `GET`; `output`) and a JSON
  * request test, and no page; `method` without `api`, or `no-loader` with `api`, is E1052.
  */
 export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.route.parse(input);
   if (!r.ok) return badInput("route", r.error);
-  const { id, path, file, api, method } = r.value;
-  const bare = r.value["no-loader"] === true;
+  const { id, file, api, method, loader } = r.value;
+  const noLoader = r.value["no-loader"] === true;
   if (method !== undefined && api !== true)
     return fail("E1052", id, "method is for an API route: pass api with method, or drop method");
-  if (bare && api === true)
-    return fail("E1052", id, "no-loader is for a page route: an API route is its handler; drop one of the two");
+  if ((noLoader || loader === true) && api === true)
+    return fail("E1052", id, "loader and no-loader are for a page route: an API route is its handler; drop it");
+  if (noLoader && loader === true) return fail("E1052", id, "loader and no-loader ask for opposite things; pass one");
   if (targetsGenerated(id) || (file !== undefined && targetsGenerated(file)))
     return fail("E1005", file ?? id, `${file ?? id} is a generated location`);
   const rid = routeId(id);
   if (rid === null) return fail("E1352", id, `route id ${id} must be dotted lowerCamel segments prefixed by a module`);
   const { mod, leaf } = rid;
+  const derived = r.value.path === undefined;
+  const path = r.value.path ?? derivedPath(id);
+  const onNode = Object.values(topologyOf(files) ?? {}).some((d) => d.adapter === "node" && d.modules.includes(mod));
+  // A page route's loader follows where the module runs (k.scaffold route): a project with no server gets no server file.
+  const bare = api !== true && (noLoader || (loader !== true && !onNode));
   if (api === true && id.split(".").length !== 2)
     return fail("E1352", id, `API route id ${id} must be <module>.<name>, name one lowerCamel segment`);
   const dir = `modules/${mod}`;
@@ -105,7 +120,11 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   if (table.has(id)) return fail("E1351", table.get(id)?.file ?? contractPath, `route ${id} already exists`);
   for (const [other, def] of table)
     if (def.path !== null && pattern(def.path) === pattern(path) && (def.method ?? "GET") === verb)
-      return fail("E1351", def.file, `path ${path} is already routed by ${other}`);
+      return fail(
+        "E1351",
+        def.file,
+        `path ${path} is already routed by ${other}${derived ? `; pass --path <path> for ${id}` : ""}`,
+      );
   const handlerName = `${VERB[verb] ?? "load"}${pascal(leaf)}`;
   const handlerPath = `${dir}/${handlerName}.server.ts`;
   const inTestDir = files.has("vitest.config.ts");
@@ -154,7 +173,7 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
         params,
         inTestDir ? `../${dir}/routes.ts` : "./routes.ts",
         api === true ? { path, method: verb } : null,
-        Object.values(topologyOf(files) ?? {}).some((d) => d.adapter === "node" && d.modules.includes(mod)),
+        onNode,
         // The project's identity mount, as the built entry passes it (k.guards Client).
         files.has("identity.ts") && files.has("topology.ts")
           ? `${"../".repeat(testPath.split("/").length - 1)}identity.ts`

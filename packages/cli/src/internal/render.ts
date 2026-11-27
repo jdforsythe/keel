@@ -3,9 +3,9 @@ import type { RenderOptions } from "./RenderOptions.ts";
 import { registry } from "./registry.ts";
 
 const DEFAULT_CAP = 5;
-/** A bare `keel <command>` in printed text, not inside a word, a path or a package name (`@keel/ui`). */
+/** A bare `keel <command>` in printed text, not inside a word, a path or a package name (`@keel/ui`), nor already run by a manager. */
 const COMMAND =
-  /(?<![\w@/.-])keel (?=(?:build|check|test|dev|docs|explain|scaffold|codemod|pack|review|ledger|grants|inspect|report|evidence|session|mcp)\b)/g;
+  /(?<![\w@/.-])(?<!(?:pnpm|npx --no|npx|yarn|bun run|bunx) )keel (?=(?:build|check|test|dev|docs|explain|scaffold|codemod|pack|review|ledger|grants|inspect|report|evidence|session|mcp)\b)/g;
 
 const coded = (r: OutRecord): boolean => r.kind === "diag" || r.kind === "review";
 const groupKey = (r: OutRecord): string => (coded(r) ? `${r.kind}:${String(r.code)}` : r.kind);

@@ -37,7 +37,7 @@ export function projectReadme(name: string, adapter: "client" | "node" | "static
     "## Where to start",
     "",
     "`modules/app/HomePage.tsx` is the page at `/`; its test is `modules/app/home.route.test.ts`. Add a page with",
-    `\`${k} scaffold route app.about --path /about\`.`,
+    `\`${k} scaffold route app.about\` (its path is \`/about\`).`,
     "",
     "## Deploy",
     "",

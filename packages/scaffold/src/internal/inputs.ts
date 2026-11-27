@@ -14,10 +14,11 @@ export const inputs = {
   library: s.object({ name: s.string(), version: s.string().optional(), exists: s.boolean().optional() }),
   route: s.object({
     id: s.string(),
-    path: s.string(),
+    path: s.string().optional(),
     file: s.string().optional(),
     api: s.boolean().optional(),
     method: s.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
+    loader: s.boolean().optional(),
     "no-loader": s.boolean().optional(),
   }),
   component: s.object({ id: s.string(), ctx: s.boolean().optional() }),
