@@ -2,6 +2,7 @@ import type { Ctx } from "@keel/ctx";
 import { err, ok } from "@keel/schema";
 import { commitStores } from "@keel/server";
 import { tx } from "@keel/store";
+import { PurgeFailed } from "./PurgeFailed.schema.ts";
 import type { RemovalData } from "./RemovalData.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
@@ -18,5 +19,5 @@ export const purge = async (data: RemovalData, ctx: Ctx) => {
   });
   return r.ok
     ? ok({})
-    : err({ code: "api.purgeFailed", message: "The list could not be deleted", data: { cause: r.error.code } });
+    : err(PurgeFailed.make({ cause: r.error.code }));
 };

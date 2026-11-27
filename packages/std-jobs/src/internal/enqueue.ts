@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { type Id, type KeelError, type Result, defect, err, ok, pathToString } from "@keel/schema";
+import { type Id, type KeelError, type Result, defect, err, keelError, ok, pathToString } from "@keel/schema";
 import type { EnqueueOptions } from "../EnqueueOptions.ts";
 import type { JobTable } from "../JobTable.ts";
 import { chanOf } from "./chanOf.ts";
@@ -23,7 +23,7 @@ export async function enqueue(
   const r = j.input.parse(input);
   if (!r.ok) {
     const data = Object.fromEntries(r.error.data.issues.map((i) => [pathToString(i.path), i.rule]));
-    return err({ code: "keel.fields", message: "keel.fields", data });
+    return err(keelError.fields.make(data));
   }
   const job = {
     id: ctx.random.id("Job"),

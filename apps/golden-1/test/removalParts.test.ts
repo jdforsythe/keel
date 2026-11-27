@@ -382,7 +382,7 @@ describe("postRemove", () => {
     expect((await postRemove.run({}, { ...at(ListParams, { listId: "l1" }), stores: st }, ctx)).ok).toBe(true);
     for (const id of ["l1", "l9"]) {
       const r = await postRemove.run({}, { ...at(ListParams, { listId: id }), stores: st }, ctx);
-      expect(r.ok ? null : r.error).toMatchObject({ code: "keel.notFound", data: { listId: id } });
+      expect(r.ok ? null : r.error).toMatchObject({ code: "keel.notFound", data: {} });
     }
     expect(Object.keys(st.removal.store.get("instances"))).toHaveLength(1);
   });
@@ -414,7 +414,7 @@ describe("postUndoRemoval", () => {
     const flow = await removeOn(ctx, "l1");
     await runFor(ctx, ctx.clock, WAIT + 120_000);
     const r = await undoOn(ctx, flow);
-    expect(r.ok ? null : r.error).toMatchObject({ code: "keel.notFound", data: { flow } });
+    expect(r.ok ? null : r.error).toMatchObject({ code: "keel.notFound", data: {} });
     expect((await storedBoard(ctx)).lists).toEqual([work]);
   });
   it("an unknown flow, or a second undo, is keel.notFound", async () => {

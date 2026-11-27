@@ -5,6 +5,7 @@ import { asResult } from "../unsafe/asResult.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import type { OutboxResult } from "./OutboxResult.ts";
 import type { SendInput } from "./SendInput.ts";
+import { Full } from "./internal/Full.schema.ts";
 import type { Output } from "./internal/Output.ts";
 import { admit } from "./internal/admit.ts";
 import { configOf } from "./internal/configOf.ts";
@@ -53,7 +54,7 @@ export async function send<const D extends object, K extends keyof D & string>(
   const entries = o.get("entries");
   if (full(c, [...entries, entry])) {
     const data = { limit: c.limit, maxBytes: c.maxBytes };
-    return { state: "failed", error: { code: "offline.full", message: c.id, data } };
+    return { state: "failed", error: Full.make(data) };
   }
   const added = tx(c.add, entry);
   if (!added.ok) return defect("outbox entry was not added", { cause: added.error });

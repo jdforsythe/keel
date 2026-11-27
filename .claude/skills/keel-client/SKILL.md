@@ -13,7 +13,7 @@ Signatures: `keel docs client`, `keel docs ui`; `keel docs <id>` for `k.componen
 
 **A11y.** `Heading level`, `Image alt` or `decorative`, and `label` on `Input`, `TextArea`, `Select`, `Checkbox` and on `Box as="nav"` are required (E1802). `Input` takes `autocomplete` (E1821). `Select options` is `{ value: string, label: string }[]`. A line a screen reader must hear is `Text role="status"` (`"alert"` for an error), there from the first render: `<Text id="done" role="status">{status.get()}</Text>`, `status` a signal that starts `''`; a status inserted with its text is E1826. Contrast is 4.5:1 (E1804): `keel check` judges it from `tokens.ts` where the text's `fg` and `bg` are literal in its component (a `fg` on a `Box` reaches its `Text`), `keel test` everywhere else; no reversed `direction` over focusable elements (E1820).
 
-**Forms, routes, title.** `form(schema, { initial })` runs in a component; show `f.pending()` in an `<If>`. `Form` (`@keel/router`) takes `action` as an `Href` from `<contract>.href(id, params?, search?)`, its module's contract; `Link` (`@keel/ui`) takes it as `to`, never `href`. The page's binding holds its verbs: `POST: save`; client-only, the action still lives in `*.server.ts` and runs in the browser. `title` names the document, else the deployable's name does. An action answers `ok(href)` to navigate, `ok(null)` to reload the loaders, or `err({ code: 'keel.fields', data: { path: message } })` to set field errors (422); any other `err` goes to `Form`'s `error` render prop. `initial` is a partial value: leave a key out for an empty field (a `line` has no empty value, so `shop: ''` fails `tsc`). An action's args carry `routes`; `pageHref(routes, new URL(url).searchParams.get('next') ?? '')` (`@keel/router/match`) turns a guard's `next` into an `Href` or an `err`: `ok(back.ok ? back.value : null)`. With `identity.ts`, a `client` or shell page's guard gets `user` from one `GET /__keel/user` per document; the API still guards.
+**Forms, routes, title.** `form(schema, { initial })` runs in a component; show `f.pending()` in an `<If>`. `Form` (`@keel/router`) takes `action` as an `Href` from `<contract>.href(id, params?, search?)`, its module's contract; `Link` (`@keel/ui`) takes it as `to`, never `href`. The page's binding holds its verbs: `POST: save`; client-only, the action still lives in `*.server.ts` and runs in the browser. `title` names the document, else the deployable's name does. An action answers `ok(href)` to navigate, `ok(null)` to reload the loaders, or `err(keelError.fields.make({ path: message }))` to set field errors (422); any other `err` goes to `Form`'s `error` render prop. `initial` is a partial value: leave a key out for an empty field (a `line` has no empty value, so `shop: ''` fails `tsc`). An action's args carry `routes`; `pageHref(routes, new URL(url).searchParams.get('next') ?? '')` (`@keel/router/match`) turns a guard's `next` into an `Href` or an `err`: `ok(back.ok ? back.value : null)`. With `identity.ts`, a `client` or shell page's guard gets `user` from one `GET /__keel/user` per document; the API still guards.
 ```ts
 // modules/notes/notes.contract.ts imports schemas and packages only (E1514)
 import { contract } from '@keel/router/contract'
@@ -22,7 +22,7 @@ export const notes = contract('notes', { 'notes.edit': { path: '/notes' } })
 ```tsx
 import { form } from '@keel/forms'
 import { Form, action, loader, manifest } from '@keel/router'
-import { err, ok, s, type Infer } from '@keel/schema'
+import { err, keelError, ok, s, type Infer } from '@keel/schema'
 import { Box, Button, Heading, Input } from '@keel/ui'
 import { notes } from './notes.contract.ts'
 
@@ -45,7 +45,7 @@ export default function NoteEditPage(props: Infer<typeof Props>) {
 
 const load = loader(notes, 'notes.edit', { output: Data }, async () => ok({ title: 'Note', city: 'City', save: 'Save' }))
 const save = action(notes, 'notes.edit', { input: NoteEdit }, async (input) =>
-  input.address.city === 'Oz' ? err({ code: 'keel.fields', message: 'Invalid', data: { 'address.city': 'Taken' } }) : ok(null))
+  input.address.city === 'Oz' ? err(keelError.fields.make({ 'address.city': 'Taken' })) : ok(null))
 
 export const routes = manifest(notes, {
   'notes.edit': { component: NoteEditPage, loader: load, POST: save, title: (p) => p.data.title },

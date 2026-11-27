@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { RecipeDraft } from "../kitchen/RecipeDraft.schema.ts";
 import { KeelFields } from "./KeelFields.schema.ts";
 import { RecipesText } from "./RecipesText.schema.ts";
@@ -17,5 +17,5 @@ export const createRecipe = action(recipes, "recipes.new", { input: RecipeDraft 
   const fields = KeelFields.parse(body);
   if (!fields.ok || fields.value.data.title === undefined) return err(body ?? r.error);
   const text = await RecipesText.load(params.locale);
-  return err({ ...fields.value, message: text.titleTaken, data: { ...fields.value.data, title: text.titleTaken } });
+  return err(keelError.fields.make({ ...fields.value.data, title: text.titleTaken }));
 });

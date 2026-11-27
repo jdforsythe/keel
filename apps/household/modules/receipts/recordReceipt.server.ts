@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { parseMoney } from "@keel/std-money";
 import { NoRows, sql } from "@keel/std-postgres";
 import { NewReceipt } from "./NewReceipt.schema.ts";
@@ -18,7 +18,7 @@ export const recordReceipt = action(
   async (input, { params }, ctx) => {
     const money = parseMoney(input.amount, input.currency, params.locale);
     const text = await ReceiptsText.load(params.locale);
-    if (!money.ok) return err({ code: "keel.fields", message: text.amountFormat, data: { amount: text.amountFormat } });
+    if (!money.ok) return err(keelError.fields.make({ amount: text.amountFormat }));
     const amount = money.value.amount;
     const id = ctx.random.id("Receipt");
     const saved = await receiptsDb(ctx).transaction(async (t) => {
@@ -32,6 +32,6 @@ export const recordReceipt = action(
       return added.ok ? ok(true) : added;
     });
     if (!saved.ok) return err(saved.error);
-    return saved.value ? ok(null) : err({ code: "keel.fields", message: text.full, data: { shop: text.full } });
+    return saved.value ? ok(null) : err(keelError.fields.make({ shop: text.full }));
   },
 );

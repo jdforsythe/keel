@@ -69,18 +69,18 @@ import { loadBoard, postTodo } from './handlers.server.ts'
 
 export const routes = manifest(api, { 'api.board': { loader: loadBoard }, 'api.addTodo': { action: postTodo } })
 ```
-A GET entry binds `loader`, a write `action`, each with an optional `guard`; a page entry binds `component` and its verbs (keel-client). `routeTable(...tables)` joins a deployable's modules. `output` is parsed before any save (E1554) and holds no `s.secret` (E1113: `reveal` it). An API `query` may require keys; after the guard, a failing `query` or `body` is 422 `keel.fields` and nothing runs. A loader or action denies with `err({ code: 'keel.denied', message, data: null })`, answered 403.
+A GET entry binds `loader`, a write `action`, each with an optional `guard`; a page entry binds `component` and its verbs (keel-client). `routeTable(...tables)` joins a deployable's modules. `output` is parsed before any save (E1554) and holds no `s.secret` (E1113: `reveal` it). An API `query` may require keys; after the guard, a failing `query` or `body` is 422 `keel.fields` and nothing runs. A loader or action denies with `err(keelError.denied.make({}))`, answered 403.
 
 **Bearer.** An API entry's guard, loader and action get `bearer: Secret<string> | undefined`, from `Authorization: Bearer`; a page's get `undefined`. Keel only parses it; check it once, in the handler that uses the token's row (`tokens(ctx).check`, keel-compliance, `idOf`). A guard's result reaches no handler, so use one only to admit. A guard without `redirect` is for API routes (on a page: E1508); denial is 403.
 
 ```ts
 // modules/api/admit.guard.ts
 import { guard } from '@keel/router'
-import { err, ok } from '@keel/schema'
+import { err, keelError, ok } from '@keel/schema'
 
 export const admit = guard({}, async ({ bearer, user }) =>
   bearer === undefined && user === ''
-    ? err({ code: 'keel.denied', message: 'sign in', data: null })
+    ? err(keelError.denied.make({}))
     : ok(null))
 ```
 

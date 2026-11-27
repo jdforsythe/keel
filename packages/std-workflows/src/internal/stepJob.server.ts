@@ -18,7 +18,7 @@ const failed = <S extends string, D>(
 ): Result<undefined, KeelError<string, unknown>> => {
   const t = S.events[event];
   const r = t === undefined ? ok(null) : tx(t, { id, payload: { code } });
-  return r.ok ? ok(undefined) : err({ code: r.error.code, message: "the failed event refused its code", data: {} });
+  return r.ok ? ok(undefined) : err(r.error);
 };
 
 /**

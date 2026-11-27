@@ -2,12 +2,12 @@ import type { Clock } from "@keel/ctx";
 import { attempt, defect, err, ok } from "@keel/schema";
 import type { KeelError, Result } from "@keel/schema";
 import type { Conflict } from "../../Conflict.ts";
-import type { ConstraintError } from "../../ConstraintError.ts";
+import type { ConstraintError } from "../../ConstraintError.schema.ts";
 import { DatabaseError } from "../../DatabaseError.schema.ts";
 import { NoRows } from "../../NoRows.schema.ts";
 import type { NotFound } from "../../NotFound.ts";
 import type { Query } from "../../Query.ts";
-import type { ResultError } from "../../ResultError.ts";
+import { ResultError } from "../../ResultError.schema.ts";
 import type { StatementError } from "../../StatementError.ts";
 import type { Unreachable } from "../../Unreachable.ts";
 import { sql } from "../../sql.ts";
@@ -76,7 +76,7 @@ function parsed<T>(q: Query<T>, raw: Raw, engine: Engine): Result<T[], ResultErr
     const p = q.schema.parse(value);
     if (!p.ok) {
       const issues = p.error.data.issues.map((i) => ({ path: [...i.path], rule: i.rule }));
-      return err({ code: "postgres.result", message: "A row does not fit its schema", data: { row, issues } });
+      return err(ResultError.make({ row, issues }, "A row does not fit its schema"));
     }
     out.push(p.value);
   }
@@ -84,17 +84,17 @@ function parsed<T>(q: Query<T>, raw: Raw, engine: Engine): Result<T[], ResultErr
 }
 
 /** A row from `run`, whose statement must return none: `postgres.result` naming each column as an unknown key. */
-const unwanted = (raw: Raw): ResultError => ({
-  code: "postgres.result",
-  message: "run's statement returned a row",
-  data: {
-    row: 0,
-    issues:
-      raw.fields.length === 0
-        ? [{ path: [], rule: "unknown-key" }]
-        : raw.fields.map((f) => ({ path: [f.name], rule: "unknown-key" })),
-  },
-});
+const unwanted = (raw: Raw): ResultError =>
+  ResultError.make(
+    {
+      row: 0,
+      issues:
+        raw.fields.length === 0
+          ? [{ path: [], rule: "unknown-key" }]
+          : raw.fields.map((f) => ({ path: [f.name], rule: "unknown-key" })),
+    },
+    "run's statement returned a row",
+  );
 
 /**
  * The engine, made ready by `backend.ensure()`: a refused or lost connection, opening the store or in the migration

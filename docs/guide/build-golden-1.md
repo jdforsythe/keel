@@ -960,11 +960,18 @@ export const removalChart = chart("api.removalChart", {
 
 A step is a function from the instance's data and `ctx` to a `Result`. `purge` and `restore` each commit one board transaction through `commitStores`; an `err` is the step's failure.
 
+```ts title="modules/api/PurgeFailed.schema.ts"
+import { s } from "@keel/schema";
+
+export const PurgeFailed = s.error("api.purgeFailed", s.object({ cause: s.string() }));
+```
+
 ```ts title="modules/api/purge.server.ts"
 import type { Ctx } from "@keel/ctx";
 import { err, ok } from "@keel/schema";
 import { commitStores } from "@keel/server";
 import { tx } from "@keel/store";
+import { PurgeFailed } from "./PurgeFailed.schema.ts";
 import type { RemovalData } from "./RemovalData.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
@@ -981,8 +988,14 @@ export const purge = async (data: RemovalData, ctx: Ctx) => {
   });
   return r.ok
     ? ok({})
-    : err({ code: "api.purgeFailed", message: "The list could not be deleted", data: { cause: r.error.code } });
+    : err(PurgeFailed.make({ cause: r.error.code }));
 };
+```
+
+```ts title="modules/api/RestoreFailed.schema.ts"
+import { s } from "@keel/schema";
+
+export const RestoreFailed = s.error("api.restoreFailed", s.object({ cause: s.string() }));
 ```
 
 ```ts title="modules/api/restore.server.ts"
@@ -991,6 +1004,7 @@ import { err, ok } from "@keel/schema";
 import { commitStores } from "@keel/server";
 import { tx } from "@keel/store";
 import type { RemovalData } from "./RemovalData.schema.ts";
+import { RestoreFailed } from "./RestoreFailed.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
@@ -1006,7 +1020,7 @@ export const restore = async (data: RemovalData, ctx: Ctx) => {
   });
   return r.ok
     ? ok({})
-    : err({ code: "api.restoreFailed", message: "The list could not be shown again", data: { cause: r.error.code } });
+    : err(RestoreFailed.make({ cause: r.error.code }));
 };
 ```
 
@@ -1051,7 +1065,7 @@ export function removalStores(ctx: Ctx) {
 
 ```ts title="modules/api/postRemove.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
 import { removalStores } from "./removalStores.server.ts";
@@ -1068,7 +1082,7 @@ export const postRemove = action(
     const { listId } = params;
     const list = stores.board.get("lists").find((l) => l.id === listId);
     if (list === undefined || list.hidden === true)
-      return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
+      return err(keelError.notFound.make({}));
     const hidden = tx(stores.hideList, { id: listId }, { meta: { caller } });
     if (!hidden.ok) return err(hidden.error);
     const started = tx(
@@ -1083,7 +1097,7 @@ export const postRemove = action(
 
 ```ts title="modules/api/postUndoRemoval.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
 import { removalStores } from "./removalStores.server.ts";
@@ -1100,7 +1114,7 @@ export const postUndoRemoval = action(
     const { flow } = params;
     const at = stores.removal.store.get("instances")[flow];
     if (at?.state !== "hidden")
-      return err({ code: "keel.notFound", message: `No removal ${flow} to undo`, data: { flow } });
+      return err(keelError.notFound.make({}));
     const r = tx(stores.removal.events.undo, { id: flow, payload: {} }, { meta: { caller } });
     return r.ok ? ok({}) : err(r.error);
   },
@@ -1193,7 +1207,7 @@ export const postList = action(api, "api.createList", { stores: boardStores }, (
 
 ```ts title="modules/api/postTodo.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
@@ -1211,7 +1225,7 @@ export const postTodo = action(
   (input, { params, caller, stores }, ctx) => {
     const { listId } = params;
     if (!stores.board.get("lists").some((l) => l.id === listId))
-      return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
+      return err(keelError.notFound.make({}));
     const { write, ...draft } = input;
     const w = writeFor(write, "");
     if (!w.ok) return err(w.error);
@@ -1223,7 +1237,7 @@ export const postTodo = action(
 
 ```ts title="modules/api/postToggle.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
@@ -1238,7 +1252,7 @@ export const postToggle = action(
   (input, { params, caller, stores }) => {
     const { todoId } = params;
     const todo = stores.board.get("todos").find((t) => t.id === todoId);
-    if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
+    if (todo === undefined) return err(keelError.notFound.make({}));
     const w = writeFor(input.write, "");
     if (!w.ok) return err(w.error);
     const r = tx(stores.toggleTodo, { id: todoId }, { meta: { caller }, ...w.value });
@@ -1249,7 +1263,7 @@ export const postToggle = action(
 
 ```ts title="modules/api/postEdit.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
@@ -1265,12 +1279,12 @@ export const postEdit = action(api, "api.editTodo", { stores: boardStores }, (in
   const { todoId } = params;
   const todos = stores.board.get("todos");
   const todo = todos.find((t) => t.id === todoId);
-  if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
+  if (todo === undefined) return err(keelError.notFound.make({}));
   const { write, ...draft } = input;
   const w = writeFor(write, "");
   if (!w.ok) return err(w.error);
   if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === draft.title))
-    return err({ code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } });
+    return err(keelError.fields.make({ title: "Another todo has this title" }, "Duplicate title"));
   const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...w.value });
   return r.ok ? ok({}) : err(r.error);
 });
@@ -1280,7 +1294,7 @@ export const postEdit = action(api, "api.editTodo", { stores: boardStores }, (in
 
 ```ts title="modules/api/postUndo.server.ts"
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
@@ -1292,7 +1306,7 @@ import { boardStores } from "./boardStores.ts";
 export const postUndo = action(api, "api.undo", { stores: boardStores }, (_input, { caller, stores }) =>
   stores.board.undoWhere((e) => e.meta?.caller === caller)
     ? ok({})
-    : err({ code: "keel.denied", message: "Nothing of yours to undo", data: {} }),
+    : err(keelError.denied.make({})),
 );
 ```
 
@@ -1583,7 +1597,7 @@ export const loadIndex = loader(todos, "todos.index", { output: BoardView }, asy
 
 ```ts title="modules/todos/loadList.server.ts"
 import { loader } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { TodoList } from "../api/TodoList.schema.ts";
 import { refreshView } from "./refreshView.ts";
 import { todos } from "./todos.contract.ts";
@@ -1594,14 +1608,14 @@ export const loadList = loader(todos, "todos.list", { output: TodoList }, async 
   if (!board.ok) return board;
   const list = board.value.lists.find((l) => l.id === params.listId);
   return list === undefined
-    ? err({ code: "keel.notFound", message: `No list ${params.listId}`, data: { listId: params.listId } })
+    ? err(keelError.notFound.make({}))
     : ok(list);
 });
 ```
 
 ```ts title="modules/todos/loadTodo.server.ts"
 import { loader } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { Todo } from "../api/Todo.schema.ts";
 import { editorChart } from "./editorChart.ts";
@@ -1618,7 +1632,7 @@ export const loadTodo = loader(todos, "todos.edit", { output: Todo }, async ({ p
   if (!board.ok) return board;
   const todo = board.value.todos.find((t) => t.id === params.todoId && t.listId === params.listId);
   if (todo === undefined)
-    return err({ code: "keel.notFound", message: `No todo ${params.todoId} in list ${params.listId}`, data: params });
+    return err(keelError.notFound.make({}));
   const followed = editorFollow();
   if (!followed.ok) return err(followed.error);
   const opened = tx(editorChart.events.edit, {});
@@ -1699,12 +1713,12 @@ A guard runs before any loader in the chain. `ok(null)` lets the request through
 
 ```ts title="modules/todos/editable.guard.ts"
 import { guard } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 
 /** Stub edit permission: denied while `ctx.storage` key `todos.readOnly` is `"1"`; redirects to `todos.index`. */
 export const editable = guard({ redirect: "todos.index" }, async (_req, ctx) =>
   (await ctx.storage.get("todos.readOnly")) === "1"
-    ? err({ code: "keel.denied", message: "todos are read-only", data: null })
+    ? err(keelError.denied.make({}))
     : ok(null),
 );
 ```

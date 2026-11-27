@@ -38,6 +38,16 @@ const opened = new WeakMap<KeyValueStorage, Promise<Opened>>();
 /** The system codes of a database file that cannot be made or opened. */
 const FILE_ERRORS: ReadonlySet<string> = new Set(["ENOENT", "EACCES", "EPERM", "EROFS", "ENOTDIR", "EEXIST", "EISDIR"]);
 
+/** True for a thrown value that is a SQLite library error or one of the file system codes above. */
+const refused = (x: unknown): boolean => {
+  const code = x instanceof Error ? Reflect.get(x, "code") : undefined;
+  return typeof code === "string" && (code.startsWith("ERR_SQLITE") || FILE_ERRORS.has(code));
+};
+
+/** Which kind of refusal a thrown value is: the library's, or the file's. */
+const reasonOf = (x: unknown): "sqlite" | "file" =>
+  x instanceof Error && String(Reflect.get(x, "code")).startsWith("ERR_SQLITE") ? "sqlite" : "file";
+
 async function open(): Promise<Opened> {
   const settings = authSettings(process.env, process.execArgv);
   if (!settings.ok) return err(settings.error);
@@ -49,12 +59,7 @@ async function open(): Promise<Opened> {
       await (await getMigrations(auth.options)).runMigrations();
       return auth;
     },
-    (x) => {
-      const code = x instanceof Error ? Reflect.get(x, "code") : undefined;
-      return typeof code === "string" && (code.startsWith("ERR_SQLITE") || FILE_ERRORS.has(code))
-        ? AuthUnavailable.make({ reason: code })
-        : undefined;
-    },
+    (x) => (refused(x) ? AuthUnavailable.make({ reason: reasonOf(x) }) : undefined),
   );
 }
 

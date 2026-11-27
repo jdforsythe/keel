@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { parseMoney } from "@keel/std-money";
 import { tx } from "@keel/store";
 import { CostDraft } from "./CostDraft.schema.ts";
@@ -10,7 +10,7 @@ import splitByParts from "./splitByParts.ts";
 import { trip } from "./trip.contract.ts";
 import { trip as tripStore } from "./trip.ts";
 
-const refuse = (path: string, message: string) => err({ code: "keel.fields", message, data: { [path]: message } });
+const refuse = (path: string, message: string) => err(keelError.fields.make({ [path]: message }));
 
 export const saveCost = action(trip, "trip.show", { input: CostDraft }, async (input, _args, ctx) => {
   const people = tripStore.get("people");

@@ -2,7 +2,7 @@ import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { type Ctx, supervise } from "@keel/ctx";
 import { action, loader } from "@keel/router";
 import type { Contract } from "@keel/router/contract";
-import { type KeelError, defect, err, ok } from "@keel/schema";
+import { defect, err, keelError, ok } from "@keel/schema";
 import { holds } from "../../unsafe/holds.ts";
 import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
@@ -26,7 +26,7 @@ import { reread } from "./internal/reread.ts";
 import { storesIn } from "./internal/storesIn.ts";
 import { watchStores } from "./internal/watchStores.ts";
 
-const denied: KeelError<"keel.denied", null> = { code: "keel.denied", message: "denied", data: null };
+const denied = keelError.denied.make({}, "denied");
 const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as const);
 /** How long an answer of `currentUser()` stands for a stream, on `ctx.clock` (std.channels Serve). */
 const STANDS_MS = 1_000;
