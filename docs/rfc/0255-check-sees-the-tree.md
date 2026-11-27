@@ -106,8 +106,8 @@ There is no `keel check --check`. `keel pack --check` (k.library-pack) is the on
 ### 5. The derivation cache
 The compiled views take 50 to 125 ms and are derived on every run. The route evaluation is the cost: one evaluation of contracts, route tables and store factories now gives both `routes.json` and `surface.json`, the way `buildRoutes` evaluates today (an esbuild bundle imported once), so `surfaceRun`'s Vite SSR server goes. Its result is cached in `<root>/node_modules/.cache/keel/derived/` under k.check-cache's rule:
 
-- **Key and probes.** The entry is named by the SHA-256 of the Keel version, the project's code file paths and the evaluation's inputs. The inputs are each file it loaded and the `package.json` of each package holding one, each with the SHA-256 of its bytes. An entry is used only when every recorded input, read again, has the same hash. Modification times are never read: a file rewritten with its old time is a miss (k.derived clause 16).
-- **What can change the result and what is keyed are one set.** This is the lesson RFC 0251 records for approvals, and it is why the inputs are what the evaluation loaded, not a list Keel guesses: `surface.json`'s `sources` guessed "project files" and missed every package (cases 6 and 7). Until RFC 0251's evaluator lands, an evaluation could also read a file by path at import time (a package reading its own data file), which no load records; the cache would then miss nothing it could see but could keep a result that file changed. So slice 3 runs the evaluation in RFC 0251's `data` child, whose read access is exactly the bundle's files: a read outside them is refused (E1184), so the loaded set is the influencing set by construction.
+- **Key and probes.** The entry is named by the SHA-256 of the Keel version, the project's code file paths and the evaluation's inputs. The inputs are each file it loaded, the `package.json` of each package holding one, and each file its code reads through `node:fs` or `node:fs/promises`, each with the SHA-256 of its bytes. The probes are every other question that code asks the file system (existence, real path, folder listing, an absent file) and each `process.env` name it reads, with the value. An input is recorded by its path through the project and resolved again at every read, each symbolic link on the path a real-path probe, so a `node_modules` link pointed at another folder (a pnpm upgrade, a re-link, a second version in the store) is a miss even while the old folder still holds its old bytes. An entry is used only when every input and probe, asked again, gets the same answer. Modification times are never read: a file rewritten with its old time is a miss (k.derived clause 16).
+- **What can change the result and what is keyed are one set.** This is the lesson RFC 0251 records for approvals, and it is why the inputs are what the evaluation asked, not a list Keel guesses: `surface.json`'s `sources` guessed "project files" and missed every package (cases 6 and 7). E1759 (k.host Node globals) refuses `node:fs` and `process` in a browser file, so a schema or contract of a module a page renders cannot read by path; a server-only file, the `routes.ts` of a node-only module and any package can, at import time or in a store factory. Those reads and environment values are keyed rather than refused, so a package reading its own data file stays usable and the guarantee "a cached derivation is the one a fresh evaluation gives" holds as written. The rest cannot differ between two evaluations of one tree: app code reads no clock, randomness or network (E1601), and store factories run on a sim ctx. Running the evaluation in RFC 0251's `data` child later narrows what it may read; it changes no key.
 - **Who writes.** The child reads and writes nothing else; it returns the route tables' data, the surface and the bundle's file list. Keel's own process, with the user's rights, writes the cache entry and the views through the one writer (`writeArtifact`: a `<name>.<pid>.tmp` file, mode 0444, renamed into place).
 
 ### 6. Concurrency
@@ -124,7 +124,8 @@ What the counts cost, measured as documentation and not as a clause: on `apps/ho
 
 ### 8. keel test, keel dev, keel ledger, scaffold
 - `keel test` derives the compiled views in its own process before vitest starts, hands `a11y.json` to each test process (vitest's `provide` and `inject`), and refreshes the views unless frozen. A render with no `artifacts` then always runs E1702 against the tree under test, in a project never built too (clause 12), which today runs no E1702 when `.keel/a11y.json` is absent.
-- `keel dev` refreshes every view after each change it applies, `routes.json` included (case 12), and its inspect document serves the plugin's derivation, so `keel check` beside a running dev server agrees with it by construction: both derive from the same files.
+- `keel dev` refreshes after each change to any file a derivation read, or to the project's code file paths, whatever the file's name: a `*.contract.ts` edit alone refreshes `routes.json` and the inspect document as a `routes.ts` edit does (case 12). Each refresh writes every view that differs, `surface.json` and the deploy files included, so an author who runs only dev never commits a stale surface, and `keel check` beside a running dev server agrees with it by construction.
+- No run rewrites the file its `--base` names, `.keel/surface.json` included: a base that a run refreshed would compare the tree with itself on the next run and hide the E1563 it reported. The `--base` text and the `keel-data` skill say what to pass: the base branch's file, `git show origin/main:.keel/surface.json > /tmp/base.json` then `keel check --base /tmp/base.json`. Every other view is still refreshed beside an error.
 - `keel ledger` derives each project's `routes.json` (the cache makes a ledger after a check cost no evaluation) and finds projects as `keel check` does.
 - A scaffold operation's refresh (k.scaffold Refresh) is this refresh; nothing changes in k.scaffold.
 
@@ -161,6 +162,7 @@ Applied in this commit (`pnpm spec k.derived` prints it):
 - k.library-pack (`implemented`): `keel pack --check` becomes `keel pack` run frozen (`--frozen`, or `CI` set); the scaffolded `prepack` runs `keel pack --frozen`; the frozen ledger messages; its last clause adds `keel pack` with `CI=true`. 3,083 tokens.
 - k.contract (`implemented`): Static reading reports E1111 alone at a spread, call or name; W1005 is reserved and no clause requires it. The clauses of k.scaffold and std.contracts that assert no W1005 stay true and are unchanged.
 - `spec/areas/tools.md`: the k.derived row. Glossary: `derived file`.
+- Review fixes: k.derived Derivation cache states its inputs (loads, `package.json`s, `node:fs` reads) and probes (other file-system questions, a real-path probe per link on an input's path, `process.env` names) and what is not keyed (E1601; the sim ctx); Refresh never rewrites the `--base` file and states dev's trigger (any file a derivation read) and its writes (every differing view, `surface.json` included); Work speaks of inputs; prose trimmed to 3,097 tokens. k.compat Base: what an author passes and that the file is never rewritten. k.cli Inspect: the views of the tree it serves. k.compiler: E1049 from Build-time evaluation at the file the failure names, with `see` k.compiler. k.ledger-items Run evidence: what a page route is, when W1733 for `reports/a11y.json` does not arise, and that every `keel ledger` run reports W1733.
 
 ## Conformance diff
 For the `conformance-writer`, from the spec text only:
@@ -176,6 +178,12 @@ For the `conformance-writer`, from the spec text only:
 - `packages/compiler/conformance/static-reading-w1005.test.ts` and the W1005 half of `route-fragment-spread-0077.test.ts`: removed, since no clause requires W1005; the E1111 half in `packages/check/conformance/static-reading-e1111.test.ts` stays.
 - `packages/cli/conformance/boundary-build-gate.test.ts`, "a warning does not stop `keel build`": the fixture gets its warning from W1012, an `index.html` in the project root (k.head Document source), which `keel check` reports and `keel build` keeps going past.
 - `packages/cli/conformance/` for k.library-pack: the three `--check` clauses read `--frozen`, and the last also runs `keel pack` with `CI=true`.
+- k.derived, new clause: "In the copy of clause 9, after one `keel check`, pointing `node_modules/@keel/std-text` at a second linked copy whose `line` default `min` is 2 makes the next `keel check` have `counts.evaluated` 1 and leave `.keel/surface.json` byte-identical to what `keel build` writes."
+- k.derived, new clause: "In the copy of clause 9 whose linked `@keel/std-text` reads `line`'s default `min` from its file `min.txt` with `readFileSync` at import time, after one `keel check`, changing `min.txt` from `1` to `2` makes the next `keel check` have `counts.evaluated` 1 and leave `.keel/surface.json` byte-identical to what `keel build` writes; with that default read from `process.env.LINE_MIN` instead, a `keel check` with `LINE_MIN=2` after one with `LINE_MIN=1` has `counts.evaluated` 1, and a third with `LINE_MIN=2` has `counts.cached` 1."
+- k.cli, new clause: "While `keel dev` serves the copy of k.derived clause 1 after its edit, changing `app.about`'s path to `/info` in the contract file alone makes, within 2 s, `.keel/routes.json` and `.keel/surface.json` byte-identical to what `keel build` writes, and `GET /__keel/inspect` answer `routes` whose `app.about` has `path` `/info`."
+- k.compat, new clause: "In a copy of `apps/household`, after giving the `setup.household` store's state a required field, `keel check --base .keel/surface.json` reports one E1563 naming that field and leaves `.keel/surface.json` byte-identical, and a second run of that command reports the same E1563."
+- k.compiler, new clause: "A `routes.ts` whose first line imports `./missing.ts`, a file that does not exist, makes `keel check` report one E1049 at that `routes.ts` line 1, whose compact record is followed by the line `see: keel docs k.compiler`."
+- k.ledger-items, new clause: "In an app with no test file, whose route tables give one page route and which has no `reports/`, `keel ledger --diff` after `keel ledger --write .keel/ledger.json` reports one W1733 at `reports/a11y.json`; with route tables giving only an API entry, or no `routes.ts`, it reports no W1733."
 - Not conformance, updated by the build: `packages/cli/test/appArtifactsFresh.test.ts` asserts `keel check --frozen` clean and `keel test` writing nothing in a frozen run; `packages/cli/test/scaffold-refresh.test.ts` unchanged.
 
 ## Build plan
@@ -200,7 +208,7 @@ W1018 is new (free on every `lane-*` branch and the main line, checked over `spe
 ## Budgets proposed (not edited)
 - `@keel/cli`: the refresh and the frozen switch are in the check path already loaded; the derivation cache is a few hundred bytes of code. Expect under 1 kB; re-base if over.
 - `@keel/compiler`: `surfaceRun` leaves the CLI for the evaluation entry; the Vite SSR server code it used goes. Expect a net decrease of the CLI.
-- No token limit moves: k.derived is about 2,730 tokens of 3,100, the tools area gains one row within its 500, and every amended section is at or under its previous size but k.ledger (+5 characters).
+- No token limit moves: k.derived is 3,097 tokens of 3,100, the tools area gains one row within its 500, and every amended section is at or under its previous size but k.ledger (+5 characters), k.compiler (E1049's location), k.cli and k.ledger-items (one clause each).
 
 ## Migration
 None before P1. The repository's own apps and examples are updated in slice 2. A version 2 `surface.json` on a base branch is read by `--base` as before.
@@ -208,9 +216,9 @@ None before P1. The repository's own apps and examples are updated in slice 2. A
 ## Token impact
 | what | before | after |
 | --- | --- | --- |
-| k.derived (new) | none | about 2,730 tokens |
-| k.compat | 2,492 | 1,632 (the Sources paragraph and three clauses go) |
-| k.compiler | 1,725 | 1,700 |
+| k.derived (new) | none | 3,097 tokens |
+| k.compat | 2,492 | 1,785 (the Sources paragraph and three clauses go; Base says what to pass) |
+| k.compiler | 1,725 | 1,827 |
 | k.check, k.a11y, k.shell, k.library-pack | 3,098, 3,095, 3,099, 3,078 | 3,097, 3,092, 3,092, 3,083 |
 | the `keel` skill | its Commands line | 15 tokens shorter |
 | an agent's loop per edit | `keel build` (8 to 12 s here, and its output) then `keel check` | `keel check` |
