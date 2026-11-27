@@ -14,6 +14,7 @@ import { hostCodeImport } from "../rules/hostCodeImport.ts";
 import { identityFile } from "../rules/identityFile.ts";
 import { identityMountElsewhere } from "../rules/identityMountElsewhere.ts";
 import { identityMountMissing } from "../rules/identityMountMissing.ts";
+import { keelSymbols } from "../rules/keelSymbols.ts";
 import { libraryTokenName } from "../rules/libraryTokenName.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
@@ -53,6 +54,7 @@ import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { schemeSelectOneScheme } from "../rules/schemeSelectOneScheme.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
+import { superviseInApp } from "../rules/superviseInApp.ts";
 import { throwingBuiltin } from "../rules/throwingBuiltin.ts";
 import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unknownToken } from "../rules/unknownToken.ts";
@@ -86,6 +88,8 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   resultDiscard,
   throwingBuiltin,
   errKeelError,
+  superviseInApp,
+  keelSymbols,
   noAmbientCapability,
   noCodeFromString,
   dynamicImport,

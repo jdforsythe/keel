@@ -35,7 +35,7 @@ export const throwingBuiltin: RuleDef = {
   code: "E1457",
   message: (f) => {
     const name = str(f.data, "name");
-    if (name === "JSON.parse") return "JSON.parse throws on bad text: use S.parseJson(text)";
+    if (name === "JSON.parse") return "JSON.parse throws on bad text: parse with a schema, as in Prefs.parseJson(text)";
     if (name === "URL") return "new URL throws on a bad address: use URL.parse(text, base) and test for null";
     return `${name} throws on bad input: call it inside attempt(fn, expect)`;
   },

@@ -1,6 +1,8 @@
 import ts from "typescript";
 import { THROW_MESSAGE } from "./THROW_MESSAGE.ts";
 import { catchMessage } from "./catchMessage.ts";
+import { expectFindings } from "./expectFindings.ts";
+import { holdsKeelResult } from "./holdsKeelResult.ts";
 
 /** A function the type pass follows by its symbol (k.unsafe One path, k.reactive Static). */
 type Callee =
@@ -10,6 +12,15 @@ type Callee =
   | "allSettled"
   | "any"
   | "defect"
+  | "attempt"
+  | "ok"
+  | "make"
+  | "causedBy"
+  | "throw"
+  | "supervise"
+  | "symbolFor"
+  | "ownSymbols"
+  | "ownKeys"
   | "scope"
   | "signal"
   | "computed"
@@ -35,11 +46,26 @@ const LIB: ReadonlyMap<string, ReadonlyMap<string, Callee>> = new Map([
     ]),
   ],
   ["PromiseLike", new Map<string, Callee>([["then", "then"]])],
+  ["Generator", new Map<string, Callee>([["throw", "throw"]])],
+  ["AsyncGenerator", new Map<string, Callee>([["throw", "throw"]])],
+  ["Iterator", new Map<string, Callee>([["throw", "throw"]])],
+  ["SymbolConstructor", new Map<string, Callee>([["for", "symbolFor"]])],
+  ["ObjectConstructor", new Map<string, Callee>([["getOwnPropertySymbols", "ownSymbols"]])],
+  ["Reflect", new Map<string, Callee>([["ownKeys", "ownKeys"]])],
 ]);
 
 /** The Keel exports followed, by package. */
 const KEEL: ReadonlyMap<string, ReadonlyMap<string, Callee>> = new Map([
-  ["@keel/schema", new Map<string, Callee>([["defect", "defect"]])],
+  [
+    "@keel/schema",
+    new Map<string, Callee>([
+      ["defect", "defect"],
+      ["attempt", "attempt"],
+      ["ok", "ok"],
+      ["make", "make"],
+      ["causedBy", "causedBy"],
+    ]),
+  ],
   [
     "@keel/reactive",
     new Map<string, Callee>([
@@ -51,6 +77,7 @@ const KEEL: ReadonlyMap<string, ReadonlyMap<string, Callee>> = new Map([
     ]),
   ],
   ["@keel/store", new Map<string, Callee>([["store", "store"]])],
+  ["@keel/ctx", new Map<string, Callee>([["supervise", "supervise"]])],
 ]);
 
 const NAMES: ReadonlySet<string> = new Set([
@@ -58,6 +85,29 @@ const NAMES: ReadonlySet<string> = new Set([
   ...[...KEEL.values()].flatMap((m) => [...m.keys()]),
 ]);
 const MAKERS: ReadonlySet<string> = new Set(["scope", "signal", "computed", "effect", "resource", "store"]);
+/** The code a callee's use as a value is (k.unsafe One path), for the callees `valueUse` does not name itself. */
+const VALUE_CODE: ReadonlyMap<string, readonly [string, string]> = new Map([
+  ["attempt", ["E1452", "k.expect"]],
+  ["ok", ["E1459", "k.attempt"]],
+  ["make", ["E1460", "k.expect"]],
+  ["causedBy", ["E1460", "k.expect"]],
+  ["supervise", ["E1461", "k.supervise"]],
+  ["symbolFor", ["E1766", "k.realm"]],
+  ["ownSymbols", ["E1766", "k.realm"]],
+  ["ownKeys", ["E1766", "k.realm"]],
+]);
+/** The name a message gives a callee whose own name is no spelling of it. */
+const SPELLED: ReadonlyMap<string, string> = new Map([
+  ["symbolFor", "Symbol.for"],
+  ["ownSymbols", "Object.getOwnPropertySymbols"],
+  ["ownKeys", "Reflect.ownKeys"],
+]);
+/** The names of the global object E1766 refuses to list (k.realm The keel. names). */
+const GLOBAL_OBJECT: ReadonlySet<string> = new Set(["globalThis", "window", "self", "global"]);
+const KEEL_SYMBOL = "keel. symbols are the kernel's: app and library code names none";
+const IN_APP = "supervise in app code: a library owns supervised work; here use attempt(fn, expect)";
+const NOT_MESSAGE = "error message is not a literal: pass values as data";
+const NESTED = "Result in a Result: return the inner Result itself";
 const CODE = /^E\d{4}$/;
 const NOT_LITERAL = "defect code is not a literal E and four digits";
 const UNREADABLE = "defect code check cannot read";
@@ -126,6 +176,12 @@ function mayDetach(opts: ts.Expression): boolean {
  * unless `kernel`, E1207 (`scope` that may detach), each callee found by its symbol: through an import alias, a
  * namespace member, a literal computed member, a `const` alias every use of which runs it, `.call`, `.apply`,
  * `.bind` and `Reflect.apply`. Any other use of one of these functions as a value is its code at that use. Also
+ * E1451 for a generator's or iterator's `throw`; for `attempt`, its `expect` (`expectFindings`: E1452, E1460); E1459
+ * for an `ok` argument that holds a keel `Result`; and, unless `kernel`, E1460 for a `make` or `causedBy` message that
+ * is no literal (k.expect Message); E1461 for `supervise` of `@keel/ctx` outside a `library` file, and in one for an
+ * `id` that is no literal; unless `kernel`, E1766 for `Symbol.for` of a string folding to `keel.…` and for
+ * `Object.getOwnPropertySymbols` or `Reflect.ownKeys` of the global object. A value use of `attempt`, `ok`, `make`,
+ * `causedBy`, `supervise` or those three is its code at the use, outside `kernel`. Also
  * E1208 (`scope`) and E1203 (`signal`, `computed`, `effect`, `resource`, `store`) for a call that follows an `await`
  * in the same function body, not inside a function given to a `run` call (k.reactive Static). `ownerOf` names the
  * package a declaration's file belongs to.
@@ -136,6 +192,7 @@ export function calleeUses(
   program: ts.Program,
   ownerOf: (fileName: string) => string | null,
   kernel: boolean,
+  library = false,
 ): Use[] {
   const out: Use[] = [];
   const fromLib = (s: ts.Symbol | undefined): boolean =>
@@ -151,10 +208,16 @@ export function calleeUses(
     for (const d of s.declarations ?? []) {
       const file = d.getSourceFile();
       if (program.isSourceFileDefaultLibrary(file)) {
-        const found = ts.isInterfaceDeclaration(d.parent) ? LIB.get(d.parent.name.text)?.get(name) : undefined;
+        const holder = ts.isInterfaceDeclaration(d.parent)
+          ? d.parent.name.text
+          : ts.isModuleBlock(d.parent) && ts.isIdentifier(d.parent.parent.name)
+            ? d.parent.parent.name.text
+            : undefined;
+        const found = holder === undefined ? undefined : LIB.get(holder)?.get(name);
         if (found !== undefined) return found;
         continue;
       }
+      if (ts.isPropertySignature(d)) continue;
       const owner = ownerOf(file.fileName);
       const found = owner === null ? undefined : KEEL.get(owner)?.get(name);
       if (found !== undefined) return found;
@@ -338,6 +401,32 @@ export function calleeUses(
     return false;
   };
 
+  /** Whether a declaration's file lies with this one: the project's own code, or the same package's (k.expect Readable). */
+  const sameHome = (f: ts.SourceFile): boolean =>
+    !f.fileName.includes("/node_modules/") || ownerOf(f.fileName) === ownerOf(sf.fileName);
+  const made = (call: ts.CallExpression): "make" | "causedBy" | undefined => {
+    const t = ownTarget(bare(call.expression));
+    return t === "make" || t === "causedBy" ? t : undefined;
+  };
+
+  /** The string `e` folds to: a literal, a template without substitution, a `const` bound to one, `+` of those. */
+  const folded = (e: ts.Expression, depth: number): string | undefined => {
+    if (depth > 8) return undefined;
+    const b = bare(e);
+    if (ts.isStringLiteral(b) || ts.isNoSubstitutionTemplateLiteral(b)) return b.text;
+    if (ts.isBinaryExpression(b) && b.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      const l = folded(b.left, depth + 1);
+      const r = folded(b.right, depth + 1);
+      return l === undefined || r === undefined ? undefined : l + r;
+    }
+    if (!ts.isIdentifier(b)) return undefined;
+    const d = checker.getSymbolAtLocation(b)?.valueDeclaration;
+    if (d === undefined || !ts.isVariableDeclaration(d) || d.initializer === undefined) return undefined;
+    const list = d.parent;
+    if (!ts.isVariableDeclarationList(list) || (list.flags & ts.NodeFlags.Const) === 0) return undefined;
+    return folded(d.initializer, depth + 1);
+  };
+
   const add = (code: string, at: ts.Node, message: string, see: string): void =>
     void out.push({ code, at: at.getStart(sf), message, see });
 
@@ -345,8 +434,13 @@ export function calleeUses(
     ts.isPropertyAccessExpression(ref) ? ref.name : ts.isElementAccessExpression(ref) ? ref.argumentExpression : ref;
 
   const valueUse = (target: Callee, ref: ts.Expression): void => {
-    const message = `${target} used other than as a call; check cannot follow it`;
-    if (target === "reject") add("E1451", ref, message, "k.errors");
+    const message = `${SPELLED.get(target) ?? target} used other than as a call; check cannot follow it`;
+    const coded = VALUE_CODE.get(target);
+    if (coded !== undefined) {
+      if (!kernel) add(coded[0], ref, message, coded[1]);
+      return;
+    }
+    if (target === "reject" || target === "throw") add("E1451", ref, message, "k.errors");
     else if (target === "defect") add("E1455", ref, message, "k.errors");
     else if (target === "scope") {
       if (!kernel) add("E1207", ref, message, "k.reactive");
@@ -357,7 +451,39 @@ export function calleeUses(
     const args = use.args ?? [];
     const spreadBefore = args.slice(0, 2).find((a) => ts.isSpreadElement(a));
     if (target === "reject") add("E1451", nameAt(ref), THROW_MESSAGE, "k.errors");
-    else if (target === "catch" || target === "allSettled" || target === "any")
+    else if (target === "throw") add("E1451", ref, THROW_MESSAGE, "k.errors");
+    else if (target === "supervise") {
+      const id = args[1];
+      if (!library) add("E1461", ref, IN_APP, "k.supervise");
+      else if (id !== undefined && !ts.isStringLiteral(id) && !ts.isNoSubstitutionTemplateLiteral(id))
+        add("E1461", id, "supervise id is not a literal", "k.supervise");
+    } else if (target === "symbolFor") {
+      const key = args[0];
+      if (!kernel && key !== undefined && !ts.isSpreadElement(key) && folded(key, 0)?.startsWith("keel.") === true)
+        add("E1766", use.call, KEEL_SYMBOL, "k.realm");
+    } else if (target === "ownSymbols" || target === "ownKeys") {
+      const held = args[0];
+      if (!kernel && held !== undefined && ts.isIdentifier(bare(held)) && GLOBAL_OBJECT.has(bare(held).getText(sf)))
+        add("E1766", use.call, KEEL_SYMBOL, "k.realm");
+    } else if (target === "attempt") {
+      const expect = args[1];
+      if (expect !== undefined && !ts.isSpreadElement(expect) && spreadBefore === undefined)
+        for (const u of expectFindings(expect, checker, sameHome, made)) add(u.code, u.at, u.message, "k.expect");
+    } else if (target === "ok") {
+      const value = args[0];
+      if (value !== undefined && !ts.isSpreadElement(value))
+        if (holdsKeelResult(checker.getTypeAtLocation(value), checker, ownerOf))
+          add("E1459", value, NESTED, "k.attempt");
+    } else if (target === "make" || target === "causedBy") {
+      const message = args[target === "make" ? 1 : 2];
+      const literal =
+        message === undefined ||
+        ts.isSpreadElement(message) ||
+        ts.isStringLiteral(message) ||
+        ts.isNoSubstitutionTemplateLiteral(message);
+      if (!kernel && !literal && !args.slice(0, 2).some((a) => ts.isSpreadElement(a)))
+        add("E1460", message, NOT_MESSAGE, "k.expect");
+    } else if (target === "catch" || target === "allSettled" || target === "any")
       add("E1452", nameAt(ref), catchMessage(target), "k.errors");
     else if (target === "then") {
       if (use.unread !== undefined) add("E1452", ref, catchMessage("value:then"), "k.errors");

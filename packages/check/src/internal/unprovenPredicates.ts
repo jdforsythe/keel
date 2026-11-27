@@ -8,8 +8,9 @@ type Gap = { readonly prop: string | undefined };
 
 /** The kernel guards (k.identity Identity): each is true only of a value its maker returned in this realm. */
 const KERNEL_GUARDS = new Set(["isSchema", "isObjectSchema", "isDefect", "isStore", "isTransaction", "isRouteTable"]);
-/** A kernel package's record of what its makers made (k.identity): the `records` binding of its `internal/records.ts`. */
-const RECORD_FILE = /[\\/](?:packages|@keel)[\\/](?:schema|store|router|server)[\\/](?:src|dist[\\/]src)[\\/]internal[\\/]records\.(?:ts|d\.ts|js)$/;
+/** A kernel package's record of what its makers made (k.identity): the binding of its `internal/records.ts` or `refusals.ts`. */
+const RECORD_FILE =
+  /[\\/](?:packages|@keel)[\\/](?:schema|store|router|server)[\\/](?:src|dist[\\/]src)[\\/]internal[\\/](?:records|refusals)\.(?:ts|d\.ts|js)$/;
 const KERNEL_FILE = /[\\/](?:packages|@keel)[\\/](?:schema|store|router)[\\/]/;
 const SCHEMA_FILE = /[\\/](?:packages|@keel)[\\/]schema[\\/]/;
 const NODE_TYPES = /[\\/]@types[\\/]node[\\/]/;
@@ -408,12 +409,12 @@ export function unprovenPredicates(sf: ts.SourceFile, checker: ts.TypeChecker): 
       if (!owned && !decls.some(isBuiltIn)) return undefined;
       return checker.getDeclaredTypeOfSymbol(sym);
     };
-    /** Whether `e` is a kernel package's record (`records.<name>`), a kernel guard's own proof. */
+    /** Whether `e` is a kernel package's record (`records.<name>`, `refusals`), a kernel guard's own proof. */
     const isRecord = (e: ts.Expression): boolean => {
       const c = bare(e);
-      if (!ts.isPropertyAccessExpression(c) || !ts.isIdentifier(c.expression) || c.expression.text !== "records")
-        return false;
-      const at = checker.getSymbolAtLocation(c.expression);
+      const root = ts.isPropertyAccessExpression(c) ? c.expression : c;
+      if (!ts.isIdentifier(root) || (root.text !== "records" && root.text !== "refusals")) return false;
+      const at = checker.getSymbolAtLocation(root);
       const decls = at === undefined ? [] : (resolved(at).declarations ?? []);
       return decls.some((d) => RECORD_FILE.test(d.getSourceFile().fileName));
     };

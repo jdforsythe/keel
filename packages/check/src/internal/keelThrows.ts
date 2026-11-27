@@ -1,5 +1,6 @@
 import ts from "typescript";
 import { isSchemaExport } from "./isSchemaExport.ts";
+import { throwOwners } from "./throwOwners.ts";
 
 type Owner = (fileName: string) => string | null;
 
@@ -50,27 +51,28 @@ function takesFailure(fn: ts.FunctionLikeDeclaration, thrown: ts.Type, checker: 
 /**
  * E1451's fix sites (k.fixes Per code): the start offsets of the `throw` statements whose value's type is a
  * `KeelError`, directly in a function whose return type, declared or inferred, takes `Result<never, E>` (a function
- * given to `attempt` does), and in no `try` block that has a `catch` within that function.
+ * given to `attempt` does), and in no `try` block that has a `catch` within that function (`throwOwners`).
  */
 export function keelThrows(sf: ts.SourceFile, checker: ts.TypeChecker, ownerOf: Owner): number[] {
-  const out: number[] = [];
-  const judge = (n: ts.ThrowStatement): void => {
-    let fn: ts.FunctionLikeDeclaration | undefined;
-    for (let at: ts.Node = n; !ts.isSourceFile(at.parent); at = at.parent) {
-      const p = at.parent;
-      if (ts.isTryStatement(p) && p.tryBlock === at && p.catchClause !== undefined) return;
-      fn = functionOf(p);
-      if (fn !== undefined) break;
-    }
-    if (fn === undefined) return;
-    const thrown = checker.getTypeAtLocation(n.expression);
-    if (!isKeelError(thrown, checker)) return;
-    if (givenToAttempt(fn, checker, ownerOf) || takesFailure(fn, thrown, checker)) out.push(n.getStart(sf));
-  };
+  const fns: { start: number; end: number; fn: ts.FunctionLikeDeclaration }[] = [];
+  const caught: { start: number; end: number }[] = [];
+  const throws = new Map<number, ts.ThrowStatement>();
+  const span = (n: ts.Node): { start: number; end: number } => ({ start: n.getStart(sf), end: n.getEnd() });
   const visit = (n: ts.Node): void => {
-    if (ts.isThrowStatement(n)) judge(n);
+    const fn = functionOf(n);
+    if (fn !== undefined) fns.push({ ...span(fn), fn });
+    if (ts.isTryStatement(n) && n.catchClause !== undefined) caught.push(span(n.tryBlock));
+    if (ts.isThrowStatement(n)) throws.set(n.getStart(sf), n);
     ts.forEachChild(n, visit);
   };
   visit(sf);
+  const out: number[] = [];
+  for (const { at, owner } of throwOwners([...throws.keys()], fns, caught)) {
+    const n = throws.get(at);
+    if (n === undefined) continue;
+    const thrown = checker.getTypeAtLocation(n.expression);
+    if (!isKeelError(thrown, checker)) continue;
+    if (givenToAttempt(owner.fn, checker, ownerOf) || takesFailure(owner.fn, thrown, checker)) out.push(at);
+  }
   return out;
 }

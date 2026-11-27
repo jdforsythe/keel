@@ -186,8 +186,5 @@ export function moduleState(file: SourceFile, ast: Program, project: readonly So
     const there = topBindings(parsed.program).get(b.imported);
     return there?.exported === true && there.kind === "const" && isSignal(there, parsed.program);
   };
-  /** Whether the top-level binding's initializer is `processSlot(...)` of `@keel/ctx`, a named process slot. */
-  const isSlot = (b: TopBinding): boolean => callOf(b.init, importedAs(ast, "processSlot", "@keel/ctx"));
-
-  return { server, top, inFunction, shadowed, moduleSignal, isSlot };
+  return { server, top, inFunction, shadowed, moduleSignal };
 }

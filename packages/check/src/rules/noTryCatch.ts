@@ -10,6 +10,16 @@ import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
+/** Listeners for uncaught throws (k.unsafe Other spellings): the global path called, and the event names it refuses. */
+const LISTENERS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+  ["addEventListener", new Set(["unhandledrejection", "rejectionhandled", "error"])],
+  ...["on", "once", "addListener", "prependListener"].map((m): [string, ReadonlySet<string>] => [
+    `process.${m}`,
+    new Set(["uncaughtException", "unhandledRejection", "uncaughtExceptionMonitor"]),
+  ]),
+]);
+const HANDLERS: ReadonlySet<string> = new Set(["onunhandledrejection", "onerror"]);
+
 type Span = { readonly start: number; readonly end: number };
 type Exit = Span & { readonly kind: "return" | "break" | "continue"; readonly label?: string };
 
@@ -18,8 +28,12 @@ const inside = (x: Span, y: Span): boolean => x.start >= y.start && x.end <= y.e
 /**
  * E1452 (k.errors, k.attempt): `try`/`catch` in app code, at the `try` keyword; a `return`, `break` or `continue`
  * leaving the `finally` holding it; a `defect` call in a `finally` block outside a function nested in it; `attempt`
- * with one argument; an `expect` written as a function with no parameter, a `_`-named one or one its body never uses.
- * The callee half (`.catch()`, a `.then()` given a second argument, `Promise.allSettled`, `Promise.any`) and `defect` in
+ * with one argument; without the type pass, an `expect` written as a function with no parameter, a `_`-named one or one
+ * its body never uses (with it, `expectFindings` judges every `expect`, k.expect).
+ * Without the type pass, a listener for uncaught throws by spelling (k.unsafe Other spellings): `addEventListener`
+ * of the global, bare or on `globalThis`, `window` or `self`, given `'unhandledrejection'`, `'rejectionhandled'` or
+ * `'error'`; an assignment to the global `onunhandledrejection` or `onerror`; `process.on`, `once`, `addListener` or
+ * `prependListener` given an uncaught-throw event (with it, `otherSpellings`). The callee half (`.catch()`, a `.then()` given a second argument, `Promise.allSettled`, `Promise.any`) and `defect` in
  * `finally` are read here by spelling without the type pass, and by symbol in it (`calleeUses`, k.unsafe One path).
  * Fix (k.fixes Per code): only cleanup and rethrow, `try { A } catch (e) { B; throw e }`, becomes
  * `let done = false; try { A; done = true } finally { if (!done) { B } }`, `done` a name free in the function; with
@@ -87,8 +101,18 @@ export const noTryCatch: RuleDef = {
         if (n.finalizer !== null) finals.push(n.finalizer);
         if (n.handler !== null) tries.push(n);
       },
+      AssignmentExpression: (n) => {
+        if (g === undefined || n.operator !== "=") return;
+        const t = n.left;
+        const path = t.type === "Identifier" || t.type === "MemberExpression" ? g.resolve(t) : null;
+        if (path?.length === 1 && HANDLERS.has(path[0] ?? "")) out.push(findingAt(file, n.start, { kind: "listener" }));
+      },
       CallExpression: (n) => {
         const c = n.callee;
+        const first = n.arguments[0];
+        const events = g === undefined ? undefined : LISTENERS.get(g.resolve(c)?.join(".") ?? "");
+        if (events !== undefined && first?.type === "Literal" && typeof first.value === "string")
+          if (events.has(first.value)) out.push(findingAt(file, n.start, { kind: "listener" }));
         if (types !== true && isDefect(c)) defects.push(c.start);
         if (isAttempt(c)) attempts.push(n);
         if (types === true || c.type !== "MemberExpression" || c.computed) return;
@@ -109,7 +133,10 @@ export const noTryCatch: RuleDef = {
       const [first, expect] = n.arguments;
       if (n.arguments.length === 1 && first?.type !== "SpreadElement")
         out.push(findingAt(file, n.start, { kind: "attempt" }));
-      else if (expect?.type === "ArrowFunctionExpression" || expect?.type === "FunctionExpression") {
+      else if (
+        types !== true &&
+        (expect?.type === "ArrowFunctionExpression" || expect?.type === "FunctionExpression")
+      ) {
         const p = expect.params[0];
         const body = expect.body;
         const untested =

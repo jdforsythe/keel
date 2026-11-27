@@ -13,7 +13,7 @@ type Open = { engine: Promise<Engine>; busy: number; used: number; readonly clos
  * Shared by every evaluation of this module in the process: a `keel dev` reload evaluates it again, and the new
  * evaluation reuses the folders and pools the last one opened instead of opening them a second time.
  */
-const KEY = Symbol.for("keel.postgres.engines");
+const KEY = Symbol.for("@keel/std-postgres:engines");
 
 function sharedEngines(): Map<string, Open> {
   const shared: unknown = Reflect.get(globalThis, KEY);

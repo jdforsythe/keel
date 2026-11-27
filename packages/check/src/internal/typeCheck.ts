@@ -14,6 +14,7 @@ import { calleeUses } from "./calleeUses.ts";
 import { dateReads } from "./dateReads.ts";
 import { errArgumentAt } from "./errArgumentAt.ts";
 import { formatLiterals } from "./formatLiterals.ts";
+import { handMadeErrors } from "./handMadeErrors.ts";
 import { importMetaDeclarations } from "./importMetaDeclarations.ts";
 import { inKernel } from "./inKernel.ts";
 import { isAppPath } from "./isAppPath.ts";
@@ -22,6 +23,8 @@ import { judgeFormat } from "./judgeFormat.ts";
 import { keelThrows } from "./keelThrows.ts";
 import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
+import { nestedResultTypes } from "./nestedResultTypes.ts";
+import { otherSpellings } from "./otherSpellings.ts";
 import { ownCode } from "./ownCode.ts";
 import { packageName } from "./packageName.ts";
 import { probeRecorder } from "./probeRecorder.ts";
@@ -48,6 +51,8 @@ const DECLARATION = /\.d\.[cm]?ts$/;
 /** Kernel and stdlib code and generated output, at the root: E1576's files are the others. */
 const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
 
+/** A workspace package's own folder: kernel and stdlib code, where `supervise` is a library's call (E1461). */
+const PACKAGE = /(?:^|\/)packages\/[^/]+\//;
 const JSX_SOURCE = "@keel/runtime-dom";
 /**
  * Parsed files (app files, node_modules, workspace packages, TS libs) by compiler options, then path: one is reused
@@ -285,6 +290,7 @@ function pass(
   const dates = new Map<string, ReadonlySet<number>>();
   const schemeSelects = new Map<string, ReadonlySet<number>>();
   const throws = new Map<string, ReadonlySet<number>>();
+  const HAND_MADE = "KeelError written by hand: declare it with s.error and pass X.make(data)";
   const E1458 = "err takes a KeelError: declare it with s.error(code, data) and pass X.make(data)";
   for (const [fileName, file] of byName) {
     const sf = program.getSourceFile(fileName);
@@ -292,6 +298,7 @@ function pass(
     const own = skip.get(file.path) ?? new Set<string>();
     const view = views.get(fileName) ?? { text: file.source, original: (p: number) => p };
     const syntactic = own.has("E1000") ? [] : program.getSyntacticDiagnostics(sf);
+    const refused = new Set<number>();
     const app = isAppPath(file.path) || library.has(file.path);
     for (const d of [...syntactic, ...program.getSemanticDiagnostics(sf)]) {
       const arg =
@@ -300,6 +307,7 @@ function pass(
           : undefined;
       const argAt = arg === undefined ? -1 : view.original(arg.getStart(sf));
       if (arg !== undefined && argAt >= 0) {
+        refused.add(arg.getStart(sf));
         out.push({
           kind: "diag",
           code: "E1458",
@@ -353,9 +361,22 @@ function pass(
       for (const t of textNodes(sf, checker))
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
     if (app) {
-      for (const u of calleeUses(sf, checker, program, ownerOf, inKernel(file.path)))
+      for (const u of calleeUses(
+        sf,
+        checker,
+        program,
+        ownerOf,
+        inKernel(file.path),
+        library.has(file.path) || PACKAGE.test(file.path),
+      ))
         push(u.code, u.at, u.message, u.see);
       for (const p of unprovenPredicates(sf, checker)) push("E1762", p.at, p.message, "k.identity");
+      for (const u of otherSpellings(sf, checker, program)) push(u.code, u.at.getStart(sf), u.message, "k.unsafe");
+      for (const t of nestedResultTypes(sf, checker, ownerOf))
+        push("E1459", t.getStart(sf), "Result in a Result: return the inner Result itself", "k.attempt");
+      if (!inKernel(file.path))
+        for (const o of handMadeErrors(sf, checker, ownerOf))
+          if (!refused.has(o.getStart(sf))) push("E1458", o.getStart(sf), HAND_MADE, "k.expect");
     }
   }
   const held = new Map(

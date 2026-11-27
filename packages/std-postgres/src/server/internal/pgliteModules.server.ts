@@ -9,7 +9,7 @@ import { installedPglite } from "./installedPglite.server.ts";
  * Compiling them for each PGlite (each about 9 MB of code) and freeing them when it closes is what a process that
  * opens many folders, or one in memory per test, spends its time on; V8's code allocator has failed on that churn.
  */
-const KEY = Symbol.for("keel.postgres.pglite-modules");
+const KEY = Symbol.for("@keel/std-postgres:pglite-modules");
 
 /**
  * The process's compiled PGlite modules, or none where no PGlite package is installed (a built server); a failed

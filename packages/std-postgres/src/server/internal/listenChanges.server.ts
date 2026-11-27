@@ -23,7 +23,7 @@ type Listener = {
  * Shared by every evaluation of this module in the process (a `keel dev` reload evaluates it again): one listening
  * connection per URL.
  */
-const KEY = Symbol.for("keel.postgres.listeners");
+const KEY = Symbol.for("@keel/std-postgres:listeners");
 
 function sharedListeners(): Map<string, Listener> {
   const shared: unknown = Reflect.get(globalThis, KEY);
