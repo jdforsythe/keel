@@ -192,19 +192,19 @@ const FILE_ERRORS: { name: string; source: string; message: string | RegExp; at:
   },
   {
     name: "base",
-    source: `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ base: { page: { bg: 'acme.accent' } }, color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' } })\n`,
+    source: `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ base: { page: { bg: 'acme.accent' } }, color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' } })\n`,
     message: "acmeTokens holds base",
     at: "base:",
   },
   {
     name: "schemes",
-    source: `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ schemes: ['light'], color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' } })\n`,
+    source: `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ schemes: ['light'], color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' } })\n`,
     message: "acmeTokens holds schemes",
     at: "schemes:",
   },
   {
     name: "a look naming a token the object lacks",
-    source: `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.missing', fg: 'acme.ink' } } })\n`,
+    source: `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.missing', fg: 'acme.ink' } } })\n`,
     message: 'look "acme.badge" names color "acme.missing", not in acmeTokens',
     at: "'acme.badge'",
   },
@@ -246,7 +246,7 @@ test(
     );
     fc.assert(
       fc.property(fc.constantFrom("base", "schemes"), values, (key, value) => {
-        const source = `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ ${key}: ${value}, color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' } })\n`;
+        const source = `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ ${key}: ${value}, color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' } })\n`;
         const d = shippedWith(source);
         expect(d.map((x) => x.message)).toEqual([`acmeTokens holds ${key}`]);
         expect(d[0]?.path).toBe(SHIPPED);
@@ -305,7 +305,7 @@ test("a shipped file in form is no E1812, and a library listing no `./tokens` en
 });
 
 // ---- own folder
-const OWN_TOKENS = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "./src/acmeTokens.ts";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n});\n`;
+const OWN_TOKENS = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "./src/acmeTokens.ts";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n});\n`;
 /** The library's own folder: the library's files at the root, `tokens.ts` composing the shipped object as the fix writes it. */
 function own(tokens = OWN_TOKENS, shipped = shippedSource()): Files {
   return [

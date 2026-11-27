@@ -7,11 +7,11 @@
 // Spec: k.a11y-static, clause "In k.looks' fixed project with `schemes: ['light', 'dark']` and `'acme.ink': { light: '#FFFFFF', dark: '#FFFFFF' }` shipped against an `acme.accent` of `{ light: '#0B5CAD', dark: '#787878' }`, `keel check` reports one E1804 at the spread `...acmeTokens.color` in `tokens.ts` with message `acme.ink on acme.accent is 4.42:1 in dark, needs 4.5:1; override in tokens.ts` and none under `node_modules/`, and one, not two, when the app's tokens also hold a `radius` token `acme.badge`."
 // Spec: k.looks, clause "`src/acmeTokens.ts` with `defineTokens({ ... } as const)` is one E1812 with message `acmeTokens.ts holds a type assertion; it is one defineTokens literal`."
 // Spec: k.looks, clause "With `tokens.ts`'s last import line `import { brandTokens } from \"@keel/ui/brand\"; // brand`, E1810's fix leaves that line as it is and adds the import on the line after it; with `/* a` ending that line and ` b */` on the next, it adds the import after the line holding ` b */`."
-// Fix (k.looks): "**Fix.** E1810's fix applies when `tokens` is `defineTokens(<object literal>)`, or an imported name `S`, taken as `defineTokens({ ...S })` with `defineTokens` imported from `@keel/ui` when the file does not import it. It adds `import { <id>Tokens } from \"<name>/tokens\";` after the last import, and for each group the shipped object holds, in k.ui's order with `look` last: `...<id>Tokens.<group>` after the last spread of the literal's `<group>` object, or, when the literal has no `<group>` property, `<group>: { ...S.<group>, ...<id>Tokens.<group> }` at its end, with one `...S.<group>` per top-level spread `...S` of an imported name whose tokens hold that group, in order. A `<group>` written as anything but an object literal gets no fix. The fix moves no comment: the import goes on its own line after the line on which the last import statement ends, or, when a comment that begins on that line ends on a later one, after the line that comment ends on. The fix's layout is not judged: a test compares the fixed file with the expected one after formatting both with `biome format` under the repo's configuration."
+// Fix (k.looks): "**Fix.** E1810's fix applies when `tokens` is `defineTokens(<object literal>)`, or an imported name `S`, taken as `defineTokens({ ...S })` with `defineTokens` imported from `@keel/ui/tokens` when the file does not import it. It adds `import { <id>Tokens } from \"<name>/tokens\";` after the last import, and for each group the shipped object holds, in k.ui's order with `look` last: `...<id>Tokens.<group>` after the last spread of the literal's `<group>` object, or, when the literal has no `<group>` property, `<group>: { ...S.<group>, ...<id>Tokens.<group> }` at its end, with one `...S.<group>` per top-level spread `...S` of an imported name whose tokens hold that group, in order. A `<group>` written as anything but an object literal gets no fix. The fix moves no comment: the import goes on its own line after the line on which the last import statement ends, or, when a comment that begins on that line ends on a later one, after the line that comment ends on. The fix's layout is not judged: a test compares the fixed file with the expected one after formatting both with `biome format` under the repo's configuration."
 // Seed: 1337 (fc.assert below). The half that needs `keel check`, `keel build` and `keel dev` to run (`evil.js` writes a marker file and none is written) is packages/cli/conformance/library-entries-e1815-cli.test.ts, since `check()` evaluates nothing.
 // ASSUMPTIONS: see library-looks-support.ts. "At each `deps` entry" is a position on the `'@acme/ui'` literal of `modules/<id>/module.ts`. In the library-contrast cases "at the spread" is a position on the `...acmeTokens.color` text. In the E1812 case the position is the line of the assertion. The E1810 fix is applied with `git apply`.
 // "keel names no file" is read as the spec lists it: a `keel` value that is no string, or a string naming no file under `src/` or `unsafe/` of the library (a file outside both, `./lib/t.ts`, and a missing `./src/missing.ts`, are each one).
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -161,7 +161,7 @@ test(
 );
 
 // ---- #13 library contrast
-const PAIRS = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  schemes: ["light", "dark"],\n  color: { ...brandTokens.color, ...acmeTokens.color%TAIL% },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n});\n`;
+const PAIRS = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  schemes: ["light", "dark"],\n  color: { ...brandTokens.color, ...acmeTokens.color%TAIL% },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n});\n`;
 const accentDark = (hex: string): Files => [
   {
     path: SHIPPED,
@@ -254,7 +254,7 @@ test(
 
 // ---- #14 as const / satisfies
 const withArg = (arg: string, tail = ""): string =>
-  `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens(${arg}${tail})\n`;
+  `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens(${arg}${tail})\n`;
 const OBJECT = `{ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } } }`;
 
 test(
@@ -319,7 +319,7 @@ test(
 test(
   "with `defineTokens` already imported above it, the new import is the very next line after the last import line, which keeps its trailing comment",
   () => {
-    const head = 'import { defineTokens } from "@keel/ui";\n';
+    const head = 'import { defineTokens } from "@keel/ui/tokens";\n';
     const source = `${head}import { brandTokens } from "@keel/ui/brand"; // brand\nexport const tokens = defineTokens({ ...brandTokens });\n`;
     const patched = sourceOf(fixOf(source), "tokens.ts").split("\n");
     const at = patched.indexOf('import { brandTokens } from "@keel/ui/brand"; // brand');

@@ -73,7 +73,7 @@ const run = (C: () => Node): void => {
 ${names.flatMap((n) => [`it("lib-${n}", () => run(WrapLib${n}));`, `it("app-${n}", () => run(WrapApp${n}));`]).join("\n")}
 `;
 const TOKENS =
-  'import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { "fg": "#8a8a8a", "bg": "#ffffff" }, space: { 1: "4px", 2: "8px", 3: "16px" } });\n';
+  'import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { "fg": "#8a8a8a", "bg": "#ffffff" }, space: { 1: "4px", 2: "8px", 3: "16px" } });\n';
 
 /** The installed library with the three components and `src/index.ts` exporting them beside `Badge`. */
 const libraryWith = (): Tree => {

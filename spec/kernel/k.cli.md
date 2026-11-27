@@ -1,6 +1,6 @@
 # k.cli: CLI, MCP, LSP
 status: conformance-covered
-**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`, served by the `keel` binary (flags parsed by `input`), `keel mcp` (one MCP tool per operation) and `keel lsp` (check diagnostics, fix diffs as code actions, `explain` as hover).
+**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`, served by the `keel` binary (flags parsed by `input`), `keel mcp` (one tool per operation) and `keel lsp` (diagnostics, fixes as code actions, `explain` as hover).
 
 **Commands.**
 | command | does |
@@ -18,16 +18,16 @@ status: conformance-covered
 | `evidence [--verify dir --key id]` | signed evidence (k.evidence) |
 | `review [range \| --all]` | escapes by danger, novelty (k.review) |
 
-`session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps` (unfilled: I1055). `report`: std.report.
+`session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps` (unfilled: I1055). `report`: std.report; `tokens`: k.design-tokens.
 
 Every command takes `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic ones also `--code <code>`.
 
-**Output.** Exactly OUTPUT.md. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
+**Output.** Exactly OUTPUT.md. Exit: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 
-**Formatter registry** (extension point).
+**Formatter registry.**
 ```ts
 import { formatter } from '@keel/cli'
-formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}`, pretty: (r) => table(r) })
+formatter('orders.report', { schema: Report, compact: (r) => r.id, pretty: table })
 ```
 Every output record has a `kind`, each kind one formatter. `json` is the record encoded by its schema, one NDJSON line, never hand-formatted. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, `review`, k.ledger's. `@keel/cli/testing`'s `respond(records, { format? })` renders records as a command does (E1054 included).
 
@@ -39,7 +39,7 @@ Every output record has a `kind`, each kind one formatter. `json` is the record 
 - `keel codemod move OrderCard` is E1052 naming `--to <module>` and a line passing it.
 - Under pnpm, `pnpm keel docs` in a line is printed as it is.
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
-- Each MCP tool's input schema equals the JSON Schema of its operation's input.
+- Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052.
 - A clean `keel check` in compact prints exactly one line.
 - `keel check apps/a` at a workspace root and `keel check` in `apps/a` report the same diagnostics.
 - Compact and json output contain no ANSI escapes, no carriage returns, and no absolute paths.
@@ -52,3 +52,4 @@ Every output record has a `kind`, each kind one formatter. `json` is the record 
 - `respond` of a record of a kind with no formatter yields E1054.
 - After `stdCommand('session', op)`, `keel session` parses argv with `op.input`, runs `op` and emits its records, and the MCP tools include `session`; unfilled, I1055, exit 0; filling it with another `op` throws E1053.
 - Run with `npm_config_user_agent` `pnpm/10.0.0`, `keel check` in a project with a stale generated deploy file prints its E1005 line naming `pnpm keel build`; with `npm/10.0.0`, `npx --no keel build`; with none, `keel build`; with `--format=json` the record text is the same in each.
+- `keel dev` with no `server.host` in the Vite config, or with `server.host` `127.0.0.1`, listens on 127.0.0.1 only.

@@ -2,7 +2,7 @@
 // Seed: 1337.
 // Assumed: tokens are passed as `artifacts: { tokens }` (as ui-e1804 does); `weight` tokens are strings such as "700".
 import { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, one } from "./support.ts";

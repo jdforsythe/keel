@@ -2,7 +2,8 @@
 // Seed: 1337.
 // Assumed (spec names no entry shape): `contrastTable(tokens)` returns an array of `{ scheme: 'light' | 'dark', fg: string, bg: string, ratio: number }`,
 // `fg` and `bg` being color token names; a color given as a single value counts in both schemes.
-import { contrastTable, defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
+import { contrastTable } from "@keel/ui/css";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, ratio, tokens } from "./fixtures.ts";

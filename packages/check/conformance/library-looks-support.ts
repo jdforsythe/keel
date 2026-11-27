@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { check } from "@keel/check";
 import { repoRoot } from "@keel/tooling/repo-root";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { manifestFile } from "./module-support.ts";
 import type { Files } from "./support.ts";
@@ -27,7 +27,7 @@ const LEDGER = `${JSON.stringify({ version: 1, unsafe: 0, hostElements: 0, rungs
 
 /** `src/acmeTokens.ts` as the k.looks Conformance fixture writes it; `color` is the source text of the `color` group's body. */
 export const shippedSource = (color = "'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF'", extra = ""): string =>
-  `import { defineTokens } from '@keel/ui'\n${extra}export const acmeTokens = defineTokens({ color: { ${color} }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } } })\n`;
+  `import { defineTokens } from '@keel/ui/tokens'\n${extra}export const acmeTokens = defineTokens({ color: { ${color} }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } } })\n`;
 
 /** `src/Badge.tsx`, its `Text` given `props` (source text of extra attributes). */
 export const badgeSource = (props = ""): string =>
@@ -77,7 +77,7 @@ export function app(tokensSource: string | undefined, over: Files = [], drop: st
 }
 
 export const BRAND_ONLY = `import { brandTokens } from "@keel/ui/brand";\nexport const tokens = brandTokens;\n`;
-const FIXED_HEAD = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n`;
+const FIXED_HEAD = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n`;
 /** `tokens.ts` as the fix writes it (k.looks Conformance), `color` and `look` the source text of each group's body after the shipped spread. */
 export const fixedTokens = (colorTail = "", lookSpread = "...acmeTokens.look"): string =>
   `${FIXED_HEAD}\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color${colorTail} },\n  look: { ...brandTokens.look${lookSpread === "" ? "" : `, ${lookSpread}`} },\n});\n`;

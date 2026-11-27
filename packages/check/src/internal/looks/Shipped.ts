@@ -6,6 +6,8 @@
 export type Shipped = {
   readonly value: Readonly<Record<string, unknown>>;
   readonly names: ReadonlyMap<string, readonly string[]>;
+  /** The names each shipped theme holds per group (k.themes Library themes), by theme key. */
+  readonly themes: ReadonlyMap<string, ReadonlyMap<string, readonly string[]>>;
   readonly keys: ReadonlyMap<string, number>;
   readonly problem: { readonly at: number; readonly message: string } | null;
 };

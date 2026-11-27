@@ -112,7 +112,7 @@ beforeAll(() => {
   write(
     fixture,
     "tokens.ts",
-    'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n',
+    'import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n',
   );
   write(
     fixture,

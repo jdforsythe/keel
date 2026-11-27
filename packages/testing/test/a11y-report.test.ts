@@ -10,7 +10,8 @@ import { render, renderRoute } from "@keel/testing";
 import { WCAG_CRITERIA, a11yRules, criteriaOf, writeA11yReport } from "@keel/testing/a11y";
 import type { A11yRun } from "@keel/testing/a11y";
 import { tempDir } from "@keel/tooling/test-tmp";
-import { Button, Text, defineTokens } from "@keel/ui";
+import { Button, Text } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 

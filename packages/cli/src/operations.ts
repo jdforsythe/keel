@@ -157,6 +157,14 @@ export const operations: readonly Operation[] = [
     scope: "tree",
   },
   {
+    name: "tokens",
+    description: "Import design tokens or set one (k.design-tokens).",
+    input: s.object({ op: s.string().optional(), args: s.array(s.string()).optional(), ...diagnostic }),
+    output: outputOf(),
+    positional: ["op", "args"],
+    scope: "none",
+  },
+  {
     name: "ledger",
     description: "Emit the ledger, --write it, or diff it with the committed one.",
     input: s.object({

@@ -9,7 +9,7 @@ import { SEED, SHIPPED, app, codesOf, composed, fixedTokens } from "./library-lo
 
 const FIXED = fixedTokens();
 const shipped = (body: string): string =>
-  `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ ${body} })\n`;
+  `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ ${body} })\n`;
 const e1812 = (source: string) => codesOf(app(FIXED, [{ path: SHIPPED, source }]), "E1812", composed());
 const lit = (v: string): string => JSON.stringify(v);
 

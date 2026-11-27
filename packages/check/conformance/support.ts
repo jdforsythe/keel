@@ -2,6 +2,7 @@
 // Seed 1337 for every property in this suite.
 import { type Dirent, readdirSync } from "node:fs";
 import type { check } from "@keel/check";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const SEED = 1337;
 export type Files = Parameters<typeof check>[0];
@@ -152,3 +153,72 @@ export function sourceFilesUnder(dir: URL): string[] {
   walk("");
   return out.sort();
 }
+
+/** Tokens written as plain data, so a group `Tokens` does not name yet (`themes`, `overlay`) type-checks before the build; the same pattern as ui's `withGroups`. */
+export const looseTokens = (plain: unknown) => defineTokens(JSON.parse(JSON.stringify(plain)));
+
+/** The `#rrggbb` channels of a hex color. */
+const channelsOf = (hex: string): [number, number, number] => {
+  const n = Number.parseInt(hex.replace("#", "").slice(0, 6), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const lin = (c: number, knee: number): number => {
+  const a = Math.abs(c);
+  return Math.sign(c) * (a <= knee ? a / 12.92 : ((a + 0.055) / 1.055) ** 2.4);
+};
+const words = (color: string): number[] =>
+  (/\(([^)]*)\)/.exec(color)?.[1] ?? "")
+    .replace("display-p3", "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => (w.endsWith("%") ? Number.parseFloat(w) / 100 : Number.parseFloat(w)));
+const oklab = (L: number, a: number, b: number): [number, number, number] => {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+};
+/** Linear sRGB channels of a `<color>` as given, from the formulas of k.values Contrast (not gamut-mapped). */
+export const linearOf = (color: string): [number, number, number] => {
+  const [x = 0, y = 0, z = 0] = color.startsWith("#") ? channelsOf(color) : words(color);
+  if (color.startsWith("#") || color.startsWith("rgb("))
+    return [lin(x / 255, 0.03928), lin(y / 255, 0.03928), lin(z / 255, 0.03928)];
+  if (color.startsWith("hsl(")) {
+    const h = ((x % 360) + 360) % 360;
+    const f = (n: number): number => {
+      const k = (n + h / 30) % 12;
+      return z - y * Math.min(z, 1 - z) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    };
+    return [lin(f(0), 0.03928), lin(f(8), 0.03928), lin(f(4), 0.03928)];
+  }
+  if (color.startsWith("oklab(")) return oklab(x, y, z);
+  if (color.startsWith("oklch(")) return oklab(x, y * Math.cos((z * Math.PI) / 180), y * Math.sin((z * Math.PI) / 180));
+  const [pr, pg, pb] = [lin(x, 0.04045), lin(y, 0.04045), lin(z, 0.04045)];
+  return [
+    1.2249401 * pr - 0.2249404 * pg,
+    -0.0420569 * pr + 1.0420571 * pg,
+    -0.0196376 * pr - 0.0786361 * pg + 1.0982735 * pb,
+  ];
+};
+/** Whether the color is inside sRGB: no linear channel out of 0..1 by more than 0.000001. */
+export const insideSrgb = (color: string): boolean => linearOf(color).every((c) => c >= -0.000001 && c <= 1.000001);
+/** `0.2126 R + 0.7152 G + 0.0722 B` of the color as given, clamped to 0..1. */
+export const lumOf = (color: string): number => {
+  const [r, g, b] = linearOf(color);
+  return Math.min(1, Math.max(0, 0.2126 * r + 0.7152 * g + 0.0722 * b));
+};
+/** WCAG contrast ratio of two `<color>`s as given, two decimals as E1804 prints it. */
+export const ratioOf = (a: string, b: string): string => {
+  const [hi, lo] = [Math.max(lumOf(a), lumOf(b)), Math.min(lumOf(a), lumOf(b))];
+  return ((hi + 0.05) / (lo + 0.05)).toFixed(2);
+};
+/** `a x c + (1 - a) x b` on each encoded sRGB channel, as browsers blend (k.values Contrast): the `#rrggbb` of `rgb` over `backdrop`. */
+export const blend = (rgb: [number, number, number], alpha: number, backdrop: string): string => {
+  const back = channelsOf(backdrop);
+  const mixed = rgb.map((c, i) => Math.round(alpha * c + (1 - alpha) * (back[i] ?? 0)));
+  return `#${mixed.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+};

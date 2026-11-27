@@ -2,6 +2,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { lsp, mcp, operations, run } from "../src/index.ts";
+import { SHARED_FLAGS } from "../src/internal/SHARED_FLAGS.ts";
 import { toJsonSchema } from "../src/internal/toJsonSchema.ts";
 import type { Io } from "../src/types/Io.ts";
 import { applyEdits } from "./support/applyEdits.ts";
@@ -35,7 +36,7 @@ const key = (d: { code: unknown; path?: unknown; line?: unknown; col?: unknown; 
   JSON.stringify([d.code, d.path, d.line, d.col, d.message]);
 
 describe("surfaces", () => {
-  it("each MCP tool's input schema equals the JSON Schema of its operation's input", async () => {
+  it("each MCP tool's input schema equals the JSON Schema of its operation's input less the shared flags, which initialize states once", async () => {
     const out = await mcp(() => ({ cwd: CWD })).receive(`${rpc(1, "tools/list", {})}\n`);
     const [reply] = replies(out);
     const result = reply?.result;
@@ -44,8 +45,16 @@ describe("surfaces", () => {
         ? result.tools
         : [];
     expect(tools.map((t) => t.name)).toEqual(operations.map((o) => o.name));
-    for (const op of operations)
-      expect(tools.find((t) => t.name === op.name)?.inputSchema).toEqual(toJsonSchema(op.input.node));
+    for (const op of operations) {
+      const full = toJsonSchema(op.input.node);
+      const props = typeof full.properties === "object" && full.properties !== null ? full.properties : {};
+      const own = Object.fromEntries(Object.entries(props).filter(([k]) => !SHARED_FLAGS.names.includes(k)));
+      expect(Object.keys(props)).toEqual(expect.arrayContaining([...SHARED_FLAGS.names]));
+      expect(tools.find((t) => t.name === op.name)?.inputSchema).toEqual({ ...full, properties: own });
+    }
+    const [init] = replies(await mcp(() => ({ cwd: CWD })).receive(`${rpc(2, "initialize", {})}\n`));
+    const text = JSON.stringify(init?.result);
+    for (const flag of SHARED_FLAGS.names) expect(text).toContain(flag);
   });
 
   it("check --format=json, the MCP check tool, and LSP diagnostics yield the same set of (code, path, line, col, message)", async () => {

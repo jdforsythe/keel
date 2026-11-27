@@ -4,7 +4,8 @@
 import { check } from "@keel/check";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
-import { Box, Text, defineTokens } from "@keel/ui";
+import { Box, Text } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 

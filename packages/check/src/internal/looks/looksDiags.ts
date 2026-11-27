@@ -1,3 +1,4 @@
+import { fitNames } from "@keel/schema/internal";
 import { tokenGroups } from "@keel/ui";
 import { type ObjectExpression, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
@@ -10,7 +11,9 @@ import { unifiedDiff } from "../unifiedDiff.ts";
 import type { LookLibrary } from "./LookLibrary.ts";
 import type { Looks } from "./Looks.ts";
 import { e1810Edits } from "./e1810Edits.ts";
+import { e1810ThemeEdits } from "./e1810ThemeEdits.ts";
 import { entryProblems } from "./entryProblems.ts";
+import { themeGaps } from "./themeGaps.ts";
 import { tokensInit } from "./tokensInit.ts";
 
 type Rec = Readonly<Record<string, unknown>>;
@@ -106,6 +109,34 @@ export function looksDiags(
         : unifiedDiff(tokensFile.path, tokensFile.source, applyEdits(tokensFile.source, edits));
     out.push(moduleDiag("E1810", tokensFile, found?.name ?? 0, message, fix, SEE));
   }
+  // E1810 for themes: the app's `contrast` and `print` themes hold the names the shipped ones hold.
+  for (const lib of looks.listed) {
+    if (lib.entry !== "ok" || lib.shipped === null) continue;
+    for (const gap of themeGaps(lib.shipped, value.themes)) {
+      const [first] = gap.missing;
+      if (first === undefined) continue;
+      const [group, token] = first;
+      const more = gap.missing.length > 1 ? ` and ${gap.missing.length - 1} more` : "";
+      const message = fitNames(
+        ([name, theme, t, id]) =>
+          `${name} needs themes.${theme} ${group} "${t}"${more}; spread ${id}Tokens.themes.${gap.key}.${group}`,
+        [lib.name, gap.theme, token, lib.id],
+      );
+      if (tokensFile === undefined) {
+        for (const { path, entry } of looks.entries.get(lib.name) ?? []) {
+          const file = byPath.get(path);
+          if (file !== undefined) out.push(moduleDiag("E1810", file, entry.start, message, undefined, SEE));
+        }
+        continue;
+      }
+      const edits = program === undefined ? null : e1810ThemeEdits(tokensFile.source, program, lib, gap);
+      const fix =
+        edits === null
+          ? undefined
+          : unifiedDiff(tokensFile.path, tokensFile.source, applyEdits(tokensFile.source, edits));
+      out.push(moduleDiag("E1810", tokensFile, found?.name ?? 0, message, fix, SEE));
+    }
+  }
   if (tokensFile === undefined) return out;
   // E1813: in a library's own folder, each key the fixture writes over its defaults.
   const own = looks.own;
@@ -132,22 +163,38 @@ export function looksDiags(
     }
   // E1813: each dotted name of the tokens that no listed library ships.
   const literals = program === undefined ? new Map<string, number>() : stringLiterals(program);
+  const unshipped = (group: string, name: string): string | undefined => {
+    const dot = name.indexOf(".");
+    if (dot < 0 || overridden.has(`${group}\u0000${name}`)) return undefined;
+    const id = name.slice(0, dot);
+    const lib = looks.listed.find((l) => l.id === id);
+    if (lib !== undefined && ships(lib, group, name)) return undefined;
+    return lib === undefined
+      ? `${group} "${name}": no library the app lists has id ${id}`
+      : `${group} "${name}": ${lib.name} ships no such token`;
+  };
+  const reported = new Set<string>();
   for (const group of [...tokenGroups, "look"]) {
     const g = value[group];
     if (!isRec(g)) continue;
     for (const name of Object.keys(g)) {
-      const dot = name.indexOf(".");
-      if (dot < 0 || overridden.has(`${group}\u0000${name}`)) continue;
-      const id = name.slice(0, dot);
-      const lib = looks.listed.find((l) => l.id === id);
-      if (lib !== undefined && ships(lib, group, name)) continue;
-      const message =
-        lib === undefined
-          ? `${group} "${name}": no library the app lists has id ${id}`
-          : `${group} "${name}": ${lib.name} ships no such token`;
-      out.push(moduleDiag("E1813", tokensFile, literals.get(name) ?? 0, message, undefined, SEE));
+      const bad = unshipped(group, name);
+      if (bad !== undefined) out.push(moduleDiag("E1813", tokensFile, literals.get(name) ?? 0, bad, undefined, SEE));
     }
   }
+  // E1813 in a theme: each dotted name of a theme's groups, as a top-level key is judged.
+  const themes = value.themes;
+  for (const theme of isRec(themes) ? Object.values(themes) : [])
+    for (const group of isRec(theme) ? tokenGroups : []) {
+      const g = isRec(theme) ? theme[group] : undefined;
+      if (!isRec(g)) continue;
+      for (const name of Object.keys(g)) {
+        const bad = unshipped(group, name);
+        if (bad === undefined || reported.has(`${group}\u0000${name}`)) continue;
+        reported.add(`${group}\u0000${name}`);
+        out.push(moduleDiag("E1813", tokensFile, literals.get(name) ?? 0, bad, undefined, SEE));
+      }
+    }
   return out;
 }
 

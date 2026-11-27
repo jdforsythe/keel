@@ -1,8 +1,8 @@
-// Properties of compileStyles: determinism, dedupe, order independence, injective class names. Seed 1337.
-import { defineTokens } from "@keel/ui";
 import type { StyleState } from "@keel/ui";
 import { compileStyles } from "@keel/ui/css";
 import type { StyleUsage } from "@keel/ui/css";
+// Properties of compileStyles: determinism, dedupe, order independence, injective class names. Seed 1337.
+import { defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -118,7 +118,7 @@ describe("compileStyles properties", () => {
     expect(at("(min-width: 768px)")).toBeLessThan(at("(min-width: 1024px)"));
     expect(at("(min-width: 1024px)")).toBeLessThan(at(".k-hover-p-1:hover"));
     expect(css).toContain(
-      '@media (prefers-color-scheme: dark){\n:root:not([data-k-scheme="light"]){--k-color-fg:#eee;--k-color-bg:#111}\n}',
+      '@media screen and (prefers-color-scheme: dark){\n:root:not([data-k-scheme="light"]){--k-color-fg:#eee;--k-color-bg:#111}\n}',
     );
   });
 
