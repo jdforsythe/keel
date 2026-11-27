@@ -26,5 +26,5 @@ const r = await run({
   interrupted,
   env: { npm_config_user_agent, KEEL_AGENT, CI },
 });
-// The run is over once its output is out: an interrupted write left in flight does not hold the process.
+// `run` settles only after an interrupted run's cleanup is done, so the process exits once its output is out.
 process.stdout.write(r.stdout, () => process.exit(r.code));

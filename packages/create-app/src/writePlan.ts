@@ -17,9 +17,11 @@ const codeOf = (e: unknown): string =>
  * listing every path, each folder is made and each file created only where nothing is (`wx`), never replaced, and the
  * marker is removed last. The writes are asynchronous, so a signal is handled while one is in flight. A write that
  * fails (`{ failed }`, E1365), or a signal (`{ stopped }`, E1367) that `interrupted` settles with during a write or
- * `stopped` reports between two, removes the files and folders this run made, in reverse, the marker last; a file whose
- * creation was still in flight is removed when it settles. A kill no handler sees leaves the marker, which the next
- * run names (E1366). `written` is told each path after its write (a test seam).
+ * `stopped` reports between two, first waits for the write in flight to settle, then removes the files this run made,
+ * then the folders it made inside the folder, then the marker, then the folder and the folders above it that it made;
+ * the promise settles only once all of that is done, so a caller that exits then leaves nothing behind. A kill no
+ * handler sees leaves the marker, which the next run names (E1366). `written` is told each path after its write (a
+ * test seam).
  */
 export async function writePlan(
   abs: string,
@@ -43,23 +45,33 @@ export async function writePlan(
     const linked = [MARKER, ...paths].find((p) => linkEscapes(real, join(real, p)));
     if (linked !== undefined) return { linked };
   }
-  const madeDirs: string[] = [];
+  /** The folder and the folders above it that this run made, outermost first. */
+  const madeOuter: string[] = [];
+  /** The folders inside the folder that this run made, in the order made. */
+  const madeInner: string[] = [];
   const madeFiles: string[] = [];
-  const undo = (): void => {
-    for (const f of madeFiles.reverse()) rmSync(f, { force: true });
-    for (const d of madeDirs.reverse()) {
-      try {
-        rmdirSync(d);
-      } catch {
-        // not empty: something else wrote into it, so it is not this run's to remove
-      }
+  const marker = join(abs, MARKER);
+  const rmdirOwn = (d: string): void => {
+    try {
+      rmdirSync(d);
+    } catch {
+      // not empty: something else wrote into it, so it is not this run's to remove
     }
   };
+  /** Removes what this run made: files, then the folders inside, then the marker, then the folder and those above. */
+  const undo = (): void => {
+    for (const f of [...madeFiles].reverse()) if (f !== marker) rmSync(f, { force: true });
+    for (const d of [...madeInner].reverse()) rmdirOwn(d);
+    if (madeFiles.includes(marker)) rmSync(marker, { force: true });
+    for (const d of [...madeOuter].reverse()) rmdirOwn(d);
+  };
+  const before = seams.stopped?.();
+  if (before !== undefined) return { stopped: before };
   if (fresh) {
     try {
       const top = mkdirSync(abs, { recursive: true });
       for (let at = abs; top !== undefined; at = dirname(at)) {
-        madeDirs.unshift(at);
+        madeOuter.unshift(at);
         if (at === top || dirname(at) === at) break;
       }
     } catch (e) {
@@ -72,10 +84,9 @@ export async function writePlan(
     for (let at = dir; at !== abs && !existsSync(at); at = dirname(at)) missing.unshift(at);
     for (const d of missing) {
       mkdirSync(d);
-      madeDirs.push(d);
+      madeInner.push(d);
     }
   };
-  const marker = join(abs, MARKER);
   const steps: readonly (readonly [string, string, string])[] = [
     [MARKER, marker, `${paths.join("\n")}\n`],
     ...paths.map((p): readonly [string, string, string] => [p, join(abs, p), files.get(p) ?? ""]),
@@ -110,12 +121,12 @@ export async function writePlan(
       interrupted,
     ]);
     if ("stop" in outcome) {
-      undo();
-      // The creation in flight may settle after the undo: its file is removed then.
-      void writing.then(
-        () => rmSync(target, { force: true }),
+      // The creation in flight settles first, so the file it may have made is in `madeFiles` before the undo.
+      await writing.then(
+        () => undefined,
         () => undefined,
       );
+      undo();
       return { stopped: outcome.stop };
     }
     if ("reason" in outcome) {
