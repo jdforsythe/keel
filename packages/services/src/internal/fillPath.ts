@@ -15,13 +15,16 @@ const NO_SEGMENT: ReadonlySet<string> = new Set(["", ".", ".."]);
  */
 export function fillPath(path: string, params: JsonValue | undefined): Result<string, ApiError<never>> {
   const fields = isFields(params) ? params : {};
-  let bad: [string, "format" | "type"] | undefined;
+  let bad: ApiError<never> | undefined;
   const filled = path.replace(PARAM, (_match, name: string) => {
     const text = textOf(Object.hasOwn(fields, name) ? fields[name] : undefined);
-    const r = attempt(() => encodeURIComponent(text));
+    const r = attempt(
+      () => encodeURIComponent(text),
+      (x) => (x instanceof URIError ? fail.input([{ path: ["params", name], rule: "type" }]) : undefined),
+    );
     if (r.ok && !NO_SEGMENT.has(text)) return r.value;
-    bad ??= [name, r.ok ? "format" : "type"];
+    bad ??= r.ok ? fail.input([{ path: ["params", name], rule: "format" }]) : r.error;
     return "";
   });
-  return bad === undefined ? ok(filled) : err(fail.input([{ path: ["params", bad[0]], rule: bad[1] }]));
+  return bad === undefined ? ok(filled) : err(bad);
 }

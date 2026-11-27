@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import type { Contract } from "@keel/router/contract";
-import { attempt, err } from "@keel/schema";
+import { attempt } from "@keel/schema";
 import type { Client } from "./Client.ts";
 import type { ContractClient } from "./ContractClient.ts";
 import type { EndpointMap } from "./EndpointMap.ts";
@@ -50,8 +50,7 @@ export function service(opts: ServiceOptions): unknown {
   const fallback = positive(opts.timeout ?? DEFAULT_TIMEOUT, "service");
   const limit = bytes(opts.maxBytes ?? DEFAULT_MAX_BYTES);
   const { base, contract } = opts;
-  if (base !== undefined && !attempt(() => new URL(base)).ok)
-    throw new Error(`service base is not an absolute URL: ${base}`);
+  if (base !== undefined && URL.parse(base) === null) throw new Error(`service base is not an absolute URL: ${base}`);
   const target = (ctx: Ctx): Target =>
     contract !== undefined
       ? moduleTarget(ctx, contract.module)
@@ -72,8 +71,10 @@ export function service(opts: ServiceOptions): unknown {
       const method = e.events
         ? (input: unknown, ctx: Ctx) => events(e, target(ctx), ms, limit, input, ctx)
         : async (input: unknown, ctx: Ctx) => {
-            const r = await attempt(() => call(e, target(ctx), ms, limit, input, ctx));
-            return r.ok ? r.value : err(fail.network());
+            return attempt(
+              () => call(e, target(ctx), ms, limit, input, ctx),
+              (x) => (x instanceof Error ? fail.network() : undefined),
+            );
           };
       return [[name, method]];
     }),

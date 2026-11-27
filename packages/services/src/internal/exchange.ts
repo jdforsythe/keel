@@ -22,7 +22,10 @@ export async function exchange(
   target: Target,
   limit: number,
 ): Promise<Result<unknown, ApiError>> {
-  const fetched = await attempt(() => target.send(req));
+  const fetched = await attempt(
+    () => target.send(req),
+    (x) => (x instanceof Error ? fail.network() : undefined),
+  );
   if (!fetched.ok) return err(fail.network());
   const res = fetched.value;
   const success = res.status >= 200 && res.status < 300;
@@ -30,8 +33,8 @@ export async function exchange(
   const schema = success ? e.output : e.errors?.[res.status];
   if (schema === undefined) return err(fail.status(res.status, null));
   const text = await readWithin(res, limit);
-  if (!text.ok && text.error === "failed") return err(fail.network());
-  if (!text.ok) return err(success ? fail.decode([{ path: [], rule: "max" }]) : fail.status(res.status, null));
+  if (!text.ok && text.error.code === "api.network") return text;
+  if (!text.ok) return success ? text : err(fail.status(res.status, null));
   const json = readJson(text.value);
   const body = !json.ok
     ? undefined
@@ -39,7 +42,7 @@ export async function exchange(
       ? routeResult(json.value, req.method === "GET")
       : success
         ? json
-        : err(json.value);
+        : { ok: false as const, error: json.value };
   const decoded = body?.ok === success ? schema.parse(body.ok ? body.value : body.error) : undefined;
   if (!success) return err(fail.status(res.status, decoded?.ok ? decoded.value : null));
   if (decoded === undefined) return err(fail.decode([{ path: [], rule: "type" }]));
