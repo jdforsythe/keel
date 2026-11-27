@@ -1,5 +1,6 @@
-import { type ColorSyntax, colorSyntax } from "../internal/colorSyntax.ts";
+import { colorSyntax } from "../internal/colorSyntax.ts";
 import { hslToRgb } from "../internal/hslToRgb.ts";
+import type { ColorSyntax } from "../types/ColorSyntax.ts";
 import { colorLinear } from "./colorLinear.ts";
 import { gamutMap } from "./gamutMap.ts";
 

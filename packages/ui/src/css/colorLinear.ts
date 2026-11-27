@@ -1,6 +1,6 @@
-import type { ColorSyntax } from "../internal/colorSyntax.ts";
 import { hslToRgb } from "../internal/hslToRgb.ts";
 import { oklabToLinear } from "../internal/oklabToLinear.ts";
+import type { ColorSyntax } from "../types/ColorSyntax.ts";
 
 type Rgb = readonly [number, number, number];
 

@@ -1,14 +1,8 @@
 import type { Shipped } from "./Shipped.ts";
+import type { ThemeGap } from "./ThemeGap.ts";
 
 type Rec = Readonly<Record<string, unknown>>;
 const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null && !Array.isArray(v);
-
-/** The names an app theme lacks of a shipped theme (k.themes Library themes): the app's theme, the shipped key, `[group, name]` each. */
-export type ThemeGap = {
-  readonly theme: string;
-  readonly key: "contrast" | "print";
-  readonly missing: readonly (readonly [string, string])[];
-};
 
 /**
  * For each of the app's themes whose `when` is `contrast` or `print` (`themes` the evaluated `themes` of the tokens,

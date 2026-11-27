@@ -2,8 +2,8 @@ import type { ObjectExpression, Program } from "oxc-parser";
 import type { Edit } from "../../types/Edit.ts";
 import { keyName } from "../keyName.ts";
 import type { LookLibrary } from "./LookLibrary.ts";
+import type { ThemeGap } from "./ThemeGap.ts";
 import { importEdits } from "./importEdits.ts";
-import type { ThemeGap } from "./themeGaps.ts";
 import { tokensInit } from "./tokensInit.ts";
 
 /** The object literal held by the property `key` of `o`, or undefined (absent, or not an object literal); null when it is held as anything else. */

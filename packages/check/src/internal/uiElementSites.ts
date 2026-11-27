@@ -1,10 +1,8 @@
 import { type JSXOpeningElement, type Program, Visitor } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
+import type { UiSite } from "./UiSite.ts";
 import { importTarget } from "./importTarget.ts";
 import { parseFile } from "./parseFile.ts";
-
-/** One use of a `@keel/ui` export: its offset (an element's `<`, a call's callee) and the element, for a call none. */
-export type UiSite = { readonly at: number; readonly element: JSXOpeningElement | undefined };
 
 const UI = "@keel/ui";
 const DEPTH = 8;
