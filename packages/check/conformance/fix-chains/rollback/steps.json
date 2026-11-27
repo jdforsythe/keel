@@ -4,7 +4,7 @@
     {
       "code": "E1452",
       "fix": true,
-      "message": "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch"
+      "message": "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)"
     }
   ]
 }

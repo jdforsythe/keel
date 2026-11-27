@@ -1,11 +1,11 @@
-// Spec: k.errors, clause "In `modules/m/a.ts`, `throw new Error('x')` is one E1451, message `throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug`, `new Promise((res, rej) => rej(x))` and `new Promise((_res, rej) => { on(rej) })` are one each at the second parameter, and `new Promise(start)` with `start` a name is one at `start`; `defect('x')` (imported from `@keel/schema`), `new Promise((res) => res(1))` and `new Promise<Result<number, E>>((res) => res(err(T)))` are none."
+// Spec: k.errors, clause "In `modules/m/a.ts`, `throw new Error('x')` is one E1451, message `throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')`, `new Promise((res, rej) => rej(x))` and `new Promise((_res, rej) => { on(rej) })` are one each at the second parameter, and `new Promise(start)` with `start` a name is one at `start`; `defect('x')` (imported from `@keel/schema`), `new Promise((res) => res(1))` and `new Promise<Result<number, E>>((res) => res(err(T)))` are none."
 // Seed 1337.
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED } from "./support.ts";
 import { at, of, run } from "./rules-support.ts";
 
-const MESSAGE = "throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug";
+const MESSAGE = "throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')";
 const HEAD =
   "import { defect, err } from '@keel/schema'\nimport type { Result, KeelError } from '@keel/schema'\ndeclare const x: unknown\ndeclare function on(f: unknown): void\ndeclare function start(res: () => void, rej: () => void): void\ntype E = KeelError<'m.e', null>\ndeclare const T: E\n";
 const src = (stmt: string) => `${HEAD}export function a(): unknown { ${stmt} }\n`;

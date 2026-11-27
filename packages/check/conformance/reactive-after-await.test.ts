@@ -1,5 +1,5 @@
 // Spec: k.reactive, clause "In `modules/m/a.ts`, `async function f() { await g(); return scope(() => undefined) }` is one E1208 at `scope` and `async function f() { await g(); return signal(0) }` one E1203 at `signal`; `async function f(c: Scope) { await g(); return c.run(() => scope(() => undefined)) }` and `function f() { return scope(() => undefined) }` are none."
-// k.reactive, Static "In app code and a library's files `keel check` also reports, at the callee, E1208 for a call of `scope` (callee found as k.unsafe One path says) and E1203 for a call of `signal`, `computed`, `effect`, `resource` or `store` that follows an `await` in the same function body, not inside a nested function, unless it is inside a function given to a `run` call; message `<name> after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => <name>(...))`, no fix; a maker reached through a helper after an `await` is the run-time defect alone."
+// k.reactive, Static "In app code and a library's files `keel check` also reports, at the callee, E1208 for a call of `scope` (callee found as k.unsafe One path says) and E1203 for a call of `signal`, `computed`, `effect`, `resource` or `store` that follows an `await` in the same function body, not inside a nested function, unless it is inside a function given to a `run` call; message `<name> after await has no owner: take c = owner() before the await, then c.run(...)`, no fix; a maker reached through a helper after an `await` is the run-time defect alone."
 // Seed 1337. The message names the rewrite; the case that applies the named rewrite checks that it passes check and type-checks. Fixtures are source text over in-memory file maps with the type pass on (the callee is found by its symbol).
 import { check } from "@keel/check";
 import fc from "fast-check";
@@ -17,7 +17,7 @@ const S = s.object({ n: s.number() })
 `;
 
 const messageOf = (name: string): string =>
-  `${name} after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => ${name}(...))`;
+  `${name} after await has no owner: take c = owner() before the await, then c.run(...)`;
 
 const run = (body: string) =>
   check([MANIFEST, { path: PATH, source: `${HEAD}${body}\n` }]).diagnostics.filter(
@@ -66,7 +66,7 @@ const MAKERS: readonly (readonly [string, string, string])[] = [
   ["scope", "scope(() => undefined)", "E1208"],
 ];
 
-test("property: a call of `scope` is E1208 and of `signal`, `computed`, `effect`, `resource` or `store` is E1203, at the callee, message `<name> after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => <name>(...))`, when an `await` precedes it in the same function body", () => {
+test("property: a call of `scope` is E1208 and of `signal`, `computed`, `effect`, `resource` or `store` is E1203, at the callee, message `<name> after await has no owner: take c = owner() before the await, then c.run(...)`, when an `await` precedes it in the same function body", () => {
   fc.assert(
     fc.property(
       fc.constantFrom(...MAKERS),
@@ -111,7 +111,7 @@ test("property: the same call before the `await`, in a nested function, or insid
   );
 });
 
-test("the rewrite the message names, `const c = owner() ?? defect('no owner')` before the `await` and `c.run(() => <name>(...))` after it, passes check and type-checks for each maker", () => {
+test("the rewrite the message names, `c = owner()` before the `await` and `c.run(...)` after it (`c` a scope, as `owner() ?? defect('no owner')` makes it), passes check and type-checks for each maker", () => {
   fc.assert(
     fc.property(fc.constantFrom(...MAKERS), ([name, call]) => {
       const imports =

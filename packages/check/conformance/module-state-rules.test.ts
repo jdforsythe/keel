@@ -23,7 +23,7 @@ test("`last.set(x)` inside a function in modules/p/load.server.ts is one E1256 a
   expect(ds).toHaveLength(1);
   expect(ds[0]?.fix).toBeUndefined();
   expect(ds[0]?.message).toBe(
-    "write to module signal last in server code: per-request state lives in the request's scope",
+    "module signal last set in server code: keep per-request state in the request scope",
   );
   expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "last.set"));
 });

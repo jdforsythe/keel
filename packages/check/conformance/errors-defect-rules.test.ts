@@ -2,7 +2,7 @@
 // Spec: k.defects, clause "In `modules/m/a.ts`, `defect('x', 'E28')`, `defect('x', code)` with `const code = 'E2801'` above it, and `k.defect('x', 'e2801')` under `import * as k from '@keel/schema'` are one E1455 each at the second argument, message `defect code is not a literal E and four digits`; `defect('x', 'E2801', detail)` with `detail` a name is one at `detail`, message `defect detail is not an object literal`."
 // Spec: k.defects, clause "In `modules/m/a.ts`, `try { f() } finally { defect('x') }` is one E1452 at the call, message `defect in finally drops the throw in flight`; `try { f() } finally { g(() => defect('x')) }` is none."
 // Spec: k.defects, clause "In `modules/m/a.ts`, `if (!r.ok) defect('x')` with `r` a `Result` is one E1455 at the call, message `defect on a failed Result: pass { cause: r.error }`, with a fix that adds `{ cause: r.error }` as the detail; `if (!r.ok) defect('x', { cause: r.error })` is none."
-// Spec: k.errors, clause "In `modules/m/a.ts`, `try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } finally { h() }` is one, message `catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch`."
+// Spec: k.errors, clause "In `modules/m/a.ts`, `try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } finally { h() }` is one, message `catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)`."
 // Seed 1337. Fixtures are source text over in-memory file maps; the type pass is off except where a fix is applied.
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -128,11 +128,11 @@ test("`if (!r.ok) defect('x', { cause: r.error })` is no E1455", () => {
   expect(E1455("if (!r.ok) defect('x', { cause: r.error })", RES)).toEqual([]);
 });
 
-test("`try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } finally { h() }` is one, message `catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch`", () => {
+test("`try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } finally { h() }` is one, message `catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)`", () => {
   expect(of(run(body("try { f() } finally { g() }")), "E1452")).toEqual([]);
   const ds = of(run(body("try { f() } catch { g() } finally { h() }")), "E1452");
   expect(ds).toHaveLength(1);
   expect(ds[0]?.message).toBe(
-    "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch",
+    "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)",
   );
 });
