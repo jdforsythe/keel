@@ -147,9 +147,11 @@ it(
       await u1.fire(theirs[0]?.id ?? "", { type: "click" });
       await u1.until("todos.outbox", { gone: true });
 
-      // The offline requests failed in the browser: user 1's page takes those console errors and nothing else, so any
+      // The offline requests failed in the browser: user 1's page takes those console errors and the refused edit's 409 and nothing else, so any
       // other problem (a rejection no code handled) is left and fails the test with E1738.
       expect(u1.problems({ kind: "console", text: "ERR_INTERNET_DISCONNECTED" }).length).toBeGreaterThan(0);
+      // The refused edit's answer, which the browser logs: the conflict the test made.
+      expect(u1.problems({ kind: "console", text: "status of 409 (Conflict)" })).toHaveLength(1);
       expect(u1.problems()).toEqual([]);
       expect(u0.problems()).toEqual([]);
 
