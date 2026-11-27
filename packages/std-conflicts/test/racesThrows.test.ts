@@ -1,6 +1,7 @@
 // std.conflicts: what a transaction function's throw does while `races` replays an order. A TypeError or RangeError
-// (a reducer reading a state its author did not expect) fails that order; a defect and any other thrown value pass
-// on to the caller of `races`, unseen and unchanged. Nothing is swallowed and nothing waits. Seed 1337 (no generated input).
+// (a reducer reading a state its author did not expect) fails that order; any other `Error` (a dependency's failure)
+// makes that entry `unchecked` `threw` and the analysis goes on; a defect and a thrown value that is no `Error` pass on
+// to the caller of `races`, unseen and unchanged. Nothing is swallowed and nothing waits. Seed 1337 (no generated input).
 import { defect, isDefect, s } from "@keel/schema";
 import { races as racesOf } from "@keel/std-conflicts";
 import { store, transaction } from "@keel/store";
@@ -44,6 +45,13 @@ const itemStores = (missing: Missing) => () => () => {
     },
     { concurrent: "rebase" },
   );
+  const set = transaction(
+    items,
+    "x.set",
+    s.object({ id: s.string(), v: s.int() }),
+    (st, p) => ({ items: st.items.map((i) => (i.id === p.id ? { ...i, v: p.v } : i)) }),
+    { concurrent: "rebase" },
+  );
   const drop = transaction(
     items,
     "x.drop",
@@ -51,7 +59,7 @@ const itemStores = (missing: Missing) => () => () => {
     (st, p) => ({ items: st.items.filter((i) => i.id !== p.id) }),
     { concurrent: "rebase" },
   );
-  return { items, add, bump, drop };
+  return { items, add, bump, set, drop };
 };
 
 // Live: add a, bump a, then drop a from base 1. Replayed with the drop first, the bump finds no item.
@@ -80,13 +88,32 @@ describe("races over a transaction function that throws", () => {
     expect(typeof out === "object" && out !== null && "threw" in out && isDefect(out.threw)).toBe(true);
   });
 
-  test.each([
-    ["string", "no item"],
-    ["error", "no item"],
-  ] as const)("a thrown %s passes on to the caller unchanged", (missing, text) => {
+  test("a thrown string passes on to the caller unchanged", () => {
     const snap = snapshotAfter(itemStores("type")(), steps);
-    const out = caught(() => races(snap, itemStores(missing)()));
-    const threw = typeof out === "object" && out !== null && "threw" in out ? out.threw : undefined;
-    expect(missing === "string" ? threw : threw instanceof Error && !isDefect(threw) ? threw.message : out).toBe(text);
+    const out = caught(() => races(snap, itemStores("string")()));
+    expect(typeof out === "object" && out !== null && "threw" in out ? out.threw : out).toBe("no item");
+  });
+
+  // Live: add a, add b, set b 1, then set b 2 from base 2 (an order race), bump a, then drop a from base 4.
+  const both = [
+    { name: "x.add", payload: { id: "a" } },
+    { name: "x.add", payload: { id: "b" } },
+    { name: "x.set", payload: { id: "b", v: 1 } },
+    { name: "x.set", payload: { id: "b", v: 2 }, base: 2 },
+    { name: "x.bump", payload: { id: "a" } },
+    { name: "x.drop", payload: { id: "a" }, base: 4 },
+  ];
+
+  test("an Error thrown by the transaction is unchecked threw for that entry, and the other entry's race stands", () => {
+    const snap = snapshotAfter(itemStores("type")(), both);
+    const found = races(snap, itemStores("error")());
+    expect(found.races.map((r) => [r.entry.id, r.kind])).toEqual([[4, "order"]]);
+    expect(found.unchecked).toEqual([{ store: "x.items", id: 6, reason: "threw" }]);
+  });
+
+  test("with a defect in place of the Error, races throws the defect", () => {
+    const snap = snapshotAfter(itemStores("type")(), both);
+    const out = caught(() => races(snap, itemStores("defect")()));
+    expect(typeof out === "object" && out !== null && "threw" in out && isDefect(out.threw)).toBe(true);
   });
 });
