@@ -106,7 +106,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
   );
 
   test(
-    "Scaffold: it writes folder `<base>/` in the working directory, holding `package.json`, `module.ts`, `src/index.ts`, `src/Example.tsx`, `test/Example.test.ts`, `tokens.ts`, `tsconfig.json`, `tsconfig.build.json` and `vitest.config.ts`, and nothing outside it",
+    "Scaffold: it writes folder `<base>/` in the working directory, holding `package.json`, `module.ts`, `src/index.ts`, `src/Example.tsx`, `test/Example.test.ts`, `tokens.ts`, `tsconfig.json`, `tsconfig.build.json` and `vitest.config.ts`, then `README.md`, `.gitignore` and the agent files, and nothing outside it",
     () => {
       const { scratchDir, lib: dir } = lib();
       expect(Object.keys(snapshot(scratchDir))).toEqual(expect.arrayContaining([LIB_BASE]));
@@ -115,8 +115,12 @@ describe("Scaffold: keel scaffold library <name>", () => {
         .filter(([, v]) => v !== "dir")
         .map(([p]) => p);
       for (const f of FILES) expect(written, f).toContain(f);
-      // README.md is the one file beyond the list the Package sentence allows (it names it in `files`).
-      expect(written.filter((p) => !FILES.includes(p) && p !== "README.md")).toEqual([]);
+      // Beyond the list: `README.md`, `.gitignore` and the agent files (k.library-pack Scaffold, k.explain Agent files).
+      const beyond = (p: string): boolean =>
+        [".gitignore", "README.md", "AGENTS.md", "CLAUDE.md"].includes(p) ||
+        /^\.claude\/skills\/[^/]+\/SKILL\.md$/.test(p);
+      expect(written.filter((p) => !FILES.includes(p) && !beyond(p))).toEqual([]);
+      for (const f of [".gitignore", "AGENTS.md", "CLAUDE.md"]) expect(written, f).toContain(f);
     },
     SLOW,
   );

@@ -208,7 +208,7 @@ describe("keel scaffold route --no-loader", () => {
       const dir = materialize(fresh());
       dirs.push(dir);
       const before = readTree(dir);
-      const r = keel(dir, ["scaffold", "route", "app.home", "--path", "/", "--no-loader"]);
+      const r = keel(dir, ["scaffold", "route", "app.about", "--path", "/about", "--no-loader"]);
       expect(r.status, text(r.records)).toBe(0);
       const created = r.records
         .filter((x) => x.kind === "scaffold.edit" && x.action === "create")
@@ -218,7 +218,7 @@ describe("keel scaffold route --no-loader", () => {
       const after = readTree(dir);
       expect([...after.keys()].filter((p) => !before.has(p) && p.endsWith(".server.ts"))).toEqual([]);
       expect(after.get("modules/app/routes.ts")).toMatch(
-        /["']app\.home["']\s*:\s*\{\s*component(?:\s*:\s*\w+)?\s*,?\s*\}/,
+        /["']app\.about["']\s*:\s*\{\s*component(?:\s*:\s*\w+)?\s*,?\s*\}/,
       );
     },
     fixedTime(120000),
