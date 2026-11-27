@@ -1,6 +1,6 @@
+import { scaffold } from "@keel/scaffold";
 import type { Result } from "@keel/schema";
 import { GITIGNORE } from "../internal/GITIGNORE.ts";
-import { opLibrary } from "../internal/opLibrary.ts";
 import { withAgents } from "../internal/withAgents.ts";
 import type { AgentSkill } from "../types/AgentSkill.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
@@ -15,7 +15,7 @@ export function libraryTree(input: {
   readonly version: string;
   readonly skills: readonly AgentSkill[];
 }): Result<Map<string, string>, ScaffoldError> {
-  const made = opLibrary({ name: input.name, version: input.version }, new Map());
+  const made = scaffold("library", { name: input.name, version: input.version }, new Map());
   if (!made.ok) return made;
   const dir = made.value.created[0]?.split("/")[0] ?? "";
   const own = new Map([...made.value.files].map(([p, v]): [string, string] => [p.slice(dir.length + 1), v]));
