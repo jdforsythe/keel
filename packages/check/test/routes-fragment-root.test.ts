@@ -86,6 +86,6 @@ it("reads the fragment from the nested project's node_modules under the workspac
   expect(routesDiags(root)).toEqual([]);
 });
 
-it("is W1005 for the unread stdlib module when the root holds no such project", () => {
-  expect(routesDiags(elsewhere).map((d) => d.code)).toEqual(["W1005"]);
+it("reports nothing on routes.json when the root holds no such project: W1005 is never reported", () => {
+  expect(routesDiags(elsewhere)).toEqual([]);
 });

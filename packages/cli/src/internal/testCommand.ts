@@ -12,6 +12,9 @@ import { TEST_FILE } from "./TEST_FILE.ts";
 import { a11yCases } from "./a11yCases.ts";
 import { artifactsSetupConfig } from "./artifactsSetupConfig.ts";
 import { catchingStray } from "./catchingStray.ts";
+import type { Work } from "./derived/Work.ts";
+import { frozenRun } from "./derived/frozenRun.ts";
+import { testViews } from "./derived/testViews.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { ownLibrary } from "./ownLibrary.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -45,6 +48,8 @@ async function vitestRun(
   filters: readonly string[],
   claims: boolean,
   runReport: true | ((report: TestRunReport) => void),
+  a11y: string | undefined,
+  frozen: boolean,
 ): Promise<TestReport> {
   let report = EMPTY;
   let run: Vitest | undefined;
@@ -65,7 +70,10 @@ async function vitestRun(
   const exitCode = process.exitCode;
   const previous = process.env.KEEL_TEST;
   const pool = process.env.UV_THREADPOOL_SIZE;
+  const wasFrozen = process.env.KEEL_FROZEN;
   process.env.KEEL_TEST = "1";
+  // Frozen (k.derived Frozen), the Vite plugin under vitest writes no view either.
+  if (frozen) process.env.KEEL_FROZEN = "1";
   // One thread-pool thread in every test process, whatever the environment holds (k.drive-law Order): libuv reads it
   // once per process, so it is in the environment the forked test processes start with (`pool: "forks"` below).
   process.env.UV_THREADPOOL_SIZE = "1";
@@ -83,7 +91,7 @@ async function vitestRun(
           reporters: [collector],
           env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" },
         },
-        artifactsSetupConfig(root),
+        artifactsSetupConfig(root, a11y),
         { stdout: sink(), stderr: sink() },
       );
       await vitest?.close();
@@ -93,6 +101,8 @@ async function vitestRun(
   } finally {
     if (previous === undefined) Reflect.deleteProperty(process.env, "KEEL_TEST");
     else process.env.KEEL_TEST = previous;
+    if (wasFrozen === undefined) Reflect.deleteProperty(process.env, "KEEL_FROZEN");
+    else process.env.KEEL_FROZEN = wasFrozen;
     if (pool === undefined) Reflect.deleteProperty(process.env, "UV_THREADPOOL_SIZE");
     else process.env.UV_THREADPOOL_SIZE = pool;
     process.exitCode = exitCode;
@@ -120,8 +130,15 @@ export async function testCommand(
   const configured = existsSync(io.cwd) && readdirSync(io.cwd).some((n) => VITEST_CONFIG.test(n));
   const runnable = configured || projectFiles(io).some((f) => TEST_FILE.test(f.path));
   // A library holds no page route, so its own folder keeps no render claims (k.library-pack Own folder).
-  const r = runnable ? await vitestRun(io.cwd, input.paths ?? [], ownLibrary(io.cwd) === undefined, report) : EMPTY;
-  const diags = r.diagnostics.map((d) => makeDiag(d.code, d.message, d));
+  const own = ownLibrary(io.cwd) === undefined;
+  // Over the disk, the derivation of the tree under test (k.derived Readers): `a11y.json` is handed to each test
+  // process, and, not frozen, the views are refreshed first.
+  const frozen = frozenRun(input.frozen, io.env);
+  const work: Work = { evaluated: 0, cached: 0, refreshed: 0 };
+  const derived =
+    runnable && own && io.load !== undefined ? await testViews(io.cwd, projectFiles(io), frozen, work) : undefined;
+  const r = runnable ? await vitestRun(io.cwd, input.paths ?? [], own, report, derived?.a11y, frozen) : EMPTY;
+  const diags = [...(derived?.diags ?? []), ...r.diagnostics.map((d) => makeDiag(d.code, d.message, d))];
   const counts = { tests: r.tests, failed: r.failed, skipped: r.skipped };
   return [...diags, { kind: "summary", ok: r.failed === 0 && r.errors === 0, name: "test", counts }];
 }

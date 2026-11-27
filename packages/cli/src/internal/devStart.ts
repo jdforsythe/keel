@@ -5,6 +5,7 @@ import { libraryEntryDiags } from "@keel/check";
 import { INDEX_HTML_IGNORED } from "@keel/compiler/hosting/INDEX_HTML_IGNORED";
 import { operations } from "../operations.ts";
 import type { DevServer } from "./DevServer.ts";
+import { frozenRun } from "./derived/frozenRun.ts";
 import { devPoll } from "./devPoll.ts";
 import { devPort } from "./devPort.ts";
 import { errorText } from "./errorText.ts";
@@ -100,6 +101,8 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
   setDefaultResultOrder("ipv4first");
   // Where a capability keeps its dev data (k.data Files), beside each deployable's storage file.
   process.env.KEEL_DEV_DIR = join(resolve(cwd), ".keel-dev");
+  // A frozen dev server (k.derived Frozen) writes no view: the Vite plugin reads `KEEL_FROZEN`.
+  if (frozenRun(input.frozen, hostIo(false).env)) process.env.KEEL_FROZEN = "1";
   let server: DevServer;
   try {
     server = await viteServer(cwd, input.port);

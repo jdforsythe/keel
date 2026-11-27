@@ -25,6 +25,18 @@ const q = (s: string): string => JSON.stringify(s);
 /** An import specifier for a root-relative or absolute file. */
 const spec = (f: string): string => q(path.isAbsolute(f) ? f : `./${f}`);
 
+/**
+ * The surface part of an evaluation (k.compat Surface): contract files and route tables to import (root-relative or
+ * absolute), and the specifiers (bare, or absolute files) of `@keel/router/internal` and `@keel/store/internal` the bundle reads
+ * them with.
+ */
+type SurfaceInput = {
+  readonly contracts: readonly string[];
+  readonly tables: readonly string[];
+  readonly router: string;
+  readonly store: string;
+};
+
 const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 const isNullableString = (x: unknown): x is string | null => x === null || typeof x === "string";
@@ -48,8 +60,14 @@ function entrySource(
   tokensFile: string | undefined,
   routesFiles: readonly (readonly [routes: string, contract: string | undefined])[],
   usages: readonly StyleUsage[],
+  surface: SurfaceInput | undefined,
 ) {
   const lines: string[] = [];
+  if (surface !== undefined)
+    lines.push(
+      `import * as keelRouterInternal from ${q(surface.router)};`,
+      `import * as keelStoreInternal from ${q(surface.store)};`,
+    );
   if (tokensFile !== undefined) lines.push(`import { compileStyles, schemesOf } from ${q(UI_CSS)};`);
   if (routesFiles.length > 0) lines.push(`import { routesArtifact } from ${q(ROUTER)};`);
   lines.push(
@@ -97,6 +115,25 @@ function entrySource(
       "  try { return routesArtifact(m.routes); } catch (e) { report(e); return {}; }",
       "};",
     );
+  // The surface's values (k.compat Surface): every contract a contract file or route table holds, each route table,
+  // and the two internals that read bindings and store shapes, live; a file that throws is E1006 naming it.
+  if (surface !== undefined)
+    lines.push(
+      "const surfaceContracts = [];",
+      "const surfaceTables = [];",
+      "const isContract = (v) => v !== null && typeof v === 'object' && v.kind === 'keel.contract';",
+      ...surface.contracts.map(
+        (f) =>
+          `try { surfaceContracts.push(...Object.values(await import(${spec(f)})).filter(isContract)); } catch (e) { problems.push(coded(e) ? \`\${e.code} \${message(e)}\` : \`E1006 ${f} failed to evaluate: \${message(e)}\`); }`,
+      ),
+      // A contract that throws is reported once: no route table is imported after it (each would read it again).
+      "const surfaceBroken = problems.length > 0;",
+      ...surface.tables.map(
+        (f) =>
+          `if (!surfaceBroken) try { const m = await import(${spec(f)}); if (m.routes !== null && typeof m.routes === 'object' && m.routes.kind === 'keel.routeTable') surfaceTables.push(m.routes); } catch (e) { problems.push(coded(e) ? \`\${e.code} \${message(e)}\` : \`E1006 ${f} failed to evaluate: \${message(e)}\`); }`,
+      ),
+      "export const surface = { contracts: surfaceContracts, tables: surfaceTables, router: keelRouterInternal, store: keelStoreInternal };",
+    );
   lines.push(
     `const routes = Object.assign({}, ${routesFiles.map(([f, c]) => `await manifest(${q(f)}, () => import(${spec(f)}), ${c === undefined ? "undefined, undefined" : `${q(c)}, () => import(${spec(c)})`})`).join(", ")});`,
     "export default JSON.stringify({ css, looks, schemes, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
@@ -121,15 +158,22 @@ export async function evaluateProject(input: {
   readonly tokensFile: string | undefined;
   readonly routesFiles: readonly string[];
   readonly usages: readonly StyleUsage[];
+  readonly surface?: SurfaceInput | undefined;
 }): Promise<{
   css: string;
   looks: Readonly<Record<string, unknown>>;
   schemes: readonly string[];
   routes: Record<string, RouteEntry>;
   problems: string[];
+  /** With `surface`: the absolute path of every file the bundle loaded (esbuild's inputs), sorted. */
+  inputs?: string[];
+  /** With `surface`: the module's `surface` export, live (contracts, route tables and the two internals). */
+  surface?: unknown;
 }> {
   const { root } = input;
-  if (input.tokensFile === undefined && input.routesFiles.length === 0)
+  const surfaceInput = input.surface;
+  const none = surfaceInput === undefined || surfaceInput.contracts.length + surfaceInput.tables.length === 0;
+  if (input.tokensFile === undefined && input.routesFiles.length === 0 && none)
     return { css: "", looks: {}, schemes: ["light"], routes: {}, problems: [] };
   // The tokens module is imported dynamically (so its throw is catchable), which esbuild treats as optional.
   if (input.tokensFile !== undefined && !fs.existsSync(path.join(root, input.tokensFile)))
@@ -142,6 +186,7 @@ export async function evaluateProject(input: {
         input.tokensFile,
         input.routesFiles.map((f) => [f, contractOf(root, f)] as const),
         input.usages,
+        none ? undefined : surfaceInput,
       ),
       resolveDir: root,
       sourcefile: "keel-evaluate.js",
@@ -149,6 +194,8 @@ export async function evaluateProject(input: {
     },
     bundle: true,
     write: false,
+    metafile: true,
+    absWorkingDir: root,
     format: "esm",
     platform: "node",
     // As the server build: a package's CommonJS `require` of a Node built-in (`pg` requires `events`) gets a real one.
@@ -201,14 +248,26 @@ export async function evaluateProject(input: {
   });
   if (result === undefined)
     return { css: "", looks: {}, schemes: ["light"], routes: {}, problems: [...new Set(syntax)] };
+  // A metafile input is relative to `root`, or `<namespace>:<path>` for a plugin's namespace; the entry and esbuild's
+  // own `<define:...>` inputs are no files.
+  const inputs = [
+    ...new Set(
+      Object.keys(result.metafile.inputs).flatMap((k) => {
+        const at = path.resolve(root, /^[a-z-]+:/.test(k) ? k.slice(k.indexOf(":") + 1) : k);
+        return k.includes("<") || k === "keel-evaluate.js" || !fs.existsSync(at) ? [] : [at];
+      }),
+    ),
+  ].sort();
   const text = result.outputFiles[0]?.text ?? "";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evaluate-"));
   const file = path.join(dir, "evaluate.mjs");
   let json: unknown;
+  let surface: unknown;
   try {
     fs.writeFileSync(file, text);
     const mod: unknown = await import(pathToFileURL(file).href);
     json = isRecord(mod) && typeof mod.default === "string" ? JSON.parse(mod.default) : undefined;
+    surface = isRecord(mod) ? mod.surface : undefined;
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -229,5 +288,6 @@ export async function evaluateProject(input: {
   }
   const looks = isRecord(json.looks) ? json.looks : {};
   const schemes = Array.isArray(json.schemes) ? json.schemes.filter((x) => x === "light" || x === "dark") : ["light"];
-  return { css: json.css, looks, schemes, routes, problems: json.problems.filter((p) => typeof p === "string") };
+  const problems = json.problems.filter((p) => typeof p === "string");
+  return { css: json.css, looks, schemes, routes, problems, ...(none ? {} : { surface, inputs }) };
 }

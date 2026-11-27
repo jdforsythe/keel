@@ -57,7 +57,7 @@ export const operations: readonly Operation[] = [
   {
     name: "check",
     description: "Run k.check over the project or the given paths.",
-    input: s.object({ paths, base: s.string().optional(), ...diagnostic }),
+    input: s.object({ paths, base: s.string().optional(), frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",
@@ -65,7 +65,7 @@ export const operations: readonly Operation[] = [
   {
     name: "test",
     description: "Run the test harness under a sim ctx (k.testing).",
-    input: s.object({ paths, ...diagnostic }),
+    input: s.object({ paths, frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",
@@ -77,6 +77,7 @@ export const operations: readonly Operation[] = [
       target: s.enum(["capacitor", "tauri"]).optional(),
       platform: s.string().optional(),
       release: s.boolean().optional(),
+      frozen: s.boolean().optional(),
       ...diagnostic,
     }),
     output: outputOf(),
@@ -86,7 +87,7 @@ export const operations: readonly Operation[] = [
   {
     name: "dev",
     description: "Dev server and log stream (k.server).",
-    input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), ...diagnostic }),
+    input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(ReqSchema),
     positional: [],
     scope: "none",
@@ -164,8 +165,8 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "pack",
-    description: "A library's gate: check, test and write .keel/ledger.json; --check writes nothing (k.library-pack).",
-    input: s.object({ check: s.boolean().optional(), ...diagnostic }),
+    description: "A library's gate: check, test and write .keel/ledger.json; --frozen writes nothing (k.library-pack).",
+    input: s.object({ frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: [],
     scope: "ledger",

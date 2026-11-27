@@ -15,8 +15,6 @@ export type { ResolvedGlobals } from "./ResolvedGlobals.ts";
 export { unwrapExpression } from "./unwrapExpression.ts";
 export { canonicalJson } from "../internal/canonicalJson.ts";
 export { hashOf } from "../internal/hashOf.ts";
-export { sourceForm } from "../internal/sourceForm.ts";
-export { sourceHash } from "../internal/sourceHash.ts";
 export type { HandlerKind } from "../internal/HandlerKind.ts";
 export type { HandlerUse } from "../internal/HandlerUse.ts";
 export { fitChain } from "../internal/fitChain.ts";

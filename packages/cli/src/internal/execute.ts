@@ -11,7 +11,7 @@ import { projectFiles } from "./projectFiles.ts";
 import { stdSlot } from "./stdSlot.ts";
 import { unavailable } from "./unavailable.ts";
 
-/** The a11y rule map, read only when a project has `.keel/routes.json` (k.a11y Claims items exist only then). */
+/** The a11y rule map, read only when a project has a `routes.json` (k.a11y Claims items exist only then). */
 const ledgerRules = async (io: Io): Promise<A11yCriteriaMap> =>
   projectFiles(io).some((f) => /(?:^|\/)\.keel\/routes\.json$/.test(f.path))
     ? (await import("./a11yRuleMap.ts")).a11yRuleMap()
@@ -51,11 +51,15 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "ledger": {
       // Loaded only when the command runs: it brings in typescript and the test harness.
       const { ledgerCommand } = await import("./ledgerCommand.ts");
-      const map = await ledgerRules(io);
+      // Over the disk, each project's `routes.json` is its derivation, not the file (k.derived Readers).
+      const derive = io.load === undefined ? undefined : (await import("./derived/derivedRoutes.ts")).derivedRoutes;
+      const work = { evaluated: 0, cached: 0, refreshed: 0 };
+      const seen = derive === undefined ? io : { ...io, files: await derive(io.cwd, projectFiles(io), work) };
+      const map = await ledgerRules(seen);
       // The static a11y codes, with each project's `tokens.ts` evaluated (k.a11y-static Tokens).
       const findings =
-        map.size === 0 ? [] : await (await import("./a11yFindings.ts")).a11yFindings(io.cwd, projectFiles(io));
-      return ledgerCommand(input, io, map, findings);
+        map.size === 0 ? [] : await (await import("./a11yFindings.ts")).a11yFindings(io.cwd, projectFiles(seen));
+      return ledgerCommand(input, seen, map, findings);
     }
     case "pack": {
       // Loaded only when the command runs: it brings in the checker, the test harness and typescript.

@@ -16,8 +16,8 @@
       "types": "./src/client.d.ts"
     },
     "./routes": {
-      "types": "./src/buildRoutes.ts",
-      "default": "./src/buildRoutes.ts"
+      "types": "./src/evaluateViews.ts",
+      "default": "./src/evaluateViews.ts"
     },
     "./internal": {
       "types": "./src/globals/index.ts",
@@ -63,8 +63,8 @@
         "types": "./src/client.d.ts"
       },
       "./routes": {
-        "types": "./dist/src/buildRoutes.d.ts",
-        "default": "./dist/src/buildRoutes.js"
+        "types": "./dist/src/evaluateViews.d.ts",
+        "default": "./dist/src/evaluateViews.js"
       },
       "./internal": {
         "types": "./dist/src/globals/index.d.ts",

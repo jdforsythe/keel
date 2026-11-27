@@ -38,7 +38,7 @@ Run `pnpm dev` from `apps/golden-1`. `keel dev` serves `web` with hot reload and
 
 ## Production
 1. `pnpm --filter ./apps/golden-1 build` runs `keel build`. It writes:
-   - the `.keel/` artifacts, `surface.json` among them;
+   - the `.keel/` views, `surface.json` the committed one;
    - `dist/web/`, the `web` client as static files (the generated `index.html`, `assets/`, `keel-mark.svg`);
    - `dist/api/`: `server.mjs`, the generated entry with every dependency bundled, beside a copy of the `web` client, `routes.json` and `std.json`;
    - `deploy/api/Dockerfile` and `deploy/compose.yaml`, from `topology.ts`.

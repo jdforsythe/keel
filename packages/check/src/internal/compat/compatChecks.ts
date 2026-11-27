@@ -1,5 +1,4 @@
 import type { Topology } from "@keel/compiler";
-import { hashOf } from "@keel/compiler/internal";
 import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
@@ -14,7 +13,6 @@ import { entrySchemaAt } from "./entrySchemaAt.ts";
 import { fieldAt } from "./fieldAt.ts";
 import { isRecord } from "./isRecord.ts";
 import { readSurface } from "./readSurface.ts";
-import { staleSource } from "./staleSource.ts";
 import { storeSchemaAt } from "./storeSchemaAt.ts";
 
 const SURFACE = /^((?:.*\/)?)\.keel\/surface\.json$/;
@@ -188,38 +186,46 @@ function stored(current: Surface, before: Surface, ctx: Ctx): Diagnostic[] {
 }
 
 /**
- * The k.compat pass over each `<dir>.keel/surface.json` among `files` that is a `version: 2` surface, intact (its
- * `hash` that of its `data`) and fresh (every evaluated source unchanged in `project`; else E1005 reports it). With a
- * `base` surface (`keel check --base`): E1562 for each base API entry with a caller in another deployable (by
- * `topologyOf(dir)`) that the current entry refuses (`base`), and E1563 and W1564 for its stores (`stored`); a `base`
- * that is no `version: 2` surface is one W1568 and nothing is compared.
+ * The k.compat pass over each project's current surface (k.compat Base): `derived[dir]["surface.json"]` when the
+ * caller derived it (k.derived Readers), else each `<dir>.keel/surface.json` among `files` that is a surface of version
+ * 2 or 3. With a `base` surface (`keel check --base`): E1562 for each base API entry with a caller in another
+ * deployable (by `topologyOf(dir)`) that the current entry refuses (`base`), and E1563 and W1564 for its stores
+ * (`stored`); a `base` that is no surface of version 2 or 3 is one W1568 and nothing is compared.
  */
 export function compatChecks(
   files: readonly SourceFile[],
   project: readonly SourceFile[],
   topologyOf: (dir: string) => Topology | undefined,
   baseValue: unknown,
+  derived?: Readonly<Record<string, Readonly<Record<string, string>>>>,
 ): Diagnostic[] {
   const out: Diagnostic[] = [];
   const before = baseValue === undefined ? null : readSurface(baseValue);
   const surfaces = files.filter((f) => SURFACE.test(f.path));
   if (baseValue !== undefined && before === null) {
     const path = surfaces[0]?.path ?? ".keel/surface.json";
-    const m = "--base names no surface of version 2; E1562 not checked";
+    const m = "--base names no surface of version 2 or 3; E1562 not checked";
     out.push({ kind: "diag", code: "W1568", path, line: 1, col: 1, message: m, see: "k.compat" });
   }
   if (before === null) return out;
+  const current = new Map<string, string>();
+  for (const [dir, views] of Object.entries(derived ?? {})) {
+    const text = views["surface.json"];
+    if (text !== undefined) current.set(dir, text);
+  }
   for (const file of surfaces) {
     const dir = SURFACE.exec(file.path)?.[1] ?? "";
+    if (!current.has(dir)) current.set(dir, file.source);
+  }
+  for (const [dir, text] of current) {
     let value: unknown;
     try {
-      value = JSON.parse(file.source);
+      value = JSON.parse(text);
     } catch {
       continue;
     }
     const surface = readSurface(value);
-    const intact = isRecord(value) && Object.hasOwn(value, "data") && value.hash === hashOf(value.data);
-    if (surface === null || !intact || staleSource(surface, dir, project) !== undefined) continue;
+    if (surface === null) continue;
     const ctx: Ctx = { dir, project, at: ".keel/surface.json" };
     out.push(...base(surface, before, topologyOf(dir), ctx), ...stored(surface, before, ctx));
   }

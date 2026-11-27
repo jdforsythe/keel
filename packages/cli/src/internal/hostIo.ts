@@ -28,7 +28,7 @@ export function hostIo(stream: boolean): Io {
           : [...readProject(cwd, scope), ...hostDocs(cwd, scope)],
     apply: (writes) => applyWrites(cwd, writes),
     // Loaded only when a build or a scaffold's refresh runs: it brings in vite and vitest.
-    build: async (dir) => (await import("./hostBuild.ts")).hostBuild(dir),
+    build: async (dir, frozen) => (await import("./hostBuild.ts")).hostBuild(dir, false, frozen === true),
     refresh: async (dir) => (await import("./hostBuild.ts")).hostBuild(dir, true),
     // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).
     shell: async () => (await import("@keel/cli/shell")).hostShell,

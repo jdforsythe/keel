@@ -1,4 +1,4 @@
-import { canonicalJson, hashOf, sourceHash } from "@keel/compiler/internal";
+import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type SourceFile, check } from "../src/index.ts";
@@ -40,11 +40,10 @@ const boardTs = (nest: Nest, hidden: string) =>
     `${HEAD}const TodoList = s.object({ id: s.string(), hidden: ${hidden} }, { closed: true })\n` +
       `export const board = () => store(s.object({ lists: ${WRAP[nest]} }, { closed: true }), { lists: [] }, { id: 'api.board' })\n`,
   );
-const data = (state: unknown, sources: readonly SourceFile[]) => ({
-  version: 2,
+const data = (state: unknown) => ({
+  version: 3,
   contracts: {},
   stores: { "api.board": { state, transactions: {} } },
-  sources: Object.fromEntries(sources.map((s) => [s.path, sourceHash(s.path, s.source)])),
 });
 const surface = (d: unknown) => f(".keel/surface.json", `${canonicalJson({ data: d, hash: hashOf(d) })}\n`);
 const run = (files: SourceFile[], base: unknown) =>
@@ -54,16 +53,16 @@ describe("E1563 fix", () => {
   it("an optional field made required is one E1563 whose fix restores the optional and leaves none", () => {
     fc.assert(
       fc.property(fc.constantFrom<Nest>("top", "array", "record", "nullable"), (nest) => {
-        const base = data(stateSchema(nest, ["id"]), []);
+        const base = data(stateSchema(nest, ["id"]));
         const now = boardTs(nest, "s.boolean()");
-        const d = run([now, surface(data(stateSchema(nest, ["id", "hidden"]), [now]))], base);
+        const d = run([now, surface(data(stateSchema(nest, ["id", "hidden"])))], base);
         expect(d.map((x) => x.code)).toEqual(["E1563"]);
         expect(d[0]?.message).toContain("hidden");
         expect(typeof d[0]?.fix).toBe("string");
         const fixed = applyPatch(now.path, now.source, d[0]?.fix ?? "");
         expect(fixed).toContain("hidden: s.boolean().optional()");
         const after = f(now.path, fixed);
-        expect(run([after, surface(data(stateSchema(nest, ["id"]), [after]))], base)).toEqual([]);
+        expect(run([after, surface(data(stateSchema(nest, ["id"])))], base)).toEqual([]);
       }),
       { seed: SEED, numRuns: 8 },
     );

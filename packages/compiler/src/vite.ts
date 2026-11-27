@@ -452,6 +452,12 @@ export default function (): {
       await dev.apps();
       return devApps.map((a) => ({ name: a.name, app: a.app }));
     },
+    // The derivation this plugin holds of the tree it serves (k.derived Readers), not the files on disk.
+    () => {
+      const parts = [...modules].filter(([k]) => isSourcePath(k)).map(([, e]) => e.artifacts);
+      const { artifacts } = mergeArtifacts(parts);
+      return { ids: artifacts["ids.json"], a11y: artifacts["a11y.json"], routes };
+    },
   );
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
@@ -766,15 +772,21 @@ export default function (): {
     }
     const { artifacts, duplicates } = mergeArtifacts(parts);
     artifacts["routes.json"] = routes;
-    const writes = resolved && !clientBuild && !ownLibrary;
-    if (writes) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
+    // A frozen command (k.derived Frozen) sets `KEEL_FROZEN=1` for its children: no view is written.
+    const writes = resolved && !clientBuild && !ownLibrary && process.env.KEEL_FROZEN !== "1";
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
     // Written once the tokens are evaluated, so a run that compiles no CSS leaves the file as it is.
     if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes] })]);
     for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
-      writeArtifact(root, name, text);
+      // A view that cannot be written is W1018 and the run goes on (k.derived Refresh): no write failure ends it.
+      try {
+        writeArtifact(root, name, text);
+      } catch (e) {
+        const why = Reflect.get(Object(e), "code");
+        warn(`keel: W1018 .keel/${name} not written (${String(why ?? e)}); judged from the derivation`);
+      }
       written.set(name, text);
     }
     const usages = canonicalJson(artifacts["styles.json"]);
@@ -861,11 +873,6 @@ export default function (): {
     schemesRead = true;
     looksKey = canonicalJson(r.looks);
     routes = r.routes;
-    // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it.
-    const prior = path.join(root, ".keel", "routes.json");
-    const next = artifactText(routes);
-    if (command === "build" && !clientBuild && fs.existsSync(prior) && fs.readFileSync(prior, "utf8") !== next)
-      warn("keel: W1005 .keel/routes.json differed from routes.ts; rewritten");
     flush();
     stale = false;
   };

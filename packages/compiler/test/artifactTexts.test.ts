@@ -1,36 +1,39 @@
-// rfc:0055 (backlog 0139): `artifactHashes` marks routes.json beside a manifest as `null` (not derivable without
-// evaluation), and the Vite plugin's build warns W1005 before it rewrites a differing routes.json.
+// k.derived Derivations: `artifactTexts` gives each compiled view's bytes and `null` for a routes.json beside a manifest
+// (an evaluated view); the Vite plugin's build rewrites a differing routes.json silently (W1005 is reserved), leaves an
+// equal one as it is, and writes nothing under `KEEL_FROZEN=1` (k.derived Frozen).
 import fs from "node:fs";
 import path from "node:path";
-import { artifactHashes, compile, stdArtifact } from "@keel/compiler";
+import { artifactTexts, compile, stdArtifact } from "@keel/compiler";
 import keel from "@keel/compiler/vite";
 import { fixedTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { artifactText } from "../src/internal/artifactText.ts";
 import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { hashOf } from "../src/internal/hashOf.ts";
 
 const C = { path: "src/C.tsx", source: 'export default function C() {\n  return <p id="c.p">x</p>\n}\n' };
-const WARNING = "keel: W1005 .keel/routes.json differed from routes.ts; rewritten";
 
-describe("artifactHashes", () => {
-  it("is the compiler's hashes, with routes.json null only beside a modules/<m>/routes.ts", () => {
-    const { hashes } = compile([C]);
-    expect(artifactHashes([C])).toEqual({ ...hashes, "std.json": stdArtifact([]).hash });
+const textsOf = (a: ReturnType<typeof compile>["artifacts"]) => ({
+  "a11y.json": artifactText(a["a11y.json"]),
+  "deps.json": artifactText(a["deps.json"]),
+  "ids.json": artifactText(a["ids.json"]),
+  "routes.json": artifactText(a["routes.json"]),
+  "std.json": artifactText(stdArtifact([]).data),
+  "styles.json": artifactText(a["styles.json"]),
+});
+
+describe("artifactTexts", () => {
+  it("is each compiled view's bytes, with routes.json null only beside a modules/<m>/routes.ts", () => {
+    expect(artifactTexts([C])).toEqual(textsOf(compile([C]).artifacts));
     const manifest = { path: "modules/m/routes.ts", source: "export const routes = {}\n" };
-    expect(artifactHashes([C, manifest])).toEqual({
-      ...compile([C, manifest]).hashes,
-      "routes.json": null,
-      "std.json": stdArtifact([]).hash,
-    });
+    expect(artifactTexts([C, manifest])).toEqual({ ...textsOf(compile([C, manifest]).artifacts), "routes.json": null });
     for (const p of ["routes.ts", "modules/routes.ts", "modules/m/sub/routes.ts", "x/modules/m/routes.ts"])
-      expect(artifactHashes([C, { path: p, source: "export const routes = {}\n" }])["routes.json"]).toBeTypeOf(
-        "string",
-      );
+      expect(artifactTexts([C, { path: p, source: "export const routes = {}\n" }])["routes.json"]).toBeTypeOf("string");
   });
 });
 
-describe("vite plugin build: a differing routes.json", () => {
+describe("vite plugin build: a differing routes.json (k.derived Refresh)", () => {
   let root = "";
   const file = (): string => path.join(root, ".keel", "routes.json");
   const genuine = `${canonicalJson({ data: {}, hash: hashOf({}) })}\n`;
@@ -50,11 +53,24 @@ describe("vite plugin build: a differing routes.json", () => {
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
-  it("warns W1005 once at build and rewrites it", { timeout: fixedTime(30000) }, async () => {
+  it("rewrites it at build without a warning", { timeout: fixedTime(30000) }, async () => {
     const data = { r: { path: "/forged" } };
     prior(`${canonicalJson({ data, hash: hashOf(data) })}\n`);
-    expect(await build("build")).toEqual([WARNING]);
+    expect(await build("build")).toEqual([]);
     expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
+  });
+
+  it("writes nothing under KEEL_FROZEN=1", { timeout: fixedTime(30000) }, async () => {
+    const before = process.env.KEEL_FROZEN;
+    process.env.KEEL_FROZEN = "1";
+    try {
+      prior("forged\n");
+      expect(await build("build")).toEqual([]);
+      expect(fs.readFileSync(file(), "utf8")).toBe("forged\n");
+    } finally {
+      if (before === undefined) Reflect.deleteProperty(process.env, "KEEL_FROZEN");
+      else process.env.KEEL_FROZEN = before;
+    }
   });
 
   it(

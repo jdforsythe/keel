@@ -3,7 +3,7 @@
 // projectManifests selects what vite build evaluates. Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { artifactHashes } from "../src/artifactHashes.ts";
+import { artifactTexts } from "../src/artifactTexts.ts";
 import { projectManifests } from "../src/internal/projectManifests.ts";
 import { routeLiterals } from "../src/routeLiterals.ts";
 import type { SourceFile } from "../src/types/SourceFile.ts";
@@ -27,7 +27,7 @@ describe("routeLiterals", () => {
   it("returns undefined without a modules/<m>/routes.ts and hashes routes.json as a string", () => {
     const only: SourceFile[] = [{ path: C, source: contractSrc(`"m.a": { path: "/a" }`) }];
     expect(routeLiterals(only)).toBeUndefined();
-    expect(typeof artifactHashes(only)["routes.json"]).toBe("string");
+    expect(typeof artifactTexts(only)["routes.json"]).toBe("string");
   });
 
   it("reads each kind of entry into exact route fields", () => {
@@ -275,9 +275,9 @@ describe("routeLiterals", () => {
     });
 
     it("hashes routes.json as null only when a selected binding exists", () => {
-      expect(artifactHashes(both)["routes.json"]).toBeNull();
+      expect(artifactTexts(both)["routes.json"]).toBeNull();
       const topology: Topology = { web: { modules: ["c"], adapter: "client" } };
-      expect(typeof artifactHashes(both, { topology })["routes.json"]).toBe("string");
+      expect(typeof artifactTexts(both, { topology })["routes.json"]).toBe("string");
     });
   });
 

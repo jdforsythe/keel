@@ -67,7 +67,7 @@ Each module lists `@keel/std-brands` in `deps`, so `keel check` holds every id b
 
 ## Production
 1. `pnpm --filter ./apps/golden-2 build` runs `keel build`. It writes:
-   - the `.keel/` artifacts, `surface.json` among them;
+   - the `.keel/` views, `surface.json` the committed one;
    - `dist/web/`, the `web` client as static files;
    - `dist/api/`: `server.mjs`, the generated entry with every dependency bundled, beside a copy of the `web` client, `routes.json`, `std.json` and each module's `modules/<id>/migrations/`;
    - `deploy/api/Dockerfile` and `deploy/compose.yaml`, from `topology.ts`.

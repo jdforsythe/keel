@@ -7,7 +7,7 @@ export function libraryReadme(name: string, id: string): string {
     "",
     "- `keel check` and `keel test` judge the library in this folder, against `tokens.ts`.",
     "- `keel pack` checks, tests and writes `.keel/ledger.json`; commit it.",
-    "- `pnpm pack` and `pnpm publish` build `dist/` and run `keel pack --check` first.",
+    "- `pnpm pack` and `pnpm publish` build `dist/` and run `keel pack --frozen` first.",
     "",
   ].join("\n");
 }

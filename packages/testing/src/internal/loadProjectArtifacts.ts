@@ -7,24 +7,24 @@ import { a11yEntries } from "./a11yEntries.ts";
 
 const messageOf = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
-/** `.keel/a11y.json` of `dir`, if present and JSON; else none. */
-const a11yJson = (dir: string): Pick<HarnessArtifacts, "a11y.json"> => {
+/** `given`, the derived `a11y.json` bytes `keel test` hands over, else `.keel/a11y.json` of `dir`, if JSON; else none. */
+const a11yJson = (dir: string, given: string | undefined): Pick<HarnessArtifacts, "a11y.json"> => {
   const file = join(dir, ".keel", "a11y.json");
-  if (!existsSync(file)) return {};
+  if (given === undefined && !existsSync(file)) return {};
   try {
-    return { "a11y.json": a11yEntries(JSON.parse(readFileSync(file, "utf8"))) };
+    return { "a11y.json": a11yEntries(JSON.parse(given ?? readFileSync(file, "utf8"))) };
   } catch {
     return {};
   }
 };
 
 /**
- * The artifacts of the project in `dir` (k.a11y Artifacts): `.keel/a11y.json` as the compiler writes it, if present,
- * and the `tokens` export of `tokens.ts`, if present. A `tokens.ts` that throws, exports no `tokens` or whose
+ * The artifacts of the project in `dir` (k.a11y Artifacts): the `a11y.json` derived from the tree, as `keel test`
+ * hands it to the test process (`a11y`, k.derived Readers), else `.keel/a11y.json` if present, and the `tokens` export of `tokens.ts`, if present. A `tokens.ts` that throws, exports no `tokens` or whose
  * `tokens` fail `TokenSchema` gives the reason instead.
  */
-export async function loadProjectArtifacts(dir: string): Promise<ProjectArtifacts> {
-  const a11y = a11yJson(dir);
+export async function loadProjectArtifacts(dir: string, given?: string): Promise<ProjectArtifacts> {
+  const a11y = a11yJson(dir, given);
   const file = join(dir, "tokens.ts");
   if (!existsSync(file)) return { ok: true, artifacts: a11y };
   let mod: unknown;

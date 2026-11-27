@@ -1,17 +1,15 @@
 import path from "node:path";
-import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
+import { compile, parseTopology, projectDirs } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
 import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { servedByEdit } from "@keel/compiler/hosting/servedByEdit";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
-import { hashOf } from "@keel/compiler/internal";
+import { compiledViews } from "./compiledViews.ts";
 import type { Checked } from "./internal/Checked.ts";
-import type { Expected } from "./internal/Expected.ts";
 import { aliasedImports } from "./internal/aliasedImports.ts";
 import { apiWithoutServer } from "./internal/apiWithoutServer.ts";
 import { applyEdits } from "./internal/applyEdits.ts";
-import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { chainStoreIds } from "./internal/chainStoreIds.ts";
 import { compatChecks } from "./internal/compat/compatChecks.ts";
@@ -45,7 +43,6 @@ import { ruleInScope } from "./internal/ruleInScope.ts";
 import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
-import { schemesIn } from "./internal/schemesIn.ts";
 import { stdInScope } from "./internal/stdInScope.ts";
 import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
@@ -78,48 +75,12 @@ function compatTopology(dir: string, all: readonly SourceFile[], opts: CheckOpti
 }
 
 /**
- * What E1005 compares each checked `.keel/` dir's artifacts with, keyed by the dir of the project holding it (`""` for
- * the root, else `apps/a/`): the hashes the compiler derives from the sources under that dir in `opts.project`
- * (default `files`), paths made relative to it, with its own `topology.ts` (rfc:0050, rfc:0055), and, when
- * `routes.json` is evaluated, the literals of its contracts and bindings. One compile per project with a checked
- * artifact; nothing the caller passes replaces the derivation (backlog 0143).
- */
-function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): ReadonlyMap<string, Expected> {
-  const out = new Map<string, Expected>();
-  const project = opts.project ?? files;
-  const dirs = projectDirs(project);
-  /** A file under `dir` that a deeper project holds is that project's, not `dir`'s (as `keel build` compiles it). */
-  const deeper = (dir: string, path: string): boolean =>
-    dirs.some((d) => d.length > dir.length && d.startsWith(dir) && path.startsWith(d));
-  for (const file of files) {
-    const dir = artifactDir(file.path);
-    if (dir === undefined || out.has(dir)) continue;
-    const sources = project
-      .filter((f) => f.path.startsWith(dir) && !deeper(dir, f.path))
-      .map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
-    const topology = topologyOf(dir, project, opts);
-    const options = topology === undefined ? {} : { topology };
-    const compiled = artifactHashes(sources, options);
-    // `schemes.json` (k.schemes) is derived from the evaluated tokens: with no `tokens.ts`, one scheme.
-    const tokens: unknown = opts.artifacts?.tokens ?? opts.projectArtifacts?.[dir]?.tokens;
-    const hasTokens = project.some((f) => f.path === `${dir}tokens.ts`);
-    const schemes = tokens !== undefined ? schemesIn(tokens) : hasTokens ? undefined : ["light"];
-    const hashes =
-      schemes === undefined ? compiled : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes] }) };
-    // Packages a route manifest spreads resolve from the project's own directory, as its imports do.
-    const literal = { ...options, root: path.join(opts.root ?? process.cwd(), dir) };
-    out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, literal) } : { hashes });
-  }
-  return out;
-}
-
-/**
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
- * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
+ * for a `.keel/` view that differs from its derivation (k.derived In process), E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
  * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
- * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
+ * W1564, W1568 over the current surface: `derived`'s, else `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  *
  * A library's files among the files (k.library In an app, `libraryFolders`) are read by every step at
  * `modules/<id>/<f>` but the type pass, the k.module pass and E1013, which read them where they lie; each diagnostic in
@@ -171,7 +132,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const resolve = reachResolve(project, dir, new Set(sources.map((f) => f.path)));
     const compiled = compile(sources, placed === undefined ? { resolve } : { topology: placed, resolve });
     if (topology !== undefined) {
-      const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
+      // E1511 reads the evaluated `routes.json` the caller derived (k.derived Readers), else the file among `files`.
+      const evaluated =
+        opts.derived?.[dir]?.["routes.json"] ?? all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
     }
     // E1552, E1566, E1572, E1573: the caller's topology, else the static read of `topology.ts`, beside the project's
@@ -298,9 +261,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
-    // E1005 derives each artifact from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
-    ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
-    ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base),
+    // E1005 derives each view from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
+    ...generatedEdits(files, (dir) => compiledViews(dir, opts.project ?? files, opts), opts.derived),
+    ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base, opts.derived),
   );
 
   // A diagnostic in a library file is located where the file lies and carries no fix (k.library In an app).

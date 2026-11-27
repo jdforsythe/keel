@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { check, libraryEntryDiags } from "@keel/check";
+import { check, compiledViews, libraryEntryDiags } from "@keel/check";
 import { importDeps } from "@keel/compiler/std/importDeps";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { CheckDiagnostic } from "./CheckDiagnostic.ts";
@@ -25,6 +25,9 @@ import { relPath } from "./relPath.ts";
  * The files of the libraries `project`'s manifests reach join `project` and, with `libraries`, the checked files
  * (`checkInputs`, k.library In an app). `reach` holds the manifests whose `deps` name the libraries read and imported
  * (default `project`; a library's own folder gives its own manifest, k.library-pack Own folder).
+ * `views` (k.derived): `derived`, each project's evaluated views, reaches `check` (the current surface, E1511, and an
+ * evaluated view among `files` compared); and the compiled views of each of `dirs` (`compiledViews`, with the
+ * evaluated tokens) are put in `out`, from the same inputs the check ran over.
  */
 export async function runCheck(
   cwd: string,
@@ -33,6 +36,11 @@ export async function runCheck(
   base?: unknown,
   libraries = false,
   reach: readonly SourceFile[] = project,
+  views?: {
+    readonly derived: Readonly<Record<string, Readonly<Record<string, string>>>>;
+    readonly dirs: readonly string[];
+    readonly out: Map<string, Readonly<Record<string, string | null>>>;
+  },
 ): Promise<Diag[]> {
   const { all, checked } = checkInputs(cwd, files, project, libraries, reach);
   // While a library's entry lists `keel` other than first (E1815, which check() reports), nothing is evaluated: no
@@ -56,9 +64,12 @@ export async function runCheck(
         project: all,
         ...(Object.keys(tokens.projectArtifacts).length === 0 ? {} : { projectArtifacts: tokens.projectArtifacts }),
         ...(base === undefined ? {} : { base }),
+        ...(views === undefined ? {} : { derived: views.derived }),
       },
     ).diagnostics,
   ];
+  const given = Object.keys(tokens.projectArtifacts).length === 0 ? {} : { projectArtifacts: tokens.projectArtifacts };
+  for (const dir of views?.dirs ?? []) views?.out.set(dir, compiledViews(dir, all, { ...options, ...given }));
   return found.map((d) => ({
     kind: "diag",
     code: d.code,

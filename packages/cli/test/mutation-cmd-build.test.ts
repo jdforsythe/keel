@@ -119,7 +119,7 @@ describe("check", () => {
     const files = [{ path: "src/a.ts", source: "export const a = 1\nexport const b = 2\n" }, ok("src/c.ts", "c")];
     const r = await run(["check", "--format=json"], { cwd: CWD, files });
     expect(r.stdout).toBe(
-      '{"kind":"diag","code":"E1752","path":"src/a.ts","line":2,"col":1,"message":"2 exports in one file (a, b); one export per file","see":"k.check"}\n{"kind":"summary","ok":false,"name":"check","counts":{"files":2,"errors":1,"warnings":0}}\n',
+      '{"kind":"diag","code":"E1752","path":"src/a.ts","line":2,"col":1,"message":"2 exports in one file (a, b); one export per file","see":"k.check"}\n{"kind":"summary","ok":false,"name":"check","counts":{"files":2,"refreshed":0,"errors":1,"warnings":0,"evaluated":0,"cached":0}}\n',
     );
     expect((await run(["check"], { cwd: CWD, files: [ok("src/c.ts", "c")] })).stdout).toBe(
       "ok check 1 files, 0 errors, 0 warnings\n",

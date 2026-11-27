@@ -19,8 +19,8 @@ describe("generatedEdits and ledger files", () => {
         f(".keel/ledger.json", '{"version":1}'),
         f("apps/a/.keel/x.json", "{}"),
       ],
-      new Map(),
-      [],
+      () => ({}),
+      undefined,
     );
     expect(out.map((d) => [d.code, d.path])).toEqual([["E1005", "apps/a/.keel/x.json"]]);
   });

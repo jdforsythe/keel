@@ -16,4 +16,4 @@ import { BarChart } from "@keel-libs/charts";
 - Nothing moves, so reduced motion shows the same chart.
 - Element ids build on your `id`: `<id>.chart`, `<id>.summary`, `<id>.button`, `<id>.table`, `<id>.row.<n>.name`, `<id>.row.<n>.value`.
 
-In this folder `pnpm check` runs `keel check` and `keel pack --check`, and `pnpm test` runs `keel test`. `keel pack` writes `.keel/ledger.json`.
+In this folder `pnpm check` runs `keel check` and `keel pack --frozen`, and `pnpm test` runs `keel test`. `keel pack` writes `.keel/ledger.json`.

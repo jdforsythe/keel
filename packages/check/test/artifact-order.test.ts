@@ -17,25 +17,20 @@ const codes = (out: string): string[] =>
     .filter((c) => /^[EWI]\d{4}$/.test(c));
 
 describe("stale-artifact lines come after source diagnostics", () => {
-  const mixed = [
-    d("E1005", ".keel/routes.json"),
-    d("W1005", ".keel/routes.json"),
-    d("E1405", "src/a.tsx"),
-    d("W2001", "src/b.tsx"),
-  ];
+  const mixed = [d("E1005", ".keel/routes.json"), d("E1405", "src/a.tsx"), d("W2001", "src/b.tsx")];
 
-  it("compact: source codes first, E1005 and W1005 last", () => {
-    expect(codes(format(mixed))).toEqual(["E1405", "W2001", "E1005", "W1005"]);
+  it("compact: source codes first, E1005 last", () => {
+    expect(codes(format(mixed))).toEqual(["E1405", "W2001", "E1005"]);
   });
 
   it("json: the same order, input order does not matter", () => {
     const a = codes(format(mixed, { mode: "json" }));
     const b = codes(format([...mixed].reverse(), { mode: "json" }));
-    expect(a).toEqual(["E1405", "W2001", "E1005", "W1005"]);
+    expect(a).toEqual(["E1405", "W2001", "E1005"]);
     expect(b).toEqual(a);
   });
 
   it("json with a limit keeps the same order", () => {
-    expect(codes(format(mixed, { mode: "json", limit: 1 }))).toEqual(["E1405", "W2001", "E1005", "W1005"]);
+    expect(codes(format(mixed, { mode: "json", limit: 1 }))).toEqual(["E1405", "W2001", "E1005"]);
   });
 });
