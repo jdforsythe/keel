@@ -6,9 +6,11 @@ type ExpectUse = { readonly code: "E1452" | "E1460"; readonly at: ts.Node; reado
 type Fn = ts.ArrowFunction | ts.FunctionExpression | ts.FunctionDeclaration;
 
 const UNREADABLE = "expect is not readable here: write the function in the call";
-const CLAIMS = "expect claims every throw: test the thrown value";
+const NEVER = "expect claims every throw: it never returns undefined";
+const UNTESTED = "expect claims every throw: return the error where instanceof, ===, a guard or .ok holds";
 const COPIES = "expect copies thrown text: carry a number, a boolean or a closed code";
 const BUILDS = "expect builds its error from the thrown value: return X.make(data)";
+const OPEN = "error data an expect returns is open text: carry a number, a boolean or a closed code";
 /** Members whose read in a copy carries the thrown value's text (k.expect Carries). */
 const TEXT_MEMBERS: ReadonlySet<string> = new Set(["message", "stack", "cause", "errors", "toString"]);
 const LITERAL_FLAGS =
@@ -58,8 +60,8 @@ function readable(
 
 /**
  * The findings of one `attempt` call's `expect` argument `arg` in the type pass (k.expect): E1452 when check cannot
- * read it (Readable) or it claims every throw (Decides), and E1460 for a copy of the thrown value that carries text or a
- * returned error built from the thrown value (Carries). A function read by name is judged as written in the call and
+ * read it (Readable) or it claims every throw (Decides 1 or 2), and E1460 for error data it returns that is not closed,
+ * however the value reached it, or a returned error built from the thrown value (Carries). A function read by name is judged as written in the call and
  * reported at `arg`. `made` names the `make` or `causedBy` call of an `s.error` a call is (k.unsafe One path).
  */
 export function expectFindings(
@@ -99,7 +101,10 @@ export function expectFindings(
     reading.set(sym, found);
     return found;
   };
-  /** Whether `e` reads the thrown value (k.expect Decides): `x`, a property of one, `Reflect.get` of one, `typeof` one. */
+  /**
+   * Whether `e` reads the thrown value (k.expect Decides): `x`, a property of one, `Reflect.get` of one, `Object(…)` of
+   * one, `typeof` one.
+   */
   function reads(e: ts.Expression): boolean {
     const b = bareExpression(e);
     if (ts.isIdentifier(b)) return readsName(b);
@@ -109,16 +114,42 @@ export function expectFindings(
     if (ts.isCallExpression(b)) {
       const c = bareExpression(b.expression);
       const first = b.arguments[0];
+      if (first === undefined) return false;
+      if (ts.isIdentifier(c) && c.text === "Object" && b.arguments.length === 1) return reads(first);
       return (
-        first !== undefined &&
-        (ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.expression)
-          ? c.expression.text === "Reflect" && c.name.text === "get"
-          : false) &&
+        ts.isPropertyAccessExpression(c) &&
+        ts.isIdentifier(c.expression) &&
+        c.expression.text === "Reflect" &&
+        c.name.text === "get" &&
         reads(first)
       );
     }
     return false;
   }
+  /** Whether `e` is `S.parse(v)` with `v` reading the thrown value, or a `const` of the function bound to one. */
+  const parsesThrown = (e: ts.Expression, depth = 0): boolean => {
+    const b = bareExpression(e);
+    if (ts.isCallExpression(b)) {
+      const c = bareExpression(b.expression);
+      const first = b.arguments[0];
+      return ts.isPropertyAccessExpression(c) && c.name.text === "parse" && first !== undefined && reads(first);
+    }
+    if (!ts.isIdentifier(b) || depth > 8) return false;
+    const d = checker.getSymbolAtLocation(b)?.valueDeclaration;
+    const list = d?.parent;
+    return (
+      d !== undefined &&
+      ts.isVariableDeclaration(d) &&
+      d.initializer !== undefined &&
+      d.pos >= fn.pos &&
+      d.end <= fn.end &&
+      d.getSourceFile() === fn.getSourceFile() &&
+      list !== undefined &&
+      ts.isVariableDeclarationList(list) &&
+      (list.flags & ts.NodeFlags.Const) !== 0 &&
+      parsesThrown(d.initializer, depth + 1)
+    );
+  };
   /** Whether `e` mentions the thrown value anywhere: `x` or a `const` reading it. */
   const mentions = (e: ts.Node): boolean => {
     if (ts.isIdentifier(e) && readsName(e)) return true;
@@ -135,13 +166,7 @@ export function expectFindings(
     const b = bareExpression(e);
     if (ts.isPrefixUnaryExpression(b)) return b.operator === ts.SyntaxKind.ExclamationToken && isTest(b.operand);
     if (ts.isCallExpression(b)) return b.arguments.some((a) => reads(a)) && booleanOrPredicate(b);
-    if (ts.isPropertyAccessExpression(b) && b.name.text === "ok") {
-      const call = bareExpression(b.expression);
-      if (!ts.isCallExpression(call)) return false;
-      const c = bareExpression(call.expression);
-      const first = call.arguments[0];
-      return ts.isPropertyAccessExpression(c) && c.name.text === "parse" && first !== undefined && reads(first);
-    }
+    if (ts.isPropertyAccessExpression(b) && b.name.text === "ok") return parsesThrown(b.expression);
     if (!ts.isBinaryExpression(b)) return false;
     const op = b.operatorToken.kind;
     if (op === ts.SyntaxKind.InstanceOfKeyword) return reads(b.left);
@@ -185,23 +210,63 @@ export function expectFindings(
   const returned: { e: ts.Expression; guarded: boolean }[] = [];
   const body = fn.body;
   if (body !== undefined && !ts.isBlock(body)) leaves(body, false, returned);
-  else if (body !== undefined) {
-    const walk = (n: ts.Node): void => {
-      if (isFn(n) || ts.isClassLike(n)) return;
-      if (ts.isReturnStatement(n) && n.expression !== undefined) {
-        let guarded = false;
-        for (let at: ts.Node = n; at !== body; at = at.parent) {
-          const p = at.parent;
-          if (ts.isIfStatement(p) && p.expression !== at && isTest(p.expression)) guarded = true;
-        }
-        leaves(n.expression, guarded, returned);
-      }
-      ts.forEachChild(n, walk);
-    };
-    walk(body);
+  else if (body !== undefined) walkStatements(body.statements, false);
+
+  /** Whether statement `s` is `return`, `return undefined` or `return void 0`, bare or alone in a block. */
+  function returnsUndefined(s: ts.Statement): boolean {
+    if (ts.isBlock(s)) {
+      const only = s.statements[0];
+      return s.statements.length === 1 && only !== undefined && returnsUndefined(only);
+    }
+    return ts.isReturnStatement(s) && (s.expression === undefined || isUndefined(bareExpression(s.expression)));
   }
-  const isUndefined = (e: ts.Expression): boolean =>
-    (ts.isIdentifier(e) && e.text === "undefined") || (ts.isVoidExpression(e) && ts.isLiteralExpression(e.expression));
+  /**
+   * The returns of a statement list, each guarded when a test selects it (k.expect Decides): the branches of an `if`
+   * whose condition is a test; the statements after `if (t) return undefined` with `t` a test, in the same list; and
+   * the clauses before any `default` of a `switch` whose expression reads the thrown value, each `case` expression holding
+   * no mention of it.
+   */
+  function walkStatements(list: readonly ts.Statement[], guarded: boolean): void {
+    let g = guarded;
+    for (const st of list) {
+      walkStatement(st, g);
+      if (ts.isIfStatement(st) && st.elseStatement === undefined && returnsUndefined(st.thenStatement))
+        if (isTest(st.expression)) g = true;
+    }
+  }
+  function walkStatement(n: ts.Node, guarded: boolean): void {
+    if (isFn(n) || ts.isClassLike(n)) return;
+    if (ts.isReturnStatement(n)) {
+      if (n.expression !== undefined) leaves(n.expression, guarded, returned);
+      return;
+    }
+    if (ts.isBlock(n)) {
+      walkStatements(n.statements, guarded);
+      return;
+    }
+    if (ts.isIfStatement(n)) {
+      const t = guarded || isTest(n.expression);
+      walkStatement(n.thenStatement, t);
+      if (n.elseStatement !== undefined) walkStatement(n.elseStatement, t);
+      return;
+    }
+    if (ts.isSwitchStatement(n)) {
+      const on = reads(n.expression);
+      let open = false;
+      for (const clause of n.caseBlock.clauses) {
+        if (ts.isDefaultClause(clause)) open = true;
+        const selects = !open && on && ts.isCaseClause(clause) && !mentions(clause.expression);
+        walkStatements(clause.statements, guarded || selects);
+      }
+      return;
+    }
+    ts.forEachChild(n, (c) => walkStatement(c, guarded));
+  }
+  function isUndefined(e: ts.Expression): boolean {
+    return (
+      (ts.isIdentifier(e) && e.text === "undefined") || (ts.isVoidExpression(e) && ts.isLiteralExpression(e.expression))
+    );
+  }
 
   const out: ExpectUse[] = [];
   const sig = checker.getSignatureFromDeclaration(fn);
@@ -210,16 +275,46 @@ export function expectFindings(
     ret === undefined ||
     (ret.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void | ts.TypeFlags.Any | ts.TypeFlags.Unknown)) !== 0 ||
     (ret.isUnion() && ret.types.some((t) => (t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void)) !== 0));
-  const decides = holdsUndefined && returned.every((r) => isUndefined(r.e) || r.guarded);
-  if (!decides) out.push({ code: "E1452", at: arg, message: CLAIMS });
+  if (!holdsUndefined) out.push({ code: "E1452", at: arg, message: NEVER });
+  else if (!returned.every((r) => isUndefined(r.e) || r.guarded))
+    out.push({ code: "E1452", at: arg, message: UNTESTED });
 
-  /** Whether a copy's type crosses (k.expect Carries): `number`, `boolean` or a union of literal types. */
-  const crosses = (t: ts.Type): boolean => {
-    if ((t.flags & (ts.TypeFlags.NumberLike | ts.TypeFlags.BooleanLike | LITERAL_FLAGS)) !== 0) return true;
-    return (
-      t.isUnion() &&
-      t.types.every((u) => (u.flags & (ts.TypeFlags.NumberLike | ts.TypeFlags.BooleanLike | LITERAL_FLAGS)) !== 0)
-    );
+  /**
+   * Whether type `t` is closed (k.expect Carries): a number, a boolean, a literal, `null` or `undefined`, a union or
+   * intersection of closed types, or an array, tuple or object whose elements, properties and index signatures are
+   * closed and that has no call or construct signature. Open `string`, `bigint`, a template literal type, `symbol`,
+   * `unknown`, `any`, `object`, a type parameter and a type check cannot resolve are not.
+   */
+  const closed = (t: ts.Type, seen: Set<ts.Type> = new Set()): boolean => {
+    const SCALAR =
+      ts.TypeFlags.NumberLike |
+      ts.TypeFlags.BooleanLike |
+      LITERAL_FLAGS |
+      ts.TypeFlags.Null |
+      ts.TypeFlags.Undefined |
+      ts.TypeFlags.Void |
+      ts.TypeFlags.Never;
+    if ((t.flags & ts.TypeFlags.BigInt) !== 0 && (t.flags & ts.TypeFlags.BigIntLiteral) === 0) return false;
+    if ((t.flags & SCALAR) !== 0) return true;
+    if (t.isUnion() || t.isIntersection()) return t.types.every((u) => closed(u, seen));
+    if ((t.flags & ts.TypeFlags.Object) === 0) return false;
+    if (seen.has(t)) return true;
+    seen.add(t);
+    if (t.getCallSignatures().length > 0 || t.getConstructSignatures().length > 0) return false;
+    if (checker.isArrayType(t) || checker.isTupleType(t)) {
+      const item = checker.getIndexTypeOfType(t, ts.IndexKind.Number);
+      return item !== undefined && closed(item, seen);
+    }
+    if (!checker.getIndexInfosOfType(t).every((i) => closed(i.type, seen))) return false;
+    return checker.getPropertiesOfType(t).every((p) => closed(checker.getTypeOfSymbol(p), seen));
+  };
+  /** Whether every `KeelError` type in `t` has closed `data`; `undefined` members are no error. */
+  const closedData = (t: ts.Type): boolean => {
+    if ((t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void | ts.TypeFlags.Never)) !== 0) return true;
+    if (t.isUnion()) return t.types.every(closedData);
+    if ((t.flags & ts.TypeFlags.Object) === 0) return false;
+    const data = checker.getPropertyOfType(t, "data");
+    return data !== undefined && closed(checker.getTypeOfSymbol(data));
   };
   /** Whether a copy builds text: a read of a text member, `String(…)`, `JSON.stringify(…)`, a template or `+`. */
   const buildsText = (n: ts.Node): boolean => {
@@ -236,35 +331,47 @@ export function expectFindings(
     }
     return ts.forEachChild(n, (c) => (buildsText(c) ? true : undefined)) === true;
   };
+  /**
+   * The data of a `make` or `causedBy` written in the `expect` (k.expect Carries), read through object and array
+   * literals: each property value or element is judged by its own type, so a literal written there is closed; a spread,
+   * a binding, a call or any other expression is judged by the type it has.
+   */
   const judgeData = (d: ts.Expression): void => {
     const b = bareExpression(d);
     if (ts.isObjectLiteralExpression(b)) {
       for (const p of b.properties) {
         if (ts.isPropertyAssignment(p)) judgeData(p.initializer);
-        else if (ts.isShorthandPropertyAssignment(p) && mentions(p.name)) judgeCopy(p.name);
-        else if (ts.isSpreadAssignment(p) && mentions(p.expression)) judgeCopy(p.expression);
+        else if (ts.isShorthandPropertyAssignment(p)) judgeLeaf(p.name);
+        else if (ts.isSpreadAssignment(p)) judgeLeaf(p.expression);
+        else out.push({ code: "E1460", at: where(p), message: OPEN });
       }
       return;
     }
     if (ts.isArrayLiteralExpression(b)) {
-      for (const el of b.elements) judgeData(ts.isSpreadElement(el) ? el.expression : el);
+      for (const el of b.elements) {
+        if (ts.isSpreadElement(el)) judgeLeaf(el.expression);
+        else judgeData(el);
+      }
       return;
     }
-    if (mentions(b)) judgeCopy(d);
+    judgeLeaf(b);
   };
-  function judgeCopy(c: ts.Expression): void {
-    if (buildsText(c) || !crosses(checker.getTypeAtLocation(c)))
-      out.push({ code: "E1460", at: where(c), message: COPIES });
+  function judgeLeaf(c: ts.Expression): void {
+    const copy = mentions(c);
+    if ((copy && buildsText(c)) || !closed(checker.getTypeAtLocation(c)))
+      out.push({ code: "E1460", at: where(c), message: copy ? COPIES : OPEN });
   }
   for (const r of returned) {
-    if (isUndefined(r.e) || !mentions(r.e)) continue;
+    if (isUndefined(r.e)) continue;
     const kind = ts.isCallExpression(r.e) ? made(r.e) : undefined;
-    if (kind === undefined || !ts.isCallExpression(r.e)) {
-      out.push({ code: "E1460", at: where(r.e), message: BUILDS });
+    if (kind !== undefined && ts.isCallExpression(r.e)) {
+      const data = r.e.arguments[kind === "make" ? 0 : 1];
+      if (data !== undefined && !ts.isSpreadElement(data)) judgeData(data);
+      else if (data !== undefined) out.push({ code: "E1460", at: where(data), message: OPEN });
       continue;
     }
-    const data = r.e.arguments[kind === "make" ? 0 : 1];
-    if (data !== undefined) judgeData(data);
+    if (mentions(r.e)) out.push({ code: "E1460", at: where(r.e), message: BUILDS });
+    else if (!closedData(checker.getTypeAtLocation(r.e))) out.push({ code: "E1460", at: where(r.e), message: OPEN });
   }
   return out;
 }

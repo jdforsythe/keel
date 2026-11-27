@@ -655,8 +655,8 @@ const ROWS: readonly Row[] = [
   [
     "E1452",
     "catch, or a finally that drops a throw",
-    "",
-    "\n```ts\ndeclare const a: () => void, b: typeof a\nexport function f() { let d = false; try { a(); d = true } finally { if (!d) b() } }```\n```ts\nimport { attempt, type KeelError } from '@keel/schema'\ndeclare const g: () => 1, T: KeelError<'m.t', null>\nexport const f = attempt(g, x => (x instanceof URIError ? T : undefined))```\n```ts\ndeclare const a: () => 1\nexport const f = () => a() + 1```",
+    "Tests: instanceof, ===/!==, a boolean call, S.parse(x).ok. Under ?:, if, if (!t) return, case.",
+    "\n```ts\nexport function f(a: () => 1) { let d = false; try { a(); d = true } finally { if (!d) a() } }\n```\n```ts\nimport { attempt, keelError as k } from '@keel/schema'\nexport const f = (g: () => 1) => attempt(g, x => x instanceof URIError ? k.busy.make({}) : undefined)\n```\n```ts\nexport const f = (a: () => 1) => a()\n```",
     "k.errors",
   ],
   [
@@ -703,7 +703,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1460",
-    "an error message that is no literal, or thrown text an expect copies into an error",
+    "an error message that is no literal, or open data in an error an expect returns",
     "Values go in data; a number, a boolean or a closed code crosses.",
     "\n```ts\nimport { keelError } from '@keel/schema'\nexport const denied = () => keelError.denied.make({}, 'sign in')```",
     "k.expect",
