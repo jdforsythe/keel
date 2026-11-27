@@ -15,6 +15,7 @@ export function instance<
   G extends string,
   A extends string,
 >(chart: Chart<D, Ev, S, G, A>, key: string): ChartInstance<D, Ev, S> {
-  if (!/^[\w.-]{1,64}$/.test(key)) defect(`instance ${chart.store.id}: key is not [\\w.-]{1,64}`);
+  if (!/^[\w.-]{1,64}$/.test(key))
+    defect("instance key is not [\\w.-]{1,64}", { data: { chart: chart.store.id, key } });
   return chart[compileKey](`${chart.store.id}:${key}`);
 }

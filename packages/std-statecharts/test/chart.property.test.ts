@@ -47,7 +47,7 @@ const attempt = (spec: Loose) => {
   try {
     return { chart: chart(`todos.prop${id}`, spec) };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: e instanceof Error ? e.message : String(e), data: Reflect.get(Object(e), "data") };
   }
 };
 
@@ -63,7 +63,7 @@ describe("chart: a declaration throws a structural code or compiles", () => {
         const badName = !named.includes(spec.initial) || tos.some((t) => !named.includes(t));
         const r = attempt(spec);
         if (badName) expect(r.error).toMatch(/^E275[134] /);
-        if (r.error !== undefined) expect(r.error).toMatch(/^E275[134] chart todos\.prop/);
+        if (r.error !== undefined) expect(r.data).toMatchObject({ chart: expect.stringMatching(/^todos\.prop/) });
       }),
       { seed: 1337, numRuns: 200 },
     );

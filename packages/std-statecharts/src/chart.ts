@@ -31,15 +31,15 @@ export function chart<
   const declared: Readonly<Record<string, LooseState>> = spec.states;
   const problem = analyze(shapeOf({ ...spec, states: declared }))[0];
   if (problem !== undefined) {
-    const text = `chart ${id}: ${problem.message}`;
-    if (problem.code === "E2751") defect(text, "E2751");
-    if (problem.code === "E2753") defect(text, "E2753");
-    defect(text, "E2754");
+    const data = { chart: id, problem: problem.message };
+    if (problem.code === "E2751") defect("chart is not well formed", "E2751", { data });
+    if (problem.code === "E2753") defect("chart is not well formed", "E2753", { data });
+    defect("chart is not well formed", "E2754", { data });
   }
   const names: S[] = [];
   for (const name in spec.states) names.push(name);
   const [first, ...rest] = names;
-  if (first === undefined) defect(`chart ${id}: no states`, "E2751");
+  if (first === undefined) defect("chart declares no states", "E2751", { data: { chart: id } });
   const guards = loosen<D, boolean>(spec.guards);
   const actions = loosen<D, D>(spec.actions);
   const pick = (cur: ChartState<string, D>, event: string, payload: unknown) => {
