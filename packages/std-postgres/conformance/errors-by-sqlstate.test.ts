@@ -235,7 +235,7 @@ for (const m of MODES.filter((x) => x.name !== "sim")) {
                   (e: unknown) => e,
                 );
                 const text = JSON.stringify(r, (_k, v: unknown) =>
-                  v instanceof Error ? { message: v.message, ...v } : v,
+                  v instanceof Error ? { ...v, message: v.message } : v,
                 );
                 expect(text, code).not.toContain("jane@x.com");
                 expect(text, code).not.toContain("4111");
