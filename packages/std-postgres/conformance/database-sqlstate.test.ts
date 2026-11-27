@@ -1,7 +1,7 @@
-// Spec: std.postgres, clause "On Postgres 17 and on a `pglite:` folder, `run` of `insert into t (v) values ('xyz')`, `t.v` a `varchar(2)` column, is `err` `postgres.database` with data `{ sqlstate: '22001' }` and `query` of `select 'a'::int` with `{ sqlstate: '22P02' }`; inside a `transaction` after `set local statement_timeout = 1`, `select pg_sleep(1)` is `err` `postgres.database` `{ sqlstate: '57014' }`; `select raise_it()`, a function doing `raise exception 'x'`, is `{ sqlstate: 'P0001' }`; no `data` holds more keys than `sqlstate`."
-// Spec: std.postgres, clause "`query` of `select * from no_such_table` rejects with a value `isDefect(v, 'E2461')` accepts whose message is `E2461 std.postgres: the database answered SQLSTATE 42P01`."
+// Spec: std.postgres, clause "On Postgres 17 and on a `pglite:` folder, `run` of `insert into t (v) values ('xyz')`, `t.v` a `varchar(2)` column, is `err` `postgres.database` with data `{ sqlstate: '22001' }` and `query` of `select 'a'::int` with `{ sqlstate: '22P02' }`; on Postgres 17, inside a `transaction` after `set local statement_timeout = 1`, `select pg_sleep(1)` is `err` `postgres.database` `{ sqlstate: '57014' }`; on a `pglite:` folder that `set local` is the E2461 defect with `data.sqlstate` `0A000`; `select raise_it()`, a function doing `raise exception 'x'`, is `{ sqlstate: 'P0001' }`; no `data` holds more keys than `sqlstate`."
+// Spec: std.postgres, clause "`query` of `select * from no_such_table` rejects with a value `isDefect(v, 'E2461')` accepts whose `data` is `{ sqlstate: '42P01' }`."
 // std.postgres, Errors "A database error of a class a caller can act on is `postgres.database`, data `{ sqlstate }`, the five-character SQLSTATE and nothing of the error's text: classes `22`, `40` (but the reruns), `53`, `54`, `55`, `57` and `P0` (a statement timeout `57014`, a lock not available `55P03`, a too long value `22001`, the app's own `raise`); `57P01` to `57P03` and class `08` are `keel.unreachable`. Any other SQLSTATE (class `42`: the app's own SQL is wrong; `XX`: the store is) is a bug, a defect E2461."
-// std.postgres, Rules "E2461 a database error no error above takes, a defect, message `E2461 std.postgres: the database answered SQLSTATE <sqlstate>`"
+// std.postgres, Rules "E2461 a database error no error above takes, a defect, message `E2461 std.postgres: the database answered an SQLSTATE no error takes`"
 // Seed: 1337.
 // Gate: runs on PGlite always and on Postgres 17 only with `KEEL_TEST_POSTGRES_URL` (the shared `MODES`, sim left out: sim runs no SQL); no case is skipped by a marker.
 // Assumption: the SQLSTATE of the property's cases is raised by a plpgsql function (`raise exception 'x' using errcode = code`), so a class no real statement reaches in a test is still reached; the reruns `40001` and `40P01` raised that way are rerun three times and then `keel.conflict`, as a real serialization failure is.
@@ -26,7 +26,8 @@ const thrownBy = (p: Promise<unknown>): Promise<unknown> =>
   );
 const expectE2461 = (v: unknown, sqlstate: string): void => {
   expect(isDefect(v, "E2461")).toBe(true);
-  expect(v instanceof Error && v.message).toBe(`E2461 std.postgres: the database answered SQLSTATE ${sqlstate}`);
+  expect(v instanceof Error && v.message).toBe("E2461 std.postgres: the database answered an SQLSTATE no error takes");
+  expect(v instanceof Error && Object.getOwnPropertyDescriptor(v, "data")?.value).toEqual({ sqlstate });
 };
 
 /** A database whose migrations make `raise_it()` and `raise_with(code)`, named per call so files share one server. */
@@ -134,7 +135,7 @@ for (const m of REAL) {
         FOLDER_BOUND,
       );
 
-      // Edge: the refusal is read from the statement's text. The clause says the `set local` form is E2461;
+      // Edge: the refusal is by value (std.postgres-errors PGlite and `statement_timeout`). The clause says the `set local` form is E2461;
       // std.postgres Modes says "setting `statement_timeout` there resets it and is E2461 (`0A000`)", which covers
       // the session form, any case and spacing, and the reset. A value of 0 leaves the engine as it is (RFC 0242 D19:
       // a statement that leaves it other than 0 is refused), so it is not refused.
@@ -237,7 +238,9 @@ for (const m of REAL) {
               (e: unknown) => e,
             );
           expect(isDefect(v, "E2461")).toBe(true);
-          expect(v instanceof Error && v.message).toBe("E2461 std.postgres: the database answered SQLSTATE 42P01");
+          expect(v instanceof Error && Object.getOwnPropertyDescriptor(v, "data")?.value).toEqual({
+            sqlstate: "42P01",
+          });
         } finally {
           mode.done();
         }
@@ -255,14 +258,12 @@ for (const m of REAL) {
         fc.tuple(sub, sub, sub).map(([a, b, d]) => `P0${a}${b}${d}`.slice(0, 5)),
         fc.constantFrom("40000", "40002", "40003"),
       )
-      .filter((c) => !["57P01", "57P02", "57P03"].includes(c));
-    const lost = fc.oneof(
-      fc.tuple(sub, sub, sub).map(([a, b, d]) => `08${a}${b}${d}`),
-      fc.constantFrom("57P01", "57P02", "57P03"),
-    );
+      .filter((c) => !["57P01", "57P02", "57P03", "53300"].includes(c));
+    // std.postgres-errors By SQLSTATE: 08000, 08001, 08003 and 08006, 57P01 to 57P03 and 53300 are unreachable
+    const lost = fc.constantFrom("08000", "08001", "08003", "08006", "57P01", "57P02", "57P03", "53300");
     const bug = fc.oneof(
       fc.tuple(fc.constantFrom("42", "XX", "0A", "3D", "28"), sub, sub, sub).map(([c, a, b, d]) => `${c}${a}${b}${d}`),
-      fc.constantFrom("42P01", "42601", "42883", "XX000", "XX001", "0A000"),
+      fc.constantFrom("42P01", "42601", "42883", "XX000", "XX001", "0A000", "08004", "08P01"),
     );
 
     test(
@@ -289,7 +290,7 @@ for (const m of REAL) {
     );
 
     test(
-      "property: a SQLSTATE of class `08`, and `57P01` to `57P03`, is `err` `keel.unreachable`",
+      "property: `08000`, `08001`, `08003`, `08006`, `57P01` to `57P03` and `53300` are `err` `keel.unreachable`",
       async () => {
         const x = setup();
         const mode = m.make();
@@ -346,7 +347,7 @@ for (const m of REAL) {
               if (out.kind !== "threw") return;
               expect(isDefect(out.value, "E2461"), code).toBe(true);
               expect(out.value instanceof Error && out.value.message, code).toBe(
-                `E2461 std.postgres: the database answered SQLSTATE ${code}`,
+                "E2461 std.postgres: the database answered an SQLSTATE no error takes",
               );
             }),
             { seed: SEED, numRuns: 15 },
