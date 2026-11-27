@@ -1,134 +1,151 @@
 // @vitest-environment happy-dom
-// Spec: k.topology, clause "With `x` forwarding to `y` and `y`'s `routes.json` marking page `b.tools` at `/tools` `local: true`, a `GET /tools` to `x` from `127.0.0.1` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: none` answers 403 `keel.denied` carrying the six k.security headers, and `y` receives no request."
-// k.topology Calls and peers: "A request for a route the peer's `routes.json` marks `local` (k.contract Local routes) is never forwarded, from any address: the forwarding deployable answers 403 `keel.denied` itself, with the k.security headers, and sends the peer nothing."
-// Seed 1337 (fast-check: the connection's remote address, `Host` and `Sec-Fetch-Site`). Fixture: as topology-forwarding-unserved-paths.test.ts (`x` serves `a`, `y` serves `b`, `x` names `y` in `peers` by URL `http://y.test`, `routes.json` in `artifacts`), page `b.tools` `local: true`, page `b.open` not.
-// ASSUMED: (1) `routesArtifact` writes `local: true` for a `local` entry (k.contract: ".keel/routes.json ... marks that entry `local: true`"); (2) the connection is the shape `createApp`'s `fetch(request, connection)` reads: `{ incoming: { socket: { remoteAddress } } }`; (3) the 403 body holds the text `keel.denied`.
-import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
-import { contract } from "@keel/router/contract";
-import { ok, s } from "@keel/schema";
-import * as server from "@keel/server";
-import { topology } from "@keel/server";
+// Spec: k.topology, clause "With `x` forwarding to `y` and `y`'s page `b.tools` at `/tools` `local: true`, `GET /tools` and `GET /%74ools` to `x` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: none`, from `127.0.0.1` and from `10.0.0.5`, each reach `y` with `x-keel-forwarded: 1` and answer 403 `keel.denied` with the six k.security headers, its loader not run; to `y` itself from `127.0.0.1` with that `Host` and `Sec-Fetch-Site`, `GET /tools` answers the page, and with `x-keel-forwarded: 1` or `x-keel-forwarded: 0` besides, 403 `keel.denied`."
+// Seed 1337 (fast-check: the header's value, the remote address, `Host` and `Sec-Fetch-Site`). Fixture: local-routes-peer-support.ts (`x` serves `a`, `y` serves `b` with
+// the `local: true` page `b.tools` carrying a guard and a loader, the page `b.slug` at `/:slug`, and `b.open`; `x` names `y` in `peers` by URL `http://y.test`).
+// "its loader not run" is read from `hits`: the loader and guard of `b.tools` and the `/:slug` loader of `y` each count their own runs.
+// ASSUMED: a request that already carries `x-keel-forwarded` is not forwarded (k.topology, loop guard), so "over any value" is exercised on the peer side, which refuses whatever the value.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { SEED, writeArtifacts, withHeaders } from "./topology-fixtures.ts";
+import { GOOD, NONE, PORT, SEED, conn, get, pair, six } from "./local-routes-peer-support.ts";
 
-type Conn = { incoming: { socket: { remoteAddress: string } } };
-type App = { fetch(req: Request, connection?: Conn): Promise<Response> };
-const isApp = (v: unknown): v is App =>
-  typeof v === "object" && v !== null && "fetch" in v && typeof v.fetch === "function";
-const make = async (o: Record<string, unknown>): Promise<App> => {
-  const f: unknown = Reflect.get(server, "createApp");
-  if (typeof f !== "function") throw new Error("@keel/server does not export createApp");
-  const app: unknown = await Reflect.apply(f, undefined, [o]);
-  if (!isApp(app)) throw new Error("createApp did not return an app with fetch");
-  return app;
-};
-const conn = (remoteAddress: string): Conn => ({ incoming: { socket: { remoteAddress } } });
+const FROM = ["127.0.0.1", "10.0.0.5"];
+const PATHS = ["/tools", "/%74ools", "/tool%73"];
+const octet = fc.integer({ min: 0, max: 255 });
+const address = fc.oneof(
+  fc.constantFrom("127.0.0.1", "::1", "::ffff:127.0.0.1", "10.0.0.5"),
+  fc.tuple(octet, octet, octet, octet).map((p) => p.join(".")),
+);
+const host = fc.constantFrom(`127.0.0.1:${PORT}`, `localhost:${PORT}`, `[::1]:${PORT}`, "example.com");
+const site = fc.constantFrom("none", "same-origin", "same-site", "cross-site");
 
-const Page = s.object({ title: s.string() });
-const page = (): Node => document.createElement("main");
-const b = () => {
-  const c = contract("b", { "b.tools": { path: "/tools", local: true }, "b.open": { path: "/open" } });
-  const tools = loader(c, "b.tools", { output: Page }, () => Promise.resolve(ok({ title: "tools" })));
-  const open = loader(c, "b.open", { output: Page }, () => Promise.resolve(ok({ title: "open" })));
-  return manifest(c, { "b.tools": { component: page, loader: tools }, "b.open": { component: page, loader: open } });
-};
-const a = () => {
-  const c = contract("a", { "a.home": { path: "/a" } });
-  return manifest(c, { "a.home": { component: page } });
-};
-
-const SIX: Record<string, string> = {
-  "x-content-type-options": "nosniff",
-  "referrer-policy": "same-origin",
-  "cross-origin-opener-policy": "same-origin",
-  "cross-origin-resource-policy": "same-origin",
-  "x-frame-options": "DENY",
-  "permissions-policy": "camera=(), microphone=(), payment=(), usb=()",
-};
-
-const PORT = 4317;
-/** `x` forwarding to `y`; `seen` holds each request `y` receives. */
-async function pair(): Promise<{ x: App; seen: Request[] }> {
-  const t = topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } });
-  const y = await make({ topology: t, deployable: "y", routes: b(), ctx: createCtx({ mode: "sim", seed: SEED }) });
-  const seen: Request[] = [];
-  const xCtx = createCtx({ mode: "sim", seed: SEED });
-  xCtx.net.route("http://y.test/*", (req) => {
-    seen.push(req.clone());
-    return y.fetch(req, conn("127.0.0.1"));
-  });
-  const x = await make({
-    topology: t,
-    deployable: "x",
-    routes: a(),
-    ctx: xCtx,
-    peers: { y: "http://y.test" },
-    artifacts: writeArtifacts(b()),
-  });
-  return { x, seen };
-}
-const get = (path: string, extra: Record<string, string>): Request =>
-  withHeaders(new Request(`http://127.0.0.1:${PORT}${path}`, { headers: { accept: "application/json" } }), extra);
-const six = (res: Response, label: string): void => {
-  for (const [name, value] of Object.entries(SIX)) expect(res.headers.get(name), `${label}: ${name}`).toBe(value);
-};
-
-describe("k.topology Calls and peers: a `local` route of a peer is never forwarded", () => {
-  it("With `x` forwarding to `y` and `y`'s `routes.json` marking page `b.tools` at `/tools` `local: true`, a `GET /tools` to `x` from `127.0.0.1` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: none` answers 403 `keel.denied` carrying the six k.security headers, and `y` receives no request", async () => {
-    const { x, seen } = await pair();
-    const res = await x.fetch(
-      get("/tools", { host: `127.0.0.1:${PORT}`, "sec-fetch-site": "none" }),
-      conn("127.0.0.1"),
-    );
-    expect(res.status).toBe(403);
-    expect(await res.text()).toContain("keel.denied");
-    six(res, "loopback");
-    expect(seen).toHaveLength(0);
+describe("k.topology Calls and peers: a `local` route of a peer", () => {
+  it("`GET /tools` and `GET /%74ools` to `x` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: none`, from `127.0.0.1` and from `10.0.0.5`, each reach `y` with `x-keel-forwarded: 1`", async () => {
+    for (const path of PATHS) {
+      for (const from of FROM) {
+        const { x, seen } = await pair();
+        await x.fetch(get(path, GOOD), conn(from));
+        expect(seen, `${path} ${from}`).toEqual([{ method: "GET", path, forwarded: "1" }]);
+      }
+    }
   });
 
-  it("a request for a `local` route of the peer is not forwarded from any remote address, loopback included, nor with no connection", async () => {
-    const octet = fc.integer({ min: 0, max: 255 });
-    const address = fc.oneof(
-      fc.constantFrom("127.0.0.1", "::1", "::ffff:127.0.0.1", "10.0.0.5", "192.168.1.5"),
-      fc.tuple(octet, octet, octet, octet).map((p) => p.join(".")),
-    );
-    const { x, seen } = await pair();
+  it("each answers 403 `keel.denied`", async () => {
+    for (const path of PATHS) {
+      for (const from of FROM) {
+        const { x } = await pair();
+        const res = await x.fetch(get(path, GOOD), conn(from));
+        expect(res.status, `${path} ${from}`).toBe(403);
+        expect(await res.text(), `${path} ${from}`).toContain("keel.denied");
+      }
+    }
+  });
+
+  it("each answers with the six k.security headers", async () => {
+    for (const path of PATHS) {
+      for (const from of FROM) {
+        const { x } = await pair();
+        six(await x.fetch(get(path, GOOD), conn(from)), `${path} ${from}`);
+      }
+    }
+  });
+
+  it("each leaves `y`'s loader, its guard and its `/:slug` loader not run, `y` having a `/:slug` route", async () => {
+    for (const path of PATHS) {
+      for (const from of FROM) {
+        const { x, hits } = await pair();
+        await x.fetch(get(path, GOOD), conn(from));
+        expect(hits, `${path} ${from}`).toEqual(NONE);
+      }
+    }
+  });
+
+  it("the forwarder judges no route: from any remote address, `Host` and `Sec-Fetch-Site` the request reaches `y` with `x-keel-forwarded: 1` and is refused there", async () => {
+    const { x, seen, hits } = await pair();
     await fc.assert(
-      fc.asyncProperty(fc.option(address, { nil: undefined }), async (addr) => {
-        const res = await x.fetch(
-          get("/tools", { host: `127.0.0.1:${PORT}`, "sec-fetch-site": "none" }),
-          addr === undefined ? undefined : conn(addr),
-        );
-        expect(res.status, String(addr)).toBe(403);
-        expect(await res.text(), String(addr)).toContain("keel.denied");
-        six(res, String(addr));
-        expect(seen, String(addr)).toHaveLength(0);
+      fc.asyncProperty(address, host, site, fc.constantFrom(...PATHS), async (a, h, f, p) => {
+        const before = seen.length;
+        const label = `${a} ${h} ${f} ${p}`;
+        const res = await x.fetch(get(p, { host: h, "sec-fetch-site": f }), conn(a));
+        expect(res.status, label).toBe(403);
+        expect(seen.length, label).toBe(before + 1);
+        expect(seen[before]?.forwarded, label).toBe("1");
+        six(res, label);
       }),
-      { seed: SEED, numRuns: 30 },
+      { seed: SEED, numRuns: 40 },
     );
+    expect(hits).toEqual(NONE);
   });
 
-  it("a `local` route of the peer is not forwarded whatever the `Host` and `Sec-Fetch-Site` of the request", async () => {
-    const { x, seen } = await pair();
-    const host = fc.constantFrom(`127.0.0.1:${PORT}`, `localhost:${PORT}`, `[::1]:${PORT}`, "example.com", "x.test");
-    const site = fc.constantFrom("none", "same-origin", "same-site", "cross-site");
-    await fc.assert(
-      fc.asyncProperty(host, site, async (h, f) => {
-        const res = await x.fetch(get("/tools", { host: h, "sec-fetch-site": f }), conn("127.0.0.1"));
-        expect(res.status, `${h} ${f}`).toBe(403);
-        six(res, `${h} ${f}`);
-        expect(seen, `${h} ${f}`).toHaveLength(0);
-      }),
-      { seed: SEED, numRuns: 20 },
-    );
+  it("a `HEAD` of those paths reaches `y` with `x-keel-forwarded: 1` and answers 403 with the six k.security headers, its loader not run", async () => {
+    for (const path of PATHS) {
+      for (const from of FROM) {
+        const { x, seen, hits } = await pair();
+        const res = await x.fetch(get(path, GOOD, "HEAD"), conn(from));
+        expect(res.status, `${path} ${from}`).toBe(403);
+        expect(seen, `${path} ${from}`).toEqual([{ method: "HEAD", path, forwarded: "1" }]);
+        six(res, `${path} ${from}`);
+        expect(hits, `${path} ${from}`).toEqual(NONE);
+      }
+    }
   });
 
-  it("a route of the peer that is not `local` is still forwarded under the same request", async () => {
-    const { x, seen } = await pair();
-    const res = await x.fetch(get("/open", { host: `127.0.0.1:${PORT}`, "sec-fetch-site": "none" }), conn("127.0.0.1"));
+  it("to `y` itself from `127.0.0.1` with that `Host` and `Sec-Fetch-Site`, `GET /tools` answers the page", async () => {
+    const { y, hits } = await pair();
+    const res = await y.fetch(get("/tools", GOOD), conn("127.0.0.1"));
     expect(res.status).toBe(200);
-    expect(seen).toHaveLength(1);
+    expect(await res.text()).toContain("tools");
+    expect(hits.tools).toBe(1);
+  });
+
+  it("with `x-keel-forwarded: 1` or `x-keel-forwarded: 0` besides, `y` answers 403 `keel.denied` with the six k.security headers", async () => {
+    for (const value of ["1", "0"]) {
+      for (const path of PATHS) {
+        const { y } = await pair();
+        const res = await y.fetch(get(path, { ...GOOD, "x-keel-forwarded": value }), conn("127.0.0.1"));
+        expect(res.status, `${value} ${path}`).toBe(403);
+        expect(await res.text(), `${value} ${path}`).toContain("keel.denied");
+        six(res, `${value} ${path}`);
+      }
+    }
+  });
+
+  it("with `x-keel-forwarded` of any value besides, `y` runs no handler, loader or guard", async () => {
+    const value = fc.oneof(fc.constantFrom("1", "0", "", "true", "2"), fc.stringMatching(/^[!-~]{1,8}$/));
+    const { y, hits } = await pair();
+    await fc.assert(
+      fc.asyncProperty(value, fc.constantFrom(...PATHS), async (v, p) => {
+        const res = await y.fetch(get(p, { ...GOOD, "x-keel-forwarded": v }), conn("127.0.0.1"));
+        expect(res.status, `${JSON.stringify(v)} ${p}`).toBe(403);
+      }),
+      { seed: SEED, numRuns: 40 },
+    );
+    expect(hits).toEqual(NONE);
+  });
+
+  it("a client sending `x-keel-forwarded` straight to `y` is refused on the `local` route whatever its address, `Host` or `Sec-Fetch-Site`: the header grants nothing", async () => {
+    const { y, hits } = await pair();
+    await fc.assert(
+      fc.asyncProperty(address, host, site, fc.constantFrom(...PATHS), async (a, h, f, p) => {
+        const label = `${a} ${h} ${f} ${p}`;
+        const res = await y.fetch(get(p, { host: h, "sec-fetch-site": f, "x-keel-forwarded": "1" }), conn(a));
+        expect(res.status, label).toBe(403);
+        expect(await res.text(), label).toContain("keel.denied");
+        six(res, label);
+      }),
+      { seed: SEED, numRuns: 40 },
+    );
+    expect(hits).toEqual(NONE);
+  });
+
+  it("a route of `y` that is not `local` is still forwarded and answered, `/open` and a `/:slug` path alike", async () => {
+    const { x, seen, hits } = await pair();
+    const open = await x.fetch(get("/open", GOOD), conn("127.0.0.1"));
+    expect(open.status).toBe(200);
+    expect(await open.text()).toContain("open");
+    const other = await x.fetch(get("/elsewhere", GOOD), conn("10.0.0.5"));
+    expect(other.status).toBe(200);
+    expect(await other.text()).toContain("slug");
+    expect(seen.map((r) => `${r.path} ${r.forwarded}`)).toEqual(["/open 1", "/elsewhere 1"]);
+    expect(hits).toEqual({ ...NONE, open: 1, slug: 1 });
   });
 });
