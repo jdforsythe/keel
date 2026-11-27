@@ -1,6 +1,7 @@
 // Spec: k.check-time, clause "In a project with a `node` module `a`, `import { defineTokens } from '@keel/ui/tokens'` in route component `modules/a/A.tsx` is one E1818 at the specifier with message `@keel/ui/tokens is check and build time only; use token names or @keel/ui/brand`, and `import { contrast } from '@keel/ui/css'` in `lib/tone.ts`, which `A.tsx` imports, one with `@keel/ui/css`; there is none for those imports in `tokens.ts`, in `tokens.design.ts` that only `tokens.ts` imports, in `modules/a/A.test.tsx`, in `vite.config.ts` or in `modules/a/a.server.ts`, nor for `import type { Tokens } from '@keel/ui/tokens'` in `A.tsx`; when `A.tsx` also imports `tokens.ts`, there are two E1818, both at `A.tsx`'s specifier `'../../tokens.ts'`, with messages `tokens.ts imports @keel/ui/tokens, check and build time only` and `tokens.design.ts imports @keel/ui/tokens, check and build time only`, and none in either file; `keel build` with any E1818 exits 1 and writes no `dist/`."
 // Seed: 1337 (no generated input: spawned `keel build` runs).
 // The `keel build` half of k.check-time #1 ("`keel build` with any E1818 exits 1 and writes no `dist/`"); the `keel check` half is check-time-entries-e1818.test.ts. The control builds are the same project with no E1818: each exits 0 and writes `dist/`, so the cases are not vacuous.
+// The re-export sits in `modules/s/types/Tokens.ts`, where k.check Rules allows one (E1752 refuses a re-export outside `index.*` and `types/`); k.check-time's own sentence writes it in `A.tsx`, which E1752 would report.
 // `@keel/ui/tokens` exports the `Tokens` type (k.check-time Entries), so a control imports `Tokens` itself, by `import type` and by `export { type Tokens } from`, as the clause does.
 // ASSUMPTIONS: as check-time-entries-e1818.test.ts (compat-support's `staticTree`, route component `modules/s/Page.tsx`, standing for `A.tsx`); the project is the `static` fixture because its build is known to complete; the build runs `keel check` first (k.boundary Build gate), so an error ends it with nothing written.
 import { existsSync } from "node:fs";
@@ -33,7 +34,11 @@ describe("k.check-time #1: `keel build` and E1818", () => {
   let reached: { dir: string; run: Run };
   beforeAll(() => {
     control = run(tree("import type { Tokens } from '@keel/ui/tokens'\n"));
-    controlExport = run(tree("export { type Tokens } from '@keel/ui/tokens'\n"));
+    controlExport = run(
+      tree("import type { Tokens } from './types/Tokens.ts'\n", {
+        "modules/s/types/Tokens.ts": "export { type Tokens } from '@keel/ui/tokens'\n",
+      }),
+    );
     tokensImport = run(tree("import { defineTokens } from '@keel/ui/tokens'\n"));
     cssImport = run(
       tree("import { tone } from '../../lib/tone.ts'\n", {
@@ -58,7 +63,7 @@ describe("k.check-time #1: `keel build` and E1818", () => {
   );
 
   it(
-    "a project with `export { type Tokens } from '@keel/ui/tokens'` in the page builds: exit 0 and a `dist/`",
+    "a project with `export { type Tokens } from '@keel/ui/tokens'` in a `types/` file of the page's module builds: exit 0 and a `dist/`",
     () => {
       expect(controlExport.run.status).toBe(0);
       expect(diags(controlExport.run, "E1818")).toEqual([]);
