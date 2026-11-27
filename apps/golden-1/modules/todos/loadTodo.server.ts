@@ -15,8 +15,7 @@ export const loadTodo = loader(todos, "todos.edit", { output: Todo }, async ({ p
   const board = await refreshView(ctx);
   if (!board.ok) return board;
   const todo = board.value.todos.find((t) => t.id === params.todoId && t.listId === params.listId);
-  if (todo === undefined)
-    return err(keelError.notFound.make({}));
+  if (todo === undefined) return err(keelError.notFound.make({}));
   const followed = editorFollow();
   if (!followed.ok) return err(followed.error);
   const opened = tx(editorChart.events.edit, {});

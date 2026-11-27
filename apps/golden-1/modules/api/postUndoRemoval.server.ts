@@ -15,8 +15,7 @@ export const postUndoRemoval = action(
   (_input, { params, caller, stores }) => {
     const { flow } = params;
     const at = stores.removal.store.get("instances")[flow];
-    if (at?.state !== "hidden")
-      return err(keelError.notFound.make({}));
+    if (at?.state !== "hidden") return err(keelError.notFound.make({}));
     const r = tx(stores.removal.events.undo, { id: flow, payload: {} }, { meta: { caller } });
     return r.ok ? ok({}) : err(r.error);
   },

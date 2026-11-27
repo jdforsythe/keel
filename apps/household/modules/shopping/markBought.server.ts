@@ -30,8 +30,7 @@ export const markBought = (
     const before = await list();
     if (!before.ok || seen.value.length > 0) return before;
     const item = before.value.find((i) => i.id === id);
-    if (item === undefined)
-      return err(keelError.notFound.make({}, "That item is no longer on the list"));
+    if (item === undefined) return err(keelError.notFound.make({}, "That item is no longer on the list"));
     if (item.rev !== write.base)
       return err(keelError.conflict.make({ transaction: "shopping.mark", head: item.rev }, "The item changed first"));
     const kept = await t.run(

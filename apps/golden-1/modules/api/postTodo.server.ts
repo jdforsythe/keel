@@ -16,8 +16,7 @@ export const postTodo = action(
   { stores: boardStores },
   (input, { params, caller, stores }, ctx) => {
     const { listId } = params;
-    if (!stores.board.get("lists").some((l) => l.id === listId))
-      return err(keelError.notFound.make({}));
+    if (!stores.board.get("lists").some((l) => l.id === listId)) return err(keelError.notFound.make({}));
     const { write, ...draft } = input;
     const w = writeFor(write, "");
     if (!w.ok) return err(w.error);

@@ -17,7 +17,5 @@ export const purge = async (data: RemovalData, ctx: Ctx) => {
     const t = tx(S.purgeList, { id });
     return t.ok ? ok(null) : err(t.error);
   });
-  return r.ok
-    ? ok({})
-    : err(PurgeFailed.make({ cause: r.error.code }));
+  return r.ok ? ok({}) : err(PurgeFailed.make({ cause: r.error.code }));
 };

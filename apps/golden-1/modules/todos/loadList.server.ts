@@ -9,7 +9,5 @@ export const loadList = loader(todos, "todos.list", { output: TodoList }, async 
   const board = await refreshView(ctx);
   if (!board.ok) return board;
   const list = board.value.lists.find((l) => l.id === params.listId);
-  return list === undefined
-    ? err(keelError.notFound.make({}))
-    : ok(list);
+  return list === undefined ? err(keelError.notFound.make({})) : ok(list);
 });

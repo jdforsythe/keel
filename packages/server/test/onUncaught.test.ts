@@ -52,9 +52,19 @@ describe("onUncaught", () => {
     const { onUncaught } = await import("../src/internal/onUncaught.ts");
     const before = EVENTS.map((e) => listenersOf(e));
     const log = { format: "compact", write: () => undefined } as const;
-    onUncaught(log, ROOT, () => false, () => undefined);
+    onUncaught(
+      log,
+      ROOT,
+      () => false,
+      () => undefined,
+    );
     const after1 = EVENTS.map((e) => listenersOf(e));
-    onUncaught(log, ROOT, () => false, () => undefined);
+    onUncaught(
+      log,
+      ROOT,
+      () => false,
+      () => undefined,
+    );
     const after2 = EVENTS.map((e) => listenersOf(e));
     try {
       expect(after1.map((l, i) => l.length - (before[i]?.length ?? 0))).toEqual([1, 1]);
@@ -73,7 +83,12 @@ describe("onUncaught", () => {
       const { onUncaught } = await import("../src/internal/onUncaught.ts");
       const { serving } = await import("../src/internal/serving.ts");
       const lines: string[] = [];
-      onUncaught({ format: "compact", write: (l) => lines.push(l) }, ROOT, () => true, () => undefined);
+      onUncaught(
+        { format: "compact", write: (l) => lines.push(l) },
+        ROOT,
+        () => true,
+        () => undefined,
+      );
       return { lines, serving };
     };
     try {

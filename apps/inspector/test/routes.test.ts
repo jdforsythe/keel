@@ -144,6 +144,9 @@ describe("loadInspect", () => {
       { params: {}, search: { url: TARGET }, url: HERE, caller: "", stores: undefined },
       failing,
     );
-    expect(e.ok ? "" : e.error).toMatchObject({ code: "inspector.unreachable", message: `${TARGET} is unreachable` });
+    expect(e.ok ? "" : e.error).toMatchObject({
+      code: "inspector.unreachable",
+      data: { url: TARGET, why: "unreachable" },
+    });
   });
 });

@@ -15,8 +15,7 @@ export const postRemove = action(
   (_input, { params, caller, stores }, ctx) => {
     const { listId } = params;
     const list = stores.board.get("lists").find((l) => l.id === listId);
-    if (list === undefined || list.hidden === true)
-      return err(keelError.notFound.make({}));
+    if (list === undefined || list.hidden === true) return err(keelError.notFound.make({}));
     const hidden = tx(stores.hideList, { id: listId }, { meta: { caller } });
     if (!hidden.ok) return err(hidden.error);
     const started = tx(

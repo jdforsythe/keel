@@ -17,7 +17,5 @@ export const restore = async (data: RemovalData, ctx: Ctx) => {
     const t = tx(S.showList, { id });
     return t.ok ? ok(null) : err(t.error);
   });
-  return r.ok
-    ? ok({})
-    : err(RestoreFailed.make({ cause: r.error.code }));
+  return r.ok ? ok({}) : err(RestoreFailed.make({ cause: r.error.code }));
 };

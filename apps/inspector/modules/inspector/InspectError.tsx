@@ -1,10 +1,18 @@
 import { type Infer, s } from "@keel/schema";
 import { Box, Heading, Text } from "@keel/ui";
 import Masthead from "./Masthead.tsx";
+import { UnreachableData } from "./UnreachableData.schema.ts";
+import { unreachableText } from "./unreachableText.ts";
 
 export const Props = s.object({
   error: s.object({ code: s.string(), message: s.string() }),
 });
+
+/** The target and why for `inspector.unreachable` (its `data`, which every error carries), else the error's message. */
+const textOf = (e: Infer<typeof Props>["error"]): string => {
+  const d = UnreachableData.parse(Reflect.get(e, "data"));
+  return d.ok ? unreachableText(d.value) : e.message;
+};
 
 /** `errorElement` of `inspector.index`: the target could not be inspected, and how to fix that. */
 export default function InspectError(props: Infer<typeof Props>) {
@@ -20,7 +28,7 @@ export default function InspectError(props: Infer<typeof Props>) {
           Cannot inspect
         </Heading>
         <Text as="p" id="inspector.error.message" m="0" font="mono" fontSize="sm">
-          {props.error.message}
+          {textOf(props.error)}
         </Text>
         <Text as="p" id="inspector.error.hint" m="0">
           Start the app with its Vite dev or preview server and pass its origin as ?url=

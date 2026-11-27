@@ -9,7 +9,5 @@ import { boardStores } from "./boardStores.ts";
  * never undoes another's write.
  */
 export const postUndo = action(api, "api.undo", { stores: boardStores }, (_input, { caller, stores }) =>
-  stores.board.undoWhere((e) => e.meta?.caller === caller)
-    ? ok({})
-    : err(keelError.denied.make({})),
+  stores.board.undoWhere((e) => e.meta?.caller === caller) ? ok({}) : err(keelError.denied.make({})),
 );
