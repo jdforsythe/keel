@@ -195,7 +195,8 @@ function layerBlocks(l: Layer, schemes: readonly Scheme[], subtree: boolean, top
  * `print`. With both schemes the dark values follow the system preference on screen until `data-k-scheme` on `<html>`
  * overrides it; once an element writes `scheme`, each screen layer re-declares its scheme values on that subtree. With
  * `themes`, the blocks sit in `@layer keel.tokens`, `keel.theme`, `keel.contrast` and `keel.print`; with none they are
- * unlayered.
+ * unlayered. Each color is declared in its sRGB form, and a screen block writing one outside sRGB is followed by its
+ * P3 block (k.gamut CSS).
  */
 function rootBlocks(tokens: Tokens, subtree: boolean): string[] {
   const schemes = schemesOf(tokens);
