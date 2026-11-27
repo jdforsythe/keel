@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.unsafe) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.identity) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
@@ -286,8 +286,8 @@ for (const f of sources) {
   }
 }
 
-// S0019 (k.unsafe Rules E1762): a type predicate or assertion function whose claimed type no body can prove, in every
-// package's `src/`, read through the package's own tsconfig; a finding inside a lifted `unsafe(` range is not one.
+// S0019 (k.identity Rules E1762): a type predicate or assertion function whose body is none of the five proofs, in
+// every package's `src/`, read through the package's own tsconfig; a finding inside a lifted `unsafe(` range is not one.
 const TS_EXT = /\.(?:ts|tsx|mts|cts)$/;
 const SRC_FILE = /^packages\/([^/]+)\/src\//;
 const byPackage = new Map();

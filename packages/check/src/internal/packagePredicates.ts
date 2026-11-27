@@ -4,7 +4,7 @@ import { lineCol } from "./lineCol.ts";
 import { unprovenPredicates } from "./unprovenPredicates.ts";
 
 /**
- * E1762's judgement over a package's own files (`tooling/structure-lint.mjs` S0019, k.unsafe Rules): one program
+ * E1762's judgement over a package's own files (`tooling/structure-lint.mjs` S0019, k.identity Rules): one program
  * from the package's `tsconfig` at `tsconfigPath`, and each of `files` (absolute, or relative to the tsconfig's
  * folder) read by `unprovenPredicates`. Each finding is the file as given, its 1-based line and column and the message.
  */
