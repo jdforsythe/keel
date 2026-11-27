@@ -1,58 +1,76 @@
-// Spec: k.escapes, clause "R1015 is one finding for `function isT(x: unknown): x is T { return true }` in `modules/m/a.ts` and none for the same inside an `unsafe(` call's function in `modules/m/unsafe/a.ts`."
-// k.escapes, Codes "R1015 | low | a function whose return type is a type predicate or assertion (k.unsafe Type predicates) outside an `unsafe(` call"
+// Spec: k.escapes, clause "R1015 is one finding for `(x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'` in `modules/m/a.ts` and none for `(x: unknown): x is Store<unknown> => isStore(x)` there."
+// Spec: k.identity, clause "`keel review` reports one R1015 for a predicate proven by structure or by the module's own set, and none for one proven by a kernel guard, a class or a schema."
+// k.escapes, Codes "R1015 | low | a type predicate or assertion proven by structure or by its module's own set (k.identity)"
 // Seed 1337 (the property); the forms are source text. The property writes all its files into one repository and reads one review.
-// Fixture text builds the `unsafe` call from a constant so this file's own source holds no literal call.
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { PROJECT, SEED, lineOf, ofCode, range, review, withRepo } from "./review-support.ts";
 
-const U = "unsafe";
-const REASON = "one two three four five six seven eight";
-const HEAD = "type T = { id: string };\n";
-const PRED = "function isT(x: unknown): x is T { return true }";
+const STRUCTURE =
+  "export const isT = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'";
+const GUARD =
+  "import { isStore } from '@keel/store';\nimport type { Store } from '@keel/store';\nexport const isS = (x: unknown): x is Store<unknown> => isStore(x)";
 
-const hitsIn = (tree: Record<string, string>, path: string) =>
+const hitsIn = (tree: Record<string, string>, path = "modules/m/a.ts") =>
   withRepo([PROJECT, tree], (repo) => ofCode(review(repo, [range(repo, 0, 1), "--list"]), "R1015")).filter(
     (h) => h.path === path,
   );
 
-test("R1015 is one finding for `function isT(x: unknown): x is T { return true }` in `modules/m/a.ts`", () => {
-  const source = `${HEAD}export ${PRED}\n`;
-  const hits = hitsIn({ "modules/m/a.ts": source }, "modules/m/a.ts");
+test("R1015 is one finding for `(x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'` in `modules/m/a.ts`", () => {
+  const source = `${STRUCTURE}\n`;
+  const hits = hitsIn({ "modules/m/a.ts": source });
   expect(hits).toHaveLength(1);
-  expect(hits[0]?.line).toBe(lineOf(source, "function isT"));
+  expect(hits[0]?.line).toBe(lineOf(source, "export const isT"));
   expect(hits[0]?.danger).toBe("low");
 }, 120_000);
 
-test("R1015 is none for the same inside an `unsafe(` call's function in `modules/m/unsafe/a.ts`", () => {
-  const source = `${HEAD}export const a = ${U}("${REASON}", () => { ${PRED}; return isT })\n`;
-  expect(hitsIn({ "modules/m/unsafe/a.ts": source }, "modules/m/unsafe/a.ts")).toEqual([]);
+test("R1015 is none for `(x: unknown): x is Store<unknown> => isStore(x)` in `modules/m/a.ts`", () => {
+  expect(hitsIn({ "modules/m/a.ts": `${GUARD}\n` })).toEqual([]);
 }, 120_000);
 
-// Each way a function can have a type predicate or assertion for its return type.
-const FORMS: readonly string[] = [
-  "export function isT(x: unknown): x is T { return true }",
-  "export const isT = (x: unknown): x is T => true",
-  "export const isT = function (x: unknown): x is T { return true }",
-  "export function assertT(x: unknown): asserts x is T {}",
-  "export function assertOk(x: unknown): asserts x {}",
-  "export const o = { isT(x: unknown): x is T { return true } }",
-  "export class C { isT(x: unknown): x is T { return true } }",
-];
-const PLAIN: readonly string[] = [
-  "export function f(x: unknown): boolean { return x === 1 }",
-  "export const f = (x: unknown): T | undefined => undefined",
-];
+// One form per proof of k.identity's list: 1 a kernel guard, 2 a class, 3 the module's own set, 4 a schema, 5 structure.
+const REPORTED: Readonly<Record<string, string>> = {
+  "structure: an object with a property": STRUCTURE,
+  "structure: a primitive": "export const isS = (x: unknown): x is string => typeof x === 'string'",
+  "structure: an array of a proven element":
+    "export const isN = (x: unknown): x is number[] => Array.isArray(x) && x.every((q) => typeof q === 'number')",
+  "the module's own set": [
+    "class Job {}",
+    "const made = new WeakSet<object>();",
+    "export function make(): Job { const j = new Job(); made.add(j); return j }",
+    "export const isJob = (x: unknown): x is Job => typeof x === 'object' && x !== null && made.has(x)",
+  ].join("\n"),
+};
+const CLEAN: Readonly<Record<string, string>> = {
+  "a kernel guard": GUARD,
+  "a class": "export class Job {}\nexport const isJob = (x: unknown): x is Job => x instanceof Job",
+  "a schema":
+    "import { s } from '@keel/schema';\nconst User = s.object({ id: s.string() });\ntype User = { id: string };\nexport const isUser = (x: unknown): x is User => User.parse(x).ok",
+  "a schema, in an assertion function":
+    "import { defect, s } from '@keel/schema';\nconst User = s.object({ id: s.string() });\ntype User = { id: string };\nexport function assertUser(x: unknown): asserts x is User { if (!(User.parse(x).ok)) defect('no user') }",
+};
 
-test("property: a function of any form whose return type is a type predicate or assertion is one finding outside an `unsafe(` call, and one returning a plain type is none", () => {
-  const cases = fc.sample(fc.record({ yes: fc.constantFrom(...FORMS), no: fc.constantFrom(...PLAIN) }), {
-    seed: SEED,
-    numRuns: 10,
-  });
+test("`keel review` reports one R1015 for a predicate proven by structure or by the module's own set", () => {
+  for (const [how, body] of Object.entries(REPORTED)) {
+    const hits = hitsIn({ "modules/m/a.ts": `${body}\n` });
+    expect(hits, how).toHaveLength(1);
+    expect(hits[0]?.danger, how).toBe("low");
+  }
+}, 240_000);
+
+test("`keel review` reports no R1015 for a predicate proven by a kernel guard, a class or a schema", () => {
+  for (const [how, body] of Object.entries(CLEAN)) expect(hitsIn({ "modules/m/a.ts": `${body}\n` }), how).toEqual([]);
+}, 240_000);
+
+test("property: one predicate of any proof is one finding when proven by structure or the module's own set, and none otherwise, each in its own file", () => {
+  const cases = fc.sample(
+    fc.record({ yes: fc.constantFrom(...Object.values(REPORTED)), no: fc.constantFrom(...Object.values(CLEAN)) }),
+    { seed: SEED, numRuns: 10 },
+  );
   const tree: Record<string, string> = {};
   cases.forEach((c, i) => {
-    tree[`modules/m/p${i}.ts`] = `${HEAD}${c.yes}\n`;
-    tree[`modules/m/n${i}.ts`] = `${HEAD}${c.no}\n`;
+    tree[`modules/m/p${i}.ts`] = `${c.yes}\n`;
+    tree[`modules/m/n${i}.ts`] = `${c.no}\n`;
   });
   const hits = withRepo([PROJECT, tree], (repo) => ofCode(review(repo, [range(repo, 0, 1), "--list"]), "R1015"));
   cases.forEach((c, i) => {

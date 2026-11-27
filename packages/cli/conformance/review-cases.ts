@@ -58,6 +58,15 @@ export const CASES: readonly Case[] = [
     },
   },
   {
+    code: "R1017",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/r.ts":
+        "import { attempt } from '@keel/schema';\ndeclare const f: () => number;\ndeclare const T: { code: 'm.t'; message: string; data: null };\nexport const r = attempt(f, (x) => (x instanceof Error ? T : undefined));\n",
+    },
+  },
+  {
     code: "R1014",
     range: false,
     base: {},
