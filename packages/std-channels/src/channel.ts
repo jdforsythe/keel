@@ -18,7 +18,9 @@ export function channel<P, M>(name: string, opts: Opts<P> & { readonly message?:
   const { message } = opts;
   const at = message === undefined ? null : secretPath(message);
   if (at !== null) {
-    return defect(`channel ${name} message holds s.secret at ${at || "(root)"}; members receive it as sent`, "E2602");
+    return defect("channel message holds an s.secret; members receive it as sent", "E2602", {
+      data: { channel: name, at: at || "(root)" },
+    });
   }
   const body = message === undefined ? undefined : s.object({ message });
   return Object.freeze({ name, ...opts, events: eventsOf(message), body });

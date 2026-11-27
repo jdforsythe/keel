@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
+import { Rejected } from "../../internal/Rejected.ts";
 import type { Hub } from "./Hub.ts";
 import { headOf } from "./headOf.ts";
 
@@ -22,7 +23,10 @@ export function remoteSaves(ctx: Ctx, hub: Hub, keys: readonly string[]): void {
     if (!key.startsWith(PREFIX)) continue;
     const store = key.slice(PREFIX.length);
     const reading = read(key);
-    void attempt(() => reading).then((got) => {
+    void attempt(
+      () => reading,
+      (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+    ).then((got) => {
       if (!got.ok) {
         for (const lost of [...(watch?.holders ?? [])]) lost();
         return;

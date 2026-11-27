@@ -1,4 +1,5 @@
-import { attempt } from "@keel/schema";
+import { attempt, s } from "@keel/schema";
+import { Rejected } from "../../internal/Rejected.ts";
 import type { Restorable } from "./Restorable.ts";
 
 /**
@@ -12,7 +13,12 @@ export async function reread(
   for (const st of list) {
     const raw = await read(`keel.store.${st.id}`);
     if (raw === null) continue;
-    const restored = attempt(() => st.restore(JSON.parse(raw)).ok);
+    const snapshot = s.json.parseJson(raw);
+    if (!snapshot.ok) return false;
+    const restored = attempt(
+      () => st.restore(snapshot.value).ok,
+      (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+    );
     if (!restored.ok || !restored.value) return false;
   }
   return true;

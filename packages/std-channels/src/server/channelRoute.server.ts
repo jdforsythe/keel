@@ -8,6 +8,7 @@ import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
 import type { ChannelEvent } from "../ChannelEvent.ts";
 import type { PublishEntry } from "../internal/PublishEntry.ts";
+import { Rejected } from "../internal/Rejected.ts";
 import type { StreamEntry } from "../internal/StreamEntry.ts";
 import type { ChannelRoute } from "./ChannelRoute.type.ts";
 import { ChannelsConfig } from "./ChannelsConfig.schema.ts";
@@ -65,9 +66,11 @@ function holding<E extends object>(
   want: Want,
   nothing = false,
 ): Contract<string, Readonly<Record<string, E>>> {
-  const members = differing(c, id, want, nothing).join(", ");
+  const members = differing(c, id, want, nothing);
   if (members.length === 0) return holds<E>(c);
-  return defect(`channelRoute: ${c.module} entry ${id} is not its channel's, at ${members}`, "E1515");
+  return defect("channelRoute: a contract entry is not its channel's", "E1515", {
+    data: { module: c.module, entry: id, members },
+  });
 }
 
 /** A channel without `message`: the stream entry's loader only; `publish` does not compile. */
@@ -115,10 +118,9 @@ export function channelRoute<P, M, S>(
   const { module } = contract;
   const { path, params: query, events: output, body, message } = channel;
   if (publish !== undefined && (message === undefined || body === undefined)) {
-    return defect(
-      `channelRoute: channel ${channel.name} declares no message, so ${publish} has nothing to publish`,
-      "E1510",
-    );
+    return defect("channelRoute: the channel declares no message, so publish has nothing to publish", "E1510", {
+      data: { channel: channel.name, publish },
+    });
   }
   const streams = holding<StreamEntry<P, M>>(contract, id, { method: "GET", path, query, events: true, output });
   const instance = (key: string): string => `${channel.name}\n${key}`;
@@ -167,7 +169,10 @@ export function channelRoute<P, M, S>(
           if (checked !== undefined && ctx.clock.now() - checked < STANDS_MS) return verdict(event, true);
           return (async (): Promise<void> => {
             const asked = currentUser();
-            const now = await attempt(() => asked);
+            const now = await attempt(
+              () => asked,
+              (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+            );
             if (!now.ok) {
               verdict(event, false);
               return;
@@ -180,13 +185,19 @@ export function channelRoute<P, M, S>(
     const deliver = (event: Event, member: () => Promise<boolean> | boolean): Step => {
       if (out) return;
       // The wrapper object keeps a returned promise from being awaited by `attempt`: only a synchronous throw is caught.
-      const asked = attempt(() => ({ answer: member() }));
+      const asked = attempt(
+        () => ({ answer: member() }),
+        (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+      );
       if (!asked.ok) return verdict(event, false);
       const m = asked.value.answer;
       return typeof m === "boolean"
         ? judge(event, m)
         : (async (): Promise<void> => {
-            const isMember = await attempt(() => m);
+            const isMember = await attempt(
+              () => m,
+              (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+            );
             if (!isMember.ok) {
               verdict(event, false);
               return;

@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
+import { Rejected } from "../../internal/Rejected.ts";
 import type { Hub } from "./Hub.ts";
 import type { StoreWatch } from "./StoreWatch.ts";
 import { remoteSaves } from "./remoteSaves.ts";
@@ -34,7 +35,10 @@ export async function watchStores(ctx: Ctx, hub: Hub, lost: () => void): Promise
       holders.clear();
       for (const f of gone) f();
     });
-    made.ready = attempt(() => started).then((got) => {
+    made.ready = attempt(
+      () => started,
+      (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+    ).then((got) => {
       if (!got.ok) return false;
       made.stop = got.value;
       return true;
@@ -53,7 +57,10 @@ export async function watchStores(ctx: Ctx, hub: Hub, lost: () => void): Promise
     });
   };
   const timer = new AbortController();
-  const late = attempt(() => ctx.clock.after(LISTEN_MS, timer.signal)).then(() => "late" as const);
+  const late = attempt(
+    () => ctx.clock.after(LISTEN_MS, timer.signal),
+    (x) => (x === timer.signal.reason ? Rejected.make({}) : undefined),
+  ).then(() => "late" as const);
   const won = await Promise.race([mine.ready.then((ok) => (ok ? "on" : "refused")), late]);
   timer.abort();
   if (won === "on") return release;

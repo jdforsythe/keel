@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
+import { Rejected } from "../../internal/Rejected.ts";
 import type { FollowReport } from "./FollowReport.ts";
 import type { Followed } from "./Followed.ts";
 
@@ -32,8 +33,17 @@ export async function followAll(
     }),
   );
   const timer = new AbortController();
-  const timeout = attempt(() => ctx.clock.after(LISTEN_MS, timer.signal)).then(() => "late" as const);
-  const won = await Promise.race([attempt(() => listening).then((r) => (r.ok ? "on" : "refused")), timeout]);
+  const timeout = attempt(
+    () => ctx.clock.after(LISTEN_MS, timer.signal),
+    (x) => (x === timer.signal.reason ? Rejected.make({}) : undefined),
+  ).then(() => "late" as const);
+  const won = await Promise.race([
+    attempt(
+      () => listening,
+      (x) => (x instanceof Error ? Rejected.make({}) : undefined),
+    ).then((r) => (r.ok ? "on" : "refused")),
+    timeout,
+  ]);
   timer.abort();
   if (won === "on") return stopAll;
   late = true;

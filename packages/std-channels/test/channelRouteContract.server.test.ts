@@ -29,7 +29,7 @@ const thrown = (fn: () => unknown): unknown => {
   try {
     fn();
   } catch (e) {
-    return typeof e === "object" && e !== null && "code" in e ? [e.code, e instanceof Error ? e.message : ""] : "?";
+    return typeof e === "object" && e !== null && "code" in e ? [e.code, Reflect.get(e, "data")] : "?";
   }
   return null;
 };
@@ -61,7 +61,7 @@ test("an entry that is not the channel's is E1515 naming each member that differ
       ]),
     );
   const bare = contract("chat", { "chat.board": { method: "GET", path: "/api/chat/board", output: Board } });
-  expect(run(bare)).toEqual(["E1515", expect.stringContaining("chat.room is not its channel's, at entry")]);
+  expect(run(bare)).toEqual(["E1515", { module: "chat", entry: "chat.room", members: ["entry"] }]);
   const moved = contract("chat", {
     "chat.room": {
       method: "GET",
@@ -72,7 +72,7 @@ test("an entry that is not the channel's is E1515 naming each member that differ
     },
     "chat.post": { method: "POST", path: "/api/chat/events", query: Room, body: room.body, output: Nothing },
   });
-  expect(run(moved)).toEqual(["E1515", expect.stringContaining("chat.room is not its channel's, at path, query")]);
+  expect(run(moved)).toEqual(["E1515", { module: "chat", entry: "chat.room", members: ["path", "query"] }]);
   const copied = contract("chat", {
     "chat.room": { method: "GET", path: "/api/chat/events", query: Room, events: true, output: room.events },
     "chat.post": {
@@ -83,7 +83,7 @@ test("an entry that is not the channel's is E1515 naming each member that differ
       output: s.object({ id: s.string() }),
     },
   });
-  expect(run(copied)).toEqual(["E1515", expect.stringContaining("chat.post is not its channel's, at body, output")]);
+  expect(run(copied)).toEqual(["E1515", { module: "chat", entry: "chat.post", members: ["body", "output"] }]);
   expect(run(chat)).toBe(null);
 });
 
@@ -102,6 +102,6 @@ test("a publish on a channel without message is E1510", () => {
   const opts = { id: "chat.ticks", publish: "chat.post", stores: flags, member };
   expect(thrown(() => Reflect.apply(channelRoute, undefined, [chat, ticks, opts]))).toEqual([
     "E1510",
-    expect.stringContaining("declares no message"),
+    { channel: "chat.ticks", publish: "chat.post" },
   ]);
 });
