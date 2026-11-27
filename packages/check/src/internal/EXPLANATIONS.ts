@@ -138,9 +138,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1050",
-    "build-time evaluation refuses what it cannot observe: node:child_process, cluster, worker_threads, a .node addon, a computed require of a code file, a read by an unopened file descriptor",
-    "A cached derivation must be the one a fresh evaluation gives, so the evaluation runs only reads it can record.",
-    "move the import into a handler, which runs at request time",
+    "build-time evaluation refused a read it cannot observe: a call into a child process, worker or network built-in, a .node addon, a computed require of a code file, a read by an unopened file descriptor",
+    "A cached derivation is the one a fresh evaluation gives, so an evaluation runs only reads it records.",
+    "move the call into a handler, which runs at request time",
     "k.compiler",
   ],
   [

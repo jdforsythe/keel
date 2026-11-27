@@ -12,6 +12,7 @@ Personas: A2 and its agent form (edit, check, done), A7 (`keel test` after an ed
 - D5: `surface.json` holds the surface only (version 3): its `sources` and k.compat's normal form go, because freshness is the derivation's job, not the record's.
 - D6: the compiled views are not committed; `surface.json` and the deploy files are. A scaffolded `.gitignore` says so.
 - D7: W1005 is reserved: `keel check` evaluates `routes.json` instead of reading literals beside it, so no part of it is unverified.
+- D8: what the evaluation reads, it reads through views of its own bundle, and what no view can record it refuses (E1050), so a cached derivation stays the one a fresh evaluation gives. Every symbolic link on the path to a file it loaded or read is a real-path probe. A refused built-in may be imported, and only a call into it is refused: a handler that uses it runs at request time, never in the evaluation.
 
 ## Problem
 `keel check` compares each `.keel/` file with what the compiler derives and reports E1005 when they differ; it reads `surface.json` from disk for `--base`; `keel test` reads `.keel/a11y.json` from disk; `keel ledger` finds projects by `.keel/routes.json`; `keel dev`'s inspect document reads the files from disk. Only `keel build` and the Vite plugin write them. So after an edit an author, or an agent, either runs `keel build` before `keel check` or reads an error about a file they never touched. The guide says it outright (`docs/guide/build-golden-1.md`): "Run `keel build` before `keel check` after edits." The `keel` skill carries it as a rule an agent must remember: "`keel check` (E1005 on `.keel/` files after an edit until `keel build` runs)".
@@ -184,6 +185,14 @@ For the `conformance-writer`, from the spec text only:
 - k.compat, new clause: "In a copy of `apps/household`, after giving the `setup.household` store's state a required field, `keel check --base .keel/surface.json` reports one E1563 naming that field and leaves `.keel/surface.json` byte-identical, and a second run of that command reports the same E1563."
 - k.compiler, new clause: "A `routes.ts` whose first line imports `./missing.ts`, a file that does not exist, makes `keel check` report one E1049 at that `routes.ts` line 1, whose compact record is followed by the line `see: keel docs k.compiler`."
 - k.ledger-items, new clause: "In an app with no test file, whose route tables give one page route and which has no `reports/`, `keel ledger --diff` after `keel ledger --write .keel/ledger.json` reports one W1733 at `reports/a11y.json`; with route tables giving only an API entry, or no `routes.ts`, it reports no W1733."
+- k.compiler, new clauses (the last six of its list), each with a fixture sketch:
+  - "A `routes.ts` whose graph reaches a `*.server.ts` file importing `node:child_process`, `node:net` and `node:dns` ...": a module `m` with a `node` deployable, `routes.ts` binding a loader from `modules/m/spawn.server.ts`; that file imports the three and exports a loader; the second half adds a top-level `execSync('true')`, the third `new Socket()`.
+  - "That `*.server.ts` file importing `./a.node` ...": an empty `modules/m/a.node` beside it and `import a from './a.node'` on line 1; the record's `line` is 1.
+  - "That `*.server.ts` file's top level calling `readFileSync(0)`, or `createRequire(import.meta.url)` ...": `modules/m/c.cjs` holding `module.exports = 1`, the name built as `['c', 'cjs'].join('.')`; after the run `node_modules/.cache/keel/derived/` holds no `*.json`.
+  - "In the copy of k.derived clause 9 whose linked `@keel/std-text` file `line.ts` is a symbolic link to `line.a.ts` ...": the suite's linked copy, `line.ts` moved to `line.a.ts` and linked back (`symlinkSync('line.a.ts', ...)`), `line.b.ts` a byte copy.
+  - "In the copy of k.derived clause 30 with `line`'s default `min` read from `globalThis.process.env.LINE_MIN` ...": the clause 30 copy, one case per way of naming `process`; the reads sit where clause 30's do.
+  - "In the copy of k.derived clause 30 with `min.txt` read through `openSync` and `readSync` ...": where clause 30's read sits, `openSync` of `min.txt`, `readSync` into a 1-byte buffer and `closeSync`; for the `.json` case `min.json` holding `{"min":1}` required as `['min', 'json'].join('.')`; the modification time set back with `utimesSync`.
+- `packages/check/conformance/explain-and-fixture-per-code.test.ts`: E1050 is a command code (k.compiler Rules) that `check()` never reports; the first k.compiler clause above is the assertion that test looks for in another package.
 - Not conformance, updated by the build: `packages/cli/test/appArtifactsFresh.test.ts` asserts `keel check --frozen` clean and `keel test` writing nothing in a frozen run; `packages/cli/test/scaffold-refresh.test.ts` unchanged.
 
 ## Build plan
@@ -203,7 +212,7 @@ Within their targets; each edit shortens or keeps the length:
 - `packages/check/src/internal/EXPLANATIONS.ts`: E1005's text, W1018's entry, W1568's message ("names no surface of version 2 or 3").
 
 ## Codes
-W1018 is new (free on every `lane-*` branch and the main line, checked over `spec/`, `packages/`, `tooling/` and `docs/rfc/`). E1005 keeps its number with the frozen meaning. W1005 is reserved and not reused.
+W1018 is new (free on every `lane-*` branch and the main line, checked over `spec/`, `packages/`, `tooling/` and `docs/rfc/`). E1005 keeps its number with the frozen meaning. W1005 is reserved and not reused. E1050 is new (free on the main line and every lane, checked with `git grep`): the build-time evaluation refused a read it cannot observe.
 
 ## Budgets proposed (not edited)
 - `@keel/cli`: the refresh and the frozen switch are in the check path already loaded; the derivation cache is a few hundred bytes of code. Expect under 1 kB; re-base if over.
@@ -216,9 +225,9 @@ None before P1. The repository's own apps and examples are updated in slice 2. A
 ## Token impact
 | what | before | after |
 | --- | --- | --- |
-| k.derived (new) | none | 3,097 tokens |
+| k.derived (new) | none | 3,098 tokens (D8's sentences in, prose trimmed; its clauses sit in k.compiler) |
 | k.compat | 2,492 | 1,785 (the Sources paragraph and three clauses go; Base says what to pass) |
-| k.compiler | 1,725 | 1,827 |
+| k.compiler | 1,725 | 2,415 (E1050 and six clauses) |
 | k.check, k.a11y, k.shell, k.library-pack | 3,098, 3,095, 3,099, 3,078 | 3,097, 3,092, 3,092, 3,083 |
 | the `keel` skill | its Commands line | 15 tokens shorter |
 | an agent's loop per edit | `keel build` (8 to 12 s here, and its output) then `keel check` | `keel check` |
@@ -230,3 +239,4 @@ Items 1 to 3 were taken by the orchestrator as recommended; item 4 was decided o
 2. **`CI` turns frozen on** (D3). Recommended, as pnpm does; a hand-written pipeline gets the guarantee without knowing the flag. The alternative is `--frozen` in the generated workflow only.
 3. **`keel pack --check` becomes `keel pack --frozen`**, so the one idea has one name (principle 1). Recommended; it is one flag in k.library-pack and its clauses, done in slice 2.
 4. **Slice 3 waits on RFC 0251's evaluator.** Decided by the orchestrator: it waits, and builds no second child.
+5. **A refused built-in is refused at its call, not at its import** (D8). Decided by the builder: `apps/household` and `apps/golden-2` reach `pg` from their store files (`modules/members/membersDb.server.ts` and `modules/accounts/accountsDb.server.ts` import `@keel/std-postgres/server`, whose `pgEngine.server.ts` imports `pg`), and `pg` requires `dns`, `net` and `tls` at its top level (`lib/connection-parameters.js` line 3, `lib/connection.js`, `lib/stream.js`) and calls none of them there. A refusal at the import would fail `keel check` of both apps and of any app whose handler spawns a process, a feature no evaluation runs; a refusal at the call keeps the guarantee whole. The alternative is the refusal at the import, with the database drivers moved out of what route tables reach.
