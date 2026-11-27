@@ -22,6 +22,21 @@ const pglite = new AsyncResource("KEEL_PGLITE");
 const apart = <T>(call: () => Promise<T>): Promise<T> => pglite.runInAsyncScope(call);
 
 /**
+ * PGlite keeps no statement timer (std.postgres Modes): after a statement whose text names `statement_timeout` and that
+ * left it other than `0`, the setting is put back to `0` and PGlite raises SQLSTATE `0A000`, which the caller meets as
+ * the defect E2461, so a timeout is refused where it is set and never silently not kept.
+ */
+async function refuseTimeout(q: Queryable, text: string): Promise<void> {
+  if (!/statement_timeout/i.test(text)) return;
+  const now = await q.query<{ statement_timeout: string }>("show statement_timeout");
+  if (now.rows[0]?.statement_timeout === "0") return;
+  await q.query("set statement_timeout = 0");
+  await q.query(
+    "do $$ begin raise exception using errcode = '0A000', message = 'PGlite keeps no statement_timeout'; end $$",
+  );
+}
+
+/**
  * The PGlite engine over `db`, its one session shared: a statement waits while a transaction holds it. Every column
  * arrives as text (the type cache tells PGlite to keep each known type as text), as for `pg`. A call with `held` (sim)
  * waits its turn for the session first, outside `held`, then runs `begin`, each statement and `commit` as separate held
@@ -31,6 +46,7 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
   const types = new TypeCache();
   const run = async (q: Queryable, text: string, params: readonly (string | null)[]): Promise<Raw> => {
     const r = await apart(() => q.query<unknown[]>(text, [...params], { rowMode: "array", parsers: types.parsers }));
+    await apart(() => refuseTimeout(q, text));
     return {
       fields: r.fields.map((f) => ({ name: f.name, oid: f.dataTypeID })),
       rows: r.rows,
@@ -41,6 +57,7 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
     query: (text, params) => run(db, text, params),
     exec: async (text) => {
       await apart(() => db.exec(text));
+      await apart(() => refuseTimeout(db, text));
     },
   };
   await types.load(top);
@@ -74,6 +91,7 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
           query: (text, params) => held(() => run(db, text, params)),
           exec: async (text) => {
             await held(() => apart(() => db.exec(text)));
+            await held(() => apart(() => refuseTimeout(db, text)));
           },
         });
         await held(() => apart(() => db.exec(out.commit ? "commit" : "rollback")));
@@ -105,6 +123,7 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
               query: (text, params) => run(t, text, params),
               exec: async (text) => {
                 await t.exec(text);
+                await apart(() => refuseTimeout(t, text));
               },
             });
             if (!out.commit) await t.rollback();
