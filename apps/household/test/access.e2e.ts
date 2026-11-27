@@ -177,7 +177,8 @@ it("a rejected form keeps the typed values and shows the error, and the setup sa
   const off = await shown(bare);
   expect(off).toMatchObject({ shop: "Market", amount: "3.555", invalid: true });
   expect(off.error).not.toBe("");
-  // With scripts off the 422 is the document's own answer: the browser logs nothing for it.
+  // With scripts off the 422 is the document's own answer, which the browser logs too: taken by name, nothing else.
+  expect(bare.problems({ kind: "console", text: "422 (Unprocessable Entity)" })).toHaveLength(1);
   expect(bare.problems()).toEqual([]);
 });
 
