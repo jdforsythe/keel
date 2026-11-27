@@ -5,24 +5,24 @@ status: conformance-covered
 **Commands.**
 | command | does |
 | --- | --- |
-| `check [paths]` | k.check over code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
+| `check [paths]` | k.check of code files and `.keel/*.json` artifacts under `paths`, each with its project's topology |
 | `test [paths] [--e2e]` | harness, sim ctx; `--e2e` the built app (k.e2e) |
 | `build` | production build per deployable |
-| `dev [--port N] [--host A]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560); loopback, wider only with `--host` (k.topology) |
+| `dev [--port N] [--host A]` | dev server, log stream (Vite's `server.port` or 5173; in use: E1560); loopback unless `--host` (k.topology) |
 | `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
 | `inspect [url]` | summarize a dev app's inspect document |
 | `render <routeId\|Component> [--props json]` | a11y tree of one render |
-| `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
-| `ledger` | emit and diff the ledger |
+| `scaffold <op>` / `codemod <op>` | structural edits (k.scaffold) |
+| `ledger` | emit, diff the ledger |
 | `evidence [--verify dir --key id]` | signed evidence bundle (k.evidence) |
 | `review [range \| --all]` | escapes by danger and novelty (k.review) |
 
-`session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps`; unfilled, I1055. `report`: std.report.
+`session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps` (unfilled: I1055). `report`: std.report.
 
-Every command takes `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic commands also `--code <code>`.
+Every command takes `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic ones also `--code <code>`.
 
-**Inspect.** In dev, `GET /__keel/inspect` is JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `inspect()` outside a request scope, `{ [id]: { state, log } }` from `stores()` unredacted, the `.keel/` artifacts. A node deployable's `createApp` with `mode: 'dev'` serves it, else the compiler plugin's dev and preview servers, where the page's dev entry posts `{ graph, stores, sections, deployable }` on mount and change (`live: false` before). `keel dev` adds `deployables` (k.topology). Both answer a loopback or listed `Host` with its own or a listed `Origin` (`createApp({ inspect: { origins } })`; plugin: comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port; CORS echoed), no `Origin` for GET only, else 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) prints `inspect.store` per store, `inspect.section` per section (per deployable given `deployables`) and counts.
+**Inspect.** In dev, `GET /__keel/inspect` is JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `inspect()` outside a request scope, `{ [id]: { state, log } }` from `stores()` unredacted, the `.keel/` artifacts. A `node` deployable's dev `createApp` serves it, else the compiler plugin's dev and preview servers, where the page's dev entry posts `{ graph, stores, sections, deployable }` on mount and change (`live: false` before). `keel dev` adds `deployables` (k.topology). Both answer a loopback or listed `Host` with its own or a listed `Origin` (`createApp({ inspect: { origins } })`; plugin: comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port; CORS echoed), no `Origin` for GET alone, else 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) prints `inspect.store` per store, `inspect.section` per section (per deployable with `deployables`), counts.
 
 **Inspector hooks** (extension point).
 ```ts
