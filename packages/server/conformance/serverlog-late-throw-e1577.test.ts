@@ -27,7 +27,9 @@ test(
     await server.exited;
     const records = server.e1577();
     expect(records).toHaveLength(1);
-    expect(records[0]?.message ?? "").toMatch(/^uncaught exception in work of route \S+: Error #[0-9a-f]{8}( at \S+:\d+)?$/);
+    expect(records[0]?.message ?? "").toMatch(
+      /^uncaught exception in work of route \S+: Error #[0-9a-f]{8}( at \S+:\d+)?$/,
+    );
     expect(server.text()).not.toContain("jane");
   },
   fixedTime(60_000),

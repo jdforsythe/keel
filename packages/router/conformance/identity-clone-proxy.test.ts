@@ -54,7 +54,8 @@ const cloneOf = (v: unknown): { made: true; copy: unknown } | { made: false } =>
     return { made: false };
   }
 };
-const proxied = (v: unknown): unknown => (typeof v === "object" || typeof v === "function" ? new Proxy(Object(v), {}) : v);
+const proxied = (v: unknown): unknown =>
+  typeof v === "object" || typeof v === "function" ? new Proxy(Object(v), {}) : v;
 
 describe("k.identity: a structuredClone and a Proxy fail every guard", () => {
   for (const { name, value, guard } of CASES) {

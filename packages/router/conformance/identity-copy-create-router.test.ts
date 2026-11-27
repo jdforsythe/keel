@@ -71,7 +71,9 @@ const router = (routes: unknown) =>
 
 describe("k.identity: a copy of a route table `manifest` returned", () => {
   for (const [how] of COPIES) {
-    it(`createRouter given routes that are ${how} throws E1515 holding routes, and runs no loader, action or guard`, ({ skip }) => {
+    it(`createRouter given routes that are ${how} throws E1515 holding routes, and runs no loader, action or guard`, ({
+      skip,
+    }) => {
       const copy = copyOf(how, table());
       if (!copy.made) return skip();
       const message = thrownOf(() => router(copy.value));

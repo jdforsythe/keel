@@ -61,7 +61,12 @@ describe("k.store: guards", () => {
       return o;
     };
     for (const v of [cart, add]) {
-      for (const c of [{ ...v }, clone(v), Object.assign({}, v), Object.assign(Object.create(Object.getPrototypeOf(v)), v)]) {
+      for (const c of [
+        { ...v },
+        clone(v),
+        Object.assign({}, v),
+        Object.assign(Object.create(Object.getPrototypeOf(v)), v),
+      ]) {
         expect(isStore(c)).toBe(false);
         expect(isTransaction(c)).toBe(false);
       }

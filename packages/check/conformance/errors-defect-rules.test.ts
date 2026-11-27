@@ -132,7 +132,5 @@ test("`try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } f
   expect(of(run(body("try { f() } finally { g() }")), "E1452")).toEqual([]);
   const ds = of(run(body("try { f() } catch { g() } finally { h() }")), "E1452");
   expect(ds).toHaveLength(1);
-  expect(ds[0]?.message).toBe(
-    "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)",
-  );
+  expect(ds[0]?.message).toBe("catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)");
 });

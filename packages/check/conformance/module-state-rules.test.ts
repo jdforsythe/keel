@@ -22,9 +22,7 @@ test("`last.set(x)` inside a function in modules/p/load.server.ts is one E1256 a
   const ds = of(run(SERVER, src), "E1256");
   expect(ds).toHaveLength(1);
   expect(ds[0]?.fix).toBeUndefined();
-  expect(ds[0]?.message).toBe(
-    "module signal last set in server code: keep per-request state in the request scope",
-  );
+  expect(ds[0]?.message).toBe("module signal last set in server code: keep per-request state in the request scope");
   expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "last.set"));
 });
 
@@ -50,8 +48,7 @@ const WRITES: readonly (readonly [string, string])[] = [
   ["conf.mode = 'x'", "const conf = { mode: '' }"],
 ];
 const DECLS = "declare const k: string\ndeclare const v: string\ndeclare const x: string\n";
-const MESSAGE =
-  "module state written in server code: use the request scope, or processSlot(name, make)";
+const MESSAGE = "module state written in server code: use the request scope, or processSlot(name, make)";
 for (const [write, decl] of WRITES) {
   test.skip(`\`${write}\` inside a function in a server file (\`${decl}\` at the top level) is one E1260 at the write, with no fix`, () => {
     const src = `${DECLS}${decl}\nexport function load() { ${write} }\n`;

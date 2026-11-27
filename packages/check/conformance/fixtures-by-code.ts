@@ -774,7 +774,10 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [
       mod("p", [], []),
       f("modules/p/last.ts", "import { signal } from '@keel/reactive'\nexport const last = signal('')\n"),
-      f("modules/p/load.server.ts", "import { last } from './last.ts'\nexport function load(x: string) { last.set(x) }\n"),
+      f(
+        "modules/p/load.server.ts",
+        "import { last } from './last.ts'\nexport function load(x: string) { last.set(x) }\n",
+      ),
     ],
     clean: [
       mod("p", [], []),
@@ -1176,10 +1179,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ...BASE,
       f("modules/app/sub/Deep.tsx", "import { Page } from 'linked-app/Page.tsx'\nexport const Deep = Page\n"),
     ],
-    clean: [
-      ...BASE,
-      f("modules/app/sub/Deep.tsx", "import { Page } from '../Page.tsx'\nexport const Deep = Page\n"),
-    ],
+    clean: [...BASE, f("modules/app/sub/Deep.tsx", "import { Page } from '../Page.tsx'\nexport const Deep = Page\n")],
   },
   // E1015 (k.boundary Following): `../../../shared/x.ts` from `modules/a/Page.tsx` resolves outside the project root.
   E1015: {
