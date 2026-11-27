@@ -1,4 +1,5 @@
 import { s } from "@keel/schema";
+import { SQLSTATES } from "../../internal/SQLSTATES.ts";
 
-/** An SQLSTATE: the five characters of a database error's `code`, carried into `postgres.database` by `parse`. */
-export const Sqlstate = s.string({ min: 5, max: 5 });
+/** An SQLSTATE `postgres.database` carries (std.postgres-errors): one of `SQLSTATES`, read by `sqlstateOf`. */
+export const Sqlstate = s.enum(SQLSTATES);

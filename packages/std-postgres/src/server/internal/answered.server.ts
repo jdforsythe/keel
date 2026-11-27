@@ -8,6 +8,7 @@ import { errors } from "./errors.server.ts";
 import { field } from "./field.server.ts";
 import { isAnswer } from "./isAnswer.server.ts";
 import { noErrorTakes } from "./noErrorTakes.server.ts";
+import { sqlstateOf } from "./sqlstateOf.server.ts";
 
 /**
  * The `expect` of a statement's `attempt` (std.postgres-errors): a constraint violation is `postgres.constraint`, a
@@ -17,7 +18,7 @@ import { noErrorTakes } from "./noErrorTakes.server.ts";
  */
 export function answered(x: unknown): ConstraintError | DatabaseError | Unreachable | undefined {
   const name = ConstraintName.parse(field(x, "constraint") || field(x, "column"));
-  const sqlstate = Sqlstate.parse(field(x, "code"));
+  const sqlstate = Sqlstate.parse(sqlstateOf(field(x, "code")));
   if (name.ok && isAnswer(x, "constraint"))
     return ConstraintError.make({ constraint: name.value, kind: constraintKind(x) }, "A row breaks a constraint");
   if (sqlstate.ok && isAnswer(x, "rerun"))
