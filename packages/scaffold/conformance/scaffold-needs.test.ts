@@ -316,19 +316,9 @@ describe("k.scaffold-needs: the table", () => {
       `In a \`${app}\` app each generator's diagnostic prints its code and an example line, a \`first:\` line or no line, and every line printed, run as written in the same project, exits 0`,
       () => {
         const all: [string, string[], string, Line][] = [...rows];
-        all.push(
-          app === "client" ? ["shell", ["shell"], "E1052", "example"] : ["shell", ["shell"], "E1052", "none"],
-          ...(app === "client"
-            ? []
-            : [
-                ["shell with a shell", ["shell", "tauri", "--id", "com.acme.shop"], "E1359", "none"] as [
-                  string,
-                  string[],
-                  string,
-                  Line,
-                ],
-              ]),
-        );
+        all.push(app === "client" ? ["shell", ["shell"], "E1052", "example"] : ["shell", ["shell"], "E1052", "none"]);
+        if (app !== "client")
+          all.push(["shell with a shell", ["shell", "tauri", "--id", "com.acme.shop"], "E1359", "none"]);
         for (const [name, args, code, kind] of all) {
           const dir = fresh(app);
           const r = scaffold(dir, args);
