@@ -35,7 +35,7 @@ function isResult(v: object): v is Result<unknown, Failure> {
     typeof v === "object" &&
     v !== null &&
     ((Reflect.get(v, "ok") === true && Object.hasOwn(v, "value")) ||
-    (Reflect.get(v, "ok") === false && isKeelError(Reflect.get(v, "error"))))
+      (Reflect.get(v, "ok") === false && isKeelError(Reflect.get(v, "error"))))
   );
 }
 
