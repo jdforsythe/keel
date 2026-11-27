@@ -40,13 +40,13 @@ formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}
 ```
 Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, `review`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
-**Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, flag value invalid for the input schema, or a required flag or argument missing, named as written (`--to <module>`, `<id>`) with a command line that passes it · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
+**Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, flag value invalid for the input schema, or a required input missing, named as typed (`--to <module>`) with a line passing it · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
 **Command form.** A line `keel` prints names each `keel <command>` in the form the reader runs it from: when `npm_config_user_agent` names pnpm, npm, yarn or bun, that manager's (`pnpm keel build`, `npx --no keel build`, `yarn keel build`, `bun run keel build`), since a `keel` on PATH may be another program; with none, `keel build`. A `keel` already in a manager's form is left as it is. Compact and pretty only; json keeps each record's text.
 
 **Conformance.**
-- `keel codemod move OrderCard` is E1052 whose message names `--to <module>` and a `keel codemod move` line passing it; `keel scaffold library` one naming `<name>`.
-- Under pnpm, a line holding `pnpm keel docs` prints it once, not `pnpm pnpm keel docs`.
+- `keel codemod move OrderCard` is E1052 naming `--to <module>` and a line passing it.
+- Under pnpm, `pnpm keel docs` in a line is printed as it is.
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
 - Each MCP tool's input schema equals the JSON Schema of its operation's input.
 - A clean `keel check` in compact prints exactly one line.
