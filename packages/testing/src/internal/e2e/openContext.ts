@@ -65,45 +65,12 @@ export async function openContext(o: {
     }
   });
   await context.addInitScript({ content: await pageScript() });
-  // Reach (k.e2e-run): a request to an origin the serve neither serves nor maps, a loopback one among them, is refused
-  // here, before it leaves the browser, and is the tab's `offsite` problem. A tab's own routes fall back to this one.
-  const refuse = (page: unknown, method: string, url: URL): void => {
-    const tab = run.tabs.find((t) => t.tab === page);
-    if (tab === undefined) return;
-    tab.problems.push({ kind: "offsite", text: `${method} ${url.origin}${url.pathname}` });
-    for (const w of [...tab.waiters]) w();
-  };
-  const outside = (href: string): URL | undefined => {
-    const url = new URL(href);
-    if (url.protocol !== "http:" && url.protocol !== "https:" && url.protocol !== "ws:" && url.protocol !== "wss:")
-      return undefined;
-    const origin = `${url.protocol.replace(/^ws/, "http")}//${url.host}`;
-    return o.reaches(origin) ? undefined : url;
-  };
-  await context.route("**/*", async (route) => {
-    const r = route.request();
-    const off = outside(r.url());
-    if (off === undefined) return route.continue().catch(() => undefined);
-    refuse(r.frame().page(), r.method(), off);
-    await route.abort("blockedbyclient").catch(() => undefined);
-  });
-  await context.routeWebSocket(/.*/, (ws) => {
-    const off = outside(ws.url());
-    if (off === undefined) {
-      ws.connectToServer();
-      return;
-    }
-    const last = run.tabs.at(-1);
-    if (last !== undefined) refuse(last.tab, "GET", off);
-    void ws.close({ code: 1008, reason: "offsite" });
-  });
-
   // A tab the page opened by itself: tracked from its first event, loaded and quiet as `open` resolves.
   const adopted = new Map<Tab, Page>();
   const adopt = async (tab: Tab): Promise<Page> => {
     const known = adopted.get(tab);
     if (known !== undefined) return known;
-    const state: TabState = trackTab(tab, false);
+    const state: TabState = trackTab(tab, false, o.reaches);
     run.tabs.push(state);
     const page = makePage(
       state,
@@ -127,14 +94,13 @@ export async function openContext(o: {
 
   const tabAt = async (path: string, hold: boolean): Promise<Page> => {
     const tab = await context.newPage();
-    const state: TabState = trackTab(tab, hold);
+    const state: TabState = trackTab(tab, hold, o.reaches);
     run.tabs.push(state);
     // Scripts off: no script of the page reaches it, and each document arrives with its script elements taken out,
     // so the page script of this harness still reads the page.
     if (!o.scripts)
       await tab.route("**/*", async (route) => {
         const r = route.request();
-        if (outside(r.url()) !== undefined) return route.fallback();
         if (r.resourceType() === "script") return route.abort("blockedbyclient");
         if (r.resourceType() !== "document") return route.fallback();
         const answer = await route.fetch();

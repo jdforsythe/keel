@@ -127,6 +127,12 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
   };
   let proxy: ProxyServer | undefined;
   const routes = new Map<string, AnswerEntry>();
+  /** Whether a page of this serve may reach `origin` (k.e2e-run Reach): a served origin, a peer name or a mapped one. */
+  const reaches = (origin: string): boolean =>
+    routes.has(origin) ||
+    /^http:\/\/[a-z0-9-]+\.peer\.keel\.test$/.test(origin) ||
+    [...hosts.values()].some((h) => h.origin === origin) ||
+    [...procs.values()].some((p) => origin === `http://127.0.0.1:${p.port()}`);
   try {
     for (const d of options.dev === true ? [] : [...hosted, ...nodes]) {
       const why = missing(d);
@@ -175,7 +181,7 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
       if (entry === undefined) throw e2eError("E1736", `origins ${o}: not a live answer() handle`, { origin: o });
       routes.set(originOf(o), entry);
     }
-    proxy = await startProxy(routes, (name) => procs.get(name)?.port());
+    proxy = await startProxy(routes, (name) => procs.get(name)?.port(), reaches);
   } catch (e) {
     await disposeAll();
     throw e;
@@ -262,11 +268,7 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
         cookies: opts.cookies ?? [],
         proxy: proxy?.server ?? "",
         mapped: routes.size > 0,
-        reaches: (origin) =>
-          routes.has(origin) ||
-          /^http:\/\/[a-z0-9-]+\.peer\.keel\.test$/.test(origin) ||
-          [...hosts.values()].some((h) => h.origin === origin) ||
-          [...procs.values()].some((p) => origin === `http://127.0.0.1:${p.port()}`),
+        reaches,
         verb: mark,
         failed: () => {
           failing = new Map(marks);

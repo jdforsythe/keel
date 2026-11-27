@@ -7,7 +7,7 @@ import { sentOf } from "./sentOf.ts";
  * under way, and its problems (page errors, console errors; policy violations arrive through the context's binding).
  * Each change wakes the waits that watch the tab.
  */
-export function trackTab(tab: Tab, holding: boolean): TabState {
+export function trackTab(tab: Tab, holding: boolean, reaches: (origin: string) => boolean): TabState {
   const state: TabState = {
     tab,
     problems: [],
@@ -24,7 +24,27 @@ export function trackTab(tab: Tab, holding: boolean): TabState {
     for (const w of [...state.waiters]) w();
   };
   const main = (r: Request): boolean => r.isNavigationRequest() && r.frame() === tab.mainFrame();
+  tab.on("websocket", (ws) => {
+    const url = new URL(ws.url());
+    const origin = `${url.protocol.replace(/^ws/, "http")}//${url.host}`;
+    if (reaches(origin)) return;
+    state.problems.push({ kind: "offsite", text: `GET ${origin}${url.pathname}` });
+    wake();
+  });
   tab.on("request", (r) => {
+    // Reach (k.e2e-run): the serve's proxy refuses a request for an origin the serve neither serves, peers nor maps;
+    // the tab records each one as an `offsite` problem.
+    const url = new URL(r.url());
+    if (/^(?:https?|wss?):$/.test(url.protocol)) {
+      const origin = `${url.protocol.replace(/^ws/, "http")}//${url.host}`;
+      if (!reaches(origin)) {
+        state.problems.push({
+          kind: "offsite",
+          text: `${r.method()} ${url.origin.replace(/^ws/, "http")}${url.pathname}`,
+        });
+        wake();
+      }
+    }
     state.requests.push(sentOf(r.method(), r.url(), Object.keys(r.headers())));
     state.inflight.add(r);
     if (main(r)) state.loaded = false;

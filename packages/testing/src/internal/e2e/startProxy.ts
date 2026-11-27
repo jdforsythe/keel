@@ -18,6 +18,7 @@ const PEER = /^([a-z0-9-]+)\.peer\.keel\.test$/;
 export async function startProxy(
   origins: ReadonlyMap<string, AnswerEntry>,
   peers: (name: string) => number | undefined,
+  reaches: (origin: string) => boolean,
 ): Promise<ProxyServer> {
   const tlsCert = runCertificate([...new Set([...origins.keys()].map((o) => new URL(o).hostname))]);
   const toAnswer = async (entry: AnswerEntry, req: IncomingMessage, res: ServerResponse, url: string) =>
@@ -56,6 +57,12 @@ export async function startProxy(
       res.writeHead(400).end();
       return;
     }
+    // Reach (k.e2e-run): a request for an origin the serve neither serves, peers nor maps goes nowhere; the page sees
+    // a network error (no answer at all) and its tab records the `offsite` problem.
+    if (!reaches(url.origin)) {
+      req.socket.destroy();
+      return;
+    }
     const peer = PEER.exec(url.hostname)?.[1];
     const port = peer === undefined ? undefined : peers(peer);
     if (port !== undefined) return pass(req, res, "127.0.0.1", port, `${url.pathname}${url.search}`);
@@ -67,6 +74,10 @@ export async function startProxy(
     const [host = "", portText = "443"] = (req.url ?? "").split(":");
     const port = Number(portText);
     const origin = port === 443 ? `https://${host}` : `https://${host}:${port}`;
+    if (!reaches(origin) && !reaches(origin.replace(/^https:/, "http:"))) {
+      socket.end("HTTP/1.1 403 Forbidden\r\n\r\n");
+      return;
+    }
     if (origins.has(origin)) {
       socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       const tls = new TLSSocket(socket, { isServer: true, cert: tlsCert.cert, key: tlsCert.key });
