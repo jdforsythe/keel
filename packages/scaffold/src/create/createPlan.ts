@@ -4,53 +4,23 @@ import { fail } from "../internal/fail.ts";
 import { managerOf } from "../internal/managerOf.ts";
 import { sortedKeys } from "../internal/sortedKeys.ts";
 import { workspaceOf } from "../internal/workspaceOf.ts";
-import { packageJson } from "../templates/packageJson.ts";
 import type { CreateInput } from "../types/CreateInput.ts";
 import type { CreatePlan } from "../types/CreatePlan.ts";
 import type { CreateRecord } from "../types/CreateRecord.ts";
 import type { ScaffoldDiag } from "../types/ScaffoldDiag.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
+import { LISTED } from "./LISTED.ts";
+import { MARKER } from "./MARKER.ts";
 import { libraryTree } from "./libraryTree.ts";
 import { managerWord } from "./managerWord.ts";
 import { projectTree } from "./projectTree.ts";
+import { suggestName } from "./suggestName.ts";
 
 const SEE = "k.create";
 const AT = { line: 1, col: 1 };
 /** Entries a folder may hold and still be empty (k.create-folder Folder). */
 const QUIET = new Set([".git", ".DS_Store", "Thumbs.db"]);
 const NAME = /^[a-z][a-z0-9-]*$/;
-/** The file a run creates first and removes last; a folder holding it was left by a run that was stopped (E1366). */
-export const MARKER = ".keel-create";
-/** The packages an app's `package.json` lists, which its own name may not be. */
-const LISTED: ReadonlySet<string> = (() => {
-  const pkg: unknown = JSON.parse(packageJson("x"));
-  const keys = (k: string): string[] => {
-    const v: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, k) : undefined;
-    return typeof v === "object" && v !== null ? Object.keys(v) : [];
-  };
-  return new Set([...keys("dependencies"), ...keys("devDependencies")]);
-})();
-/** Letters NFKD leaves whole, by the ASCII a person writes for them (k.create Names). */
-const FOLD: Readonly<Record<string, string>> = { ß: "ss", æ: "ae", œ: "oe", ø: "o", đ: "d", ł: "l", þ: "th", ð: "d" };
-
-/** Whether `n` passes the app name rule (k.create Names). */
-export const validName = (n: string): boolean => NAME.test(n) && n.length <= 64 && !LISTED.has(n);
-
-/**
- * The name E1352's fix names for `name`, or undefined when none is valid: marks dropped (`é` -> `e`), the letters `FOLD`
- * lists spelled out, lowercased, each run of other characters one `-`, none at either end.
- */
-export function suggestName(name: string): string | undefined {
-  const n = name
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[ßæœøđłþð]/g, (c) => FOLD[c] ?? c)
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return validName(n) ? n : undefined;
-}
-
 const refuse = (
   code: string,
   path: string,

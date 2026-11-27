@@ -2,10 +2,8 @@ import { existsSync, mkdirSync, realpathSync, rmSync, rmdirSync, writeFileSync }
 import { dirname, join, relative } from "node:path";
 import { MARKER } from "@keel/scaffold/create";
 import { linkEscapes } from "@keel/scaffold/links";
+import type { Stop } from "./Stop.ts";
 import { realOf } from "./realOf.ts";
-
-/** A signal the process caught, which stops the writes. */
-export type Stop = "SIGINT" | "SIGTERM";
 
 /** Lets the event loop run, so a SIGINT or SIGTERM that arrived during the last write reaches its handler. */
 const turn = (): Promise<void> => new Promise((done) => setImmediate(done));
