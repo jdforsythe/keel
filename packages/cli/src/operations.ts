@@ -56,7 +56,7 @@ const structural = {
 export const operations: readonly Operation[] = [
   {
     name: "check",
-    description: "Run k.check over the project or the given paths.",
+    description: "Run k.check over the project or given paths.",
     input: s.object({ paths, base: s.string().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
@@ -77,7 +77,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "build",
-    description: "Compile the project, write .keel artifacts, vite build.",
+    description: "Compile, write .keel artifacts, vite build.",
     input: s.object({
       target: s.enum(["capacitor", "tauri"]).optional(),
       platform: s.string().optional(),
@@ -90,7 +90,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "dev",
-    description: "Dev server and log stream (k.server).",
+    description: "Dev server and logs (k.server).",
     input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), host: s.string().optional(), ...diagnostic }),
     output: outputOf(ReqSchema),
     positional: [],
@@ -98,7 +98,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "docs",
-    description: "Installed docs: the areas, an area, a section or skill; --for a code, block, name or term; --sync.",
+    description: "Installed docs: areas, an area, a section or skill; --for a code, block, name or term; --sync.",
     input: s.object({ id: s.string().optional(), for: s.string().optional(), sync: s.boolean().optional(), ...common }),
     output: outputOf(
       DocsAreaSchema,
@@ -124,7 +124,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "inspect",
-    description: "Summarize GET /__keel/inspect of a dev app (default http://localhost:5173).",
+    description: "Summarize a dev app's /__keel/inspect (default http://localhost:5173).",
     input: s.object({ url: s.string().optional(), ...common }),
     output: outputOf(InspectStoreSchema, InspectSectionSchema),
     positional: ["url"],
@@ -132,7 +132,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "render",
-    description: "The a11y tree of one render of a route or component.",
+    description: "The a11y tree of one route or component render.",
     input: s.object({ target: s.string().optional(), props: s.string().optional(), ...common }),
     output: outputOf(A11ySchema),
     positional: ["target"],
@@ -156,7 +156,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "ledger",
-    description: "Emit the ledger, --write it, or diff it against the committed one.",
+    description: "Emit the ledger, --write it, or diff it with the committed one.",
     input: s.object({
       diff: s.boolean().optional(),
       write: s.string().optional(),
@@ -169,7 +169,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "pack",
-    description: "A library's gate: check, test and write .keel/ledger.json; --check writes nothing (k.library-pack).",
+    description: "A library's gate: check, test, write .keel/ledger.json; --check writes nothing (k.library-pack).",
     input: s.object({ check: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: [],
@@ -177,7 +177,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "evidence",
-    description: "Write a signed evidence bundle, or --verify one with --key <keyId>.",
+    description: "Write a signed evidence bundle, or --verify one by --key <keyId>.",
     input: s.object({
       out: s.string().optional(),
       audit: s.string().optional(),
@@ -191,7 +191,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "review",
-    description: "Escapes from the framework's protections by danger and novelty, over a git range or --all.",
+    description: "Escapes from Keel's protections by danger and novelty, over a git range or --all.",
     input: s.object({
       paths,
       all: s.boolean().optional(),
