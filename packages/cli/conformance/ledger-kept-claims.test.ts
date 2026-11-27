@@ -7,6 +7,7 @@ import { join } from "node:path";
 // Spec: k.ledger, clause "Over a ledger whose `a11y` also holds `a11y:.:gone#1.4.3` and `a11y:r#1.4.3` at `example`, with `gone` not among the project's routes, `keel ledger --write` writes neither item, with and without `reports/a11y.json`."
 // Spec: k.ledger, clause "From a committed claim for `packages/a/src/a.ts` whose `sha` the file no longer hashes to, and a report on disk whose `files` hold `src/a.ts` with the tree's source and only `Ignored` mutants, `keel ledger --write` stores no claim for `packages/a/src/a.ts` and `keel ledger --diff` reports no W1714; with one `Killed` mutant in place of the `Ignored` one it stores a claim for it whose `sha` is the file's, and `--diff` reports no W1714."
 // Seed: 1337 (no property: fixed projects, the real `keel` binary over temp projects in the OS tmpdir).
+// ASSUMED: the clause's route `r` is `m.r` (E1155: a route id of module `m` is `m.<name>`).
 // ASSUMPTIONS: the committed ledger is first written by `keel ledger --write` over the bare project, then its `a11y` list is edited (an array of `{ item, rung }`, as tooling/ledger/ledger.json holds it); the route tables are TABLES below (module `m`, route id `r`, a page route: a non-null `path`, no `api: true`); ASSUMED: the project has no `.keel/` and `keel ledger` derives its routes (k.a11y Claims);
 // an `A11yRun` is `{ route, component, rules, violations: [{ rule, element }], file, test, passed }`; `E1804` is the rule mapped to 1.4.3; `--diff` reads the committed ledger at tooling/ledger/ledger.json.
 import { fixedTime } from "@keel/tooling/test-time";
@@ -25,18 +26,18 @@ import {
 } from "./test-sim-project.ts";
 
 const COMMITTED = "tooling/ledger/ledger.json";
-const ITEM = "a11y:.:r#1.4.3";
-const GONE = "a11y:.:gone#1.4.3";
+const ITEM = "a11y:.:m.r#1.4.3";
+const GONE = "a11y:.:m.gone#1.4.3";
 // the item form without a project: no current key is this, so `--write` drops it
-const OLD = "a11y:r#1.4.3";
+const OLD = "a11y:m.r#1.4.3";
 /** The route tables of a project whose one module `m` has the page route `r` (`path: '/r'`). */
 const TABLES: Readonly<Record<string, string>> = {
   "topology.ts": `export default { api: { modules: ["m"], adapter: "node" } };\n`,
-  "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n  "r": { path: "/r" },\n});\n`,
-  "modules/m/routes.ts": `import { manifest } from "@keel/router";\nimport { Text } from "@keel/ui";\nimport { m } from "./m.contract.ts";\n\nexport const routes = manifest(m, {\n  "r": { component: () => Text({ id: "m.r.msg", children: "r" }), title: () => "r" },\n});\n`,
+  "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n  "m.r": { path: "/r" },\n});\n`,
+  "modules/m/routes.ts": `import { manifest } from "@keel/router";\nimport { Text } from "@keel/ui";\nimport { m } from "./m.contract.ts";\n\nexport const routes = manifest(m, {\n  "m.r": { component: () => Text({ id: "m.r.msg", children: "r" }), title: () => "r" },\n});\n`,
 };
 const run = (passed: boolean, violations: readonly { rule: string; element: string }[]) =>
-  `${JSON.stringify([{ route: "r", component: null, rules: ["E1804"], violations, file: "modules/m/test/r.test.ts", test: "renders r", passed }], null, 2)}\n`;
+  `${JSON.stringify([{ route: "m.r", component: null, rules: ["E1804"], violations, file: "modules/m/test/r.test.ts", test: "renders r", passed }], null, 2)}\n`;
 const FAILED = run(false, [{ rule: "E1804", element: "r.msg" }]);
 const PASSED = run(true, []);
 

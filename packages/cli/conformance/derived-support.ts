@@ -4,8 +4,8 @@
 // (vite refuses files outside its workspace). `node_modules` of a copy is a real folder of links to the original's entries, so its
 // `node_modules/.cache/keel` is the copy's own.
 // The child env drops vitest's variables, every KEEL_* and `CI`, so only a case sets them.
-// ASSUMED (the spec gives the trailer in compact form only): a diagnostic is a compact line `CODE path[:line:col] message`, and the trailer
-// is the last line that starts with `ok ` or `fail `; `refreshed` is read from the trailer's `<n> refreshed`.
+// A run is read in json: a `diag` record (`code`, `path`, `message`) per diagnostic and the `summary` record's `counts` (k.derived Refresh: `refreshed`, `evaluated`,
+// `cached`). `--format=compact` gives the trailer, the last line that starts with `ok ` or `fail `, and a compact diagnostic line `CODE path[:line:col] message`.
 import { spawn, spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -39,8 +39,11 @@ export type Out = {
   stdout: string;
   stderr: string;
   diags: Diag[];
+  /** The compact trailer; empty in json. */
   trailer: string;
-  /** The `<n> refreshed` of the trailer; 0 when the trailer holds none. */
+  /** The json summary's `counts` (the compact trailer's `<n> refreshed` when compact). */
+  counts: Record<string, number>;
+  /** `counts.refreshed`, -1 when the run printed none. */
   refreshed: number;
 };
 
@@ -48,14 +51,33 @@ const LINE = /^([EWIT]\d{4}) (\S+?)(?::\d+:\d+)? (.*)$/;
 
 export function parseOut(status: number | null, stdout: string, stderr: string): Out {
   const diags: Diag[] = [];
+  const counts: Record<string, number> = {};
   let trailer = "";
   for (const line of stdout.split("\n")) {
     if (/^(ok|fail) /.test(line)) trailer = line;
+    if (line.startsWith("{")) {
+      const v: unknown = JSON.parse(line);
+      if (typeof v !== "object" || v === null) continue;
+      const kind: unknown = Reflect.get(v, "kind");
+      if (kind === "diag") {
+        const code: unknown = Reflect.get(v, "code");
+        const path: unknown = Reflect.get(v, "path");
+        const message: unknown = Reflect.get(v, "message");
+        diags.push({ code: String(code), path: String(path), message: String(message) });
+      } else if (kind === "summary") {
+        const c: unknown = Reflect.get(v, "counts");
+        if (typeof c === "object" && c !== null)
+          for (const [k, n] of Object.entries(c)) if (typeof n === "number") counts[k] = n;
+      }
+      continue;
+    }
     const m = LINE.exec(line);
     if (m !== null) diags.push({ code: m[1] ?? "", path: m[2] ?? "", message: m[3] ?? "" });
   }
   const r = /(\d+) refreshed/.exec(trailer);
-  return { status, stdout, stderr, diags, trailer, refreshed: r === null ? 0 : Number(r[1]) };
+  if (r !== null) counts.refreshed = Number(r[1]);
+  else if (trailer !== "" && counts.refreshed === undefined) counts.refreshed = 0;
+  return { status, stdout, stderr, diags, trailer, counts, refreshed: counts.refreshed ?? -1 };
 }
 
 export function childEnv(extra: Readonly<Record<string, string>>): Record<string, string> {
@@ -69,7 +91,7 @@ export function childEnv(extra: Readonly<Record<string, string>>): Record<string
 }
 
 const withFormat = (args: readonly string[]): string[] =>
-  args.some((a) => a.startsWith("--format")) ? [...args] : [...args, "--format=compact"];
+  args.some((a) => a.startsWith("--format")) ? [...args] : [...args, "--format=json"];
 
 /** `keel <args>` in `dir`. */
 export function keel(dir: string, args: readonly string[], env: Readonly<Record<string, string>> = {}): Out {
@@ -285,52 +307,26 @@ export function build(dir: string): void {
 
 // ---- the client-only-api fixture ----
 
-/**
- * A copy of `examples/client-only-api` with one module `ping` (contract `ping`, entry `ping.one`, GET `/api/one`) that the `web` deployable
- * serves on the `node` adapter, built. ASSUMED: k.api E1511 (an API entry in a module a `client` deployable serves) makes clause 1 of k.derived
- * ("adding an API entry to a contract and its binding" in the unchanged example, exit 0) unsatisfiable, so the example gains a module its
- * deployable can serve.
- */
+/** A copy of `examples/client-only-api`, built. */
 export function apiTree(): Tree {
   const t = newTree("examples/client-only-api");
-  put(
-    t.dir,
-    "modules/ping/module.ts",
-    'import { module } from "@keel/compiler";\n\nexport default module({\n  id: "ping",\n  deps: [],\n  capabilities: [],\n  public: { exports: [] },\n});\n',
-  );
-  put(t.dir, "modules/ping/ping.contract.ts", PING_CONTRACT);
-  put(t.dir, "modules/ping/one.server.ts", pingLoader("one"));
-  put(t.dir, "modules/ping/routes.ts", PING_ROUTES);
-  sub(
-    t.dir,
-    "topology.ts",
-    'modules: ["app"],\n    adapter: "client"',
-    'modules: ["app", "ping"],\n    adapter: "node"',
-  );
   build(t.dir);
   return t;
 }
 
-export const PING_CONTRACT =
-  'import { contract } from "@keel/router/contract";\nimport { s } from "@keel/schema";\n\nexport const ping = contract("ping", {\n  "ping.one": { method: "GET", path: "/api/one", output: s.object({}) },\n});\n';
-export const PING_ROUTES =
-  'import { manifest } from "@keel/router";\nimport { one } from "./one.server.ts";\nimport { ping } from "./ping.contract.ts";\n\nexport const routes = manifest(ping, {\n  "ping.one": { loader: one },\n});\n';
-export const pingLoader = (name: string): string =>
-  `import { loader } from "@keel/router";\nimport { ok } from "@keel/schema";\nimport { ping } from "./ping.contract.ts";\n\nexport const ${name} = loader(ping, "ping.${name}", {}, async () => ok({}));\n`;
-
-/** Clause 1's edit: an API entry `ping.two` in the contract and its binding. */
-export function addEntry(dir: string): void {
+/** Clause 1's edit: the page route `app.about` at `/about` in the contract, bound to `HomePage`. */
+export function addRoute(dir: string): void {
   sub(
     dir,
-    "modules/ping/ping.contract.ts",
-    "});\n",
-    '  "ping.two": { method: "GET", path: "/api/two", output: s.object({}) },\n});\n',
+    "modules/app/app.contract.ts",
+    '  "app.releases": {\n    path: "/releases",\n  },\n',
+    '  "app.releases": {\n    path: "/releases",\n  },\n  "app.about": { path: "/about" },\n',
   );
-  put(dir, "modules/ping/two.server.ts", pingLoader("two"));
-  put(
+  sub(
     dir,
-    "modules/ping/routes.ts",
-    'import { manifest } from "@keel/router";\nimport { one } from "./one.server.ts";\nimport { ping } from "./ping.contract.ts";\nimport { two } from "./two.server.ts";\n\nexport const routes = manifest(ping, {\n  "ping.one": { loader: one },\n  "ping.two": { loader: two },\n});\n',
+    "modules/app/routes.ts",
+    '  "app.releases": {\n    component: ReleasesPage,\n    title: () => "Releases",\n  },\n',
+    '  "app.releases": {\n    component: ReleasesPage,\n    title: () => "Releases",\n  },\n  "app.about": { component: HomePage, title: () => "About" },\n',
   );
 }
 
@@ -348,14 +344,14 @@ export function householdTree(): Tree {
 
 /** The compact line `<n> ok`/`fail` trailer of a run, for messages. */
 export const brief = (o: Out): string =>
-  `${o.trailer} | ${o.diags.map((d) => `${d.code} ${d.path}`).join(", ")} | ${o.stderr.slice(-200)}`;
+  `${o.trailer} ${JSON.stringify(o.counts)} | ${o.diags.map((d) => `${d.code} ${d.path}`).join(", ")} | ${o.stderr.slice(-200)}`;
 
 /** A pause the test's own loop takes between two looks at something a child does (not a timer the code under test sees). */
 export function nap(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-/** The `a11y:` items `keel ledger` emits in `dir`, sorted. */
+/** The `a11y:` items `keel ledger` emits in `dir` with their rungs (`<item>=<rung>`), sorted. */
 export function a11yItems(dir: string): string[] {
   const r = spawnSync(process.execPath, [BIN, "ledger", "--format=json"], {
     cwd: dir,
@@ -368,7 +364,8 @@ export function a11yItems(dir: string): string[] {
     const v: unknown = JSON.parse(line);
     if (typeof v !== "object" || v === null) continue;
     const item: unknown = Reflect.get(v, "item");
-    if (Reflect.get(v, "kind") === "ledger" && typeof item === "string" && item.startsWith("a11y:")) items.push(item);
+    if (Reflect.get(v, "kind") === "ledger" && typeof item === "string" && item.startsWith("a11y:"))
+      items.push(`${item}=${String(Reflect.get(v, "rung"))}`);
   }
   return items.sort();
 }

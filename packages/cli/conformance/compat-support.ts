@@ -51,7 +51,7 @@ function isRec(v: unknown): v is Rec {
   return typeof v === "object" && v !== null && "kind" in v && typeof v.kind === "string";
 }
 
-export function keel(dir: string, args: string[]): Run {
+export function keel(dir: string, args: string[], extraEnv: Record<string, string> = {}): Run {
   const env: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST" || k === "CI" || k === "KEEL_FROZEN") continue;
@@ -60,7 +60,7 @@ export function keel(dir: string, args: string[]): Run {
   const r = spawnSync(process.execPath, [join(root, "packages/cli/src/bin.ts"), ...args, "--format=json"], {
     cwd: dir,
     encoding: "utf8",
-    env,
+    env: { ...env, ...extraEnv },
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

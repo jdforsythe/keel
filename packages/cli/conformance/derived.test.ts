@@ -11,10 +11,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-// Spec: k.derived, clause "In a copy of `examples/client-only-api` after `keel build`, adding an API entry to a contract and its binding, then `keel check`, reports no E1005, exits 0, prints `2 refreshed` in its trailer, and leaves `.keel/routes.json` and `.keel/surface.json` byte-identical to what `keel build` of that tree writes."
+// Spec: k.derived, clause "In a copy of `examples/client-only-api` after `keel build`, adding a page route `app.about` at `/about` to its contract and binding it to `HomePage`, then `keel check`, reports no E1005, exits 0, prints `1 refreshed` in its trailer, and leaves `.keel/routes.json` byte-identical to what `keel build` of that tree writes."
 // Spec: k.derived, clause "In that copy, after renaming an element id in a page component, `keel check` reports no E1005 and leaves `.keel/ids.json` and `.keel/a11y.json` byte-identical to what `keel build` writes."
-// Spec: k.derived, clause "A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, and its trailer holds no `refreshed`."
-// Spec: k.derived, clause "After the edit of clause 1, `keel check --frozen` exits 1 with one E1005 at `.keel/routes.json` and one at `.keel/surface.json`, each message naming the contract file, and no file in `.keel/` changes."
+// Spec: k.derived, clause "A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, its compact trailer holds no `refreshed`, and its json summary's `counts.refreshed` is 0."
+// Spec: k.derived, clause "After the edit of clause 1, `keel check --frozen` exits 1 with one E1005, at `.keel/routes.json`, and no file in `.keel/` changes."
 // Spec: k.derived, clause "After the edit of clause 1, `keel check` with `CI=true` gives the output of clause 4, and with `CI=false` the output of clause 1."
 // Spec: k.derived, clause "Changing one byte of `.keel/ids.json` makes `keel check` rewrite it with `1 refreshed` and exit 0, and makes `keel check --frozen` report one E1005 at that file."
 // Spec: k.derived, clause "A file `.keel/x.json` is one E1005 under `keel check` and under `keel check --frozen`, and is still there after both."
@@ -23,35 +23,35 @@ import { join } from "node:path";
 // Spec: k.derived, clause "In a copy of `apps/household` with `.keel/` deleted, giving the `setup.household` store's state a required field makes `keel check --base <the committed surface>` report one E1563 naming that field."
 // Spec: k.derived, clause "In a fixture whose page renders `<button id=\"p.b\">` and whose test renders it with `renderRoute`, replacing `.keel/a11y.json` with one giving `p.b` role `link` leaves `keel test` passing."
 // Spec: k.derived, clause "In that fixture with `.keel/` deleted, a passing `renderRoute` under `keel test` records a run whose `rules` hold E1702."
-// Spec: k.derived, clause "`keel lsp` diagnostics for an unsaved buffer adding an API entry write no file in `.keel/`."
+// Spec: k.derived, clause "`keel lsp` diagnostics for an unsaved buffer adding the page route of clause 1 write no file in `.keel/`."
 // Spec: k.derived, clause "Two `keel check` processes started together after the edit of clause 1 both exit 0, and afterwards each `.keel/` file is byte-identical to what `keel build` writes and no `*.tmp` file is left."
 // Spec: k.derived, clause "After one `keel check`, replacing each entry in `node_modules/.cache/keel/derived/` with `{}` or its first 40 bytes leaves the next `keel check` printing the same stdout bytes and writing the same files as a run with the folder deleted."
 // Spec: k.derived, clause "After one `keel check` of the household copy, rewriting a file of the linked `@keel/std-text` copy that the evaluation loaded, with its old modification time, makes the next `keel check` evaluate again, as a run with `node_modules/.cache/keel` deleted does."
 // Spec: k.derived, clause "After one `keel check`, re-indenting a contract file and adding a comment to it makes the next `keel check` write no file."
 // Spec: k.derived, clause "While `keel dev` serves the copy of clause 1, within 2 s of the edit `.keel/routes.json` is byte-identical to what `keel build` writes, and a `keel check` run then writes no file."
-// Spec: k.derived, clause "In a copy of `apps/household` with `.keel/` deleted, `keel test` then `keel ledger` give one `a11y:` item per page route and criterion, as with `.keel/` present."
+// Spec: k.derived, clause "In a fixture with one page route `r` and a passing `renderRoute` test of it, with `.keel/` deleted, `keel test` then `keel ledger` give the same `a11y:.:r#<criterion>` items and rungs as with `.keel/` present, and a page route `s` added after `keel build` with no build since gets its `a11y:.:s#<criterion>` items."
 // Spec: k.derived, clause "No fixture makes `keel check` report W1005."
 // Spec: k.derived, clause "`keel scaffold project p` writes a `.gitignore` holding the lines `.keel/a11y.json`, `.keel/deps.json`, `.keel/ids.json`, `.keel/routes.json`, `.keel/std.json` and `.keel/styles.json`, and no line matching `.keel/surface.json`."
+// Spec: k.derived, clause "After `keel build` of the copy of clause 1, setting the colour its page text uses so that text falls under 4.5:1 against its background makes the next `keel check` report E1804 at that text and write no file."
 // Seed 1337 (recorded). The real binary over copies of `examples/client-only-api` and `apps/household` (derived-support.ts), built once and cloned per case.
-// ASSUMED (spec text gives no fixture): clause 1 adds an API entry "to a contract and its binding" in the unchanged example, but k.api E1511 makes an API entry in a
-// module a `client` deployable serves an error, so the example gains a module `ping` its `web` deployable serves on the `node` adapter (derived-support.ts `apiTree`);
-// the edit adds the entry `ping.two` to `ping`'s contract and its `routes.ts`.
+// Clause 1's edit adds the page route `app.about` at `/about` to the example's contract and binds it to `HomePage` (derived-support.ts `addRoute`).
 // ASSUMED: "what `keel build` writes" is read by running `keel build` in the same tree after the run under test: a view the run left stale changes.
 // ASSUMED: `--format=compact` trailer `ok check <n> files, <k> refreshed, ...`; a W1018 names the view in its `path` or its message.
 // ASSUMED: the default of `line` in the linked `@keel/std-text` is written `min ?? 1` in `line.ts` of the copy (std.text: `line({ min = 1, max })`).
+// ASSUMED: k.derived 19's page routes `r` and `s` are `m.r` and `m.s` (E1155: a route id of module `m` is `m.<name>`), their items `a11y:.:m.r#<criterion>`.
 // The page of clauses 11 and 12 renders `<Button id="p.b">` (a `@keel/ui` button, whose element is a `button`).
 import { lsp } from "@keel/cli";
 import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { keelProject, moduleFiles, runsOf, testHead } from "./a11y-project-support.ts";
+import { TOPOLOGY, keelProject, runsOf, testHead } from "./a11y-project-support.ts";
 import {
   BIN,
   type Out,
   SEED,
   type Tree,
   a11yItems,
-  addEntry,
+  addRoute,
   addSize,
   age,
   apiTree,
@@ -95,11 +95,11 @@ const fresh = (t: Tree): Tree => {
 /** A copy of the built example with clause 1's edit applied. */
 const edited = (): Tree => {
   const c = fresh(api);
-  addEntry(c.dir);
+  addRoute(c.dir);
   return c;
 };
 const CACHE = "node_modules/.cache/keel";
-const CONTRACT = "modules/ping/ping.contract.ts";
+const CONTRACT = "modules/app/app.contract.ts";
 
 beforeAll(() => {
   api = apiTree();
@@ -126,13 +126,13 @@ const noW1005 = (out: Out): void => expect(codes(out, "W1005"), brief(out)).toEq
 
 describe("k.derived: a run reads the tree, not the views", () => {
   test(
-    "In a copy of `examples/client-only-api` after `keel build`, adding an API entry to a contract and its binding, then `keel check`, reports no E1005, exits 0, prints `2 refreshed` in its trailer, and leaves `.keel/routes.json` and `.keel/surface.json` byte-identical to what `keel build` of that tree writes.",
+    "In a copy of `examples/client-only-api` after `keel build`, adding a page route `app.about` at `/about` to its contract and binding it to `HomePage`, then `keel check`, reports no E1005, exits 0, prints `1 refreshed` in its trailer, and leaves `.keel/routes.json` byte-identical to what `keel build` of that tree writes.",
     () => {
       const t = edited();
       const out = keel(t.dir, ["check"]);
       expect(codes(out, "E1005"), brief(out)).toEqual([]);
       expect(out.status, brief(out)).toBe(0);
-      expect(out.trailer).toContain("2 refreshed");
+      expect(out.refreshed).toBe(1);
       noW1005(out);
       matchesBuild(t.dir);
     },
@@ -140,15 +140,26 @@ describe("k.derived: a run reads the tree, not the views", () => {
   );
 
   test(
-    "In a copy of `examples/client-only-api` after `keel build`, adding an API entry to a contract and its binding, then `keel check`, reports no E1005, exits 0, prints `2 refreshed` in its trailer, and leaves `.keel/routes.json` and `.keel/surface.json` byte-identical to what `keel build` of that tree writes." +
+    "In a copy of `examples/client-only-api` after `keel build`, adding a page route `app.about` at `/about` to its contract and binding it to `HomePage`, then `keel check`, reports no E1005, exits 0, prints `1 refreshed` in its trailer, and leaves `.keel/routes.json` byte-identical to what `keel build` of that tree writes." +
+      " (the compact trailer shows the count)",
+    () => {
+      const t = edited();
+      const out = keel(t.dir, ["check", "--format=compact"]);
+      expect(out.trailer, brief(out)).toMatch(/^ok check \d+ files, 1 refreshed, 0 errors/);
+    },
+    SLOW,
+  );
+
+  test(
+    "In a copy of `examples/client-only-api` after `keel build`, adding a page route `app.about` at `/about` to its contract and binding it to `HomePage`, then `keel check`, reports no E1005, exits 0, prints `1 refreshed` in its trailer, and leaves `.keel/routes.json` byte-identical to what `keel build` of that tree writes." +
       " (a contract path changed)",
     () => {
       const t = fresh(api);
-      sub(t.dir, CONTRACT, 'path: "/api/one"', 'path: "/api/uno"');
+      sub(t.dir, CONTRACT, 'path: "/releases"', 'path: "/notes"');
       const out = keel(t.dir, ["check"]);
       expect(codes(out, "E1005"), brief(out)).toEqual([]);
       expect(out.status, brief(out)).toBe(0);
-      expect(out.trailer).toContain("2 refreshed");
+      expect(out.refreshed).toBe(1);
       matchesBuild(t.dir);
     },
     SLOW,
@@ -169,7 +180,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
   );
 
   test(
-    "A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, and its trailer holds no `refreshed`.",
+    "A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, its compact trailer holds no `refreshed`, and its json summary's `counts.refreshed` is 0.",
     () => {
       const t = edited();
       expect(keel(t.dir, ["check"]).status).toBe(0);
@@ -178,13 +189,16 @@ describe("k.derived: a run reads the tree, not the views", () => {
       const out = keel(t.dir, ["check"]);
       expect(out.status, brief(out)).toBe(0);
       expect(changed(before, snapshot(t.dir))).toEqual([]);
-      expect(out.trailer).not.toContain("refreshed");
+      expect(out.refreshed).toBe(0);
+      const compact = keel(t.dir, ["check", "--format=compact"]);
+      expect(compact.trailer, brief(compact)).toMatch(/^ok check /);
+      expect(compact.trailer).not.toContain("refreshed");
     },
     SLOW,
   );
 
   test(
-    "A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, and its trailer holds no `refreshed`." +
+    "A second `keel check` with no file changed writes no file, every `.keel/` file keeping its modification time, its compact trailer holds no `refreshed`, and its json summary's `counts.refreshed` is 0." +
       " (a built tree, over random subsets of edits: the count is the number of views that differ)",
     () => {
       const t = fresh(api);
@@ -200,7 +214,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
           expect(out.refreshed).toBe(picked.length);
           const moved = changed(before, snapshot(t.dir));
           expect(moved).toEqual([...picked].sort());
-          if (picked.length === 0) expect(out.trailer).not.toContain("refreshed");
+          if (picked.length === 0) expect(out.refreshed).toBe(0);
         }),
         { seed: SEED, numRuns: 5 },
       );
@@ -209,7 +223,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
   );
 
   test(
-    "After the edit of clause 1, `keel check --frozen` exits 1 with one E1005 at `.keel/routes.json` and one at `.keel/surface.json`, each message naming the contract file, and no file in `.keel/` changes.",
+    "After the edit of clause 1, `keel check --frozen` exits 1 with one E1005, at `.keel/routes.json`, and no file in `.keel/` changes.",
     () => {
       const t = edited();
       age(t.dir);
@@ -217,8 +231,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
       const out = keel(t.dir, ["check", "--frozen"]);
       const e = codes(out, "E1005");
       expect(out.status, brief(out)).toBe(1);
-      expect(e.map((d) => d.path).sort()).toEqual([".keel/routes.json", ".keel/surface.json"]);
-      for (const d of e) expect(d.message).toContain("ping.contract.ts");
+      expect(e.map((d) => d.path)).toEqual([".keel/routes.json"]);
       expect(changed(before, snapshot(t.dir))).toEqual([]);
     },
     SLOW,
@@ -237,7 +250,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
       const out = keel(off.dir, ["check"], { CI: "false" });
       expect(codes(out, "E1005"), brief(out)).toEqual([]);
       expect(out.status).toBe(0);
-      expect(out.trailer).toContain("2 refreshed");
+      expect(out.refreshed).toBe(1);
     },
     SLOW,
   );
@@ -257,13 +270,13 @@ describe("k.derived: a run reads the tree, not the views", () => {
       for (const w of ways) {
         const out = keel(stale.dir, ["check", ...w.args], w.env);
         expect(out.status, brief(out)).toBe(1);
-        expect(codes(out, "E1005")).toHaveLength(2);
+        expect(codes(out, "E1005")).toHaveLength(1);
         expect(changed(before, snapshot(stale.dir))).toEqual([]);
       }
       fc.assert(
         fc.property(fc.constantFrom("1", "yes", "TRUE", "on"), (ci) => {
           const out = keel(stale.dir, ["check"], { CI: ci });
-          expect(codes(out, "E1005")).toHaveLength(2);
+          expect(codes(out, "E1005")).toHaveLength(1);
           expect(changed(before, snapshot(stale.dir))).toEqual([]);
         }),
         { seed: SEED, numRuns: 3 },
@@ -273,7 +286,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
           const t = edited();
           const out = keel(t.dir, ["check"], { CI: ci });
           expect(codes(out, "E1005"), brief(out)).toEqual([]);
-          expect(out.trailer).toContain("2 refreshed");
+          expect(out.refreshed).toBe(1);
         }),
         { seed: SEED, numRuns: 3 },
       );
@@ -315,7 +328,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
           expect(changed(before, snapshot(t.dir))).toEqual([]);
           const out = keel(t.dir, ["check"]);
           expect(out.status, brief(out)).toBe(0);
-          expect(out.trailer).toContain("1 refreshed");
+          expect(out.refreshed).toBe(1);
           expect(read(t.dir, ids)).toBe(good);
         }),
         { seed: SEED, numRuns: 4 },
@@ -350,14 +363,15 @@ describe("k.derived: a run reads the tree, not the views", () => {
         const out = keel(t.dir, ["check"]);
         expect(out.status, brief(out)).toBe(0);
         expect(codes(out, "E1005")).toEqual([]);
-        expect(codes(out, "W1018"), brief(out)).toHaveLength(2);
+        expect(codes(out, "W1018"), brief(out)).toHaveLength(1);
         const ran = keel(t.dir, ["test"]);
         expect(codes(ran, "T0001"), brief(ran)).toEqual([]);
         expect(ran.status, brief(ran)).toBe(0);
-        expect(ran.trailer).toMatch(/^ok test [1-9]\d* tests, 0 failed/);
+        expect(ran.counts.tests).toBeGreaterThan(0);
+        expect(ran.counts.failed).toBe(0);
         const w = codes(ran, "W1018");
-        expect(w, brief(ran)).toHaveLength(2);
-        for (const d of w) expect(`${d.path} ${d.message}`).toMatch(/\.keel\/(routes|surface)\.json/);
+        expect(w, brief(ran)).toHaveLength(1);
+        for (const d of w) expect(`${d.path} ${d.message}`).toMatch(/\.keel\/routes\.json/);
       } finally {
         chmodSync(join(t.dir, ".keel"), 0o755);
       }
@@ -382,7 +396,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
       const plain = fresh(houseTree());
       editStdText(plain, "min ?? 1", "min ?? 2", false);
       const second = keel(plain.dir, ["check"]);
-      expect(second.trailer, brief(second)).toContain("1 refreshed");
+      expect(second.refreshed, brief(second)).toBe(1);
     },
     SLOW,
   );
@@ -395,7 +409,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
       editStdText(t, "min ?? 1", "min ?? 0", false);
       const out = keel(t.dir, ["check"]);
       expect(codes(out, "E1005"), brief(out)).toEqual([]);
-      expect(out.trailer).toContain("1 refreshed");
+      expect(out.refreshed).toBe(1);
       expect(read(t.dir, ".keel/surface.json")).toContain("line(0..40)");
     },
     SLOW,
@@ -434,7 +448,7 @@ describe("k.derived: a run reads the tree, not the views", () => {
   );
 
   test(
-    "After the edit of clause 1, `keel check --frozen` exits 1 with one E1005 at `.keel/routes.json` and one at `.keel/surface.json`, each message naming the contract file, and no file in `.keel/` changes." +
+    "After the edit of clause 1, `keel check --frozen` exits 1 with one E1005, at `.keel/routes.json`, and no file in `.keel/` changes." +
       " (a deploy file: storage added to topology.ts)",
     () => {
       const t = fresh(houseTree());
@@ -462,11 +476,11 @@ describe("k.derived: a run reads the tree, not the views", () => {
       put(
         t.dir,
         ".keel/surface.json",
-        text.replace('"version":3', '"version":2,"sources":{"modules/ping/routes.ts":"fnv1a:00000000"}'),
+        text.replace('"version":3', '"version":2,"sources":{"modules/app/routes.ts":"fnv1a:00000000"}'),
       );
       const out = keel(t.dir, ["check"]);
       expect(codes(out, "E1005"), brief(out)).toEqual([]);
-      expect(out.trailer).toContain("1 refreshed");
+      expect(out.refreshed).toBe(1);
       expect(read(t.dir, ".keel/surface.json")).toBe(text);
     },
     SLOW,
@@ -477,7 +491,8 @@ describe("k.derived: keel test and the a11y artifacts", () => {
   /** A project with one page `m.r`, one passing `renderRoute` test, built. */
   function a11yProject(): string {
     const dir = keelProject("derived-a11y", {
-      ...moduleFiles(["r"], false),
+      "topology.ts": TOPOLOGY,
+      "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n  "m.r": { path: "/r" },\n});\n`,
       "tsconfig.json": `${JSON.stringify({ extends: "@keel/compiler/tsconfig.strict.json", compilerOptions: { jsxImportSource: "@keel/runtime-dom" }, include: ["modules"] }, null, 2)}\n`,
       "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module" })}\n`,
       "vite.config.ts": `import keel from "@keel/compiler/vite";\nimport { defineConfig } from "vite";\nexport default defineConfig({ plugins: [keel()] });\n`,
@@ -551,15 +566,21 @@ it("renders the route r", async () => {
   );
 
   test(
-    "In a copy of `apps/household` with `.keel/` deleted, `keel test` then `keel ledger` give one `a11y:` item per page route and criterion, as with `.keel/` present.",
+    "In a fixture with one page route `r` and a passing `renderRoute` test of it, with `.keel/` deleted, `keel test` then `keel ledger` give the same `a11y:.:r#<criterion>` items and rungs as with `.keel/` present, and a page route `s` added after `keel build` with no build since gets its `a11y:.:s#<criterion>` items.",
     () => {
-      const t = fresh(houseTree());
-      expect(keel(t.dir, ["test"]).status).toBe(0);
-      const present = a11yItems(t.dir);
+      const dir = a11yProject();
+      expect(keel(dir, ["test"]).status).toBe(0);
+      const present = a11yItems(dir);
       expect(present.length).toBeGreaterThan(0);
-      rmSync(join(t.dir, ".keel"), { recursive: true, force: true });
-      expect(keel(t.dir, ["test"]).status).toBe(0);
-      expect(a11yItems(t.dir)).toEqual(present);
+      for (const i of present) expect(i).toMatch(/^a11y:\.:m\.r#/);
+      rmSync(join(dir, ".keel"), { recursive: true, force: true });
+      expect(keel(dir, ["test"]).status).toBe(0);
+      expect(a11yItems(dir)).toEqual(present);
+      sub(dir, "modules/m/m.contract.ts", "});\n", '  "m.s": { path: "/s" },\n});\n');
+      sub(dir, "modules/m/routes.ts", "});\n", '  "m.s": { component: Page, title: () => "s" },\n});\n');
+      const added = a11yItems(dir);
+      expect(added.filter((i) => i.startsWith("a11y:.:m.s#")).length).toBeGreaterThan(0);
+      expect(added.filter((i) => i.startsWith("a11y:.:m.r#"))).toEqual(present);
     },
     SLOW,
   );
@@ -567,7 +588,7 @@ it("renders the route r", async () => {
 
 describe("k.derived: other readers and writers", () => {
   test(
-    "`keel lsp` diagnostics for an unsaved buffer adding an API entry write no file in `.keel/`.",
+    "`keel lsp` diagnostics for an unsaved buffer adding the page route of clause 1 write no file in `.keel/`.",
     async () => {
       const t = fresh(api);
       age(t.dir);
@@ -580,10 +601,7 @@ describe("k.derived: other readers and writers", () => {
       await server.receive(
         frame({ jsonrpc: "2.0", id: 1, method: "initialize", params: { rootUri: `file://${t.dir}` } }),
       );
-      const text = read(t.dir, CONTRACT).replace(
-        "});\n",
-        '  "ping.two": { method: "GET", path: "/api/two", output: s.object({}) },\n});\n',
-      );
+      const text = read(t.dir, CONTRACT).replace("});\n", '  "app.about": { path: "/about" },\n});\n');
       await server.receive(
         frame({
           jsonrpc: "2.0",
@@ -683,7 +701,7 @@ describe("k.derived: other readers and writers", () => {
       const out = keel(t.dir, ["check"]);
       expect(out.status, brief(out)).toBe(0);
       expect(changed(before, snapshot(t.dir))).toEqual([]);
-      expect(out.trailer).not.toContain("refreshed");
+      expect(out.refreshed).toBe(0);
     },
     SLOW,
   );
@@ -711,7 +729,7 @@ describe("k.derived: other readers and writers", () => {
         });
       try {
         expect(await until(() => canConnect(port), fixedTime(120_000)), "keel dev serves").toBe(true);
-        addEntry(t.dir);
+        addRoute(t.dir);
         expect(await until(() => read(t.dir, ".keel/routes.json") === expected, fixedTime(2_000))).toBe(true);
         const skip = ["node_modules", ".keel-dev", "dist"];
         const before = snapshot(t.dir, skip);
@@ -729,8 +747,8 @@ describe("k.derived: other readers and writers", () => {
     "No fixture makes `keel check` report W1005.",
     () => {
       const t = fresh(api);
-      sub(t.dir, CONTRACT, "export const ping", 'const base = "/api/";\nexport const ping');
-      sub(t.dir, CONTRACT, 'path: "/api/one"', 'path: base + "one"');
+      sub(t.dir, CONTRACT, "export const app", 'const base = "/rel";\nexport const app');
+      sub(t.dir, CONTRACT, 'path: "/releases"', 'path: base + "eases"');
       for (const args of [["check"], ["check", "--frozen"]]) noW1005(keel(t.dir, args));
       const h = fresh(houseTree());
       for (const args of [["check"], ["check", "--frozen"]]) noW1005(keel(h.dir, args));
@@ -754,3 +772,32 @@ describe("k.derived: other readers and writers", () => {
 });
 
 // k.derived Derivations: a derivation that fails reports its codes at `keel check` as at `keel build`, and writes no view (no numbered clause; k.compat's E1006 clause is asserted in compat-0092.test.ts).
+
+describe("k.derived: tokens are evaluated by each run", () => {
+  /** `tokens.ts` whose page text takes a colour of 1.53:1 against its background (ASSUMED: the page text takes `base.page`'s `fg` on its `bg`, as `brandTokens` names them). */
+  const PALE = [
+    'import { brandTokens } from "@keel/ui/brand";',
+    "",
+    "export const tokens = {",
+    "  ...brandTokens,",
+    '  color: { ...brandTokens.color, muted: "#cccccc" },',
+    '  base: { ...brandTokens.base, page: { ...brandTokens.base.page, fg: "muted" } },',
+    "};",
+    "",
+  ].join("\n");
+
+  test(
+    "After `keel build` of the copy of clause 1, setting the colour its page text uses so that text falls under 4.5:1 against its background makes the next `keel check` report E1804 at that text and write no file.",
+    () => {
+      const t = fresh(api);
+      put(t.dir, "tokens.ts", PALE);
+      age(t.dir);
+      const before = snapshot(t.dir);
+      const out = keel(t.dir, ["check"]);
+      const hits = codes(out, "E1804");
+      expect(hits.length, brief(out)).toBeGreaterThan(0);
+      expect(changed(before, snapshot(t.dir))).toEqual([]);
+    },
+    SLOW,
+  );
+});
