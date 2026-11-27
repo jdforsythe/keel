@@ -43,7 +43,7 @@ export const validName = (n: string): boolean => NAME.test(n) && n.length <= 64 
 export function suggestName(name: string): string | undefined {
   const n = name
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\p{M}/gu, "")
     .toLowerCase()
     .replace(/[ßæœøđłþð]/g, (c) => FOLD[c] ?? c)
     .replace(/[^a-z0-9]+/g, "-")
