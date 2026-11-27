@@ -2,12 +2,13 @@
 | id | holds |
 |-|-|
 | k.ui | design tokens, base elements, style props, scroll regions and standard slots |
-| k.values | token value forms: characters, numbers, lengths, colors, overlays, themes, the stylesheet |
+| k.values | token value forms: characters, numbers, lengths, colors, overlays, the stylesheet |
+| k.gamut | wide gamut colors, as shipped and judged |
 | k.schemes | light and dark schemes, `SchemeSelect`, `ThemeSelect`, first paint, E1814, E1816 |
-| k.themes | themes per `when`, combinations, library themes, `combinations(tokens)`, E1807, E1818 |
+| k.themes | themes, combinations, library themes, E1807 |
 | k.looks | library looks: `<id>.<name>` tokens a library ships, needs, E1810 to E1813 |
 | k.a11y | accessibility: required props, contrast, order and focus, render checks, E1802 |
-| k.a11y-static | static contrast checks on token values at check and build |
+| k.a11y-static | static contrast checks on token values |
 | k.aria | `Part` element for widgets, roles, behavior and part styles |
 | k.roles | part roles for app widgets: tag and props for each role |
 | k.host-element | `Host` element for outside-owned nodes: text alternative, value, lifecycle |

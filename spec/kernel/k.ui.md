@@ -29,7 +29,7 @@ The compiler emits one atomic class per (prop, token, breakpoint, state), dedupl
 
 **Standard slots.** JSX children are the default slot and arrive as `props.children` (k.component); base elements accept a thunk or a plain string/Node. `loading: () => JSX`, `empty: () => JSX`, `error: (e: KeelError) => JSX`. These names carry these signatures everywhere; `For` accepts `empty`.
 
-**Rules.** E1801 raw value where a token is required (fix: nearest token), or a token the tokens lack · E1803 `style` attribute · E1805 lowercase intrinsic element in app code (fix: matching base element) · E1806 standard slot name with another signature · E1807 `tokens.ts` fails `TokenSchema` · E1808 base element `children` made eagerly (an element call or JSX, or an array or `const` of them) (fix: `() =>`) · E1809 `gap` with no `direction` (fix: `direction="column"`) · E1818 `@keel/ui/tokens` or `@keel/ui/css` where a client may load it (k.themes Check-time entries). E1802 and E1804: k.a11y.
+**Rules.** E1801 raw value where a token is required (fix: nearest token), or a token the tokens lack · E1803 `style` attribute · E1805 lowercase intrinsic element in app code (fix: matching base element) · E1806 standard slot name with another signature · E1807 `tokens.ts` fails `TokenSchema` · E1808 base element `children` made eagerly (an element call or JSX, or an array or `const` of them) (fix: `() =>`) · E1809 `gap` with no `direction` (fix: `direction="column"`) · E1818 `@keel/ui/tokens` or `@keel/ui/css` where a client may load it (k.check-time). E1802 and E1804: k.a11y.
 
 **E1808's message.** `<base> children made before it; pass a thunk` (`Box`: 41 units).
 
