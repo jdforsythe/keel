@@ -68,7 +68,9 @@ function resolve(tokens: Tokens, prop: keyof typeof vocabulary, token: string): 
     const i = names.indexOf(token);
     if (i >= 0) return { body: `${entry.lead}${entry.property}:var(${varName(group, token)})`, index: i };
   }
-  const want = entry.groups.length > 0 ? `a ${entry.groups.join(" or ")} token` : `one of ${kw.join(" ")}`;
+  // An overlay is a color with alpha (k.values Overlays): the message names the color group alone.
+  const named = entry.groups.filter((g) => g !== "overlay");
+  const want = named.length > 0 ? `a ${named.join(" or ")} token` : `one of ${kw.join(" ")}`;
   throw fail("E1801", `${prop}=${JSON.stringify(token).slice(0, 40)} is not ${want}`);
 }
 

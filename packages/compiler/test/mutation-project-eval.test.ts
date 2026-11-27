@@ -40,6 +40,7 @@ describe("evaluateProject (mutation)", () => {
       css: "",
       looks: {},
       schemes: ["light"],
+      themes: [],
       routes: {},
       problems: [],
     });
@@ -56,6 +57,7 @@ describe("evaluateProject (mutation)", () => {
       css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n.k-bg-bg{background-color:var(--k-color-bg)}\n@media (min-width: 768px){\n.k-md-hover-p-2:hover{padding:var(--k-space-2)}\n}\n`,
       looks: {},
       schemes: ["light"],
+      themes: [],
       routes: {},
       problems: [],
     });
@@ -75,6 +77,7 @@ describe("evaluateProject (mutation)", () => {
         css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n`,
         looks: {},
         schemes: ["light"],
+        themes: [],
         routes: {},
         problems: ['E1801 p="9" is not a space token'],
       });
@@ -95,6 +98,7 @@ describe("evaluateProject (mutation)", () => {
         css: "",
         looks: {},
         schemes: ["light"],
+        themes: [],
         routes: {},
         problems: ["E1807 token color.fg is not in its group's form"],
       });
@@ -224,6 +228,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
       css: "",
       looks: {},
       schemes: ["light"],
+      themes: [],
       routes: {},
       problems: ["E1006 r/none.ts exports no routes"],
     });
@@ -283,6 +288,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
         css: "",
         looks: {},
         schemes: ["light"],
+        themes: [],
         routes: {},
         problems: ["E1000 r/syntax.ts:1:56 syntax error: Expected `,` or `}` but found `;`"],
       });
