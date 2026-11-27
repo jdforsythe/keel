@@ -394,25 +394,25 @@ describe("E1601 noAmbientCapability", () => {
   const E = (path: string, src: string): string => only("E1601", path, src);
   it("pins each ambient use with its message and fix", () => {
     const out = [
-      block("now", E("src/a.ts", `export const t = () => ${NOW}()\n`)),
-      block("now with arg", E("src/a.ts", `export const t = () => ${NOW}(1)\n`)),
-      block("random", E("src/a.ts", `export const t = () => ${RANDOM}()\n`)),
-      block("randomUUID", E("src/a.ts", "export const t = () => crypto.randomUUID()\n")),
-      block("new Date()", E("src/a.ts", "export const t = () => new Date()\n")),
+      block("now", E("src/a.ts", `export const t = (ctx: Ctx) => ${NOW}()\n`)),
+      block("now with arg", E("src/a.ts", `export const t = (ctx: Ctx) => ${NOW}(1)\n`)),
+      block("random", E("src/a.ts", `export const t = (ctx: Ctx) => ${RANDOM}()\n`)),
+      block("randomUUID", E("src/a.ts", "export const t = (ctx: Ctx) => crypto.randomUUID()\n")),
+      block("new Date()", E("src/a.ts", "export const t = (ctx: Ctx) => new Date()\n")),
       block("new Date(x) ok", E("src/a.ts", "export const t = (x: number) => new Date(x)\n")),
-      block("Date()", E("src/a.ts", "export const t = () => Date()\n")),
-      block("fetch", E("src/a.ts", "export const t = () => fetch('/x', { method: 'POST' })\n")),
-      block("window.fetch", E("src/a.ts", "export const t = () => window.fetch('/x')\n")),
-      block("globalThis.fetch", E("src/a.ts", "export const t = () => globalThis.fetch('/x')\n")),
+      block("Date()", E("src/a.ts", "export const t = (ctx: Ctx) => Date()\n")),
+      block("fetch", E("src/a.ts", "export const t = (ctx: Ctx) => fetch('/x', { method: 'POST' })\n")),
+      block("window.fetch", E("src/a.ts", "export const t = (ctx: Ctx) => window.fetch('/x')\n")),
+      block("globalThis.fetch", E("src/a.ts", "export const t = (ctx: Ctx) => globalThis.fetch('/x')\n")),
       block("fetch reference", E("src/a.ts", "export const t = window.fetch\n")),
-      block("localStorage.getItem", E("src/a.ts", "export const t = () => localStorage.getItem('k')\n")),
-      block("localStorage.setItem", E("src/a.ts", "export const t = () => localStorage.setItem('k', 'v')\n")),
-      block("localStorage.clear", E("src/a.ts", "export const t = () => localStorage.clear()\n")),
-      block("window.localStorage", E("src/a.ts", "export const t = () => window.localStorage\n")),
-      block("globalThis.localStorage", E("src/a.ts", "export const t = () => globalThis.localStorage\n")),
+      block("localStorage.getItem", E("src/a.ts", "export const t = (ctx: Ctx) => localStorage.getItem('k')\n")),
+      block("localStorage.setItem", E("src/a.ts", "export const t = (ctx: Ctx) => localStorage.setItem('k', 'v')\n")),
+      block("localStorage.clear", E("src/a.ts", "export const t = (ctx: Ctx) => localStorage.clear()\n")),
+      block("window.localStorage", E("src/a.ts", "export const t = (ctx: Ctx) => window.localStorage\n")),
+      block("globalThis.localStorage", E("src/a.ts", "export const t = (ctx: Ctx) => globalThis.localStorage\n")),
       block("Date.now reference", E("src/a.ts", `export const t = ${NOW}\n`)),
-      block("Math.floor ok", E("src/a.ts", "export const t = () => Math.floor(1)\n")),
-      block("computed ok", E("src/a.ts", "export const t = () => Date['now']()\n")),
+      block("Math.floor ok", E("src/a.ts", "export const t = (ctx: Ctx) => Math.floor(1)\n")),
+      block("computed ok", E("src/a.ts", "export const t = (ctx: Ctx) => Date['now']()\n")),
       block("other object ok", E("src/a.ts", "export const t = (o: { now(): number }) => o.now()\n")),
       block(
         "non-identifier object ok",
@@ -420,102 +420,103 @@ describe("E1601 noAmbientCapability", () => {
       ),
       block(
         "declared name shadows",
-        E("src/a.ts", "const Date = { now: () => 1 }\nexport const t = () => Date.now()\n"),
+        E("src/a.ts", "const Date = { now: () => 1 }\nexport const t = (ctx: Ctx) => Date.now()\n"),
       ),
-      block("declared fetch", E("src/a.ts", "import { fetch } from './net.ts'\nexport const t = () => fetch('/x')\n")),
-      block("declared Date new", E("src/a.ts", "import { Date } from './d.ts'\nexport const t = () => new Date()\n")),
-      block("declared Date call", E("src/a.ts", "import { Date } from './d.ts'\nexport const t = () => Date()\n")),
-      block("new Foo", E("src/a.ts", "export const t = () => new Foo()\n")),
-      block("new ns.Date", E("src/a.ts", "export const t = () => new ns.Date()\n")),
-      block("test path", E("test/a.test.ts", `export const t = () => ${NOW}()\n`)),
-      block("config path exempt", E("vite.config.ts", `export const t = () => ${NOW}()\n`)),
-      block("two on a line", E("src/a.ts", `export const t = () => [${NOW}(), ${RANDOM}()]\n`)),
-      block("long what is clipped", E("src/a.ts", "export const t = () => localStorage.removeItem('k')\n")),
+      block("declared fetch", E("src/a.ts", "import { fetch } from './net.ts'\nexport const t = (ctx: Ctx) => fetch('/x')\n")),
+      block("declared Date new", E("src/a.ts", "import { Date } from './d.ts'\nexport const t = (ctx: Ctx) => new Date()\n")),
+      block("declared Date call", E("src/a.ts", "import { Date } from './d.ts'\nexport const t = (ctx: Ctx) => Date()\n")),
+      block("new Foo", E("src/a.ts", "export const t = (ctx: Ctx) => new Foo()\n")),
+      block("new ns.Date", E("src/a.ts", "export const t = (ctx: Ctx) => new ns.Date()\n")),
+      block("test path", E("test/a.test.ts", `export const t = (ctx: Ctx) => ${NOW}()\n`)),
+      block("config path exempt", E("vite.config.ts", `export const t = (ctx: Ctx) => ${NOW}()\n`)),
+      block("two on a line", E("src/a.ts", `export const t = (ctx: Ctx) => [${NOW}(), ${RANDOM}()]\n`)),
+      block("long what is clipped", E("src/a.ts", "export const t = (ctx: Ctx) => localStorage.removeItem('k')\n")),
+      block("no ctx in scope: no fix", E("src/a.ts", "export const t = () => Date.now()\n")),
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
       "# now
-      1:24 Date.now() outside ctx; use ctx.clock.now()
+      1:32 Date.now() outside ctx; use ctx.clock.now()
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => Date.now()
-      +export const t = () => ctx.clock.now()
+      -export const t = (ctx: Ctx) => Date.now()
+      +export const t = (ctx: Ctx) => ctx.clock.now()
       # now with arg
-      1:24 Date.now outside ctx; use the ctx capability
+      1:32 Date.now outside ctx; use the ctx capability
       # random
-      1:24 Math.random() outside ctx; use ctx.random.float()
+      1:32 Math.random() outside ctx; use ctx.random.float()
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => Math.random()
-      +export const t = () => ctx.random.float()
+      -export const t = (ctx: Ctx) => Math.random()
+      +export const t = (ctx: Ctx) => ctx.random.float()
       # randomUUID
-      1:24 crypto.randomUUID outside ctx; use ctx.random.id(brand)
+      1:32 crypto.randomUUID outside ctx; use ctx.random.id(brand)
       # new Date()
-      1:24 new Date() outside ctx; use new Date(ctx.clock.now())
+      1:32 new Date() outside ctx; use new Date(ctx.clock.now())
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => new Date()
-      +export const t = () => new Date(ctx.clock.now())
+      -export const t = (ctx: Ctx) => new Date()
+      +export const t = (ctx: Ctx) => new Date(ctx.clock.now())
       # new Date(x) ok
 
       # Date()
-      1:24 Date() outside ctx; use the ctx capability
+      1:32 Date() outside ctx; use the ctx capability
       # fetch
-      1:24 fetch outside ctx; use ctx.net.fetch
+      1:32 fetch outside ctx; use ctx.net.fetch
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => fetch('/x', { method: 'POST' })
-      +export const t = () => ctx.net.fetch('/x', { method: 'POST' })
+      -export const t = (ctx: Ctx) => fetch('/x', { method: 'POST' })
+      +export const t = (ctx: Ctx) => ctx.net.fetch('/x', { method: 'POST' })
       # window.fetch
-      1:24 window.fetch outside ctx; use ctx.net.fetch
+      1:32 window.fetch outside ctx; use ctx.net.fetch
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => window.fetch('/x')
-      +export const t = () => ctx.net.fetch('/x')
+      -export const t = (ctx: Ctx) => window.fetch('/x')
+      +export const t = (ctx: Ctx) => ctx.net.fetch('/x')
       # globalThis.fetch
-      1:24 globalThis.fetch outside ctx; use ctx.net.fetch
+      1:32 globalThis.fetch outside ctx; use ctx.net.fetch
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => globalThis.fetch('/x')
-      +export const t = () => ctx.net.fetch('/x')
+      -export const t = (ctx: Ctx) => globalThis.fetch('/x')
+      +export const t = (ctx: Ctx) => ctx.net.fetch('/x')
       # fetch reference
       1:18 window.fetch outside ctx; use the ctx capability
       # localStorage.getItem
-      1:24 localStorage.getItem outside ctx; use ctx.storage.get
+      1:32 localStorage.getItem outside ctx; use ctx.storage.get
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => localStorage.getItem('k')
-      +export const t = () => ctx.storage.get('k')
+      -export const t = (ctx: Ctx) => localStorage.getItem('k')
+      +export const t = (ctx: Ctx) => ctx.storage.get('k')
       # localStorage.setItem
-      1:24 localStorage.setItem outside ctx; use ctx.storage.set
+      1:32 localStorage.setItem outside ctx; use ctx.storage.set
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => localStorage.setItem('k', 'v')
-      +export const t = () => ctx.storage.set('k', 'v')
+      -export const t = (ctx: Ctx) => localStorage.setItem('k', 'v')
+      +export const t = (ctx: Ctx) => ctx.storage.set('k', 'v')
       # localStorage.clear
-      1:24 localStorage outside ctx; use the ctx capability
+      1:32 localStorage outside ctx; use the ctx capability
       # window.localStorage
-      1:24 window.localStorage outside ctx; use the ctx capability
+      1:32 window.localStorage outside ctx; use the ctx capability
       # globalThis.localStorage
-      1:24 globalThis.localStorage outside ctx; use the ctx capability
+      1:32 globalThis.localStorage outside ctx; use the ctx capability
       # Date.now reference
       1:18 Date.now outside ctx; use the ctx capability
       # Math.floor ok
 
       # computed ok
-      1:24 Date.now() outside ctx; use ctx.clock.now()
+      1:32 Date.now() outside ctx; use ctx.clock.now()
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => Date['now']()
-      +export const t = () => ctx.clock.now()
+      -export const t = (ctx: Ctx) => Date['now']()
+      +export const t = (ctx: Ctx) => ctx.clock.now()
       # other object ok
 
       # non-identifier object ok
@@ -533,29 +534,31 @@ describe("E1601 noAmbientCapability", () => {
       # new ns.Date
 
       # test path
-      1:24 Date.now() outside ctx; use ctx.clock.now()
+      1:32 Date.now() outside ctx; use ctx.clock.now()
       --- a/test/a.test.ts
       +++ b/test/a.test.ts
       @@ -1 +1 @@
-      -export const t = () => Date.now()
-      +export const t = () => ctx.clock.now()
+      -export const t = (ctx: Ctx) => Date.now()
+      +export const t = (ctx: Ctx) => ctx.clock.now()
       # config path exempt
 
       # two on a line
-      1:25 Date.now() outside ctx; use ctx.clock.now()
+      1:33 Date.now() outside ctx; use ctx.clock.now()
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => [Date.now(), Math.random()]
-      +export const t = () => [ctx.clock.now(), Math.random()]
-      1:37 Math.random() outside ctx; use ctx.random.float()
+      -export const t = (ctx: Ctx) => [Date.now(), Math.random()]
+      +export const t = (ctx: Ctx) => [ctx.clock.now(), Math.random()]
+      1:45 Math.random() outside ctx; use ctx.random.float()
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1 +1 @@
-      -export const t = () => [Date.now(), Math.random()]
-      +export const t = () => [Date.now(), ctx.random.float()]
+      -export const t = (ctx: Ctx) => [Date.now(), Math.random()]
+      +export const t = (ctx: Ctx) => [Date.now(), ctx.random.float()]
       # long what is clipped
-      1:24 localStorage outside ctx; use the ctx capability"
+      1:32 localStorage outside ctx; use the ctx capability
+      # no ctx in scope: no fix
+      1:24 Date.now() outside ctx; use ctx.clock.now()"
     `);
   });
 });

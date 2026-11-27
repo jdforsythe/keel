@@ -102,14 +102,14 @@ const CASES: Case[] = [
   },
   {
     code: "E1601",
-    bad: [f("src/roll.ts", "export const roll = () => Math.random()\n")],
+    bad: [f("src/roll.ts", "export const roll = (ctx: Ctx) => Math.random()\n")],
     clean: [f("src/roll.ts", "export const roll = (ctx: { random: { float(): number } }) => ctx.random.float()\n")],
     fix: true,
   },
   {
     code: "E1601",
-    bad: [f("test/a.test.ts", "const r = Math.random()\nvoid r\n")],
-    clean: [f("test/a.test.ts", "const r = 0.5\nvoid r\n")],
+    bad: [f("test/a.test.ts", "const r = (ctx: Ctx) => Math.random()\nvoid r\n")],
+    clean: [f("test/a.test.ts", "const r = (ctx: Ctx) => 0.5\nvoid r\n")],
     fix: true,
   },
   {
