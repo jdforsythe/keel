@@ -1,5 +1,4 @@
-// k.scaffold, Generators "`route`: contract entry and binding (k.contract), page component, route test (one without `app` passes `identity.ts`'s default export as `mount` when the project has it, k.testing), and a `*.server.ts` loader when a `node` deployable lists the module or `--loader` asks for one (on a `client` deployable it runs in the browser, k.boundary); with `--no-loader`, or by default elsewhere, no loader file and a binding of `component` alone. Without `--path` the path is `/` and the id's segments after the module, each in kebab case, joined by `/` (`app.about` `/about`, `orders.orderHistory` `/order-history`, `orders.list.recent` `/list/recent`), never a param; a derived path another route holds is E1351 naming that route, fix `--path <path>`; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component. Input `{ id, path?, file?, api?, method?, loader?, 'no-loader'? }`; `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; `method` without `api`, `loader` or `no-loader` with `api`, or both, is E1052."
-// k.scaffold, Generators "`route`: contract entry and binding (k.contract), page component, route test (one without `app` passes `identity.ts`'s default export as `mount` when the project has it, k.testing), and a `*.server.ts` loader when a `node` deployable lists the module or `--loader` asks for one (on a `client` deployable it runs in the browser, k.boundary); with `--no-loader`, or by default elsewhere, no loader file and a binding of `component` alone. Without `--path` the path is `/` and the id's segments after the module, each in kebab case, joined by `/` (`app.about` `/about`, `orders.orderHistory` `/order-history`, `orders.list.recent` `/list/recent`), never a param; an id the contract already holds is E1351 naming that id, not `--path`; a derived path another route holds is E1351 naming that route, fix `--path <path>`; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component. Input `{ id, path?, file?, api?, method?, loader?, 'no-loader'? }`; `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; `method` without `api`, `loader` or `no-loader` with `api`, or both, is E1052."
+// k.scaffold, Generators "`route`: contract entry and binding (k.contract), page component, route test (one without `app` passes `identity.ts`'s default export as `mount` when the project has it, k.testing), and a `*.server.ts` loader when a `node` deployable lists the module or `--loader` asks for one (in a module only `client` deployables list it runs in the browser, k.boundary, and the run prints the `scaffold.note` `note <file> the loader runs in the browser and its file ships in the client bundle`, json `{ kind, path, note }`, `note` the sentence after the file); with `--no-loader`, or by default elsewhere, no loader file and a binding of `component` alone. Without `--path` the path is `/` and the id's segments after the module, each in kebab case, joined by `/` (`app.about` `/about`, `orders.orderHistory` `/order-history`, `orders.list.recent` `/list/recent`), never a param; an id the contract already holds is E1351 naming that id, not `--path`; a derived path another route holds is E1351 naming that route, fix `--path <path>`; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component (E1353 in a module a `client` or `static` deployable lists, k.scaffold-needs). Input `{ id, path?, file?, api?, method?, loader?, 'no-loader'? }`; `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; `method` without `api`, `loader` or `no-loader` with `api`, or both, is E1052."
 // Spec: k.scaffold, clause "In the default project `route { id: 'app.about' }` binds `/about`, writes no `*.server.ts` and leaves `keel check` and `keel test` clean; with `loader: true` it writes `modules/app/loadAbout.server.ts`; in the `node` project `{ id: 'app.about' }` writes it; `{ id: 'app.start' }` beside a route at `/start` is E1351 holding `--path`; `loader` with `no-loader` is E1052."
 import fc from "fast-check";
 import { expect, it } from "vitest";
@@ -73,7 +72,7 @@ it("route with `api` and a `method` adds an API entry with that method, a `*.ser
   fc.assert(
     fc.property(lowerName, fc.constantFrom("GET", "POST", "PUT", "PATCH", "DELETE"), (name, method) => {
       const id = `orders.${name}`;
-      const out = apply("route", { id, path: `/api/${name}`, api: true, method }, withOrders());
+      const out = apply("route", { id, path: `/api/${name}`, api: true, method }, freshNode());
       const contract = read(out.files, "modules/orders/orders.contract.ts");
       expect(contract).toMatch(new RegExp(`['"]${esc(id)}['"]\\s*:\\s*\\{[^}]*method:\\s*['"]${method}['"]`));
       expect(out.created.some((p) => /\.server\.ts$/.test(p))).toBe(true);
@@ -89,7 +88,7 @@ it("route with `api` and a `method` adds an API entry with that method, a `*.ser
 });
 
 it("route with `api` and no `method` adds a GET entry bound to a loader", () => {
-  const out = apply("route", { id: "orders.lookup", path: "/api/lookup", api: true }, withOrders());
+  const out = apply("route", { id: "orders.lookup", path: "/api/lookup", api: true }, freshNode());
   expect(read(out.files, "modules/orders/orders.contract.ts")).toMatch(/method:\s*['"]GET['"]/);
   expect(read(out.files, "modules/orders/routes.ts")).toMatch(/['"]orders\.lookup['"]\s*:\s*\{\s*loader:/);
 });
@@ -109,7 +108,7 @@ it("route with a `method` and no `api` is E1052 and writes nothing", () => {
 });
 
 it("route with a `method` outside GET, POST, PUT, PATCH and DELETE is E1052", () => {
-  const r = scaffoldRaw("route", { id: "orders.x", path: "/x", api: true, method: "TRACE" }, withOrders());
+  const r = scaffoldRaw("route", { id: "orders.x", path: "/x", api: true, method: "TRACE" }, freshNode());
   expect(r.ok).toBe(false);
   expect(errText(r)).toContain("E1052");
 });
@@ -119,9 +118,9 @@ it("route with `file` names the handler or component file it writes", () => {
   expect(out.created.some((p) => p.includes("Pick"))).toBe(true);
 });
 
-// Spec: k.scaffold clause "`scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` it adds an API write entry, its binding and its handler."
+// Spec: k.scaffold, clause "`scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` in the `node` project it adds an API write entry, its binding and its handler."
 it("with `api` and `method: 'POST'` route adds an API write entry, its binding and its handler", () => {
-  const out = apply("route", { id: "orders.place", path: "/api/place", api: true, method: "POST" }, withOrders());
+  const out = apply("route", { id: "orders.place", path: "/api/place", api: true, method: "POST" }, freshNode());
   expect(read(out.files, "modules/orders/orders.contract.ts")).toMatch(/method:\s*['"]POST['"]/);
   expect(read(out.files, "modules/orders/routes.ts")).toMatch(/['"]orders\.place['"]\s*:\s*\{\s*action:/);
   expect(out.created.some((p) => /\.server\.ts$/.test(p))).toBe(true);
@@ -225,7 +224,7 @@ it("`loader` with `no-loader` is E1052 and writes nothing", () => {
 
 it("`loader` or `no-loader` with `api` is E1052", () => {
   for (const flag of ["loader", "no-loader"] as const) {
-    const r = scaffoldRaw("route", { id: "orders.x", path: "/api/x", api: true, [flag]: true }, withOrders());
+    const r = scaffoldRaw("route", { id: "orders.x", path: "/api/x", api: true, [flag]: true }, freshNode());
     expect(r.ok, flag).toBe(false);
     expect(errText(r), flag).toContain("E1052");
   }

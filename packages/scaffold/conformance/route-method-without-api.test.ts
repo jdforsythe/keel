@@ -1,8 +1,9 @@
-// Spec: k.scaffold, clause "`scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` it adds an API write entry, its binding and its handler."
+// Spec: k.scaffold, clause "`scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` in the `node` project it adds an API write entry, its binding and its handler."
 // Seed 1337 (fast-check).
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, errText, esc, lowerName, read, scaffoldRaw, snap, withOrders } from "./fixtures.ts";
+import { freshNode } from "./service-base-support.ts";
 
 it("`scaffold route` with `method` and no `api` is E1052 and writes nothing", () => {
   fc.assert(
@@ -22,7 +23,7 @@ it("`scaffold route` with `api` and `method: 'POST'` adds an API write entry, it
   fc.assert(
     fc.property(lowerName, (name) => {
       const id = `orders.${name}`;
-      const out = apply("route", { id, path: `/api/${name}`, api: true, method: "POST" }, withOrders());
+      const out = apply("route", { id, path: `/api/${name}`, api: true, method: "POST" }, freshNode());
       expect(read(out.files, "modules/orders/orders.contract.ts")).toMatch(
         new RegExp(`['"]${esc(id)}['"]\\s*:\\s*\\{[^}]*method:\\s*['"]POST['"]`),
       );
