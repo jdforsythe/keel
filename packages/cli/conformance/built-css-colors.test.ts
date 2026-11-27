@@ -1,4 +1,5 @@
 // Spec: k.gamut, clause "After `keel build` of a `static` project with color tokens `a` `color(display-p3 0 0.52 0.5)`, `b` `#000000`, `c` `oklch(70% 0.48 290)` and `d` `hsl(19deg 87% 39%)` and `overlay: { s: { value: 'color(display-p3 0 0.66 0 / 0.95)', over: ['b'] } }`, the hex colors and color functions in `dist`'s CSS files, each compared as a color (the same form and equal numbers, letter case and a 3-digit hex's expansion aside), are exactly `rgb(0 133 127)`, `color(display-p3 0 0.52 0.5)`, `#000000`, `rgb(160 131 255)`, `color(display-p3 0.6085 0.5055 1)`, `hsl(19deg 87% 39%)`, `rgb(0 167 4 / 0.95)` and `color(display-p3 0 0.66 0 / 0.95)`, and no CSS file holds `@supports`."
+// The `@supports` assertion is stated for the default build target, as k.gamut says (a `build.cssTarget` older than `color()` guards the P3 blocks, built-output-verified.test.ts #11): both projects here set no `build.target` and no `cssTarget`.
 // Seed: 1337 (no generated input: two spawned `keel build` runs).
 // k.gamut #4, on a real `keel build` of a `static` project (compat-support's `staticTree`, adapter `static`, module `s`; its `tokens.ts` is written here). The first project is the clause's own; the second holds tokens inside sRGB, inside P3 and beyond P3, in two themes (`slate`, a `choice` theme, and `hc`, the `contrast` theme), a print theme `paper`, both schemes and an overlay, and the same law is asserted of it: every color value of `dist`'s CSS is one the forms of k.gamut give, nothing else ships.
 // A color value is read from each declaration's value (a hex or a function form among `rgb`, `hsl`, `oklab`, `oklch`, `color`) and compared as a color: the same form (`rgb(...)` is not `#rrggbb`), the same numbers (`0.5` is `.5`; a unit such as `deg` or `%` is not part of the number), letter case and a 3-digit hex's expansion aside. A build that minified `rgb(0 133 127)` to `#00857f` would be a different form and fail.
@@ -137,7 +138,7 @@ describe("k.gamut #4: the built CSS holds only the forms Keel computed and judge
   );
 
   it(
-    "and no CSS file holds `@supports`",
+    "and, at the default build target, no CSS file holds `@supports`",
     () => {
       expect(one.files.length).toBeGreaterThan(0);
       for (const f of one.files) expect(readFileSync(f, "utf8"), f).not.toContain("@supports");
@@ -233,7 +234,7 @@ export const tokens = defineTokens({
   );
 
   it(
-    "no CSS file holds `@supports`",
+    "at the default build target, no CSS file holds `@supports`",
     () => {
       expect(b.files.length).toBeGreaterThan(0);
       for (const f of b.files) expect(readFileSync(f, "utf8"), f).not.toContain("@supports");

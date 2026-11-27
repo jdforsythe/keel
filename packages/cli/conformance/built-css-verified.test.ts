@@ -1,11 +1,12 @@
 // Spec: k.gamut, clause "`keel build` of that project with `build: { cssMinify: 'lightningcss' }` in `vite.config.ts` exits 1 with one E1819 line and no `dist/<name>/`; with a `css.postcss` plugin writing each `rgb(<r> <g> <b>)` as lowercase 6-digit hex, it prints `E1819 --k-color-a is #00857f in the built CSS, expected rgb(0 133 127)`; with `build: { cssMinify: false }`, or none, it exits 0."
 // Spec: k.gamut, clause "In that project, a `styles` stylesheet holding `.x{--k-color-b:#000000}` makes `keel build` print `E1819 --k-color-b is #000000 in the built CSS where Keel declares none`; one holding `.x{color:#123ABC}` and `@supports (display:grid){.g{display:grid}}` builds."
-// k.bundle Rules E1819 "E1819 built CSS writing a color token's property other than as compiled (k.gamut CSS)."
+// k.bundle Rules E1819 "E1819 built output holding Keel's CSS other than as compiled, or outside `.css` files (k.gamut CSS)."
 // Seed: 1337 (fc.sample below picks the colors of the `declares none` builds); every other input is fixed.
 // k.gamut #5 and #6 on a real `keel build` of #4's `static` project (compat-support's `staticTree`, adapter `static`, deployable `site`, module `s`), its `tokens.ts` the clause's own. The `vite.config.ts` and the `styles` stylesheet (a package export that is a .css file, as E1587 requires: `appcss/app.css`, a package the fixture writes under `node_modules/`) vary; the PostCSS plugins are plain objects written in the fixture (no `postcss` import).
-// What the spec's CSS paragraph says and these cases assert: each browser build reads its emitted `.css` files after every plugin has run; each declaration of a `--k-color-*` or `--k-overlay-*` property (whatever its value), or of another `--k-*` one whose value holds a hex color or a color function, is verified; the first difference fails the build with E1819, one line, no position, no `dist/<name>/`, a message of one of five forms within 89 units; no other declaration is read.
-// ASSUMPTIONS: the E1819 line is a `diag` record whose `message` is the text after the code (as every other file here reads E1818); "no position" is `line` and `col` absent; which declaration is first when a plugin changes many (lightningcss, a plugin hitting `:root` as a whole) is not stated, so those cases assert the form of the message, not its property; the P3 block is found as an `@media` rule whose conditions hold `color-gamut`.
-// UNTESTABLE: the sentence "Fix: unset the `build.cssMinify` (Lightning CSS rewrites colors and adds `@supports`), `css.transformer` or PostCSS plugin that rewrote it." (a diag record's `fix` is a unified diff hunk, docs/OUTPUT.md, and prose has none; no other place is named). Also: "each value cut to an equal share" when both a found and an expected value are long (no plugin can make the expected value long); only the one-value form is cut here.
+// What the spec's CSS paragraph says and these cases assert: each browser build reads its emitted `.css` files after every plugin has run; each `--k-*` declaration is verified (a `--k-color-*` or `--k-overlay-*` one, or one holding a hex color or a color function, against its compiled value; any other `--k-*` one, refused when Keel declares none at that place); the first difference fails the build with E1819, one line, no position, `see` k.gamut, no `dist/<name>/`, a message of one of seven forms within 89 units; a declaration of a property not starting `--k-` is not read.
+// ASSUMPTIONS: the E1819 line is a `diag` record whose `message` is the text after the code (as every other file here reads E1818); "no position" is `line` and `col` absent; which declaration is first when a plugin changes many (lightningcss, a plugin hitting `:root` as a whole) is not fixed beyond file and declaration order, so those cases assert the form of the message, not its property; the P3 block is found as an `@media` rule whose conditions hold `color-gamut`.
+// The sentence "Fix (`keel explain E1819`): unset the `build.cssMinify` (Lightning CSS rewrites colors and adds `@supports`), `css.transformer` or PostCSS plugin that rewrote it, or the plugin that moved Keel's CSS out of its file." has its carrier in `keel explain E1819`, asserted below to name each cause (a diag record's `fix` is a unified diff hunk, docs/OUTPUT.md, and prose has none).
+// UNTESTABLE: Also: "each value cut to an equal share" when both a found and an expected value are long (no plugin can make the expected value long); only the one-value form is cut here.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
@@ -118,8 +119,9 @@ const expectBuilds = (b: Built): void => {
 const FORMS = [
   /^--k-[a-z0-9-]+ is .+ in the built CSS, expected .+$/,
   /^--k-[a-z0-9-]+ is missing from the built CSS, expected .+$/,
-  /^--k-[a-z0-9-]+ is .+ under @supports in the built CSS, expected none$/,
+  /^--k-[a-z0-9-]+ is .+ under @[a-z-]+ in the built CSS, expected none$/,
   /^--k-[a-z0-9-]+ is .+ in the built CSS where Keel declares none$/,
+  /^--k-[a-z0-9-]+ is .+ in \S+; Keel's CSS ships in \.css files$/,
   /^--k-[a-z0-9-]+'s P3 block does not follow its sRGB block in the built CSS$/,
 ];
 const isAForm = (m: string): boolean => FORMS.some((f) => f.test(m));
@@ -289,9 +291,30 @@ describe("k.gamut #6: a `styles` stylesheet", () => {
 
   const other = build(vite(""), ".x{--k-zz:5px;--k-yy:calc(1px + 2px);margin:0}");
   it(
-    "no other declaration is read: another `--k-*` property holding no hex color or color function builds",
+    "any `--k-*` declaration Keel did not write is refused: `.x{--k-zz:5px;--k-yy:calc(1px + 2px);margin:0}` fails as `E1819 --k-zz is 5px in the built CSS where Keel declares none`; `margin:0` is not read",
     () => {
-      expectBuilds(other);
+      const d = expectFails(other);
+      expect(message(d)).toBe("--k-zz is 5px in the built CSS where Keel declares none");
+    },
+    SLOW,
+  );
+
+  const notK = build(vite(""), ".x{margin:0;color:#123ABC;--q-zz:5px}");
+  it(
+    "a declaration of a property not starting `--k-` is not read",
+    () => {
+      expectBuilds(notK);
+    },
+    SLOW,
+  );
+
+  it(
+    "`keel explain E1819` names the causes: `build.cssMinify`, `css.transformer`, a PostCSS plugin, and a plugin that moved Keel's CSS out of its file",
+    () => {
+      const r = keel(b.dir, ["explain", "E1819"]);
+      const text = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+      expect(r.status).toBe(0);
+      for (const word of ["cssMinify", "css.transformer", "PostCSS"]) expect(text, word).toContain(word);
     },
     SLOW,
   );
