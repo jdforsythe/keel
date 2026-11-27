@@ -9,8 +9,8 @@ function line(r: Out, pretty: boolean, run: string): string {
       return pretty ? `create  ${r.path}` : `create ${r.path}`;
     case "create.next":
       return pretty
-        ? `  ${r.command}${r.dir === undefined ? "" : `   (in ${r.dir})`}${r.command.endsWith(" dev") ? "   # http://localhost:5173" : ""}`
-        : `next ${r.command}${r.dir === undefined ? "" : ` (in ${r.dir})`}`;
+        ? `  ${r.command}${r.command.endsWith(" dev") ? "   # http://localhost:5173" : ""}`
+        : `next ${r.command}`;
     case "diag": {
       const at =
         r.path === undefined || r.path === ""
@@ -32,7 +32,7 @@ function line(r: Out, pretty: boolean, run: string): string {
 
 /**
  * The records in a docs/OUTPUT.md format, the trailer last. `json`: one record per line, uncapped unless `limit`.
- * `compact`: `create <path>`, `next <command>` (` (in <dir>)`), the diagnostic with `see`, then `ok create ...`.
+ * `compact`: `create <path>`, `next <command>`, the diagnostic with `see`, then `ok create ...`.
  * A `see` line names `keel docs` in the project's form `run` (`pnpm keel docs k.create`), which works once the
  * printed install has run. `pretty`: the same, the next commands under a `Next:` line, indented to copy. `quiet` keeps the trailer; `limit`
  * caps each kind, saying how many it left out.

@@ -64,8 +64,9 @@ function inGlobs(path: string, globs: readonly string[]): boolean {
 export function workspaceOf(
   folder: string,
   ancestors: Readonly<Record<string, string>>,
+  cwd: string | undefined = undefined,
 ): { readonly root: string | undefined; readonly member: boolean; readonly cli: string | undefined } {
-  const { above, target, rel } = folderAbove(folder);
+  const { above, target, rel } = folderAbove(folder, 64, cwd);
   let root: string | undefined;
   let member = false;
   let cli: string | undefined;

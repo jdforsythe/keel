@@ -21,4 +21,6 @@ export type CreateInput = {
   readonly realPath?: string | undefined;
   readonly gitAbove?: boolean | undefined;
   readonly userAgent?: string | undefined;
+  /** The working folder's real path, which names the folders above it for the workspace's globs. */
+  readonly cwd?: string | undefined;
 };

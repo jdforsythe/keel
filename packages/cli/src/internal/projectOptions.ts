@@ -25,7 +25,7 @@ export function projectOptions(
     const text = io.read?.(key);
     if (text !== undefined) ancestors[key] = text;
   }
-  const ws = workspaceOf(dir === "" ? "." : dir, ancestors);
+  const ws = workspaceOf(dir === "" ? "." : dir, ancestors, resolve(io.cwd));
   const member = ws.root !== undefined;
   return {
     packageManager: member ? undefined : managerWord(io.env?.npm_config_user_agent).packageManager,

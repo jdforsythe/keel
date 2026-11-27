@@ -214,7 +214,7 @@ describe("createPlan: Node, folder and workspace", () => {
     const ws = { "pnpm-workspace.yaml": "packages:\n  - 'apps/*'\n  - '!apps/skip'\n" };
     const m = plan({ folder: "apps/b", ancestors: ws, userAgent: "yarn/4.5.0 node/v22.15.0" });
     expect(sorted([...m.files.keys()])).toEqual(CLIENT.filter((p) => p !== "turbo.json" && !p.startsWith(".github/")));
-    expect(m.records.find((r) => r.command === "yarn install")?.dir).toBe("../..");
+    expect(m.records.find((r) => r.command === "yarn install")).toEqual({ kind: "create.next", command: "yarn install" });
     expect(plan({ folder: "apps/skip", ancestors: ws }).text).toContain("W1364");
     expect(plan({ folder: "apps/ok", ancestors: ws }).text).not.toContain("W1364");
     const deep = plan({
@@ -222,7 +222,7 @@ describe("createPlan: Node, folder and workspace", () => {
       ancestors: { "../package.json": JSON.stringify({ workspaces: { packages: ["*/x"] } }) },
     });
     expect(deep.text).not.toContain("W1364");
-    expect(deep.records.find((r) => r.command === "pnpm install")?.dir).toBe("../..");
+    expect(next(deep)).toContain("pnpm install");
     const cli = { "../node_modules/@keel/cli/package.json": JSON.stringify({ version: "0.3.9" }) };
     expect(plan({ ancestors: cli }).text).toContain("pnpm create @keel/app@0.3.9");
     expect(plan({ ancestors: cli, userAgent: "npm/10.0.0" }).text).toContain("npm create @keel/app@0.3.9");
@@ -269,3 +269,38 @@ describe("createPlan: no template residue", () => {
         }
   });
 });
+
+describe("createPlan: the workspace from any working folder (property)", () => {
+  it("a folder the root's globs take is a member, no W1364, wherever in the workspace create runs", () => {
+    const seg = fc.stringMatching(/^[a-z][a-z0-9]{0,6}$/);
+    fc.assert(
+      fc.property(
+        fc.array(seg, { minLength: 0, maxLength: 3 }),
+        seg,
+        fc.integer({ min: 0, max: 3 }),
+        (top, leaf, up) => {
+          const root = `/r/${top.join("/")}`.replace(/\/$/, "");
+          const target = `${root}/apps/${leaf}`;
+          // the working folder: the root, `apps/`, or a folder below the root elsewhere
+          const cwd = [root, `${root}/apps`, `${root}/x`, `${root}/x/y`][up] ?? root;
+          const folder = relativeTo(cwd, target);
+          const yaml = relativeTo(cwd, `${root}/pnpm-workspace.yaml`);
+          const p = plan({ folder, cwd, ancestors: { [yaml]: "packages:\n  - apps/*\n" } });
+          expect(p.ok, p.text).toBe(true);
+          expect(p.text, `${cwd} ${folder}`).not.toContain("W1364");
+          expect(p.files.has("turbo.json")).toBe(false);
+          expect(next(p)).toContain("pnpm install");
+        },
+      ),
+      cfg,
+    );
+  });
+});
+
+function relativeTo(from: string, to: string): string {
+  const a = from.split("/").filter((x) => x !== "");
+  const b = to.split("/").filter((x) => x !== "");
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i += 1;
+  return [...a.slice(i).map(() => ".."), ...b.slice(i)].join("/") || ".";
+}

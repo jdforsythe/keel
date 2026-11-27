@@ -55,6 +55,7 @@ export function run(p: Process): { readonly stdout: string; readonly code: numbe
     realPath: disk.realPath,
     gitAbove: disk.gitAbove,
     userAgent: p.env.npm_config_user_agent,
+    cwd: p.cwd,
   });
   if (!planned.ok) {
     const d = planned.error.data;

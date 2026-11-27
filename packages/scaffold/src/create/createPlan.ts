@@ -63,7 +63,7 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
     if (name.length > 64)
       return refuse("E1352", "package.json", "project name is over 64 characters; pass a shorter --name");
   }
-  const ws = workspaceOf(folder, input.ancestors ?? {});
+  const ws = workspaceOf(folder, input.ancestors ?? {}, input.cwd);
   if (ws.cli !== undefined && ws.cli !== input.version)
     return refuse(
       "E1363",
@@ -148,11 +148,11 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
     };
     records.push(warn);
   }
-  const next = (command: string, dir?: string): CreateRecord =>
-    dir === undefined ? { kind: "create.next", command } : { kind: "create.next", command, dir };
+  const next = (command: string): CreateRecord => ({ kind: "create.next", command });
   if (folder !== ".") records.push(next(`cd ${shellPath(folder)}`));
   if (input.gitAbove !== true) records.push(next("git init -b main"));
-  records.push(next(m.install, ws.root));
+  // The manager finds the workspace's root from any folder in it, so the install is printed as it is typed.
+  records.push(next(m.install));
   const steps = input.library === undefined ? ["dev", "check", "test", "build"] : ["check", "test", "pack"];
   for (const s of steps) records.push(next(`${m.run} ${s}`));
   return ok({ files, records });
