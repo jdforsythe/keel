@@ -33,6 +33,7 @@ const BASE = [
   ".keel/.gitkeep",
   "AGENTS.md",
   "CLAUDE.md",
+  "README.md",
   "modules/app/HomePage.tsx",
   "modules/app/app.contract.ts",
   "modules/app/home.route.test.ts",
@@ -194,9 +195,9 @@ describe("createPlan: Node, folder and workspace", () => {
     );
   });
 
-  it("with `existing`, any planned path that exists is E1361 naming it and plans nothing (property)", () => {
+  it("with `existing`, any planned path that exists is E1361 naming it and plans nothing; an existing README.md is kept (property)", () => {
     fc.assert(
-      fc.property(fc.constantFrom(...CLIENT), (hit) => {
+      fc.property(fc.constantFrom(...CLIENT.filter((f) => f !== "README.md")), (hit) => {
         const p = plan({ existing: true, listing: ["README.md", hit] });
         expect(p.ok).toBe(false);
         expect(p.text).toContain("E1361");
@@ -253,12 +254,18 @@ describe("createPlan: no template residue", () => {
   it("no file but TypeScript (where `${` is the language's) of any kind, for any manager, in or out of a workspace, holds `${` residue", () => {
     const ws = { "pnpm-workspace.yaml": "packages:\n  - apps/*\n" };
     for (const ua of [undefined, "pnpm/9.12.0", "npm/10.9.0", "yarn/1.22.22", "yarn/4.5.0", "bun/1.2.0"])
-      for (const kind of [{}, { adapter: "static" as const }, { adapter: "node" as const }, { library: "@acme/charts" }])
+      for (const kind of [
+        {},
+        { adapter: "static" as const },
+        { adapter: "node" as const },
+        { library: "@acme/charts" },
+      ])
         for (const where of [{}, { folder: "apps/b", ancestors: ws }]) {
           const p = plan({ userAgent: ua, ...kind, ...where });
           expect(p.ok, p.text).toBe(true);
           for (const [path, text] of p.files)
-            if (!path.startsWith(".claude/") && !/\.tsx?$/.test(path)) expect(RESIDUE.exec(text)?.[0], `${ua} ${path}`).toBeUndefined();
+            if (!path.startsWith(".claude/") && !/\.tsx?$/.test(path))
+              expect(RESIDUE.exec(text)?.[0], `${ua} ${path}`).toBeUndefined();
         }
   });
 });

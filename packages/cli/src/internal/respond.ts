@@ -4,8 +4,8 @@ import type { OutRecord } from "../types/OutRecord.ts";
 import type { RunResult } from "../types/RunResult.ts";
 import { defaultMode } from "./defaultMode.ts";
 import { exitCode } from "./exitCode.ts";
-import { normalize } from "./normalize.ts";
 import { keelForm } from "./keelForm.ts";
+import { normalize } from "./normalize.ts";
 import { render } from "./render.ts";
 
 type Flags = {

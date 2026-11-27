@@ -45,7 +45,7 @@ It also takes `--format`, `--quiet` and `--limit` (k.cli). It reads no standard 
 
 **Package manager, Workspace.** k.create-manager: the manager `npm_config_user_agent` names, its commands, `packageManager` and CI install, and an app inside a workspace (E1363, W1364).
 
-**Folder.** A folder is empty when it holds nothing but `.git`, `.DS_Store` and `Thumbs.db`. Any other entry is E1360, unless `--existing`; with it, every path the plan writes that exists is one E1361, at the first in sorted order, naming one, or counting several and listing each in `paths` (docs/OUTPUT.md). Each file is created only where none is, and never replaced. A failed write is E1365: the files and folders this run made are removed. Writes are judged as k.scaffold Links says (E1357).
+**Folder.** A folder is empty when it holds nothing but `.git`, `.DS_Store` and `Thumbs.db`. Any other entry is E1360, unless `--existing`; with it, every path the plan writes that exists is one E1361, at the first in sorted order, naming one, or counting several and listing each in `paths` (docs/OUTPUT.md). Each file is created only where none is, and never replaced; an app's `README.md` is left out where one exists. A failed write is E1365: the files and folders this run made are removed. Writes are judged as k.scaffold Links says (E1357).
 
 **Names.** The name is `--name`, else the folder's last segment (of its real path for `.`). It is `[a-z][a-z0-9-]*`, at most 64 characters, and not a dependency the project lists, else E1352 with the fix `--name <n>`, `n` the name lowercased with each run of other characters one `-`. `--library` takes `@<scope>/<base>`, else E1352.
 

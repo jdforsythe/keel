@@ -104,6 +104,8 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
       );
   }
   const taken = new Set(listing.map((p) => p.replace(/\/$/, "")));
+  // The folder's own README is kept: the project's is a guide, not a file the project needs (k.create Folder).
+  if (input.existing === true && taken.has("README.md") && input.library === undefined) files.delete("README.md");
   const listed = listing.filter((p) => !p.endsWith("/"));
   const clashes = [
     ...new Set(
