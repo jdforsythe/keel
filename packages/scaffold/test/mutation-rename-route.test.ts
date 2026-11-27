@@ -110,9 +110,10 @@ describe("route rejections", () => {
 });
 
 describe("route effects", () => {
-  it("adds the manifest entry, loader, page and test; root path and params", () => {
+  it("adds the manifest entry, loader, page and test (the root path is the project's `app.home`)", () => {
     const f = base();
-    const out = apply("route", { id: "orders.list", path: "/" }, f);
+    expect(rej("route", { id: "orders.list", path: "/" }, f).code).toBe("E1351");
+    const out = apply("route", { id: "orders.list", path: "/list" }, f);
     expect([...out.keys()].filter((p) => !f.has(p)).sort()).toEqual([
       "modules/orders/ListPage.tsx",
       "modules/orders/list.route.test.ts",

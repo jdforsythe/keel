@@ -15,7 +15,8 @@ import type { DeployTopology } from "./types/DeployTopology.ts";
  * with each target's CI jobs. `project.version` is the app's `package.json` version (default `0.0.0`), `project.pkg`
  * its name, `project.policy` gives the content security policy
  * for a deployable's declared `origins` (k.origins), `project.identity` whether the project has
- * `identity.ts`: what each shell target is given (`ShellApp`). Pure; equal input gives byte-identical output, whatever
+ * `identity.ts`: what each shell target is given (`ShellApp`); `project.packageManager`, the `package.json` field, the
+ * manager the CI workflow installs and runs `keel` with (k.create Package manager). Pure; equal input gives byte-identical output, whatever
  * the order of deployables or modules in `topology`.
  */
 export function deployFiles(
@@ -27,6 +28,7 @@ export function deployFiles(
     readonly policy?: ((origins?: Origins) => string) | undefined;
     readonly identity?: boolean | undefined;
     readonly shells?: DeployShells | undefined;
+    readonly packageManager?: string | undefined;
   },
 ): Map<string, string> {
   const names = Object.keys(topology).sort();
@@ -39,7 +41,8 @@ export function deployFiles(
     identity: project.identity === true,
   };
   const files: [string, string][] = [];
-  if (project.ci) files.push([".github/workflows/ci.yml", ciWorkflow(topology, shells, shared)]);
+  if (project.ci)
+    files.push([".github/workflows/ci.yml", ciWorkflow(topology, shells, shared, project.packageManager)]);
   const env = (n: string): readonly string[] => topology[n]?.env ?? [];
   if (nodes.length > 0)
     files.push(["deploy/compose.yaml", composeYaml(nodes, (n) => topology[n]?.storage ?? "file", env)]);

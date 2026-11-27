@@ -4,9 +4,9 @@
 import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { linkEscapes } from "@keel/scaffold/links";
 import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, test } from "vitest";
-import { linkEscapes } from "../src/internal/linkEscapes.ts";
 import { shellTargets } from "../src/internal/shellTargets.ts";
 
 const made: string[] = [];

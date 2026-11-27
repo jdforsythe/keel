@@ -10,12 +10,22 @@ import { AGENTS_START } from "./AGENTS_START.ts";
 
 const lineIs = (marker: string) => (l: string) => l.replace(/\r$/, "") === marker;
 
+/** Whether a `package.json` text has `"keel": "library"` (k.library-pack). */
+function isLibrary(text: string | undefined): boolean {
+  try {
+    const pkg: unknown = JSON.parse(text ?? "null");
+    return typeof pkg === "object" && pkg !== null && Reflect.get(pkg, "keel") === "library";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The agent files of a project tree (path -> text) that differ from what `keel docs --sync` writes, sorted by path
  * (k.scaffold Agent files): `AGENTS.md` with the Keel block replaced in place or appended after the user's text,
  * `CLAUDE.md` (`@AGENTS.md`) only when absent, and `.claude/skills/<name>/SKILL.md` for each skill. An `AGENTS.md`
  * whose markers are not one start line followed by one end line is E1355; nothing is written. A CRLF `AGENTS.md` gets
- * the block in CRLF.
+ * the block in CRLF. A tree whose `package.json` has `"keel": "library"` gets the library's block (k.explain Agent files).
  */
 export function agentFiles(
   files: ReadonlyMap<string, string>,
@@ -23,7 +33,7 @@ export function agentFiles(
 ): Result<DeployDrift[], ScaffoldError> {
   const have = files.get("AGENTS.md");
   const nl = have?.includes("\r\n") === true ? "\r\n" : "\n";
-  const block = agentsBlock(skills).replaceAll("\n", nl);
+  const block = agentsBlock(skills, isLibrary(files.get("package.json"))).replaceAll("\n", nl);
   const lines = (have ?? "").split("\n");
   const starts = lines.flatMap((l, i) => (lineIs(AGENTS_START)(l) ? [i] : []));
   const ends = lines.flatMap((l, i) => (lineIs(AGENTS_END)(l) ? [i] : []));
