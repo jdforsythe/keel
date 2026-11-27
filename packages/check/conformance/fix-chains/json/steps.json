@@ -6,6 +6,10 @@
       "fix": false,
       "message": "catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)"
     },
-    { "code": "E1457", "fix": false, "message": "JSON.parse throws on bad text: use S.parseJson(text)" }
+    {
+      "code": "E1457",
+      "fix": false,
+      "message": "JSON.parse throws on bad text: parse with a schema, as in Prefs.parseJson(text)"
+    }
   ]
 }

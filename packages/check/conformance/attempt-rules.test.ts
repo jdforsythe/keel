@@ -49,7 +49,7 @@ test("`err(T)` is no E1458", () => {
 });
 
 const BUILT: readonly (readonly [string, string])[] = [
-  ["JSON.parse(t)", "JSON.parse throws on bad text: use S.parseJson(text)"],
+  ["JSON.parse(t)", "JSON.parse throws on bad text: parse with a schema, as in Prefs.parseJson(text)"],
   ["new URL(t)", "new URL throws on a bad address: use URL.parse(text, base) and test for null"],
   ["decodeURIComponent(t)", "decodeURIComponent throws on bad input: call it inside attempt(fn, expect)"],
   ["decodeURI(t)", "decodeURI throws on bad input: call it inside attempt(fn, expect)"],
