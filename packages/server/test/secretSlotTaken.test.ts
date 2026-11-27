@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { keepRunning } from "../src/internal/keepRunning.ts";
 import { redacted } from "../src/internal/redacted.ts";
+import { thrownText } from "../src/internal/thrownText.ts";
 
 const SEED = 1337;
 const field = (v: unknown, k: string): unknown => (typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined);
@@ -129,8 +130,8 @@ describe("the onSecret slot taken while a runner's run runs", () => {
       },
       createCtx({ mode: "sim", seed: SEED }),
       again.signal,
-      (message, _frames, secrets) => {
-        seen.push(redacted(message, { secrets, pii: new Set() }));
+      (thrown, _frames, secrets) => {
+        seen.push(redacted(thrownText(thrown), { secrets, pii: new Set() }));
         again.abort();
       },
       () => [],

@@ -1,22 +1,22 @@
 import { originOf } from "@keel/compiler/hosting/originOf";
 import { peerKey } from "@keel/compiler/hosting/peerKey";
-import { type ObjectSchema, attempt, s } from "@keel/schema";
+import { type ObjectSchema, s } from "@keel/schema";
 
 /** An absolute `http:` or `https:` URL (a peer's `KEEL_PEER_<NAME>`). */
 const PeerUrl = s.format("keel.peerUrl", s.string({ min: 1 }), {
   check: (v) => {
-    const u = attempt(() => new URL(v));
-    return u.ok && (u.value.protocol === "http:" || u.value.protocol === "https:");
+    const u = URL.canParse(v) ? new URL(v) : undefined;
+    return u !== undefined && (u.protocol === "http:" || u.protocol === "https:");
   },
   gen: { from: s.string({ min: 1 }), map: (host) => `http://${host}` },
 });
 
-/** A URL whose scheme is one of `schemes` (`KEEL_DATABASE_URL`, k.deploy Storage); `attempt` keeps a bad value out of any thrown error. */
+/** A URL whose scheme is one of `schemes` (`KEEL_DATABASE_URL`, k.deploy Storage); a bad value throws nothing. */
 const DatabaseUrl = (schemes: readonly string[]) =>
   s.format("keel.databaseUrl", s.string({ min: 1 }), {
     check: (v) => {
-      const u = attempt(() => new URL(v));
-      return u.ok && schemes.includes(u.value.protocol);
+      const u = URL.canParse(v) ? new URL(v) : undefined;
+      return u !== undefined && schemes.includes(u.protocol);
     },
     gen: { from: s.string({ min: 1 }), map: (v) => `${schemes[0] ?? "file:"}/${encodeURIComponent(v)}` },
   });

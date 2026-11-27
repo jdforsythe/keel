@@ -5,7 +5,8 @@ import { unexpectedOf } from "./unexpectedOf.ts";
 /**
  * Run `fn` as `attempt` does (the same `keel.unexpected` KeelError on a throw or rejection, read through
  * `unexpectedOf`) and keep what `frames` (the app's `appFrames` reader) reads from what it threw, for the log `diag`
- * (k.server Log); a reader that throws on the value gives no frames. The stack never enters the KeelError, which
+ * (k.server Log), and the value itself for its log records (`ThrownRecords`); a reader that throws on the value gives
+ * no frames. The stack never enters the KeelError, which
  * reaches results, the browser and session captures. Never rejects, whatever was thrown.
  */
 export async function caught<T>(
@@ -13,7 +14,7 @@ export async function caught<T>(
   frames: (thrown: unknown) => readonly string[],
 ): Promise<CaughtRun<T>> {
   try {
-    return { result: ok(await fn()), frames: [] };
+    return { result: ok(await fn()), frames: [], thrown: undefined };
   } catch (thrown) {
     let read: readonly string[] = [];
     try {
@@ -21,6 +22,6 @@ export async function caught<T>(
     } catch {
       read = [];
     }
-    return { result: err(unexpectedOf(thrown)), frames: read };
+    return { result: err(unexpectedOf(thrown)), frames: read, thrown };
   }
 }

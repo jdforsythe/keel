@@ -18,33 +18,38 @@ async function runOne(
   args: { params: Rec; search: Rec; url: string },
 ): Promise<LoaderOutcome> {
   const { sv, rq } = r;
-  const { result: ran, frames } = await caught(async () => {
+  const {
+    result: ran,
+    frames,
+    thrown,
+  } = await caught(async () => {
     const stores = l.stores === undefined ? undefined : await openFactory(sv.ctx, rq, l.stores);
     const at = { ...args, caller: rq.caller.id, user: rq.user, stores };
     return rq.scope.run(() => l.run(rq.bearer === undefined ? at : { ...at, bearer: rq.bearer }, sv.ctx));
   }, sv.frames);
   if (!ran.ok) {
-    const clean = scrubbedCause(ran.error, rq);
-    const lead = `loader ${id} threw: `;
-    return { result: err(clean), diag: { code: "keel.unexpected", lead, message: lead + clean.data.cause, frames } };
+    const diags = sv.thrown("keel.unexpected", `loader ${id} threw: `, thrown, frames);
+    return { result: err(scrubbedCause(ran.error, rq)), diags };
   }
-  if (!ran.value.ok) return { result: ran.value, diag: null };
+  if (!ran.value.ok) return { result: ran.value, diags: [] };
   const checked = l.output.parse(ran.value.value);
   if (!checked.ok) {
     const refused = outputRefused("loader", id, l.output, checked.error);
-    return { result: err(refused.error), diag: refused.diag };
+    return { result: err(refused.error), diags: [refused.diag] };
   }
   const json = attempted(() => l.output.encode(checked.value));
   if (json.ok) notePii(rq.pii, l.output, json.value);
   const result = json.ok ? ok({ value: checked.value, json: json.value }) : err(scrubbedCause(json.error, rq));
-  return { result, diag: null };
+  return { result, diags: [] };
 }
 
 /**
  * Start every loader of `chain` together (they all start before any resolves) and collect their outcomes
  * in chain order; levels without a loader give `ok(undefined)`. Each runs in the request scope with `url` (the absolute
  * request URL), the request's `caller`, `user` (k.user) and `bearer` (k.api Bearer), and its instance of its `stores` factory (`openFactory`). A throw becomes
- * `keel.unexpected` with a `keel.unexpected` diag carrying its app `frames` (`caught`), both without the request's `.pii()` values and revealed secrets (`scrubbedCause`; its `lead`, `loader <id> threw: `, is what `scrubbedDiag` keeps past a scrub cap); each
+ * `keel.unexpected` without the request's `.pii()` values and revealed secrets (`scrubbedCause`), and its
+ * `keel.unexpected` records (`sv.thrown`: its form with its app `frames`, `caught`, and its text only while full text is
+ * on; their `lead`, `loader <id> threw: `, is what `scrubbedDiag` keeps past a scrub cap); each
  * output's `.pii()` values join the request's (`notePii`), and an encode that throws is a scrubbed `keel.unexpected`; data
  * failing `output` is `keel.unexpected` with an E1554 diag.
  */
@@ -57,7 +62,7 @@ export function runLoaders(
     chain.map(
       (lvl): Promise<LoaderOutcome> =>
         lvl.def.loader === undefined
-          ? Promise.resolve({ result: ok({ value: undefined, json: null }), diag: null })
+          ? Promise.resolve({ result: ok({ value: undefined, json: null }), diags: [] })
           : runOne(r, lvl.id, lvl.def.loader, args),
     ),
   );

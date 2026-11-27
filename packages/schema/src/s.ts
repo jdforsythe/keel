@@ -12,6 +12,7 @@ import type { StringInput } from "./StringInput.ts";
 import { err } from "./err.ts";
 import type { Node } from "./internal/Node.ts";
 import { clip } from "./internal/clip.ts";
+import { declaredCodes } from "./internal/declaredCodes.ts";
 import { formats } from "./internal/formats.ts";
 import { fromStrings } from "./internal/fromStrings.ts";
 import { invalid } from "./internal/invalid.ts";
@@ -168,6 +169,7 @@ export const s = Object.freeze({
   union,
   format,
   error: <C extends string, D extends Schema<unknown>>(code: C, data: D): ErrorSchema<C, Infer<D>> => {
+    declaredCodes().add(code);
     const node: Node = {
       kind: "object",
       fields: {

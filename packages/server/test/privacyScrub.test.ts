@@ -5,7 +5,7 @@
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
-import { type Infer, attempt, ok, reveal, s } from "@keel/schema";
+import { type Infer, ok, reveal, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -13,6 +13,7 @@ import { createApp, topology } from "../src/index.ts";
 import { redacted } from "../src/internal/redacted.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
 import { scrubbedCause } from "../src/internal/scrubbedCause.ts";
+import { unexpectedOf } from "../src/internal/unexpectedOf.ts";
 
 const Notes = s.object({ items: s.array(s.string().pii("content")) });
 const Text = s.object({ text: s.string() });
@@ -202,11 +203,7 @@ describe("redacted", () => {
 
 describe("scrubbedCause", () => {
   const thrown = (message: string) => {
-    const r = attempt((): null => {
-      throw new Error(message);
-    });
-    if (r.ok) throw new Error("the fixture did not throw");
-    return r.error;
+    return unexpectedOf(new Error(message));
   };
   it("drops secrets and pii values from the cause and the message", () => {
     const rq = { pii: new Set(["ada lovelace"]), secrets: new Set(["tok-7f3a9c"]) };

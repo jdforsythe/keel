@@ -26,6 +26,8 @@ import { declaredTopology } from "./internal/declaredTopology.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { installServerDom } from "./internal/dom/installServerDom.ts";
+import { envValue } from "./internal/envValue.ts";
+import { fingerprintOf } from "./internal/fingerprintOf.ts";
 import { forward } from "./internal/forward.ts";
 import { handle } from "./internal/handle.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
@@ -33,6 +35,7 @@ import { inspectResponse } from "./internal/inspectResponse.ts";
 import { keepRunning } from "./internal/keepRunning.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { loadStd } from "./internal/loadStd.ts";
+import { logThrownUntil } from "./internal/logThrownUntil.ts";
 import { logUnwritable } from "./internal/logUnwritable.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
@@ -53,6 +56,7 @@ import { selectDeployable } from "./internal/selectDeployable.ts";
 import { serving } from "./internal/serving.ts";
 import { slotSince } from "./internal/slotSince.ts";
 import { tallyOf } from "./internal/tallyOf.ts";
+import { thrownLog } from "./internal/thrownLog.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -137,6 +141,10 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   const modules = new Set([...routes.contracts.map((c) => c.module), ...Object.keys(runners)]);
   const origin = opts.origin === undefined ? undefined : new URL(opts.origin).origin;
   const mode = opts.mode ?? "production";
+  // The start of the text window and the fingerprint's key, read once (k.serverlog Thrown values); a malformed
+  // KEEL_LOG_THROWN is E1596 before anything is served.
+  const until = logThrownUntil(envValue("KEEL_LOG_THROWN"), opts.ctx.clock.now());
+  const fingerprint = await fingerprintOf(envValue("KEEL_SECRET"));
   const env = nodeEnv();
   const deployed = mode === "production" && env !== "development" && env !== "test";
   if (deployed && opts.assets === undefined)
@@ -233,6 +241,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     frames: appFrames(opts.artifacts, (message) =>
       log?.write(diagLine(log.format, { code: "keel.unexpected", message })),
     ),
+    thrown: thrownLog(fingerprint, () => mode === "dev" || (until !== undefined && opts.ctx.clock.now() < until)),
     ...(log === undefined ? {} : { log }),
     identity: opts.identity,
     days: top[name]?.caller?.days,
@@ -354,11 +363,10 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     }
     return response;
   });
-  // A runner's record is scrubbed with the set of the `run` that rejected (`keepRunning`); a runner has no pii set.
-  const failed = (message: string, frames: readonly string[], secrets: Set<string>) => {
-    const lead = "runner rejected, rerun in 1000 ms: ";
-    const d = { code: "keel.unexpected", lead, message: lead + message, frames };
-    log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
+  // A runner's records are scrubbed with the set of the `run` that rejected (`keepRunning`); a runner has no pii set.
+  const failed = (thrown: unknown, frames: readonly string[], secrets: Set<string>) => {
+    const records = sv.thrown("keel.unexpected", "runner rejected, rerun in 1000 ms: ", thrown, frames);
+    for (const d of records) log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
   };
   const app: ServerApp = {
     fetch: async (req) => {

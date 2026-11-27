@@ -42,7 +42,7 @@ export async function page(
   const { chain, def, id } = m.route;
   const publicize = (e: KeelError<string, unknown>) => publicError(scrubbedError(e, r.rq), r.sv.mode);
   const outcomes = await runLoaders(r, chain, { params: m.params, search: m.search, url: r.url });
-  const diags = outcomes.flatMap((o) => (o.diag === null ? [] : [o.diag]));
+  const diags = outcomes.flatMap((o) => o.diags);
   const failedAt = outcomes.findIndex((o) => !o.result.ok);
   const failed = outcomes[failedAt]?.result;
   const loaderError = failed === undefined || failed.ok ? null : failed.error;
