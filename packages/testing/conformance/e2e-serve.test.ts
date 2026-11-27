@@ -163,6 +163,7 @@ await page.fire('a.connect.go', { type: 'click' })
 await page.until('a.connect.text', { text: process.env.EXPECT_TEXT ?? '' })
 expect(payments.requests()).toHaveLength(Number(process.env.EXPECT_REQUESTS))
 const problems = page.problems({ kind: 'csp', text: /./ })
+page.problems({ kind: 'console', text: /Content Security Policy/ })
 expect(problems.length > 0).toBe(process.env.EXPECT_TEXT === 'blocked')`,
     },
     {
