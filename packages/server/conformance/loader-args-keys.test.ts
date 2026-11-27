@@ -1,9 +1,8 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "A loader's `fn` argument has exactly the keys `params`, `search`, `url`, `caller`, `user`, `bearer`, `stores` and `signal`."
-// k.server API: "`loader(contract, id, { output?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores }` and `ctx`; a route that must judge where a request came from declares `local` (k.contract Local routes); `url` carries `KEEL_ORIGIN`'s origin where set; returns `Promise<Result<T, KeelError>>` encoded with `output` (the entry's on an API entry, k.contract)."
+// k.server API: "`loader(contract, id, { output?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores, signal }` and `ctx`; a route that must judge where a request came from declares `local` (k.contract Local routes); `url` carries `KEEL_ORIGIN`'s origin where set; returns `Promise<Result<T, KeelError>>` encoded with `output` (the entry's on an API entry, k.contract)."
 // Seed: n/a (the keys are a fixed list). Method: `createApp` over a manifest of a page loader, an API GET loader and an API GET loader with `query`, each recording `Object.keys` of its first argument; each is requested over `app.fetch` with `sec-fetch-site: same-origin` and `host` set, as a request a loader could read them from.
 // ASSUMED: (1) the key list is the same for a page loader and an API GET loader (the clause says "A loader's"); (2) `signal` is present on a request-time loader that is not live.
-// INCONSISTENT (reported): k.server's API bullet lists `{ params, search, url, caller, user, bearer, stores }` with no `signal`, k.contract's clause lists `signal`; the k.contract clause is asserted as it reads.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

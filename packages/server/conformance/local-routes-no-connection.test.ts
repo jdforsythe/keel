@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "The same `GET` with `Sec-Fetch-Site: cross-site`, with no `Sec-Fetch-Site`, or with `Host: example.com`, answers 403 `keel.denied` and its loader does not run."
-// k.contract Local routes: "A request `createApp`'s `fetch` gets with no connection (a harness, k.testing) has no remote address and is refused too."
+// k.contract Local routes: "A request `fetch` gets with no connection (a harness, k.testing) has no remote address and is refused too."
 // Seed: n/a (no generated input). Method (happy-dom, whose `Request` drops headers the test sets, so `withHeaders` of topology-fixtures.ts sets them): `createApp` over a manifest holding a `local: true` page and API GET and a non-local API GET, `app.fetch(new Request(...))` with every header the three conditions name satisfied but the one the Request cannot carry: the connection.
 // UNTESTABLE here: a peer address handed to `app.fetch`. `spec/` states no seam for a remote address on an in-process request (k.hosting, k.server and k.testing hold none), so no in-process case asserts the answered half; the answered half is local-routes-answered.test.ts over a real connection.
 import { createCtx } from "@keel/ctx";
@@ -71,7 +71,7 @@ const req = (path: string, headers: Record<string, string> = {}): Request =>
   });
 
 describe("k.contract Local routes: a request with no connection", () => {
-  it("A request `createApp`'s `fetch` gets with no connection has no remote address and is refused: 403 `keel.denied` on a `local: true` page and API GET, no loader or guard running", async () => {
+  it("A request `fetch` gets with no connection has no remote address and is refused: 403 `keel.denied` on a `local: true` page and API GET, no loader or guard running", async () => {
     const app = await boot();
     for (const path of ["/panel", "/api/probe"]) {
       const r = await app.fetch(req(path));
