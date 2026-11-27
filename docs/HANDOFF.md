@@ -29,7 +29,7 @@ active:
   - first thing on resume: `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2`, `git log --oneline origin/jdforsythe/test-impl -1`; then each lane's `git log --oneline -5` against this list; then the plan's last checkpoints.
   - safe to clear: NO as of checkpoint 262: six agents run (a builder on `lane-r-defect`; conformance-writers on `lane-r-sessions`, `lane-r-create`, `lane-r-themes`, `lane-r-fresh`, `lane-r-e2e`); the plan's checkpoint 262 lists them and the queue behind them.
 blockers: none
-needs a person: (1) the licence for published packages: the repo is `UNLICENSED` until one is chosen at the first public release; (2) decisions D206 to D234 stand unless reversed: the ones that change what an author writes: D226 (`attempt` requires `expect`), D218 (`defineTokens` from `@keel/ui/tokens`), D216 (`keel dev --host`), D219 (no page signal), D215 and D217 (device libraries and two more RFCs before public).
+needs a person: (0) may the orchestrator mend the local gate's own tooling (`tooling/gate.mjs` sets no `GITHUB_OUTPUT` for the shard step; `tooling/gate-plan.mjs` has no container for `built-smokes`' `postgres` service): 15 of 21 jobs fail on it on any commit; (1) the licence for published packages: the repo is `UNLICENSED` until one is chosen at the first public release; (2) decisions D206 to D234 stand unless reversed: the ones that change what an author writes: D226 (`attempt` requires `expect`), D218 (`defineTokens` from `@keel/ui/tokens`), D216 (`keel dev --host`), D219 (no page signal), D215 and D217 (device libraries and two more RFCs before public).
 last updated: 2026-11-27
 ```
 
