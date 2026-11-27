@@ -1,5 +1,6 @@
 import { type RouteTable, routeTable } from "@keel/router";
 import { pageHref } from "@keel/router/match";
+import { defect } from "@keel/schema";
 import { identity } from "@keel/server";
 import mount from "./identity.ts";
 import { routes as web } from "./modules/notes/routes.ts";
@@ -27,7 +28,7 @@ function joinedTable(at: RouteTable): RouteTable {
 
 /** `POST /api/auth/sign-in/email`: sets the cookie to the posted name and answers 303 to the page the `next` search key names (`pageHref`), else `/`. */
 async function handle(request: Request, _ctx: unknown, at: { readonly routes: RouteTable }): Promise<Response> {
-  const url = new URL(request.url);
+  const url = URL.parse(request.url) ?? defect("a request has an address");
   if (request.method !== "POST" || url.pathname !== `${mount.path}/sign-in/email`) {
     return new Response(null, { status: 404 });
   }
