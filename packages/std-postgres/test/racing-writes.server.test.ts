@@ -7,9 +7,7 @@
 // transactions run one after another and the race reduces to serial order; the documented outcome is the same.
 // Seed: 1337.
 import { randomBytes } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { rmSync } from "node:fs";
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
@@ -19,6 +17,7 @@ import type { TransactionOptions } from "@keel/std-postgres/server";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
@@ -77,7 +76,7 @@ type Mode = {
 };
 
 function realMode(label: string, url: () => string, interleaves: boolean): Mode & { done(): void } {
-  const dir = mkdtempSync(join(tmpdir(), "keel-race-"));
+  const dir = tempDir("keel-race-");
   const before = process.env.KEEL_POSTGRES_URL;
   return {
     name: label,

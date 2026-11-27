@@ -1,8 +1,8 @@
 // A `keel session` job whose test file the project's vitest `include` misses reports E1052 and leaves nothing behind.
 // Seed 1337
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, test, vi } from "vitest";
 
 vi.mock("@keel/cli", async (importOriginal) => {
@@ -12,7 +12,7 @@ vi.mock("@keel/cli", async (importOriginal) => {
 
 const { runJob } = await import("../src/internal/runJob.ts");
 
-const cwd = mkdtempSync(path.join(tmpdir(), "keel-runjob-"));
+const cwd = tempDir("keel-runjob-");
 afterAll(() => rmSync(cwd, { recursive: true, force: true }));
 
 describe("std.sessions: runJob without a result", () => {

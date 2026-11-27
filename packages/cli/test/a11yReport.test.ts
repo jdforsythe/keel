@@ -1,10 +1,11 @@
 // a11yReport (k.evidence a11y.json): each claim with the rules mapped to its criterion, the criteria no rule maps to,
 // and the contrast table of the project's tokens.ts. Seed 1337.
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WCAG_CRITERIA } from "@keel/testing/a11y";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
 import type { A11yClaim } from "../src/internal/A11yClaim.ts";
@@ -18,7 +19,7 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 const project = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(here, ".tmp-a11yReport-"));
+  const dir = tempDir(".tmp-a11yReport-", here);
   dirs.push(dir);
   // The project has `@keel/ui` installed, as an app does: the report reads `contrastTable` from the project's own copy.
   mkdirSync(join(dir, "node_modules", "@keel"), { recursive: true });
@@ -86,12 +87,12 @@ describe("a11yReport", () => {
 
   test("a default export is read when there is no named tokens export; the named one wins", async () => {
     const byDefault = project({ "tokens.ts": 'export default { color: { a: "#000000", b: "#ffffff" } };\n' });
-    expect((await a11yReport(byDefault, [], map, true)).contrast).toHaveLength(4);
+    expect((await a11yReport(byDefault, [], map, true)).contrast).toHaveLength(2);
     const both = project({
       "tokens.ts":
         'export const tokens = { color: { a: "#000000", b: "#ffffff" } };\nexport default { color: { a: "#000000", b: "#ffffff", c: "#777777" } };\n',
     });
-    expect((await a11yReport(both, [], map, true)).contrast).toHaveLength(4);
+    expect((await a11yReport(both, [], map, true)).contrast).toHaveLength(2);
   });
 
   test("a tokens file that throws, or no tokens.ts, gives no rows", async () => {

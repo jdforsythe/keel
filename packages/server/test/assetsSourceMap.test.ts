@@ -1,8 +1,8 @@
 // A client build whose Vite config turns on `build.sourcemap` writes `*.map` files beside its chunks under `assets/`,
 // each holding the client sources (`sourcesContent`). They are not to be read or served; see the RFC on client maps.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadAssets } from "../src/internal/loadAssets.ts";
 
@@ -11,7 +11,7 @@ afterEach(() => {
   for (const d of made.splice(0)) fs.rmSync(d, { recursive: true, force: true });
 });
 const dir = (files: Record<string, string>): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-maps-"));
+  const d = tempDir("keel-maps-");
   made.push(d);
   for (const [rel, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true });

@@ -2,6 +2,7 @@
 // published file set (`dist`, `docs`) still serves its routes. Examples only: fixed projects in a temp dir.
 import fs from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { stdModuleDir } from "../src/internal/stdModuleDir.ts";
 import { stdRoutes } from "../src/std/stdRoutes.ts";
@@ -31,7 +32,7 @@ const targetOf = (entry: unknown): string => {
 };
 
 beforeEach(() => {
-  root = fs.realpathSync(fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-std-published-")));
+  root = fs.realpathSync(tempDir(".tmp-std-published-", import.meta.dirname));
   write(
     "modules/app/module.ts",
     'export default { id: "app", deps: ["@keel/std-pub"], capabilities: [], public: { exports: [] } };\n',

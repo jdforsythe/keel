@@ -3,6 +3,7 @@
 // Examples only: fixed packages in a temp dir. No random inputs (a fast-check seed would be 1337).
 import fs from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stdPlacedExports } from "../src/std/stdPlacedExports.ts";
 
@@ -20,7 +21,7 @@ const app = (m: string, deps: readonly string[]) => ({
 });
 
 beforeAll(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-std-placed-"));
+  root = tempDir(".tmp-std-placed-", import.meta.dirname);
   pkg("half", { "./module": "./module.ts", "./contract": "./contract.ts" }, ["contract.ts"]);
   pkg("gone", { "./contract": "./contract.ts", "./routes": "./routes.ts" }, ["contract.ts"]);
   pkg("full", { "./contract": "./contract.ts", "./routes": "./routes.ts" }, ["contract.ts", "routes.ts"]);

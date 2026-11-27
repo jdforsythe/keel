@@ -46,7 +46,15 @@ export type PartProps =
   | R<"listbox", Kids & Named & Orient & Active & { readonly multiselectable?: V<boolean> }>
   | R<"menu", Kids & Named & Orient & Active>
   | R<"option", Kids & Off & { readonly selected: V<boolean> }>
-  | R<"menuitem", Kids & Off>
+  | R<
+      "menuitem",
+      Kids &
+        Off & {
+          /** A menu bar's item that opens a submenu (k.roles). */
+          readonly hasPopup?: V<"menu">;
+          readonly expanded?: V<boolean>;
+        }
+    >
   | R<"menuitemcheckbox", Kids & Off & { readonly checked: V<boolean> }>
   | R<
       "combobox",
@@ -65,6 +73,9 @@ export type PartProps =
           readonly controls?: V<string>;
           readonly hasPopup?: V<"menu" | "listbox" | "dialog">;
           readonly expanded?: V<boolean>;
+          /** A toggle button's state, written as `aria-pressed`; the component flips it in `onClick`. */
+          readonly pressed?: V<boolean>;
+          readonly describedBy?: V<string>;
         }
     >
   | R<"checkbox", Named & { readonly checked: V<boolean | "mixed"> }>
@@ -157,5 +168,48 @@ export type PartProps =
           readonly value?: V<string>;
           /** Called when the radio becomes checked. */
           readonly onChange?: () => void;
+        }
+    >
+  | R<
+      "switch",
+      Kids &
+        Named &
+        Off & {
+          readonly checked: V<boolean>;
+          readonly describedBy?: V<string>;
+        }
+    >
+  | R<"toolbar", Kids & Named & Orient>
+  | R<"menubar", Kids & Named & Orient & Active>
+  | R<"menuitemradio", Kids & Off & { readonly checked: V<boolean> }>
+  | R<
+      "meter",
+      Kids &
+        Named & {
+          readonly min: V<number>;
+          readonly max: V<number>;
+          readonly value: V<number>;
+          readonly low?: V<number>;
+          readonly high?: V<number>;
+          readonly optimum?: V<number>;
+          readonly valueText?: V<string>;
+        }
+    >
+  | R<
+      "progressbar",
+      Kids &
+        Named & {
+          /** Undefined: indeterminate. */
+          readonly value?: V<number | undefined>;
+          readonly max?: V<number>;
+          readonly valueText?: V<string>;
+        }
+    >
+  | R<
+      "region",
+      Kids &
+        Named & {
+          /** A toggle `button`'s, never a region's. */
+          readonly pressed?: never;
         }
     >;

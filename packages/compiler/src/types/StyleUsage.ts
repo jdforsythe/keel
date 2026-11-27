@@ -11,7 +11,9 @@ export type StyleUsage = {
   readonly state?:
     | "selected"
     | "checked"
+    | "pressed"
     | "expanded"
+    | "current"
     | "highlighted"
     | "hover"
     | "focusVisible"

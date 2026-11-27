@@ -1,19 +1,19 @@
 // k.server-deps Registration through a library: an export counts when its defining file in the library, followed through
 // the entry's re-exports, imports `@keel/ctx` and names `register`.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, expect, it } from "vitest";
 import { libraryRegisters } from "../src/internal/libraryRegisters.ts";
 import type { Library } from "../src/types/Library.ts";
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-libreg-"));
+const root = tempDir("keel-libreg-");
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
 /** A library `@acme/store` whose entry reaches `store` (registering) and `plain` (not) by the re-export `hop` gives. */
 function library(hop: "named" | "star" | "local" | "renamed"): Library {
-  const dir = fs.mkdtempSync(path.join(root, "lib-"));
+  const dir = tempDir("lib-", root);
   const write = (rel: string, text: string): void => {
     fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
     fs.writeFileSync(path.join(dir, rel), text);

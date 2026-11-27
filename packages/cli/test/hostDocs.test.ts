@@ -1,14 +1,14 @@
 // hostDocs: the binary's loader for `keel docs` and the agent files, on a real temporary tree outside the repo.
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { hostDocs } from "../src/internal/hostDocs.ts";
 
 const dirs: string[] = [];
 const tree = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(tmpdir(), "keel-hostdocs-"));
+  const dir = tempDir("keel-hostdocs-");
   dirs.push(dir);
   for (const [p, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, p)), { recursive: true });

@@ -37,3 +37,11 @@ What a subagent in a lane is told, so a fresh orchestrator can brief one without
 ## Waiting and teardown
 
 Wait on something you own: a file your command writes at its end, or its exit code. Never wait with `pgrep -f <text>` when the waiting command's own line holds that text: it matches itself and never ends. Give every wait loop an upper bound. Before you report, stop every loop, server and container you started and remove the temp folders you made; say in the report what, if anything, is left.
+
+## Docs freshness
+
+A doc's `verified:` line says someone checked the whole doc against the tree at that commit. Move it only when you have done that and corrected what was wrong. If `docs-freshness` fails (D0001) on a doc your lane did not change, report it and leave the line alone: moving the line to get a gate through is a weakened check.
+
+## The form of a Conformance list
+
+A section's Conformance clauses are `- ` bullets, one whole checkable sentence each, with no blank line inside the list. A clause's number is its position; the ledger reads only `- ` bullets (k.ledger-items), so a list written `1.`, `2.` hides every clause from it. When a brief or a report says "clause #7" it means the seventh bullet.

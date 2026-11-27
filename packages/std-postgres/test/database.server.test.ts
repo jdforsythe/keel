@@ -1,8 +1,7 @@
 // Seed 1337. The database capability beyond its conformance: settling without a timer, plan delays and the end of a
 // plan, savepoints inside a transaction, isolation, errors that throw, and E2454 for a migration file that is gone.
 import { execFile } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
@@ -12,6 +11,7 @@ import type { Tx } from "@keel/std-postgres/server";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import { fixedTime, testTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 
@@ -157,7 +157,7 @@ const child = (url: string, cap: string, files: Record<string, string>): Promise
   });
 
 test("an applied migration whose file is gone is E2454; a new file after the applied ones runs", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "keel-pg-"));
+  const dir = tempDir("keel-pg-");
   try {
     const url = `pglite:${dir}`;
     const cap = `t.gone${process.pid}`;

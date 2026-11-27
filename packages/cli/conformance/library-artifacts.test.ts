@@ -1,12 +1,12 @@
 // k.library In an app, the clause on the `.keel/` artifacts, quoted whole
 // In an app (compiler): "The compiler resolves imports with the `keel` condition on every surface (dev, build, test) and transforms a library's files as the app's, read at `modules/<id>/<f>`: JSX, element ids, and style props into the app's CSS file against the app's `tokens.ts`; the `.keel/` artifacts derive from a library's files at those paths as from the app's, and E1005 compares them over the same files, so a reader of an artifact (E1702, the inspector) judges a library's element as an app's. A linked library's imports resolve from its real folder, as Node's do, so the kernel packages it imports must resolve there to the app's (one workspace install)."
-// Spec: k.library, clause "In that project, with the app's `tokens.ts` and a `static` deployable `site` whose `/` page renders `<Badge id=\"shop.badge\" />`, `keel build`'s `dist/site/index.html` holds an element with id `shop.badge.box`, and a `.css` file under `dist/site/` holds the atomic rule of `p=\"2\"`, which the same build without `p=\"2\"` in the library lacks."
+// Spec: k.library, clause "In that project, with the library shipping `chartsTokens` as `defineTokens({ space: { 'charts.2': '8px' } })`, `exports` gaining `\"./tokens\":{\"keel\":\"./src/chartsTokens.ts\",\"default\":\"./index.js\"}`, the app's `tokens.ts` as E1810's fix writes it over `brandTokens`, `p=\"charts.2\"` on the Badge's `Box` and a `static` deployable `site` whose `/` page renders `<Badge id=\"shop.badge\" />`, `keel build`'s `dist/site/index.html` holds an element with id `shop.badge.box`, and a `.css` file under `dist/site/` holds the atomic rule of `p=\"charts.2\"`, which a build without it lacks."
 // The project is the second clause's
 // Spec: k.compiler, clause "Changing any byte of a file under `.keel/` makes `keel check --frozen` report E1005 on that file."
 // k.compiler Artifacts: "Derived files (k.derived), written to `.keel/` as views"; the checks run frozen (`keel check --frozen`), the mode in which a differing view is E1005.
 // Seed: 1337 (no generated input). Binary runs: 6 (`keel build`, `keel check`, a library file changed, `keel check`; the app-module control: the same three on its own project).
-// ASSUMPTIONS (spec silent): "the library's style" is a usage of `p: "2"` in `.keel/styles.json` (the artifact `keel build` writes for style props; the file is named by no spec section), `keel check` reports E1005 at a path
-// under `.keel/` and names that file; the change is `p="2"` to `p="1"` in the library's `src/Badge.tsx`, which changes what the build writes. The control moves the same element into the app module `shop`.
+// ASSUMPTIONS (spec silent): "the library's style" is a usage of `p: "charts.2"` in `.keel/styles.json` (the artifact `keel build` writes for style props; the file is named by no spec section), `keel check` reports E1005 at a path
+// under `.keel/` and names that file; the change is dropping `p="charts.2"` from the library's `src/Badge.tsx`, which changes what the build writes. The control moves the same element into the app module `shop`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, expect, test } from "vitest";
@@ -17,8 +17,8 @@ import {
   cleanup,
   diags,
   keel,
-  library,
   materialize,
+  chartsSiteTree,
   siteTree,
   write,
 } from "./library-support.ts";
@@ -41,22 +41,15 @@ let changed: Rec[] = [];
 let controlChanged: Rec[] = [];
 let controlClean: Rec[] = [];
 beforeAll(() => {
-  dir = materialize(siteTree());
+  dir = materialize(chartsSiteTree());
   build = keel(dir, ["build"]);
   clean = keel(dir, ["check", "--frozen"]).records.filter((x) => x.kind === "diag");
   styles = stylesOf(dir);
-  write(dir, { [BADGE_PATH]: readFileSync(join(dir, BADGE_PATH), "utf8").replace('p="2"', 'p="1"') });
+  write(dir, { [BADGE_PATH]: readFileSync(join(dir, BADGE_PATH), "utf8").replace(' p="charts.2"', "") });
   changed = keel(dir, ["check", "--frozen"]).records.filter((x) => x.kind === "diag");
 
   control = materialize({
-    ...siteTree([
-      library({
-        files: {
-          "src/Badge.tsx":
-            "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`} />\n}\n",
-        },
-      }),
-    ]),
+    ...siteTree(),
     "modules/shop/Own.tsx":
       'import { Box } from \'@keel/ui\'\nexport default function Own() {\n  return <Box id="shop.own" p="2" />\n}\n',
   });
@@ -84,9 +77,9 @@ test(
 );
 
 test(
-  "In that project, the `.keel/` artifacts `keel build` writes derive from the library's files: `styles.json` holds the library's `p=\"2\"`",
+  "In that project, the `.keel/` artifacts `keel build` writes derive from the library's files: `styles.json` holds the library's `p=\"charts.2\"`",
   () => {
-    expect(usesP(styles, "2")).toBe(true);
+    expect(usesP(styles, "charts.2")).toBe(true);
   },
   SLOW,
 );

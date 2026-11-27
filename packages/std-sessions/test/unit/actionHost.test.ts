@@ -4,12 +4,12 @@
 // Seed 1337 (no random inputs)
 import fs from "node:fs";
 import http from "node:http";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { actionHost } from "../../src/internal/actionHost.ts";
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-action-host-"));
+const dir = tempDir("keel-action-host-");
 const script = path.join(dir, "child.mjs");
 const argv = process.argv;
 const command = process.env.KEEL_COMMAND;

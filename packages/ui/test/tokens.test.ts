@@ -1,5 +1,4 @@
 // TokenSchema and defineTokens beyond conformance. Seed 1337.
-import { gen } from "@keel/schema/gen";
 import { TokenSchema, defineTokens } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -34,9 +33,28 @@ describe("TokenSchema", () => {
     }
   });
 
-  it("accepts every generated token file and encodes it to equal JSON", () => {
+  it("accepts every generated token file in its groups' forms and encodes it to equal JSON", () => {
+    const hex = fc.stringMatching(/^#[0-9a-f]{6}$/);
+    const length = fc
+      .tuple(fc.integer({ min: 0, max: 400 }), fc.constantFrom("px", "rem", "em"))
+      .map(([n, u]) => `${n}${u}`);
+    const name = fc.stringMatching(/^[a-z][a-z0-9]{0,5}$/);
+    const tokens = fc.record(
+      {
+        color: fc.dictionary(name, fc.oneof(hex, fc.record({ light: hex, dark: hex }))),
+        space: fc.dictionary(name, length),
+        radius: fc.dictionary(name, length),
+        fontSize: fc.dictionary(name, length),
+        weight: fc.dictionary(name, fc.constantFrom("normal", "bold", "400", "700")),
+        motion: fc.dictionary(
+          name,
+          fc.integer({ min: 0, max: 900 }).map((n) => `${n}ms`),
+        ),
+      },
+      { requiredKeys: [] },
+    );
     fc.assert(
-      fc.property(gen(TokenSchema), (t) => {
+      fc.property(tokens, (t) => {
         expect(TokenSchema.parse(t).ok).toBe(true);
         expect(TokenSchema.encode(t)).toEqual(JSON.parse(JSON.stringify(t)));
       }),

@@ -1,6 +1,7 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, sep } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 
@@ -36,7 +37,7 @@ const TOPOLOGY = {
 
 /** `check` over `files` in a project root whose `node_modules/@keel` links the workspace packages. */
 function e1107(files: Files, onDisk: Files = []): string[] {
-  const root = mkdtempSync(join(realpathSync(tmpdir()), "keel-e1107-std-"));
+  const root = tempDir("keel-e1107-std-", realpathSync(tmpdir()));
   roots.push(root);
   const all = [TOPOLOGY, MANIFEST, ...files];
   for (const f of all) {

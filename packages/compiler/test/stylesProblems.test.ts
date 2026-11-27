@@ -1,8 +1,8 @@
 // k.topology Rules, E1587: the static read of each deployable's `styles` (stylesProblems) against a project folder
 // whose packages export a stylesheet, a script and nothing else.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stylesProblems } from "../src/hosting/stylesProblems.ts";
 import { shortPath } from "../src/internal/shortPath.ts";
@@ -14,7 +14,7 @@ const write = (rel: string, text: string): void => {
   fs.writeFileSync(f, text);
 };
 beforeAll(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-styles-"));
+  root = tempDir(".tmp-styles-", import.meta.dirname);
   write("package.json", JSON.stringify({ name: "app", type: "module" }));
   write("local.css", "a{}");
   write(
@@ -106,7 +106,7 @@ describe("stylesProblems", () => {
 
   it("resolves from the project folder given, not from the compiler's own", () => {
     const source = top("web: { styles: ['sheet/base.css'] }");
-    const empty = fs.mkdtempSync(path.join(os.tmpdir(), "keel-styles-"));
+    const empty = tempDir("keel-styles-");
     try {
       expect(stylesProblems(source, empty)).toEqual([
         { deployable: "web", offset: source.indexOf("'sheet"), message: entry("sheet/base.css", "no package export") },

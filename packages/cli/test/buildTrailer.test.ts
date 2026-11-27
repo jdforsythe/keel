@@ -1,18 +1,9 @@
 // One trailer per `keel build`, last, after every step has settled.
 import { spawnSync } from "node:child_process";
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, existsSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, join } from "node:path";
 import { fixedTime, testTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, test } from "vitest";
 import { cleanup, materialize } from "../conformance/compat-support.ts";
 
@@ -20,7 +11,7 @@ const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
 const made: string[] = [];
 
 const project = (viteBody: string): string => {
-  const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-build-trailer-")));
+  const d = realpathSync(tempDir("keel-build-trailer-"));
   made.push(d);
   mkdirSync(join(d, "node_modules/.bin"), { recursive: true });
   writeFileSync(join(d, "vite.config.ts"), "export default {}\n");
@@ -113,7 +104,7 @@ describe("build trailer", () => {
   test(
     "a failing native tool after a good web build ends with one fail trailer, no ok build line, and its error on stderr",
     () => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-build-tool-")));
+      const root = realpathSync(tempDir("keel-build-tool-"));
       made.push(root);
       const manifest =
         "import { module } from '@keel/compiler'\nexport default module({ id: 'c', deps: [], capabilities: [], public: { exports: [] } })\n";

@@ -4,6 +4,7 @@ import os from "node:os";
 import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { type Files, apply } from "./helpers.ts";
 
@@ -65,7 +66,7 @@ describe("a fresh scaffold passes its own scripts untouched", () => {
           // A workspace project lives inside the repo (its vite serves the repo's tooling); a standalone one stands alone.
           const parent = workspace ? nodePath.join(REPO_ROOT, ".fixtures") : os.tmpdir();
           fs.mkdirSync(parent, { recursive: true });
-          const dir = fs.mkdtempSync(nodePath.join(parent, "keel-scaffold-first-"));
+          const dir = tempDir("keel-scaffold-first-", parent);
           try {
             onDisk(apply("project", { name: "shop", adapter, workspace }, new Map()), dir);
             const pkg = JSON.parse(fs.readFileSync(nodePath.join(dir, "package.json"), "utf8"));

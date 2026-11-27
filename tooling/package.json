@@ -9,6 +9,7 @@
     "./quick-first": "./quick-first.ts",
     "./repo-root": "./repo-root.ts",
     "./test-time": "./test-time.ts",
+    "./test-tmp": "./test-tmp.ts",
     "./vitest-config": "./vitest-config.ts",
     "./vitest-reporter": "./vitest-reporter.ts"
   },

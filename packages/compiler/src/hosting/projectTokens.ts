@@ -4,9 +4,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import type { TokensResult } from "./TokensResult.ts";
+import { shippedTokensPlugin } from "./shippedTokensPlugin.ts";
 
 // Resolved from the project root, which a project with `tokens.ts` depends on (its `defineTokens` or `brandTokens`).
+const UI_CSS = "@keel/ui/css";
 const ENTRY = `import { TokenSchema } from "@keel/ui";
+import { schemesOf } from ${JSON.stringify(UI_CSS)};
 const message = (e) => (e && typeof e === "object" && "message" in e ? String(e.message) : String(e));
 let result;
 try {
@@ -16,7 +19,7 @@ try {
   else {
     const parsed = TokenSchema.parse(tokens);
     result = parsed.ok
-      ? { ok: true, tokens: parsed.value }
+      ? { ok: true, tokens: parsed.value, schemes: [...schemesOf(parsed.value)] }
       : { ok: false, reason: "tokens.ts: tokens fail TokenSchema: " + parsed.error.message };
   }
 } catch (e) {
@@ -28,9 +31,10 @@ export { result };
 const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> => typeof x === "object" && x !== null;
 
 /**
- * The `tokens` export of `<root>/tokens.ts`, parsed by the project's `TokenSchema` (k.a11y-static Tokens), or
- * undefined when the file is absent. The file and everything it imports are bundled with esbuild (Node's conditions,
- * as `evaluateProject`) and imported from a fresh temporary file on every call, so a long-lived process never judges
+ * The `tokens` export of `<root>/tokens.ts`, parsed by the project's `TokenSchema` (k.a11y-static Tokens), with
+ * its color schemes (`schemesOf`, k.schemes), or
+ * undefined when the file is absent. The file and everything it imports are bundled with esbuild (Node's conditions
+ * and `keel`, as `evaluateProject`, so a library's `./tokens` entry is its source, k.looks) and imported from a fresh temporary file on every call, so a long-lived process never judges
  * a stale token. A throw, a bundle error, no `tokens` export or a `TokenSchema` failure gives the reason, worded as
  * the render harness words it.
  */
@@ -44,10 +48,11 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
       write: false,
       format: "esm",
       platform: "node",
-      conditions: [],
+      conditions: ["keel"],
       target: "node20",
       logLevel: "silent",
       loader: { ".css": "empty" },
+      plugins: [shippedTokensPlugin(root)],
     });
     text = out.outputFiles[0]?.text ?? "";
   } catch (e) {
@@ -61,7 +66,10 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
     fs.writeFileSync(file, text);
     const mod: unknown = await import(pathToFileURL(file).href);
     const result = isRecord(mod) ? mod.result : undefined;
-    if (isRecord(result) && result.ok === true) return { ok: true, tokens: result.tokens };
+    if (isRecord(result) && result.ok === true) {
+      const schemes = Array.isArray(result.schemes) ? result.schemes.filter((x) => typeof x === "string") : ["light"];
+      return { ok: true, tokens: result.tokens, schemes };
+    }
     if (isRecord(result) && typeof result.reason === "string") return { ok: false, reason: result.reason };
     return { ok: false, reason: "tokens.ts failed to evaluate" };
   } catch (e) {

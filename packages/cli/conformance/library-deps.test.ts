@@ -16,9 +16,9 @@ import { expect, test } from "vitest";
 import {
   NAME,
   ROUTES_JS,
+  type Rec,
   SEED,
   SLOW,
-  type Rec,
   type Tree,
   built,
   cleanup,
@@ -95,10 +95,19 @@ test("A `deps` entry that does not begin with `@` is a module id of the project,
   );
 });
 
+/** `./tools` as k.entries writes an entry: `keel` first, naming a file under `src/`; Node reads `default`. */
+const TOOLS_ENTRY = { keel: "./src/tools.ts", default: "./tools.js" };
+
 const withTools = (deps: string[], extra: Tree[] = []): Tree =>
   project({
     deps,
-    libraries: [library({ exports: { "./tools": "./tools.js" }, files: { "tools.js": toolsRule("E2999") } }), ...extra],
+    libraries: [
+      library({
+        exports: { "./tools": TOOLS_ENTRY },
+        files: { "src/tools.ts": "export {}\n", "tools.js": toolsRule("E2999") },
+      }),
+      ...extra,
+    ],
   });
 
 test(
@@ -128,8 +137,8 @@ test(
         library({
           name: "@acme/other",
           id: "other",
-          exports: { "./tools": "./tools.js" },
-          files: { "tools.js": toolsRule("E2999") },
+          exports: { "./tools": TOOLS_ENTRY },
+          files: { "src/tools.ts": "export {}\n", "tools.js": toolsRule("E2999") },
         }),
       ],
     });
@@ -144,7 +153,12 @@ function routesJson(modules: string[]): string {
     project({
       modules,
       page: false,
-      libraries: [library({ exports: { "./routes": "./routes.js" }, files: { "routes.js": ROUTES_JS } })],
+      libraries: [
+        library({
+          exports: { "./routes": { keel: "./src/routes.ts", default: "./routes.js" } },
+          files: { "src/routes.ts": "export {}\n", "routes.js": ROUTES_JS },
+        }),
+      ],
     }),
   );
   try {

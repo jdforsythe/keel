@@ -8,10 +8,13 @@ import { setLeaves } from "../internal/setLeaves.ts";
 import { states } from "../internal/states.ts";
 import { styleProps } from "../internal/styleProps.ts";
 import { tokenGroups } from "../internal/tokenGroups.ts";
+import { valueForms } from "../internal/valueForms.ts";
 import { varName } from "../internal/varName.ts";
 import { vocabulary } from "../internal/vocabulary.ts";
 import type { StyleProp } from "../types/StyleProp.ts";
 import type { Tokens } from "../types/Tokens.ts";
+import { schemesOf } from "./schemesOf.ts";
+import { stateSelectors } from "./stateSelectors.ts";
 
 type Rule = {
   readonly cls: string;
@@ -31,7 +34,7 @@ const SCROLL = ".k-scroll{overflow-x:auto;min-width:0}";
 
 const fail = (code: string, message: string): Error => Object.assign(new Error(message), { code });
 
-/** Token values are written into declarations; anything that could end one is rejected. */
+/** Token values are written into declarations; `valueForms` admitted each, so this only asserts none ends one. */
 const value = (group: string, name: string, v: string): string => {
   if (/[{};<>]|\/\*/.test(v)) throw fail("E1807", `token ${group}.${name} has a value that breaks out of CSS`);
   return v;
@@ -60,31 +63,43 @@ function resolve(tokens: Tokens, prop: keyof typeof vocabulary, token: string): 
   throw fail("E1801", `${prop}=${JSON.stringify(token).slice(0, 40)} is not ${want}`);
 }
 
+/**
+ * The custom properties (k.schemes CSS): with one scheme, `:root` declares `color-scheme` and that scheme's values;
+ * with both, `:root` holds the light values, the dark ones follow the system preference until `data-k-scheme` on
+ * `<html>` overrides it.
+ */
 function rootBlocks(tokens: Tokens): string[] {
-  const light: string[] = [];
+  const schemes = schemesOf(tokens);
+  const both = schemes.length === 2;
+  const first = schemes[0] ?? "light";
+  const main: string[] = [];
   const dark: string[] = [];
   const reduced: string[] = [];
   for (const group of tokenGroups) {
     if (group === "breakpoint") continue;
     for (const [name, v] of Object.entries(tokens[group] ?? {})) {
       const n = varName(group, name);
-      if (typeof v === "string") light.push(`${n}:${value(group, name, v)}`);
+      if (typeof v === "string") main.push(`${n}:${value(group, name, v)}`);
       else {
-        light.push(`${n}:${value(group, name, v.light)}`);
-        dark.push(`${n}:${value(group, name, v.dark)}`);
+        main.push(`${n}:${value(group, name, both ? v.light : v[first])}`);
+        if (both) dark.push(`${n}:${value(group, name, v.dark)}`);
       }
       if (group === "motion") reduced.push(`${n}:0ms`);
     }
   }
-  const out: string[] = [];
-  if (light.length > 0) out.push(`:root{${light.join(";")}}`);
-  if (dark.length > 0) out.push(`@media (prefers-color-scheme: dark){\n:root{${dark.join(";")}}\n}`);
+  const out = [`:root{${[`color-scheme:${both ? "light dark" : first}`, ...main].join(";")}}`];
+  if (both) {
+    const d = dark.join(";");
+    out.push(`@media (prefers-color-scheme: dark){\n:root:not([data-k-scheme="light"]){${d}}\n}`);
+    out.push(`:root[data-k-scheme="dark"]{${["color-scheme:dark", ...dark].join(";")}}`);
+    out.push(`:root[data-k-scheme="light"]{color-scheme:light}`);
+  }
   if (reduced.length > 0) out.push(`@media (prefers-reduced-motion: reduce){\n:root{${reduced.join(";")}}\n}`);
   return out;
 }
 
 const selectorsOf = (sel: string, state: PartState | undefined): string =>
-  (states.find((s) => s.key === state)?.sel ?? [""]).map((s) => `${sel}${s}`).join(",");
+  (state === undefined ? [""] : stateSelectors(state)).map((s) => `${sel}${s}`).join(",");
 
 const ruleText = (r: Rule): string => `${selectorsOf(`.${r.cls}`, r.state)}{${r.body}}`;
 
@@ -140,8 +155,8 @@ function baseLayer(tokens: Tokens, bps: readonly (readonly [string, string])[]):
 /**
  * Compile style usages to atomic CSS. Pure and deterministic: one class per (prop, token, breakpoint,
  * state), deduplicated; equal props give equal class lists. A usage naming a `look` gets the set's classes for every
- * prop and state it does not set itself, then its own. Output order: `:root` custom properties (dark-scheme and
- * reduced-motion overrides in media blocks), the `keel.base` layer (`[hidden]{display:none!important}`, `body` with
+ * prop and state it does not set itself, then its own. Output order: `:root` custom properties (the k.schemes rules and
+ * reduced-motion overrides in a media block), the `keel.base` layer (`[hidden]{display:none!important}`, `body` with
  * `overflow-wrap:anywhere`, the summary's list unmarked, each `base` set on its role selector with its states and
  * breakpoints, and the `base.focus` ring on `:focus-visible`), then the unlayered atomic rules: base rules, one
  * `min-width` block per breakpoint in token order, then state rules (selected, checked, expanded, highlighted, hover,
@@ -153,6 +168,8 @@ export function compileStyles(input: { readonly tokens: Tokens; readonly usages:
   css: string;
 } {
   const { tokens } = input;
+  const refused = valueForms(tokens)[0];
+  if (refused !== undefined) throw fail("E1807", `token ${refused.join(".")} is not in its group's form`);
   const problem = focusProblem(tokens);
   if (problem !== null) throw fail("E1807", problem);
   const bps = Object.entries(tokens.breakpoint ?? {});

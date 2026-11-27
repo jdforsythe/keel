@@ -56,9 +56,9 @@ describe("build with a topology", () => {
       cwd: CWD,
       files: [node, load, ...written],
     });
-    // four .keel artifacts, std.json, compose, the Dockerfile and the CI workflow
-    expect(count(first)).toBe(8);
-    expect(count(again)).toBe(8);
+    // five .keel artifacts, std.json, compose, the Dockerfile and the CI workflow
+    expect(count(first)).toBe(9);
+    expect(count(again)).toBe(9);
     expect(first.writes.map((w) => w.path)).toContain(".github/workflows/ci.yml");
   });
 

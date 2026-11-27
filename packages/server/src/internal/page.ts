@@ -19,6 +19,7 @@ import { renderChain } from "./renderChain.ts";
 import { runLoaders } from "./runLoaders.ts";
 import { scrubbedError } from "./scrubbedError.ts";
 import { statusOf } from "./statusOf.ts";
+import { withScheme } from "./withScheme.ts";
 import { withServedForm } from "./withServedForm.ts";
 import { withoutPasswords } from "./withoutPasswords.ts";
 
@@ -72,18 +73,20 @@ export async function page(
   const posted = submission === null || shown !== null ? null : { ...submission, href: m.url };
   const rendered = attempted(() =>
     inRequest(r.rq, () =>
-      withServedForm(posted, () =>
-        renderChain({
-          chain,
-          params: m.params,
-          search: m.search,
-          data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
-          props,
-          failure: shown,
-          prepend: (html) => (submission === null || shown !== null ? "" : fieldSummary(submission, html)),
-          ctx: r.sv.ctx,
-          publicize,
-        }),
+      withScheme(r, () =>
+        withServedForm(posted, () =>
+          renderChain({
+            chain,
+            params: m.params,
+            search: m.search,
+            data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
+            props,
+            failure: shown,
+            prepend: (html) => (submission === null || shown !== null ? "" : fieldSummary(submission, html)),
+            ctx: r.sv.ctx,
+            publicize,
+          }),
+        ),
       ),
     ),
   );

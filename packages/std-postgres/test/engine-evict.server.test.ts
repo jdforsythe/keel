@@ -1,13 +1,13 @@
 // Seed 1337. std.postgres Modes: at most two pglite: folders stay open in a process; opening another closes the idle
 // ones used least recently, never a busy one or a postgres: pool, and the use order carries over a reload of the module.
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { testTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, expect, test, vi } from "vitest";
 
 const KEY = Symbol.for("keel.postgres.engines");
-const dir = mkdtempSync(join(tmpdir(), "keel-evict-"));
+const dir = tempDir("keel-evict-");
 const before: unknown = Reflect.get(globalThis, KEY);
 
 const fresh = async (): Promise<typeof import("../src/server/internal/engineFor.server.ts")> => {

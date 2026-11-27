@@ -1,5 +1,5 @@
 {
-  "@keel/check": ["k.a11y-static", "k.check-cache", "k.explain", "k.host", "k.privacy-reads"],
+  "@keel/check": ["k.a11y-static", "k.check-cache", "k.explain", "k.entries", "k.host", "k.looks", "k.privacy-reads"],
   "@keel/cli": [
     "k.boundary",
     "k.check",
@@ -85,5 +85,5 @@
   "@keel/std-workflows": ["std.workflows"],
   "@keel/store": ["k.store", "k.sync"],
   "@keel/testing": ["k.drive", "k.drive-law", "k.model", "k.prove", "k.requests", "k.test-run", "k.testing"],
-  "@keel/ui": ["k.a11y", "k.aria", "k.host-code", "k.host-element", "k.roles", "k.ui"]
+  "@keel/ui": ["k.a11y", "k.aria", "k.host-code", "k.host-element", "k.roles", "k.schemes", "k.ui", "k.values"]
 }

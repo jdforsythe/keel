@@ -1,9 +1,8 @@
 // The helpers the package's own tests share: a rig per driver (SQLite on a temporary file, Postgres on PGlite or on the
 // server `KEEL_TEST_POSTGRES_URL` names, its keel tables dropped first) and child `node` processes.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
@@ -11,6 +10,7 @@ import { PGlite } from "@electric-sql/pglite";
 import type { KeyValueStorage } from "@keel/ctx";
 import { postgres } from "@keel/std-db/postgres";
 import { sqlite } from "@keel/std-db/sqlite";
+import { tempDir as tempFolder } from "@keel/tooling/test-tmp";
 import pg from "pg";
 
 /** The engine's two WebAssembly modules, compiled once for the file's every PGlite instead of for each one. */
@@ -28,7 +28,7 @@ export type Kind = "sqlite" | "postgres";
 export const KINDS: readonly Kind[] = ["sqlite", "postgres"];
 export const SEED = 1337;
 
-export const tempDir = (): string => mkdtempSync(join(tmpdir(), "keel-db-"));
+export const tempDir = (): string => tempFolder("keel-db-");
 export const removeDir = (dir: string): void => rmSync(dir, { recursive: true, force: true });
 
 export async function closeStorage(storage: unknown): Promise<void> {

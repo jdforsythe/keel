@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { inspector } from "../src/inspect/inspector.ts";
 import { inspectorSections } from "../src/inspect/inspectorSections.ts";
@@ -19,7 +20,7 @@ const values = (): unknown => inspectorSections(ctx).sections;
 let root = "";
 beforeEach(() => {
   inspectors.clear();
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-inspector-reload-"));
+  root = tempDir(".tmp-inspector-reload-", import.meta.dirname);
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });

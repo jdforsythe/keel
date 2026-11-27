@@ -1,10 +1,10 @@
 // k.check explain and docs: `keel explain` of a code a registered stdlib rule reports gives that rule's message and
 // `explain`, as `keel check` loads the project's std deps. A stub `@keel/std-*` package in a real temp folder.
 // Seed: 1337 (no generated inputs).
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, expect, test } from "vitest";
 import { run } from "../src/run.ts";
 
@@ -18,7 +18,7 @@ const RULE = `defineRule({ code: "E2998", message: "a stub rule's message", expl
 
 /** A project whose module lists a stub `@keel/std-explainstub` whose `./tools` registers E2998. */
 function project(): string {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-explain-std-")));
+  const root = realpathSync(tempDir("keel-explain-std-"));
   made.push(root);
   const pkg = join(root, "stub");
   mkdirSync(pkg, { recursive: true });

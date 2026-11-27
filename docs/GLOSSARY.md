@@ -26,6 +26,8 @@ Canonical names. Changing one requires an RFC.
 - **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.
 - **base**: the `tokens.ts` group of style sets the compiled stylesheet applies to each element role (`page`, `heading`, `link`, `button`, `control`, `label`, `fieldError`, `summary`), with the `focus` color of the keyboard focus ring; any style prop at a use wins (k.ui).
 - **look**: a named style set in the `look` group of `tokens.ts`, applied as `look="<name>"`; the element's own props replace the set's per prop (k.ui).
+- **library tokens**: the tokens object a library ships from its `./tokens` entry, `<id>Tokens`, each name `<id>.<name>`; the app spreads it into its own `tokens.ts`, and its names are the ones the library's files may write (k.looks).
+- **color scheme**: `light` or `dark`, one value of each color token; an app's `schemes` names one or both, and with both the person's system preference or a `SchemeSelect` pick decides (k.schemes).
 - **host element**: `Host` from `@keel/ui`, the one element whose node outside code owns (a chart library, d3, a standard custom element), given a schema-typed value and run by `hostCode({ mount, update, dispose })`; client only, opaque to the harness and replay, counted in the ledger (k.host-element).
 - **driver**: an object passed as `createCtx({ drivers })` that supplies `storage` or `net` on a `real` or `shell` ctx and keeps that capability's contract.
 - **shell**: a native package of a `client` deployable, `capacitor` (Android, iOS) or `tauri` (desktop), declared in `topology.ts` as `shells`.

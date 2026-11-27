@@ -1,8 +1,8 @@
 // The browser-build helpers of the Vite plugin (k.boundary, k.bundle): stubs, handler bindings, miscased specifiers,
 // `new URL` literals and the E1007 graph walk. Seed 1337.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { parseSync } from "oxc-parser";
 import { describe, expect, it } from "vitest";
@@ -15,7 +15,7 @@ import { urlLiterals } from "../src/internal/urlLiterals.ts";
 
 describe("exportNames", () => {
   it("lists value exports, follows export * and drops types", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-exports-"));
+    const dir = tempDir("keel-exports-");
     try {
       fs.writeFileSync(path.join(dir, "y.ts"), "export const y = 1\nexport default 2\nexport type Y = 1\n");
       fs.writeFileSync(

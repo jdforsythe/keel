@@ -1,7 +1,7 @@
 // k.user Identity source: the generated entries of each `node` deployable pass the project's `identity.server.ts`.
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { devEntryCode } from "../src/internal/devEntryCode.ts";
 import { serverEntryCode } from "../src/internal/serverEntryCode.ts";
@@ -12,7 +12,7 @@ afterAll(() => {
   for (const r of roots) rmSync(r, { recursive: true, force: true });
 });
 const project = (withIdentity: boolean): string => {
-  const root = mkdtempSync(join(tmpdir(), "keel-entry-who-"));
+  const root = tempDir("keel-entry-who-");
   roots.push(root);
   if (withIdentity) writeFileSync(join(root, "identity.server.ts"), "export default {}\n");
   return root;
