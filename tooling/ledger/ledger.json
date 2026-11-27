@@ -4,8 +4,8 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2765,
-    "probabilistic": 465,
+    "example": 2806,
+    "probabilistic": 467,
     "exhaustive": 21,
     "proven": 92,
     "monitored": 8
@@ -2598,6 +2598,54 @@
       "rung": "example"
     },
     {
+      "pkg": "create-app",
+      "name": "caselessAt",
+      "file": "packages/create-app/src/caselessAt.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "ownPackage",
+      "file": "packages/create-app/src/ownPackage.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "parseFlags",
+      "file": "packages/create-app/src/parseFlags.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "create-app",
+      "name": "readInputs",
+      "file": "packages/create-app/src/readInputs.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "realOf",
+      "file": "packages/create-app/src/realOf.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "render",
+      "file": "packages/create-app/src/render.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "run",
+      "file": "packages/create-app/src/run.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "create-app",
+      "name": "writePlan",
+      "file": "packages/create-app/src/writePlan.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "ctx",
       "name": "NetStep",
       "file": "packages/ctx/src/NetStep.schema.ts",
@@ -4394,6 +4442,14 @@
       "rung": "example"
     },
     {
+      "item": "k.cli#2b8ad806",
+      "rung": "none"
+    },
+    {
+      "item": "k.cli#98dc8d48",
+      "rung": "none"
+    },
+    {
       "item": "k.cli#07d28201",
       "rung": "example"
     },
@@ -4430,35 +4486,11 @@
       "rung": "example"
     },
     {
-      "item": "k.cli#0350f362",
-      "rung": "example"
-    },
-    {
       "item": "k.cli#ce50206a",
       "rung": "example"
     },
     {
       "item": "k.cli#398abea4",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#37360651",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#230e07eb",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#35e83788",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#4c74ea7c",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#74b07083",
       "rung": "example"
     },
     {
@@ -4470,8 +4502,8 @@
       "rung": "example"
     },
     {
-      "item": "k.cli#390ee352",
-      "rung": "example"
+      "item": "k.cli#15fcca56",
+      "rung": "none"
     },
     {
       "item": "k.compat#cd449a1a",
@@ -4787,6 +4819,122 @@
     },
     {
       "item": "k.contract#6dc1cada",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#4d0e8cf6",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#a3cb12a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#3ab069df",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#fc177b14",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#964e816d",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#9c3ca074",
+      "rung": "none"
+    },
+    {
+      "item": "k.create-folder#4fcd4632",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#240629b2",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4bb31ef7",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#016e77e1",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#eb6b3008",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#da096e98",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2e707ab2",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#8855ad56",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#55b02fb5",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4edddd90",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#e4aec79c",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2d8cb4ef",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#3141d042",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0c658d38",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0aa22e84",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0a665250",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2379d4c3",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#138a83e9",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#899f68d4",
+      "rung": "none"
+    },
+    {
+      "item": "k.create#ef7594f7",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4d5882a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#6b2332ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#81d2e835",
       "rung": "example"
     },
     {
@@ -5626,6 +5774,22 @@
       "rung": "example"
     },
     {
+      "item": "k.explain#bea8d924",
+      "rung": "none"
+    },
+    {
+      "item": "k.explain#f43d664d",
+      "rung": "none"
+    },
+    {
+      "item": "k.explain#a3e6a41a",
+      "rung": "none"
+    },
+    {
+      "item": "k.explain#e1314763",
+      "rung": "none"
+    },
+    {
       "item": "k.formats#a4a148e7",
       "rung": "probabilistic"
     },
@@ -5951,6 +6115,34 @@
     },
     {
       "item": "k.hosting#9ed4ddac",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#0350f362",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#37360651",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#230e07eb",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#35e83788",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#4c74ea7c",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#74b07083",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#390ee352",
       "rung": "example"
     },
     {
@@ -7426,6 +7618,34 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold-needs#99662289",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#7cd97b47",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#32777646",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#d3fcca97",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#6ea9154f",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#57d08dd2",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#14b2412b",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold-service#a9444bcb",
       "rung": "example"
     },
@@ -7506,6 +7726,10 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#d2ee049d",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold#980af00f",
       "rung": "example"
     },
@@ -7534,7 +7758,7 @@
       "rung": "example"
     },
     {
-      "item": "k.scaffold#f7d2895f",
+      "item": "k.scaffold#3f0d7bc7",
       "rung": "example"
     },
     {
@@ -7550,7 +7774,15 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#00af183c",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold#27e8ecd6",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#17345bd2",
       "rung": "example"
     },
     {
@@ -7571,6 +7803,10 @@
     },
     {
       "item": "k.scaffold#8b7a66df",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#ab964dca",
       "rung": "example"
     },
     {
