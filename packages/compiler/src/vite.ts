@@ -71,9 +71,12 @@ import type { RouteEntry } from "./types/RouteEntry.ts";
 import type { Topology } from "./types/Topology.ts";
 
 const CODE = /\.[cm]?[jt]sx?$/;
-/** Test code and tool configs are not app code: no rules, no lowering (k.testing lint E1701 covers tests). */
+/**
+ * Test code (k.check App code: `*.test.*`, `*.spec.*`, under `test/`, `tests/`, `conformance/`, `__tests__/`) and tool
+ * configs are not app code: no rules, no lowering (k.testing lint E1701 covers tests).
+ */
 const NOT_APP =
-  /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
+  /(?:^|\/)(?:test|tests|conformance|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 /**

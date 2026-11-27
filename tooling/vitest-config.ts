@@ -13,7 +13,11 @@
 // file passes to vitest (test-time.ts, test-times.ts). In a Keel project (a `topology.ts` in the working
 // directory) a run outside `keel test` gets what `keel test` gives it: `KEEL_TEST=1` and `@keel/testing/setup`, so a
 // harness render given no `artifacts` takes the project's `.keel/a11y.json` and `tokens.ts` (k.a11y Artifacts).
-import { existsSync } from "node:fs";
+// In a library's own folder (`"keel": "library"` in its `package.json`, k.library Kind) the compiler's own plugin
+// runs first, so the library's `src` is compiled as an app that lists it compiles it (k.library In an app) and each
+// top-level statement of it runs in a module root (k.reactive Module roots); test files stay uncompiled, so a test
+// file's top level has no module root (docs/TESTING.md).
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import { join } from "node:path";
@@ -70,6 +74,20 @@ function asKeelTest(): { env: Record<string, string>; setup: string[] } {
   }
 }
 
+/** Whether the folder `cwd` is a library's own (its `package.json` has `"keel": "library"`, k.library Kind). */
+function ownLibrary(cwd: string): boolean {
+  const file = join(cwd, "package.json");
+  if (!existsSync(file)) return false;
+  const pkg: unknown = JSON.parse(readFileSync(file, "utf8"));
+  return typeof pkg === "object" && pkg !== null && Reflect.get(pkg, "keel") === "library";
+}
+
+/** The compiler's plugin (`@keel/compiler/vite`), loaded only for a library's own folder. */
+async function compilerPlugin(): Promise<ReturnType<typeof import("../packages/compiler/src/vite.ts").default>> {
+  const { default: keel } = await import("../packages/compiler/src/vite.ts");
+  return keel();
+}
+
 export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
   const test = config.test ?? {};
   const workers = test.maxWorkers ?? workersFromEnv();
@@ -79,7 +97,12 @@ export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
   const keelTest = asKeelTest();
   return {
     ...config,
-    plugins: [...(config.plugins ?? []), testTimesPlugin(testTimeScale()), propertyTimesPlugin(testTimeout)],
+    plugins: [
+      ...(ownLibrary(process.cwd()) ? [compilerPlugin()] : []),
+      ...(config.plugins ?? []),
+      testTimesPlugin(testTimeScale()),
+      propertyTimesPlugin(testTimeout),
+    ],
     test: {
       ...test,
       testTimeout,
