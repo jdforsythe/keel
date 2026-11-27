@@ -113,10 +113,10 @@ describe("composeRequired", () => {
 });
 
 describe("idHeads", () => {
-  it("is the fixed head of each template id, once", () => {
+  it("is the fixed head of each template id, and the tail of one built on a prop, once", () => {
     expect(
       idHeads(["<b id={`shop.row.${r.id}`} />", "id={`shop.row.${x}`}", "id={`a.b-c.${k}.x`}", "id={`${k}.x`}"]),
-    ).toEqual(["a.b-c.", "shop.row."]);
+    ).toEqual([".x", "a.b-c.", "shop.row."]);
   });
 });
 
