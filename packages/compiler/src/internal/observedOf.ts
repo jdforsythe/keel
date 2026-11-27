@@ -1,7 +1,8 @@
 import type { Observed } from "./Observed.ts";
+import type { ObservedKind } from "./ObservedKind.ts";
 
-const KINDS = ["exists", "realpath", "list"] as const;
-type Kind = (typeof KINDS)[number];
+const KINDS: readonly ObservedKind[] = ["exists", "stat", "lstat", "realpath", "list", "process", "call"];
+type Kind = ObservedKind;
 const isKind = (x: unknown): x is Kind => KINDS.some((k) => k === x);
 const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);

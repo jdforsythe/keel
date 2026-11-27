@@ -406,12 +406,73 @@ describe("evaluateProject observes what it reads by another way, and refuses wha
           "n",
         ),
       );
-      expect((await run("tokens9.ts")).problems.join("\n")).toMatch(/^E1050 require\(".*c\.cjs"\) of a file/);
+      expect((await run("tokens9.ts")).problems.join("\n")).toMatch(
+        /^E1050 a require or import\(\) of ".*c\.cjs", a code file/,
+      );
       write(
         "tokens10.ts",
         tokensWith('import { readFileSync } from "node:fs";\nconst n = readFileSync(0).length;', "n"),
       );
       expect((await run("tokens10.ts")).problems.join("\n")).toMatch(/^E1050 a read by file descriptor 0/);
+    },
+  );
+
+  it(
+    "gives each module its own import.meta, resolves a createRequire name from its folder and records each lookup, an absent one too",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("sub/d.json", '{"n":4}');
+      write(
+        "sub/m14.ts",
+        'import { createRequire } from "node:module";\nconst req = createRequire(import.meta.url);\nlet absent = 0;\ntry { req(["absent-q", "x.json"].join("/")); } catch { absent = 1; }\nexport const n = req(["./d", "json"].join(".")).n + absent;',
+      );
+      write("tokens14.ts", tokensWith('import { n } from "./sub/m14.ts";', "n"));
+      const r = await run("tokens14.ts");
+      expect(r.problems).toEqual([]);
+      const seen = r.observe?.();
+      expect(seen?.reads).toContain(fs.realpathSync(path.join(root, "sub", "d.json")));
+      expect(seen?.probes).toContainEqual(["realpath", path.join(root, "sub", "node_modules", "absent-q")]);
+      expect(seen?.probes).toContainEqual(["realpath", path.join(root, "node_modules", "absent-q")]);
+      expect(seen?.probes).toContainEqual(["process", "cwd"]);
+    },
+  );
+
+  it(
+    "records a relative import's candidates before the file it loaded, as absent",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("h18.ts", "export const n = 5;");
+      write("tokens18.ts", tokensWith('import { n } from "./h18";', "n"));
+      const seen = (await run("tokens18.ts")).observe?.();
+      expect(seen?.probes).toContainEqual(["stat", path.join(root, "h18")]);
+      expect(seen?.probes).toContainEqual(["stat", path.join(root, "h18.tsx")]);
+      expect(seen?.probes).not.toContainEqual(["stat", path.join(root, "h18.ts")]);
+    },
+  );
+
+  it(
+    "refuses a computed import() of a code file and each route to Node's own loader with E1050",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("c15.cjs", "module.exports = 1;");
+      const cases: readonly (readonly [string, RegExp])[] = [
+        [
+          `const n = (await import([${JSON.stringify(path.join(root, "c15"))}, "cjs"].join("."))).default;`,
+          /^E1050 a require or import\(\) of ".*c15\.cjs", a code file/,
+        ],
+        ['import m from "node:module";\nconst n = m._load("./c15.cjs");', /^E1050 node:module\._load at build time/],
+        [
+          'import { createRequire } from "node:module";\nconst n = createRequire(import.meta.url)("module")._load("./c15.cjs");',
+          /^E1050 node:module\._load at build time/,
+        ],
+        ["const n = process.mainModule.filename;", /^E1050 process\.mainModule at build time/],
+        ['const n = import.meta.resolve("./c15.cjs");', /^E1050 import\.meta\.resolve at build time/],
+        ['const n = Function("return 1")();', /^E1050 Function at build time/],
+      ];
+      for (const [i, [head, refused]] of cases.entries()) {
+        write(`tokens15${i}.ts`, tokensWith(head, "n"));
+        expect((await run(`tokens15${i}.ts`)).problems.join("\n")).toMatch(refused);
+      }
     },
   );
 });

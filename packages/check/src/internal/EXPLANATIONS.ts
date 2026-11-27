@@ -139,7 +139,7 @@ const ROWS: readonly Row[] = [
   [
     "E1050",
     "build-time evaluation refused a read it cannot observe",
-    "A child process, worker or network call, a .node addon, a computed require of code, an unopened descriptor.",
+    "A child process, network call, .node addon, code named at run time, Node's loader or an unopened descriptor.",
     "move the call into a handler, which runs at request time",
     "k.compiler",
   ],

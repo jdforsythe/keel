@@ -13,5 +13,7 @@ export function noteDiag(line: string): Diag | undefined {
   const m = NOTE.exec(line.trim());
   if (m === null) return undefined;
   const [, code = "", path, message = ""] = m;
+  // An E1050 is unlocated unless its line is (k.compiler Rules): its message starts with what was refused.
+  if (code === "E1050") return makeDiag(code, line.trim().slice("E1050 ".length));
   return makeDiag(code, message, path === undefined ? {} : { path });
 }

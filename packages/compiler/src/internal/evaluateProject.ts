@@ -11,18 +11,21 @@ import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
 import { OBSERVE_BANNER } from "./OBSERVE_BANNER.ts";
 import type { Observed } from "./Observed.ts";
+import { SERVER_ENV } from "./SERVER_ENV.ts";
+import { UNRESOLVED_MARK } from "./UNRESOLVED_MARK.ts";
 import { bundleFailure } from "./bundleFailure.ts";
 import { contractOf } from "./contractOf.ts";
+import { importMetaPlugin } from "./importMetaPlugin.ts";
 import { internalFailure } from "./internalFailure.ts";
+import { isNodeBuiltin } from "./isNodeBuiltin.ts";
 import { observePlugin } from "./observePlugin.ts";
 import { observedOf } from "./observedOf.ts";
 import { pathLinks } from "./pathLinks.ts";
+import { withImportMeta } from "./withImportMeta.ts";
 
 // Build-time only (D24): the bundle below is resolved from the app root, which depends on these packages.
 const UI_CSS = "@keel/ui/css";
 const ROUTER = "@keel/router";
-
-const SERVER_ENV = JSON.stringify({ BASE_URL: "/", MODE: "production", DEV: false, PROD: true, SSR: true });
 
 const q = (s: string): string => JSON.stringify(s);
 /** An import specifier for a root-relative or absolute file. */
@@ -172,9 +175,10 @@ export async function evaluateProject(input: {
   /** The absolute path of every file the bundle loaded (esbuild's inputs), sorted; none when nothing was bundled. */
   inputs?: string[];
   /**
-   * What the bundle's code has asked so far of the file system and the environment (`Observed`), each symbolic link on the
-   * path to a file it loaded or read, and each `node_modules/<name>` a bare import resolved through, among its `realpath`
-   * probes (`pathLinks`); read after the last of its code has run.
+   * What the bundle's code has asked so far of the file system, the environment and the process (`Observed`), with
+   * what the bundle's resolver asked (`pathLinks`): each candidate and `node_modules/<name>` it tried, each symbolic
+   * link on a path to a file loaded or read among its probes, and the nearest `package.json` and `tsconfig.json` of
+   * each loaded file's folder among its reads; read after the last of its code has run.
    */
   observe?: () => Observed;
   /** With `surface`: the module's `surface` export, live (contracts, route tables and the two internals). */
@@ -212,13 +216,26 @@ export async function evaluateProject(input: {
     // the bundle's own (`OBSERVE_BANNER`), which with its views records what the code reads in `__keelObserved`.
     banner: { js: OBSERVE_BANNER },
     // As the server build: `import.meta.env` holds Vite's built-in values only (the plugin's `envPrefix` admits none).
-    // Every free `process`, `globalThis` and `global` is the bundle's recording view of it.
+    // Every other `import.meta` is its module's own (`withImportMeta`); every free `process`, `globalThis`, `global`
+    // `console` and `navigator` is the bundle's view of it, and `Function`, `eval`, `fetch`, `WebSocket` and
+    // `EventSource` refused views (`OBSERVE_BANNER`).
     define: {
-      "import.meta.env": SERVER_ENV,
+      "import.meta.env": JSON.stringify(SERVER_ENV),
+      "import.meta": "__keelMeta",
       process: "__keelProcess",
       globalThis: "__keelGlobal",
       global: "__keelGlobal",
+      console: "__keelConsole",
+      Function: "__keelFunction",
+      eval: "__keelEval",
+      fetch: "__keelFetch",
+      WebSocket: "__keelWebSocket",
+      EventSource: "__keelEventSource",
+      navigator: "__keelNavigator",
     },
+    // A literal `import()` is bundled; a computed one becomes the bundle's own `require` (`OBSERVE_BANNER`), never
+    // Node's loader.
+    supported: { "dynamic-import": false },
     // Node's own conditions (`node`, `import`, `default`), without esbuild's `module`: the file a package's `exports`
     // gives here is the one Node imports and the one `routeLiterals` reads; `keel` first gives a library's source.
     conditions: ["keel"],
@@ -254,10 +271,15 @@ export async function evaluateProject(input: {
               return { errors: broken.map((d) => ({ text: d.message })) };
             }
             const out = r.outputs[0];
-            return { contents: out?.code ?? "", loader: "ts", resolveDir: path.dirname(args.path) };
+            return {
+              contents: withImportMeta(out?.code ?? "", args.path),
+              loader: "ts",
+              resolveDir: path.dirname(args.path),
+            };
           });
         },
       },
+      importMetaPlugin(),
     ],
   });
   const result = await bundled.catch((e: unknown) => {
@@ -276,7 +298,16 @@ export async function evaluateProject(input: {
       }),
     ),
   ].sort();
-  const text = result.outputFiles[0]?.text ?? "";
+  // The names left to run time because none resolved from their importer (a `require` in a `try`): the bundle's free
+  // `require` answers them not found, and `pathLinks` records the questions that resolution asked.
+  const unresolved = [
+    ...new Set(
+      Object.values(result.metafile.inputs).flatMap((i) =>
+        i.imports.filter((x) => x.external === true && !isNodeBuiltin(x.path)).map((x) => x.path),
+      ),
+    ),
+  ].sort();
+  const text = (result.outputFiles[0]?.text ?? "").replace(UNRESOLVED_MARK, () => JSON.stringify(unresolved));
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evaluate-"));
   const file = path.join(dir, "evaluate.mjs");
   let json: unknown;
@@ -311,8 +342,8 @@ export async function evaluateProject(input: {
   const problems = json.problems.filter((p) => typeof p === "string");
   const observe = (): Observed => {
     const o = observedOf(observed);
-    const link = (l: string): readonly ["realpath", string] => ["realpath", l];
-    return { ...o, probes: [...o.probes, ...pathLinks(root, result.metafile, o.reads).map(link)] };
+    const asked = pathLinks(root, result.metafile, o.reads);
+    return { ...o, reads: [...new Set([...o.reads, ...asked.files])], probes: [...o.probes, ...asked.probes] };
   };
   return { css: json.css, looks, schemes, routes, problems, inputs, observe, ...(none ? {} : { surface }) };
 }

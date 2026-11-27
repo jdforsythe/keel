@@ -1,3 +1,5 @@
+import type { CacheProbe } from "./CacheProbe.ts";
+
 /** What one evaluation of a project gives (`evaluateTree`), data only, so it can cross a process boundary. */
 export type Evaluation = {
   /** `routes.json`'s data: each route entry by id. */
@@ -10,8 +12,8 @@ export type Evaluation = {
   readonly inputs: readonly string[];
   /** The absolute path of every file its code read through `node:fs` or `node:fs/promises`, as the code named it. */
   readonly reads: readonly string[];
-  /** Its code's other questions of the file system, each with an absolute path. */
-  readonly probes: readonly (readonly ["exists" | "realpath" | "list", string])[];
+  /** Its code's and its resolver's other questions, each with an absolute path, a fact's name or a call (`CacheProbe`). */
+  readonly probes: readonly (readonly [Exclude<CacheProbe["kind"], "env" | "env-names">, string])[];
   /** Each `process.env` name its code read, with the value it saw (`null`: absent). */
   readonly env: readonly (readonly [string, string | null])[];
   /** Whether its code listed `process.env`'s names. */

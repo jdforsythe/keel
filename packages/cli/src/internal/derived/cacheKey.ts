@@ -6,10 +6,13 @@ import { sha256Hex } from "../sha256Hex.ts";
 import { hashFile } from "./hashFile.ts";
 
 /** The entry format; a change of it is a miss for every older entry. */
-const FORMAT = 2;
+const FORMAT = 3;
 let keel: string | undefined;
 
-/** The SHA-256 of the evaluator's own code: the CLI's version and each file that evaluates (k.derived Derivation cache). */
+/**
+ * The SHA-256 of the evaluator's own code: the CLI's version and each file that evaluates, the compiler's internal
+ * folder (the bundle's views and resolver) whole (k.derived Derivation cache).
+ */
 function keelKey(): string {
   if (keel !== undefined) return keel;
   const own = dirname(fileURLToPath(import.meta.url));
@@ -21,7 +24,10 @@ function keelKey(): string {
       .sort()
       .map((n) => join(own, n)),
     views,
-    join(dirname(views), "internal", `evaluateProject${ext}`),
+    ...readdirSync(join(dirname(views), "internal"))
+      .filter((n) => n.endsWith(ext))
+      .sort()
+      .map((n) => join(dirname(views), "internal", n)),
     join(own, "..", `surfaceOf${ext}`),
     join(own, "..", `toJsonSchema${ext}`),
   ];

@@ -7,7 +7,17 @@ import type { Evaluation } from "./Evaluation.ts";
 import { cacheHeld } from "./cacheHeld.ts";
 import { cacheKey } from "./cacheKey.ts";
 
-const KINDS: readonly CacheProbe["kind"][] = ["exists", "realpath", "list", "env", "env-names"];
+const KINDS: readonly CacheProbe["kind"][] = [
+  "exists",
+  "stat",
+  "lstat",
+  "realpath",
+  "list",
+  "process",
+  "call",
+  "env",
+  "env-names",
+];
 
 /** The recorded inputs of an entry, or undefined when one is out of shape. */
 function inputsOf(v: unknown): CacheInput[] | undefined {
