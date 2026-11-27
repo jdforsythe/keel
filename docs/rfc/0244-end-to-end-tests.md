@@ -11,6 +11,8 @@ Status: implemented (ADR-0267), the third part (The review's findings, below) in
 7. **`keel dev` listens on loopback by default; `keel dev --host <address>` is the one opt-in.** Decided with the operator. A person testing on a real phone over the local network is an ordinary need (A4; an iPhone has no `adb reverse`), and a wall there sends people to tunnels that are worse. The opt-in is a flag alone, so no environment value or committed file turns it on. It prints one W1569 naming the addresses, and its explanation lists what the network reaches: the source modules Vite serves, HMR, dev error texts, and whatever the app serves in dev, such as a dev sign-in fixture's fixed secret. `/__keel/inspect` still answers loopback connections alone, because it holds every store unredacted. An app's own dev fixtures are its own code, so Keel cannot fence them; the warning names them instead. `serve` in e2e and the inspector stay loopback, with no switch (k.topology #18 to #20, k.cli `dev` row).
 8. **A production `node` deployable listens on every interface unless `HOST` says otherwise.** Recommended: a container's port mapping needs it, and an operator narrows it with `HOST`. The reverse, loopback by default, would break every Dockerfile Keel writes.
 9. **The inspector trusts `Host` and `Sec-Fetch-Site`, with no token.** Recommended (The review's findings, 1). A token in the page cannot guard the first navigation, which is the one an attacker forges.
+11. **`local: true` routes, not `site` and `host` on every loader.** Recommended (fourth part, 1).
+12. **`--no-sandbox` exists, as a flag that warns on every run.** Recommended: a locked-down runner where the user cannot change a sysctl otherwise has no way through but running as root, which is worse.
 10. **New verbs for upload, download, hover and opened tabs; no verb for drag, the clipboard or frames.** Recommended (finding 12).
 6. **Map titles trimmed.** Recommended. The spec map had 17 tokens of room and `keel docs` had 1. Instead of raising either budget, map titles are shortened with no change of meaning: `Secrets, pii`, `Server deps`, `Surface compat`, `Library pack`, `Escape review`, `A11y`, `Proofs`, `Exploration`, and for the third part `Explain`, `Formats`, `Manifest`, `Contract`, and this RFC's own `Tests`, `Pages` and `Runner`. To reverse, restore the titles and re-base `spec.map` to 1,700 and `docs.map` to 1,730. At integration the lane merges `jdforsythe/test-impl`, whose two-level map (RFC 0246: a short top map plus area files under `spec/areas/`) replaces the one-level budgets this trimming served. This RFC's sections then take rows in the area files, and every shortened title returns to its full form: `Explain` to `Explanations`, `Formats` to `Format types`, `Manifest` to `Module manifest`, `Contract` to `Module contract`, `Tests` to `End-to-end tests`, `Pages` to `End-to-end pages`, `Runner` to `End-to-end runner`, and the second part's eight likewise. No budget is raised.
 
@@ -242,6 +244,26 @@ A review attacked the second step's build. Each finding below gives the rule, th
     - Clauses: k.e2e-page #23 to #26.
 13. **CI cost.**
     - Build plan only.
+
+### Two surfaces the build added (fourth part)
+1. **Local routes instead of `site` and `host` on every loader.**
+   - What was built: the inspector's caller rule widened every loader with `site` (`Sec-Fetch-Site`) and `host` (`Host`). That gives every app a general way to make decisions on raw headers. An author behind a proxy would treat `Host` as trusted, and neither header is a boundary alone.
+   - Decision: the loader is not widened. A page or API entry declares `local: true` (k.contract Local routes), and the server enforces it before guards, loaders or actions run. It requires three things: a loopback remote address, a loopback `Host` with a port, and `Sec-Fetch-Site` `same-origin` or `none`. Any other request is 403 `keel.denied`.
+   - Why it is better for A2: one declared member, not header logic in each app. For A8: the surface (`routes.json`) shows which routes answer this machine alone, and the remote-address check holds where `Host` is forged. Any dev tool can reuse it.
+   - Clauses: k.contract Local routes and Conformance, the last five bullets; k.server's loader bullet and k.contract Binding list no `site` or `host`.
+   - Builder:
+     - remove `site` and `host` from `@keel/server` and `@keel/router`'s loader argument;
+     - pass the connection's remote address from `start` to `createApp`;
+     - enforce `local`, and write it into `routes.json`;
+     - `apps/inspector`: `local: true` on `inspector.index`, the loader's header checks deleted.
+2. **The sandbox.**
+   - When Chromium cannot start its sandbox, the run fails with E1734 before any file. The fix text names `kernel.apparmor_restrict_unprivileged_userns=0`, `kernel.unprivileged_userns_clone=1`, a seccomp profile allowing `CLONE_NEWUSER`, and `--no-sandbox`.
+   - `--no-sandbox` is the one explicit acceptance: a flag only, with W1734 on every run. Root on Linux runs unsandboxed with W1734 on every run.
+   - The seam is `KEEL_E2E_SANDBOX=unavailable`. It makes the check fail without launching, and no value turns the sandbox off.
+   - Clauses: k.e2e-run Browser and its last three bullets; k.e2e Files names the flag.
+   - The repo's CI runs `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0` on its Ubuntu runners. That is acceptable there for three reasons: the runner is a single-use VM; the setting restores what the kernel allowed before Ubuntu 23.10; and it keeps the sandbox on rather than taking `--no-sandbox`.
+   - Builder: the `--no-sandbox` flag and W1734 for it, the seam, and the fix text.
+   - Conformance-writer: the new bullets, using the seam.
 
 ### Worked case 1: a storefront
 A cart that survives a reload and a declined payment, with card data kept out of the server log (K2). The payment provider is an `answer`, and the app reaches it through its module's `env`.

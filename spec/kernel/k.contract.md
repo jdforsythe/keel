@@ -14,9 +14,9 @@ It is client-safe (E1514); keys are route ids prefixed by the module id (E1155).
 
 | Kind | Requires | Optional |
 | --- | --- | --- |
-| page | `path` | `params`, `search` |
+| page | `path` | `params`, `search`, `local` |
 | layout | `layout: true` | |
-| API | `method`, `path`, `output` | `params`, `query`, `body`, `errors`, `timeout`, `events` |
+| API | `method`, `path`, `output` | `params`, `query`, `body`, `errors`, `timeout`, `events`, `local` |
 
 A kind refuses members outside its row. `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; an API id is `<module>.<name>`, `name` one lowerCamel segment.
 
@@ -25,10 +25,12 @@ A kind refuses members outside its row. `method` is `GET`, `POST`, `PUT`, `PATCH
 **Binding.** `routes.ts` exports `routes = manifest(contract, binding)`, binding every entry and nothing else: a page `{ component, loader?, guard?, layout?, errorElement?, title?, POST?, PUT?, PATCH?, DELETE? }` (verbs: page actions); a layout `{ component, loader?, guard?, layout?, errorElement? }`; an API GET `{ loader, guard? }`; an API write `{ action, guard? }`. `layout` names a layout of any module (k.routes); page and layout guards have a `redirect` (k.guards).
 
 **Handlers.** A handler names its entry; `fn` is never annotated:
-- `loader(contract, id, decl, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, site, host, stores, signal }` and `ctx` (k.server). `params` is `Infer` of the entry's `params` (`{}` without), `search` of a page's `search` or an API entry's `query`; a layout's `params` are the matched route's, `unknown`. On an API GET `decl` is `{ stores? }` and `fn` returns `Result` of `output`, as an async generator when `events: true` (live, k.server), and only then: no page or layout loader is live. On a page or layout `decl` is `{ output, stores? }`.
+- `loader(contract, id, decl, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores, signal }` and `ctx` (k.server). `params` is `Infer` of the entry's `params` (`{}` without), `search` of a page's `search` or an API entry's `query`; a layout's `params` are the matched route's, `unknown`. On an API GET `decl` is `{ stores? }` and `fn` returns `Result` of `output`, as an async generator when `events: true` (live, k.server), and only then: no page or layout loader is live. On a page or layout `decl` is `{ output, stores? }`.
 - `action(contract, id, decl, fn)`: on an API write `decl` is `{ stores? }` and `fn` gets the decoded `body` (`{}` without one), `{ params, url, caller, user, bearer, stores }` and `ctx` and returns `Result` of `output` (k.api Output). On a page `decl` is `{ input, stores? }` and `fn` returns `Result<Href | null>` (k.router Form); its verb is its binding key.
 
 **Derived.** `<contract>.href(id, params?, search?)` links to a page of it (k.router Links). `service({ contract, timeout? })` (k.services) has a method per API entry. `routes.json` and `surface.json` (k.compat) derive from both. Every entry is public to a module whose `deps` name this one; importing the contract needs `deps` only (E1152), never `public.exports`.
+
+**Local routes.** `local: true` on a page or API entry makes it a route of this machine alone, for a dev tool (the inspector). Before guards, loaders or actions run, the server answers a request matching it only when three things hold: the connection's remote address is a loopback address (`127.0.0.1`, `::1`); its `Host` is `localhost`, `127.0.0.1` or `[::1]` with a port; and its `Sec-Fetch-Site` is `same-origin` or `none`. Any other request, one with no `Sec-Fetch-Site` among them, is 403 `keel.denied` and runs nothing. A request `createApp`'s `fetch` gets with no connection (a harness, k.testing) has no remote address and is refused too. A page on another site (a cross-site navigation), a rebound name (a foreign `Host`) and another machine are each refused. A proxy on the same machine that forwards with a loopback `Host` makes the route reachable through it, so a `local` route is not deployed behind one. `.keel/routes.json` marks the entry `local: true`, so the surface shows it. A loader reads no request header: `fn` gets the members Binding lists, and `local` is the one declared way to judge where a request came from. `local` other than the literal `true` is E1510.
 
 **Rules.** E1510 an entry of no kind or with a member its kind refuses, or a binding member its entry refuses; a type error, thrown by `contract` or `manifest`; fix removes the member, none for an entry missing one · E1513 a `contract()` call outside `modules/<id>/<id>.contract.ts` or a package's `./contract`, a second one, an `id` not the folder's module id, an export not named `<id>`, a `routes.ts` binding another module's contract, `contract` reached but by a direct call of its import (an alias, a re-export), or an API id with a dotted name; `contract` throws the last alone; no fix, the message names the expected path · E1514 a contract file importing anything but a `*.schema.ts` file or a package, at the import; no fix · E1515 a binding missing an entry or an entry's required member, with a key the contract lacks, with a handler declared for another id or contract, with a plain loader on an `events: true` entry, or with an async generator loader on any other; a type error, `manifest` throws it naming the id; fix removes an extra key. E1502, E1503, E1504 (k.router) and E1653 (k.services) read the contract. Where each code fires: k.routes.
 
@@ -44,3 +46,8 @@ A kind refuses members outside its row. `method` is `GET`, `POST`, `PUT`, `PATCH
 - A contract file importing a `.tsx` component, a `*.server.ts` file or `routes.ts` is one E1514; importing `*.schema.ts` files and `@keel/std-*` packages is none.
 - `contract` in `modules/a/routes.ts`, or `contract('b', ...)` in `modules/a/a.contract.ts`, is one E1513 naming `modules/a/a.contract.ts`; called, `contract('b', ...)` throws none.
 - Module `b` importing `modules/a/a.contract.ts` without `a` in `deps` is one E1152; with it none, and no E1151.
+- A `GET` of a `local: true` page from `127.0.0.1` with `Host: 127.0.0.1:<port>` and `Sec-Fetch-Site: none` answers the page, and its loader runs once.
+- The same `GET` with `Sec-Fetch-Site: cross-site`, with no `Sec-Fetch-Site`, or with `Host: example.com`, answers 403 `keel.denied` and its loader does not run.
+- A `GET` of that page over a connection from a non-loopback address of the machine, with `Host: localhost:<port>` and `Sec-Fetch-Site: same-origin`, answers 403 `keel.denied`.
+- `.keel/routes.json` of a contract with a `local: true` API entry marks that entry `local: true`; `local: false` on an entry is E1510.
+- A loader's `fn` argument has exactly the keys `params`, `search`, `url`, `caller`, `user`, `bearer`, `stores` and `signal`.

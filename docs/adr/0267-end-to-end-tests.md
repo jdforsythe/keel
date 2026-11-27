@@ -30,6 +30,8 @@
   - A library host is made per call, with `wrap` and `tokens`, and its paths must lie in their folders.
   - The inspector takes an origin only, answers only a loopback `Host` with `Sec-Fetch-Site` `same-origin` or `none`, and gives one failure text.
 
+- Fourth part: a dev-only route declares `local: true` (k.contract), which the server enforces before any handler runs: a loopback remote address, a loopback `Host` and `Sec-Fetch-Site` `same-origin` or `none`. Loaders get no `site` or `host`. A Chromium that cannot start its sandbox fails the run with E1734 naming the settings. `--no-sandbox` is the one explicit way to run without it, with W1734 on every run. `KEEL_E2E_SANDBOX=unavailable` is the test seam.
+
 **Alternatives.**
 - Document Playwright and stop there. That is a harness each developer builds, with CSS selectors, sleeps, no server lifecycle and no ledger tie.
 - `@playwright/test` as the runner. That is a second runner beside vitest, with a second report and a second set of timeouts.
