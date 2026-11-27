@@ -51,7 +51,7 @@ it("finds shop.b.text", () => {
 const BADGE_USE = (fn: string): string =>
   `import { Badge } from '${NAME}'\nexport default function ${fn}() {\n  return <Badge id="shop.b" />\n}\n`;
 const APP_TOKENS =
-  'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n\nexport const tokens = defineTokens({ ...brandTokens, color: { ...brandTokens.color, ...acmeTokens.color }, look: { ...brandTokens.look, ...acmeTokens.look } });\n';
+  'import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n\nexport const tokens = defineTokens({ ...brandTokens, color: { ...brandTokens.color, ...acmeTokens.color }, look: { ...brandTokens.look, ...acmeTokens.look } });\n';
 
 /** The files of k.looks' fixture library, relative to its package folder. */
 const libraryFiles = (): Tree => ({
@@ -71,7 +71,7 @@ const libraryFiles = (): Tree => ({
   "src/Badge.tsx":
     "import { Text } from '@keel/ui'\nexport default function Badge(props: { id: string }) { return <Text id={`${props.id}.text`} look=\"acme.badge\">x</Text> }\n",
   "src/acmeTokens.ts":
-    "import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } } })\n",
+    "import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } } })\n",
   ".keel/ledger.json": LEDGER,
 });
 

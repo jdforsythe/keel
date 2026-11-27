@@ -26,7 +26,7 @@ const hostsOf = "readdirSync('.keel').filter((n) => /^e2e-host-/.test(n))";
 const FRAME =
   'import { Box, type Children } from "@keel/ui";\n\nexport default function Frame(props: { children: Children }) {\n  return Box({ as: "main", id: "frame", children: props.children });\n}\n';
 const DARK =
-  'import { defineTokens } from "@keel/ui";\n\nexport const tokens = defineTokens({\n  color: { ink: "#eeeeee", low: "#777777", white: "#ffffff", page: "#101010" },\n  space: { 1: "4px" },\n  base: { page: { bg: "page", fg: "ink", p: "1" }, focus: "ink" },\n});\n';
+  'import { defineTokens } from "@keel/ui/tokens";\n\nexport const tokens = defineTokens({\n  color: { ink: "#eeeeee", low: "#777777", white: "#ffffff", page: "#101010" },\n  space: { 1: "4px" },\n  base: { page: { bg: "page", fg: "ink", p: "1" }, focus: "ink" },\n});\n';
 const OTHER = 'export { default } from "../src/Card.ts";\n';
 const extra: Tree = { "test/Frame.ts": FRAME, "test/dark.ts": DARK, "test/Card.ts": OTHER };
 

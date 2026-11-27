@@ -347,7 +347,7 @@ const TSCONFIG = `${JSON.stringify(
   2,
 )}\n`;
 const TOKENS =
-  "import { defineTokens } from '@keel/ui'\nexport const tokens = defineTokens({\n  color: { ink: '#111111', low: '#777777', white: '#ffffff', page: '#f9f9f9' },\n  space: { 1: '4px' },\n  base: { page: { bg: 'page', fg: 'ink', p: '1' }, focus: 'ink' },\n})\n";
+  "import { defineTokens } from '@keel/ui/tokens'\nexport const tokens = defineTokens({\n  color: { ink: '#111111', low: '#777777', white: '#ffffff', page: '#f9f9f9' },\n  space: { 1: '4px' },\n  base: { page: { bg: 'page', fg: 'ink', p: '1' }, focus: 'ink' },\n})\n";
 /** The root files every fixture project holds. */
 export const rootFiles = (topology: string): Tree => ({
   "package.json": PKG,
