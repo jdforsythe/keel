@@ -9,7 +9,7 @@
 // Needs a real browser: nothing here.
 import { check } from "@keel/check";
 import { combinations } from "@keel/ui/css";
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { CHECK_CASE_BOUND } from "./check-time.ts";

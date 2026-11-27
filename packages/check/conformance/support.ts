@@ -2,7 +2,7 @@
 // Seed 1337 for every property in this suite.
 import { type Dirent, readdirSync } from "node:fs";
 import type { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const SEED = 1337;
 export type Files = Parameters<typeof check>[0];

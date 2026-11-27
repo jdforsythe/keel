@@ -7,7 +7,7 @@
 // Assumed: a diagnostic's `line` and `col` are 1-based and point at the opening quote of a string literal and at the first character of a responsive key; the clip of `<value>` at 20 units keeps 17 and `...`, as k.check Diagnostics' clip does at every width; `brandTokens` has `text` and `card` colors and the space tokens `2` and `3`.
 // Not asserted (untestable from the text): "A library file in an app is read as the app's" is not a Conformance sentence; `keyword` props are asserted only as "no E1801" with a nonsense value, since their type, not check, closes them.
 import { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

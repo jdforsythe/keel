@@ -23,8 +23,8 @@ import {
 import { SEED, looseTokens, ratioOf } from "./support.ts";
 
 const shipped = (themes: string): string =>
-  `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } }, themes: { ${themes} } })\n`;
-const HEAD = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n`;
+  `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } }, themes: { ${themes} } })\n`;
+const HEAD = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n`;
 const appSource = (themes: string, colorTail = ""): string =>
   `${HEAD}\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color${colorTail} },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n  themes: { ${themes} },\n});\n`;
 const codeOf = (f: () => unknown): unknown => {

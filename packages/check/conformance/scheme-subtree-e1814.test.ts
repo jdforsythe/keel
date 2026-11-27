@@ -3,7 +3,7 @@
 // Only the E1814 half of the k.aria clause is asserted here (its CSS and render half is packages/ui/conformance/themes-css.test.ts); k.schemes Checks and Rules give the message and the empty fix ("a `Box` writing `scheme` (k.aria), at the attribute"; fix: none).
 // ASSUMPTIONS (as schemes-contrast.test.ts): tokens reach `check()` as `artifacts: { tokens }` beside a `tokens.ts` source; "at the attribute" is a position on `scheme="dark"` (the name, or its opening quote).
 import { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

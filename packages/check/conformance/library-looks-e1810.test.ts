@@ -9,7 +9,7 @@
 // Rules (k.looks): "E1813 a name with a `.` in the app's tokens that no listed library ships, or a fixture key overriding a default (In an app, Own folder; fix: none)" (the app half; the fixture half is library-looks-own-folder.test.ts).
 // Seed: 1337 (fc.assert below). The CSS half of the third clause (`keel build`) is asserted over `compileStyles` of the composed tokens; the build itself is an end-to-end case.
 // ASSUMPTIONS: see library-looks-support.ts. E1810 to E1814 judge the evaluated tokens `check()` is given as `artifacts: { tokens }` and read `tokens.ts`'s text for positions and the fix (k.looks In an app); the fix's layout is not judged, so the fixed file and the expected one are compared after `biome format` (k.looks Fix).
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { compileStyles } from "@keel/ui/css";
 import fc from "fast-check";
@@ -221,7 +221,7 @@ test(
 );
 
 test("a dropped group is one E1810 for the library naming the first missing name, groups in k.ui's order with `look` last, `and <n> more` counting the rest", () => {
-  const noColor = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\nexport const tokens = defineTokens({ ...brandTokens, look: { ...brandTokens.look, ...acmeTokens.look } });\n`;
+  const noColor = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\nexport const tokens = defineTokens({ ...brandTokens, look: { ...brandTokens.look, ...acmeTokens.look } });\n`;
   const evaluated = defineTokens({
     ...brandTokens,
     look: { ...brandTokens.look, "acme.badge": { bg: "acme.accent", fg: "acme.ink" } },
