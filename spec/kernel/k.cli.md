@@ -15,8 +15,8 @@ status: conformance-covered
 | `render <routeId\|Component> [--props json]` | a11y tree of one render |
 | `scaffold <op>` / `codemod <op>` | structural edits (k.scaffold) |
 | `ledger` | emit, diff the ledger |
-| `evidence [--verify dir --key id]` | signed evidence bundle (k.evidence) |
-| `review [range \| --all]` | escapes by danger and novelty (k.review) |
+| `evidence [--verify dir --key id]` | signed evidence (k.evidence) |
+| `review [range \| --all]` | escapes by danger, novelty (k.review) |
 
 `session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps` (unfilled: I1055). `report`: std.report.
 
