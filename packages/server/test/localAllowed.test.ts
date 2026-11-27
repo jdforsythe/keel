@@ -39,4 +39,28 @@ describe("localAllowed (k.contract Local routes)", () => {
     for (const site of [undefined, "cross-site", "same-site", "", "NONE"])
       expect(localAllowed(req(host, site), "127.0.0.1"), String(site)).toBe(false);
   });
+
+  it("judges a target in absolute form by its authority, whatever Host says (RFC 9112)", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom("127.0.0.1:4100", "localhost:4100", "[::1]:4100"),
+        fc.constantFrom("example.com:4100", "evil.example", "127.0.0.1", "a@127.0.0.1:4100", "127.0.0.1:0"),
+        fc.constantFrom("http", "https", "HTTP"),
+        (own, foreign, scheme) => {
+          expect(localAllowed(req(own, "none"), "127.0.0.1", `${scheme}://${foreign}/x`), foreign).toBe(false);
+          expect(localAllowed(req(foreign, "none"), "127.0.0.1", `${scheme}://${own}/x`), own).toBe(true);
+          expect(localAllowed(req(own, "none"), "127.0.0.1", "/x")).toBe(true);
+          expect(localAllowed(req(foreign, "none"), "127.0.0.1", "/x")).toBe(false);
+        },
+      ),
+      { seed: SEED, numRuns: 50 },
+    );
+  });
+
+  it("refuses a loopback Host or authority with port 0", () => {
+    for (const h of ["127.0.0.1:0", "localhost:0", "[::1]:0", "127.0.0.1:00"]) {
+      expect(localAllowed(req(h, "none"), "127.0.0.1"), h).toBe(false);
+      expect(localAllowed(req("127.0.0.1:4100", "none"), "127.0.0.1", `http://${h}/x`), h).toBe(false);
+    }
+  });
 });

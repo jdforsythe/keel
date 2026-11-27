@@ -44,4 +44,14 @@ describe("readableHost", () => {
     for (const v of ["127.0.0.1:9100", "[::1]:9100", "localhost", "LOCALHOST:9100"])
       expect(readableHost(["Host", v]), v).toBe(v);
   });
+
+  it("refuses a port of 0, where no server listens, in any spelling", () => {
+    fc.assert(
+      fc.property(name, fc.constantFrom("0", "00", "00000"), (h, zero) => {
+        expect(readableHost(["Host", `${h}:${zero}`])).toBeUndefined();
+      }),
+      { seed: SEED },
+    );
+    for (const v of ["127.0.0.1:0", "[::1]:0", "localhost:0"]) expect(readableHost(["Host", v]), v).toBeUndefined();
+  });
 });

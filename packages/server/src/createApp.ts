@@ -55,6 +55,7 @@ import { selectDeployable } from "./internal/selectDeployable.ts";
 import { serving } from "./internal/serving.ts";
 import { slotSince } from "./internal/slotSince.ts";
 import { tallyOf } from "./internal/tallyOf.ts";
+import { targetOf } from "./internal/targetOf.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -312,7 +313,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     // A preflight from an allowed origin to an API route: no guard, loader or action runs.
     const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");
     // A `local: true` route answers this machine alone (k.contract Local routes): checked before anything of it runs.
-    const refusedLocal = matched?.def.local === true && !localAllowed(raw, remoteOf(c.env));
+    const refusedLocal = matched?.def.local === true && !localAllowed(raw, remoteOf(c.env), targetOf(c.env));
     const ran = refusedLocal
       ? { ok: true as const, value: { response: denied("local route refused"), route: matched?.id, diags: [] } }
       : pre
