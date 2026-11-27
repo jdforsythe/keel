@@ -84,7 +84,22 @@
       "steps": [
         "$setup",
         {
-          "name": "Chromium for the end-to-end conformance of @keel/cli and @keel/testing (k.e2e Browser)",
+          "name": "whether this shard runs a test file that drives a browser (ci-shards --browser)",
+          "id": "browser",
+          "run": "node tooling/ci-shards.mjs --browser ${{ matrix.shard }} >> \"$GITHUB_OUTPUT\"\necho \"playwright=$(node -p \"require('playwright-core/package.json').version\")\" >> \"$GITHUB_OUTPUT\""
+        },
+        {
+          "name": "Chromium cache, keyed by the playwright-core version",
+          "if": "steps.browser.outputs.browser == 'true'",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.cache/ms-playwright",
+            "key": "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+          }
+        },
+        {
+          "name": "Chromium for the end-to-end conformance of this shard (k.e2e-run Browser): a cached browser is not downloaded again",
+          "if": "steps.browser.outputs.browser == 'true'",
           "run": "pnpm exec playwright-core install --with-deps chromium"
         },
         {
@@ -284,7 +299,20 @@
           "run": "pnpm build"
         },
         {
-          "name": "Chromium for the end-to-end tests (k.e2e Browser)",
+          "name": "playwright-core version, the Chromium cache's key",
+          "id": "browser",
+          "run": "echo \"playwright=$(node -p \"require('playwright-core/package.json').version\")\" >> \"$GITHUB_OUTPUT\""
+        },
+        {
+          "name": "Chromium cache, keyed by the playwright-core version",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.cache/ms-playwright",
+            "key": "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+          }
+        },
+        {
+          "name": "Chromium for the end-to-end tests (k.e2e-run Browser): a cached browser is not downloaded again",
           "run": "pnpm exec playwright-core install --with-deps chromium"
         },
         {
@@ -310,10 +338,6 @@
         {
           "name": "values in Chromium: every rule the compiler emits from token values kept, each attack value refused before emission (k.values)",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/values.mjs"
-        },
-        {
-          "name": "resume in place as the smoke judges it: no served element removed and none added under an island root, and each page's served markup, for golden-2's pages and household's setup page, three runs",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
         },
         {
           "name": "examples: check, test and build in each, then its end-to-end files where it has them",

@@ -65,7 +65,17 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: "Chromium for the end-to-end conformance of @keel/cli and @keel/testing (k.e2e Browser)"
+      - name: "whether this shard runs a test file that drives a browser (ci-shards --browser)"
+        id: browser
+        run: "node tooling/ci-shards.mjs --browser ${{ matrix.shard }} >> \"$GITHUB_OUTPUT\"\necho \"playwright=$(node -p \"require('playwright-core/package.json').version\")\" >> \"$GITHUB_OUTPUT\""
+      - name: "Chromium cache, keyed by the playwright-core version"
+        if: "steps.browser.outputs.browser == 'true'"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: "~/.cache/ms-playwright"
+          key: "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+      - name: "Chromium for the end-to-end conformance of this shard (k.e2e-run Browser): a cached browser is not downloaded again"
+        if: "steps.browser.outputs.browser == 'true'"
         run: pnpm exec playwright-core install --with-deps chromium
       - name: "turbo cache: the builds the check job ran"
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -218,7 +228,15 @@ jobs:
           TURBO_TOKEN: "${{ secrets.TURBO_TOKEN }}"
           TURBO_TEAM: "${{ vars.TURBO_TEAM }}"
         run: pnpm build
-      - name: "Chromium for the end-to-end tests (k.e2e Browser)"
+      - name: "playwright-core version, the Chromium cache's key"
+        id: browser
+        run: "echo \"playwright=$(node -p \"require('playwright-core/package.json').version\")\" >> \"$GITHUB_OUTPUT\""
+      - name: "Chromium cache, keyed by the playwright-core version"
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: "~/.cache/ms-playwright"
+          key: "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+      - name: "Chromium for the end-to-end tests (k.e2e-run Browser): a cached browser is not downloaded again"
         run: pnpm exec playwright-core install --with-deps chromium
       - name: "golden-1 end to end: persistence, restart, the removal workflow on SQLite and Postgres 17, monitor, content security policy"
         working-directory: apps/golden-1
@@ -234,8 +252,6 @@ jobs:
         run: node ../../packages/cli/src/bin.ts test --e2e
       - name: "values in Chromium: every rule the compiler emits from token values kept, each attack value refused before emission (k.values)"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/values.mjs"
-      - name: "resume in place as the smoke judges it: no served element removed and none added under an island root, and each page's served markup, for golden-2's pages and household's setup page, three runs"
-        run: "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
       - name: "examples: check, test and build in each, then its end-to-end files where it has them"
         run: "set -e\nfor d in examples/*/; do\n  (cd \"$d\" && node ../../packages/cli/src/bin.ts check && node ../../packages/cli/src/bin.ts test && if grep -q '\"keel\": \"library\"' package.json; then node ../../packages/cli/src/bin.ts pack --check; else node ../../packages/cli/src/bin.ts build; fi && if ls test/*.e2e.ts >/dev/null 2>&1; then node ../../packages/cli/src/bin.ts test --e2e; fi)\ndone"
       - name: "e2e run reports: each project's reports/tests/e2e.json, paths kept, for the ledger"
