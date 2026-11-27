@@ -1,5 +1,5 @@
-// Spec: k.errors, clause "With `d` a defect, `attempt(() => { throw new Error('w', { cause: d }) }, spy)` and `attempt(() => Promise.any([Promise.reject(d)]), spy)` throw or reject with the wrapping value itself and never call `spy`."
-// Spec: k.errors, clause "A value made by `defect('x', 'E2801')` under one copy of `@keel/schema` is `isDefect(v, 'E2801')` under a second copy loaded from another path; `structuredClone(v)` and the value a worker receives by `postMessage(v)` are not `isDefect`."
+// Spec: k.attempt, clause "With `d` a defect, `attempt(() => { throw new Error('w', { cause: d }) }, spy)` and `attempt(() => Promise.any([Promise.reject(d)]), spy)` throw or reject with the wrapping value itself and never call `spy`."
+// Spec: k.defects, clause "A value made by `defect('x', 'E2801')` under one copy of `@keel/schema` is `isDefect(v, 'E2801')` under a second copy loaded from another path in the same realm; `structuredClone(v)` and the value a worker receives by `postMessage(v)` are not `isDefect`."
 // Seed 1337.
 // Assumption: "a second copy loaded from another path" is a second evaluation of the package, `vi.resetModules()` then a dynamic import; a copy of the build under a temporary path would also do but needs the build.
 // Assumption: "at most 8 steps" counts each `cause` or `errors` member followed as one step: a wrapper holding the defect is 1 step, so 8 wrappers skip `expect` and 9 do not.

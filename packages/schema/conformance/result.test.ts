@@ -1,9 +1,8 @@
-import { attempt, err, ok, s } from "@keel/schema";
+import { err, ok, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 // Spec: k.errors, clause "`ok(v)` is `{ ok: true, value: v }`; `err(e)` is `{ ok: false, error: e }`."
 // Spec: k.errors, clause "`s.result(T, E)` round-trips every generated ok and err value through its JSON codec."
-// Spec: k.errors, clause "`attempt` returns `ok(value)` when `fn` returns, and `err` with code `keel.unexpected` when `fn` throws or its promise rejects; it never throws."
 // Seed 1337.
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED } from "./fixtures";
@@ -67,51 +66,6 @@ describe("k.errors: s.result round-trip", () => {
       }),
       opts,
     );
-  });
-});
-
-describe("k.errors: attempt", () => {
-  it("attempt returns ok(value) when fn returns", async () => {
-    expect(await attempt(() => 42)).toEqual({ ok: true, value: 42 });
-  });
-
-  it("attempt returns ok(value) when fn's promise resolves", async () => {
-    expect(await attempt(() => Promise.resolve("v"))).toEqual({ ok: true, value: "v" });
-  });
-
-  it("attempt returns err keel.unexpected when fn throws, and never throws", async () => {
-    const r = await attempt(() => {
-      throw new Error("boom");
-    });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.code).toBe("keel.unexpected");
-  });
-
-  it("attempt returns err keel.unexpected when fn throws a non-Error value", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.jsonValue(), async (thrown) => {
-        const r = await attempt(() => {
-          throw thrown;
-        });
-        expect(r.ok).toBe(false);
-        if (!r.ok) expect(r.error.code).toBe("keel.unexpected");
-      }),
-      opts,
-    );
-  });
-
-  it("attempt returns err keel.unexpected when fn's promise rejects, and never throws", async () => {
-    const r = await attempt(() => Promise.reject(new Error("boom")));
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.code).toBe("keel.unexpected");
-  });
-
-  it("attempt returns err keel.unexpected for an async function that throws", async () => {
-    const r = await attempt(async () => {
-      throw new Error("boom");
-    });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.code).toBe("keel.unexpected");
   });
 });
 
