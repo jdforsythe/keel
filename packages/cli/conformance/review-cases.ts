@@ -67,6 +67,30 @@ export const CASES: readonly Case[] = [
     },
   },
   {
+    code: "R1018",
+    range: false,
+    base: {},
+    head: {
+      "libs/jobs/package.json": `${JSON.stringify({ name: "@acme/jobs", version: "1.0.0", type: "module", keel: "library" })}\n`,
+      "libs/jobs/src/run.ts":
+        "import { supervise } from '@keel/ctx';\ndeclare const ctx: never;\ndeclare const f: () => number;\ndeclare const T: never;\nexport const r = supervise(ctx, 'jobs.run', f, T);\n",
+    },
+  },
+  {
+    code: "R1019",
+    range: false,
+    base: {},
+    head: { "modules/m/s.ts": "export const k = (name: string) => Symbol.for(name);\n" },
+  },
+  {
+    code: "R1020",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/l.ts": "declare const h: () => void;\nexport const f = (name: string) => process.on(name, h);\n",
+    },
+  },
+  {
     code: "R1014",
     range: false,
     base: {},
