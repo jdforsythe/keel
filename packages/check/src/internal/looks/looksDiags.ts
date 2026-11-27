@@ -1,9 +1,9 @@
+import { fitNames } from "@keel/schema/internal";
 import { tokenGroups } from "@keel/ui";
 import { type ObjectExpression, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { applyEdits } from "../applyEdits.ts";
-import { fitNames } from "@keel/schema/internal";
 import { keyName } from "../keyName.ts";
 import { moduleDiag } from "../modules/moduleDiag.ts";
 import { parseFile } from "../parseFile.ts";

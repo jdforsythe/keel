@@ -35,7 +35,7 @@ export const checkTimeEntries: RuleDef = {
     if (NODE_MODULES.test(p) && !library) return [];
     const sites = valueImportSites(ast).filter((s) => ENTRIES.has(s.spec));
     const read = checkTimeReach(p, project);
-    const own = read !== undefined && read.exempt && !read.entry ? [] : sites;
+    const own = read?.exempt === true && !read.entry ? [] : sites;
     const out = own.map((s) => findingAt(file, s.start, { entry: s.spec }));
     if (!library && !NODE_MODULES.test(p))
       for (const r of read?.reports ?? []) out.push(findingAt(file, r.start, { entry: r.entry, file: r.file }));
