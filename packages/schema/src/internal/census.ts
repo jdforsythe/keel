@@ -9,8 +9,8 @@ const apply = Reflect.apply;
 const bare = (url: string): string => url.replace(/[?#].*$/, "");
 
 /**
- * Enter `name` at `url` in the realm's census (k.realm One copy), the map of kernel package names to file URLs at
- * `globalThis[Symbol.for('keel.census')]`. Returns the URL an evaluation from another file entered first, else
+ * Enter `name` at `url` in the realm's census (k.realm One copy), the map of kernel package names to the URL of each
+ * one's file (in a browser bundle, its path from the project) at `globalThis[Symbol.for('keel.census')]`. Returns the URL an evaluation from another file entered first, else
  * `undefined`; the same file again is no second copy.
  */
 export function census(name: string, url: string): string | undefined {
