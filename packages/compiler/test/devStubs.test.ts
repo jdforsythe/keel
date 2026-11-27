@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { type ViteDevServer, createServer } from "vite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -14,7 +15,7 @@ const write = (rel: string, text: string): void => {
   fs.writeFileSync(path.join(root, rel), text);
 };
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-dev-stubs-"));
+  root = tempDir(".tmp-dev-stubs-", import.meta.dirname);
   write("topology.ts", `export default { api: { modules: ["a"], adapter: "node" } };\n`);
   write(
     "modules/a/load.server.ts",

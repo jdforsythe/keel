@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { parseSync } from "oxc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -102,7 +103,7 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
   };
   const saved = process.env.KEEL_DEPLOYABLE;
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-islands-"));
+    root = tempDir(".tmp-islands-", import.meta.dirname);
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
   });
   afterEach(() => {

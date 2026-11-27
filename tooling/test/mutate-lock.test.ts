@@ -2,8 +2,8 @@
 // Every process a test starts is killed by that test, by process group where it has one.
 import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { stallCheck } from "../mutate.mjs";
 import { acquire, ancestors, busyDiag, heldBy, holderAlive, lockedDiag } from "../mutateLock.mjs";
@@ -26,7 +26,7 @@ function kill(pid: number): void {
     } catch {}
 }
 const temp = (): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-mutate-test-"));
+  const d = tempDir("keel-mutate-test-");
   dirs.push(d);
   return d;
 };

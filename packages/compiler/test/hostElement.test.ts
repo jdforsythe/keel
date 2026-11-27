@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { compile } from "../src/index.ts";
 import { evaluateProject } from "../src/internal/evaluateProject.ts";
@@ -43,7 +44,7 @@ describe("a host element code file's stylesheet at build-time evaluation", () =>
     "a `.css` import in the code a route reaches evaluates to nothing in Node",
     { timeout: fixedTime(30000) },
     async () => {
-      root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-host-css-"));
+      root = tempDir(".tmp-host-css-", import.meta.dirname);
       const write = (rel: string, text: string): void => {
         fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
         fs.writeFileSync(path.join(root, rel), text);

@@ -2,8 +2,8 @@
 // own timeout (property-times.ts judges the test; this file checks the folders it is applied to).
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { fixedTime, testTime } from "../test-time.ts";
 
@@ -15,7 +15,7 @@ afterAll(() => {
 
 /** Runs structure-lint over a throwaway root holding `files`; returns its S0017 diagnostics. */
 function s0017(files: Record<string, string>): { code: string; path: string; line: number }[] {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-s0017-"));
+  const root = tempDir("keel-s0017-");
   made.push(root);
   for (const [file, source] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

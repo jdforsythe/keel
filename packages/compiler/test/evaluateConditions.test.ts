@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { evaluateProject } from "../src/internal/evaluateProject.ts";
 import { routeLiterals } from "../src/routeLiterals.ts";
@@ -15,7 +16,7 @@ const write = (rel: string, text: string): void => {
   fs.writeFileSync(file, text);
 };
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-cond-"));
+  root = tempDir(".tmp-cond-", import.meta.dirname);
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))

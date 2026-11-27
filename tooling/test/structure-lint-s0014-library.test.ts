@@ -4,8 +4,8 @@
 // text is built from constants so this file's own source holds no literal `unsafe(` call.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { fixedTime, testTime } from "../test-time.ts";
 
@@ -24,7 +24,7 @@ const KERNEL = JSON.stringify({ name: "@x/p", type: "module" });
 
 /** structure-lint over a throwaway root holding `files`; its S0014 findings. */
 function s0014(files: Readonly<Record<string, string>>): { code: string; path: string; line: number }[] {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-s0014-lib-"));
+  const root = tempDir("keel-s0014-lib-");
   made.push(root);
   for (const [file, source] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

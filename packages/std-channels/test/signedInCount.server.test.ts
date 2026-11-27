@@ -3,8 +3,7 @@
 // user's own `perCaller` on the module, never the anonymous `perAnonymous`; with no user and no caller cookie it is
 // anonymous. A client cannot assert a user: a header the identity source does not accept, or an unsigned
 // `x-keel-user`, leaves the request anonymous.
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
@@ -12,6 +11,7 @@ import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
 import { channelRoute } from "../src/server/channelRoute.server.ts";
@@ -22,7 +22,7 @@ const TOKENS: Record<string, string> = { "tok-ada": "ada", "tok-bo": "bo" };
 
 let dir = "";
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "keel-channels-signed-"));
+  dir = tempDir("keel-channels-signed-");
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

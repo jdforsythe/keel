@@ -1,10 +1,11 @@
 // a11yReport (k.evidence a11y.json): each claim with the rules mapped to its criterion, the criteria no rule maps to,
 // and the contrast table of the project's tokens.ts. Seed 1337.
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WCAG_CRITERIA } from "@keel/testing/a11y";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
 import type { A11yClaim } from "../src/internal/A11yClaim.ts";
@@ -18,7 +19,7 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 const project = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(here, ".tmp-a11yReport-"));
+  const dir = tempDir(".tmp-a11yReport-", here);
   dirs.push(dir);
   // The project has `@keel/ui` installed, as an app does: the report reads `contrastTable` from the project's own copy.
   mkdirSync(join(dir, "node_modules", "@keel"), { recursive: true });

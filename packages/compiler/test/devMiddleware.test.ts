@@ -5,6 +5,7 @@ import fs from "node:fs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { devEntryCode } from "../src/internal/devEntryCode.ts";
 import { devMiddleware } from "../src/internal/devMiddleware.ts";
@@ -60,7 +61,7 @@ describe("devMiddleware", () => {
 
 describe("devEntryCode", () => {
   it("gives each dev app the identity source's handle path, or undefined without identity.server.ts", () => {
-    const root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-dev-mount-"));
+    const root = tempDir(".tmp-dev-mount-", import.meta.dirname);
     try {
       const topology = { api: { modules: [], adapter: "node" as const } };
       expect(devEntryCode(root, topology)).toContain("(p) => matchUrl(table, p).route !== null, undefined]);");

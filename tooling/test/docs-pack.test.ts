@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   badWords,
@@ -24,7 +24,7 @@ afterEach(() => {
 
 /** A small repo: two sections each in kernel and std, three packages, the map, two area files and a glossary. */
 function fixture(owners: Record<string, string[]>, edit: Record<string, string | undefined> = {}): string {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), "docs-pack-"));
+  const repo = tempDir("docs-pack-");
   scratch.push(repo);
   const files: Record<string, string | undefined> = {
     "spec/00-map.md":
