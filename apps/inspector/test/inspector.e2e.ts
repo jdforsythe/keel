@@ -75,10 +75,12 @@ it(
     );
     expect(kinds.length).toBeGreaterThan(0);
 
+    // The store's log as the view counts it, and one entry shown per entry counted: a view that always says the log is
+    // empty, or that counts what it does not show, fails here.
     const count = (await view.find("inspector.store.todos.outbox.count")).text;
-    expect(count).not.toBe("");
+    expect(count).toMatch(/^Log: [1-9]\d* entries$/);
     const entries = await view.findAll("inspector.store.todos.outbox.entry");
-    expect(entries.length).toBeGreaterThan(0);
+    expect(entries).toHaveLength(Number(/\d+/.exec(count)?.[0]));
     expect(entries.some((e) => e.text.includes("outbox.add"))).toBe(true);
 
     expect((await view.find("inspector.ids.counts")).text).not.toBe("");

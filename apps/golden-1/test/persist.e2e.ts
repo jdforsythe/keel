@@ -45,6 +45,8 @@ it("a list and a todo survive reloads, a toggle and its undo reach the api, and 
 
   await page.reload();
   await page.until(link, { text: name });
+  // One list made, one link after the reload: a list rendered twice fails here.
+  expect(await page.findAll("todos.listLink")).toHaveLength(1);
 
   await page.fire(link, { type: "click" });
   await page.until("todos.list.title", { text: name });

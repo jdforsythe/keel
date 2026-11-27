@@ -2,7 +2,7 @@
 // the receipts, the household name and the session are all there after the server is started again, and the list's
 // pages say Connecting while it is gone and Live once it is back.
 import { expect, it } from "vitest";
-import { addStaple, holds, household, itemsOf, json, member, read, unexpected } from "./householdApp.ts";
+import { addStaple, holds, household, householdName, itemsOf, json, member, read, unexpected } from "./householdApp.ts";
 
 it("PGlite keeps the list, the receipts and the name through a kill with a write in flight, and the session outlives it", async () => {
   const { served } = await household();
@@ -40,8 +40,8 @@ it("PGlite keeps the list, the receipts and the name through a kill with a write
   expect(holds(items)).toBe(true);
   await page.navigate("/receipts");
   expect((await page.findAll("receipts.total")).map((t) => t.text)).toContain("€3.50");
-  const named = await (await page.fetch("/api/household", { headers: read })).text();
-  expect(named).toContain("Oak Road");
+  // The kept name by equality: a name saved as `Oak Road ` (a space) fails here.
+  expect(await householdName(await page.fetch("/api/household", { headers: read }))).toBe("Oak Road");
   await page.navigate("/profile");
   expect((await page.location()).path).toBe("/profile");
   expect(unexpected(page)).toEqual([]);

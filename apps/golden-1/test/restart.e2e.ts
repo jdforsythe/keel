@@ -60,7 +60,12 @@ it("the board stored before a SIGKILL is the board after the restart, and the ne
 
   // restart: the stored board equals the one before, and the api answers the same board.
   expect(await app.state(board)).toEqual(before);
-  expect(await app.log(board)).toEqual(was);
+  // Byte for byte: the stored snapshot's digest and each entry's payload digest are the ones before the SIGKILL.
+  const again = await app.log(board);
+  expect(was.digest).toMatch(/^[0-9a-f]{64}$/);
+  expect(again.digest).toBe(was.digest);
+  expect(again.entries.map((e) => e.digest)).toEqual(was.entries.map((e) => e.digest));
+  expect(again).toEqual(was);
   expect(JSON.stringify(await view(app))).toBe(shown);
 
   // next write: a toggle after the restart is applied to the restored board (done flips back).

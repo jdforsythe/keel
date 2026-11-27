@@ -147,9 +147,11 @@ it(
       await u1.fire(theirs[0]?.id ?? "", { type: "click" });
       await u1.until("todos.outbox", { gone: true });
 
-      // The offline requests failed in the browser: they are the problems user 1's page read.
-      expect((await u1.problems()).length).toBeGreaterThan(0);
-      expect(await u0.problems()).toEqual([]);
+      // The offline requests failed in the browser: user 1's page takes those console errors and nothing else, so any
+      // other problem (a rejection no code handled) is left and fails the test with E1738.
+      expect(u1.problems({ kind: "console", text: "ERR_INTERNET_DISCONNECTED" }).length).toBeGreaterThan(0);
+      expect(u1.problems()).toEqual([]);
+      expect(u0.problems()).toEqual([]);
 
       // tally merged: the api's runner writes `sessions.tally` every 60 s of its clock. The storage key is no store's, so
       // each read of the `until` below (every 100 ms) starts one request for the tally and the test reads the last answer.

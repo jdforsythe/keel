@@ -156,9 +156,10 @@ it("a receipt form records a receipt, and a rejected one keeps the typed values 
   expect(on).toMatchObject({ shop: "Market", amount: "3.555", invalid: true });
   expect(on.error).not.toBe("");
   // The browser reports the 422 the form was answered with as a console error.
-  expect(page.problems().map((p) => p.text)).toEqual([
+  expect(page.problems({ kind: "console", text: "422 (Unprocessable Entity)" }).map((p) => p.text)).toEqual([
     "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
   ]);
+  expect(page.problems()).toEqual([]);
 });
 
 it("a rejected form keeps the typed values and shows the error, and the setup saves, with scripts off", async () => {
@@ -176,7 +177,8 @@ it("a rejected form keeps the typed values and shows the error, and the setup sa
   const off = await shown(bare);
   expect(off).toMatchObject({ shop: "Market", amount: "3.555", invalid: true });
   expect(off.error).not.toBe("");
-  expect(bare.problems().filter((p) => p.kind !== "console")).toEqual([]);
+  // With scripts off the 422 is the document's own answer: the browser logs nothing for it.
+  expect(bare.problems()).toEqual([]);
 });
 
 it("a minted token calls the API as the member, and a revoked one is refused", async () => {

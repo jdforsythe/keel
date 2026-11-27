@@ -102,12 +102,11 @@ it(
       const page = await app.open("/");
       await page.find("app.home.tile");
       await page.settle();
-      const problems = page.problems();
-      const csp = problems.filter((p) => p.kind === "csp");
+      const csp = page.problems({ kind: "csp", text: "img-src" });
       expect(csp.map((p) => p.text)).toEqual(["img-src blocked https://undeclared.example/0.png"]);
-      expect(problems.filter((p) => p.kind === "console").every((p) => p.text.includes("undeclared.example"))).toBe(
-        true,
-      );
+      // The browser's own console line for the blocked image names it; nothing else is left.
+      page.problems({ kind: "console", text: "undeclared.example" });
+      expect(page.problems()).toEqual([]);
     } finally {
       await rm(tmp, { recursive: true, force: true });
     }

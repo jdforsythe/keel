@@ -140,13 +140,11 @@ export function holds(items: readonly Item[]): boolean {
 /**
  * The problems of `page` that are not a request the page lost with its server or its network (the browser's own
  * network errors are console errors): each as `kind: text`. A test that stops its server or takes the page offline
- * reads them here, so an error of the page's own code still fails it.
+ * takes them here; whatever else is left is returned and, untaken, fails the test with E1738.
  */
 export function unexpected(page: Page): string[] {
-  return page
-    .problems()
-    .filter((p) => !(p.kind === "console" && p.text.startsWith("Failed to load resource")))
-    .map((p) => `${p.kind}: ${p.text}`);
+  page.problems({ kind: "console", text: /^Failed to load resource/ });
+  return page.problems().map((p) => `${p.kind}: ${p.text}`);
 }
 
 /** The texts of the list's rows on `page`. */

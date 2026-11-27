@@ -40,12 +40,10 @@ async function signedIn(served: Served, who: string, path: string): Promise<Page
 const runNow = async (page: Page): Promise<number> =>
   (await page.fetch("/api/restock", { method: "POST", headers: json, body: "{}" })).status;
 
-/** The text of the document's `problems()` that are not a request the page lost with its server or its network. */
+/** Takes the requests the page lost with its server or its network; returns every other problem, as `kind: text`. */
 function unexpected(page: Page): string[] {
-  return page
-    .problems()
-    .filter((p) => !(p.kind === "console" && p.text.startsWith("Failed to load resource")))
-    .map((p) => `${p.kind}: ${p.text}`);
+  page.problems({ kind: "console", text: /^Failed to load resource/ });
+  return page.problems().map((p) => `${p.kind}: ${p.text}`);
 }
 
 it(
@@ -57,6 +55,12 @@ it(
     const typed = "Elm Street";
     const input = "setup.form:name";
     const signed = await signedIn(served, who, "/signin");
+    // The served markup, as the signed-in context is sent it: the form's island, the page, and the live panel that says
+    // Connecting since a server render has no stream.
+    const html = await (await signed.fetch("/setup", { headers: { accept: "text/html" } })).text();
+    expect([...html.matchAll(/data-k-island="([^"]*)"/g)].map((m) => m[1])).toContain("setup.form");
+    expect(html).toContain('id="setup.page"');
+    expect(html).toMatch(/id="shopping\.restock\.live"[^>]*>Connecting/);
     const page = await signed.open("/setup", { hold: true });
     await page.fire(input, { type: "input", value: typed });
     await page.fire(input, { type: "focus" });
@@ -65,7 +69,9 @@ it(
     await page.press("ArrowRight");
     // The served document has no stream yet.
     expect((await page.find(live)).text).toMatch(/^Connecting/);
-    await page.resume();
+    // The frame's list of recorded events gains a line per event the recorder keeps, the claimed input's among them:
+    // the one place the claim may add elements.
+    await page.resume({ grows: ["app.recording.events"] });
     expect((await page.find(input)).value).toBe(typed);
     // std.live: `status()` is `connecting` before the first read commits and `live` after it.
     await page.until(live, { text: /^Live/ });

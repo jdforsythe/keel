@@ -90,7 +90,7 @@ it(
     await grace.until("shopping.outbox.refused", { gone: true }, { fixed: 10_000 });
     const after = await itemsOf(await ada.fetch("/api/items", { headers: read }));
     expect(after.find((i) => i.id === oats)?.bought).toBe(true);
-    expect(grace.problems().filter((p) => p.kind !== "console")).toEqual([]);
+    expect(unexpected(grace)).toEqual([]);
     expect(unexpected(ada)).toEqual([]);
   },
 );

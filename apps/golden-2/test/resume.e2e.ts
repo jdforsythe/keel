@@ -207,6 +207,7 @@ it("the new-recipe page keeps the title typed before resume, and clearing it sho
   const html = await served_(served, "/recipes/new", "web");
   expect(html).toContain('id="recipes.new"');
   expect(html).toContain('name="title"');
+  expect(html).toContain('name="title"');
   const title = "recipes.draft:title";
   const page = await served.open("/recipes/new", { deployable: "web", hold: true });
   await page.fire(title, { type: "input", value: "Soup" });

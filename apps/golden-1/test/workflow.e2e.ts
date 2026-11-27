@@ -94,14 +94,15 @@ async function crashInsideStep(app: Served): Promise<void> {
   expect((await app.log(removal)).entries.map((e) => e.name)).not.toContain("api.removal.restored");
 
   await app.start();
-  // The resumed step waits its own 2,000 ms: an input of the app, not a bound the test chose.
+  // The resumed step waits its own 2,000 ms: an input of the app (`fixed`), and the smoke's bound of 10 s from the
+  // restart holds: 5 s of app time and 5 s the test chose. A step retried after a longer back-off fails here.
   await app.until(
     removal,
     (r) => {
       const rows = Object.values(r.instances);
       return rows.length === 1 && rows.every((i) => i.state === "kept");
     },
-    { fixed: fixedTime(5_000), within: 30_000 },
+    { fixed: fixedTime(5_000), within: 5_000 },
   );
   // The step ran twice (the killed run and the resumed one) and its restore is recorded once.
   const names = (await app.log(removal)).entries.map((e) => e.name);
