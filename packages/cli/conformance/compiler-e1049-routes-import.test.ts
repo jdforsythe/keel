@@ -1,7 +1,7 @@
 // Spec: k.compiler, clause "A `routes.ts` whose first line imports `./missing.ts`, a file that does not exist, makes `keel check` report one E1049 at that `routes.ts` line 1, whose compact record is followed by the line `see: keel docs k.compiler`."
 // Seed 1337 (recorded) for the property: the line the failing import sits on (the clause's line 1 is its first draw), 4 runs, one `keel check` each.
 // The real `keel` binary over a temp project (OS tmpdir): module `m` with one page route, as moduleFiles of a11y-project-support.ts, its `routes.ts` given a failing import ahead of its own text.
-// ASSUMED: the compact diagnostic record is `E1049 <path>:<line>:<col> <message>` with `<path>` ending `modules/m/routes.ts` (the file's path from the project), and the `see` line is the next line of stdout.
+// ASSUMED: the compact diagnostic record is `E1049 <path>:<line>:<col> <message>` with `<path>` ending `modules/m/routes.ts` (the file's path from the project), and the `see` line is the next line of stdout, printed as docs/OUTPUT.md states for compact (`see: keel docs <id>`, indented two spaces under its record as the `fix` and `see` lines of a diagnostic are).
 import { rmSync } from "node:fs";
 import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
@@ -10,7 +10,7 @@ import { keelProject, moduleFiles } from "./a11y-project-support.ts";
 import { SEED, keel, put } from "./derived-support.ts";
 
 const SLOW = fixedTime(600_000);
-const SEE = "see: keel docs k.compiler";
+const SEE = "  see: keel docs k.compiler";
 
 const dirs: string[] = [];
 afterAll(() => {

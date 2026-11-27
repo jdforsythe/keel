@@ -2,12 +2,12 @@
 // Seed 1337 (recorded); no random inputs. The household copy of derived-support.ts (`@keel/std-text` linked outside `node_modules`), built once and cloned per case.
 // The second copy is a copy of the first with `line`'s default `min` 2, at `<base>/alt/std-text`; the link is the one at `node_modules/@keel/std-text`.
 // The cases "pointed back" and "an unchanged link" state k.derived Derivation cache ("each symbolic link on it a real-path probe, so a link pointed at another folder is a miss") and are not part of the clause's one sentence.
-import { rmSync, symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, test } from "vitest";
 import { lineSurface, secondCopy, surfaceIsBuilt } from "./derived-cache-support.ts";
-import { type Tree, brief, cloneTree, dropTree, householdTree, keel, read } from "./derived-support.ts";
+import { type Tree, brief, cloneTree, dropTree, editStdText, householdTree, keel, read } from "./derived-support.ts";
 
 const SLOW = fixedTime(600_000);
 
@@ -82,6 +82,80 @@ describe("k.derived: a re-linked package is a miss", () => {
       const out = keel(t.dir, ["check"]);
       expect(out.counts.evaluated, brief(out)).toBe(0);
       expect(out.counts.cached, brief(out)).toBe(1);
+    },
+    SLOW,
+  );
+});
+
+describe("k.derived: a link inside a package on the path to a loaded file, pointed at another file, is a miss", () => {
+  // Spec: Derivation cache, "each symbolic link on it (a `node_modules/<name>` link) a real-path probe, so a link pointed at another folder ... is a miss": every link on an input's path, whatever it is a link to.
+  // The linked copy's `line.ts` (a file its evaluation loads) becomes a link to `line.a.ts`, a copy of it; `line.b.ts` is a copy whose default `min` is `min`.
+  /** A household copy whose `line.ts` of `@keel/std-text` is a link to `line.a.ts`, after one `keel check`; returns the link's folder and the link. */
+  function linked(): { t: Tree; folder: string; link: string } {
+    house ??= householdTree();
+    if (!made.includes(house)) made.push(house);
+    const t = cloneTree(house);
+    made.push(t);
+    const rel = editStdText(t, "min ?? 1", "min ?? 1", false)[0];
+    if (rel === undefined) throw new Error("no line.ts");
+    const link = join(t.base, rel);
+    const folder = dirname(link);
+    copyFileSync(link, join(folder, "line.a.ts"));
+    rmSync(link);
+    symlinkSync("line.a.ts", link);
+    const first = keel(t.dir, ["check"]);
+    expect(first.status, brief(first)).toBe(0);
+    return { t, folder, link };
+  }
+  /** Writes `line.b.ts`, a copy of `line.a.ts` with its default `min` `min`. */
+  function other(folder: string, min: number): void {
+    const text = read(folder, "line.a.ts").replace("min ?? 1", `min ?? ${String(min)}`);
+    rmSync(join(folder, "line.b.ts"), { force: true });
+    copyFileSync(join(folder, "line.a.ts"), join(folder, "line.b.ts"));
+    writeFileSync(join(folder, "line.b.ts"), text);
+  }
+  const repoint = (link: string, to: string): void => {
+    rmSync(link);
+    symlinkSync(to, link);
+  };
+
+  test(
+    "an unchanged link inside the package is a hit: `counts.evaluated` 0 and `counts.cached` 1",
+    () => {
+      const { t } = linked();
+      const out = keel(t.dir, ["check"]);
+      expect(out.counts.evaluated, brief(out)).toBe(0);
+      expect(out.counts.cached, brief(out)).toBe(1);
+    },
+    SLOW,
+  );
+
+  test(
+    "pointing that link at another file with the same bytes makes the next `keel check` have `counts.evaluated` 1, and `.keel/surface.json` byte-identical to what `keel build` writes",
+    () => {
+      const { t, folder, link } = linked();
+      const before = read(t.dir, ".keel/surface.json");
+      other(folder, 1);
+      repoint(link, "line.b.ts");
+      const out = keel(t.dir, ["check"]);
+      expect(out.counts.evaluated, brief(out)).toBe(1);
+      expect(out.counts.cached, brief(out)).toBe(0);
+      expect(read(t.dir, ".keel/surface.json")).toBe(before);
+      expect(surfaceIsBuilt(t)).toBe(true);
+    },
+    SLOW,
+  );
+
+  test(
+    "pointing that link at another file with a default `min` of 2 makes the next `keel check` have `counts.evaluated` 1 and `.keel/surface.json` hold the new value, byte-identical to what `keel build` writes",
+    () => {
+      const { t, folder, link } = linked();
+      other(folder, 2);
+      repoint(link, "line.b.ts");
+      const out = keel(t.dir, ["check"]);
+      expect(out.counts.evaluated, brief(out)).toBe(1);
+      expect(read(t.dir, ".keel/surface.json")).toContain(lineSurface(2));
+      expect(surfaceIsBuilt(t)).toBe(true);
     },
     SLOW,
   );
