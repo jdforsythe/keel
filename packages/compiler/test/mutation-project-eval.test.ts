@@ -101,7 +101,7 @@ describe("evaluateProject (mutation)", () => {
         schemes: ["light"],
         themes: [],
         routes: {},
-        problems: ["E1807 token color.fg is not in its group's form"],
+        problems: ["E1807 color.fg: not a color value"],
       });
     },
   );

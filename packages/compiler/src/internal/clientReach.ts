@@ -18,7 +18,8 @@ const ROUTES = /(?:^|\/)routes\.ts$/;
  * file by value imports, re-exports, `import()` and `new URL(<literal>, import.meta.url)`, each followed by `resolve`
  * (k.boundary Following; relative specifiers only when absent) and a template `import()` with a relative head to each
  * file it matches, a query (`?worker`, `?url`) naming its file; so a worker a client entry starts is a client entry.
- * Server-only is by name, any extension, any case. With none, every file but server-only ones. `hits` are their
+ * Server-only is by name, any extension, any case. With none, every file but server-only ones. `reached` is the
+ * entries and what they reach, none with no `topology`. `hits` are their
  * imports of server-only files (a query names its file; a `routes.ts` reports none), with the chain when an entry
  * reaches the importer.
  */
@@ -26,7 +27,11 @@ export function clientReach(
   files: readonly { readonly path: string; readonly program: Program }[],
   topology: Topology | undefined,
   resolve?: Resolve,
-): { readonly subject: ReadonlySet<string>; readonly hits: readonly ReachHit[] } {
+): {
+  readonly subject: ReadonlySet<string>;
+  readonly reached: ReadonlySet<string>;
+  readonly hits: readonly ReachHit[];
+} {
   const byPath = new Map(files.map((f) => [f.path, f]));
   const follow = resolve ?? relativeResolve(new Set(byPath.keys()));
   const owners = (p: string) => {
@@ -104,5 +109,5 @@ export function clientReach(
     visit(p, true);
   }
   for (const p of subject) if (!parent.has(p)) visit(p, false);
-  return { subject, hits };
+  return { subject, reached: new Set(parent.keys()), hits };
 }
