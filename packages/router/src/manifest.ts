@@ -1,6 +1,7 @@
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
 import { bindTable } from "./internal/bindTable.ts";
+import { madeFrozen } from "./internal/madeFrozen.ts";
 import { tables } from "./internal/tables.ts";
 import type { Binding } from "./types/Binding.ts";
 import type { Manifest } from "./types/Manifest.ts";
@@ -18,11 +19,10 @@ export function manifest<M extends string, C extends Entries, O>(
   binding: Binding<C, O, M>,
 ): Manifest<M, C> {
   const compiled = bindTable(contract, binding);
-  const m: Manifest<M, C> = Object.freeze({
-    kind: "keel.routeTable",
-    contract,
-    contracts: Object.freeze([contract]),
-  });
+  const m: Manifest<M, C> = madeFrozen(
+    { kind: "keel.routeTable", contract, contracts: Object.freeze([contract]) },
+    "routeTable",
+  );
   tables.set(m, compiled);
   return m;
 }

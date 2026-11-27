@@ -1,6 +1,11 @@
-import { type JsonValue, type Schema, attempt, s } from "@keel/schema";
+import { type JsonValue, type KeelError, type Schema, attempt, s } from "@keel/schema";
 
 const json = s.json();
+const UNENCODED: KeelError<"sessions.unencoded", null> = {
+  code: "sessions.unencoded",
+  message: "sessions.unencoded",
+  data: null,
+};
 
 /**
  * `value` as JSON (std.sessions): with `schema`, as it encodes it (so no undeclared key of an open object is kept),
@@ -8,7 +13,11 @@ const json = s.json();
  */
 export function jsonOf(value: unknown, schema?: Schema<unknown, boolean>): JsonValue {
   if (schema !== undefined) {
-    const r = attempt(() => schema.encode(value));
+    // `encode` throws an Error for a value its schema refuses.
+    const r = attempt(
+      () => schema.encode(value),
+      (x) => (x instanceof Error ? UNENCODED : undefined),
+    );
     return r.ok ? r.value : null;
   }
   const r = json.parse(value);

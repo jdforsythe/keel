@@ -16,4 +16,4 @@ None.
 
 ## Unsafe
 
-count: 3 (`unsafe/narrow.ts`: a `Case`'s value typed as the variant its tag selects, which `Match` renders it for; `unsafe/nodeOf.ts`: a content value with a `nodeType` typed as a DOM node of any realm; `unsafe/propsSchemaOf.ts`: an island component's `Props` typed as the schema whose `parse` decodes its props)
+count: 2 (`unsafe/narrow.ts`: a `Case`'s value typed as the variant its tag selects, which `Match` renders it for; `unsafe/nodeOf.ts`: a content value with a `nodeType` typed as a DOM node of any realm)

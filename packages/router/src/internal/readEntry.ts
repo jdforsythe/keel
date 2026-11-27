@@ -1,5 +1,4 @@
-import { type ObjectSchema, isSchema } from "@keel/schema";
-import { objectSchemaOf } from "../../unsafe/objectSchemaOf.ts";
+import { type ObjectSchema, isObjectSchema, isSchema } from "@keel/schema";
 import type { EntryShape } from "./EntryShape.ts";
 import { codedError } from "./codedError.ts";
 import { compilePath } from "./compilePath.ts";
@@ -18,8 +17,8 @@ const refused = (id: string, keys: readonly string[], row: readonly string[], ki
 };
 const objectSchema = (id: string, e: object, k: string): ObjectSchema<unknown> | undefined => {
   const v = ownValue(e, k);
-  const o = objectSchemaOf(v);
-  if (v === undefined || o !== undefined) return o;
+  if (v === undefined) return undefined;
+  if (isObjectSchema(v)) return v;
   throw codedError("E1510", `${id}: "${k}" is no object schema`);
 };
 

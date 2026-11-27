@@ -4,10 +4,9 @@ import { type Infer, type KeelError, type Result, type Schema, type Secret, isSc
 import { isolate } from "@keel/store";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
-import { LOADER_KEY } from "./internal/LOADER_KEY.ts";
 import { firstYield } from "./internal/firstYield.ts";
 import { fixedUser } from "./internal/fixedUser.ts";
-import { markedFrozen } from "./internal/markedFrozen.ts";
+import { madeFrozen } from "./internal/madeFrozen.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { refuseSecret } from "./internal/refuseSecret.ts";
 import { withStores } from "./internal/withStores.ts";
@@ -117,8 +116,8 @@ export function loader(
     ...(stores === undefined ? {} : { stores }),
     run,
   };
-  if (Reflect.get(fn, Symbol.toStringTag) !== "AsyncGeneratorFunction") return markedFrozen(base, LOADER_KEY);
-  return markedFrozen(
+  if (Reflect.get(fn, Symbol.toStringTag) !== "AsyncGeneratorFunction") return madeFrozen(base, "loader");
+  return madeFrozen(
     {
       ...base,
       live: (a: LiveInput, ctx: Ctx) => {
@@ -130,7 +129,7 @@ export function loader(
           : liveWithStores(stores, ctx, (st) => yields(fn({ ...at, stores: st }, ctx)));
       },
     },
-    LOADER_KEY,
+    "loader",
   );
 }
 

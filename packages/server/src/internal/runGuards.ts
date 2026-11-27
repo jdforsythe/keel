@@ -62,8 +62,8 @@ async function step(
       return {
         kind: "fail",
         at: i,
-        error: unexpected(carried.error),
-        diags: [{ code: "E1508", message: carried.error.slice(6, 95) }],
+        error: unexpected(carried.error.message),
+        diags: [{ code: "E1508", message: carried.error.message.slice(6, 95) }],
       };
     const to = attempted(() => encodeHref(id, target, carried.value, {}));
     if (!to.ok)

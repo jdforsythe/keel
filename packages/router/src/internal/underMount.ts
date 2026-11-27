@@ -1,4 +1,5 @@
 import { attempt } from "@keel/schema";
+import { undecodable } from "./undecodable.ts";
 
 /**
  * Whether `path` (no search or hash), its segments decoded as the matcher decodes them (`decodeURIComponent` each)
@@ -6,6 +7,6 @@ import { attempt } from "@keel/schema";
  * `/api/auth`, `/API/auth` is not. An undecodable path is under none (it matches no page anyway).
  */
 export function underMount(path: string, mount: string): boolean {
-  const decoded = attempt(() => path.split("/").map(decodeURIComponent).join("/"));
+  const decoded = attempt(() => path.split("/").map(decodeURIComponent).join("/"), undecodable);
   return decoded.ok && `${decoded.value.replace(/\/+$/, "")}/`.startsWith(`${mount}/`);
 }

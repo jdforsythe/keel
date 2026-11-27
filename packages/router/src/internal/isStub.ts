@@ -1,5 +1,7 @@
-import { STUB } from "./STUB.ts";
+import { kernelSet } from "@keel/schema/internal";
 import type { ServerStub } from "./ServerStub.ts";
 
-/** Whether `v` is a stub of a server-only export (`serverOnly`): a key guard on the mark `serverOnly` sets. */
-export const isStub = (v: unknown): v is ServerStub => typeof v === "function" && Object.hasOwn(v, STUB);
+/** Whether `v` is a stub `serverOnly` made in this realm (k.boundary, k.identity), read from the kernel's record. */
+export function isStub(v: unknown): v is ServerStub {
+  return typeof v === "function" && kernelSet("router.serverOnly").has(v);
+}

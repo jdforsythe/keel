@@ -1,16 +1,7 @@
-import { isSchema } from "@keel/schema";
+import { kernelSet } from "@keel/schema/internal";
 import type { Loader } from "../types/Loader.ts";
-import { LOADER_KEY } from "./LOADER_KEY.ts";
-import { ownValue } from "./ownValue.ts";
 
-/** Whether `v` is a value `loader(contract, id, decl, fn)` made: a key guard on its mark. */
+/** Whether `v` is a value `loader(contract, id, decl, fn)` made in this realm (k.identity), read from the kernel's record, never from a property. */
 export function isLoader(v: unknown): v is Loader {
-  return (
-    typeof v === "object" &&
-    v !== null &&
-    ownValue(v, "kind") === "keel.loader" &&
-    typeof ownValue(v, "run") === "function" &&
-    isSchema(ownValue(v, "output")) &&
-    Object.hasOwn(v, LOADER_KEY)
-  );
+  return typeof v === "object" && v !== null && kernelSet("router.loader").has(v);
 }

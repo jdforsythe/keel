@@ -1,7 +1,7 @@
-import { STORE_KEY } from "./internal/STORE_KEY.ts";
+import { kernelSet } from "@keel/schema/internal";
 import type { Store } from "./types/Store.ts";
 
-/** Whether `x` is a store `store` made (k.store Guards): a key guard on `Symbol.for('keel.store')`. */
+/** Whether `x` is a store `store` made in this realm (k.store Guards, k.identity), read from the kernel's record, never from a property. */
 export function isStore(x: unknown): x is Store<unknown> {
-  return typeof x === "object" && x !== null && Object.hasOwn(x, STORE_KEY);
+  return typeof x === "object" && x !== null && kernelSet("store").has(x);
 }

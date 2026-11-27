@@ -1,7 +1,7 @@
-import { TRANSACTION_KEY } from "./internal/TRANSACTION_KEY.ts";
+import { kernelSet } from "@keel/schema/internal";
 import type { Transaction } from "./types/Transaction.ts";
 
-/** Whether `x` is a transaction `transaction` made (k.store Guards): a key guard on `Symbol.for('keel.transaction')`. */
+/** Whether `x` is a transaction `transaction` made in this realm (k.store Guards, k.identity), read from the kernel's record, never from a property. */
 export function isTransaction(x: unknown): x is Transaction<unknown, unknown> {
-  return typeof x === "object" && x !== null && Object.hasOwn(x, TRANSACTION_KEY);
+  return typeof x === "object" && x !== null && kernelSet("transaction").has(x);
 }

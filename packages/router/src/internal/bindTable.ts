@@ -1,3 +1,4 @@
+import { isObjectSchema, isSchema } from "@keel/schema";
 import { callable } from "../../unsafe/callable.ts";
 import type { Contract } from "../contract/types/Contract.ts";
 import type { Action } from "../types/Action.ts";
@@ -34,15 +35,13 @@ const ROWS = {
 const rowOf = (s: EntryShape): keyof typeof ROWS =>
   s.kind === "api" ? (s.method === "GET" ? "read" : "write") : s.kind;
 
-/** The loader bound at `s`, checked: declared for this contract and id, live exactly on an `events: true` GET (E1515). */
+/** The loader bound at `s`, checked: one `loader` made (k.identity), for this contract and id, live exactly on an `events: true` GET (E1515). */
 function loaderAt(c: Contract, s: EntryShape, v: unknown): Loader | undefined {
   if (v === undefined) return undefined;
   if (isStub(v)) return stubbed.loader(c, s.id, v);
-  if (!isLoader(v) || v.contract !== c || v.id !== s.id)
-    throw codedError(
-      "E1515",
-      `${s.id}: its loader is declared for ${isLoader(v) ? `${v.contract.module}'s ${v.id}` : "no entry"}`,
-    );
+  if (!isLoader(v)) throw codedError("E1515", `${s.id}: loader is no value loader() made`);
+  if (v.contract !== c || v.id !== s.id || !isSchema(v.output))
+    throw codedError("E1515", `${s.id}: its loader is declared for ${v.contract.module}'s ${v.id}`);
   const live = typeof ownValue(v, "live") === "function";
   if (s.kind === "api" && s.events === true && !live)
     throw codedError("E1515", `${s.id}: an events entry's loader is an async generator`);
@@ -51,21 +50,22 @@ function loaderAt(c: Contract, s: EntryShape, v: unknown): Loader | undefined {
   return v;
 }
 
-/** The action bound at `s` under `member`, checked: declared for this contract and id, of the entry's kind (E1515). */
+/** The action bound at `s` under `member`, checked: one `action` made (k.identity), for this contract and id, of the entry's kind (E1515). */
 function actionAt(c: Contract, s: EntryShape, member: string, v: unknown): Action | ApiAction | undefined {
   if (v === undefined) return undefined;
   if (isStub(v)) return stubbed.action(c, s.id, v);
+  if (!isAction(v)) throw codedError("E1515", `${s.id}: ${member} is no value action() made`);
   const api = s.kind === "api";
-  if (!isAction(v) || v.contract !== c || v.id !== s.id || (ownValue(v, "output") !== undefined) !== api)
+  if (v.contract !== c || v.id !== s.id || !isObjectSchema(v.input) || (v.output !== undefined) !== api)
     throw codedError("E1515", `${s.id}: ${member} is not an action declared for ${s.id}`);
   return v;
 }
 
-/** The guard bound at `s`, checked: a guard (E1515), with a `redirect` on a page or layout (E1508). */
+/** The guard bound at `s`, checked: one `guard` made (k.identity, E1515), with a `redirect` on a page or layout (E1508). */
 function guardAt(s: EntryShape, v: unknown): ApiGuard | undefined {
   if (v === undefined) return undefined;
   if (isStub(v)) return stubbed.guard(v);
-  if (!isGuard(v)) throw codedError("E1515", `${s.id}: guard is no guard`);
+  if (!isGuard(v)) throw codedError("E1515", `${s.id}: guard is no value guard() made`);
   if (s.kind !== "api" && typeof v.redirect !== "string") throw codedError("E1508", `${s.id}: guard without redirect`);
   return v;
 }
@@ -83,7 +83,8 @@ function layoutFits(module: string, shapes: ReadonlyMap<string, EntryShape>, lay
 
 /**
  * Bind `binding` to contract `c` (k.contract Binding) and compile one module's table. Throws an Error with `code`:
- * E1515 a key no entry of `c` has, an entry left unbound, a binding missing its required member (`component`,
+ * E1515 a key no entry of `c` has, a loader, action or guard no maker made (k.identity: a copy, a spread or a `Proxy` of
+ * one is none), an entry left unbound, a binding missing its required member (`component`,
  * `loader`, `action`) or a handler declared for another id or contract, a plain loader on an `events: true` entry or
  * an async generator one on any other; E1510 a member the entry's kind refuses; E1508 a page or layout guard without
  * `redirect`, a redirect to an API entry, or a guarded page whose chain carries a param its redirect route of `c`

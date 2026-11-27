@@ -1,11 +1,10 @@
 import { type Computed, type Scope, batch, computed, owner, signal } from "@keel/reactive";
 import { type Result, type Schema, type SchemaError, err, ok, piiPaths, piiValues, s } from "@keel/schema";
+import { kernelSet } from "@keel/schema/internal";
 import type { Bound } from "./internal/Bound.ts";
 import type { Concurrent } from "./internal/Concurrent.ts";
 import { LOG_LIMIT } from "./internal/LOG_LIMIT.ts";
 import type { Row } from "./internal/Row.ts";
-import { STORE_KEY } from "./internal/STORE_KEY.ts";
-import { TRANSACTION_KEY } from "./internal/TRANSACTION_KEY.ts";
 import type { TxError } from "./internal/TxError.ts";
 import { baseSchema } from "./internal/baseSchema.ts";
 import { conflict } from "./internal/conflict.ts";
@@ -399,8 +398,8 @@ export function store<T extends object>(
           [coreKey]: (raw, options) => run(t, bind(raw), options),
         };
         declaredSources.set(t, { fn, guards });
-        Object.defineProperty(t, TRANSACTION_KEY, { value: true });
-        return t;
+        kernelSet("transaction").add(t);
+        return Object.freeze(t);
       },
       guard(check) {
         guards.push(check);
@@ -408,7 +407,7 @@ export function store<T extends object>(
     },
   };
   // signal() above already threw E1203 outside a scope, so an owner exists here.
-  Object.defineProperty(self, STORE_KEY, { value: true });
+  kernelSet("store").add(Object.freeze(self));
   registry.set(id, self);
   statePiiOf.set(self, () => statePii);
   storePayloads.set(self, payloads);

@@ -8,8 +8,8 @@ import type { Href } from "../types/Href.ts";
 import type { RouteTable } from "../types/RouteTable.ts";
 import { matchHref } from "./matchHref.ts";
 
-const refused = (): Result<never, KeelError<"keel.notFound", null>> =>
-  err({ code: "keel.notFound", message: "not a page", data: null });
+const NOT_A_PAGE: KeelError<"keel.notFound", null> = { code: "keel.notFound", message: "not a page", data: null };
+const refused = (): Result<never, KeelError<"keel.notFound", null>> => err(NOT_A_PAGE);
 
 /** Per route table, the ids that are some guard's `redirect` route. */
 const redirects = new WeakMap<object, ReadonlySet<string>>();
@@ -36,7 +36,11 @@ export function pageHref(routes: RouteTable, text: string): Result<Href, KeelErr
   if (m === null || redirectsOf(routes).has(m.id)) return refused();
   const bound = bindingsOf(routes).get(m.id);
   if (bound === undefined) return refused();
-  const built = attempt(() => encodeHref(m.id, shapesOf.get(bound.contract)?.get(m.id), m.params, m.search));
+  // A param or search value its schema refuses to encode is no page: encodeHref and the schema throw an Error.
+  const built = attempt(
+    () => ({ href: encodeHref(m.id, shapesOf.get(bound.contract)?.get(m.id), m.params, m.search) }),
+    (x) => (x instanceof Error ? NOT_A_PAGE : undefined),
+  );
   // A param that decoded to a slash, a backslash or a dot segment would write a path a proxy reads differently.
-  return built.ok && !returnRefused(built.value) ? ok(built.value) : refused();
+  return built.ok && !returnRefused(built.value.href) ? ok(built.value.href) : refused();
 }

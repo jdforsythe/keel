@@ -6,14 +6,13 @@ import {
   type Result,
   type Schema,
   type Secret,
+  isObjectSchema,
   isSchema,
   s,
 } from "@keel/schema";
-import { objectSchemaOf } from "../unsafe/objectSchemaOf.ts";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
-import { ACTION_KEY } from "./internal/ACTION_KEY.ts";
-import { markedFrozen } from "./internal/markedFrozen.ts";
+import { madeFrozen } from "./internal/madeFrozen.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { withStores } from "./internal/withStores.ts";
 import { routeTable } from "./routeTable.ts";
@@ -125,7 +124,7 @@ export function action<I, P, St>(
   const output = ownValue(at, "output");
   if (decl.input === undefined && isSchema(output)) {
     const body = ownValue(at, "body");
-    return markedFrozen({ ...base, input: objectSchemaOf(body) ?? EMPTY, output }, ACTION_KEY);
+    return madeFrozen({ ...base, input: isObjectSchema(body) ? body : EMPTY, output }, "action");
   }
-  return markedFrozen({ ...base, input: decl.input ?? EMPTY }, ACTION_KEY);
+  return madeFrozen({ ...base, input: decl.input ?? EMPTY }, "action");
 }

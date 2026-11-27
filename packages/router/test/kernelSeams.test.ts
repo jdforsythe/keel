@@ -78,7 +78,11 @@ describe("carriedParams", () => {
 
   it("E1508 names the redirect and the first field the matched route lacks or holds as undefined", () => {
     const lacks = (name: string): unknown =>
-      err(`E1508 guard redirect to "cp.login" needs param "${name}", which the matched route lacks`);
+      err({
+        code: "keel.unexpected",
+        message: `E1508 guard redirect to "cp.login" needs param "${name}", which the matched route lacks`,
+        data: {},
+      });
     expect(carriedParams("cp.login", login, { team: "b" })).toEqual(lacks("org"));
     expect(carriedParams("cp.login", login, { org: "a" })).toEqual(lacks("team"));
     expect(carriedParams("cp.login", login, { org: "a", team: undefined })).toEqual(lacks("team"));
