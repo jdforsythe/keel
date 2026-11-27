@@ -1,5 +1,5 @@
 // Properties of the color forms (k.values Colors, Contrast), compositing, gamut mapping and combinations. Seed 1337.
-import { combinations, composite, contrast } from "@keel/ui/css";
+import { combinations, composite, contrast, gamutForms } from "@keel/ui/css";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { gamutMap } from "../src/css/gamutMap.ts";
@@ -76,11 +76,11 @@ describe("color forms", () => {
 describe("composite", () => {
   it("alpha 1 is the overlay, alpha 0 the backdrop, and the result lies between them", () => {
     fc.assert(
-      fc.property(byte, byte, byte, byte, unit, (r, g, b, k, a) => {
+      fc.property(byte, byte, byte, byte, unit, fc.constantFrom(...gamutForms), (r, g, b, k, a, form) => {
         const back = hex(k, k, k);
-        expect(contrast(composite(`rgb(${r} ${g} ${b} / 1)`, back), hex(r, g, b))).toBeCloseTo(1, 6);
-        expect(contrast(composite(`rgb(${r} ${g} ${b} / 0)`, back), back)).toBeCloseTo(1, 6);
-        const mix = colorSyntax(composite(`rgb(${r} ${g} ${b} / ${a})`, back));
+        expect(contrast(composite(`rgb(${r} ${g} ${b} / 1)`, back, form), hex(r, g, b))).toBeCloseTo(1, 6);
+        expect(contrast(composite(`rgb(${r} ${g} ${b} / 0)`, back, form), back)).toBeCloseTo(1, 6);
+        const mix = colorSyntax(composite(`rgb(${r} ${g} ${b} / ${a})`, back, form));
         mix?.channels.forEach((c, i) => {
           const top = [r, g, b][i] ?? 0;
           expect(c).toBeGreaterThanOrEqual(Math.min(top, k) - 0.000001);

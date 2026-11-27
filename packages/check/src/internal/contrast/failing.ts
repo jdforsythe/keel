@@ -1,4 +1,4 @@
-import { composite, contrast } from "@keel/ui/css";
+import { type GamutForm, composite, contrast, gamutForms } from "@keel/ui/css";
 import type { Combo } from "./Combo.ts";
 import { overOf } from "./overOf.ts";
 import { valueIn } from "./valueIn.ts";
@@ -42,13 +42,45 @@ const ratioOf = (fg: string, bg: string): number | undefined => {
     return undefined;
   }
 };
-const over = (top: string, back: string): string | undefined => {
+const over = (top: string, back: string, form: GamutForm): string | undefined => {
   try {
-    return composite(top, back);
+    return composite(top, back, form);
   } catch {
     return undefined;
   }
 };
+
+/**
+ * The lowest ratio of `fg` on `bg` in one combination over `back`, or undefined when a value does not read. With an
+ * overlay on either side, the pair is composited once in each gamut form (both mapped, both clipped) and the lower
+ * ratio stands (k.values Contrast); with none, `contrast` judges the pair in every form.
+ */
+function lowest(c: Combo, fg: string, bg: string, bgIsOverlay: boolean, back: string | undefined): number | undefined {
+  const fgIsOverlay = overOf(c, fg) !== undefined;
+  if (!bgIsOverlay && !fgIsOverlay) {
+    const a = opaque(c, fg);
+    const b = opaque(c, bg);
+    return a === undefined || b === undefined ? undefined : ratioOf(a, b);
+  }
+  let low: number | undefined;
+  for (const form of gamutForms) {
+    let b: string | undefined;
+    if (!bgIsOverlay) b = opaque(c, bg);
+    else {
+      const top = valueIn(c, "overlay", bg);
+      const base = back === undefined ? undefined : opaque(c, back);
+      b = top === undefined || base === undefined ? undefined : over(top, base, form);
+    }
+    if (b === undefined) return undefined;
+    const fgTop = fgIsOverlay ? valueIn(c, "overlay", fg) : opaque(c, fg);
+    const a = fgTop === undefined ? undefined : fgIsOverlay ? over(fgTop, b, form) : fgTop;
+    if (a === undefined) return undefined;
+    const r = ratioOf(a, b);
+    if (r === undefined) return undefined;
+    low = low === undefined ? r : Math.min(low, r);
+  }
+  return low;
+}
 
 /**
  * The first combination where `fg` on `bg` falls below its threshold (k.a11y-static Judged, Combinations, Overlays),
@@ -74,18 +106,7 @@ export function failing(
     const backs: (string | undefined)[] =
       bgOver === undefined ? [undefined] : under === undefined ? [...bgOver] : [under];
     for (const back of backs) {
-      let b: string | undefined;
-      if (bgOver === undefined) b = opaque(c, bg);
-      else {
-        const top = valueIn(c, "overlay", bg);
-        const base = back === undefined ? undefined : opaque(c, back);
-        b = top === undefined || base === undefined ? undefined : over(top, base);
-      }
-      if (b === undefined) continue;
-      const fgTop = overOf(c, fg) === undefined ? opaque(c, fg) : valueIn(c, "overlay", fg);
-      const a = fgTop === undefined ? undefined : overOf(c, fg) === undefined ? fgTop : over(fgTop, b);
-      if (a === undefined) continue;
-      const ratio = ratioOf(a, b);
+      const ratio = lowest(c, fg, bg, bgOver !== undefined, back);
       if (ratio !== undefined && ratio < min)
         return {
           fg,

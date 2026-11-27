@@ -1,5 +1,5 @@
 import type { BaseRole, StyleProp, Tokens } from "@keel/ui";
-import { type Combination, combinations, composite, contrast } from "@keel/ui/css";
+import { type Combination, type GamutForm, combinations, composite, contrast, gamutForms } from "@keel/ui/css";
 import type { ClassMap } from "./ClassMap.ts";
 import type { Violation } from "./Violation.ts";
 import { inDisabledFieldset } from "./inDisabledFieldset.ts";
@@ -16,9 +16,9 @@ const ratioOf = (fg: string, bg: string): number | undefined => {
   }
 };
 /** An overlay over its backdrop, or `""` (unjudged) when either reads as none. */
-const blend = (top: string, under: string): string => {
+const blend = (top: string, under: string, form: GamutForm): string => {
   try {
-    return composite(top, under);
+    return composite(top, under, form);
   } catch {
     return "";
   }
@@ -154,23 +154,42 @@ export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
         };
         const fgTok = tokenAt(map, tokens, el, "fg", at);
         const bgTok = tokenAt(map, tokens, el, "bg", at);
-        let bg = pick(bgTok, "#FFFFFF");
+        const bgTop = pick(bgTok, "#FFFFFF");
+        const fgTop = pick(fgTok, "#000000");
+        const bgIsOverlay = bgTok !== undefined && overlays[bgTok] !== undefined;
+        const fgIsOverlay = fgTok !== undefined && overlays[fgTok] !== undefined;
         // A `bg` overlay is composited over the background painted under the element that paints it.
-        if (bgTok !== undefined && overlays[bgTok] !== undefined) {
+        let base = "";
+        if (bgIsOverlay) {
           const holder = painter(map, el, bgTok)?.parentElement ?? null;
           const under = holder === null ? undefined : tokenAt(map, tokens, holder, "bg", at);
-          const base = under !== undefined && overlays[under] !== undefined ? "" : pick(under, "#FFFFFF");
-          bg = blend(bg, base);
+          base = under !== undefined && overlays[under] !== undefined ? "" : pick(under, "#FFFFFF");
         }
-        let fg = pick(fgTok, "#000000");
-        if (fgTok !== undefined && overlays[fgTok] !== undefined) fg = blend(fg, bg);
+        // With an overlay on either side, the pair is composited once in each gamut form, the lower ratio standing.
+        const pairs: (readonly [string, string])[] = [];
+        if (!bgIsOverlay && !fgIsOverlay) pairs.push([fgTop, bgTop]);
+        else
+          for (const form of gamutForms) {
+            const bg = bgIsOverlay ? blend(bgTop, base, form) : bgTop;
+            pairs.push([fgIsOverlay ? blend(fgTop, bg, form) : fgTop, bg]);
+          }
+        let ratio: number | undefined;
+        let fg = fgTop;
+        let bg = bgTop;
+        for (const [f, b] of pairs) {
+          const r = ratioOf(f, b);
+          if (r === undefined) {
+            ratio = undefined;
+            break;
+          }
+          if (ratio === undefined || r < ratio) [ratio, fg, bg] = [r, f, b];
+        }
         const sizeTok = tokenAt(map, tokens, el, "fontSize", at);
         const weightTok = tokenAt(map, tokens, el, "weight", at);
         const size = px(sizeTok === undefined ? "" : (tokens.fontSize?.[sizeTok] ?? ""));
         const weight = Number(weightTok === undefined ? 400 : tokens.weight?.[weightTok]);
         const large = size >= 24 || (size >= 18.66 && weight >= 700);
         const need = c.contrast ? (large ? 4.5 : 7) : large ? 3 : 4.5;
-        const ratio = ratioOf(fg, bg);
         if (ratio !== undefined && ratio < need) {
           help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok ?? fg} on ${bgTok ?? bg}, ${c.name})`;
           break;

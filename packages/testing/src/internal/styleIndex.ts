@@ -3,26 +3,33 @@ import { compileStyles } from "@keel/ui/css";
 import type { ClassMap } from "./ClassMap.ts";
 import { px } from "./px.ts";
 
-const PROPS = { fg: "color", bg: "color", fontSize: "fontSize", weight: "weight" } as const;
+const PROPS = {
+  fg: ["color", "overlay"],
+  bg: ["color", "overlay"],
+  fontSize: ["fontSize"],
+  weight: ["weight"],
+} as const;
 const memo = new WeakMap<Tokens, ClassMap>();
 
 /**
- * Every resting atomic class (no state) of `fg`, `bg`, `fontSize` and `weight` that `tokens` can produce, per
- * breakpoint, mapped back to its prop and token through `compileStyles`, the compiler's own class names.
+ * Every resting atomic class (no state) of `fg`, `bg` (a color's or an overlay's), `fontSize` and `weight` that
+ * `tokens` can produce, per breakpoint, mapped back to its prop and token through `compileStyles`, the compiler's own class names.
  */
 export function styleIndex(tokens: Tokens): ClassMap {
   const hit = memo.get(tokens);
   if (hit !== undefined) return hit;
   const breakpoints = Object.entries(tokens.breakpoint ?? {}).map(([n, v]): readonly [string, number] => [n, px(v)]);
-  const usages = Object.entries(PROPS).flatMap(([prop, group]) =>
-    Object.keys(tokens[group] ?? {}).flatMap((token) =>
-      [undefined, ...breakpoints.map(([n]) => n)].map((bp) => ({
-        prop,
-        token,
-        bp,
-        usage: bp === undefined ? { props: { [prop]: token } } : { props: { [prop]: token }, breakpoint: bp },
-      })),
-    ),
+  const usages = Object.entries(PROPS).flatMap(([prop, groups]) =>
+    groups
+      .flatMap((group) => Object.keys(tokens[group] ?? {}))
+      .flatMap((token) =>
+        [undefined, ...breakpoints.map(([n]) => n)].map((bp) => ({
+          prop,
+          token,
+          bp,
+          usage: bp === undefined ? { props: { [prop]: token } } : { props: { [prop]: token }, breakpoint: bp },
+        })),
+      ),
   );
   const { classes } = compileStyles({ tokens, usages: usages.map((u) => u.usage) });
   const byClass = new Map<string, { prop: string; token: string; bp: string | undefined }>();
