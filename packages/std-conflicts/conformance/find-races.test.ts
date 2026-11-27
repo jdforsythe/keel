@@ -4,11 +4,10 @@
 // Assumptions: `findRaces`'s `stores` is an array of factories (the spec's "a factory in `stores`"); its `races` is the
 // `Race[]` of the replayed store. The group is recorded with `editTodo` `'rebase'`, then replayed against a server and a
 // factory that declare it `'rebase'` (the lost update) or `'reject'`.
-import { findRaces } from "@keel/std-conflicts";
 import { openGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { STORE_ID, USER, boardStores, groupOptions, lostUpdate, serveWith } from "./fixtures.ts";
+import { STORE_ID, USER, boardStores, groupOptions, lostUpdate, serveWith, findRacesInRoot } from "./fixtures.ts";
 
 const title = fc.stringMatching(/^[a-z]{1,8}$/);
 
@@ -24,7 +23,7 @@ describe("std.conflicts: findRaces", () => {
       fc.asyncProperty(title, title, async (first, second) => {
         fc.pre(first !== second);
         const group = await record(first, second);
-        const r = await findRaces(group, { user: USER, serve: serveWith("rebase"), stores: [boardStores()] });
+        const r = await findRacesInRoot(group, { user: USER, serve: serveWith("rebase"), stores: [boardStores()] });
         expect(r.unchecked).toEqual([]);
         expect(r.races).toHaveLength(1);
         expect(r.races[0]).toMatchObject({
@@ -44,7 +43,7 @@ describe("std.conflicts: findRaces", () => {
       fc.asyncProperty(title, title, async (first, second) => {
         fc.pre(first !== second);
         const group = await record(first, second);
-        const r = await findRaces(group, {
+        const r = await findRacesInRoot(group, {
           user: USER,
           serve: serveWith("reject"),
           stores: [boardStores({ edit: "reject" })],
@@ -58,7 +57,7 @@ describe("std.conflicts: findRaces", () => {
 
   test("two runs of `findRaces` on one group are byte-equal", async () => {
     const group = await record("Oat milk", "Soy milk");
-    const run = () => findRaces(group, { user: USER, serve: serveWith("rebase"), stores: [boardStores()] });
+    const run = () => findRacesInRoot(group, { user: USER, serve: serveWith("rebase"), stores: [boardStores()] });
     const a = await run();
     const b = await run();
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));

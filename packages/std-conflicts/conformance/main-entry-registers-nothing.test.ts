@@ -5,10 +5,10 @@ import { rules } from "@keel/check";
 import { formatter } from "@keel/cli";
 import { respond } from "@keel/cli/testing";
 import { s } from "@keel/schema";
-import { raceRecords, races } from "@keel/std-conflicts";
+import { raceRecords } from "@keel/std-conflicts";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { STORE_ID, boardStores, snapshotOf } from "./fixtures.ts";
+import { STORE_ID, boardStores, snapshotOf, racesInRoot } from "./fixtures.ts";
 
 const TOOLS = "@keel/std-conflicts/tools";
 const PATH = "group.json";
@@ -22,7 +22,7 @@ const raceOf = (n: number) => {
     { t: "edit" as const, id: "x", title: "last", base: 1 },
   ];
   const snap = snapshotOf({}, ops);
-  return raceRecords(PATH, races(snap, boardStores()), { [STORE_ID]: snap });
+  return raceRecords(PATH, racesInRoot(snap, boardStores()), { [STORE_ID]: snap });
 };
 
 const listed = (code: string): boolean => JSON.stringify(rules()).includes(code);

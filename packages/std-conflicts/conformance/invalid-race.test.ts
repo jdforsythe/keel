@@ -1,10 +1,9 @@
 // Spec: std.conflicts, clause "A rebased entry whose other order fails an invariant is an `invalid` race."
 // Seed 1337
 // The fixture store's invariant: no two todos share a title.
-import { races } from "@keel/std-conflicts";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { STORE_ID, boardStores, snapshotOf } from "./fixtures.ts";
+import { STORE_ID, boardStores, snapshotOf, racesInRoot } from "./fixtures.ts";
 
 describe("std.conflicts: invalid races", () => {
   test("A rebased entry whose other order fails an invariant is an `invalid` race", () => {
@@ -19,7 +18,7 @@ describe("std.conflicts: invalid races", () => {
           { t: "edit", id: "x", title: c, base: 2 },
           { t: "edit", id: "y", title: a, base: 2 },
         ]);
-        const r = races(snap, boardStores());
+        const r = racesInRoot(snap, boardStores());
         expect(r.unchecked).toEqual([]);
         expect(r.races).toHaveLength(1);
         expect(r.races[0]).toMatchObject({

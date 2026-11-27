@@ -7,6 +7,7 @@
 //   accepted on read too), and the hand-built server reads and writes it as k.server's Server state does.
 import type { Ctx, SimCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { findRaces, races } from "@keel/std-conflicts";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
@@ -72,6 +73,39 @@ const writer = (op: { readonly base?: number; readonly key?: string }) => ({
   ...(op.base === undefined ? {} : { base: op.base }),
   ...(op.key === undefined ? {} : { key: op.key }),
 });
+
+/** `races` called under a root a test makes (k.reactive Module roots: `scope(fn, { detached: true })`), disposed when the call returns. */
+export function racesInRoot(...args: Parameters<typeof races>): ReturnType<typeof races> {
+  const out: ReturnType<typeof races>[] = [];
+  const root = scope(
+    () => {
+      out.push(races(...args));
+    },
+    { detached: true },
+  );
+  root.dispose();
+  const [report] = out;
+  if (report === undefined) throw new Error("fixture: races returned nothing");
+  return report;
+}
+
+/** `findRaces` called under a root a test makes, which stays open until the returned promise settles. */
+export async function findRacesInRoot(...args: Parameters<typeof findRaces>): ReturnType<typeof findRaces> {
+  const started: ReturnType<typeof findRaces>[] = [];
+  const root = scope(
+    () => {
+      started.push(findRaces(...args));
+    },
+    { detached: true },
+  );
+  try {
+    const [run] = started;
+    if (run === undefined) throw new Error("fixture: findRaces did not start");
+    return await run;
+  } finally {
+    root.dispose();
+  }
+}
 
 /** Live stores after `ops` (every op must commit); the scope stays open until `dispose()`. */
 export function open(opts: Options, ops: readonly Op[]) {

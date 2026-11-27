@@ -7,21 +7,23 @@ import { coverage, chart } from "@keel/std-statecharts";
 import { explore } from "@keel/testing";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { editor, nextId } from "./fixtures.ts";
+import { editor, nextId, inRoot } from "./fixtures.ts";
 
 const lock = (limit: number) =>
-  chart(nextId("lock"), {
-    data: s.object({ n: s.int({ min: 0, max: 3 }) }),
-    start: { n: 0 },
-    events: { inc: s.object({}), open: s.object({}) },
-    guards: { tooMany: (d) => d.n > 3 + limit, ok: (d) => d.n < 3 },
-    actions: { up: (d) => ({ n: Math.min(3, d.n + 1) }) },
-    initial: "closed",
-    states: {
-      closed: { on: { inc: { guard: "ok", do: "up" }, open: { to: "vault", guard: "tooMany" } } },
-      vault: { final: true },
-    },
-  });
+  inRoot(() =>
+    chart(nextId("lock"), {
+      data: s.object({ n: s.int({ min: 0, max: 3 }) }),
+      start: { n: 0 },
+      events: { inc: s.object({}), open: s.object({}) },
+      guards: { tooMany: (d) => d.n > 3 + limit, ok: (d) => d.n < 3 },
+      actions: { up: (d) => ({ n: Math.min(3, d.n + 1) }) },
+      initial: "closed",
+      states: {
+        closed: { on: { inc: { guard: "ok", do: "up" }, open: { to: "vault", guard: "tooMany" } } },
+        vault: { final: true },
+      },
+    }),
+  );
 
 describe("std.statecharts: closed-form exploration of a chart", () => {
   test("Under `explore`'s closed form, a chart with finite `data` and payloads returns `complete: true`", () => {
