@@ -16,10 +16,14 @@ export function nodeProject(): Files {
   return apply("project", { name: "shop", adapter: "node" }, new Map()).files;
 }
 
+/**
+ * The environment of the test run, less vitest's own keys and `npm_config_user_agent`: run as a reader types `keel`,
+ * so its lines take the bare form (k.cli Command form), whether or not a package manager started the test run.
+ */
 function cleanEnv(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST") continue;
+    if (k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST" || k === "npm_config_user_agent") continue;
     env[k] = v;
   }
   return env;

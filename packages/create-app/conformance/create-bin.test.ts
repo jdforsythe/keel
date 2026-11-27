@@ -233,6 +233,7 @@ describe("create-app: files per kind", () => {
         "src/index.ts",
         "src/Example.tsx",
         "test/Example.test.ts",
+        "test/Example.e2e.ts",
         "tokens.ts",
         "tsconfig.json",
         "tsconfig.build.json",
