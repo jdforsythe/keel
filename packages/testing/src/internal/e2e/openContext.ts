@@ -29,8 +29,8 @@ export async function openContext(o: {
   readonly cookies: readonly CookieSeed[];
   readonly proxy: string;
   readonly mapped: boolean;
-  /** Whether a page of this serve may reach `origin` (k.e2e-run Reach): a served origin, a peer name or a mapped one. */
-  readonly reaches: (origin: string) => boolean;
+  /** Whether the serve's proxy refused a request for `origin` (k.e2e-run Reach). */
+  readonly refusedAt: (origin: string) => boolean;
   readonly verb: () => void;
   readonly failed: () => void;
   /** The serve's contexts: this one joins them before its first tab loads, so the test's end closes it. */
@@ -70,7 +70,7 @@ export async function openContext(o: {
   const adopt = async (tab: Tab): Promise<Page> => {
     const known = adopted.get(tab);
     if (known !== undefined) return known;
-    const state: TabState = trackTab(tab, false, o.reaches);
+    const state: TabState = trackTab(tab, false, o.refusedAt);
     run.tabs.push(state);
     const page = makePage(
       state,
@@ -94,7 +94,7 @@ export async function openContext(o: {
 
   const tabAt = async (path: string, hold: boolean): Promise<Page> => {
     const tab = await context.newPage();
-    const state: TabState = trackTab(tab, hold, o.reaches);
+    const state: TabState = trackTab(tab, hold, o.refusedAt);
     run.tabs.push(state);
     // Scripts off: no script of the page reaches it, and each document arrives with its script elements taken out,
     // so the page script of this harness still reads the page.

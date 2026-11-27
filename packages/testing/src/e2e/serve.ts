@@ -127,6 +127,8 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
   };
   let proxy: ProxyServer | undefined;
   const routes = new Map<string, AnswerEntry>();
+  /** The origins the serve's proxy refused a request for: a tab's failed request there is its `offsite` problem. */
+  const refusedOrigins = new Set<string>();
   /** Whether a page of this serve may reach `origin` (k.e2e-run Reach): a served origin, a peer name or a mapped one. */
   const reaches = (origin: string): boolean =>
     routes.has(origin) ||
@@ -181,7 +183,12 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
       if (entry === undefined) throw e2eError("E1736", `origins ${o}: not a live answer() handle`, { origin: o });
       routes.set(originOf(o), entry);
     }
-    proxy = await startProxy(routes, (name) => procs.get(name)?.port(), reaches);
+    proxy = await startProxy(
+      routes,
+      (name) => procs.get(name)?.port(),
+      reaches,
+      (o) => refusedOrigins.add(o),
+    );
   } catch (e) {
     await disposeAll();
     throw e;
@@ -268,7 +275,7 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
         cookies: opts.cookies ?? [],
         proxy: proxy?.server ?? "",
         mapped: routes.size > 0,
-        reaches,
+        refusedAt: (origin) => refusedOrigins.has(origin),
         verb: mark,
         failed: () => {
           failing = new Map(marks);

@@ -7,7 +7,7 @@ import { sentOf } from "./sentOf.ts";
  * under way, and its problems (page errors, console errors; policy violations arrive through the context's binding).
  * Each change wakes the waits that watch the tab.
  */
-export function trackTab(tab: Tab, holding: boolean, reaches: (origin: string) => boolean): TabState {
+export function trackTab(tab: Tab, holding: boolean, refusedAt: (origin: string) => boolean): TabState {
   const state: TabState = {
     tab,
     problems: [],
@@ -25,21 +25,22 @@ export function trackTab(tab: Tab, holding: boolean, reaches: (origin: string) =
   };
   const main = (r: Request): boolean => r.isNavigationRequest() && r.frame() === tab.mainFrame();
   // Reach (k.e2e-run): the serve's proxy refuses a request for an origin the serve neither serves, peers nor maps;
-  // the tab records each such failed request as an `offsite` problem. One the page's own policy blocked never left
-  // the page: that is its `csp` problem alone.
+  // the tab records each failed request to an origin the proxy refused as an `offsite` problem. One the page's own
+  // policy blocked never reached the proxy: that is its `csp` problem alone.
   tab.on("requestfailed", (r) => {
     const url = new URL(r.url());
-    if (!/^https?:$/.test(url.protocol) || reaches(url.origin)) return;
-    if ((r.failure()?.errorText ?? "").includes("BLOCKED_BY_CSP")) return;
+    if (!/^https?:$/.test(url.protocol) || !refusedAt(url.origin)) return;
     state.problems.push({ kind: "offsite", text: `${r.method()} ${url.origin}${url.pathname}` });
     wake();
   });
   tab.on("websocket", (ws) => {
     const url = new URL(ws.url());
     const origin = `${url.protocol.replace(/^ws/, "http")}//${url.host}`;
-    if (reaches(origin)) return;
-    state.problems.push({ kind: "offsite", text: `GET ${origin}${url.pathname}` });
-    wake();
+    ws.on("socketerror", () => {
+      if (!refusedAt(origin)) return;
+      state.problems.push({ kind: "offsite", text: `GET ${origin}${url.pathname}` });
+      wake();
+    });
   });
   tab.on("request", (r) => {
     state.requests.push(sentOf(r.method(), r.url(), Object.keys(r.headers())));
