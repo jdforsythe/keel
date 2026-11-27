@@ -41,12 +41,15 @@ describe("project template carries the Keel brand (docs/BRAND.md)", () => {
 describe("project template writes a .gitignore", () => {
   const empty = new Map<string, string>();
   for (const workspace of [false, true]) {
-    it(`ignores build and tool output and keeps .keel committed (workspace: ${workspace})`, () => {
+    it(`ignores build and tool output and the derived views; surface.json stays committed (workspace: ${workspace})`, () => {
       const text = apply("project", { name: "shop", workspace }, empty).files.get(".gitignore") ?? "";
       const lines = text.split("\n");
       for (const l of ["node_modules", "dist", ".keel-dev/", ".keel/sessions/"]) expect(lines).toContain(l);
+      // k.derived Version control: one line per compiled view and routes.json, none for surface.json or `.keel/`.
+      for (const v of ["a11y", "deps", "ids", "routes", "schemes", "std", "styles"])
+        expect(lines).toContain(`.keel/${v}.json`);
       expect(lines).not.toContain(".keel/");
-      expect(lines).not.toContain(".keel/std.json");
+      expect(lines.filter((l) => l.includes("surface.json"))).toEqual([]);
     });
   }
 });
