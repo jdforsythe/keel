@@ -1,5 +1,7 @@
 # Keel, the updates since the deep dive
 
+covers-to: 0e9128506
+
 A two-voice updates episode written with the `keel-podcast` skill in its updates mode, from the main line and the open lanes of the twenty-sixth of November 2026. It covers only what changed after `keel-deep-dive.md` and what that episode left out. The host is the same senior architect; the guest is Keel's creator. Every state claim is read from `tasks/0963-to-p1/PLAN.md` (checkpoints 126 to 209), `tasks/p1/TODO.md`, `tasks/p1/end-user-review.md` and `tasks/FUTURE.md` as they stood that day. "Merged" means on the main line; "built in a lane" means on a branch, not merged; "designed" means an accepted RFC with spec text and nothing built. About 56 minutes at 150 words a minute.
 
 ## Cold open (minutes 0 to 2)

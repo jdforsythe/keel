@@ -13,18 +13,26 @@ This skill turns the project's goals and its current state into one spoken episo
 | Angle or audience | A senior engineer deciding whether Keel is worth a weekend and then a team |
 | Target length | 75 to 90 minutes, at about 150 spoken words a minute: 11,000 to 13,500 words |
 | Output file | `docs/podcast/<slug>.md`, a slug that names the angle; list `docs/podcast/` first and never reuse a name |
+| Main-line head | The commit the caller passes as the main line's head; the episode covers up to it and records it |
 
-Do not read earlier episodes under `docs/podcast/` before writing. Each episode is written from the sources, so it is not a rewrite of the last one; list the folder only to avoid a name collision.
+## Request kinds
+
+- **An update.** A new script for the changes on the main line from the newest script's `covers-to` commit to the head the caller passes. Earlier scripts are kept. The rules are under Updates episode.
+- **A full new podcast.** One script written from scratch from the sources, up to the head the caller passes. The old scripts under `docs/podcast/` are deleted in the same commit.
+
+The caller passes the current main-line head commit with either kind. When none is passed, use `git rev-parse --short <main-line branch>` and say so in the report. Read every fact at that commit (`git show <head>:<path>`), not at a later one.
+
+For a full new podcast, do not read earlier episodes under `docs/podcast/` before writing. Each episode is written from the sources, so it is not a rewrite of the last one; list the folder only to avoid a name collision.
 
 ## Updates episode
 
-When asked for an updates episode, the scope is what changed after the newest script under `docs/podcast/` and what that script left out. These rules replace the matching ones in the rest of this skill; everything else holds.
+When asked for an updates episode, the scope is what changed on the main line from the newest script's `covers-to` commit to the head the caller passes, and what that script left out. These rules replace the matching ones in the rest of this skill; everything else holds.
 
-- Read the newest script first, whole (this is the one exception to the rule above), and take its date from `git log -1 --format=%cI -- <file>`. Repeat nothing from it beyond a recap of two to four exchanges in the cold open. Where it stated a gap, a disagreement between two files or a promise, the update says what became of each.
+- Read the newest script first, whole, and take its `covers-to` line: that commit is this episode's `covers-from`. `git log --oneline <covers-from>..<head>` is the range, and `git log -1 --format=%cI <covers-from>` its start date. Repeat nothing from it beyond a recap of two to four exchanges in the cold open. Where it stated a gap, a disagreement between two files or a promise, the update says what became of each.
 - Sources: the active task's `PLAN.md` checkpoints and decisions dated after that script, read in order; `tasks/p1/TODO.md`, `tasks/p1/personas.md`, `tasks/p1/end-user-review.md` and `tasks/FUTURE.md`; and each RFC written since, read on the lane branch that holds it when it is not merged. The plan is the record of what happened; when `tasks/p1/TODO.md` lags it, the plan wins and the report says so.
 - States: "merged" means on the main line. Work on a lane branch is "built in a lane, not merged", and its review state is said with it. An accepted RFC with nothing built is "designed". A reserved RFC number is "reserved, not written". Only merged work may be called built and proven.
 - The coverage checklist becomes: what the last episode's open items became; the gate and CI; each idea or decision made since and what it became; each review that found holes, two to four told as stories with the reproduction and the fix; the end-user findings by state (merged, in a lane, open); a quick-fire round; the honest state sorted by the four states above, and what is left before public.
-- Target length: 45 to 60 minutes, 6,750 to 9,000 words. Output file: `docs/podcast/keel-updates-<yyyy-mm>.md`, with a letter suffix when the month already has one.
+- Target length: 45 to 60 minutes, 6,750 to 9,000 words. Output file: `docs/podcast/keel-updates-<yyyy-mm-dd>.md`, the day it is written, with a letter suffix when that day already has one.
 - The gap list is kept the same way.
 
 ## The cast
@@ -99,6 +107,7 @@ The list goes back to whoever ran the skill, in the final report. It is not writ
 
 ## Form
 
+- Under the `#` title, before any other text, the script records the commits it covers as bare lines: `covers-to: <sha>` for every script, and `covers-from: <sha>` above it for an updates episode. These are the next update's starting point.
 - Speaker turns start with `HOST:` or `GUEST:` at the start of a paragraph. No other labels, no stage directions.
 - `##` headings for segments, each with rough minutes, for example "## 3. The kernel tour (minutes 14 to 38)". Segment minutes add up to the target.
 - A cold open of two to four exchanges before the first heading's material settles in; a quick-fire round with short questions and one-to-three-sentence answers; a closing on what is next.
@@ -119,6 +128,7 @@ The list goes back to whoever ran the skill, in the final report. It is not writ
 - [ ] Every state claim traced to a named source read today; every number traced to a file with its date.
 - [ ] Every comparison names what the other framework does well, and every version comes from research.md.
 - [ ] Every open blocker and major from the end-user reviews is spoken.
+- [ ] `covers-to` (and for an update `covers-from`) under the title, equal to the commits the episode was read at.
 - [ ] Word count within the target (`wc -w`), segment minutes add up.
 - [ ] Each lint above passes; its last line is in the report.
 - [ ] The gap list is ranked, each item with its question, sources and suggested home, and it is in the report, not in the episode.
