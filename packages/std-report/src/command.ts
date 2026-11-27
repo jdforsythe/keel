@@ -45,7 +45,12 @@ const done = (records: OutRecord[], counts: Record<string, number>, ok: boolean)
   writes: [],
 });
 
-const diag = (code: string, message: string): OutRecord => ({ kind: "diag", code, message, see: "k.cli" });
+const diag = (code: string, message: string): OutRecord => ({
+  kind: "diag",
+  code,
+  message,
+  see: code === "E1056" ? "k.inspect" : "k.cli",
+});
 
 /** `url` without its query and fragment, cut to `URL_MAX`: the form an E1056 message names. */
 const shown = (url: string): string => {
