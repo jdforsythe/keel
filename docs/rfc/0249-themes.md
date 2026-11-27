@@ -485,7 +485,7 @@ Applied in this commit, status `proposed` for new text.
 - k.aria: Scheme and Print paragraphs after the states table, as the shared style vocabulary of base elements and `Part`. Conformance #14 and #15 new.
 - k.ui: groups gain `overlay` and `themes`; style props gain `breakBefore`, `breakAfter`, `breakInside`; responsive keys point to k.aria Print. No clause changes.
 - k.looks: Shipped tokens allows `themes` as k.values Library themes gives; Library contrast reports per combination. No clause changes (#12's `in dark` is a combination name).
-- k.cli (to `implemented`): the `tokens import` and `tokens set` row, Tokens, E1071 and W1072. Conformance #21 to #25 new.
+- k.design-tokens (new, area `tools`): Import, Set, E1071 and W1072, and conformance #1 to #5 (first written as k.cli #21 to #25; #4 now gives the dark file `surface` `#141317`, so the focus ring clears 3:1 in both schemes). k.cli keeps one pointer sentence, so `keel docs k.cli` stays within 1,500 tokens.
 - Map: k.cli reads `implemented`. No row added; no title changed.
 - Glossary: **theme**, **combination**, **overlay**.
 

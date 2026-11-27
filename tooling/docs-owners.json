@@ -4,6 +4,7 @@
     "k.boundary",
     "k.check",
     "k.cli",
+    "k.design-tokens",
     "k.compat",
     "k.docs",
     "k.errors",
