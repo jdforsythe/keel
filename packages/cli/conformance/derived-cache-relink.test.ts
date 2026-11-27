@@ -1,7 +1,9 @@
 // Spec: k.derived, clause "In the copy of clause 9, after one `keel check`, pointing `node_modules/@keel/std-text` at a second linked copy whose `line` default `min` is 2 makes the next `keel check` have `counts.evaluated` 1 and leave `.keel/surface.json` byte-identical to what `keel build` writes."
 // Seed 1337 (recorded); no random inputs. The household copy of derived-support.ts (`@keel/std-text` linked outside `node_modules`), built once and cloned per case.
 // The second copy is a copy of the first with `line`'s default `min` 2, at `<base>/alt/std-text`; the link is the one at `node_modules/@keel/std-text`.
-// The cases "pointed back" and "an unchanged link" state k.derived Derivation cache ("each symbolic link on it a real-path probe, so a link pointed at another folder is a miss") and are not part of the clause's one sentence.
+// Also states, k.derived Derivation cache: "An input is recorded by its path through the project and resolved again at every read, each symbolic link on it, and its `node_modules/<name>` entry, a real-path probe, so a link pointed elsewhere is a miss, to the same bytes too."
+// Spec: k.compiler, clause "In the copy of k.derived clause 9 whose linked `@keel/std-text` file `line.ts` is a symbolic link to `line.a.ts`, after one `keel check`, pointing that link at `line.b.ts`, a copy of `line.a.ts`, makes the next `keel check` have `counts.evaluated` 1 and `counts.cached` 0."
+// The cases "pointed back" and "an unchanged link" state the Derivation cache sentence above and are not part of the first clause's one sentence.
 import { copyFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
@@ -88,7 +90,7 @@ describe("k.derived: a re-linked package is a miss", () => {
 });
 
 describe("k.derived: a link inside a package on the path to a loaded file, pointed at another file, is a miss", () => {
-  // Spec: Derivation cache, "each symbolic link on it (a `node_modules/<name>` link) a real-path probe, so a link pointed at another folder ... is a miss": every link on an input's path, whatever it is a link to.
+  // Spec: Derivation cache, "each symbolic link on it ... a real-path probe, so a link pointed elsewhere is a miss, to the same bytes too": every link on an input's path, whatever it is a link to.
   // The linked copy's `line.ts` (a file its evaluation loads) becomes a link to `line.a.ts`, a copy of it; `line.b.ts` is a copy whose default `min` is `min`.
   /** A household copy whose `line.ts` of `@keel/std-text` is a link to `line.a.ts`, after one `keel check`; returns the link's folder and the link. */
   function linked(): { t: Tree; folder: string; link: string } {
@@ -131,7 +133,7 @@ describe("k.derived: a link inside a package on the path to a loaded file, point
   );
 
   test(
-    "pointing that link at another file with the same bytes makes the next `keel check` have `counts.evaluated` 1, and `.keel/surface.json` byte-identical to what `keel build` writes",
+    "In the copy of k.derived clause 9 whose linked `@keel/std-text` file `line.ts` is a symbolic link to `line.a.ts`, after one `keel check`, pointing that link at `line.b.ts`, a copy of `line.a.ts`, makes the next `keel check` have `counts.evaluated` 1 and `counts.cached` 0, and `.keel/surface.json` byte-identical to what `keel build` writes",
     () => {
       const { t, folder, link } = linked();
       const before = read(t.dir, ".keel/surface.json");
