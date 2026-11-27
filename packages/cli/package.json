@@ -27,6 +27,10 @@
     "./shell": {
       "types": "./src/shell/index.ts",
       "default": "./src/shell/index.ts"
+    },
+    "./tokens": {
+      "types": "./src/tokens/index.ts",
+      "default": "./src/tokens/index.ts"
     }
   },
   "bin": {
@@ -60,6 +64,10 @@
       "./shell": {
         "types": "./dist/src/shell/index.d.ts",
         "default": "./dist/src/shell/index.js"
+      },
+      "./tokens": {
+        "types": "./dist/src/tokens/index.d.ts",
+        "default": "./dist/src/tokens/index.js"
       }
     }
   },

@@ -80,7 +80,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     }
     case "tokens": {
       // Loaded only when the command runs: it brings in the parser and the project's `@keel/ui`.
-      const { tokensCommand } = await import("./tokens/tokensCommand.ts");
+      const { tokensCommand } = await import("@keel/cli/tokens");
       return tokensCommand(input, io);
     }
     case "dev":
