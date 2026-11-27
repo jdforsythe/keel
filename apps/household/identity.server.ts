@@ -49,7 +49,7 @@ async function identify(args: { readonly request: Request }, ctx: Ctx): Promise<
 async function remember(path: string, res: Response, ctx: Ctx): Promise<Response> {
   if (path !== `${mount.path}/sign-in/email` || !res.ok) return res;
   const signed = SignedInUser.parseJson(await res.clone().text());
-  if (!signed.ok) return defect("sign-in answer without a user");
+  if (!signed.ok) return defect("sign-in answer without a user", { cause: signed.error });
   const { id, email, name } = signed.value.user;
   const saved = await membersDb(ctx).run(
     sql(NoRows)`insert into members (user_id, email, name) values (${id}, ${email}, ${name})
@@ -80,7 +80,8 @@ async function handle(request: Request, ctx: Ctx, at: { readonly routes: RouteTa
   headers.set("content-type", "application/json");
   headers.delete("content-length");
   const fields = Object.fromEntries(new URLSearchParams(await request.text()));
-  const sent = new Request(new URL(url.pathname, url.origin), {
+  const target = URL.parse(url.pathname, url.origin) ?? defect("a request's path has an address");
+  const sent = new Request(target, {
     method: "POST",
     headers,
     body: JSON.stringify(fields),
