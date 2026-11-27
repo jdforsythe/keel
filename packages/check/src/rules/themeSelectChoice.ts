@@ -1,7 +1,7 @@
+import { fitNames } from "@keel/schema/internal";
 import type { JSXOpeningElement, ObjectProperty } from "oxc-parser";
 import { dropThemeSelect } from "../internal/dropThemeSelect.ts";
 import { findingAt } from "../internal/findingAt.ts";
-import { fitNames } from "@keel/schema/internal";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { keyName } from "../internal/keyName.ts";
 import { num } from "../internal/num.ts";

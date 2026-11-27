@@ -1,7 +1,7 @@
+import { fitNames } from "@keel/schema/internal";
 import { combosIn } from "../internal/contrast/combosIn.ts";
 import { judgeElements } from "../internal/contrast/judgeElements.ts";
 import { findingAt } from "../internal/findingAt.ts";
-import { fitNames } from "@keel/schema/internal";
 import { fixElsewhere } from "../internal/fixElsewhere.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { projectLooks } from "../internal/looks/projectLooks.ts";
