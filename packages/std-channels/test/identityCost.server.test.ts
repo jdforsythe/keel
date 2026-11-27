@@ -4,7 +4,7 @@
 // `identify` per stream per second of `ctx.clock`.
 import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
-import { type CurrentUser, action, manifest } from "@keel/router";
+import { type CurrentUser, action, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
@@ -52,13 +52,10 @@ async function rig(identify: (() => string) | undefined, open = true) {
   const calls = { stream: 0, other: 0 };
   const route = channelRoute(c, room, { id: "cost.room", stores: factory, member: () => true });
   // The stream's loader as served, noting the `currentUser` the server hands it.
-  const watched = {
-    ...route.loader,
-    live: (a: Parameters<typeof route.loader.live>[0], cx: Parameters<typeof route.loader.live>[1]) => {
-      given.currentUser = a.currentUser;
-      return route.loader.live(a, cx);
-    },
-  };
+  const watched = loader(c, "cost.room", {}, async function* (a, cx) {
+    given.currentUser = a.currentUser;
+    yield* route.loader.live(a, cx);
+  });
   const bump = action(c, "cost.bump", { stores: factory }, async (_b, { stores }) => {
     void tx(stores.bump, {});
     return ok({});
