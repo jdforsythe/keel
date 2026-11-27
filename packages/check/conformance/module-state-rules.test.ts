@@ -1,6 +1,6 @@
 // Spec: k.shared, clause "In `modules/p/load.server.ts`, `last.set(x)` inside a function, `last` imported from `./last.ts`, is one E1256 at the call with no fix; the same call at the file's top level, `const s = signal(0); s.set(1)` inside a loader's function, and the call in `modules/p/Panel.tsx` (no handler, not a server file) are none."
 // Spec: k.shared, clause "In `modules/p/load.server.ts`, inside a function, each of `count++` and `count = 1` (`let count = 0` at the top level), `cache.set(k, v)` (`const cache = new Map()`), `seen.push(x)` (`const seen: string[] = []`) and `conf.mode = 'x'` (`const conf = { mode: '' }`) is one E1260 at the write; `cache.get(k)`, `pool.set(k, v)` with `const pool = processSlot('p.pool', () => new Map())`, `count = 1` at the top level, and each of these in `modules/p/Panel.tsx` are none."
-// Seed 1337. E1260's clause names `processSlot` (RFC 0251, another lane): the `pool.set` case imports it from `@keel/ctx`; where it does not exist yet that case fails for want of the export, which the builder reads as waiting on that lane.
+// Seed 1337. Not built yet: E1260 is no registered code until RFC 0251 builds it (k.errors and k.fixes no longer name it; k.shared is proposed), so every E1260 case is `test.skip`; the builder changes `test.skip` to `test` in each. The `pool.set` case imports `processSlot` from `@keel/ctx`.
 import { check } from "@keel/check";
 import { expect, test } from "vitest";
 import { type Files, manifestFile } from "./module-support.ts";
@@ -51,9 +51,9 @@ const WRITES: readonly (readonly [string, string])[] = [
 ];
 const DECLS = "declare const k: string\ndeclare const v: string\ndeclare const x: string\n";
 const MESSAGE =
-  "module state written in server code: per request use the request's scope, per process use processSlot(name, make)";
+  "module state written in server code: use the request scope, or processSlot(name, make)";
 for (const [write, decl] of WRITES) {
-  test(`\`${write}\` inside a function in a server file (\`${decl}\` at the top level) is one E1260 at the write, with no fix`, () => {
+  test.skip(`\`${write}\` inside a function in a server file (\`${decl}\` at the top level) is one E1260 at the write, with no fix`, () => {
     const src = `${DECLS}${decl}\nexport function load() { ${write} }\n`;
     const ds = of(run(SERVER, src, []), "E1260");
     expect(ds).toHaveLength(1);
@@ -61,13 +61,13 @@ for (const [write, decl] of WRITES) {
     expect(ds[0]?.fix).toBeUndefined();
     expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, write, "export function load"));
   });
-  test(`\`${write}\` in modules/p/Panel.tsx is no E1260`, () => {
+  test.skip(`\`${write}\` in modules/p/Panel.tsx is no E1260`, () => {
     const src = `${DECLS}${decl}\nexport function Panel() { ${write}; return null }\n`;
     expect(of(run(PANEL, src, []), "E1260")).toEqual([]);
   });
 }
 
-test("`cache.get(k)`, `pool.set(k, v)` over a processSlot, and `count = 1` at the top level are no E1260", () => {
+test.skip("`cache.get(k)`, `pool.set(k, v)` over a processSlot, and `count = 1` at the top level are no E1260", () => {
   const reads = `${DECLS}const cache = new Map<string, string>()\nexport function load() { return cache.get(k) }\n`;
   expect(of(run(SERVER, reads, []), "E1260")).toEqual([]);
   const pool = `import { processSlot } from '@keel/ctx'\n${DECLS}const pool = processSlot('p.pool', () => new Map<string, string>())\nexport function load() { pool.set(k, v) }\n`;

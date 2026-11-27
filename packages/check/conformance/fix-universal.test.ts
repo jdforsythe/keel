@@ -71,7 +71,7 @@ test(
       ).map((s) => s.code),
     );
     for (const code of ["E1451", "E1452", "E1455"]) expect(withFix.has(code), code).toBe(true);
-    for (const code of ["E1453", "E1457", "E1458", "E1203", "E1208", "E1256", "E1260", "E1762"]) {
+    for (const code of ["E1453", "E1457", "E1458", "E1203", "E1208", "E1256", "E1762"]) {
       for (const s of STARTS.filter((x) => x.code === code)) {
         const ds = check(s.files, { ...s.opts, types: false }).diagnostics.filter((d) => d.code === code);
         expect(

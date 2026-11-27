@@ -377,6 +377,7 @@ const NO_FIX = [
   "E1163", // k.library Rules: no fix; a diagnostic in a library file carries none (k.library In an app)
   "E1166", // k.library Rules: no fix stated; which of the two ids to rename is the author's choice
   "E1167", // k.server-deps Rules: no fix stated; the name an `env` entry should hold is the author's
+  "E1256", // k.shared Rules: no fix; where the per-request state lives is the author's choice
   "E1203", // k.reactive Static: no fix; the scope to run in is the author's to capture
   "E1204", // the Case per resource state is the author's
   "E1207", // whether to drop the detached scope or own it differently is a design change
@@ -392,7 +393,6 @@ const NO_FIX = [
   "E1454", // which code to rename is the author's choice
   "E1457", // k.attempt Rules: no fix; whether to parse or attempt is the author's choice
   "E1458", // k.attempt Rules: no fix; the KeelError to declare is the author's
-  "E1260", // k.shared Rules: no fix; where the state belongs is the author's choice
   "E1501", // the target route id is unknown to the checker
   "E1502", // which path to change is the author's choice
   "E1503", // the params field is the author's to write

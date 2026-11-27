@@ -8,7 +8,7 @@ import { explain } from "@keel/check/explain";
 import { expect, test } from "vitest";
 import { MANIFEST, PATH } from "./rules-support.ts";
 
-const PER_CODE = ["E1451", "E1452", "E1455", "E1453", "E1457", "E1458", "E1203", "E1208", "E1256", "E1260", "E1762"];
+const PER_CODE = ["E1451", "E1452", "E1455", "E1453", "E1457", "E1458", "E1203", "E1208", "E1256", "E1762"];
 const SHAPES: Readonly<Record<string, number>> = { E1451: 2, E1452: 3, E1203: 1, E1208: 1 };
 const examplesOf = (text: string): string[] =>
   [...text.matchAll(/```[A-Za-z]*\n([\s\S]*?)```/g)].map((m) => m[1] ?? "");

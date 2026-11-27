@@ -770,12 +770,16 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
-  E1260: {
+  E1256: {
     bad: [
-      f("modules/p/load.server.ts", "const seen: string[] = []\nexport function load(x: string) { seen.push(x) }\n"),
+      mod("p", [], []),
+      f("modules/p/last.ts", "import { signal } from '@keel/reactive'\nexport const last = signal('')\n"),
+      f("modules/p/load.server.ts", "import { last } from './last.ts'\nexport function load(x: string) { last.set(x) }\n"),
     ],
     clean: [
-      f("modules/p/load.server.ts", "export function load(x: string) { const seen: string[] = []; seen.push(x) }\n"),
+      mod("p", [], []),
+      f("modules/p/last.ts", "import { signal } from '@keel/reactive'\nexport const last = signal('')\n"),
+      f("modules/p/load.server.ts", "import { last } from './last.ts'\nexport function load() { return last.get() }\n"),
     ],
   },
   E1501: {
@@ -1165,17 +1169,16 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("api.server.ts", "import { notes } from './lib/notes.server.ts'\nexport const api = notes\n"),
     ],
   },
-  // The bad page reaches `notes` through the symlink `node_modules/linked-notes` and `app` lists no dep, so only E1013 reports (`#notes/...` is also E1576).
+  // k.bundle Aliases: `modules/app/sub/Deep.tsx` reaches its own module's `Page.tsx` through the symlink `node_modules/linked-app`; the fix `'../Page.tsx'` stays inside `app`, so no E1152 follows it.
   E1013: {
     opts: { root: sharedRoot() },
     bad: [
-      mod("app", [], []),
-      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx" && b.path !== "modules/app/module.ts"),
-      f("modules/app/Page.tsx", "import { lib } from 'linked-notes/lib.ts'\nexport const Page = lib\n"),
+      ...BASE,
+      f("modules/app/sub/Deep.tsx", "import { Page } from 'linked-app/Page.tsx'\nexport const Deep = Page\n"),
     ],
     clean: [
-      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx"),
-      f("modules/app/Page.tsx", "import { lib } from '../notes/lib.ts'\nexport const Page = lib\n"),
+      ...BASE,
+      f("modules/app/sub/Deep.tsx", "import { Page } from '../Page.tsx'\nexport const Deep = Page\n"),
     ],
   },
   // E1015 (k.boundary Following): `../../../shared/x.ts` from `modules/a/Page.tsx` resolves outside the project root.
