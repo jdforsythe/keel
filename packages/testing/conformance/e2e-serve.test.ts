@@ -9,7 +9,8 @@
 // Spec: k.e2e, clause "After a test that made a `serve` ends, passed or failed, none of its processes runs and its data folder is gone."
 // Spec: k.e2e, clause "A page's `fetch` with header `x-a: 1` to a mapped origin whose `answer` answers `OPTIONS` 204 with `access-control-allow-origin: *` and no `access-control-allow-headers` rejects in the page, and that `answer`'s `requests()` holds one `OPTIONS` and no `GET`."
 // Spec: k.e2e, clause "`open('/', { cookies: [{ name: 'gh', value: 'g1', origin: 'https://api.example.com', sameSite: 'None', secure: true }] })` puts the cookie in the context, and `cookies()` then lists `gh` with no value."
-// Spec: k.e2e, clause "After two transactions committed through a page, `log(store)` is `{ head: 2, entries: [{ id: 1, name }, { id: 2, name }] }` with each transaction's name, after a `stop()` and `start()` too."
+// Spec: k.e2e, clause "After two transactions committed through a page, `log(store)` holds `head` 2 and `entries` with ids 1 and 2 and each transaction's name, and after a `stop()` and `start()` it is equal, `digest` and each entry's `digest` among it."
+// Spec: k.e2e, clause "`log(store)`'s `digest` is the SHA-256 hex of the text the storage holds at the store's key, and an entry whose payload is `{ \"title\": \"Milk\" }` has `digest` the SHA-256 hex of `{\"title\":\"Milk\"}`."
 // Spec: k.e2e, clause "`stop('api', { drain: true })` sends SIGTERM and resolves once the process has exited with code 0, and `serverLog('api')` then holds what the process wrote while draining."
 // k.e2e Rules (E1736 `page` outside a library's folder, E1737 a deployable that did not start by an exit or a missing `dist/<name>/`) are asserted by the two last cases.
 // Seed: 1337 (the property inside the isolation fixture test, 3 runs). Method: each project below is a built-app fixture (fixtures/e2e/) whose e2e file holds the clause's test;
@@ -21,6 +22,7 @@ import {
   type Run,
   SUPPORT_BOARD,
   SUPPORT_ENV,
+  SUPPORT_ROWS,
   cleanup,
   keelE2e,
   outcome,
@@ -28,7 +30,7 @@ import {
   reasons,
   suite,
 } from "./e2e-support.ts";
-import { PAGES, nodeApp } from "./fixtures/e2e/node-app.ts";
+import { PAGES, milkApp, nodeApp } from "./fixtures/e2e/node-app.ts";
 import { staticApp } from "./fixtures/e2e/static-app.ts";
 import { twoNodeApp } from "./fixtures/e2e/two-node.ts";
 
@@ -254,11 +256,57 @@ const logged = suite(
 const page = await app.open('/')
 await page.fire('a.add', { type: 'click' })
 await page.fire('a.add', { type: 'click' })
-const expected = { head: 2, entries: [{ id: 1, name: 'a.addList' }, { id: 2, name: 'a.addList' }] }
-expect(await app.log(board())).toEqual(expected)
+const before = await app.log(board())
+expect(before.head).toBe(2)
+expect(before.entries.map((e) => [e.id, e.name])).toEqual([[1, 'a.addList'], [2, 'a.addList']])
+expect(before.digest).toMatch(/^[0-9a-f]{64}$/)
+for (const e of before.entries) expect(e.digest).toMatch(/^[0-9a-f]{64}$/)
 await app.stop()
 await app.start()
-expect(await app.log(board())).toEqual(expected)`,
+expect(await app.log(board())).toEqual(before)`,
+    },
+  ],
+);
+
+const digested = suite(
+  [
+    "import { createHash } from 'node:crypto'",
+    "import { serve } from '@keel/testing/e2e'",
+    "import { envOf } from './support.ts'",
+    "import { board } from './board.ts'",
+    "import { texts, changeRow } from './rows.ts'",
+    "const sha = (t: string): string => createHash('sha256').update(t).digest('hex')",
+    "const file = (url: string): string => url.replace(/^file:/, '')",
+  ],
+  [
+    {
+      title: "the digest is the SHA-256 of the stored text and the entries one of its payload",
+      body: `const app = await serve()
+const page = await app.open('/')
+await page.fire('a.add', { type: 'click' })
+const log = await app.log(board())
+const env = await envOf(app, 'api')
+expect(texts(file(env.data ?? '')).map(sha)).toContain(log.digest)
+expect(log.entries).toHaveLength(1)
+expect(log.entries[0]?.digest).toBe(sha('{"title":"Milk"}'))`,
+    },
+    {
+      title:
+        "the digests are equal across a stop and a start and a one-byte change to the stored row changes the digest",
+      body: `const app = await serve()
+const page = await app.open('/')
+await page.fire('a.add', { type: 'click' })
+const before = await app.log(board())
+const env = await envOf(app, 'api')
+await app.stop()
+await app.start()
+expect(await app.log(board())).toEqual(before)
+await app.stop()
+expect(changeRow(file(env.data ?? ''), before.digest, 'Milk', 'Milj')).toBe(true)
+await app.start()
+const after = await app.log(board())
+expect(after.digest).not.toBe(before.digest)
+expect(after.entries).toEqual(before.entries)`,
     },
   ],
 );
@@ -288,7 +336,7 @@ let statDir = "";
 let envDir = "";
 let okDir = "";
 let blockedDir = "";
-const ISO = ["preflight", "cookieOpt", "logged", "drained"] as const;
+const ISO = ["preflight", "cookieOpt", "logged", "drained", "digested"] as const;
 const isoDirs = new Map<string, string>();
 const runs = new Map<string, Run>();
 
@@ -305,12 +353,13 @@ beforeAll(() => {
   okDir = project(withSupport({ ...nodeApp(pages, [], CONNECT), ...board, [MAIN_FILE]: main.source }));
   blockedDir = project(withSupport({ ...nodeApp(pages), ...board, [MAIN_FILE]: main.source }));
   // Each clause of a feature the handle may not have yet runs in a project of its own: a call the handle lacks is a type error (E1751) that fails the build.
-  const suites = { preflight, cookieOpt, logged, drained };
+  const suites = { preflight, cookieOpt, logged, drained, digested };
   for (const key of ISO) {
     const d = project(
       withSupport({
-        ...nodeApp(pages, [], key === "preflight" ? CONNECT : ""),
+        ...(key === "digested" ? milkApp(pages) : nodeApp(pages, [], key === "preflight" ? CONNECT : "")),
         ...board,
+        ...(key === "digested" ? { "test/rows.ts": SUPPORT_ROWS } : {}),
         [`test/${key}.e2e.ts`]: suites[key].source,
       }),
     );
@@ -416,10 +465,23 @@ describe("k.e2e serve", () => {
     );
   });
 
-  it("After two transactions committed through a page, `log(store)` is `{ head: 2, entries: [{ id: 1, name }, { id: 2, name }] }` with each transaction's name, after a `stop()` and `start()` too", () => {
+  it("After two transactions committed through a page, `log(store)` holds `head` 2 and `entries` with ids 1 and 2 and each transaction's name, and after a `stop()` and `start()` it is equal, `digest` and each entry's `digest` among it.", () => {
     isolated(
       "logged",
       logged.lines["log holds the head and the ids and names of the entries, across a stop and a start"],
+    );
+  });
+
+  it('`log(store)`\'s `digest` is the SHA-256 hex of the text the storage holds at the store\'s key, and an entry whose payload is `{ "title": "Milk" }` has `digest` the SHA-256 hex of `{"title":"Milk"}`.', () => {
+    isolated(
+      "digested",
+      digested.lines["the digest is the SHA-256 of the stored text and the entries one of its payload"],
+    );
+    isolated(
+      "digested",
+      digested.lines[
+        "the digests are equal across a stop and a start and a one-byte change to the stored row changes the digest"
+      ],
     );
   });
 

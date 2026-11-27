@@ -22,11 +22,12 @@ import { fileURLToPath } from "node:url";
 // `@keel/cli` run these files, so each installs Chromium first (tooling/ci.source.json's `built-smokes` job does it with
 // `pnpm exec playwright install --with-deps chromium`).
 import { fixedTime } from "@keel/tooling/test-time";
+import { expect } from "vitest";
 import type { Tree } from "./fixtures/e2e/node-app.ts";
 
 export const SEED = 1337;
 export const REPO = fileURLToPath(new URL("../../../", import.meta.url));
-const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
+export const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 
 /** Resolves `playwright-core` from the repo: the hoisted link when there is one, else the pnpm store's copy. */
 function playwrightCore(): string | undefined {
@@ -92,7 +93,7 @@ export function write(dir: string, tree: Tree): void {
 }
 
 /** The process env without vitest's variables and any `KEEL_*`, then `extra`. */
-function cleanEnv(extra: Readonly<Record<string, string>>): Record<string, string> {
+export function cleanEnv(extra: Readonly<Record<string, string>>): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (v === undefined || k.startsWith("VITEST") || k.startsWith("KEEL_")) continue;
@@ -247,3 +248,86 @@ export function reasons(r: Run | undefined): string {
   }
   return out.length > 0 ? out.join("\n").slice(0, 4000) : `${r.stdout}\n${r.stderr}`.slice(-3000);
 }
+
+export type Job = {
+  readonly key: string;
+  readonly tree: Tree;
+  readonly file: string;
+  readonly source: string;
+  readonly env?: Readonly<Record<string, string>>;
+  readonly omit?: readonly string[];
+};
+export type Ran = { dir: string; run: Run; file: string };
+
+/**
+ * Makes one project per job (a case on a verb the handle may lack is a type error, E1751, that fails its project's build and no other),
+ * runs `keel test --e2e` over each and returns what ran by key. Every run's `KEEL_TEST_TIME_SCALE` is 1 unless the job sets it.
+ */
+export function runJobs(jobs: readonly Job[]): Map<string, Ran> {
+  const out = new Map<string, Ran>();
+  for (const j of jobs) {
+    const dir = project({ ...j.tree, [j.file]: j.source }, { omit: j.omit ?? [] });
+    out.set(j.key, {
+      dir,
+      run: keelE2e(dir, [], { env: { KEEL_TEST_TIME_SCALE: "1", ...(j.env ?? {}) } }),
+      file: j.file,
+    });
+  }
+  return out;
+}
+
+/** Asserts the fixture test at `line` of job `key` passed, with the run's own failure text as the message. */
+export function passedJob(ran: ReadonlyMap<string, Ran>, key: string, line: number | undefined): void {
+  const r = ran.get(key);
+  expect(r, `job ${key} ran`).toBeDefined();
+  expect(line, "the fixture test exists").toBeDefined();
+  if (r === undefined) return;
+  expect(outcome(r.dir, r.file, line ?? 0), reasons(r.run)).toBe("passed");
+}
+
+/**
+ * `test/rows.ts` of a fixture project (a source text): the text of every value of a SQLite file's tables (`texts`), and the change of
+ * one such value whose SHA-256 is `digest`, `from` replaced by `to` (`changeRow`: true when a row was changed). It reads the storage
+ * file as bytes the test owns and takes no table or key name from the product.
+ */
+export const SUPPORT_ROWS = `import { createHash } from 'node:crypto'
+import { DatabaseSync } from 'node:sqlite'
+const sha = (t: string): string => createHash('sha256').update(t).digest('hex')
+const text = (v: unknown): string | undefined =>
+  typeof v === 'string' ? v : v instanceof Uint8Array ? Buffer.from(v).toString('utf8') : undefined
+function tables(db: DatabaseSync): string[] {
+  const names: string[] = []
+  for (const row of db.prepare("select name from sqlite_master where type = 'table'").all()) {
+    const name = row.name
+    if (typeof name === 'string') names.push(name)
+  }
+  return names
+}
+export function texts(path: string): string[] {
+  const db = new DatabaseSync(path, { readOnly: true })
+  const out: string[] = []
+  for (const t of tables(db))
+    for (const row of db.prepare(\`select * from "\${t}"\`).all())
+      for (const v of Object.values(row)) {
+        const s = text(v)
+        if (s !== undefined) out.push(s)
+      }
+  db.close()
+  return out
+}
+export function changeRow(path: string, digest: string, from: string, to: string): boolean {
+  const db = new DatabaseSync(path)
+  let changed = false
+  for (const t of tables(db))
+    for (const row of db.prepare(\`select rowid as rid, * from "\${t}"\`).all())
+      for (const [column, v] of Object.entries(row)) {
+        const s = text(v)
+        if (changed || column === 'rid' || s === undefined || sha(s) !== digest) continue
+        const rid = typeof row.rid === 'number' || typeof row.rid === 'bigint' ? row.rid : 0
+        db.prepare(\`update "\${t}" set "\${column}" = ? where rowid = ?\`).run(typeof v === 'string' ? s.replace(from, to) : Buffer.from(s.replace(from, to)), rid)
+        changed = true
+      }
+  db.close()
+  return changed
+}
+`;

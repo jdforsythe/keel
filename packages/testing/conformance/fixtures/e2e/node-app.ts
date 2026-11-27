@@ -368,3 +368,38 @@ export function nodeApp(
     ...moduleFiles("a", pages, { home: true, env }),
   };
 }
+
+/** `nodeApp` whose action `a.home` commits `{ title: 'Milk' }` (a payload whose JSON is `{"title":"Milk"}`) in place of `{ name: 'list' }`. */
+export function milkApp(pages: readonly Page[] = Object.values(PAGES)): Tree {
+  const base = nodeApp(pages);
+  const board = base["modules/a/boards.ts"] ?? "";
+  const add = base["modules/a/add.server.ts"] ?? "";
+  return {
+    ...base,
+    "modules/a/AddList.schema.ts":
+      "import { s } from '@keel/schema'\nexport const AddList = s.object({ title: s.string() })\n",
+    "modules/a/boards.ts": board.replace("p.name", "p.title"),
+    "modules/a/add.server.ts": add.replace("{ name: 'list' }", "{ title: 'Milk' }"),
+  };
+}
+
+/**
+ * `nodeApp` whose `a.env` answer also holds `aws` (`process.env.AWS_SECRET_ACCESS_KEY ?? 'none'`), `home` and `tmp` (the served process's `HOME` and
+ * `TMPDIR`), the route the k.e2e-run Environment clause reads.
+ */
+export function awsApp(pages: readonly Page[] = []): Tree {
+  const base = nodeApp(pages);
+  const out = base["modules/a/EnvOut.schema.ts"] ?? "";
+  const env = base["modules/a/env.server.ts"] ?? "";
+  return {
+    ...base,
+    "modules/a/EnvOut.schema.ts": out.replace(
+      "s.object({",
+      "s.object({ aws: s.string(), home: s.string(), tmp: s.string(),",
+    ),
+    "modules/a/env.server.ts": env.replace(
+      "ok({",
+      "ok({ aws: process.env.AWS_SECRET_ACCESS_KEY ?? 'none', home: process.env.HOME ?? '', tmp: process.env.TMPDIR ?? '',",
+    ),
+  };
+}

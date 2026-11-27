@@ -1,10 +1,10 @@
 import { copyFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 // @vitest-environment node
-// Spec: k.e2e-page, clause "A test whose page's click handler rejects with `new Error('boom')` (an unhandled rejection: app code may not `throw`, E1451), and that never calls `problems()`, fails with E1738 holding `boom`; calling `problems()` after the click returns it, and the test passes."
+// Spec: k.e2e-page, clause "A test whose page's click handler rejects with `new Error('boom')` (an unhandled rejection: app code may not `throw`, E1451), and that never calls `problems()`, fails with E1738 holding `boom`; calling `problems({ kind: 'pageerror', text: 'boom' })` after the click returns it, and the test passes; calling `problems()` with no argument returns it, and the test still fails with E1738."
 // Spec: k.e2e-page, clause "A test that fails at `until` writes one `.png` and one `.zip` under `reports/e2e/` named after its file and its T0001's line, and its T0001 output lists the `server:` records of the requests made during that `until`; the same test passing writes nothing under `reports/e2e/`."
 // Spec: k.e2e-page, clause "`a11y()` of a page whose text is `#777` on `#fff` rejects E1703 naming `color-contrast`."
-// Spec: k.e2e-page, clause "A page whose click handler calls `console.warn('late')` fails its test with E1738 holding `warning late` when the test does not read `problems()`, and `problems()` after the click returns `{ kind: 'warning', text: 'late' }`."
+// Spec: k.e2e-page, clause "A page whose click handler calls `console.warn('late')` fails its test with E1738 holding `warning late` when the test does not read `problems()`, and `problems({ kind: 'warning', text: 'late' })` after the click returns `{ kind: 'warning', text: 'late' }` and the test passes."
 // k.e2e-page Rules E1735 (`<verb> <id>: <what was seen> after <s>s`) and E1738 (a browser problem the test did not read), and the Failure output paragraph (T0001 at the test's line, at most 10 `server:` lines,
 // then `screenshot:` per open tab and `trace:` per context, `<file>-<line>-<n>`), are asserted by the cases after the three clauses.
 // Seed: n/a (no generated input). Method: as e2e-serve.test.ts: fixtures/e2e/node-app.ts, `keel test --e2e` in compact format (the failure output is read as text), the report and `reports/e2e/` read per case.
@@ -48,7 +48,7 @@ const warnRead = suite(
       body: `const app = await serve()
 const page = await app.open('/warn')
 await page.fire('a.warn.go', { type: 'click' })
-expect(page.problems()).toEqual([{ kind: 'warning', text: 'late' }])
+expect(page.problems({ kind: 'warning', text: 'late' })).toEqual([{ kind: 'warning', text: 'late' }])
 expect(page.problems()).toEqual([])`,
     },
   ],
@@ -61,9 +61,26 @@ const read = suite(
       body: `const app = await serve()
 const page = await app.open('/boom')
 await page.fire('a.boom.go', { type: 'click' })
+const problems = page.problems({ kind: 'pageerror', text: 'boom' })
+expect(problems).toHaveLength(1)
+expect(problems[0]?.kind).toBe('pageerror')
+expect(problems[0]?.text).toContain('boom')
+expect(page.problems()).toEqual([])`,
+    },
+  ],
+);
+// `problems()` with no argument returns the problem and takes none: the test still fails with E1738.
+const readAll = suite(
+  [SERVE],
+  [
+    {
+      title: "a boom the test reads with no argument",
+      body: `const app = await serve()
+const page = await app.open('/boom')
+await page.fire('a.boom.go', { type: 'click' })
 const problems = page.problems()
 expect(problems.some((p) => p.text.includes('boom'))).toBe(true)
-expect(page.problems()).toEqual([])`,
+expect(page.problems().some((p) => p.text.includes('boom'))).toBe(true)`,
     },
   ],
 );
@@ -113,11 +130,14 @@ const F = {
   warned: "test/warned.e2e.ts",
   warnRead: "test/warnread.e2e.ts",
   read: "test/read.e2e.ts",
+  readAll: "test/readall.e2e.ts",
   until: "test/until.e2e.ts",
   tabs: "test/tabs.e2e.ts",
   contrast: "test/contrast.e2e.ts",
 } as const;
 let dir = "";
+let dirArgs = "";
+let second: Run = { status: null, stdout: "", stderr: "" };
 let failing: Run = { status: null, stdout: "", stderr: "" };
 let passing: Run = { status: null, stdout: "", stderr: "" };
 let listedAfterPass: string[] = [];
@@ -129,12 +149,19 @@ beforeAll(() => {
     "test/failure.ts": FAILURE,
     [F.boom]: boom.source,
     [F.warned]: warned.source,
-    [F.warnRead]: warnRead.source,
-    [F.read]: read.source,
     [F.until]: until.source,
     [F.tabs]: tabs.source,
     [F.contrast]: contrast.source,
   });
+  // `problems(...expected)` is a call the handle may lack: a project of its own, so its type error fails no other case here.
+  dirArgs = project({
+    ...nodeApp(Object.values(PAGES)),
+    "test/failure.ts": FAILURE,
+    [F.read]: read.source,
+    [F.readAll]: readAll.source,
+    [F.warnRead]: warnRead.source,
+  });
+  second = keelE2e(dirArgs, [], { env: { KEEL_TEST_TIME_SCALE: "1" } });
   failing = keelE2e(dir, [], { env: { KEEL_TEST_TIME_SCALE: "1" } });
   listedAfterFail = listing(dir, "reports/e2e");
   // the second run rewrites `e2e.json`: the first run's report is kept beside it
@@ -158,12 +185,19 @@ function block(file: string, line: number): { text: string; line: number } {
 }
 
 describe("k.e2e-page failure output and problems", () => {
-  it("A test whose page's click handler rejects with `new Error('boom')` (an unhandled rejection: app code may not `throw`, E1451), and that never calls `problems()`, fails with E1738 holding `boom`; calling `problems()` after the click returns it, and the test passes", () => {
+  it("A test whose page's click handler rejects with `new Error('boom')` (an unhandled rejection: app code may not `throw`, E1451), and that never calls `problems()`, fails with E1738 holding `boom`; calling `problems({ kind: 'pageerror', text: 'boom' })` after the click returns it, and the test passes; calling `problems()` with no argument returns it, and the test still fails with E1738.", () => {
     expect(outcome(dir, F.boom, lineOf(boom, "a boom the test never reads"), "first.json")).toBe("failed");
     const b = block(F.boom, lineOf(boom, "a boom the test never reads"));
     expect(b.text).toContain("E1738");
     expect(b.text).toContain("boom");
-    expect(outcome(dir, F.read, lineOf(read, "a boom the test reads"), "first.json")).toBe("passed");
+    expect(outcome(dirArgs, F.read, lineOf(read, "a boom the test reads")), second.stdout).toBe("passed");
+    // `problems()` with no argument returns it and the test still fails with E1738
+    expect(outcome(dir, F.readAll, lineOf(readAll, "a boom the test reads with no argument"), "first.json")).toBe(
+      "failed",
+    );
+    const all = block(F.readAll, lineOf(readAll, "a boom the test reads with no argument"));
+    expect(all.text).toContain("E1738");
+    expect(all.text).toContain("boom");
   });
 
   it("A test that fails at `until` writes one `.png` and one `.zip` under `reports/e2e/` named after its file and its T0001's line, and its T0001 output lists the `server:` records of the requests made during that `until`; the same test passing writes nothing under `reports/e2e/`", () => {
@@ -184,12 +218,12 @@ describe("k.e2e-page failure output and problems", () => {
 });
 
 describe("k.e2e-page warnings", () => {
-  it("A page whose click handler calls `console.warn('late')` fails its test with E1738 holding `warning late` when the test does not read `problems()`, and `problems()` after the click returns `{ kind: 'warning', text: 'late' }`", () => {
+  it("A page whose click handler calls `console.warn('late')` fails its test with E1738 holding `warning late` when the test does not read `problems()`, and `problems({ kind: 'warning', text: 'late' })` after the click returns `{ kind: 'warning', text: 'late' }` and the test passes.", () => {
     expect(outcome(dir, F.warned, lineOf(warned, "a warning the test never reads"), "first.json")).toBe("failed");
     const b = block(F.warned, lineOf(warned, "a warning the test never reads"));
     expect(b.text).toContain("E1738");
     expect(b.text).toContain("warning late");
-    expect(outcome(dir, F.warnRead, lineOf(warnRead, "a warning the test reads"), "first.json")).toBe("passed");
+    expect(outcome(dirArgs, F.warnRead, lineOf(warnRead, "a warning the test reads")), second.stdout).toBe("passed");
   });
 });
 
