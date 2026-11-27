@@ -2,7 +2,8 @@
 // Spec: k.fixes, clause "The chain `cleanup` has no step: `keel check` reports nothing on its start."
 // Spec: k.fixes, clause "The chains `invalid`, `missing` and `bug` each take one step with no fix; the probes hold that a bad field answers `err` `schema.invalid`, an absent row `err` with the module's `missing` code and its `id`, and a row that must exist a defect whose `data` is `{ id }` and whose message holds no id."
 // Spec: k.fixes, clause "The chain `rollback` takes one step, and its probe holds: with `work` rejecting with `w`, an object whose `code` is `40P01`, the function rejects with `w` itself after the statements `begin` and `rollback`; with `work` resolving, the statements are `begin` and `commit`."
-// Seed 1337. The walk (k.fixes Fix chains): each chain under fix-chains/ has `start/`, optional `edit1/`, `edit2/`, `end/`, `steps.json` and `probe.test.ts`; the files of a state sit under `modules/<module>/`. At each step the first diagnostic `check` reports (code, message, whether it carries a fix) is read; a fix is applied with `git apply`, else the named edit is the next state. The project is type-checked at every state (`check` with the type pass on reports a TypeScript error as E1751). The fixed text is compared to `end/` with quotes, semicolons, commas and whitespace removed, since the repository's formatter lays out the stored files.
+// Seed 1337. The walk (k.fixes Fix chains): each chain under fix-chains/ has `start/`, optional `edit1/`, `edit2/`, `end/`, `steps.json` and `probe.test.ts`; the files of a state sit under `modules/<module>/`. At each step the first diagnostic `check` reports (code, message, whether it carries a fix) is read; a fix is applied with `git apply`, else the named edit is the next state. The project is type-checked at every state (`check` with the type pass on reports a TypeScript error as E1751). The fixed text is compared to `end/` exactly after both are laid out by the repository's formatter (biome, from stdin, the repository's configuration): quotes, semicolons, commas and whitespace are the formatter's, every other character must match.
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
@@ -17,7 +18,17 @@ interface Step {
   fix: boolean;
   message?: string;
 }
-const norm = (s: string): string => s.replace(/[\s;,'"]/g, "");
+const ROOT = join(import.meta.dirname, "..", "..", "..");
+/** The text laid out by the repository's formatter: a different quote, semicolon, comma or break is the formatter's, any other character is not. */
+const norm = (source: string, path: string): string => {
+  const r = spawnSync(join(ROOT, "node_modules", ".bin", "biome"), ["format", `--stdin-file-path=${path}`], {
+    cwd: ROOT,
+    input: source,
+    encoding: "utf8",
+  });
+  if (r.status !== 0) throw new Error(`the formatter refused ${path}: ${r.stderr}`);
+  return r.stdout;
+};
 const stateOf = (chain: string, module: string, state: string): Files => {
   const dir = join(DIR, chain, state);
   return readdirSync(dir)
@@ -28,7 +39,7 @@ const withManifest = (module: string, files: Files): Files => [
   manifestFile({ id: module, deps: [], capabilities: [], exports: [] }),
   ...files,
 ];
-const normFiles = (files: Files): string[] => files.map((f) => `${f.path}:${norm(f.source)}`);
+const normFiles = (files: Files): string[] => files.map((f) => `${f.path}:\n${norm(f.source, f.path)}`);
 
 test("the ten chains of k.fixes Fix chains exist", () => {
   expect(

@@ -1,6 +1,6 @@
 // Spec: k.reactive, clause "In `modules/m/a.ts`, `async function f() { await g(); return scope(() => undefined) }` is one E1208 at `scope` and `async function f() { await g(); return signal(0) }` one E1203 at `signal`; `async function f(c: Scope) { await g(); return c.run(() => scope(() => undefined)) }` and `function f() { return scope(() => undefined) }` are none."
-// k.reactive, Static "In app code and a library's files `keel check` also reports, at the callee, E1208 for a call of `scope` (callee found as k.unsafe One path says) and E1203 for a call of `signal`, `computed`, `effect`, `resource` or `store` that follows an `await` in the same function body, not inside a nested function, unless it is inside a function given to a `run` call; message `<name> after await runs with no owner; use a captured scope's run`, no fix."
-// Seed 1337. Fixtures are source text over in-memory file maps with the type pass on (the callee is found by its symbol).
+// k.reactive, Static "In app code and a library's files `keel check` also reports, at the callee, E1208 for a call of `scope` (callee found as k.unsafe One path says) and E1203 for a call of `signal`, `computed`, `effect`, `resource` or `store` that follows an `await` in the same function body, not inside a nested function, unless it is inside a function given to a `run` call; message `<name> after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => <name>(...))`, no fix; a maker reached through a helper after an `await` is the run-time defect alone."
+// Seed 1337. The message names the rewrite; the case that applies the named rewrite checks that it passes check and type-checks. Fixtures are source text over in-memory file maps with the type pass on (the callee is found by its symbol).
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -15,6 +15,9 @@ import { store } from '@keel/store'
 declare function g(): Promise<void>
 const S = s.object({ n: s.number() })
 `;
+
+const messageOf = (name: string): string =>
+  `${name} after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => ${name}(...))`;
 
 const run = (body: string) =>
   check([MANIFEST, { path: PATH, source: `${HEAD}${body}\n` }]).diagnostics.filter(
@@ -31,7 +34,7 @@ test("`async function f() { await g(); return scope(() => undefined) }` is one E
   const ds = run(body);
   expect(ds.map((d) => d.code)).toEqual(["E1208"]);
   expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(body, "scope(() =>"));
-  expect(ds[0]?.message).toBe("scope after await runs with no owner; use a captured scope's run");
+  expect(ds[0]?.message).toBe(messageOf("scope"));
   expect(ds[0]?.fix).toBeUndefined();
 });
 
@@ -40,7 +43,7 @@ test("`async function f() { await g(); return signal(0) }` is one E1203 at `sign
   const ds = run(body);
   expect(ds.map((d) => d.code)).toEqual(["E1203"]);
   expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(body, "signal(0)"));
-  expect(ds[0]?.message).toBe("signal after await runs with no owner; use a captured scope's run");
+  expect(ds[0]?.message).toBe(messageOf("signal"));
   expect(ds[0]?.fix).toBeUndefined();
 });
 
@@ -63,7 +66,7 @@ const MAKERS: readonly (readonly [string, string, string])[] = [
   ["scope", "scope(() => undefined)", "E1208"],
 ];
 
-test("property: a call of `scope` is E1208 and of `signal`, `computed`, `effect`, `resource` or `store` is E1203, at the callee, message `<name> after await runs with no owner; use a captured scope's run`, when an `await` precedes it in the same function body", () => {
+test("property: a call of `scope` is E1208 and of `signal`, `computed`, `effect`, `resource` or `store` is E1203, at the callee, message `<name> after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => <name>(...))`, when an `await` precedes it in the same function body", () => {
   fc.assert(
     fc.property(
       fc.constantFrom(...MAKERS),
@@ -82,7 +85,7 @@ test("property: a call of `scope` is E1208 and of `signal`, `computed`, `effect`
           ds.map((d) => d.code),
           body,
         ).toEqual([code]);
-        expect(ds[0]?.message).toBe(`${name} after await runs with no owner; use a captured scope's run`);
+        expect(ds[0]?.message).toBe(messageOf(name));
         expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(body, call));
       },
     ),
@@ -103,6 +106,31 @@ test("property: the same call before the `await`, in a nested function, or insid
       ]) {
         expect(run(body), body).toEqual([]);
       }
+    }),
+    { seed: SEED, numRuns: 30 },
+  );
+});
+
+test("the rewrite the message names, `const c = owner() ?? defect('no owner')` before the `await` and `c.run(() => <name>(...))` after it, passes check and type-checks for each maker", () => {
+  fc.assert(
+    fc.property(fc.constantFrom(...MAKERS), ([name, call]) => {
+      const imports =
+        name === "store"
+          ? "import { owner } from '@keel/reactive'\nimport { store } from '@keel/store'\nimport { defect } from '@keel/schema'\nimport { S } from './S.schema.ts'\n"
+          : `import { owner, ${name} } from '@keel/reactive'\nimport { defect } from '@keel/schema'\n`;
+      const source = `${imports}declare function g(): Promise<void>
+export async function a() {
+  const c = owner() ?? defect('no owner')
+  await g()
+  return c.run(() => ${call})
+}
+`;
+      const schema = {
+        path: "modules/m/S.schema.ts",
+        source: "import { s } from '@keel/schema'\nexport const S = s.object({ n: s.number() })\n",
+      };
+      const out = check([MANIFEST, schema, { path: PATH, source }]).diagnostics;
+      expect(out.map((d) => `${d.code} ${d.message}`).join(" ; "), call).toBe("");
     }),
     { seed: SEED, numRuns: 30 },
   );
