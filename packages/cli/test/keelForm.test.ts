@@ -1,3 +1,4 @@
+import { managerOf } from "@keel/scaffold/create";
 // k.cli Command form: a printed `keel <command>` is in the form of the manager that started the run.
 import { describe, expect, it } from "vitest";
 import { keelForm } from "../src/internal/keelForm.ts";
@@ -18,6 +19,7 @@ describe("keel's command form", () => {
     expect(keelForm("bun/1.2.0")).toBe("bun run keel");
     expect(keelForm(undefined)).toBe("keel");
     expect(keelForm("deno/2.0.0")).toBe("keel");
+    for (const m of ["pnpm", "npm", "yarn", "bun"]) expect(keelForm(`${m}/1.0.0`)).toBe(managerOf(`${m}@1.0.0`).run);
   });
 
   it("compact and pretty print the form; json keeps the record's text; @keel/ names are not commands", () => {
@@ -25,8 +27,12 @@ describe("keel's command form", () => {
     expect(c).toContain("pnpm keel build writes it");
     expect(c).toContain("see: pnpm keel docs k.deploy");
     expect(render([diag], { ...opts, mode: "pretty", keel: "npx --no keel" })).toContain("npx --no keel build");
-    expect(render([diag], { ...opts, mode: "json", keel: "pnpm keel" })).toContain('"generated deploy file missing; keel build');
+    expect(render([diag], { ...opts, mode: "json", keel: "pnpm keel" })).toContain(
+      '"generated deploy file missing; keel build',
+    );
     const pkg = makeDiag("E1576", "import @keel/ui/brand, not a keel docs internal path");
-    expect(render([pkg], { ...opts, mode: "compact", keel: "pnpm keel" })).toContain("@keel/ui/brand, not a pnpm keel docs");
+    expect(render([pkg], { ...opts, mode: "compact", keel: "pnpm keel" })).toContain(
+      "@keel/ui/brand, not a pnpm keel docs",
+    );
   });
 });
