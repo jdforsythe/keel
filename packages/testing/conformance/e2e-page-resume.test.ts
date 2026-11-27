@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FAILURE, type Ran, cleanup, passedJob, runJobs, suite } from "./e2e-support.ts";
 import { EXTRA, EXTRA_FILES, GROW } from "./fixtures/e2e/extra-pages.ts";
 import { PAGES, type Page, nodeApp } from "./fixtures/e2e/node-app.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 const IMPORTS = ["import { serve } from '@keel/testing/e2e'", "import { failure } from './failure.ts'"];
 
@@ -74,7 +75,7 @@ beforeAll(() => {
     job("cut", [GROW.growcut], cut),
     job("outside", [GROW.growout], outside),
   ]);
-}, 3_000_000);
+}, fixedTime(3_000_000));
 afterAll(cleanup);
 
 describe("k.e2e-page resume claims", () => {

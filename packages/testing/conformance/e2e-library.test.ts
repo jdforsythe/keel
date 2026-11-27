@@ -9,6 +9,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { library } from "./e2e-library-support.ts";
 import { type Run, cleanup, keelE2e, outcome, project, reasons, suite } from "./e2e-support.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 const withRouter = suite(
   ["import { readFileSync, readdirSync } from 'node:fs'", "import { serve } from '@keel/testing/e2e'"],
@@ -48,7 +49,7 @@ beforeAll(() => {
   withoutDir = project({ ...library("@keel/router"), [FILE]: withoutRouter.source }, { omit: ["router"] });
   runs.set("with", keelE2e(withDir));
   runs.set("without", keelE2e(withoutDir));
-}, 3_000_000);
+}, fixedTime(3_000_000));
 afterAll(cleanup);
 
 const why = (key: string): string => reasons(runs.get(key));
