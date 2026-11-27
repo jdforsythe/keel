@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 // Targeted examples pinning hydration-region walking, island props decoding, text binding and list placement.
+import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { Mismatch } from "../src/internal/Mismatch.ts";
 import { islandProps } from "../src/internal/islandProps.ts";
@@ -123,7 +124,7 @@ describe("nextClaimable", () => {
 });
 
 describe("islandProps", () => {
-  const withProps = (parse: (j: unknown) => unknown): unknown => Object.assign(() => null, { Props: { parse } });
+  const withProps = (Props: unknown): unknown => Object.assign(() => null, { Props });
 
   it("without a Props schema returns a plain-object json as is, else {}", () => {
     const w: string[] = [];
@@ -152,34 +153,41 @@ describe("islandProps", () => {
     expect(w).toEqual([]);
   });
 
+  it("an object of a schema's shape, or a copy of a schema, is no Props schema (k.identity)", () => {
+    const w: string[] = [];
+    const j = { a: 1 };
+    const S = s.object({ a: s.string() });
+    for (const Props of [{ parse: () => ({ ok: true, value: { z: 1 } }) }, { ...S }, new Proxy(S, {})])
+      expect(islandProps(withProps(Props), j, "i", w)).toBe(j);
+    expect(w).toEqual([]);
+  });
+
   it("uses the parsed record when the schema accepts", () => {
     const w: string[] = [];
-    const seen: unknown[] = [];
-    const c = withProps((j) => {
-      seen.push(j);
-      return { ok: true, value: { parsed: true } };
-    });
-    expect(islandProps(c, { raw: 1 }, "i", w)).toEqual({ parsed: true });
-    expect(seen).toEqual([{ raw: 1 }]);
+    const c = withProps(s.object({ pw: s.secret(s.string()) }));
+    const out = islandProps(c, { pw: "x" }, "i", w);
+    expect(out.pw).toBeInstanceOf(Object);
+    expect(out.pw).not.toBe("x");
     expect(w).toEqual([]);
   });
 
   it("feeds {} to parse when json is null or undefined, but keeps other falsy json", () => {
-    const seen: unknown[] = [];
-    const c = withProps((j) => {
-      seen.push(j);
-      return { ok: true, value: {} };
-    });
-    islandProps(c, null, "i", []);
-    islandProps(c, undefined, "i", []);
-    islandProps(c, 0, "i", []);
-    islandProps(c, "", "i", []);
-    expect(seen).toEqual([{}, {}, 0, ""]);
+    const c = withProps(s.object({ a: s.number().optional() }));
+    for (const j of [null, undefined]) {
+      const w: string[] = [];
+      expect(islandProps(c, j, "i", w)).toEqual({});
+      expect(w).toEqual([]);
+    }
+    for (const j of [0, ""]) {
+      const w: string[] = [];
+      expect(islandProps(c, j, "i", w)).toEqual({});
+      expect(w).toHaveLength(1);
+    }
   });
 
   it("warns E1253 with the island id and falls back when parse fails", () => {
     const w: string[] = [];
-    const c = withProps(() => ({ ok: false }));
+    const c = withProps(s.object({ a: s.string() }));
     const j = { a: 1 };
     expect(islandProps(c, j, "main", w)).toBe(j);
     expect(w).toEqual(['E1253 [data-k-island="main"] props do not decode with its Props schema']);
@@ -188,10 +196,15 @@ describe("islandProps", () => {
   });
 
   it("warns and falls back when parse succeeds with a non-record value", () => {
-    for (const value of [1, "s", null, [1], undefined]) {
+    const cases: Array<[unknown, unknown]> = [
+      [s.number(), 1],
+      [s.string(), "s"],
+      [s.number().nullable(), null],
+      [s.array(s.number()), [1]],
+    ];
+    for (const [Props, value] of cases) {
       const w: string[] = [];
-      const c = withProps(() => ({ ok: true, value }));
-      expect(islandProps(c, { a: 1 }, "k", w)).toEqual({ a: 1 });
+      expect(islandProps(withProps(Props), value, "k", w)).toEqual({});
       expect(w).toEqual(['E1253 [data-k-island="k"] props do not decode with its Props schema']);
     }
   });
