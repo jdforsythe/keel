@@ -4,7 +4,7 @@ import { type KeelError, type Result, attempt, defect } from "@keel/schema";
 import { type Channel, subscribe } from "@keel/std-channels";
 import { type Transaction, tx } from "@keel/store";
 import type { LiveStatus } from "./LiveStatus.schema.ts";
-import { Rejected } from "./Rejected.ts";
+import { Rejected } from "./Rejected.schema.ts";
 
 const FIRST_MS = 1000;
 const MAX_MS = 30_000;

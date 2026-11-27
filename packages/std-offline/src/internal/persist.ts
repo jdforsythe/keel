@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { type Result, attempt, err, ok } from "@keel/schema";
 import type { Config } from "./Config.ts";
-import { Failed } from "./Failed.ts";
+import { Failed } from "./Failed.schema.ts";
 import { flowOf } from "./flowOf.ts";
 
 /**
@@ -23,9 +23,8 @@ export async function persist(ctx: Ctx, c: Config): Promise<Result<null, ReturnT
     },
     (x) => (x instanceof Error ? Failed.make({}) : undefined),
   );
-  void written.then((w) => {
-    if (w.ok && gone) void persist(ctx, c);
-  });
+  // The write after a late landing is the last one tried: when it fails too, storage keeps what landed last.
+  void written.then(async (w) => (w.ok && gone ? (await persist(ctx, c)).ok : false));
   const bound = new Promise<Result<null, ReturnType<typeof Failed.make>>>((late) => {
     void attempt(
       async () => {

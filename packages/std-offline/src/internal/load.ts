@@ -1,14 +1,14 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt, s } from "@keel/schema";
-import { tx } from "@keel/store";
 import { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { Config } from "./Config.ts";
-import { Failed } from "./Failed.ts";
+import { Failed } from "./Failed.schema.ts";
+import { apply } from "./apply.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
 import { flowOf } from "./flowOf.ts";
 import { full } from "./full.ts";
-import { persist } from "./persist.ts";
+import { rewrite } from "./rewrite.ts";
 
 /**
  * Loads the outbox stored in `ctx.storage` once per ctx, entry by entry: adds, in order, each entry the store lacks
@@ -48,9 +48,9 @@ async function read(ctx: Ctx, c: Config): Promise<void> {
     }
     const next = { ...e, state: e.state === "sending" ? ("queued" as const) : e.state };
     if (full(c, [...entries, next])) break;
-    void tx(c.add, next);
+    apply(c.add, next);
     flowOf(c, ctx).held.add(next.key);
     moved ||= foreign;
   }
-  if (moved) void (await persist(ctx, c));
+  if (moved) await rewrite(ctx, c);
 }

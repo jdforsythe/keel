@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { type JsonValue, attempt } from "@keel/schema";
 import type { Job } from "../Job.type.ts";
-import { Thrown } from "./Thrown.ts";
+import { Thrown } from "./Thrown.schema.ts";
 
 /**
  * One run of a job: its stored input parsed, `fn` raced against `timeoutMs` on `ctx.clock` (then `a` aborts). Resolves

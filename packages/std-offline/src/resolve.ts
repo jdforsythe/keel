@@ -1,16 +1,17 @@
 import type { Ctx } from "@keel/ctx";
-import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import type { OutboxResult } from "./OutboxResult.ts";
 import type { Resolution } from "./Resolution.schema.ts";
 import type { Outputs } from "./internal/Outputs.ts";
 import { admit } from "./internal/admit.ts";
+import { apply } from "./internal/apply.ts";
 import { configOf } from "./internal/configOf.ts";
 import { flowOf } from "./internal/flowOf.ts";
 import { flush } from "./internal/flush.ts";
 import { load } from "./internal/load.ts";
 import { persist } from "./internal/persist.ts";
+import { rewrite } from "./internal/rewrite.ts";
 
 /**
  * Answer a refused entry (std.offline Resolve), once the stored outbox has loaded. `'mine'` queues a `conflict` entry
@@ -50,10 +51,10 @@ export async function resolve<const D extends object>(
   // Only an entry this ctx added or loaded.
   const state = flowOf(c, ctx).held.has(key) ? c.store.get("entries").find((e) => e.key === key)?.state : undefined;
   if (state !== "conflict" && (resolution === "mine" || state !== "failed")) return false;
-  void tx(c.resolve, { key, resolution });
+  apply(c.resolve, { key, resolution });
   if (resolution === "theirs") {
     flowOf(c, ctx).held.delete(key);
-    if (!(await persist(ctx, c)).ok) void (await persist(ctx, c));
+    if (!(await persist(ctx, c)).ok) await rewrite(ctx, c);
     return true;
   }
   const error = await admit(ctx, c, key);

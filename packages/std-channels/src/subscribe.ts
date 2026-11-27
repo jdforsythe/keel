@@ -5,7 +5,7 @@ import type { Channel } from "./Channel.type.ts";
 import type { ChannelEvent } from "./ChannelEvent.ts";
 import type { ChannelStatus } from "./ChannelStatus.ts";
 import type { Subscription } from "./Subscription.ts";
-import { Rejected } from "./internal/Rejected.ts";
+import { Rejected } from "./internal/Rejected.schema.ts";
 import { apiOf } from "./internal/apiOf.ts";
 
 const FIRST_MS = 1000;

@@ -1,6 +1,6 @@
 import { attempt } from "@keel/schema";
 import { TimeZone } from "@keel/std-temporal";
-import { UnknownZone } from "./UnknownZone.ts";
+import { UnknownZone } from "./UnknownZone.schema.ts";
 import { parseCron } from "./parseCron.ts";
 
 const hostLacks = (zone: string): boolean =>

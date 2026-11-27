@@ -10,7 +10,9 @@ import { rowOf } from "./rowOf.ts";
 export function forgetJob<S extends string, D>(m: Model<S, D>): Job<FlowInput> {
   return job({ input: FlowInput }, async (input, ctx) => {
     const r = await commitStores(ctx, m.open, (S) => {
-      if (rowOf(S, input, (s) => m.finals.has(s)) !== undefined) void tx(S.forget, { id: input.id });
+      if (rowOf(S, input, (s) => m.finals.has(s)) === undefined) return ok(null);
+      const gone = tx(S.forget, { id: input.id });
+      if (!gone.ok) return gone;
       return ok(null);
     });
     return r.ok ? ok(null) : r;

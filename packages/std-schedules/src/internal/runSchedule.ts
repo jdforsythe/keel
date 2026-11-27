@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt, defect } from "@keel/schema";
 import type { JobTable, Queue } from "@keel/std-jobs";
-import { Cancelled } from "./Cancelled.ts";
+import { Cancelled } from "./Cancelled.schema.ts";
 import { Marks } from "./Marks.schema.ts";
 import type { Planned } from "./Planned.ts";
 import { seek } from "./seek.ts";
@@ -50,7 +50,7 @@ export async function runSchedule(
       () =>
         t < Number.POSITIVE_INFINITY
           ? ctx.clock.after(Math.max(0, t - ctx.clock.now()), signal)
-          : new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason), { once: true })),
+          : new Promise<void>((done) => signal.addEventListener("abort", () => done(), { once: true })),
       (x) => (x === signal.reason ? Cancelled.make({}) : undefined),
     );
     if (!waited.ok) return;

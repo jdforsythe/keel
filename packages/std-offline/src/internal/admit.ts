@@ -1,8 +1,9 @@
 import type { Ctx } from "@keel/ctx";
-import { tx } from "@keel/store";
 import type { Config } from "./Config.ts";
+import { apply } from "./apply.ts";
 import { fault } from "./fault.ts";
 import { persist } from "./persist.ts";
+import { rewrite } from "./rewrite.ts";
 
 /**
  * Writes the outbox to `ctx.storage` for entry `key`, made `queued` in memory a moment before, and holds that entry
@@ -23,8 +24,8 @@ export function admit(
         ? fault(c, "offline.owner")
         : undefined;
     const error = fault(c, "offline.storage");
-    void tx(c.settle, { key, state: "failed", error });
-    void (await persist(ctx, c));
+    apply(c.settle, { key, state: "failed", error });
+    await rewrite(ctx, c);
     return error;
   });
   c.writes.set(key, written);

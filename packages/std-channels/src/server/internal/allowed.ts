@@ -1,5 +1,5 @@
 import { attempt } from "@keel/schema";
-import { Rejected } from "../../internal/Rejected.ts";
+import { Rejected } from "../../internal/Rejected.schema.ts";
 /** `member` applied, failing closed: a throw is a denial. */
 export function allowed<A>(member: (at: A) => boolean, at: A): boolean {
   const asked = attempt(

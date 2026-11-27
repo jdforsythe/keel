@@ -43,7 +43,8 @@ export function stepJob<S extends string, D>(
         const r = rowOf(S, input, here);
         if (r === undefined) return ok(undefined);
         if (r.attempt >= max) return failed(S, step.failed, input.id, "workflows.attempts");
-        void tx(S.attempt, input);
+        const counted = tx(S.attempt, input);
+        if (!counted.ok) return counted;
         return ok({ data: r.data, last: r.attempt + 1 >= max });
       });
       if (!first.ok) return first;

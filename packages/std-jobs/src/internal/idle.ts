@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
-import { Cancelled } from "./Cancelled.ts";
+import { Cancelled } from "./Cancelled.schema.ts";
 import type { Chan } from "./Chan.ts";
 
 /** Wait `ms` on `ctx.clock` (forever for `Infinity`), or until `c` wakes after version `v`, or `signal` aborts. */

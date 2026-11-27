@@ -1,11 +1,11 @@
 import type { Ctx } from "@keel/ctx";
 import { computed, signal } from "@keel/reactive";
 import { instance } from "@keel/std-statecharts";
-import { tx } from "@keel/store";
 import type { KeyInput } from "@keel/ui/aria";
 import type { ListState } from "./ListState.ts";
 import type { Option } from "./Option.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
+import { send } from "./internal/send.ts";
 import { optionsChart } from "./optionsChart.ts";
 import { stableRows } from "./stableRows.ts";
 
@@ -50,9 +50,9 @@ export function listChart<O extends Option>(
     const was = known.get();
     if (keys.length === was.length && keys.every((k, i) => k === was[i])) return;
     const at = index.get();
-    if (c.store.get("data").count !== size()) void tx(c.events.items, { count: size() });
+    if (c.store.get("data").count !== size()) send(c.events.items, { count: size() });
     known.set(keys);
-    if (open.get() && c.store.get("data").active !== at) void tx(c.events.jump, { to: at });
+    if (open.get() && c.store.get("data").active !== at) send(c.events.jump, { to: at });
   };
   const partId = (key: string) => `${id}.${part}.${key}`;
   const activeId = computed(() => {
@@ -61,7 +61,7 @@ export function listChart<O extends Option>(
   });
   const jump = (to: number) => {
     sync();
-    void tx(c.events.jump, { to });
+    send(c.events.jump, { to });
   };
   let buffer = "";
   let last = Number.NEGATIVE_INFINITY;
@@ -81,19 +81,19 @@ export function listChart<O extends Option>(
     indexOf: (key: string) => list.get().findIndex((o) => o.key === key),
     opened: (at: number) => {
       sync();
-      if (!open.get()) void tx(c.events.open, { count: size(), at: Math.min(at, 9999) });
+      if (!open.get()) send(c.events.open, { count: size(), at: Math.min(at, 9999) });
     },
     close: (back: boolean) => {
       sync();
-      if (open.get()) void tx(c.events.close, { back });
+      if (open.get()) send(c.events.close, { back });
     },
     choose: () => {
       sync();
-      void tx(c.events.choose, {});
+      send(c.events.choose, {});
     },
     move: (by: "next" | "prev" | "first" | "last", wrap: boolean) => {
       sync();
-      void tx(c.events.move, { by, wrap });
+      send(c.events.move, { by, wrap });
     },
     jump,
     /** A printable key without `mod` extends the buffer and jumps to the next option whose text starts with it. */

@@ -1,14 +1,15 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
-import { tx } from "@keel/store";
 import type { OutboxResult } from "../OutboxResult.ts";
 import type { Config } from "./Config.ts";
-import { Failed } from "./Failed.ts";
+import { Failed } from "./Failed.schema.ts";
+import { apply } from "./apply.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
 import { flowOf } from "./flowOf.ts";
 import { outcomeOf } from "./outcomeOf.ts";
 import { persist } from "./persist.ts";
+import { rewrite } from "./rewrite.ts";
 
 const obj = (x: unknown): object => (typeof x === "object" && x !== null ? x : {});
 /** The entry waits for its owner: the ctx's owner became `""` before its answer. */
@@ -58,7 +59,7 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
   // Writes the outbox; false, with `lost` set, when the storage write rejects (with any value, a defect included).
   const put = async (key: string, state: string, extra: object, out?: OutboxResult<unknown>): Promise<boolean> => {
     const payload: unknown = { key, state, ...extra };
-    void tx(c.settle, payload);
+    apply(c.settle, payload);
     answer = out;
     const written = await persist(ctx, c);
     if (!written.ok) lost = true;
@@ -134,8 +135,8 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       // A storage write that rejected: the entry in hand, unless an answer settled it, is failed in memory; the outbox
       // is written once more (best effort).
       const error = fault(c, "offline.storage");
-      if (!answer) void tx(c.settle, { key, state: "failed", error });
-      void (await persist(ctx, c));
+      if (!answer) apply(c.settle, { key, state: "failed", error });
+      await rewrite(ctx, c);
       done(key, answer ?? { state: "failed", error });
     }
   } finally {

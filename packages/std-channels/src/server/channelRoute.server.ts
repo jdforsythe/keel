@@ -8,7 +8,7 @@ import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
 import type { ChannelEvent } from "../ChannelEvent.ts";
 import type { PublishEntry } from "../internal/PublishEntry.ts";
-import { Rejected } from "../internal/Rejected.ts";
+import { Rejected } from "../internal/Rejected.schema.ts";
 import type { StreamEntry } from "../internal/StreamEntry.ts";
 import type { ChannelRoute } from "./ChannelRoute.type.ts";
 import { ChannelsConfig } from "./ChannelsConfig.schema.ts";

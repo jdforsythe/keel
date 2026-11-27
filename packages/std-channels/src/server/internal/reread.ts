@@ -1,5 +1,5 @@
 import { attempt, s } from "@keel/schema";
-import { Rejected } from "../../internal/Rejected.ts";
+import { Rejected } from "../../internal/Rejected.schema.ts";
 import type { Restorable } from "./Restorable.ts";
 
 /**

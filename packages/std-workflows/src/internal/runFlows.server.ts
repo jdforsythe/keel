@@ -1,7 +1,7 @@
 import { type Ctx, observe } from "@keel/ctx";
 import { attempt } from "@keel/schema";
 import type { FlowQueue } from "../FlowQueue.ts";
-import { Cancelled } from "./Cancelled.ts";
+import { Cancelled } from "./Cancelled.schema.ts";
 import type { Planned } from "./Planned.ts";
 import { counted } from "./counted.ts";
 import { planKey } from "./planKey.ts";
@@ -52,10 +52,12 @@ export async function runFlows(
       const wake = new AbortController();
       nap = wake;
       const napping = ctx.clock.after(POLL_MS, wake.signal);
-      void (await attempt(
+      const napped = await attempt(
         () => napping,
         (x) => (x === wake.signal.reason ? Cancelled.make({}) : undefined),
-      ));
+      );
+      // A poke cancels the nap: the loop looks again at once, as it does when the nap ends.
+      if (!napped.ok) continue;
     }
   } finally {
     stop();

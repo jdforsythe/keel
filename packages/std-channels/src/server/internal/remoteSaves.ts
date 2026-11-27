@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
-import { Rejected } from "../../internal/Rejected.ts";
+import { Rejected } from "../../internal/Rejected.schema.ts";
 import type { Hub } from "./Hub.ts";
 import { headOf } from "./headOf.ts";
 
