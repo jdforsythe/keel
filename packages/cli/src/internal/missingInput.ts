@@ -1,3 +1,4 @@
+import { parseTopology } from "@keel/compiler";
 import { type Op, scaffold } from "@keel/scaffold";
 
 /** Each operation's positional arguments in order (`scaffoldInput`). */
@@ -26,51 +27,93 @@ const modulesOf = (files: ReadonlyMap<string, string>): string[] =>
     .filter((m): m is string => m !== undefined)
     .sort();
 
+/** A command line (`keel` bare, for the Command form to spell) and the input it passes to `@keel/scaffold`. */
+type Line = { readonly text: string; readonly op: Op; readonly input: Readonly<Record<string, unknown>> };
+
+/** Whether `line`, run in the project of `files`, is not refused for a name the project already holds (E1351). */
+const free = (line: Line, files: ReadonlyMap<string, string>): boolean => {
+  const r = scaffold(line.op, line.input, files);
+  return r.ok || r.error.data.code !== "E1351";
+};
+
+/** The first of `make("")`, `make("2")` ... `make("9")` whose name the project does not hold; `make("")` when all do. */
+const firstFree = (make: (n: string) => Line, files: ReadonlyMap<string, string>): Line =>
+  ["", "2", "3", "4", "5", "6", "7", "8", "9"].map(make).find((l) => free(l, files)) ?? make("");
+
 /**
- * A command line that passes `op`'s inputs (k.scaffold), formed from the project in `files` so that run as written it
- * succeeds: a generator that takes a module id names the first module in sorted order (`app` without one), a
- * transaction that module's first store (`cart` without one), a service a `--reason` where its module's `client`
- * deployable asks for one (E1358); `keel` left bare for the Command form to spell.
+ * What `op` needs given its inputs (k.scaffold-needs), formed from the project in `files` so that it names only what
+ * the project holds and, run as written, succeeds: `example`, a line that passes the inputs, or `first`, the line that
+ * makes what the project lacks for it. A generator that takes a module id names the first module in sorted order
+ * (`app` without one) and a new name it does not hold (`about`, else `about2`, ...); `transaction` that module's first
+ * store, or `first` the line making one; `service` a `--reason` where its module's `client` deployable asks for one
+ * (E1358); `shell` `--to` the first `client` deployable when there are several, or `first` the `place` that makes one.
  */
-const lineOf = (op: Op, files: ReadonlyMap<string, string>): string => {
+const lineOf = (op: Op, files: ReadonlyMap<string, string>): { readonly example: Line } | { readonly first: Line } => {
   const mod = modulesOf(files)[0] ?? "app";
-  const store =
-    [...files.keys()]
-      .map((p) =>
-        p.startsWith(`modules/${mod}/`) ? /^[^/]+\/[^/]+\/([a-z][A-Za-z0-9]*)\.store\.ts$/.exec(p)?.[1] : undefined,
-      )
-      .filter((s): s is string => s !== undefined)
-      .sort()[0] ?? "cart";
-  // A `client` deployable that lists the module and lacks the origin asks for a reason (E1358, k.scaffold-service).
-  const probe = op === "service" ? scaffold("service", { id: mod, base: "https://a.test" }, files) : undefined;
-  const reason = probe !== undefined && !probe.ok && probe.error.data.code === "E1358";
+  const store = [...files.keys()]
+    .map((p) =>
+      p.startsWith(`modules/${mod}/`) ? /^[^/]+\/[^/]+\/([a-z][A-Za-z0-9]*)\.store\.ts$/.exec(p)?.[1] : undefined,
+    )
+    .filter((s): s is string => s !== undefined)
+    .sort()[0];
+  const gen = (o: Op, args: string, input: Readonly<Record<string, unknown>>): Line => ({
+    text: `keel scaffold ${o} ${args}`,
+    op: o,
+    input,
+  });
+  const mod2 = (o: Op, name: (n: string) => string, sep: string) =>
+    firstFree((n) => gen(o, `${mod}${sep}${name(n)}`, { id: `${mod}${sep}${name(n)}` }), files);
   switch (op) {
     case "project":
-      return "keel scaffold project shop";
+      return { example: gen(op, "shop", { name: "shop" }) };
     case "module":
-      return "keel scaffold module orders";
+      return { example: firstFree((n) => gen(op, `orders${n}`, { id: `orders${n}` }), files) };
     case "route":
-      return `keel scaffold route ${mod}.about`;
+      return { example: mod2(op, (n) => `about${n}`, ".") };
     case "component":
-      return `keel scaffold component ${mod}/OrderCard`;
+      return { example: mod2(op, (n) => `OrderCard${n}`, "/") };
     case "store":
-      return `keel scaffold store ${mod}.cart`;
+      return { example: mod2(op, (n) => `cart${n}`, ".") };
     case "transaction":
-      return `keel scaffold transaction ${mod}.${store}.addItem`;
-    case "service":
-      return `keel scaffold service ${mod} --base https://a.test${reason ? " --reason geo" : ""}`;
-    case "shell":
-      return "keel scaffold shell tauri --id com.acme.shop";
+      return store === undefined
+        ? { first: mod2("store", (n) => `cart${n}`, ".") }
+        : { example: mod2(op, (n) => `${store}.addItem${n}`, ".") };
+    case "service": {
+      // A `client` deployable that lists the module and lacks the origin asks for a reason (E1358, k.scaffold-service).
+      const probe = scaffold("service", { id: mod, base: "https://a.test" }, files);
+      const reason = !probe.ok && probe.error.data.code === "E1358";
+      const input = { id: mod, base: "https://a.test", ...(reason ? { reason: "geo" } : {}) };
+      return { example: gen(op, `${mod} --base https://a.test${reason ? " --reason geo" : ""}`, input) };
+    }
+    case "shell": {
+      const src = files.get("topology.ts");
+      const topo = src === undefined ? undefined : parseTopology(src).topology;
+      const clients = Object.entries(topo ?? {})
+        .filter(([, d]) => d.adapter === "client")
+        .map(([name]) => name)
+        .sort();
+      const shell = firstFree((n) => {
+        const kind = n === "" ? "tauri" : "capacitor";
+        const to = clients.length > 1 ? ` --to ${clients[0] ?? ""}` : "";
+        const input = { shell: kind, id: "com.acme.shop", ...(to === "" ? {} : { to: clients[0] }) };
+        return gen(op, `${kind} --id com.acme.shop${to}`, input);
+      }, files);
+      // With no `client` deployable to take a shell, E1359 names the line that makes one (k.scaffold-shell).
+      const probe = scaffold(op, shell.input, files);
+      const make = probe.ok || probe.error.data.code !== "E1359" ? [] : probe.error.data.message.split("; first: ");
+      const [, text] = make;
+      return text === undefined ? { example: shell } : { first: { text, op: "place", input: {} } };
+    }
     case "library":
-      return "keel scaffold library @acme/charts";
+      return { example: gen(op, "@acme/charts", { name: "@acme/charts" }) };
     case "rename":
-      return "keel codemod rename OrderCard OrderTile";
+      return { example: { text: "keel codemod rename OrderCard OrderTile", op, input: {} } };
     case "move":
-      return "keel codemod move OrderCard --to catalog";
+      return { example: { text: "keel codemod move OrderCard --to catalog", op, input: {} } };
     case "place":
-      return "keel codemod place digest --to jobs";
+      return { example: { text: "keel codemod place digest --to jobs", op, input: {} } };
     case "add-field":
-      return "keel codemod add-field Order note string";
+      return { example: { text: "keel codemod add-field Order note string", op, input: {} } };
   }
 };
 
@@ -80,5 +123,8 @@ const lineOf = (op: Op, files: ReadonlyMap<string, string>): string => {
  */
 export function missingInput(op: Op, field: string, files: ReadonlyMap<string, string> = new Map()): string {
   const shown = ARGS[op].includes(field) ? `<${field}>` : `--${field} <${VALUE[`${op}.${field}`] ?? field}>`;
-  return `${op} needs ${shown}${op === "service" ? ":" : ", as in"} ${lineOf(op, files)}`;
+  const line = lineOf(op, files);
+  if ("first" in line)
+    return `${op} needs ${op === "shell" ? "a client deployable" : "a store"} first: ${line.first.text}`;
+  return `${op} needs ${shown}${op === "service" ? ":" : ", as in"} ${line.example.text}`;
 }

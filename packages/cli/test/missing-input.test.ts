@@ -1,6 +1,6 @@
 // Spec: k.cli Rules (E1052: a required flag or argument missing, named as written with a command line that passes it)
 // and Command form (a `keel` already in a manager's form is left as it is).
-import type { Op } from "@keel/scaffold";
+import { type Op, scaffold } from "@keel/scaffold";
 import { describe, expect, it } from "vitest";
 import { missingInput } from "../src/internal/missingInput.ts";
 import { runEngine } from "../src/internal/runEngine.ts";
@@ -31,6 +31,20 @@ describe("E1052 for a missing input", () => {
     expect(missingInput("service", "id", files)).toBe(
       "service needs <id>: keel scaffold service shop --base https://a.test",
     );
+  });
+
+  it("names what the project lacks and the line that makes it, and a name the project does not hold", () => {
+    const fresh = scaffold("project", { name: "shop", adapter: "static" }, new Map());
+    const files = fresh.ok ? fresh.value.files : new Map<string, string>();
+    expect(missingInput("transaction", "id", files)).toBe(
+      "transaction needs a store first: keel scaffold store app.cart",
+    );
+    expect(missingInput("shell", "shell", files)).toBe(
+      "shell needs a client deployable first: keel codemod place app --to app --adapter client",
+    );
+    const about = scaffold("route", { id: "app.about" }, files);
+    const taken = about.ok ? about.value.files : files;
+    expect(missingInput("route", "id", taken)).toBe("route needs <id>, as in keel scaffold route app.about2");
   });
 
   it("each operation's required inputs fit docs/OUTPUT.md's bound in the longest manager form", () => {
