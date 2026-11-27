@@ -16,10 +16,7 @@ const SLOW = fixedTime(300_000);
 const SECRET = "appearance-built-secret-of-32-bytes-or-more";
 
 const page = (m: string): string =>
-  "import type { Ctx } from '@keel/ctx'\nimport { Box, Button, Text, appearance } from '@keel/ui'\n" +
-  "export default function Page(_props: unknown, ctx: Ctx) {\n  const a = appearance(ctx)\n  return (\n" +
-  `    <Box id="${m}.page" as="main">\n      <Text id="${m}.theme">{a.theme()}</Text>\n` +
-  `      <Button id="${m}.pick" onClick={() => { a.set({ theme: 'slate' }) }}>Slate</Button>\n    </Box>\n  )\n}\n`;
+  `import type { Ctx } from '@keel/ctx'\nimport { Box, Button, Text, appearance } from '@keel/ui'\nexport default function Page(_props: unknown, ctx: Ctx) {\n  const a = appearance(ctx)\n  return (\n    <Box id="${m}.page" as="main">\n      <Text id="${m}.theme">{a.theme()}</Text>\n      <Button id="${m}.pick" onClick={() => { a.set({ theme: 'slate' }) }}>Slate</Button>\n    </Box>\n  )\n}\n`;
 
 const mod = (m: string, path: string): Tree => ({
   [`modules/${m}/module.ts`]: `import { module } from '@keel/compiler'\nexport default module({ id: '${m}', deps: [], capabilities: [], public: { exports: [] } })\n`,

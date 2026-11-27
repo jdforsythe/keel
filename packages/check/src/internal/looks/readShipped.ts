@@ -1,6 +1,6 @@
 import { tokenGroups as groupOrder } from "@keel/ui";
-import { TokenSchema } from "@keel/ui/tokens";
 import { tokenGroups } from "@keel/ui/css";
+import { TokenSchema } from "@keel/ui/tokens";
 import type { Expression, ObjectExpression, Program } from "oxc-parser";
 import { keyName } from "../keyName.ts";
 import type { Shipped } from "./Shipped.ts";

@@ -15,11 +15,7 @@ const TOKENS_CODE = ["fail TokenSchema", "safe-area-inset", "revert-layer", "210
 const ACCENT = "#b8420d";
 
 const page = (body: string): string =>
-  "import { Box, Text } from '@keel/ui'\nimport { brandTokens } from '@keel/ui/brand'\n" +
-  body +
-  "export default function Page() {\n  return (\n" +
-  '    <Box id="w.page" as="main" p="4">\n' +
-  '      <Text id="w.page.text">{label()}</Text>\n    </Box>\n  )\n}\n';
+  `import { Box, Text } from '@keel/ui'\nimport { brandTokens } from '@keel/ui/brand'\n${body}export default function Page() {\n  return (\n    <Box id="w.page" as="main" p="4">\n      <Text id="w.page.text">{label()}</Text>\n    </Box>\n  )\n}\n`;
 const READS = page("const label = (): string => brandTokens.color.accent\n");
 const VALIDATES = page(
   "import { defineTokens } from '@keel/ui/tokens'\n" +

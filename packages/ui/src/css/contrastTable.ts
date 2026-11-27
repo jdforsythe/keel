@@ -1,7 +1,7 @@
-import { contrast } from "./contrast.ts";
-import { schemesOf } from "./schemesOf.ts";
 import type { ContrastRow } from "../types/ContrastRow.ts";
 import type { Tokens } from "../types/Tokens.ts";
+import { contrast } from "./contrast.ts";
+import { schemesOf } from "./schemesOf.ts";
 
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 

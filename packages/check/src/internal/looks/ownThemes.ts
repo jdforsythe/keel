@@ -1,5 +1,5 @@
-import { TokenSchema } from "@keel/ui/tokens";
 import type { Theme } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import type { Looks } from "./Looks.ts";
 import { withWhen } from "./withWhen.ts";
 

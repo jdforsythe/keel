@@ -1,6 +1,6 @@
 import type { Theme, Tokens } from "@keel/ui";
-import { TokenSchema } from "@keel/ui/tokens";
 import { combinations } from "@keel/ui/css";
+import { TokenSchema } from "@keel/ui/tokens";
 import type { Combo } from "./Combo.ts";
 
 const memo = new WeakMap<object, Map<string, readonly Combo[]>>();
