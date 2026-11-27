@@ -519,7 +519,7 @@ describe("k.create createPlan: next records", () => {
     expect(p.records.slice(edits.length).every((r) => r.kind === "create.next")).toBe(true);
   });
 
-  it("There is no `cd` for `.`, no `git init` when a `.git` is at or above the folder, and a library ends `keel check`, `keel test`, `keel pack --check`.", () => {
+  it("There is no `cd` for `.`, no `git init` when a `.git` is at or above the folder, and a library ends `keel check`, `keel test`, `keel pack`.", () => {
     const dot = plan({ folder: ".", realPath: "/w/shop", userAgent: PNPM });
     expect(commands(dot)[0]).toBe("git init");
     const git = plan({ folder: "shop", gitAbove: true, userAgent: PNPM });
@@ -532,7 +532,7 @@ describe("k.create createPlan: next records", () => {
       "pnpm keel build",
     ]);
     const lib = plan({ library: "@acme/charts", userAgent: PNPM });
-    expect(commands(lib).slice(-3)).toEqual(["pnpm keel check", "pnpm keel test", "pnpm keel pack --check"]);
+    expect(commands(lib).slice(-3)).toEqual(["pnpm keel check", "pnpm keel test", "pnpm keel pack"]);
   });
 
   it("No printed command fetches a package the project's install did not: no `npx` without `--no`, no `dlx`, no `create`, no `add`.", () => {

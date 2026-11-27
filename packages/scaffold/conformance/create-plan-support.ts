@@ -1,22 +1,12 @@
 // Shared harness for the k.create `createPlan` conformance (not a test file). Seed 1337 for every property.
-// ASSUMED API (the spec names `createPlan(input)` from `@keel/scaffold/create`, pure, returning `Result<CreatePlan, ScaffoldError>`,
-// "from the flags, the folder's listing, the ancestors' files Workspace names, the Node version and `npm_config_user_agent`";
-// it fixes no field names, so this file fixes them, one place to change):
-//   input  { folder?, name?, adapter?, library?, existing?, listing?, ancestors?, nodeVersion, userAgent?, version, gitAbove?, realPath? }
-//     folder     as typed, relative to the working folder; default "."
-//     listing    every path under the folder, relative, "/"-separated, a directory with a trailing "/"; default none
-//     ancestors  the files Workspace names (`pnpm-workspace.yaml`, `package.json`, `node_modules/@keel/cli/package.json`) at any level
-//                from the working folder up, keyed relative to the working folder ("pnpm-workspace.yaml", "../package.json")
-//     version    create's own version (the spec lists no such input; an app pins "create's version", so the plan needs it)
-//     gitAbove   a `.git` is at or above the folder
-//     realPath   the folder's real absolute path (the name of `.`)
-//   result { ok: true, value: { files: Map<path, text> (paths relative to the folder), records: { kind, ... }[] } }
-//          | { ok: false, error }   (a code is found as a substring of the JSON, as fixtures.ts does)
-//   records: `{ kind: "scaffold.edit", action: "create", path }` sorted, then `{ kind: "create.next", command, dir? }`;
-//   a warning (W1364) is a `{ kind: "diag", code, ... }` record.
+// The input and result are the signature k.create Package states: `createPlan({ version, nodeVersion, skills, folder?, name?, adapter?, library?, existing?, listing?, ancestors?, realPath?, gitAbove?, userAgent? })`
+// returning `Result<{ files: Map<path, text>, records }, ScaffoldError>`; `files` are keyed from the folder, `listing` and `ancestors` as the signature's comments say.
+// What the signature leaves open is read here: a code is found as a substring of the JSON of the error or the records (as fixtures.ts does); records are
+// `{ kind: "scaffold.edit", action: "create", path }` sorted, then `{ kind: "create.next", command, dir? }`; W1364 is a `{ kind: "diag", code, ... }` record.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createPlan } from "@keel/scaffold/create";
+import type { AgentSkill } from "@keel/scaffold/create";
 import { root } from "./keel-cli.ts";
 
 export { root };
@@ -36,6 +26,7 @@ export type PlanInput = {
   version?: string;
   gitAbove?: boolean;
   realPath?: string;
+  skills?: readonly AgentSkill[];
 };
 
 export type Rec = { kind: string; [key: string]: unknown };
@@ -47,9 +38,27 @@ export const NODE = "22.15.0";
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 const isRec = (v: unknown): v is Rec => isObj(v) && typeof v.kind === "string";
 
+const frontmatterDescription = (text: string): string => {
+  const m = /^description:\s*(.*)$/m.exec(text);
+  const raw = m?.[1] ?? "";
+  return raw.startsWith('"') && raw.endsWith('"') ? raw.slice(1, -1) : raw;
+};
+/** The skills create ships and passes as `skills` (k.create Package): each `skills/<name>/SKILL.md` of `@keel/cli`, byte for byte. */
+export const shippedSkills = (): AgentSkill[] =>
+  skillNames().map((name) => {
+    const text = readFileSync(join(root, "packages/cli/skills", name, "SKILL.md"), "utf8");
+    return { name, description: frontmatterDescription(text), text };
+  });
+
 /** `createPlan` with the defaults of a fresh, empty, pnpm-run folder, as a view that never throws on a red run. */
 export function plan(input: PlanInput = {}): PlanView {
-  const r: unknown = createPlan({ nodeVersion: NODE, version: VERSION, folder: "shop", ...input });
+  const r: unknown = createPlan({
+    nodeVersion: NODE,
+    version: VERSION,
+    skills: shippedSkills(),
+    folder: "shop",
+    ...input,
+  });
   if (!isObj(r)) return { ok: false, files: new Map(), records: [], text: String(r) };
   const ok = r.ok === true;
   const value = isObj(r.value) ? r.value : {};
