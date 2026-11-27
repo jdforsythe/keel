@@ -738,9 +738,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1511",
-    "API entry in a module a client or static deployable serves",
-    "Those deployables have no server to answer it.",
-    "serve the module from a node deployable, or move the API entry to a module one serves",
+    "API entry or local: true entry in a module a client or static deployable serves",
+    "Those deployables have no server to answer an API entry or to enforce local: true, and the build would ship what a local route guards.",
+    "serve the module from a node deployable, or move the entry to a module one serves",
     "k.api",
   ],
   [

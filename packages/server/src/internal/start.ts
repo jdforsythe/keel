@@ -8,8 +8,8 @@ import { createApp } from "@keel/server";
 import { onUncaught } from "@keel/server/internal/onUncaught";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
-import { denied } from "./denied.ts";
 import { diagLine } from "./diagLine.ts";
+import { startRefusal } from "./startRefusal.ts";
 
 const line = (text: string): void => {
   process.stdout.write(`${text}\n`);
@@ -128,17 +128,31 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   const port = env.value.PORT ?? 8080;
   // `HOST` unset: every interface, as Node's `listen(port)` binds (k.deploy).
   const host = env.value.HOST;
+  const https = env.value.KEEL_ORIGIN?.startsWith("https:") === true;
   // The request listener hands `app.fetch` each request's connection, whose remote address a `local: true` route reads
   // (k.contract). A `Host` it cannot read back (`[::ffff:127.0.0.1]:<port>`) reaches no route: refused as a foreign one
-  // (k.contract Local routes); any other request it cannot read stays 400, as it answers alone.
+  // (k.contract Local routes); any other request it cannot read stays 400, as it answers alone. Each carries the
+  // k.security headers (`startRefusal`).
   const listener = getRequestListener(app.fetch, {
     ...(host === undefined ? {} : { hostname: host }),
     errorHandler: (e) =>
-      e instanceof RequestError && e.message === "Invalid host header"
-        ? denied("host refused")
-        : new Response(null, { status: e instanceof RequestError ? 400 : 500 }),
+      startRefusal(
+        e instanceof RequestError && e.message === "Invalid host header"
+          ? "host refused"
+          : new Response(null, { status: e instanceof RequestError ? 400 : 500 }),
+        https,
+      ),
   });
-  const srv = createServer(listener);
+  // A request with no `Host`, or an empty one, over HTTP/1.0 or HTTP/1.1, reaches no route: 403 `keel.denied`, never
+  // 400 (k.contract Local routes). Node's own 400 for an HTTP/1.1 one is turned off so this answers it.
+  const srv = createServer({ requireHostHeader: false }, (req, res) => {
+    if ((req.headers.host ?? "") !== "") return listener(req, res);
+    const r = startRefusal("host refused", https);
+    return r.text().then((body) => {
+      res.writeHead(r.status, Object.fromEntries(r.headers));
+      res.end(body);
+    });
+  });
   srv.listen(port, host, () => {
     const a = srv.address();
     const at = typeof a === "object" && a !== null ? a.port : port;

@@ -4,8 +4,8 @@ import { attempted } from "./attempted.ts";
 
 /**
  * The paths `peers` serve (k.topology Calls and peers): each route of `<artifacts>/routes.json` (`{ data }`, data by
- * route id with `module` and `path`) whose module is in a deployable named in `peers`. No artifacts, no file or an
- * unreadable one: none.
+ * route id with `module` and `path`) whose module is in a deployable named in `peers`, marked `local` when the entry
+ * has `local: true`. No artifacts, no file or an unreadable one: none.
  */
 export async function peerPaths(
   artifacts: string | undefined,
@@ -27,8 +27,9 @@ export async function peerPaths(
     const module: unknown = Reflect.get(route, "module");
     const p: unknown = Reflect.get(route, "path");
     const deployable = peers.find((d) => typeof module === "string" && topology[d]?.modules.includes(module));
+    const local = Reflect.get(route, "local") === true ? { local: true as const } : {};
     if (deployable !== undefined && typeof p === "string")
-      out.push({ segments: p.split("/").filter((x) => x !== ""), deployable });
+      out.push({ segments: p.split("/").filter((x) => x !== ""), deployable, ...local });
   }
   return out;
 }

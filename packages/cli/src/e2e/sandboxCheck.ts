@@ -6,10 +6,12 @@ import { makeDiag } from "../internal/makeDiag.ts";
 
 /** What a Chromium launch throws when the kernel or container refuses the user namespaces its sandbox needs. */
 const REFUSED = /No usable sandbox|SUID sandbox|new namespace|user namespace/i;
+/** What a user can do as written, safest first (k.e2e-run Browser). */
 const FIX =
-  "allow unprivileged user namespaces: sysctl kernel.apparmor_restrict_unprivileged_userns=0 (Ubuntu 23.10 and later), " +
-  "sysctl kernel.unprivileged_userns_clone=1 (Debian), or a container seccomp profile that allows clone with " +
-  "CLONE_NEWUSER; or pass --no-sandbox to accept an unsandboxed browser";
+  "on the host, sysctl kernel.apparmor_restrict_unprivileged_userns=0 (Ubuntu 23.10 and later) or " +
+  "sysctl kernel.unprivileged_userns_clone=1 (Debian); in a container, a seccomp profile that allows clone with " +
+  "CLONE_NEWUSER, or docker run --security-opt seccomp=unconfined, which lifts every syscall filter from the " +
+  "container; last, --no-sandbox, an unsandboxed browser with W1734 on every run";
 
 /** The one E1734 of a Chromium that cannot start its sandbox (k.e2e-run Browser), its fix naming the settings. */
 const sandboxRefused = (): Diag =>

@@ -174,7 +174,7 @@ const isNothing = (e: Expression): boolean => (e.type === "Literal" && e.value =
 /**
  * One contract entry's literal fields (k.contract) from its static reading (`readContract`): its kind (an API entry
  * has `method`, a layout `layout`, else a page), `path` (`null` for a layout), an API entry's `method` and `api: true`,
- * and whether `params` and a page's `search` or an API entry's `query` are declared. `unread` gets each member that is
+ * `local: true` when the entry's `local` is the literal `true`, and whether `params` and a page's `search` or an API entry's `query` are declared. `unread` gets each member that is
  * not a literal as `<id> <member>`; an entry with a spread or computed key, which may set any member, is read as
  * nothing and named `<id> <source text>`.
  */
@@ -198,6 +198,9 @@ function readEntry(e: ContractEntryReading, text: (g: ContractGap) => string, un
     const m = e.literals.get("method");
     if (typeof m === "string") out.method = m;
   }
+  const local = e.members.get("local")?.value;
+  const lv = local === undefined ? undefined : unwrapExpression(local);
+  if (lv !== undefined && lv.type === "Literal" && lv.value === true) out.local = true;
   const parts = [
     ["params", "params"],
     ["search", api ? "query" : "search"],
