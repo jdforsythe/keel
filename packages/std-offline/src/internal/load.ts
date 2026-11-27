@@ -2,13 +2,13 @@ import type { Ctx } from "@keel/ctx";
 import { attempt, s } from "@keel/schema";
 import { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { Config } from "./Config.ts";
-import { Failed } from "./Failed.schema.ts";
 import { apply } from "./apply.ts";
 import { fault } from "./fault.ts";
 import { field } from "./field.ts";
 import { flowOf } from "./flowOf.ts";
 import { full } from "./full.ts";
 import { rewrite } from "./rewrite.ts";
+import { storageFailed } from "./storageFailed.ts";
 
 /**
  * Loads the outbox stored in `ctx.storage` once per ctx, entry by entry: adds, in order, each entry the store lacks
@@ -24,10 +24,7 @@ export function load(ctx: Ctx, c: Config): Promise<void> {
 }
 
 async function read(ctx: Ctx, c: Config): Promise<void> {
-  const raw = await attempt(
-    () => ctx.storage.get(`keel.outbox.${c.id}`),
-    (x) => (x instanceof Error ? Failed.make({}) : undefined),
-  );
+  const raw = await attempt(() => ctx.storage.get(`keel.outbox.${c.id}`), storageFailed);
   const json = raw.ok && raw.value !== null ? s.json.parseJson(raw.value) : undefined;
   const list = json?.ok ? field(json.value, "entries") : undefined;
   let moved = false;
