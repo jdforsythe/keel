@@ -214,7 +214,10 @@ describe("createPlan: Node, folder and workspace", () => {
     const ws = { "pnpm-workspace.yaml": "packages:\n  - 'apps/*'\n  - '!apps/skip'\n" };
     const m = plan({ folder: "apps/b", ancestors: ws, userAgent: "yarn/4.5.0 node/v22.15.0" });
     expect(sorted([...m.files.keys()])).toEqual(CLIENT.filter((p) => p !== "turbo.json" && !p.startsWith(".github/")));
-    expect(m.records.find((r) => r.command === "yarn install")).toEqual({ kind: "create.next", command: "yarn install" });
+    expect(m.records.find((r) => r.command === "yarn install")).toEqual({
+      kind: "create.next",
+      command: "yarn install",
+    });
     expect(plan({ folder: "apps/skip", ancestors: ws }).text).toContain("W1364");
     expect(plan({ folder: "apps/ok", ancestors: ws }).text).not.toContain("W1364");
     const deep = plan({
