@@ -4,6 +4,7 @@
 | k.check | static checker pipeline, diagnostic records, rule registry and flags |
 | k.check-cache | cross-process cache of the type pass, its key and entries |
 | k.derived | files derived from the tree, their readers, refresh, frozen runs and the derivation cache |
+| k.evaluator | the process a build-time evaluation runs in: its start, realm, questions, end and E1048 |
 | k.explain | `explain(code)` entry, explanation table and agent file text |
 | k.host | rules against app reads of host zone, locale and Node globals, E1758 and E1759 |
 | k.cli | operations behind the CLI, MCP and LSP, command table, inspector and output |

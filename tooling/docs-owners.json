@@ -24,7 +24,7 @@
     "k.topology",
     "k.unsafe"
   ],
-  "@keel/compiler": ["k.bundle", "k.compiler"],
+  "@keel/compiler": ["k.bundle", "k.compiler", "k.evaluator"],
   "@keel/ctx": ["k.ctx", "k.data", "k.owner", "k.persist", "k.sim"],
   "@keel/forms": ["k.forms"],
   "@keel/reactive": ["k.reactive"],
