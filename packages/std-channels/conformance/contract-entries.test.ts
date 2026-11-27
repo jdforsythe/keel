@@ -26,7 +26,8 @@ const messageOf = (fn: () => unknown): { code: unknown; message: string } => {
   } catch (e) {
     return {
       code: typeof e === "object" && e !== null && "code" in e ? e.code : "no-code",
-      message: e instanceof Error ? e.message : String(e),
+      // a defect's message is the code's literal words; the members it names may stand in its `data` (k.defects)
+      message: `${e instanceof Error ? e.message : String(e)} ${typeof e === "object" && e !== null && "data" in e ? JSON.stringify(e.data) : ""}`,
     };
   }
   return { code: null, message: "" };
