@@ -13,7 +13,7 @@ const node = (cache: string | null): string[] => [
 ];
 
 /**
- * The manager of a `packageManager` value (`"<name>@<version>"`, k.create Package manager): pnpm, npm, yarn or bun,
+ * The manager of a `packageManager` value (`"<name>@<version>"`, k.create-manager Package manager): pnpm, npm, yarn or bun,
  * and pnpm for none or another name. Yarn 1 installs in CI with `--frozen-lockfile`, later yarn with `--immutable`
  * after `corepack enable`; bun's setup reads its version from `package.json`.
  */

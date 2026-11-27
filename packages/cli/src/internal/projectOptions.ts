@@ -3,7 +3,7 @@ import { ancestorKeys, managerWord, workspaceOf } from "@keel/scaffold/create";
 import type { Io } from "../types/Io.ts";
 
 /**
- * What `keel scaffold project <dir>` reads as `create-app` does (k.scaffold `project`, k.create Package manager and
+ * What `keel scaffold project <dir>` reads as `create-app` does (k.scaffold `project`, k.create-manager Package manager and
  * Workspace): the `packageManager` that `npm_config_user_agent` gives, whether `dir` is inside a workspace (`member`),
  * whether the root's globs leave it out (`outside`), and the version of the `@keel/cli` that resolves from its parent.
  * The Workspace files above it are read through `io.read`.

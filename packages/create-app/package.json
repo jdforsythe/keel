@@ -9,7 +9,7 @@
   },
   "publishConfig": {
     "bin": {
-      "create-app": "./dist/src/bin.js"
+      "create-app": "./dist/bin.js"
     }
   },
   "engines": {
@@ -17,15 +17,13 @@
   },
   "files": ["dist", "skills"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test",
+    "check": "tsc --noEmit && biome check src test build.mjs",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node build.mjs",
     "prepack": "node ../../tooling/docs-check.mjs --write"
   },
-  "dependencies": {
-    "@keel/scaffold": "workspace:*"
-  },
   "devDependencies": {
+    "@keel/scaffold": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3"

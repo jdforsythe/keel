@@ -51,7 +51,7 @@ export async function setupProject(kit: string, name: string, into?: string): Pr
     must("pnpm --version", pnpm);
     must(
       "create",
-      await sh("node", [join(boot, "node_modules", "@keel", "create-app", "dist", "src", "bin.js"), name], parent, {
+      await sh("node", [join(boot, "node_modules", "@keel", "create-app", "dist", "bin.js"), name], parent, {
         npm_config_user_agent: `pnpm/${pnpm.output.trim().split("\n").at(-1) ?? ""} node/${process.version}`,
       }),
     );

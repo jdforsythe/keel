@@ -16,7 +16,7 @@ import type { DeployTopology } from "./types/DeployTopology.ts";
  * its name, `project.policy` gives the content security policy
  * for a deployable's declared `origins` (k.origins), `project.identity` whether the project has
  * `identity.ts`: what each shell target is given (`ShellApp`); `project.packageManager`, the `package.json` field, the
- * manager the CI workflow installs and runs `keel` with (k.create Package manager). Pure; equal input gives byte-identical output, whatever
+ * manager the CI workflow installs and runs `keel` with (k.create-manager Package manager). Pure; equal input gives byte-identical output, whatever
  * the order of deployables or modules in `topology`.
  */
 export function deployFiles(

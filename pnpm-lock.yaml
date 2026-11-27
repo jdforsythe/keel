@@ -1479,11 +1479,10 @@ importers:
         version: 21.0.4
 
   packages/create-app:
-    dependencies:
+    devDependencies:
       '@keel/scaffold':
         specifier: workspace:*
         version: link:../scaffold
-    devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

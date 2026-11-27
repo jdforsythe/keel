@@ -58,7 +58,7 @@ const refusal = (d: ScaffoldDiag, into: string): OutRecord[] => [
  * `keel build` then refreshes what `keel check` reads (k.scaffold Refresh): the edit set is applied, `buildCommand`
  * runs up to the bundles over the new tree, its diagnostics follow the edit lines, and the trailer counts `artifacts` as that run of `keel build` does. The edit set comes back as `scaffold.edit` records (unified diffs
  * under `--dry-run`) plus writes for the binary (`project <name>`: under `<name>/`, with the agent files of the running
- * `@keel/cli` unless `--workspace`, its version, and k.create's Package manager and Workspace rules, `projectOptions`;
+ * `@keel/cli` unless `--workspace`, its version, and k.create-manager's rules, `projectOptions`;
  * `library`: with `.gitignore` and the agent files in `<base>/`); a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
  * `--kind` tries component then schema (PascalCase) or store then route (dotted), first one that finds `from`.
  */
@@ -94,7 +94,7 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   if (generated !== undefined && !generated.ok)
     return { records: [generated.diag, summary(`${name} ${op}`, [generated.diag], {})], writes: [] };
   const given = scaffoldInput(op, input, generated?.value, (d) => d !== "" && existsSync(join(io.cwd, d)));
-  // `project` outside the Keel monorepo follows k.create's Versions, Package manager and Workspace rules.
+  // `project` outside the Keel monorepo follows k.create's Versions and k.create-manager's rules.
   const opts = op === "project" && input.workspace !== true ? projectOptions(io, into.slice(0, -1)) : undefined;
   if (opts?.cli !== undefined && opts.cli !== cliVersion()) {
     const d = makeDiag(

@@ -56,7 +56,7 @@ function inGlobs(path: string, globs: readonly string[]): boolean {
 }
 
 /**
- * k.create Workspace for `folder` over `ancestors` (`createPlan`'s keys): the nearest folder above it holding
+ * k.create-manager Workspace for `folder` over `ancestors` (`createPlan`'s keys): the nearest folder above it holding
  * `pnpm-workspace.yaml` or a `package.json` with `workspaces` (`root`, the path from the target to it; `member` whether
  * the root's globs take the target), and the version of the `@keel/cli` that resolves from the target's parent
  * (`node_modules/@keel/cli` in the nearest folder above that has one).

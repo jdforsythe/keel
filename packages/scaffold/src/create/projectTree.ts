@@ -1,5 +1,5 @@
-import { scaffold } from "@keel/scaffold";
 import type { Result } from "@keel/schema";
+import { projectFiles } from "../internal/projectFiles.ts";
 import { withAgents } from "../internal/withAgents.ts";
 import type { AgentSkill } from "../types/AgentSkill.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
@@ -18,11 +18,6 @@ export function projectTree(input: {
   readonly skills: readonly AgentSkill[];
 }): Result<Map<string, string>, ScaffoldError> {
   const { name, adapter, version, packageManager, member, skills } = input;
-  // Through the package's main entry, so the generator `keel scaffold project` runs is the one module both load.
-  const made = scaffold(
-    "project",
-    { name, adapter, version, member, ...(packageManager === undefined ? {} : { packageManager }) },
-    new Map(),
-  );
-  return made.ok ? withAgents(made.value.files, skills) : made;
+  // The templates alone: creating parses nothing, so no parser or check is loaded (k.create Package).
+  return withAgents(projectFiles({ name, adapter, version, packageManager, member }), skills);
 }

@@ -1,7 +1,7 @@
 const MANAGERS = new Set(["pnpm", "npm", "yarn", "bun"]);
 
 /**
- * The manager `npm_config_user_agent` names (k.create Package manager): the name before `/` in its first word when it
+ * The manager `npm_config_user_agent` names (k.create-manager Package manager): the name before `/` in its first word when it
  * is pnpm, npm, yarn or bun, else pnpm, and the `packageManager` value that word gives (`npm@10.9.0`; none when the
  * variable is absent or names another manager).
  */

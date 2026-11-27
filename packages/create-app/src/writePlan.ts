@@ -13,15 +13,44 @@ export function writePlan(
   abs: string,
   files: ReadonlyMap<string, string>,
 ): { readonly ok: true } | { readonly linked: string } | { readonly failed: string; readonly reason: string } {
-  const real = realOf(abs);
   const paths = [...files.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  const linked = paths.find((p) => linkEscapes(real, join(real, p)));
-  if (linked !== undefined) return { linked };
+  // A folder this run makes holds no link, so only an existing one is judged; its ancestors are never read.
+  const fresh = !existsSync(abs);
+  if (!fresh) {
+    const real = realOf(abs);
+    const linked = paths.find((p) => linkEscapes(real, join(real, p)));
+    if (linked !== undefined) return { linked };
+  }
   const madeDirs: string[] = [];
   const madeFiles: string[] = [];
+  const undo = (): void => {
+    for (const f of madeFiles.reverse()) rmSync(f, { force: true });
+    for (const d of madeDirs.reverse()) {
+      try {
+        rmdirSync(d);
+      } catch {
+        // not empty: something else wrote into it, so it is not this run's to remove
+      }
+    }
+  };
+  if (fresh) {
+    try {
+      const top = mkdirSync(abs, { recursive: true });
+      for (let at = abs; top !== undefined; at = dirname(at)) {
+        madeDirs.unshift(at);
+        if (at === top || dirname(at) === at) break;
+      }
+    } catch (e) {
+      return {
+        failed: ".",
+        reason: e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : "an error",
+      };
+    }
+  }
+  /** The folders under `abs` on the way to `dir` that do not exist yet, made in order. */
   const mkdirs = (dir: string): void => {
     const missing: string[] = [];
-    for (let at = dir; !existsSync(at) && dirname(at) !== at; at = dirname(at)) missing.unshift(at);
+    for (let at = dir; at !== abs && !existsSync(at); at = dirname(at)) missing.unshift(at);
     for (const d of missing) {
       mkdirSync(d);
       madeDirs.push(d);
@@ -34,14 +63,7 @@ export function writePlan(
       writeFileSync(target, files.get(p) ?? "", { flag: "wx" });
       madeFiles.push(target);
     } catch (e) {
-      for (const f of madeFiles.reverse()) rmSync(f, { force: true });
-      for (const d of madeDirs.reverse()) {
-        try {
-          rmdirSync(d);
-        } catch {
-          // not empty: something else wrote into it, so it is not this run's to remove
-        }
-      }
+      undo();
       const code = e instanceof Error && "code" in e && typeof e.code === "string" ? e.code : "an error";
       return { failed: p, reason: code };
     }

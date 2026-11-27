@@ -42,7 +42,7 @@
     "k.routes"
   ],
   "@keel/runtime-dom": ["k.component", "k.defaults", "k.runtime"],
-  "@keel/scaffold": ["k.create", "k.scaffold", "k.scaffold-service", "k.scaffold-shell"],
+  "@keel/scaffold": ["k.create", "k.create-manager", "k.scaffold", "k.scaffold-service", "k.scaffold-shell"],
   "@keel/schema": ["k.formats", "k.privacy", "k.reveal", "k.schema"],
   "@keel/server": [
     "k.claim",

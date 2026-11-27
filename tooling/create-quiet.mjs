@@ -4,7 +4,7 @@
 // static or dynamic, of a process or network module (`node:child_process`, `node:worker_threads`, `node:cluster`,
 // `node:net`, `node:tls`, `node:dgram`, `node:dns`, `node:http`, `node:https`, `node:http2`, with or without `node:`),
 // or a call of a network global (`fetch`, `new WebSocket`, `new EventSource`, `new XMLHttpRequest`) outside comments
-// and strings. Third-party packages the reach imports (`oxc-parser`, `magic-string`) are outside the rule. This is the
+// and strings. The reach imports no third-party package: `packages/create-app/build.mjs` refuses one, and the packed-kit smoke holds the tarball to no dependency. This is the
 // proof on a Node whose permission model cannot refuse a connection (before 25); from 25 the permission-model run
 // refuses one as well.
 import fs from "node:fs";

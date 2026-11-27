@@ -1,5 +1,5 @@
-import { agentFiles } from "@keel/scaffold/agents";
 import { type Result, ok } from "@keel/schema";
+import { agentFiles } from "../agents/agentFiles.ts";
 import type { AgentSkill } from "../types/AgentSkill.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import { sortedKeys } from "./sortedKeys.ts";

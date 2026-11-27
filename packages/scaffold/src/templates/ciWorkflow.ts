@@ -105,7 +105,7 @@ function shellJob(name: string, shell: string, j: ShellJob, served: boolean, m: 
  * one `review` job on a pull request (k.review CI).
  * A `client` deployable's shells add the CI jobs of their targets in `shells` (`ShellApp` from `project`), on its paths
  * (k.shell CI); a `manual` one makes `workflow_dispatch` a trigger. `packageManager` (the `package.json` field) picks
- * the setup, the frozen install, the lockfile watched and the way `keel` runs (k.create Package manager); none is pnpm's.
+ * the setup, the frozen install, the lockfile watched and the way `keel` runs (k.create-manager Package manager); none is pnpm's.
  */
 export function ciWorkflow(
   topology: DeployTopology,

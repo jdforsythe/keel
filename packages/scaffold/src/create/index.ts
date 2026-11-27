@@ -9,3 +9,4 @@ export { libraryTree } from "./libraryTree.ts";
 export { projectTree } from "./projectTree.ts";
 export { managerWord } from "./managerWord.ts";
 export { workspaceOf } from "../internal/workspaceOf.ts";
+export { managerOf } from "../internal/managerOf.ts";

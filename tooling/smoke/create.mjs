@@ -150,7 +150,27 @@ try {
   await writeFile(join(boot, "pnpm-workspace.yaml"), yaml);
   const bootInstall = await sh("pnpm install --prefer-offline", boot);
   r.step("bootstrap install of @keel/create-app", bootInstall.ok, bootInstall.ok ? "" : tail(bootInstall.out));
-  const bin = join(boot, "node_modules", "@keel", "create-app", "dist", "src", "bin.js");
+  // k.create: the packed @keel/create-app lists no dependency, and installing it alone locks nothing else.
+  const tarball = (await readdir(kit)).find((f) => /^keel-create-app-.+\.tgz$/.test(f)) ?? "";
+  const manifest = await sh(`tar -xOzf ${JSON.stringify(join(kit, tarball))} package/package.json`, work);
+  const pkg = manifest.ok ? JSON.parse(manifest.out) : {};
+  const listed = ["dependencies", "optionalDependencies", "peerDependencies"].flatMap((f) => Object.keys(pkg[f] ?? {}));
+  const scripts = Object.keys(pkg.scripts ?? {}).filter((k) => /install|prepare/.test(k));
+  r.step(
+    "@keel/create-app: no dependency, no install script",
+    manifest.ok && listed.length === 0 && scripts.length === 0,
+    [...listed, ...scripts].join(" "),
+  );
+  const lock = await readFile(join(boot, "pnpm-lock.yaml"), "utf8");
+  const locked = [...(lock.split(/^packages:$/m)[1] ?? "").split(/^\S/m)[0].matchAll(/^ {2}'?([^\s:']+)/gm)].map(
+    (m) => m[1],
+  );
+  r.step(
+    "@keel/create-app: its install locks only itself",
+    locked.length === 1 && locked[0].startsWith("@keel/create-app"),
+    locked.join(" "),
+  );
+  const bin = join(boot, "node_modules", "@keel", "create-app", "dist", "bin.js");
   const kinds = [
     ["client", "shop", []],
     ["static", "site", ["--adapter", "static"]],

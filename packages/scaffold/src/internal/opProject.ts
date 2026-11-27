@@ -22,7 +22,7 @@ import { badInput } from "./badInput.ts";
 import { commit } from "./commit.ts";
 import { fail } from "./fail.ts";
 import { inputs } from "./inputs.ts";
-import { opRoute } from "./opRoute.ts";
+import { projectFiles } from "./projectFiles.ts";
 
 /**
  * `scaffold project <name> [--adapter client|node|static] [--workspace]` (default `client`): root config, tokens,
@@ -60,21 +60,9 @@ export function opProject(input: unknown, files: ReadonlyMap<string, string>): R
     writes.set("test/app.test.ts", appTestTs());
     return commit(files, writes);
   }
-  const deploy = deployFiles({ web: { modules: ["app"], adapter } }, { ci: !member, packageManager: manager });
-  if (!member) writes.set("turbo.json", turboJson(["app"]));
-  if (manager?.startsWith("yarn@") === true) writes.set(".yarnrc.yml", "nodeLinker: node-modules\n");
-  writes.set(".keel/.gitkeep", "");
-  for (const [p, v] of deploy) writes.set(p, v);
-  const generated = ["turbo.json", ".keel/.gitkeep", ...deploy.keys()];
-  const base = commit(files, writes, generated);
-  if (!base.ok) return base;
-  const home = opRoute(
-    { id: "app.home", path: "/", ...(adapter === "node" ? {} : { "no-loader": true }) },
-    base.value.files,
+  const made = projectFiles({ name, adapter, version, packageManager: manager, member });
+  const generated = [...made.keys()].filter(
+    (p) => p === "turbo.json" || p === ".keel/.gitkeep" || /^(deploy|\.github)\//.test(p),
   );
-  if (!home.ok) return home;
-  for (const [p, v] of home.value.files) if (files.get(p) !== v) writes.set(p, v);
-  writes.set("modules/app/HomePage.tsx", homePageTsx(name));
-  writes.set("modules/app/home.route.test.ts", homeRouteTest(name, adapter === "node"));
-  return commit(files, writes, generated);
+  return commit(files, made, generated);
 }

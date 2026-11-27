@@ -66,5 +66,7 @@ export function readInputs(
     if (existsSync(join(at, ".git"))) gitAbove = true;
     if (gitAbove || dirname(at) === at) break;
   }
-  return { abs, realPath: realOf(abs), listing: listing(abs), ancestors, gitAbove };
+  const here = existsSync(abs);
+  // A folder that does not exist yet has no listing, and its name is the one typed: nothing above it is read for it.
+  return { abs, realPath: here ? realOf(abs) : abs, listing: here ? listing(abs) : [], ancestors, gitAbove };
 }
