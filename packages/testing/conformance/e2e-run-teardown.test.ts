@@ -173,7 +173,7 @@ describe("k.e2e-run teardown", () => {
         if (withMarker) writeFileSync(join(to, ".keel-e2e"), body);
         else rmSync(join(to, ".keel-e2e"));
         const at = (now - ageMs) / 1000;
-        utimesSync(join(to, ".keel-e2e"), at, at);
+        if (withMarker) utimesSync(join(to, ".keel-e2e"), at, at);
         utimesSync(to, at, at);
         return name;
       };

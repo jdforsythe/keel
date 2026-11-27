@@ -80,11 +80,13 @@ await closed.dispose()
 const redirecting = await answer(() => new Response(null, { status: 302, headers: { location: stand.origin + '/admin' } }))
 const plain = await answer(() => new Response('hello', { status: 200 }))
 const texts: string[] = []
+// the origin appears as written and URL-encoded (the resume state holds the target): both forms are named
+const named = (body: string, origin: string): string => body.replaceAll(origin, '<origin>').replaceAll(encodeURIComponent(origin), '<origin>')
 for (const origin of [closedOrigin, redirecting.origin, plain.origin]) {
   const r = await ask(port, url(origin), good)
   expect(r.body).toContain('no inspect document at ' + origin)
-  for (const leak of ['ECONNREFUSED', '302', 'hello', 'refused']) expect(r.body.replace(origin, '').includes(leak)).toBe(false)
-  texts.push(r.body.replaceAll(origin, '<origin>'))
+  for (const leak of ['ECONNREFUSED', '302', 'hello', 'refused']) expect(named(r.body, origin).includes(leak)).toBe(false)
+  texts.push(named(r.body, origin))
 }
 expect(sent().some((s) => s.includes('/admin'))).toBe(false)
 expect(new Set(texts.map((t) => t.replace(/[0-9a-f]{16,}/g, '')))).toHaveProperty('size', 1)

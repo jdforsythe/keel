@@ -10,8 +10,9 @@
 // Observation seams (the spec states none for launch options, so each is read from outside the product): the sandbox flag from the browser's own command line (`ps`): Playwright adds `--no-sandbox` to a Chromium it launches with the sandbox off; the browser of this run is the one whose
 // `--user-data-dir` lies under the run's `TMPDIR` (the runner points it at the run folder, k.e2e-run Teardown).
 // SKIPPED with a stated reason: the root-on-Linux case needs a root user on Linux (`process.getuid() === 0`); the non-root case needs the opposite; the loopback-address half of the listen case needs a non-loopback address of this machine (`os.networkInterfaces()`), else only the bound address is asserted.
+// UNTESTABLE: E1734 `chromium cannot start its sandbox here` (Browser, Rules; no Conformance bullet): a test cannot make the kernel or container refuse unprivileged user namespaces, and the spec names no seam or the setting its fix names.
 // UNTESTABLE: "holds no file before its first `open`" (the profile folder's content before the browser starts is not observable from a test); the case asserts the folder is inside the run folder, is not the user's, and that nothing is written outside the run folder.
-// ASSUMED: (1) a SIGKILL-free run leaves the private `TMPDIR` and `HOME` of the case empty: neither the browser (which gets no `HOME`, Environment) nor the runner writes there; (2) `offsite` is raised for a `fetch` of the page to an origin the topology's `origins` declares for the policy but the `serve` does not map;
+// ASSUMED: (1) a SIGKILL-free run leaves the private `HOME` empty and the private `TMPDIR` empty but for Node's `node-compile-cache` of the `keel` process: the browser (which gets no `HOME`, Environment) writes in neither, and the run folder is removed; (2) `offsite` is raised for a `fetch` of the page to an origin the topology's `origins` declares for the policy but the `serve` does not map;
 // (3) the served route answers `aws`, `home`, `tmp` as `a.env`'s `EnvOut` fields (fixtures/e2e/node-app.ts `awsApp`); (4) for the EEXIST clause the test removes `.keel/` and writes a regular file at that path before `serve`, so the library host folder cannot be made: the system error code may be EEXIST or ENOTDIR by platform (AMBIGUOUS: the spec names no way to provoke EEXIST from outside),
 // and the case asserts `uncaught: ` then the system error's code, and no `fix:` line.
 import { mkdtempSync, readdirSync, rmSync } from "node:fs";
@@ -32,6 +33,7 @@ import {
 } from "./e2e-support.ts";
 import { EXTRA, EXTRA_FILES } from "./fixtures/e2e/extra-pages.ts";
 import { PAGES, awsApp, nodeApp } from "./fixtures/e2e/node-app.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 // The private HOME of the profile case would hide the browser the machine installed: the browsers' own folder is named.
 const browsers =
@@ -191,7 +193,7 @@ beforeAll(() => {
       source: uncaught.source,
     },
   ]);
-}, 3_000_000);
+}, fixedTime(3_000_000));
 afterAll(() => {
   for (const d of homes) rmSync(d, { recursive: true, force: true });
   cleanup();
@@ -218,7 +220,11 @@ describe("k.e2e-run browser, reach, environment and output", () => {
 
   it("The browser of a run starts with a profile folder inside the run folder that holds no file before its first `open`, and no file outside the run folder is written by it.", () => {
     passedJob(ran, "profile", profile.lines["the profile folder is inside the run folder"]);
-    for (const d of tmps) expect(readdirSync(d)).toEqual([]);
+    // The clause says what the browser writes: nothing outside the run folder, so the private HOME stays empty and the private TMPDIR holds
+    // no run folder and no browser file. Node's own compile cache (`node-compile-cache`) is written by the `keel` process, not the browser, and the clause does not name it.
+    const [home, tmp] = tmps;
+    expect(readdirSync(home ?? "")).toEqual([]);
+    expect(readdirSync(tmp ?? "").filter((n) => n !== "node-compile-cache")).toEqual([]);
   });
 
   it("A page's request to `https://example.org/x`, an origin the run does not serve or map, reaches no server, fails in the page as a network error, and leaves `{ kind: 'offsite', text: 'GET https://example.org/x' }` among `problems()`.", () => {

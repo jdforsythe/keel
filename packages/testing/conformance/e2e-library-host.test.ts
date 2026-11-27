@@ -6,7 +6,7 @@
 // Seed: n/a (no generated input). Method: as e2e-library.test.ts (the library folder of e2e-library-support.ts) run under `keel test --e2e`; the cases need Chromium (e2e-support.ts); none skips.
 // A job of its own holds each feature a handle may lack (`wrap`, `tokens`): an option the handle does not type is a type error (E1751) that fails its project's build and no other.
 // ASSUMED: (1) `wrap` is a file under `test/` whose default export is a function of `{ children }`, `children` a `Box`'s `children` value; `tokens` is a file under `test/` exporting `tokens` from `defineTokens`, as `tokens.ts` does.
-// (2) "serve their page" at once is shown by both files holding their own `.keel/e2e-host-<random>/` at one moment (each waits, by `settle()` frames, for the other's marker file); `keel test --e2e` runs at most 2 files at once (k.e2e Files).
+// (2) "serve their page" at once is shown by both files holding their own `.keel/e2e-host-<random>/` at one moment (each waits, by `settle()` frames, for the other's marker file, counts, then marks that it has counted and waits for the other's count mark before ending, so neither disposes before the other has counted); `keel test --e2e` runs at most 2 files at once (k.e2e Files).
 // (3) "naming the path" is the message holding the path as written. (4) The Frame's id is `frame`; "inside" is read from `a11y('frame')`'s tree holding `card.title`.
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { library } from "./e2e-library-support.ts";
 import { type Ran, cleanup, outcome, passedJob, reasons, runJobs, suite } from "./e2e-support.ts";
 import type { Tree } from "./fixtures/e2e/node-app.ts";
+import { fixedTime } from "@keel/tooling/test-time";
 
 const IMPORTS = [
   "import { existsSync, readdirSync, writeFileSync } from 'node:fs'",
@@ -39,7 +40,11 @@ expect((await page.find('card.title')).text).toBe('A')
 writeFileSync('.keel/mark-A', '1')
 for (let i = 0; i < 1200 && !existsSync('.keel/mark-B'); i++) await page.settle()
 expect(existsSync('.keel/mark-B')).toBe(true)
-expect(${hostsOf}.length).toBeGreaterThanOrEqual(2)
+const seen = ${hostsOf}
+expect(new Set(seen).size).toBeGreaterThanOrEqual(2)
+writeFileSync('.keel/seen-A', '1')
+for (let i = 0; i < 1200 && !existsSync('.keel/seen-B'); i++) await page.settle()
+expect(existsSync('.keel/seen-B')).toBe(true)
 expect((await page.find('card.title')).text).toBe('A')`,
   },
 ]);
@@ -52,7 +57,11 @@ expect((await page.find('card.title')).text).toBe('B')
 writeFileSync('.keel/mark-B', '1')
 for (let i = 0; i < 1200 && !existsSync('.keel/mark-A'); i++) await page.settle()
 expect(existsSync('.keel/mark-A')).toBe(true)
-expect(${hostsOf}.length).toBeGreaterThanOrEqual(2)
+const seen = ${hostsOf}
+expect(new Set(seen).size).toBeGreaterThanOrEqual(2)
+writeFileSync('.keel/seen-B', '1')
+for (let i = 0; i < 1200 && !existsSync('.keel/seen-A'); i++) await page.settle()
+expect(existsSync('.keel/seen-A')).toBe(true)
 expect((await page.find('card.title')).text).toBe('B')`,
   },
 ]);
@@ -113,7 +122,7 @@ beforeAll(() => {
     { key: "outside", tree: base, file: "test/outside.e2e.ts", source: outsideTest.source },
   ]);
   libDirs = [...ran.values()].map((r) => r.dir);
-}, 3_000_000);
+}, fixedTime(3_000_000));
 afterAll(cleanup);
 
 const hostsLeft = (dir: string): string[] =>
