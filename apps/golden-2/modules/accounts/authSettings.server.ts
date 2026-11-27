@@ -1,5 +1,5 @@
 import { dirname, join } from "node:path";
-import { type Result, type s, err, ok } from "@keel/schema";
+import { type Result, err, ok, type s } from "@keel/schema";
 import { MissingSecret } from "./MissingSecret.schema.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;

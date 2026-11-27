@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { Ctx, KeyValueStorage } from "@keel/ctx";
-import { type Result, type s, attempt, err } from "@keel/schema";
+import { type Result, attempt, err, type s } from "@keel/schema";
 import { betterAuth } from "better-auth";
 import { getMigrations } from "better-auth/db/migration";
 import mount from "../../identity.ts";

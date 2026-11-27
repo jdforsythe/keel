@@ -1,7 +1,7 @@
 import { loader } from "@keel/router";
 import { attempt, ok } from "@keel/schema";
-import { digest } from "./digest.contract.ts";
 import { FeedClosed } from "./FeedClosed.schema.ts";
+import { digest } from "./digest.contract.ts";
 import { readLatest } from "./readLatest.ts";
 
 /** How often the feed reads the stored digest, in `ctx.clock` ms. */
