@@ -8,14 +8,14 @@
 // Spec: k.create, clause "A `client` or `static` project has no file named `*.server.ts`, no `deploy/` folder, and no file outside `AGENTS.md` and `.claude/` holding `KEEL_SECRET`, `createApp` or `identity`."
 // Spec: k.create, clause "`--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`."
 // Spec: k.create, clause "In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project."
-// Spec: k.create, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written."
+// Spec: k.create, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written."
 // Spec: k.create, clause "Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was."
 // Spec: k.create, clause "A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written."
 // Spec: k.create, clause "With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: \"npm@10.9.0\"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`."
 // Spec: k.create, clause "Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project."
 // Spec: k.create, clause "With `node_modules/@keel/cli` at another version above the target, `create-app` reports E1363 naming both versions and writes nothing."
 // Spec: k.create, clause "`--adapter node --library @a/b`, a second folder argument and `--nope` are each E1052, exit 2, nothing written."
-// Spec: k.create, clause "Run as `node --permission` with reads allowed, writes allowed only in the folder, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project."
+// Spec: k.create, clause "Run as `node --permission` with reads allowed, writes granted to the folder and its contents alone, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project, and those flags refuse a write beside the folder and a child process; from Node 25 they refuse a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019)."
 // Spec: k.create, clause "In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints the same records and writes nothing."
 // Spec: k.create, clause "`@keel/create-app`'s `skills/<name>/SKILL.md` equal `keel docs <name>` of `@keel/cli` at the same version, byte for byte."
 // Spec: k.create, clause "From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --check`, and in each `keel docs --sync` writes nothing."
@@ -295,7 +295,7 @@ describe("create-app: the folder", () => {
   );
 
   it(
-    "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written.",
+    "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written.",
     async () => {
       const cwd = sandbox();
       put(cwd, "shop/README.md", "mine\n");
@@ -313,6 +313,29 @@ describe("create-app: the folder", () => {
       expect(bad.out).toContain("package.json");
       expect(entries(join(other, "shop"))).toEqual(before);
       expect(tree(join(other, "shop")).get("package.json")).toBe('{"name":"mine"}\n');
+      // A folder holding three files the project writes: one E1361 whose `paths` are the three, each on its own detail line in compact.
+      const three = sandbox();
+      for (const f of ["tokens.ts", "topology.ts", "package.json", "README.md"]) put(three, `shop/${f}`, "mine\n");
+      const beforeThree = entries(join(three, "shop"));
+      const compact = await run(["shop", "--existing", "--format=compact"], three);
+      expect(compact.status).toBe(1);
+      const lines = compact.stdout.split("\n");
+      expect(lines.filter((l) => l.includes("E1361"))).toHaveLength(1);
+      const head = lines.findIndex((l) => l.includes("E1361"));
+      const detail = lines.slice(head + 1, head + 4);
+      // A path is relative to the working folder (OUTPUT.md), so `shop/package.json`; the spec fixes the three paths, not the prefix.
+      const bare = (l: string): string => l.trim().replace(/^shop\//, "");
+      expect(detail.map(bare)).toEqual(["package.json", "tokens.ts", "topology.ts"]);
+      expect(detail.every((l) => /^\s+\S/.test(l))).toBe(true);
+      const json = await run(["shop", "--existing", "--format=json"], three);
+      const e1361 = records(json.stdout).filter((x) => x.code === "E1361");
+      expect(e1361).toHaveLength(1);
+      expect(Array.isArray(e1361[0]?.paths) ? e1361[0]?.paths.map((x) => bare(String(x))) : []).toEqual([
+        "package.json",
+        "tokens.ts",
+        "topology.ts",
+      ]);
+      expect(entries(join(three, "shop"))).toEqual(beforeThree);
     },
     T,
   );
@@ -486,7 +509,7 @@ describe("create-app: usage errors", () => {
 
 describe("create-app: what it does not do", () => {
   it(
-    "Run as `node --permission` with reads allowed, writes allowed only in the folder, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project.",
+    "Run as `node --permission` with reads allowed, writes granted to the folder and its contents alone, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project, and those flags refuse a write beside the folder and a child process; from Node 25 they refuse a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019).",
     async () => {
       const cwd = realpathSync(sandbox());
       const shop = join(cwd, "shop");
@@ -514,6 +537,30 @@ describe("create-app: what it does not do", () => {
       expect(r.status, r.out).toBe(0);
       expect(keys(tree(shop))).toEqual(clientSet());
       expect(entries(cwd).filter((p) => !p.startsWith("shop"))).toEqual([]);
+    },
+    T,
+  );
+
+  // The connection half of the clause needs Node 25: older Node's permission model has no network grant to withhold, so `net.connect` is allowed there.
+  it.skipIf(Number(process.versions.node.split(".")[0]) < 25)(
+    "Run as `node --permission` with reads allowed, writes granted to the folder and its contents alone, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project, and those flags refuse a write beside the folder and a child process; from Node 25 they refuse a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019): the connection half.",
+    () => {
+      const cwd = realpathSync(sandbox());
+      const shop = join(cwd, "shop");
+      const probe = spawnSync(
+        process.execPath,
+        [
+          "--permission",
+          "--allow-fs-read=*",
+          `--allow-fs-write=${shop}`,
+          `--allow-fs-write=${shop}/*`,
+          "--allow-addons",
+          "-e",
+          `const net=require("node:net");let c;try{const s=net.connect(9,"127.0.0.1");s.on("error",()=>{});s.destroy();c="allowed"}catch(e){c=e.code}console.log(c)`,
+        ],
+        { encoding: "utf8", cwd },
+      );
+      expect(probe.stdout.trim(), probe.stderr).toBe("ERR_ACCESS_DENIED");
     },
     T,
   );

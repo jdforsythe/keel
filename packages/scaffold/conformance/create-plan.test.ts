@@ -6,7 +6,7 @@
 // Spec: k.create, clause "A `client` or `static` project has no file named `*.server.ts`, no `deploy/` folder, and no file outside `AGENTS.md` and `.claude/` holding `KEEL_SECRET`, `createApp` or `identity`."
 // Spec: k.create, clause "`--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`."
 // Spec: k.create, clause "In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project."
-// Spec: k.create, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written."
+// Spec: k.create, clause "With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written."
 // Spec: k.create, clause "A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written."
 // Spec: k.create, clause "`createPlan` given Node 22.14.0 returns E1362 and no file."
 // Spec: k.create, clause "With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: \"npm@10.9.0\"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`."
@@ -189,6 +189,27 @@ describe("k.create createPlan: versions", () => {
   });
 });
 
+/** The `paths` array (relative to the working folder, so `shop/` first: stripped, the spec fixes the three paths, not the prefix) of the E1361 diagnostic found anywhere in the JSON of a refused plan. */
+const pathsOf = (text: string): string[] => {
+  const find = (v: unknown): string[] | undefined => {
+    if (Array.isArray(v)) {
+      for (const x of v) {
+        const r = find(x);
+        if (r) return r;
+      }
+      return undefined;
+    }
+    if (typeof v !== "object" || v === null) return undefined;
+    for (const [k, x] of Object.entries(v)) {
+      if (k === "paths" && Array.isArray(x)) return x.map((v) => String(v).replace(/^shop\//, ""));
+      const r = find(x);
+      if (r) return r;
+    }
+    return undefined;
+  };
+  return find(JSON.parse(text)) ?? [];
+};
+
 describe("k.create createPlan: folder", () => {
   it("In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project.", () => {
     fc.assert(
@@ -212,7 +233,7 @@ describe("k.create createPlan: folder", () => {
     expect(plan({ listing: ["notes.txt"] }).text).toContain("E1360");
   });
 
-  it("With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written.", () => {
+  it("With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json`, one also holding `tokens.ts` and `topology.ts` one E1361 whose `paths` are the three; nothing is written.", () => {
     const ok = plan({ existing: true, listing: ["README.md"] });
     expect(ok.ok, ok.text).toBe(true);
     expect(ok.files.has("README.md")).toBe(false);
@@ -222,6 +243,11 @@ describe("k.create createPlan: folder", () => {
     expect(bad.text).toContain("E1361");
     expect(bad.text).toContain("package.json");
     expect(bad.files.size).toBe(0);
+    const three = plan({ existing: true, listing: ["topology.ts", "README.md", "tokens.ts", "package.json"] });
+    expect(three.ok).toBe(false);
+    expect(three.text).toContain("E1361");
+    expect(pathsOf(three.text)).toEqual(["package.json", "tokens.ts", "topology.ts"]);
+    expect(three.files.size).toBe(0);
   });
 
   it("Each file is created only where none is, and never replaced: for any path the plan writes, listing it with `--existing` is E1361 naming it and writes nothing.", () => {
@@ -231,7 +257,9 @@ describe("k.create createPlan: folder", () => {
         const p = plan({ existing: true, listing: [hit, ...more, "README.md"] });
         expect(p.ok).toBe(false);
         expect(p.text).toContain("E1361");
-        expect(p.text).toContain(hit);
+        const hits = [...new Set([hit, ...more])].sort();
+        expect(p.text).toContain(hits[0] ?? hit);
+        if (hits.length > 1) expect(pathsOf(p.text)).toEqual(hits);
         expect(p.files.size).toBe(0);
       }),
       cfg,
