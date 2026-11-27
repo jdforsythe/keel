@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative } from "node:path";
-import { pathToFileURL } from "node:url";
+import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
 import { sourceHash } from "@keel/compiler/internal";
 import { entryDependency } from "@keel/compiler/internal/entry/entryDependency";
@@ -9,6 +9,7 @@ import { libraryRel } from "@keel/compiler/std/libraryRel";
 import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
 import { createViteServer } from "vitest/node";
+import type { JsonSchema } from "./JsonSchema.ts";
 import { applyWrites } from "./applyWrites.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { hashOf } from "./hashOf.ts";
@@ -18,12 +19,10 @@ import { surfaceOf } from "./surfaceOf.ts";
 
 const CONTRACT = /^modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
-/** The kernel packages the evaluation imports natively, as this process does. */
-const KERNEL = ["@keel/schema", "@keel/reactive", "@keel/store", "@keel/router", "@keel/ctx"] as const;
 /** A kernel internal the evaluation loads: the project's package, else the CLI's own dependency (`entryDependency`). */
+/** This package's JSON Schema writer, loaded in the evaluation's graph. */
+const TO_JSON_SCHEMA = fileURLToPath(new URL("./toJsonSchema.ts", import.meta.url));
 const kernel = (id: string, root: string): string => entryDependency(id, root, import.meta.url) ?? id;
-/** What `import()` takes for `kernel`'s answer: a file's URL, or the bare id this process resolves. */
-const native = (spec: string): string => (isAbsolute(spec) ? pathToFileURL(spec).href : spec);
 const firstLine = (e: unknown): string => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "";
 /** An E code a thrown value carries (`{ code: "E1502" }`), kept as k.compiler Build-time evaluation keeps it. */
 const codeOf = (e: unknown): string | undefined => {
@@ -131,6 +130,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
   const bindings: unknown[] = [];
   const byId = new Map<string, Readonly<Record<string, unknown>>>();
   let shapes: unknown;
+  let schemaJson: (x: unknown) => JsonSchema | null = () => null;
   try {
     const server =
       contractFiles.length + routeFiles.length === 0
@@ -145,9 +145,6 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
             ssr: {
               resolve: { conditions: ["keel", "module", "node", "development|production"] },
               noExternal: libraries.map((l) => l.name),
-              // The kernel packages that keep identity load once, natively, so a schema, a store and a route table
-              // the app's modules make are the ones this process's guards know (k.identity, k.realm).
-              external: [...KERNEL],
             },
             plugins: [
               {
@@ -186,7 +183,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         if (isRecord(m) && isRecord(m.routes) && m.routes.kind === "keel.routeTable") tables.push(m.routes);
       }
       const internal: unknown =
-        tables.length === 0 ? undefined : await import(native(kernel("@keel/router/internal", root)));
+        tables.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/router/internal", root));
       const bindingsOf = isRecord(internal) ? internal.bindingsOf : undefined;
       for (const t of tables) {
         const cs = isRecord(t) && Array.isArray(t.contracts) ? t.contracts : [];
@@ -206,8 +203,20 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
             }
       }
       const kept: unknown =
-        bindings.length === 0 ? undefined : await import(native(kernel("@keel/store/internal", root)));
+        bindings.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/store/internal", root));
       shapes = isRecord(kept) ? kept.storeShapes : undefined;
+      // A schema the app's modules made is known only to the evaluation of `@keel/schema` that made it (k.realm):
+      // the graph's own `isSchema` and this package's `toJsonSchema`, loaded in that graph, read it.
+      const schemaMod: unknown = await server?.ssrLoadModule(kernel("@keel/schema", root));
+      const jsonMod: unknown = await server?.ssrLoadModule(TO_JSON_SCHEMA);
+      const isSchemaIn = isRecord(schemaMod) ? schemaMod.isSchema : undefined;
+      const toJsonIn = isRecord(jsonMod) ? jsonMod.toJsonSchema : undefined;
+      if (typeof isSchemaIn === "function" && typeof toJsonIn === "function")
+        schemaJson = (x) => {
+          if (Reflect.apply(isSchemaIn, undefined, [x]) !== true) return null;
+          const out: unknown = Reflect.apply(toJsonIn, undefined, [Reflect.get(Object(x), "node")]);
+          return isRecord(out) ? out : null;
+        };
       const clashes = isRecord(kept) ? kept.storeIdClashes : undefined;
       if (typeof clashes === "function")
         for (const m of clashes(chainsOf(byId))) if (typeof m === "string") notes.push(`E1550 ${m}\n`);
@@ -216,7 +225,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
     }
     if (notes.length > 0) return { code: 1, notes };
     const storesOf = (factory: unknown): unknown => (typeof shapes === "function" ? shapes(factory) : undefined);
-    const data = surfaceOf({ contracts, bindings, callers: contractCallers(files), storesOf, sources });
+    const data = surfaceOf({ contracts, bindings, callers: contractCallers(files), storesOf, sources, schemaJson });
     const content = `${canonicalJson({ data, hash: hashOf(data) })}\n`;
     applyWrites(root, [{ path: ".keel/surface.json", content, readonly: true }]);
     return { code: 0, notes };
