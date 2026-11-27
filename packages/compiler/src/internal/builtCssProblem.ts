@@ -16,14 +16,13 @@ const selectorKey = (s: string): string =>
     .replace(/\s+/g, " ")
     .replace(/\s*([>+~,])\s*/g, "$1")
     .replace(/=\s*(["'])(-?[A-Za-z_][\w-]*)\1\s*\]/g, "=$2]");
-/** A condition lowercased, spaces collapsed, none inside parentheses' ends or beside a colon. */
+/** A condition lowercased, spaces collapsed, none beside a parenthesis or a colon. */
 const condKey = (c: string): string =>
   c
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ")
-    .replace(/\(\s+/g, "(")
-    .replace(/\s+\)/g, ")")
+    .replace(/\s*([()])\s*/g, "$1")
     .replace(/\s*:\s*/g, ":");
 const keyOf = (r: CssRule, supports = true): string =>
   JSON.stringify([
