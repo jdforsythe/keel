@@ -1,6 +1,7 @@
 import { type Ctx, observe } from "@keel/ctx";
 import { attempt } from "@keel/schema";
 import type { FlowQueue } from "../FlowQueue.ts";
+import { Cancelled } from "./Cancelled.ts";
 import type { Planned } from "./Planned.ts";
 import { counted } from "./counted.ts";
 import { planKey } from "./planKey.ts";
@@ -48,9 +49,13 @@ export async function runFlows(
       }
       sent = now;
       if (dirty || signal.aborted) continue;
-      nap = new AbortController();
-      const napping = ctx.clock.after(POLL_MS, nap.signal);
-      void (await attempt(() => napping));
+      const wake = new AbortController();
+      nap = wake;
+      const napping = ctx.clock.after(POLL_MS, wake.signal);
+      void (await attempt(
+        () => napping,
+        (x) => (x === wake.signal.reason ? Cancelled.make({}) : undefined),
+      ));
     }
   } finally {
     stop();

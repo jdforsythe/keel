@@ -2,7 +2,7 @@
 // file `keel check` reads only as part of the project, and a guarded self target beside a guarded target with no `to`.
 // Seed 1337.
 import { check } from "@keel/check";
-import { ok, s } from "@keel/schema";
+import { isDefect, ok, s } from "@keel/schema";
 import { commitStores } from "@keel/server";
 import { chart } from "@keel/std-statecharts";
 import "@keel/std-workflows/tools";
@@ -34,9 +34,16 @@ test("A chart event named start, attempt or forget is refused with a diagnostic 
   fc.assert(
     fc.property(fc.constantFrom(...RESERVED), (name) => {
       const id = nextId("reserved");
-      expect(() => inRoot(() => workflow(id, { chart: named(name) }))).toThrow(
-        `E2355 workflow ${id}: chart event ${name} takes the name of a workflow transaction; rename it`,
-      );
+      const caught = (() => {
+        try {
+          inRoot(() => workflow(id, { chart: named(name) }));
+        } catch (e) {
+          return e;
+        }
+        return undefined;
+      })();
+      expect(isDefect(caught, "E2355")).toBe(true);
+      expect(Reflect.get(Object(caught), "data")).toEqual({ workflow: id, event: name });
     }),
     { seed: 1337, numRuns: 3 },
   );
