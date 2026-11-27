@@ -5,7 +5,7 @@ import { CODE_FILE } from "./CODE_FILE.ts";
 
 const SKIP = new Set(["node_modules", "dist", "coverage", "reports", ".turbo", ".git", ".worktrees"]);
 /** The host project `serve({ page })` writes in a library's folder (k.e2e Libraries): generated, never the library's source. */
-const E2E_HOST = /(?:^|\/)\.keel\/e2e-host$/;
+const E2E_HOST = /(?:^|\/)\.keel\/e2e-host-[^/]+$/;
 const TEXT = /\.(?:[cm]?[jt]sx?|json|md|ya?ml|css|html|txt|rs|toml)$|(?:^|\/)Dockerfile$/;
 const MAX_BYTES = 1_000_000;
 /** Build configuration is tooling, type-checked by the project's own tsc, not app code for `keel check`. */

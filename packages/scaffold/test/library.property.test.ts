@@ -56,7 +56,7 @@ describe("scaffold library", () => {
         const e2e = r.value.files.get(`${base}/test/Example.e2e.ts`) ?? "";
         expect(e2e).toContain(`serve({ page: "src/Example.tsx", props: { id: "lib" } })`);
         expect(e2e).toContain("a11y()");
-        expect(r.value.files.get(`${base}/.gitignore`)).toContain(".keel/e2e-host/");
+        expect(r.value.files.get(`${base}/.gitignore`)).toContain(".keel/e2e-host-*/");
         const again = scaffold("library", { name: `@${sc}/${base}`, version: "1.2.3" }, new Map());
         expect(again.ok && [...again.value.files]).toEqual([...r.value.files]);
       }),

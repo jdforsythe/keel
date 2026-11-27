@@ -13,7 +13,7 @@ packages/*/conformance/.tmp-*
 .keel/sessions/
 packages/*/.keel/
 .keel-dev/
-**/.keel/e2e-host/
+**/.keel/e2e-host-*/
 .DS_Store
 .env*
 !.env.example

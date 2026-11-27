@@ -3,4 +3,4 @@ dist
 .turbo
 coverage
 reports
-.keel/e2e-host/
+.keel/e2e-host-*/
