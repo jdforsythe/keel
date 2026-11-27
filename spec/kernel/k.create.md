@@ -39,7 +39,7 @@ It also takes `--format`, `--quiet` and `--limit` (k.cli). It reads no standard 
 | `node` | the same, and `modules/app/loadHome.server.ts`, `deploy/web/Dockerfile`, `deploy/compose.yaml` |
 | `--library` | what `library` writes under `<base>/` (k.library-pack Scaffold), at the folder's root, then `.gitignore` and the agent files |
 
-`HomePage.tsx` renders the heading `app.home.title`, the project name, and the paragraph `app.home.next`, which names `modules/app/HomePage.tsx` and `keel docs`. `home.route.test.ts` renders `app.home` (with `app` on `node`, k.testing), expects that heading text and runs `a11y()`.
+`HomePage.tsx` renders the heading `app.home.title`, the project name, and the paragraph `app.home.next`, which names `modules/app/HomePage.tsx` and `keel docs` in the manager's form (`pnpm keel docs`). Every command a written file or a printed line names is in that form, `see:` lines included. `home.route.test.ts` renders `app.home` (with `app` on `node`, k.testing), expects that heading text and runs `a11y()`.
 
 **Versions.** An app lists each `@keel/*` package at exactly create's version, never a range; a library at `^<version>`, as k.library-pack Scaffold says. An app's `engines.node` is `>=22.15`. A running Node older than 22.15 is E1362, before any other step.
 

@@ -5,6 +5,7 @@ import type { RunResult } from "../types/RunResult.ts";
 import { defaultMode } from "./defaultMode.ts";
 import { exitCode } from "./exitCode.ts";
 import { normalize } from "./normalize.ts";
+import { keelForm } from "./keelForm.ts";
 import { render } from "./render.ts";
 
 type Flags = {
@@ -30,6 +31,7 @@ export function respond(
     verbose: flags.verbose === true,
     code: flags.code,
     command: flags.command,
+    keel: keelForm(io.env?.npm_config_user_agent),
   });
   return { code: exitCode(all), stdout, stderr: "", records: all };
 }

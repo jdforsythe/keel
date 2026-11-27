@@ -42,6 +42,8 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 
 **Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
+**Command form.** A line `keel` prints names each `keel <command>` in the form the reader runs it from: when `npm_config_user_agent` names pnpm, npm, yarn or bun, that manager's (`pnpm keel build`, `npx --no keel build`, `yarn keel build`, `bun run keel build`), since a `keel` on PATH may be another program; with none, `keel build`. Compact and pretty only; json keeps each record's text.
+
 **Conformance.**
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
 - Each MCP tool's input schema equals the JSON Schema of its operation's input.
@@ -63,3 +65,4 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - `respond` of a record of a kind with no formatter yields E1054.
 - After `stdCommand('session', op)`, `keel session` parses argv with `op.input`, runs `op` and emits its records, and the MCP tools include `session`; unfilled, I1055, exit 0; filling it with another `op` throws E1053.
 - `keel inspect` of a document with `deployables` prints one `inspect.section` per deployable and section.
+- Run with `npm_config_user_agent` `pnpm/10.0.0`, `keel check` in a project with a stale generated deploy file prints its E1005 line naming `pnpm keel build`; with `npm/10.0.0`, `npx --no keel build`; with none, `keel build`; with `--format=json` the record text is the same in each.

@@ -3,6 +3,9 @@ import type { RenderOptions } from "./RenderOptions.ts";
 import { registry } from "./registry.ts";
 
 const DEFAULT_CAP = 5;
+/** A bare `keel <command>` in printed text, not inside a word, a path or a package name (`@keel/ui`). */
+const COMMAND =
+  /(?<![\w@/.-])keel (?=(?:build|check|test|dev|docs|explain|scaffold|codemod|pack|review|ledger|grants|inspect|report|evidence|session|mcp)\b)/g;
 
 const coded = (r: OutRecord): boolean => r.kind === "diag" || r.kind === "review";
 const groupKey = (r: OutRecord): string => (coded(r) ? `${r.kind}:${String(r.code)}` : r.kind);
@@ -35,6 +38,9 @@ export function render(records: readonly OutRecord[], o: RenderOptions): string 
     }
   }
   if (summary !== undefined) out.push(line(summary));
-  const text = out.filter((l) => l !== "").join("\n");
+  const joined = out.filter((l) => l !== "").join("\n");
+  // A command a line names is printed as the reader runs it (k.cli): `pnpm keel build` when a manager started this run.
+  const text =
+    o.mode === "json" || o.keel === undefined || o.keel === "keel" ? joined : joined.replace(COMMAND, `${o.keel} `);
   return text === "" ? "" : `${text}\n`;
 }

@@ -13,6 +13,7 @@ import { tsconfigJson } from "../templates/tsconfigJson.ts";
 import { turboJson } from "../templates/turboJson.ts";
 import { viteConfigTs } from "../templates/viteConfigTs.ts";
 import { GITIGNORE } from "./GITIGNORE.ts";
+import { managerOf } from "./managerOf.ts";
 
 /**
  * The files of a new project outside the Keel monorepo (k.scaffold `project`, k.create Files), path -> text, from the
@@ -41,7 +42,7 @@ export function projectFiles(input: {
     ["modules/app/module.ts", moduleTs("app")],
     ["modules/app/app.contract.ts", homeContractTs()],
     ["modules/app/routes.ts", homeRoutesTs(node)],
-    ["modules/app/HomePage.tsx", homePageTsx(name)],
+    ["modules/app/HomePage.tsx", homePageTsx(name, managerOf(manager).run)],
     ["modules/app/home.route.test.ts", homeRouteTest(name, node)],
     [".gitignore", GITIGNORE],
     [".keel/.gitkeep", ""],

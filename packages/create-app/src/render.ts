@@ -3,7 +3,7 @@ import type { Out } from "./Out.ts";
 /** docs/OUTPUT.md's message bound: 89 UTF-16 units, a longer one cut to 86 and `...`. */
 const clip = (m: string): string => (m.length > 89 ? `${m.slice(0, 86)}...` : m);
 
-function line(r: Out, pretty: boolean): string {
+function line(r: Out, pretty: boolean, run: string): string {
   switch (r.kind) {
     case "scaffold.edit":
       return pretty ? `create  ${r.path}` : `create ${r.path}`;
@@ -16,7 +16,7 @@ function line(r: Out, pretty: boolean): string {
         r.path === undefined || r.path === ""
           ? ""
           : `${r.path}${r.line === undefined ? "" : `:${r.line}:${r.col ?? 1}`}`;
-      const see = `  see: keel docs ${r.see}`;
+      const see = `  see: ${run} docs ${r.see}`;
       // A diagnostic about several files names each on its own line under the head (docs/OUTPUT.md).
       const each = (r.paths ?? []).map((p) => `  ${p}`);
       return pretty
@@ -33,7 +33,8 @@ function line(r: Out, pretty: boolean): string {
 /**
  * The records in a docs/OUTPUT.md format, the trailer last. `json`: one record per line, uncapped unless `limit`.
  * `compact`: `create <path>`, `next <command>` (` (in <dir>)`), the diagnostic with `see`, then `ok create ...`.
- * `pretty`: the same, the next commands under a `Next:` line, indented to copy. `quiet` keeps the trailer; `limit`
+ * A `see` line names `keel docs` in the project's form `run` (`pnpm keel docs k.create`), which works once the
+ * printed install has run. `pretty`: the same, the next commands under a `Next:` line, indented to copy. `quiet` keeps the trailer; `limit`
  * caps each kind, saying how many it left out.
  */
 export function render(
@@ -41,6 +42,7 @@ export function render(
   format: "compact" | "json" | "pretty",
   quiet = false,
   limit?: number,
+  run = "pnpm keel",
 ): string {
   const body = quiet ? [] : records.filter((r) => r.kind !== "summary");
   const trailer = records.filter((r) => r.kind === "summary");
@@ -60,13 +62,13 @@ export function render(
   for (const r of kept) {
     if (pretty && r.kind !== last && out.length > 0) out.push("");
     if (pretty && r.kind === "create.next" && last !== "create.next") out.push("Next:");
-    out.push(line(r, pretty));
+    out.push(line(r, pretty, run));
     last = r.kind;
     const left = more.get(r.kind);
     if (left !== undefined && kept.filter((k) => k.kind === r.kind).at(-1) === r)
       out.push(`... +${left} more ${r.kind} (create-app --limit ${(seen.get(r.kind) ?? 0).toString()})`);
   }
   if (pretty && out.length > 0 && trailer.length > 0) out.push("");
-  for (const r of trailer) out.push(line(r, pretty));
+  for (const r of trailer) out.push(line(r, pretty, run));
   return out.length === 0 ? "" : `${out.join("\n")}\n`;
 }
