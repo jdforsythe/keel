@@ -1,4 +1,5 @@
 import type { PartState } from "../aria/PartState.ts";
+import { USES_MEDIA } from "./USES_MEDIA.ts";
 import { className } from "./className.ts";
 import { isReadable } from "./isReadable.ts";
 import { isRecord } from "./isRecord.ts";
@@ -43,8 +44,10 @@ export function classesOf(props: Readonly<Record<string, unknown>>): string[] {
       const nested = st[s.key];
       if (isRecord(nested) && !isReadable(nested)) collect(nested, s.key, out);
     }
-  const media = props.media;
-  if (media === "screen" || media === "print") out.push(`k-media-${media}`);
+  if (USES_MEDIA) {
+    const media = props.media;
+    if (media === "screen" || media === "print") out.push(`k-media-${media}`);
+  }
   const lowered = props.class;
   if (typeof lowered === "string")
     for (const c of lowered.split(/\s+/)) if (ATOMIC.test(c) && !out.includes(c)) out.push(c);

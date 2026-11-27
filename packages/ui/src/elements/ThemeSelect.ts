@@ -1,4 +1,4 @@
-import { renderCtx } from "@keel/runtime-dom/internal";
+import { renderArtifacts, renderCtx } from "@keel/runtime-dom/internal";
 import { reveal } from "@keel/runtime-dom/ops";
 import { appearance } from "../appearance.ts";
 import { appearanceOf } from "../internal/appearanceOf.ts";
@@ -6,6 +6,7 @@ import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { bound } from "../internal/bound.ts";
+import { keepDocument } from "../internal/keepDocument.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import type { ControlStyles } from "../types/ControlStyles.ts";
@@ -36,10 +37,12 @@ export function ThemeSelect(
     },
 ): Node {
   const ctx = renderCtx();
-  const themes = ctx === undefined ? [] : appearanceOf(ctx).themes;
-  const now = ctx === undefined ? "default" : appearance(ctx).theme();
+  const artifacts = renderArtifacts();
   const control = (id: string): HTMLSelectElement =>
     make("select", (el) => {
+      keepDocument(ctx, artifacts, el.ownerDocument);
+      const themes = ctx === undefined ? [] : appearanceOf(ctx).themes;
+      const now = ctx === undefined ? "default" : appearance(ctx).theme();
       el.setAttribute("id", id);
       applyIdLang(el, props, false);
       if (props.label !== undefined) el.setAttribute("aria-label", props.label);

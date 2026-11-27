@@ -9,3 +9,4 @@ export type { HostEntry } from "./HostEntry.ts";
 export { hosts } from "./hosts.ts";
 export { rendered } from "./rendered.ts";
 export { renderCtx } from "./renderCtx.ts";
+export { renderArtifacts } from "./renderArtifacts.ts";

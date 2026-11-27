@@ -1,3 +1,4 @@
+import { USES_SCHEME } from "../internal/USES_SCHEME.ts";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
@@ -48,7 +49,8 @@ export function Box(
       attrOf(el, "aria-labelledby", isGetter(props, "labelledBy"), () => props.labelledBy);
     }
     attrOf(el, "aria-label", isGetter(props, "label"), () => props.label);
-    if (props.scheme === "light" || props.scheme === "dark") el.setAttribute("data-k-scheme", props.scheme);
+    if (USES_SCHEME && (props.scheme === "light" || props.scheme === "dark"))
+      el.setAttribute("data-k-scheme", props.scheme);
     applyStyle(el, props, scroll ? "k-scroll" : undefined);
     appendChildren(el, renderChildren(props.children));
   });

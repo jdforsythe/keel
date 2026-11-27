@@ -55,6 +55,7 @@ import { shortPath } from "./internal/shortPath.ts";
 import { stylesMiddleware } from "./internal/stylesMiddleware.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
+import { usesFlagCode } from "./internal/usesFlagCode.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { writeStatic } from "./internal/writeStatic.ts";
 import { allLibraries } from "./std/allLibraries.ts";
@@ -70,6 +71,7 @@ import type { Artifacts } from "./types/Artifacts.ts";
 import type { Library } from "./types/Library.ts";
 import type { Output } from "./types/Output.ts";
 import type { RouteEntry } from "./types/RouteEntry.ts";
+import type { StyleUsage } from "./types/StyleUsage.ts";
 import type { Topology } from "./types/Topology.ts";
 
 const CODE = /\.[cm]?[jt]sx?$/;
@@ -845,10 +847,14 @@ export default function (): {
     return parts.join("\n");
   };
 
+  /** Every compiled module's style usages, merged. */
+  const styleUsages = (): readonly StyleUsage[] =>
+    mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts["styles.json"].usages;
+
   /** Re-evaluate tokens and route manifests: `keel.css` and `routes.json`. */
   const refresh = async (): Promise<void> => {
     stale = false;
-    const usages = mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts["styles.json"].usages;
+    const usages = styleUsages();
     const r = await evaluateProject({
       root,
       tokensFile: exists("tokens.ts") ? "tokens.ts" : undefined,
@@ -1096,6 +1102,11 @@ export default function (): {
       return null;
     },
     async load(this: unknown, id, options) {
+      // A build serves `@keel/ui`'s `USES_*` flags from the usages `buildStart` collected (k.compiler Build).
+      if (command === "build") {
+        const flag = usesFlagCode(id, styleUsages());
+        if (flag !== null) return flag;
+      }
       if (options?.ssr === false) {
         const stub = browserLoad(id, forBrowser(this, options));
         if (stub !== null) return stub;

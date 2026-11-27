@@ -3,7 +3,6 @@ import type { Scope } from "@keel/reactive";
 import { createOwner } from "./internal/createOwner.ts";
 import { createRoot } from "./internal/createRoot.ts";
 import { disposeOwner } from "./internal/disposeOwner.ts";
-import { rendered } from "./internal/rendered.ts";
 import { rootFallback } from "./internal/rootFallback.ts";
 import { showRevealed } from "./internal/showRevealed.ts";
 import { stampOf } from "./internal/stampOf.ts";
@@ -22,10 +21,7 @@ import type { MountOptions } from "./types/MountOptions.ts";
  * removes the rendered nodes, every root listener, and every binding and subscription. Idempotent.
  */
 export function mount(component: Component, el: Element, options: MountOptions): () => void {
-  const root = createRoot(el, options.ctx, options.mode);
-  // A mount given no artifacts keeps what a render before it gave this ctx (a served document's themes).
-  const artifacts = options.artifacts ?? rendered.get(options.ctx)?.artifacts ?? {};
-  rendered.set(options.ctx, { document: el.ownerDocument, artifacts });
+  const root = createRoot(el, options.ctx, options.mode, options.artifacts);
   const owner = createOwner(null, root, null);
   const before = el.lastChild;
   const anchor = el.appendChild(el.ownerDocument.createComment(""));

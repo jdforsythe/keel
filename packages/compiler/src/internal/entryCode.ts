@@ -70,6 +70,7 @@ export function entryCode(
     `import { createCtx } from ${q(CTX)};`,
     `import { browserHistory, createRouter, routeTable } from ${q(ROUTER)};`,
     `import { mount } from ${q(RUNTIME)};`,
+    ...(themes.length === 0 ? [] : [`import { rendered as __keelRendered } from ${q(`${RUNTIME}/internal`)};`]),
     `import { inspect } from ${q(REACTIVE)};`,
     `import { stores } from ${q(STORE)};`,
     `import { inspectorSections } from ${q(SECTIONS)};`,
@@ -102,8 +103,11 @@ export function entryCode(
     `const router = createRouter(${table}, { ctx, history: browserHistory(), mode${identity ? ", mount: __keelIdentity.path" : ""} });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,
-    // The `choice` themes ride with the mount so `appearance(ctx)` knows them (k.schemes Choice); none, no bytes.
-    `mount(router.App, el, { ctx, mode${themes.length === 0 ? "" : `, artifacts: { themes: ${JSON.stringify(themes)} }`} });`,
+    // The `choice` themes, kept with the document for this ctx so `appearance(ctx)` knows them (k.schemes Choice); none, no bytes.
+    ...(themes.length === 0
+      ? []
+      : [`__keelRendered.set(ctx, { document, artifacts: { themes: ${JSON.stringify(themes)} } });`]),
+    "mount(router.App, el, { ctx, mode });",
     'if (mode === "dev") {',
     '  let last = "";',
     "  const report = () => {",

@@ -311,7 +311,7 @@ export function collectStyles(
   return { usages, rewrites, edits, diagnostics };
 }
 
-/** One usage per distinct literal `media` on a base element and `scheme` on a `Box`, in that order (k.aria Scheme and Print). */
+/** One usage per distinct literal `media` (a literal leaf of a dynamic one too) on a base element and `scheme` on a `Box`, in that order (k.aria Scheme and Print). */
 function ownUsages(a: Analysis, base: ReadonlySet<string>, ui: ReadonlyMap<string, string>): StyleUsage[] {
   const seen = new Map<string, StyleUsage>();
   for (const j of a.jsx) {
@@ -324,8 +324,20 @@ function ownUsages(a: Analysis, base: ReadonlySet<string>, ui: ReadonlyMap<strin
       const allowed = OWN_USAGE[name];
       if (allowed === undefined || (name === "scheme" && ui.get(n.name) !== "Box")) continue;
       const sv = staticValueOf(at.value);
-      if (sv !== undefined && !sv.bare && allowed.includes(sv.text))
-        seen.set(`${name}:${sv.text}`, { props: { [name]: sv.text } });
+      const v = at.value;
+      // `media` takes the literal leaves of a dynamic `?:`/`&&` value too, so its classes and blocks exist (k.aria Print).
+      const values =
+        sv !== undefined
+          ? sv.bare
+            ? []
+            : [sv.text]
+          : name === "media" &&
+              v !== null &&
+              v.type === "JSXExpressionContainer" &&
+              v.expression.type !== "JSXEmptyExpression"
+            ? tokensOf(v.expression).tokens
+            : [];
+      for (const text of values) if (allowed.includes(text)) seen.set(`${name}:${text}`, { props: { [name]: text } });
     }
   }
   return [...seen.keys()].sort().flatMap((k) => {

@@ -1,11 +1,12 @@
 import type { Ctx } from "@keel/ctx";
-import { renderCtx } from "@keel/runtime-dom/internal";
+import { renderArtifacts, renderCtx } from "@keel/runtime-dom/internal";
 import { reveal } from "@keel/runtime-dom/ops";
 import { appearance } from "../appearance.ts";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { bound } from "../internal/bound.ts";
+import { keepDocument } from "../internal/keepDocument.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import type { ControlStyles } from "../types/ControlStyles.ts";
@@ -51,8 +52,10 @@ export function SchemeSelect(
     },
 ): Node {
   const ctx = renderCtx();
+  const artifacts = renderArtifacts();
   const control = (id: string): HTMLSelectElement =>
     make("select", (el) => {
+      keepDocument(ctx, artifacts, el.ownerDocument);
       el.setAttribute("id", id);
       applyIdLang(el, props, false);
       if (props.label !== undefined) el.setAttribute("aria-label", props.label);

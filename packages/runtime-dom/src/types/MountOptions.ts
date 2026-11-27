@@ -9,6 +9,6 @@ export interface MountOptions {
   readonly onError?: (error: CaughtError) => void;
   /** The root fallback shows the error's message only in `dev`; `production` (the default) shows `keel.unexpected`. */
   readonly mode?: "dev" | "production";
-  /** What the render is given beside `ctx` (the tokens, or the `choice` theme names), kept with the document for this ctx's capabilities. */
+  /** What the render is given beside `ctx` (the tokens, or the `choice` theme names); `SchemeSelect` and `ThemeSelect` keep it with their document for this ctx's `appearance`. */
   readonly artifacts?: RenderArtifacts | undefined;
 }
