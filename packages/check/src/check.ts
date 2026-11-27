@@ -270,8 +270,11 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const input = { file, ast: parsed.program, artifacts, project };
     // One by one: a file may give more findings than a spread call takes arguments.
     const selects = typed?.schemeSelects.get(libs.real(file.path));
+    const throws = typed?.keelThrows.get(libs.real(file.path)) ?? new Set<number>();
     const typedInput =
-      dates === undefined ? input : { ...input, dates, types: true, schemeSelects: selects ?? new Set<number>() };
+      dates === undefined
+        ? input
+        : { ...input, dates, types: true, schemeSelects: selects ?? new Set<number>(), keelThrows: throws };
     for (const d of runRules(registered, typedInput)) out.push(d);
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));

@@ -59,14 +59,22 @@ function parseEntry(text: string): TypeEntry | undefined {
     !Array.isArray(v.probes) ||
     !Array.isArray(v.items) ||
     !isDates(v.dates) ||
-    !isDates(v.schemeSelects)
+    !isDates(v.schemeSelects) ||
+    !isDates(v.keelThrows)
   )
     return undefined;
   const probes = v.probes.filter(isProbe);
   const items = v.items.filter((i): i is Diagnostic | FormatSite => isDiagnostic(i) || isSite(i));
   if (probes.length !== v.probes.length || items.length !== v.items.length) return undefined;
   const sets = (list: [string, number[]][]) => new Map(list.map(([p, ns]) => [p, new Set(ns)]));
-  return { key: v.key, probes, items, dates: sets(v.dates), schemeSelects: sets(v.schemeSelects) };
+  return {
+    key: v.key,
+    probes,
+    items,
+    dates: sets(v.dates),
+    schemeSelects: sets(v.schemeSelects),
+    keelThrows: sets(v.keelThrows),
+  };
 }
 
 /**
@@ -90,6 +98,7 @@ export function typeCache(dir: string, name: string) {
       try {
         const dates = [...entry.dates].map(([p, s]) => [p, [...s]]);
         const schemeSelects = [...entry.schemeSelects].map(([p, s]) => [p, [...s]]);
+        const keelThrows = [...entry.keelThrows].map(([p, s]) => [p, [...s]]);
         const text = JSON.stringify({
           format: CACHE_FORMAT,
           key: entry.key,
@@ -97,6 +106,7 @@ export function typeCache(dir: string, name: string) {
           items: entry.items,
           dates,
           schemeSelects,
+          keelThrows,
         });
         if (Buffer.byteLength(text) > MAX_BYTES) return;
         fs.mkdirSync(dir, { recursive: true });

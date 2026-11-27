@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { THROW_MESSAGE } from "./THROW_MESSAGE.ts";
 import { catchMessage } from "./catchMessage.ts";
 
 /** A function the type pass follows by its symbol (k.unsafe One path, k.reactive Static). */
@@ -58,9 +59,10 @@ const NAMES: ReadonlySet<string> = new Set([
 ]);
 const MAKERS: ReadonlySet<string> = new Set(["scope", "signal", "computed", "effect", "resource", "store"]);
 const CODE = /^E\d{4}$/;
-const THROW = "throw in app code; return err(...) when expected, defect(...) when a bug";
 const NOT_LITERAL = "defect code is not a literal E and four digits";
 const UNREADABLE = "defect code check cannot read";
+const NOT_TEXT = "defect message is not a literal: pass values as data, defect('text', { data })";
+const NOT_DETAIL = "defect detail is not an object literal";
 const DETACHED = "scope({ detached }) is for kernel code; nest the scope, or make a module root";
 
 /** One finding: its code, offset in the parsed text, message and spec section. */
@@ -324,6 +326,18 @@ export function calleeUses(
     return awaitsOf(own).some(([a, b]) => b <= end && !(a <= start && b >= end));
   };
 
+  /**
+   * Whether `call` lies in a `finally` block, outside a function nested in it (E1452); one in a `return` there is
+   * that `return`'s E1452 alone, a control exit from the `finally`.
+   */
+  const inFinally = (call: ts.Node): boolean => {
+    for (let n: ts.Node = call; !ts.isSourceFile(n.parent); n = n.parent) {
+      if (asFunction(n.parent) !== undefined || ts.isReturnStatement(n.parent)) return false;
+      if (ts.isTryStatement(n.parent) && n.parent.finallyBlock === n) return true;
+    }
+    return false;
+  };
+
   const add = (code: string, at: ts.Node, message: string, see: string): void =>
     void out.push({ code, at: at.getStart(sf), message, see });
 
@@ -342,7 +356,7 @@ export function calleeUses(
   const judgeCall = (target: Callee, ref: ts.Expression, use: Call): void => {
     const args = use.args ?? [];
     const spreadBefore = args.slice(0, 2).find((a) => ts.isSpreadElement(a));
-    if (target === "reject") add("E1451", nameAt(ref), THROW, "k.errors");
+    if (target === "reject") add("E1451", nameAt(ref), THROW_MESSAGE, "k.errors");
     else if (target === "catch" || target === "allSettled" || target === "any")
       add("E1452", nameAt(ref), catchMessage(target), "k.errors");
     else if (target === "then") {
@@ -350,12 +364,20 @@ export function calleeUses(
       else if (args.filter((a) => !ts.isOmittedExpression(a)).length >= 2 || args.some((a) => ts.isSpreadElement(a)))
         add("E1452", nameAt(ref), catchMessage("then"), "k.errors");
     } else if (target === "defect") {
-      const code = args[1];
       if (use.bound !== undefined) add("E1455", use.bound, UNREADABLE, "k.errors");
       else if (use.unread !== undefined) add("E1455", use.unread, UNREADABLE, "k.errors");
       else if (spreadBefore !== undefined) add("E1455", use.holder ?? spreadBefore, UNREADABLE, "k.errors");
-      else if (code !== undefined && !(ts.isStringLiteral(code) && CODE.test(code.text)))
-        add("E1455", code, NOT_LITERAL, "k.errors");
+      else {
+        const [message, second, third] = args;
+        if (message !== undefined && !ts.isStringLiteral(message) && !ts.isNoSubstitutionTemplateLiteral(message))
+          add("E1455", message, NOT_TEXT, "k.errors");
+        if (second !== undefined && !ts.isObjectLiteralExpression(bare(second))) {
+          if (!(ts.isStringLiteral(second) && CODE.test(second.text))) add("E1455", second, NOT_LITERAL, "k.errors");
+          if (third !== undefined && !ts.isSpreadElement(third) && !ts.isObjectLiteralExpression(bare(third)))
+            add("E1455", third, NOT_DETAIL, "k.errors");
+        }
+      }
+      if (inFinally(use.call)) add("E1452", ref, catchMessage("defect-finally"), "k.errors");
     } else if (target === "scope" && !kernel) {
       const opts = args[1];
       if (use.unread !== undefined) add("E1207", use.unread, DETACHED, "k.reactive");
@@ -366,7 +388,7 @@ export function calleeUses(
       add(
         target === "scope" ? "E1208" : "E1203",
         ref,
-        `${target} after await runs with no owner; use a captured scope's run`,
+        `${target} after await runs with no owner: take const c = owner() ?? defect('no owner') before the await, then c.run(() => ${target}(...))`,
         "k.reactive",
       );
   };

@@ -6,4 +6,6 @@ export type Typed = {
   readonly dates: ReadonlyMap<string, ReadonlySet<number>>;
   /** Per file path, the offsets of what the checker resolves to `@keel/ui`'s `SchemeSelect` (E1814). */
   readonly schemeSelects: ReadonlyMap<string, ReadonlySet<number>>;
+  /** Per file path, the offsets of the `throw` statements E1451's fix rewrites (`keelThrows`). */
+  readonly keelThrows: ReadonlyMap<string, ReadonlySet<number>>;
 };

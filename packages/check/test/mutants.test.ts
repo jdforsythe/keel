@@ -57,275 +57,226 @@ const only = (code: string, path: string, source: string): string =>
 
 const block = (title: string, body: string): string => `# ${title}\n${body}`;
 
+const RES =
+  "import { ok, type KeelError, type Result } from '@keel/schema'\ndeclare const neg: KeelError<'m.neg', null>\n";
+
 describe("E1452 noTryCatch", () => {
   const E = (path: string, src: string): string => only("E1452", path, src);
   it("pins every try/catch shape: message, location, and fix", () => {
     const out = [
       block(
-        "async return",
+        "rethrow, lines",
         E(
           "src/a.ts",
-          "export async function f(p: Promise<number>) {\n  try {\n    return await p\n  } catch (e) {\n    return 0\n  }\n}\n",
+          "export async function f(p: () => Promise<void>) {\n  try {\n    await p()\n    await p()\n  } catch (e) {\n    await undo()\n    throw e\n  }\n}\n",
         ),
       ),
       block(
-        "async no return",
+        "rethrow, one line",
+        E("src/a.ts", "export function f(p: () => void) {\n  try { p() } catch (e) { undo(); throw e }\n}\n"),
+      ),
+      block(
+        "rethrow, indented",
         E(
           "src/a.ts",
-          "export async function f(p: Promise<number>) {\n  try {\n    await p\n  } catch (e) {\n    log(e)\n  }\n}\n",
+          "export function f(p: () => void) {\n  if (p) {\n    try { p() } catch (err) { undo(); throw err }\n  }\n}\n",
         ),
       ),
       block(
-        "sync return",
+        "done taken",
         E(
           "src/a.ts",
-          "export function f(p: () => number) {\n  try {\n    return p()\n  } catch (e) {\n    return 0\n  }\n}\n",
+          "export function f(p: () => void) {\n  const done = 1\n  try { p() } catch (e) { undo(); throw e }\n  return done\n}\n",
         ),
       ),
       block(
-        "sync no return",
-        E("src/a.ts", "export function f(p: () => void) {\n  try {\n    p()\n  } catch (e) {\n    log(e)\n  }\n}\n"),
+        "rethrow alone",
+        E("src/a.ts", "export function f(p: () => void) {\n  try { p(); p() } catch (e) { throw e }\n}\n"),
       ),
       block(
-        "no param",
-        E("src/a.ts", "export function f(p: () => void) {\n  try {\n    p()\n  } catch {\n    log()\n  }\n}\n"),
-      ),
-      block("one line", E("src/a.ts", "export function f(p: () => void) {\n  try { p() } catch (e) { log(e) }\n}\n")),
-      block(
-        "indented",
+        "rethrow alone, declares",
         E(
           "src/a.ts",
-          "export function f(p: () => void) {\n  if (p) {\n    try { p() } catch (err) { log(err) }\n  }\n}\n",
+          "export function f(p: () => number) {\n  try { const x = p(); use(x) } catch (e) { throw e }\n}\n",
         ),
       ),
+      block("top level", E("src/a.ts", "try { go() } catch (e) { undo(); throw e }\n")),
+      block(
+        "own loop break",
+        E(
+          "src/a.ts",
+          "export function f(p: () => boolean) {\n  try { for (;;) { if (p()) break } } catch (e) { undo(); throw e }\n}\n",
+        ),
+      ),
+      block(
+        "reads the error",
+        E("src/a.ts", "export function f(p: () => void) {\n  try { p() } catch (e) { log(e); throw e }\n}\n"),
+      ),
+      block(
+        "return in try",
+        E("src/a.ts", "export function f(p: () => number) {\n  try { return p() } catch (e) { undo(); throw e }\n}\n"),
+      ),
+      block(
+        "break leaves try",
+        E(
+          "src/a.ts",
+          "export function f(p: () => boolean) {\n  for (;;) { try { if (p()) break } catch (e) { undo(); throw e } }\n}\n",
+        ),
+      ),
+      block(
+        "not last",
+        E("src/a.ts", "export function f(p: () => void) {\n  try { p() } catch (e) { throw e; undo() }\n}\n"),
+      ),
+      block("no param", E("src/a.ts", "export function f(p: () => void) {\n  try { p() } catch { log() }\n}\n")),
       block(
         "finalizer unfixable",
         E(
           "src/a.ts",
-          "export function f(p: () => void) {\n  try {\n    p()\n  } catch (e) {\n    log(e)\n  } finally {\n    done()\n  }\n}\n",
+          "export function f(p: () => void) {\n  try { p() } catch (e) { undo(); throw e } finally { done() }\n}\n",
         ),
       ),
       block(
         "destructured param unfixable",
-        E(
-          "src/a.ts",
-          "export function f(p: () => void) {\n  try {\n    p()\n  } catch ({ message }) {\n    log(message)\n  }\n}\n",
-        ),
-      ),
-      block("top level unfixable", E("src/a.ts", "try {\n  go()\n} catch (e) {\n  log(e)\n}\n")),
-      block(
-        "nested fn return not owned",
-        E(
-          "src/a.ts",
-          "export function f(p: () => void) {\n  try {\n    const g = () => { return 1 }\n    p(g)\n  } catch (e) {\n    log(e)\n  }\n}\n",
-        ),
+        E("src/a.ts", "export function f(p: () => void) {\n  try { p() } catch ({ message }) { log(message) }\n}\n"),
       ),
       block(
-        "nested await not owned",
-        E(
-          "src/a.ts",
-          "export function f(p: () => void) {\n  try {\n    const g = async () => { await p() }\n    g()\n  } catch (e) {\n    log(e)\n  }\n}\n",
-        ),
-      ),
-      block(
-        "existing import",
-        E(
-          "src/a.ts",
-          "import { attempt } from '@keel/schema'\nexport function f(p: () => void) {\n  try { p() } catch (e) { log(e) }\n}\n",
-        ),
-      ),
-      block(
-        "named import appended",
-        E(
-          "src/a.ts",
-          "import { ok } from '@keel/schema'\nexport function f(p: () => void) {\n  try { p() } catch (e) { log(e) }\n}\n",
-        ),
+        "no statement list",
+        E("src/a.ts", "export function f(p: () => void) {\n  if (p) try { p() } catch (e) { undo(); throw e }\n}\n"),
       ),
       block("promise catch", E("src/a.ts", "export const f = (p: Promise<number>) => p.catch(() => 0)\n")),
       block("computed catch ignored", E("src/a.ts", "export const f = (p: Promise<number>) => p['catch'](() => 0)\n")),
       block("other member ignored", E("src/a.ts", "export const f = (p: Promise<number>) => p.then(() => 0)\n")),
       block("test path ignored", E("test/a.test.ts", "try { go() } catch (e) { log(e) }\n")),
+      block(
+        "attempt",
+        E(
+          "src/a.ts",
+          "import { attempt } from '@keel/schema'\nexport const a = attempt(f)\nexport const b = attempt(f, () => T)\nexport const c = attempt(f, (_x) => T)\nexport const d = attempt(f, (x) => T)\nexport const e = attempt(f, (x) => (x instanceof RangeError ? T : undefined))\n",
+        ),
+      ),
+      block(
+        "defect in finally",
+        E(
+          "src/a.ts",
+          "import { defect } from '@keel/schema'\nexport function f() {\n  try { g() } finally { defect('x') }\n  try { g() } finally { g(() => defect('x')) }\n}\n",
+        ),
+      ),
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
-      "# async return
-      2:3 try/catch in app code; use attempt(fn)
+      "# rethrow, lines
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
       --- a/src/a.ts
       +++ b/src/a.ts
-      @@ -1,7 +1,11 @@
-      +import { attempt } from "@keel/schema";
-       export async function f(p: Promise<number>) {
-      -  try {
-      +  const attempted = await attempt(async () => {
-           return await p
+      @@ -1,9 +1,12 @@
+       export async function f(p: () => Promise<void>) {
+      +  let done = false
+         try {
+           await p()
+           await p()
       -  } catch (e) {
-      +  });
-      +  if (attempted.ok) return attempted.value;
-      +  {
-      +    const e = attempted.error;
-           return 0
+      -    await undo()
+      -    throw e
+      +    done = true
+      +  } finally {
+      +    if (!done) {
+      +      await undo()
+      +    }
          }
        }
-      # async no return
-      2:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,7 +1,10 @@
-      +import { attempt } from "@keel/schema";
-       export async function f(p: Promise<number>) {
-      -  try {
-      +  const attempted = await attempt(async () => {
-           await p
-      -  } catch (e) {
-      +  });
-      +  if (!attempted.ok) {
-      +    const e = attempted.error;
-           log(e)
-         }
-       }
-      # sync return
-      2:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,7 +1,11 @@
-      +import { attempt } from "@keel/schema";
-       export function f(p: () => number) {
-      -  try {
-      +  const attempted = attempt(() => {
-           return p()
-      -  } catch (e) {
-      +  });
-      +  if (attempted.ok) return attempted.value;
-      +  {
-      +    const e = attempted.error;
-           return 0
-         }
-       }
-      # sync no return
-      2:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,7 +1,10 @@
-      +import { attempt } from "@keel/schema";
-       export function f(p: () => void) {
-      -  try {
-      +  const attempted = attempt(() => {
-           p()
-      -  } catch (e) {
-      +  });
-      +  if (!attempted.ok) {
-      +    const e = attempted.error;
-           log(e)
-         }
-       }
-      # no param
-      2:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,7 +1,9 @@
-      +import { attempt } from "@keel/schema";
-       export function f(p: () => void) {
-      -  try {
-      +  const attempted = attempt(() => {
-           p()
-      -  } catch {
-      +  });
-      +  if (!attempted.ok) {
-           log()
-         }
-       }
-      # one line
-      2:3 try/catch in app code; use attempt(fn)
+      # rethrow, one line
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,3 +1,4 @@
-      +import { attempt } from "@keel/schema";
        export function f(p: () => void) {
-      -  try { p() } catch (e) { log(e) }
-      +  const attempted = attempt(() => { p() }); if (!attempted.ok) { const e = attempted.error; log(e) }
+      -  try { p() } catch (e) { undo(); throw e }
+      +  let done = false
+      +  try { p(); done = true } finally { if (!done) { undo() } }
        }
-      # indented
-      3:5 try/catch in app code; use attempt(fn)
+      # rethrow, indented
+      3:5 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,5 +1,6 @@
-      +import { attempt } from "@keel/schema";
        export function f(p: () => void) {
          if (p) {
-      -    try { p() } catch (err) { log(err) }
-      +    const attempted = attempt(() => { p() }); if (!attempted.ok) { const err = attempted.error; log(err) }
+      -    try { p() } catch (err) { undo(); throw err }
+      +    let done = false
+      +    try { p(); done = true } finally { if (!done) { undo() } }
          }
        }
+      # done taken
+      3:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      --- a/src/a.ts
+      +++ b/src/a.ts
+      @@ -1,5 +1,6 @@
+       export function f(p: () => void) {
+         const done = 1
+      -  try { p() } catch (e) { undo(); throw e }
+      +  let done2 = false
+      +  try { p(); done2 = true } finally { if (!done2) { undo() } }
+         return done
+       }
+      # rethrow alone
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      --- a/src/a.ts
+      +++ b/src/a.ts
+      @@ -1,3 +1,3 @@
+       export function f(p: () => void) {
+      -  try { p(); p() } catch (e) { throw e }
+      +  p(); p()
+       }
+      # rethrow alone, declares
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      # top level
+      1:1 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      --- a/src/a.ts
+      +++ b/src/a.ts
+      @@ -1 +1,2 @@
+      -try { go() } catch (e) { undo(); throw e }
+      +let done = false
+      +try { go(); done = true } finally { if (!done) { undo() } }
+      # own loop break
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      --- a/src/a.ts
+      +++ b/src/a.ts
+      @@ -1,3 +1,4 @@
+       export function f(p: () => boolean) {
+      -  try { for (;;) { if (p()) break } } catch (e) { undo(); throw e }
+      +  let done = false
+      +  try { for (;;) { if (p()) break } done = true } finally { if (!done) { undo() } }
+       }
+      # reads the error
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      # return in try
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      # break leaves try
+      2:14 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      # not last
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      # no param
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
       # finalizer unfixable
-      2:3 try/catch in app code; use attempt(fn)
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
       # destructured param unfixable
-      2:3 try/catch in app code; use attempt(fn)
-      # top level unfixable
-      1:1 try/catch in app code; use attempt(fn)
-      # nested fn return not owned
-      2:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,8 +1,11 @@
-      +import { attempt } from "@keel/schema";
-       export function f(p: () => void) {
-      -  try {
-      +  const attempted = attempt(() => {
-           const g = () => { return 1 }
-           p(g)
-      -  } catch (e) {
-      +  });
-      +  if (!attempted.ok) {
-      +    const e = attempted.error;
-           log(e)
-         }
-       }
-      # nested await not owned
-      2:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,8 +1,11 @@
-      +import { attempt } from "@keel/schema";
-       export function f(p: () => void) {
-      -  try {
-      +  const attempted = attempt(() => {
-           const g = async () => { await p() }
-           g()
-      -  } catch (e) {
-      +  });
-      +  if (!attempted.ok) {
-      +    const e = attempted.error;
-           log(e)
-         }
-       }
-      # existing import
-      3:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,4 +1,4 @@
-       import { attempt } from '@keel/schema'
-       export function f(p: () => void) {
-      -  try { p() } catch (e) { log(e) }
-      +  const attempted = attempt(() => { p() }); if (!attempted.ok) { const e = attempted.error; log(e) }
-       }
-      # named import appended
-      3:3 try/catch in app code; use attempt(fn)
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,4 +1,4 @@
-      -import { ok } from '@keel/schema'
-      +import { ok, attempt } from '@keel/schema'
-       export function f(p: () => void) {
-      -  try { p() } catch (e) { log(e) }
-      +  const attempted = attempt(() => { p() }); if (!attempted.ok) { const e = attempted.error; log(e) }
-       }
+      2:3 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
+      # no statement list
+      2:10 catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect), any other throw reaches its owner with no catch
       # promise catch
-      1:44 .catch() in app code; use attempt(fn)
+      1:44 .catch() in app code: await it; an expected failure is attempt(fn, expect)
       # computed catch ignored
 
       # other member ignored
 
       # test path ignored
-      "
+
+      # attempt
+      2:18 attempt needs expect: (x) => x instanceof T ? E.make(data) : undefined
+      3:29 expect claims every throw: test the thrown value
+      4:29 expect claims every throw: test the thrown value
+      5:29 expect claims every throw: test the thrown value
+      # defect in finally
+      3:25 defect in finally drops the throw in flight"
     `);
   });
 });
@@ -335,99 +286,106 @@ describe("E1451 noThrow", () => {
     const E = (path: string, src: string): string => only("E1451", path, src);
     const out = [
       block(
-        "in function",
-        E("src/a.ts", "export function f(n: number) {\n  if (n < 0) throw new Error('neg')\n  return n\n}\n"),
+        "KeelError in a Result function",
+        E(
+          "src/a.ts",
+          `${RES}export function f(n: number): Result<number, KeelError<'m.neg', null>> {\n  if (n < 0) throw neg\n  return ok(n)\n}\n`,
+        ),
       ),
-      block("arrow", E("src/a.ts", "export const f = (n: number) => {\n  throw n\n}\n")),
-      block("function expr", E("src/a.ts", "export const f = function (n: number) {\n  throw n\n}\n")),
       block(
-        "with err import",
-        E("src/a.ts", "import { err } from '@keel/schema'\nexport function f(n: number) {\n  throw n\n}\n"),
+        "async Promise of a Result",
+        E(
+          "src/a.ts",
+          `${RES}export async function f(n: number): Promise<Result<number, KeelError<'m.neg', null>>> {\n  if (n < 0) throw neg\n  return ok(n)\n}\n`,
+        ),
+      ),
+      block(
+        "inside a try with a catch",
+        E(
+          "src/a.ts",
+          `${RES}export function f(n: number): Result<number, KeelError<'m.neg', null>> {\n  try { if (n < 0) throw neg } catch { g() }\n  return ok(n)\n}\n`,
+        ),
+      ),
+      block(
+        "an Error in a Result function",
+        E(
+          "src/a.ts",
+          `${RES}export function f(n: number): Result<number, KeelError<'m.neg', null>> {\n  if (n < 0) throw new Error('neg')\n  return ok(n)\n}\n`,
+        ),
+      ),
+      block(
+        "a number function",
+        E("src/a.ts", `${RES}export function f(n: number): number {\n  if (n < 0) throw neg\n  return n\n}\n`),
+      ),
+      block(
+        "rethrow of the catch binding",
+        E("src/a.ts", "export function f() {\n  try { g() } catch (e) { throw e }\n}\n"),
+      ),
+      block(
+        "rethrow in a nested function",
+        E("src/a.ts", "export function f() {\n  try { g() } catch (e) { h(() => { throw e }) }\n}\n"),
+      ),
+      block(
+        "promises",
+        E(
+          "src/a.ts",
+          "export const a = Promise.reject(1)\nexport const b = new Promise((res, rej) => rej(1))\nexport const c = new Promise(start)\nexport const d = new Promise((res) => res(1))\n",
+        ),
       ),
       block("top level has no fix", E("src/a.ts", "throw new Error('x')\n")),
-      block("after a function, top level", E("src/a.ts", "function g() { return 1 }\nthrow g()\n")),
-      block("nested", E("src/a.ts", "export function f() {\n  const g = () => {\n    throw 1\n  }\n  throw g\n}\n")),
       block("test file exempt", E("test/a.test.ts", "throw new Error('x')\n")),
       block("config exempt", E("vite.config.ts", "throw new Error('x')\n")),
       block("unsafe dir read", E("src/unsafe/a.ts", "throw new Error('x')\n")),
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
-      "# in function
-      2:14 throw in app code; return err(...) when expected, defect(...) when a bug
+      "# KeelError in a Result function
+      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
       --- a/src/a.ts
       +++ b/src/a.ts
-      @@ -1,4 +1,5 @@
-      +import { err } from "@keel/schema";
-       export function f(n: number) {
-      -  if (n < 0) throw new Error('neg')
-      +  if (n < 0) return err(new Error('neg'))
-         return n
+      @@ -1,6 +1,6 @@
+      -import { ok, type KeelError, type Result } from '@keel/schema'
+      +import { ok, type KeelError, type Result, err } from '@keel/schema'
+       declare const neg: KeelError<'m.neg', null>
+       export function f(n: number): Result<number, KeelError<'m.neg', null>> {
+      -  if (n < 0) throw neg
+      +  if (n < 0) return err(neg)
+         return ok(n)
        }
-      # arrow
-      2:3 throw in app code; return err(...) when expected, defect(...) when a bug
+      # async Promise of a Result
+      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
       --- a/src/a.ts
       +++ b/src/a.ts
-      @@ -1,3 +1,4 @@
-      +import { err } from "@keel/schema";
-       export const f = (n: number) => {
-      -  throw n
-      +  return err(n)
+      @@ -1,6 +1,6 @@
+      -import { ok, type KeelError, type Result } from '@keel/schema'
+      +import { ok, type KeelError, type Result, err } from '@keel/schema'
+       declare const neg: KeelError<'m.neg', null>
+       export async function f(n: number): Promise<Result<number, KeelError<'m.neg', null>>> {
+      -  if (n < 0) throw neg
+      +  if (n < 0) return err(neg)
+         return ok(n)
        }
-      # function expr
-      2:3 throw in app code; return err(...) when expected, defect(...) when a bug
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,3 +1,4 @@
-      +import { err } from "@keel/schema";
-       export const f = function (n: number) {
-      -  throw n
-      +  return err(n)
-       }
-      # with err import
-      3:3 throw in app code; return err(...) when expected, defect(...) when a bug
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,4 +1,4 @@
-       import { err } from '@keel/schema'
-       export function f(n: number) {
-      -  throw n
-      +  return err(n)
-       }
+      # inside a try with a catch
+      4:20 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      # an Error in a Result function
+      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      # a number function
+      4:14 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      # rethrow of the catch binding
+
+      # rethrow in a nested function
+      2:37 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      # promises
+      1:26 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      2:36 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
+      3:30 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
       # top level has no fix
-      1:1 throw in app code; return err(...) when expected, defect(...) when a bug
-      # after a function, top level
-      2:1 throw in app code; return err(...) when expected, defect(...) when a bug
-      # nested
-      3:5 throw in app code; return err(...) when expected, defect(...) when a bug
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,6 +1,7 @@
-      +import { err } from "@keel/schema";
-       export function f() {
-         const g = () => {
-      -    throw 1
-      +    return err(1)
-         }
-         throw g
-       }
-      5:3 throw in app code; return err(...) when expected, defect(...) when a bug
-      --- a/src/a.ts
-      +++ b/src/a.ts
-      @@ -1,6 +1,7 @@
-      +import { err } from "@keel/schema";
-       export function f() {
-         const g = () => {
-           throw 1
-         }
-      -  throw g
-      +  return err(g)
-       }
+      1:1 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug
       # test file exempt
 
       # config exempt
 
       # unsafe dir read
-      1:1 throw in app code; return err(...) when expected, defect(...) when a bug"
+      1:1 throw in app code: return err(E.make(data)) for a failure a caller handles, defect('text') for a bug"
     `);
   });
 });
@@ -3394,13 +3352,13 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # implicit any class method
       E1751 2:20 TS7006 Parameter 'props' implicitly has an 'any' type.
       # result discarded
-      E1453 4:3 Result discarded as a statement; narrow on r.ok
+      E1453 4:3 Result discarded: narrow on r.ok and handle r.error
       # result awaited discarded
-      E1453 4:3 Result discarded as a statement; narrow on r.ok
+      E1453 4:3 Result discarded: narrow on r.ok and handle r.error
       # result paren discarded
-      E1453 4:4 Result discarded as a statement; narrow on r.ok
+      E1453 4:4 Result discarded: narrow on r.ok and handle r.error
       # result voided
-
+      E1453 4:3 Result discarded: narrow on r.ok and handle r.error
       # result used
 
       # non-result union

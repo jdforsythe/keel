@@ -3,6 +3,7 @@ import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
 import { componentCtxSignature } from "../rules/componentCtxSignature.ts";
 import { defectCode } from "../rules/defectCode.ts";
 import { dynamicImport } from "../rules/dynamicImport.ts";
+import { errKeelError } from "../rules/errKeelError.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
 import { foreignUrlFetch } from "../rules/foreignUrlFetch.ts";
@@ -42,6 +43,7 @@ import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
 import { piiInRouteUrl } from "../rules/piiInRouteUrl.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
 import { resourceViaMatch } from "../rules/resourceViaMatch.ts";
+import { resultDiscard } from "../rules/resultDiscard.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
 import { revealedValue } from "../rules/revealedValue.ts";
 import { reversedFocusOrder } from "../rules/reversedFocusOrder.ts";
@@ -50,6 +52,7 @@ import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { schemeSelectOneScheme } from "../rules/schemeSelectOneScheme.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
+import { throwingBuiltin } from "../rules/throwingBuiltin.ts";
 import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unknownToken } from "../rules/unknownToken.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
@@ -79,6 +82,9 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noThrow,
   noTryCatch,
   defectCode,
+  resultDiscard,
+  throwingBuiltin,
+  errKeelError,
   noAmbientCapability,
   noCodeFromString,
   dynamicImport,

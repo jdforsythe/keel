@@ -7,6 +7,12 @@ import { applyEdits } from "./applyEdits.ts";
 import { ruleThrew } from "./ruleThrew.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
+/**
+ * Codes whose messages k.errors prints word for word, longer than the 89 units of k.check Diagnostics: they are
+ * kept whole, since a clipped one would drop the shape it names.
+ */
+const WHOLE: ReadonlySet<string> = new Set(["E1451", "E1452"]);
+
 function toDiagnostic(rule: RuleDef, f: Finding, input: RuleInput): Diagnostic {
   const text = typeof rule.message === "string" ? rule.message : rule.message(f);
   const base: Diagnostic = {
@@ -15,7 +21,7 @@ function toDiagnostic(rule: RuleDef, f: Finding, input: RuleInput): Diagnostic {
     path: f.path,
     line: f.line,
     col: f.col,
-    message: clipMessage(text, 89),
+    message: clipMessage(text, WHOLE.has(rule.code) ? Number.MAX_SAFE_INTEGER : 89),
   };
   const withSee: Diagnostic = rule.see === undefined ? base : { ...base, see: rule.see };
   const edits = rule.fix?.(f, { file: input.file, ast: input.ast }) ?? null;
