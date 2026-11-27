@@ -91,6 +91,11 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * In production, `assets` (the deployable's `keel build` output) is read once here: documents load its built entry and
  * its files are served nosniff, immutable only when the manifest names them hashed, never through a symlink out of
  * `assets/`; a missing or entry-less manifest rejects with E1555 (k.server Build).
+ * `KEEL_LOG_THROWN` and `KEEL_SECRET` are read from the environment first, on the ctx clock's reading then: a thrown
+ * value's records (`thrownLog`, k.serverlog Thrown values) hold its class, code, fingerprint (under `KEEL_SECRET`,
+ * else a key drawn here), site and causes, and its text only in a second record, under `mode: 'dev'` or while the
+ * clock reads before the `KEEL_LOG_THROWN` instant; a value that is no ISO 8601 instant at most 24 hours ahead rejects
+ * with E1596, naming no part of it.
  * A production `createApp` without `assets` also rejects with E1555 unless `NODE_ENV` (trimmed, any case) is
  * `development` or `test`; unset counts as production. Without a build its island documents would load
  * `/@keel/entry.ts`, whose bare `@keel/*` imports only Vite resolves. Whether a page has islands is known only when it
