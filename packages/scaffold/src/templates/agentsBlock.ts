@@ -41,7 +41,9 @@ export function agentsBlock(skills: readonly AgentSkill[], library = false, run 
     "- Schemas live in `*.schema.ts`, server work in `*.server.ts`.",
     "- No `throw` or `try`: return a `Result`. No `Date.now`, `Math.random`, `fetch` or DOM globals: use `ctx`.",
     "- No `any`, casts, `!` or `@ts-ignore`. Never import a `@keel/*` internal path.",
-    `- Add modules, routes, components and stores with \`${run} scaffold\`; rename and move with \`${run} codemod\`. Generated files are read-only.`,
+    library
+      ? "- Write each component in `src/`, export it from `src/index.ts` and name it in `module.ts` `public.exports`: a library has no modules, routes or stores to scaffold. Generated files are read-only."
+      : `- Add modules, routes, components and stores with \`${run} scaffold\`; rename and move with \`${run} codemod\`. Generated files are read-only.`,
     `- Stop only when \`${run} check\` and \`${run} test\` are clean.`,
     ...list,
     "",

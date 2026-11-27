@@ -10,7 +10,13 @@ export type ScaffoldDiag = {
   readonly line: number;
   readonly col: number;
   readonly message: string;
-  readonly see: "k.scaffold" | "k.scaffold-service" | "k.scaffold-shell" | "k.create" | "k.create-folder";
+  readonly see:
+    | "k.scaffold"
+    | "k.scaffold-service"
+    | "k.scaffold-shell"
+    | "k.create"
+    | "k.create-folder"
+    | "k.library-pack";
   readonly paths?: readonly string[];
   readonly missing?: string;
   readonly cause?: { readonly code: string; readonly path: string; readonly line: number; readonly message: string };

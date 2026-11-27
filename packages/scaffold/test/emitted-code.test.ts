@@ -39,7 +39,8 @@ function biomeClean(path: string, text: string): string | null {
 
 function build(workspace: boolean): Files {
   let files: Files = new Map();
-  files = apply("project", { name: "shop", workspace }, files);
+  // A `node` project: an API route needs a node deployable (k.scaffold-needs).
+  files = apply("project", { name: "shop", adapter: "node", workspace }, files);
   files = apply("module", { id: "todos" }, files);
   files = apply("route", { id: "todos.list", path: "/lists/:listId", loader: true }, files);
   files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit", loader: true }, files);

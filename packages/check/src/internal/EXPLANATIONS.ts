@@ -640,8 +640,8 @@ const ROWS: readonly Row[] = [
   [
     "E1366",
     "create-app: a stopped run left this folder",
-    "A run creates .keel-create first, listing every path it writes, and removes it last; it is here because a run was killed before it finished, so some of those files may be half a project. Nothing is written.",
-    "remove the files .keel-create lists and .keel-create, or the folder",
+    "A run creates .keel-create first, listing every file it writes and then every folder it makes, deepest first, and removes it last; it is here because a run was killed before it finished, so some of those files may be half a project. Nothing is written.",
+    "remove each path .keel-create lists that exists, in order, then .keel-create; or the folder",
     "k.create-folder",
   ],
   [

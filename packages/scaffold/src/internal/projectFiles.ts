@@ -13,7 +13,7 @@ import { topologyTs } from "../templates/topologyTs.ts";
 import { tsconfigJson } from "../templates/tsconfigJson.ts";
 import { turboJson } from "../templates/turboJson.ts";
 import { viteConfigTs } from "../templates/viteConfigTs.ts";
-import { GITIGNORE } from "./GITIGNORE.ts";
+import { gitignoreOf } from "./gitignoreOf.ts";
 import { managerOf } from "./managerOf.ts";
 
 /**
@@ -46,7 +46,7 @@ export function projectFiles(input: {
     ["modules/app/HomePage.tsx", homePageTsx(name, managerOf(manager).run)],
     ["modules/app/home.route.test.ts", homeRouteTest(name, node)],
     ["README.md", projectReadme(name, adapter, managerOf(manager))],
-    [".gitignore", GITIGNORE],
+    [".gitignore", gitignoreOf(manager)],
     [".keel/.gitkeep", ""],
   ]);
   if (node) files.set("modules/app/loadHome.server.ts", loaderTs("loadHome", "app", "app.home", false));

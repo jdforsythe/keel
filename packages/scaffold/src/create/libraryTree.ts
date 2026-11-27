@@ -1,5 +1,5 @@
 import type { Result } from "@keel/schema";
-import { GITIGNORE } from "../internal/GITIGNORE.ts";
+import { gitignoreOf } from "../internal/gitignoreOf.ts";
 import { libraryFiles } from "../internal/libraryFiles.ts";
 import { withAgents } from "../internal/withAgents.ts";
 import type { AgentSkill } from "../types/AgentSkill.ts";
@@ -20,7 +20,7 @@ export function libraryTree(input: {
   const made = libraryFiles(input.name, input.version, input.packageManager);
   if (!made.ok) return made;
   const own = new Map(made.value.files);
-  own.set(".gitignore", GITIGNORE);
+  own.set(".gitignore", gitignoreOf(input.packageManager));
   if (input.packageManager?.startsWith("yarn@") === true) own.set(".yarnrc.yml", "nodeLinker: node-modules\n");
   return withAgents(own, input.skills);
 }

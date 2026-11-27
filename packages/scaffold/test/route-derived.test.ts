@@ -60,9 +60,11 @@ describe("scaffold route: the loader follows the deployable", () => {
     }
   });
 
-  it("an API route keeps its handler wherever it runs", () => {
-    const f = apply("route", { id: "app.items", api: true }, project("client"));
+  it("an API route keeps its handler on node, and with no node deployable is E1353 naming E1511", () => {
+    const f = apply("route", { id: "app.items", api: true }, project("node"));
     expect(f.has("modules/app/loadItems.server.ts")).toBe(true);
+    const r = scaffold("route", { id: "app.items", api: true }, project("client"));
+    expect(r.ok ? "" : r.error.data.cause?.code).toBe("E1511");
   });
 });
 

@@ -75,7 +75,8 @@ function addEntry(path: string, src: string, fn: string, entry: string, imports:
  * `*.server.ts` handler naming the entry (a loader; an action for an API write). A page route has a loader when a `node`
  * deployable lists the module or `loader` asks for one; otherwise it binds the page's `component` alone. Without `path`
  * the path comes from the id (`derivedPath`); one another route holds is E1351 naming `--path`. `api` (k.api) writes an API entry (`method`, default `GET`; `output`) and a JSON
- * request test, and no page; `method` without `api`, or `no-loader` with `api`, is E1052.
+ * request test, and no page; `method` without `api`, or `no-loader` with `api`, is E1052; `api` in a module a `client` or
+ * `static` deployable lists is E1353 naming E1511.
  */
 export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.route.parse(input);
@@ -104,6 +105,20 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   const routesPath = `${dir}/routes.ts`;
   const contractPath = `${dir}/${mod}.contract.ts`;
   if (!files.has(`${dir}/module.ts`)) return fail("E1352", id, `${mod} is not a module of this project`);
+  // An API entry in a module a `client` or `static` deployable serves has no server to answer it (k.api E1511).
+  const serverless = Object.entries(topologyOf(files) ?? {})
+    .filter(([, d]) => d.adapter !== "node" && d.modules.includes(mod))
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))[0];
+  if (api === true && serverless !== undefined) {
+    const [name, d] = serverless;
+    const message = `${id}: API route in ${d.adapter} deployable ${name}, which has no server`;
+    return fail(
+      "E1353",
+      "topology.ts",
+      "aborted, would introduce E1511: an API route needs a node deployable; nothing written",
+      { code: "E1511", path: "topology.ts", line: 1, message },
+    );
+  }
   if (
     path !== "/" &&
     (!path.startsWith("/") ||

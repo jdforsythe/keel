@@ -32,7 +32,7 @@ const nameList = (names: readonly string[]): string =>
  * `topology.ts`, and `package.json` lists the shell's std package and app packages. Changes those two files alone and
  * refreshes nothing. Refusals, in order: E1052 for the input, a missing `topology.ts` or a `package.json` that is not
  * a JSON object; E1353 naming E1573 for an `id` that is not reverse-DNS; E1359 with no one `client` deployable to
- * take the shell; E1351 when it already declares that shell; E1052 when it or its `shells` is not an object literal.
+ * take the shell, with none the `place` line that makes one; E1351 when it already declares that shell; E1052 when it or its `shells` is not an object literal.
  */
 export function opShell(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.shell.parse(input);
@@ -89,8 +89,11 @@ export function opShell(input: unknown, files: ReadonlyMap<string, string>): Res
     const first = unread[0];
     if (first !== undefined) return refuse("E1052", "topology.ts", `${literal(first)}; pass --to`);
     const [one, two] = clients;
-    if (one === undefined)
-      return refuse("E1359", "topology.ts", `topology.ts has no client deployable for a ${shell} shell`);
+    // The first module in sorted order moves to a new `client` deployable: the one line that makes what a shell needs.
+    const placed = ast.deployables.flatMap((d) => d.modules).sort()[0];
+    const fresh = names.includes("app") ? "native" : "app";
+    const make = placed === undefined ? "" : `; first: keel codemod place ${placed} --to ${fresh} --adapter client`;
+    if (one === undefined) return refuse("E1359", "topology.ts", `no client deployable${make}`);
     if (two !== undefined)
       return refuse(
         "E1359",
