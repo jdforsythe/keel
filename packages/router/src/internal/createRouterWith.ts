@@ -232,7 +232,7 @@ export function createRouterWith<T extends RouteTable>(
     if (!carried.ok) return carried;
     const r = attempt(
       () => encodeHref(id, own.get(id)?.def, carried.value, {}),
-      (x) => (x instanceof Error ? unexpected(`guard redirect to "${id}" failed: ${x.message}`) : undefined),
+      (x) => (x instanceof Error ? unexpected(`guard redirect to "${id}" failed: ${x.name}: ${x.message}`) : undefined),
     );
     if (!r.ok) return r;
     const to = withNext(String(r.value), guardNext(table, url));
