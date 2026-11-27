@@ -1,7 +1,7 @@
-// Spec: k.serverlog, clause "With `KEEL_LOG_THROWN` an instant one hour after start, in production mode, `server.mjs` of the `/late` fixture writes one E1577 record whose message matches `^uncaught exception in work of route \S+: Error #[0-9a-f]{8}( at \S+:\d+)? Error: user jane@x\.com failed$`; where `jane@x.com` is a `.pii()` value of that request's input it ends `Error: user [pii] failed`; after that instant the record ends at the fingerprint or the site."
+// Spec: k.serverlog, clause "With `KEEL_LOG_THROWN` an instant one hour after start, in production mode, `server.mjs` of the `/late` fixture writes one E1577 record whose message matches `^uncaught exception in work of route \S+: Error #[0-9a-f]{8}( at \S+:\d+)? Error: user jane@x\.com failed$`; where `jane@x.com` is a `.pii()` value of that request's input it ends `Error: user [pii] failed`; with an instant already past at start, the record ends at the fingerprint or the site."
 // Seed: 1337 (no generated inputs: fixed process scenarios). Spawns the built `server.mjs` of the leave-process fixture in json format on a port the OS just freed; the child is killed in `afterEach`.
 // Waits are on the child's output and exit, never on a clock. The instants are read from the host clock as the modification time of a file just written (a real process has no sim clock, and a test reads no clock API) and formatted by arithmetic (iso-instant.ts).
-// Assumption: "after that instant" is an instant already past at start (one hour before it); the spec writes no limit for a past instant.
+// Reading: "an instant already past at start" is one hour before the start.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -75,7 +75,7 @@ test(
 );
 
 test(
-  "after that instant the record ends at the fingerprint or the site, and no line holds `jane`",
+  "with an instant already past at start, the record ends at the fingerprint or the site, and no line holds `jane`",
   async () => {
     const { records, text } = await lateRecord("/late", isoOfEpochMs(nowMs() - HOUR));
     expect(records).toHaveLength(1);

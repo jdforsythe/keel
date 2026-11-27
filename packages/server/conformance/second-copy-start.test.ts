@@ -1,6 +1,6 @@
-// Spec: k.realm, clause "`server.mjs` of a fixture whose bundle loads a second copy of `@keel/schema` from another folder prints one `diag` with code E1765 naming both URLs and exits 1, with no E1577 record."
+// Spec: k.realm, clause "`server.mjs` of a fixture, imported after a copy of `@keel/schema` from another folder was evaluated in its process, prints one `diag` with code E1765 naming both URLs and exits 1, with no E1577 record."
 // Seed 1337 (no generated input: one process scenario). Spawns node on a wrapper beside the built `server.mjs` of the leave-process fixture; the child is killed in `afterEach`.
-// Assumption: the bundle loads a second copy of `@keel/schema` by an import that runs before the bundle's own, so the wrapper imports the copy first and then `server.mjs`; the entry reads the refusal the second evaluation raises and prints it as a coded `diag`.
+// Reading: the copy is evaluated in the child's process by a wrapper that imports it first and then `server.mjs`; the entry reads the refusal its own evaluation raises and prints it as a coded `diag`.
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -35,7 +35,7 @@ afterEach(() => {
 });
 
 test(
-  "`server.mjs` of a fixture whose bundle loads a second copy of `@keel/schema` from another folder prints one `diag` with code E1765 naming both URLs and exits 1, with no E1577 record",
+  "`server.mjs` of a fixture, imported after a copy of `@keel/schema` from another folder was evaluated in its process, prints one `diag` with code E1765 naming both URLs and exits 1, with no E1577 record",
   async () => {
     const port = await freePort();
     const child = spawn(process.execPath, [path.join(fixture, "dist", "web", "two-copies.mjs")], {

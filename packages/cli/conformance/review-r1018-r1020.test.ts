@@ -1,9 +1,9 @@
-// Spec: k.escapes, clause "R1018 is one finding for `supervise(ctx, 'jobs.run', f, T)` in a library's file; R1019 one for `Symbol.for(name)` with `name` a parameter and none for `Symbol.for('app.key')`; R1020 one each for `window.addEventListener(name, h)` and `process.on(name, h)` with `name` a parameter, and none for `el.addEventListener(name, h)` with `el` an element."
+// Spec: k.escapes, clause "R1018 is one finding for `supervise(ctx, 'jobs.run', f, T)` in a library's file (a file of a `"keel": "library"` package, k.library); R1019 one for `Symbol.for(name)` with `name` a parameter and none for `Symbol.for('app.key')`; R1020 one each for `window.addEventListener(name, h)` and `process.on(name, h)` with `name` a parameter, and none for `el.addEventListener(name, h)` with `el` an element."
 // Spec: k.supervise, clause "`keel review` reports one R1018 for each `supervise` call of a library's file, and none for a file with no such call."
 // Spec: k.realm, clause "`keel review` reports one R1019 for `Symbol.for(name)` with `name` a parameter in `modules/m/a.ts`, and none for `Symbol.for('app.key')`."
 // k.escapes, Codes "R1018 | medium, opt-in | a `supervise` call (k.supervise)"; "R1019 | critical | a `Symbol.for` call whose argument does not fold to a string (k.realm)"; "R1020 | high | `addEventListener` on `globalThis`, `window` or `self`, or bare, or `process.on`, `once`, `addListener` or `prependListener`, with an event name that is no literal (k.unsafe Other spellings)". The table rows are CASES in review-cases.ts.
 // Seed 1337 (no generated input: the forms are source text). Each case writes one repository and reads one review.
-// Assumption: "a library's file" is a file under `src/` of a workspace folder whose `package.json` has `"keel": "library"`.
+// Reading: "a library's file" is a file of a package whose `package.json` has `"keel": "library"` (k.library); the fixture puts them under `src/` of a workspace folder.
 import { testTime } from "@keel/tooling/test-time";
 import { expect, test } from "vitest";
 import { PROJECT, ofCode, range, review, withRepo } from "./review-support.ts";
@@ -17,7 +17,7 @@ const SUPERVISE =
   "import { supervise } from '@keel/ctx';\nimport type { Ctx } from '@keel/ctx';\ndeclare const ctx: Ctx;\ndeclare const f: () => number;\ndeclare const T: { code: 'm.t'; message: string; data: null };\nexport const r = supervise(ctx, 'jobs.run', f, T);\n";
 
 test(
-  "R1018 is one finding for `supervise(ctx, 'jobs.run', f, T)` in a library's file",
+  "R1018 is one finding for `supervise(ctx, 'jobs.run', f, T)` in a library's file (a file of a `\"keel\": \"library\"` package, k.library)",
   () => {
     const h = hits({ ...LIB, "libs/jobs/src/run.ts": SUPERVISE }, "R1018");
     expect(h).toHaveLength(1);
