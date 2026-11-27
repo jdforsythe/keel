@@ -80,21 +80,24 @@ export function workflowRuns(yaml) {
 }
 
 /**
- * The generated workflow's own shell steps, as a pull request runs them: the project committed on `main`, pushed to a
- * local bare `origin`, a change on a branch; each job's `run:` with `BASE_REF=main`, `GITHUB_OUTPUT` and `RUNNER_TEMP`.
+ * The generated workflow's own shell steps, as a pull request runs them: the project committed on `trunk` (a default
+ * branch other than `main`, so a step that names `main` fails), pushed to a local bare `origin`, a change on a branch;
+ * each job's `run:` with `BASE_REF=trunk`, `GITHUB_OUTPUT` and `RUNNER_TEMP`.
  * GitHub's expressions a step names (`${{ github.base_ref }}`) are replaced as GitHub does. GitHub's `uses:` steps (checkout, the manager's and Node's setup, the upload) are not run: the folder already holds
  * the checkout and the install; `docker build` is not run either (no daemon on every machine). Resolves the failed
  * step's label and output, or undefined.
  */
+const BASE = "trunk";
+
 async function pullRequestPath(dir, kind) {
   const git = (line) => sh(`git -c user.email=smoke@keel.invalid -c user.name=smoke ${line}`, dir);
   for (const line of [
-    "init -q -b main",
+    `init -q -b ${BASE}`,
     "add -A",
     "commit -q -m init",
     "init -q --bare ../origin.git",
     "remote add origin ../origin.git",
-    "push -q origin main",
+    `push -q origin ${BASE}`,
     "fetch -q origin",
     "checkout -q -b change",
   ]) {
@@ -109,14 +112,14 @@ async function pullRequestPath(dir, kind) {
   made.push(temp);
   const outputs = join(temp, "github-output");
   await writeFile(outputs, "");
-  const env = { BASE_REF: "main", GITHUB_OUTPUT: outputs, RUNNER_TEMP: temp, GITHUB_EVENT_NAME: "pull_request" };
+  const env = { BASE_REF: BASE, GITHUB_OUTPUT: outputs, RUNNER_TEMP: temp, GITHUB_EVENT_NAME: "pull_request" };
   for (const { job, script } of workflowRuns(await readFile(join(dir, ".github", "workflows", "ci.yml"), "utf8"))) {
     if (script.startsWith("docker ")) continue;
     if (job !== "keel-paths" && job !== "review" && !(await readFile(outputs, "utf8")).includes(`${job}=true`))
       return { label: `${job} was not marked to run`, out: await readFile(outputs, "utf8") };
     // GitHub replaces its expressions before the shell sees a step; only the ones a pull request's steps use are known.
     const expanded = script
-      .replaceAll("${{ github.base_ref }}", "main")
+      .replaceAll("${{ github.base_ref }}", BASE)
       .replaceAll("${{ github.event_name }}", "pull_request");
     if (expanded.includes("${{")) return { label: `${job}: an expression the smoke does not know`, out: expanded };
     const r = await sh(`set -eu\n${expanded}`, dir, env);
