@@ -66,25 +66,25 @@ No printed command fetches a package the project's install did not.
 **Rules.** E1360 the folder holds files (fix: name a new folder, or add `--existing`) · E1361 `--existing` and a file the project writes exists (fix: move it aside, or use a new folder) · E1362 Node older than 22.15 (fix: install Node 22.15 or later) · E1363 the workspace has `@keel/cli` at another version (fix: `pnpm create @keel/app@<that version>`) · W1364 the workspace's package globs leave the folder out (fix: add it to them) · E1365 a write failed; this run's files are removed (fix: free the path or its permission). Names are E1352, flags E1052 (`--adapter` with `--library`, a second folder, an unknown flag), links E1357.
 
 **Conformance.**
-1. With standard input an open pipe that nothing writes and no terminal, `create-app shop` in an empty folder exits 0 and writes `shop/`.
-2. `create-app` with no argument, in an empty folder `shop`, writes the project into it, named `shop`.
-3. The default project's files are exactly the `client` row, with one `.claude/skills/<name>/SKILL.md` per skill `keel docs` lists.
-4. `--adapter static` writes the same paths with `adapter: "static"` in `topology.ts`; `--adapter node` adds exactly `modules/app/loadHome.server.ts`, `deploy/web/Dockerfile` and `deploy/compose.yaml`.
-5. For each adapter the tree equals, byte for byte, the one `keel scaffold project` writes with that adapter from a `@keel/cli` of create's version and the same `npm_config_user_agent`.
-6. Every `@keel/*` entry of an app's `package.json` is create's version with no range, and `engines.node` is `>=22.15`.
-7. A `client` or `static` project has no file named `*.server.ts`, no `deploy/` folder, and no file outside `AGENTS.md` and `.claude/` holding `KEEL_SECRET`, `createApp` or `identity`.
-8. `--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`.
-9. In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project.
-10. With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written.
-11. Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was.
-12. A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written.
-13. `createPlan` given Node 22.14.0 returns E1362 and no file.
-14. With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: "npm@10.9.0"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`.
-15. With `yarn/4.5.0`, `.yarnrc.yml` holds `nodeLinker: node-modules`; with no user agent, `package.json` has no `packageManager` and the commands are pnpm's.
-16. Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project.
-17. With `node_modules/@keel/cli` at another version above the target, `create-app` reports E1363 naming both versions and writes nothing.
-18. `--adapter node --library @a/b`, a second folder argument and `--nope` are each E1052, exit 2, nothing written.
-19. Run as `node --permission` with reads allowed, writes allowed only in the folder, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project.
-20. In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints the same records and writes nothing.
-21. `@keel/create-app`'s `skills/<name>/SKILL.md` equal `keel docs <name>` of `@keel/cli` at the same version, byte for byte.
-22. From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --check`, and in each `keel docs --sync` writes nothing.
+- With standard input an open pipe that nothing writes and no terminal, `create-app shop` in an empty folder exits 0 and writes `shop/`.
+- `create-app` with no argument, in an empty folder `shop`, writes the project into it, named `shop`.
+- The default project's files are exactly the `client` row, with one `.claude/skills/<name>/SKILL.md` per skill `keel docs` lists.
+- `--adapter static` writes the same paths with `adapter: "static"` in `topology.ts`; `--adapter node` adds exactly `modules/app/loadHome.server.ts`, `deploy/web/Dockerfile` and `deploy/compose.yaml`.
+- For each adapter the tree equals, byte for byte, the one `keel scaffold project` writes with that adapter from a `@keel/cli` of create's version and the same `npm_config_user_agent`.
+- Every `@keel/*` entry of an app's `package.json` is create's version with no range, and `engines.node` is `>=22.15`.
+- A `client` or `static` project has no file named `*.server.ts`, no `deploy/` folder, and no file outside `AGENTS.md` and `.claude/` holding `KEEL_SECRET`, `createApp` or `identity`.
+- `--library @acme/charts` writes the `library` files at the folder's root with `.gitignore` and the agent files, and `package.json` names `@acme/charts`.
+- In a folder holding `notes.txt`, `create-app` reports E1360, exits 1 and writes nothing; in one holding only `.git` and `.DS_Store` it writes the project.
+- With `--existing`, a folder holding `README.md` gets the project and its `README.md` unchanged, and one holding `package.json` gets E1361 naming `package.json` and nothing written.
+- Run by a user whom file modes bind (not root), with `--existing` and an empty read-only `public/`, `create-app` reports E1365 naming `public/keel-mark.svg` and leaves the folder as it was.
+- A folder `My Site` is E1352 whose message holds `--name my-site`; `--name vite` and `--library charts` are each E1352, nothing written.
+- `createPlan` given Node 22.14.0 returns E1362 and no file.
+- With `npm_config_user_agent` `npm/10.9.0 node/v22.15.0`, `package.json` has `packageManager: "npm@10.9.0"`, the CI workflow runs `npm ci`, and the next records are `npm install` and `npx --no keel dev`, `check`, `test`, `build`.
+- With `yarn/4.5.0`, `.yarnrc.yml` holds `nodeLinker: node-modules`; with no user agent, `package.json` has no `packageManager` and the commands are pnpm's.
+- Below a folder whose `pnpm-workspace.yaml` lists `apps/*`, `create-app apps/b` writes no `turbo.json`, CI workflow or `packageManager`, and its install record has `dir` `../..`; `create-app tools/b` there reports W1364 and writes the project.
+- With `node_modules/@keel/cli` at another version above the target, `create-app` reports E1363 naming both versions and writes nothing.
+- `--adapter node --library @a/b`, a second folder argument and `--nope` are each E1052, exit 2, nothing written.
+- Run as `node --permission` with reads allowed, writes allowed only in the folder, addons allowed and no child process or worker, `create-app shop` exits 0 and writes the project.
+- In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints the same records and writes nothing.
+- `@keel/create-app`'s `skills/<name>/SKILL.md` equal `keel docs <name>` of `@keel/cli` at the same version, byte for byte.
+- From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --check`, and in each `keel docs --sync` writes nothing.
