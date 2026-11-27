@@ -17,6 +17,8 @@ import type { Raw } from "./Raw.ts";
 import { alwaysExits } from "./alwaysExits.ts";
 import { foldString } from "./foldString.ts";
 import { okFacts } from "./okFacts.ts";
+import { reviewedProof } from "./reviewedProof.ts";
+import { wideExpect } from "./wideExpect.ts";
 
 /** A TypeScript suppression comment, as E1757 reads one. */
 /** A ts-suppression comment: a line of its text starts with a directive, leading white space, `/` and `*` aside. */
@@ -181,7 +183,7 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
   const unsafeSpans: { start: number; end: number }[] = [];
   const predicate = (n: FunctionNode | ArrowFunctionExpression): void => {
     if (n.body === null || n.returnType?.typeAnnotation.type !== "TSTypePredicate") return;
-    if (unsafeSpans.some((s) => n.start >= s.start && n.end <= s.end)) return;
+    if (unsafeSpans.some((s) => n.start >= s.start && n.end <= s.end) || !reviewedProof(n)) return;
     add("R1015", n.start, n.end);
   };
   const isDefectCall = (c: Expression): boolean =>
@@ -257,6 +259,10 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
       const a0 = n.arguments[0];
       const arg = a0 === undefined || a0.type === "SpreadElement" ? undefined : a0;
       for (const a of n.arguments) if (a.type !== "SpreadElement") evalRef(a);
+      const attempted =
+        (c.type === "Identifier" && c.name === "attempt") ||
+        (c.type === "MemberExpression" && !c.computed && c.property.type === "Identifier" && c.property.name === "attempt");
+      if (attempted && wideExpect(parsed.program, n.arguments[1])) add("R1017", n.start, n.end);
       if (c.type === "Identifier") {
         if (c.name === "unsafe") {
           unsafeCalls++;

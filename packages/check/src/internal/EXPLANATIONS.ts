@@ -1628,10 +1628,17 @@ const ROWS: readonly Row[] = [
   ],
   [
     "R1015",
-    "a type predicate or assertion outside unsafe(): the type checker takes its claim on trust",
-    "Low. Read whether its body checks every property its type names.",
-    "x is T over a typeof object test -> check each property T names, or move it into unsafe()",
-    "k.escapes, k.unsafe",
+    "a type predicate or assertion proven by structure or by its module's own set",
+    "Low. Read whether each check holds what the type names, and that only the module adds to its set.",
+    "a property check missing -> add it, or prove the type by a schema's parse(x).ok",
+    "k.escapes, k.identity",
+  ],
+  [
+    "R1017",
+    "an attempt whose expect returns an error for a value tested only by instanceof Error, or by nothing",
+    "Medium. Such an expect turns a bug's throw into an expected failure.",
+    "x instanceof Error -> x instanceof Error && x.name === 'CardError'",
+    "k.escapes, k.attempt",
   ],
   [
     "R1014",
