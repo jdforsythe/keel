@@ -2,6 +2,7 @@
 // Seed: 1337 (fixed project). No `test.skip`: the case is a plain test and fails until RFC 0249 is built.
 // The `keel check` half of the clause's `breakpoint` token `print`: the project's `tokens.ts` evaluated is E1807 at `tokens.ts` line 1, column 1 (k.a11y-static Tokens). The compiled CSS and the type error are packages/ui/conformance/print-props.test.ts.
 // ASSUMED, as a11y-static-codes-cli.test.ts: a diagnostic record is `{ kind: "diag", code, path, line, col }`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, it } from "vitest";
 import { TOPOLOGY, keelProject } from "./a11y-project-support.ts";
 import { keel, removeProject } from "./test-sim-project.ts";
@@ -24,16 +25,24 @@ const diags = (breakpoint: string) => {
 };
 
 describe("k.aria: a `breakpoint` token `print`", () => {
-  it("a `breakpoint` token `print` is one E1807 at `tokens.ts` line 1, column 1, and exits 1", () => {
-    const run = diags('print: "600px"');
-    const d = run.records.filter((r) => r.kind === "diag" && r.code === "E1807");
-    expect(d).toHaveLength(1);
-    expect(d[0]).toMatchObject({ path: "tokens.ts", line: 1, col: 1 });
-    expect(run.status).toBe(1);
-  }, 180_000);
+  it(
+    "a `breakpoint` token `print` is one E1807 at `tokens.ts` line 1, column 1, and exits 1",
+    () => {
+      const run = diags('print: "600px"');
+      const d = run.records.filter((r) => r.kind === "diag" && r.code === "E1807");
+      expect(d).toHaveLength(1);
+      expect(d[0]).toMatchObject({ path: "tokens.ts", line: 1, col: 1 });
+      expect(run.status).toBe(1);
+    },
+    fixedTime(180_000),
+  );
 
-  it("a breakpoint named `printer` is no E1807", () => {
-    const run = diags('printer: "600px"');
-    expect(run.records.filter((r) => r.kind === "diag" && r.code === "E1807")).toEqual([]);
-  }, 180_000);
+  it(
+    "a breakpoint named `printer` is no E1807",
+    () => {
+      const run = diags('printer: "600px"');
+      expect(run.records.filter((r) => r.kind === "diag" && r.code === "E1807")).toEqual([]);
+    },
+    fixedTime(180_000),
+  );
 });

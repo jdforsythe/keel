@@ -8,11 +8,12 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { run } from "@keel/cli";
 import fc from "fast-check";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, test } from "vitest";
 import { TOPOLOGY, keelProject } from "./a11y-project-support.ts";
 import { keel, removeProject } from "./test-sim-project.ts";
 
-const SLOW = 180_000;
+const SLOW = fixedTime(180_000);
 const SEED = 1337;
 const created: string[] = [];
 afterAll(() => {

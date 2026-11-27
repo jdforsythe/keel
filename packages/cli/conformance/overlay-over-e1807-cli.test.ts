@@ -2,6 +2,7 @@
 // Seed: 1337 (fixed project). No `test.skip`: the case is a plain test and fails until RFC 0249 is built.
 // The `keel check` half of the clause's `over: ['nope']`: an `over` naming no color token the same tokens hold fails `TokenSchema` at `overlay.<name>.over`, so the project's `tokens.ts` is E1807 at `tokens.ts` line 1, column 1 (k.a11y-static Tokens) and no element is judged: no E1804 or E1817 is reported for an element using the overlay. The unlisted-backdrop E1817 (check only) is packages/check/conformance/combinations.test.ts; that the render check reports no E1817 is a harness case owed to RFC 0244's runner.
 // ASSUMED, as a11y-static-codes-cli.test.ts: a diagnostic record is `{ kind: "diag", code, path, line, col }`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, it } from "vitest";
 import { TOPOLOGY, keelProject } from "./a11y-project-support.ts";
 import { keel, removeProject } from "./test-sim-project.ts";
@@ -26,17 +27,25 @@ const run = (over: string) => {
 };
 
 describe("k.values: an overlay's `over`", () => {
-  it("an `over` naming no color token is one E1807 at `tokens.ts` line 1, column 1, with no E1804 or E1817, and exits 1", () => {
-    const r = run('"nope"');
-    const d = r.records.filter((x) => x.kind === "diag");
-    expect(d.filter((x) => x.code === "E1807")).toHaveLength(1);
-    expect(d.find((x) => x.code === "E1807")).toMatchObject({ path: "tokens.ts", line: 1, col: 1 });
-    expect(d.filter((x) => x.code === "E1804" || x.code === "E1817")).toEqual([]);
-    expect(r.status).toBe(1);
-  }, 180_000);
+  it(
+    "an `over` naming no color token is one E1807 at `tokens.ts` line 1, column 1, with no E1804 or E1817, and exits 1",
+    () => {
+      const r = run('"nope"');
+      const d = r.records.filter((x) => x.kind === "diag");
+      expect(d.filter((x) => x.code === "E1807")).toHaveLength(1);
+      expect(d.find((x) => x.code === "E1807")).toMatchObject({ path: "tokens.ts", line: 1, col: 1 });
+      expect(d.filter((x) => x.code === "E1804" || x.code === "E1817")).toEqual([]);
+      expect(r.status).toBe(1);
+    },
+    fixedTime(180_000),
+  );
 
-  it("an `over` naming a held color token is no E1807", () => {
-    const r = run('"card"');
-    expect(r.records.filter((x) => x.kind === "diag" && x.code === "E1807")).toEqual([]);
-  }, 180_000);
+  it(
+    "an `over` naming a held color token is no E1807",
+    () => {
+      const r = run('"card"');
+      expect(r.records.filter((x) => x.kind === "diag" && x.code === "E1807")).toEqual([]);
+    },
+    fixedTime(180_000),
+  );
 });
