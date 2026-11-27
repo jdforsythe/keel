@@ -4,7 +4,7 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2806,
+    "example": 2813,
     "probabilistic": 467,
     "exhaustive": 21,
     "proven": 92,
@@ -4443,11 +4443,11 @@
     },
     {
       "item": "k.cli#2b8ad806",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#98dc8d48",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.cli#07d28201",
@@ -4503,7 +4503,7 @@
     },
     {
       "item": "k.cli#15fcca56",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compat#cd449a1a",
@@ -5775,19 +5775,19 @@
     },
     {
       "item": "k.explain#bea8d924",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.explain#f43d664d",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.explain#a3e6a41a",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.explain#e1314763",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.formats#a4a148e7",

@@ -1,5 +1,5 @@
 {
-  "commit": "bd2bcfc1a49db16c94359fd5bf3b9b345440fa1d",
+  "commit": "edc926c79d8a0a76c714d8e5abb8c08ac35bd2e2",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1188,7 +1188,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-27T21:36:09.584Z",
+  "generatedAt": "2026-11-27T22:17:47.509Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1422,10 +1422,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 1347,
+        "example": 1354,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 11,
+        "none": 4,
         "probabilistic": 259,
         "proven": 53
       },
@@ -1562,16 +1562,16 @@
         },
         "k.cli": {
           "byRung": {
-            "example": 13,
+            "example": 16,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 3,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 16,
-          "verified": 13
+          "verified": 16
         },
         "k.compat": {
           "byRung": {
@@ -1848,16 +1848,16 @@
         },
         "k.explain": {
           "byRung": {
-            "example": 4,
+            "example": 8,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 4,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 8,
-          "verified": 4
+          "verified": 8
         },
         "k.formats": {
           "byRung": {
@@ -3187,10 +3187,10 @@
         }
       },
       "total": 1676,
-      "verified": 1665
+      "verified": 1672
     },
     "evidenceByRung": {
-      "example": 2806,
+      "example": 2813,
       "exhaustive": 21,
       "monitored": 8,
       "probabilistic": 467,
@@ -3777,7 +3777,7 @@
     "items": 3006,
     "negativeTypes": 90,
     "unsafe": 33,
-    "verified": 2935
+    "verified": 2942
   },
   "mutation": {
     "packages": {
@@ -4366,8 +4366,8 @@
         "unitFiles": 92
       },
       "packages/cli": {
-        "conformanceCases": 1117,
-        "conformanceFiles": 254,
+        "conformanceCases": 1121,
+        "conformanceFiles": 258,
         "exploreFiles": 1,
         "fails": 0,
         "otherCases": 0,
@@ -4941,8 +4941,8 @@
       }
     },
     "totals": {
-      "conformanceCases": 7475,
-      "conformanceFiles": 1603,
+      "conformanceCases": 7479,
+      "conformanceFiles": 1607,
       "exploreFiles": 21,
       "fails": 3,
       "otherCases": 0,
