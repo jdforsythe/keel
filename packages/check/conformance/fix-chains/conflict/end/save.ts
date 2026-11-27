@@ -1,10 +1,6 @@
-import { attempt } from "@keel/schema";
-import type { KeelError, Result } from "@keel/schema";
-const conflict: KeelError<"keel.conflict", Record<string, never>> = {
-  code: "keel.conflict",
-  message: "keel.conflict",
-  data: {},
-};
+import { attempt, keelError } from "@keel/schema";
+import type { Result } from "@keel/schema";
+const conflict = keelError.conflict.make({});
 export async function save(tx: () => Promise<number>, tries: number): Promise<Result<number, typeof conflict>> {
   for (let i = 0; ; i++) {
     const r = await attempt(tx, (x) => (x instanceof Error && x.name === "ConflictError" ? conflict : undefined));

@@ -393,6 +393,9 @@ const NO_FIX = [
   "E1454", // which code to rename is the author's choice
   "E1457", // k.attempt Rules: no fix; whether to parse or attempt is the author's choice
   "E1458", // k.attempt Rules: no fix; the KeelError to declare is the author's
+  "E1459", // k.attempt Rules: no fix; which Result to return is the author's
+  "E1460", // k.expect Rules: no fix; the data a message becomes is the author's
+  "E1461", // k.supervise Rules: no fix; a library owns supervised work
   "E1501", // the target route id is unknown to the checker
   "E1502", // which path to change is the author's choice
   "E1503", // the params field is the author's to write
@@ -437,6 +440,8 @@ const NO_FIX = [
   "E1762", // k.unsafe Rules: no fix; moving the predicate into unsafe() or giving it a key guard is the author's choice
   "E1801", // a look name that no `look` declares has no nearest token; the author names the look or declares it
   "E1802", // the missing prop value is the author's choice
+  "E1765", // k.realm Rules: no fix; which copy to keep is the project's dependency choice
+  "E1766", // k.realm Rules: no fix; the kernel owns those names
   "E1607", // which registered name to keep is the author's choice
   "E1803", // the replacement token is the author's choice
   "E1804", // which token pair to use is a design choice

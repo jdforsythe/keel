@@ -766,9 +766,81 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [
       f(
         "src/f.ts",
-        "import { err } from '@keel/schema'\nexport const f = () => err({ code: 'm.x', message: 'm.x', data: null })\n",
+        "import { err, keelError } from '@keel/schema'\nexport const f = () => err(keelError.denied.make({}))\n",
       ),
     ],
+  },
+  E1459: {
+    bad: [
+      f(
+        "src/f.ts",
+        "import { ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ndeclare const r: Result<number, KeelError<'m.e', null>>\nexport const f = () => ok(r)\n",
+      ),
+    ],
+    clean: [f("src/f.ts", "import { ok } from '@keel/schema'\nexport const f = () => ok(1)\n")],
+  },
+  E1460: {
+    bad: [
+      f(
+        "src/f.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\ndeclare const text: string\nexport const f = E.make({}, text)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\nexport const f = E.make({}, 'sign in')\n",
+      ),
+    ],
+  },
+  E1461: {
+    bad: [
+      mod("m", [], []),
+      f(
+        "modules/m/a.ts",
+        "import { supervise } from '@keel/ctx'\nimport type { Ctx } from '@keel/ctx'\nimport type { KeelError } from '@keel/schema'\ndeclare const ctx: Ctx\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const r = supervise(ctx, 'm.run', f, T)\n",
+      ),
+    ],
+    clean: [
+      mod("m", [], []),
+      f(
+        "modules/m/a.ts",
+        "import { attempt } from '@keel/schema'\nimport type { KeelError } from '@keel/schema'\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const r = attempt(f, (x) => (x instanceof RangeError ? T : undefined))\n",
+      ),
+    ],
+  },
+  E1765: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "package.json",
+        JSON.stringify({ name: "app", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0", dep: "1.0.0" } }),
+      ),
+      f("node_modules/@keel/schema/package.json", JSON.stringify({ name: "@keel/schema", version: "1.0.0" })),
+      f(
+        "node_modules/dep/package.json",
+        JSON.stringify({ name: "dep", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0" } }),
+      ),
+      f(
+        "node_modules/dep/node_modules/@keel/schema/package.json",
+        JSON.stringify({ name: "@keel/schema", version: "1.0.0" }),
+      ),
+    ],
+    clean: [
+      f(
+        "package.json",
+        JSON.stringify({ name: "app", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0", dep: "1.0.0" } }),
+      ),
+      f("node_modules/@keel/schema/package.json", JSON.stringify({ name: "@keel/schema", version: "1.0.0" })),
+      f(
+        "node_modules/dep/package.json",
+        JSON.stringify({ name: "dep", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0" } }),
+      ),
+    ],
+  },
+  E1766: {
+    bad: [mod("m", [], []), f("modules/m/a.ts", "export const k = Symbol.for('keel.kernel')\n")],
+    clean: [mod("m", [], []), f("modules/m/a.ts", "export const k = Symbol.for('app.key')\n")],
   },
   E1256: {
     bad: [
