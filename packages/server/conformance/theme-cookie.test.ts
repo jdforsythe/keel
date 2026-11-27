@@ -82,13 +82,27 @@ describe("k.schemes: a node document's theme on the first paint", () => {
     await fc.assert(
       fc.asyncProperty(
         fc.oneof(
-          fc.constantFrom("slate", "forest", "Slate", "slate ", "default", "light", "", "slate,forest", "x"),
+          fc.constantFrom(
+            "slate",
+            "forest",
+            "Slate",
+            "slate%20",
+            "slate ",
+            "default",
+            "light",
+            "",
+            "slate,forest",
+            "x",
+          ),
           fc.stringMatching(/^[a-z][a-z0-9]{0,8}$/),
         ),
         fc.constantFrom("a=1; ", "", "keel-scheme=dark; "),
         async (value, other) => {
           const doc = await serve(json(["light", "dark"], ["slate", "forest"]), `${other}keel-theme=${value}`);
-          expect(theme(doc)).toBe(value === "slate" || value === "forest" ? value : null);
+          // A header's field value holds no trailing white space (RFC 9110; `Headers` trims it, as does a cookie-pair's
+          // parse): `slate ` reaches the server as `slate`. `slate%20` keeps its tail and is no listed theme.
+          const sent = value.trimEnd();
+          expect(theme(doc)).toBe(sent === "slate" || sent === "forest" ? sent : null);
         },
       ),
       { seed: SEED, numRuns: 15 },
