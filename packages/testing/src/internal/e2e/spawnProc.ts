@@ -22,6 +22,8 @@ function hookExit(): void {
 
 /** A process that loses its port to another (E1560 `fails to bind`) is started again on another, at most 3 times. */
 const RETRIES = 3;
+/** The pause between readiness probes that got no answer. */
+const PROBE_GAP = 100;
 
 /**
  * A process `serve` runs: `node <args>` in `cwd` with `env(port)` on a free port (`port` given, the one a restart
@@ -65,13 +67,23 @@ export function spawnProc(opts: {
         () => finish({ why: "silent", detail: `no HTTP answer to GET / within ${seconds(opts.readyMs)}` }),
         opts.readyMs,
       );
+      // Once begun, the probe asks again until an answer or the end of `readyMs`: a slow first answer is awaited
+      // whole, a refused or reset connection is asked again after PROBE_GAP.
+      const deadline = Date.now() + opts.readyMs;
       let probing = false;
       const probe = async (): Promise<void> => {
         if (probing || settled) return;
         probing = true;
-        const ok = await answersAt(`http://127.0.0.1:${at}`);
+        while (!settled) {
+          const left = deadline - Date.now();
+          if (left <= 0) break;
+          if (await answersAt(`http://127.0.0.1:${at}`, left)) {
+            finish(undefined);
+            break;
+          }
+          await new Promise((wake) => setTimeout(wake, PROBE_GAP));
+        }
         probing = false;
-        if (ok) finish(undefined);
       };
       const onLine = (line: string): void => {
         if (line.trim() === "") return;
