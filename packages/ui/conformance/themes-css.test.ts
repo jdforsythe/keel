@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Spec: k.schemes, clause "With the first case's tokens and `themes: { slate: { color: { fg: '#222222' } } }`, the CSS opens with `@layer keel.tokens,keel.theme,keel.contrast,keel.print;`, the first case's blocks sit in `@layer keel.tokens`, and `@layer keel.theme` holds `:root[data-k-theme=\"slate\"]` declaring `--k-color-fg:#222222`; with `slate`'s `fg` `{ light: '#222222', dark: '#dddddd' }`, it also holds `:root[data-k-theme=\"slate\"]:not([data-k-scheme=\"light\"])` declaring `--k-color-fg:#dddddd` under `@media screen and (prefers-color-scheme: dark)`."
 // Spec: k.schemes, clause "`themes: { hc: { when: 'contrast', color: { fg: '#000000' } } }` puts `:root` declaring `--k-color-fg:#000000` under `@media (prefers-contrast: more)` in `@layer keel.contrast`, and `themes: { paper: { when: 'print', color: { bg: '#ffffff' } } }` puts `:root` declaring `color-scheme:light`, `print-color-adjust:exact` and `--k-color-bg:#ffffff` under `@media print` in `@layer keel.print`; in each, every rule declaring `--k-color-fg:#eeeeee` is under an `@media` whose query starts `screen`, and no `data-k-theme` is written."
 // Spec: k.aria, clause "With color tokens `fg` `{ light: '#111111', dark: '#eeeeee' }` and `bg` `{ light: '#ffffff', dark: '#111111' }`, `<Box id=\"side\" scheme=\"dark\">` renders `data-k-scheme=\"dark\"` on its element in server and client output and the CSS holds `:root [data-k-scheme=\"dark\"]` declaring `color-scheme:dark` and `--k-color-fg:#eeeeee` under `@media screen`; with no `scheme` written, the CSS holds no ` [data-k-scheme=`; `compileStyles({ tokens, usages: [{ props: { scheme: 'dark' } }] })` gives `classes` `[[]]` and CSS holding `:root [data-k-scheme=\"light\"]` and `:root [data-k-scheme=\"dark\"]` under `@media screen`; with `brandTokens`, `<Box scheme=\"dark\">` is one E1814 at the attribute with message `scheme=\"dark\" needs schemes light and dark; the tokens have light only`."
@@ -36,7 +37,10 @@ describe("k.schemes: themes in layers", () => {
     const media = mediaBlocks(tokens, "prefers-color-scheme:dark");
     expect(media).toHaveLength(1);
     expect(ruleBody(media[0] ?? "", ':root:not([data-k-scheme="light"])') ?? "").toContain("--k-color-fg:#eeeeee");
-    expect(ruleBody(withoutMedia(tokens), ':root[data-k-scheme="dark"]') ?? "").toContain("color-scheme:dark");
+    // k.schemes CSS: `S[data-k-scheme="dark"]` sits under `screen` and `M` (bare for the top level), never outside an `@media`.
+    const screen = mediaBlocks(tokens, "screen").join("");
+    expect(ruleBody(screen, ':root[data-k-scheme="dark"]') ?? "").toContain("color-scheme:dark");
+    expect(ruleBody(withoutMedia(tokens), ':root[data-k-scheme="dark"]')).toBeNull();
     expect(layerBody(outOf(), "keel.theme") ?? "").not.toContain("#111111");
   });
 

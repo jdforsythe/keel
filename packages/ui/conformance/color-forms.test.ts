@@ -187,11 +187,21 @@ describe("k.values: the six opaque forms", () => {
 
 describe("k.values: one luminance per form, computed exactly", () => {
   test("each form's contrast against black is its luminance from the stated formula: `(L + 0.05) / 0.05`", () => {
+    // Inside or outside sRGB is computed (a linear channel below 0 or above 1 by more than 0.000001, k.values Contrast), not
+    // assumed: `color(display-p3 0.67 0.29 0.1)` has a linear sRGB blue of about -0.0024, so it is outside, and an outside
+    // color is judged as the lower of its as-given ratio and its gamut-mapped one: at most the formula's, never above it.
     for (const form of FORMS) {
-      expect(inSrgb(form), `${form} is inside sRGB`).toBe(true);
-      expect(contrast(form, BLACK), form).toBeCloseTo((colorLuminance(form) + 0.05) / 0.05, 2);
-      expect(contrast(WHITE, form), form).toBeCloseTo(1.05 / (colorLuminance(form) + 0.05), 2);
+      const given = (colorLuminance(form) + 0.05) / 0.05;
+      const givenOnWhite = 1.05 / (colorLuminance(form) + 0.05);
+      if (inSrgb(form)) {
+        expect(contrast(form, BLACK), form).toBeCloseTo(given, 2);
+        expect(contrast(WHITE, form), form).toBeCloseTo(givenOnWhite, 2);
+      } else {
+        expect(contrast(form, BLACK), form).toBeLessThanOrEqual(given + 0.005);
+        expect(contrast(WHITE, form), form).toBeLessThanOrEqual(givenOnWhite + 0.005);
+      }
     }
+    expect(FORMS.filter((f) => !inSrgb(f))).toEqual(["color(display-p3 0.67 0.29 0.1)"]);
   });
 
   test("hex and `rgb()` of one color have one luminance, whatever the channels", () => {

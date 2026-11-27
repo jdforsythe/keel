@@ -50,7 +50,7 @@ describe("k.aria: Print", () => {
             { props: { p: v }, breakpoint: "print" },
           ]);
           const n = norm(outsideBaseLayer(css));
-          const media = [...n.matchAll(/@media([^{]*)\{/g)].map((m) => m[1] ?? "");
+          const media = [...n.matchAll(/@media([^{]*)\{/g)].map((m) => (m[1] ?? "").trim());
           const last = media.lastIndexOf("print");
           expect(last).toBeGreaterThanOrEqual(0);
           expect(media.slice(last + 1).filter((m) => m.includes("min-width"))).toEqual([]);
