@@ -1,12 +1,12 @@
 import type { StorageReport } from "@keel/ctx";
-import { attempt } from "@keel/schema";
+import { s } from "@keel/schema";
 import pg from "pg";
 import type { StorageListening } from "./StorageListening.ts";
 import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
 /** The keys of a `keel_storage` payload from another driver, else nothing: its own token's, and anything not shaped `{"o","k"}`, is dropped. */
 function foreignKeys(payload: string, own: string): readonly string[] | undefined {
-  const read = attempt((): unknown => JSON.parse(payload));
+  const read = s.json.parseJson(payload);
   if (!read.ok) return undefined;
   const parsed = read.value;
   if (typeof parsed !== "object" || parsed === null) return undefined;
@@ -24,13 +24,14 @@ function foreignKeys(payload: string, own: string): readonly string[] | undefine
  */
 export function storageListener(url: URL, token: string): StorageListening {
   const watchers = new Set<(report: StorageReport) => void>();
-  let opening: Promise<pg.Client> | undefined;
+  /** The listening client being opened: `client` rejects as `open` did, `settled` is the client or, failed, nothing. */
+  let opening: { readonly client: Promise<pg.Client>; readonly settled: Promise<pg.Client | undefined> } | undefined;
   let live: pg.Client | undefined;
   const drop = (client: pg.Client, lost: boolean): void => {
     client.removeAllListeners();
     client.on("error", () => undefined);
     if (live !== client) {
-      void attempt(() => client.end());
+      void client.end();
       return;
     }
     live = undefined;
@@ -38,9 +39,9 @@ export function storageListener(url: URL, token: string): StorageListening {
     const gone = [...watchers];
     watchers.clear();
     if (lost) for (const on of gone) on({ kind: "lost" });
-    void attempt(() => client.end());
+    void client.end();
   };
-  const open = async (): Promise<pg.Client> => {
+  const open = async (settle: (client: pg.Client | undefined) => void): Promise<pg.Client> => {
     const client = new pg.Client({
       connectionString: verifiedSslmode(url.href),
       application_name: `keel-storage-${process.pid}`,
@@ -52,8 +53,8 @@ export function storageListener(url: URL, token: string): StorageListening {
       if (m.channel !== "keel_storage" || m.payload === undefined) return;
       const keys = foreignKeys(m.payload, token);
       if (keys === undefined || keys.length === 0) return;
-      // A watcher's throw never reaches the connection.
-      for (const on of [...watchers]) void attempt(() => on({ kind: "committed", keys }));
+      // A watcher's throw never reaches the connection: each runs in its own microtask, and a throw goes to the process.
+      for (const on of [...watchers]) queueMicrotask(() => on({ kind: "committed", keys }));
     });
     let listening = false;
     try {
@@ -64,33 +65,40 @@ export function storageListener(url: URL, token: string): StorageListening {
       if (!listening) {
         client.removeAllListeners();
         client.on("error", () => undefined);
-        void (await attempt(() => client.end()));
+        await client.end();
       }
+      settle(listening ? client : undefined);
     }
     live = client;
     return client;
+  };
+  const start = (): NonNullable<typeof opening> => {
+    let settle = (_client: pg.Client | undefined): void => undefined;
+    const settled = new Promise<pg.Client | undefined>((resolve) => {
+      settle = resolve;
+    });
+    return { client: open(settle), settled };
   };
   const stopIfIdle = async (): Promise<void> => {
     if (watchers.size > 0 || opening === undefined) return;
     const pending = opening;
     opening = undefined;
     live = undefined;
-    const settled = await attempt(() => pending);
-    if (!settled.ok) return;
-    const client = settled.value;
+    const client = await pending.settled;
+    if (client === undefined) return;
     client.removeAllListeners();
     client.on("error", () => undefined);
-    void (await attempt(() => client.end()));
+    await client.end();
   };
   return {
     watch: async (on) => {
       const mine = on;
       watchers.add(mine);
-      opening ??= open();
+      opening ??= start();
       const pending = opening;
       let opened = false;
       try {
-        await pending;
+        await pending.client;
         opened = true;
       } finally {
         if (!opened) {

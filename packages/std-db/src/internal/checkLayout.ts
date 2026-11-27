@@ -9,7 +9,9 @@ export function checkLayout(stored: unknown): boolean {
   if (stored === undefined || stored === null) return true;
   const n = typeof stored === "string" && /^[1-9][0-9]{0,8}$/.test(stored) ? Number(stored) : 0;
   if (n > LAYOUT)
-    return defect(`database layout ${n} is newer than this std.db's ${LAYOUT}; upgrade @keel/std-db`, "E2152");
+    return defect("the database layout is newer than this std.db's; upgrade @keel/std-db", "E2152", {
+      data: { layout: n, known: LAYOUT },
+    });
   if (n < 1) return defect("KEEL_DATABASE_URL names a database whose keel_meta layout is not a version", "E2153");
   return false;
 }

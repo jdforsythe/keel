@@ -61,14 +61,17 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
         }),
       (x) => opFailed("postgres", "open", x),
     );
-    if (!opened.ok) return defect("KEEL_DATABASE_URL: the Postgres database cannot be reached or set up", "E2153");
+    if (!opened.ok)
+      return defect("KEEL_DATABASE_URL: the Postgres database cannot be reached or set up", "E2153", {
+        cause: opened.error,
+      });
     ready = true;
   } finally {
-    if (!ready) void (await attempt(() => pool.end()));
+    if (!ready) void (await poolEnded(pool));
   }
   let closed = false;
   const live = (op: string): void => {
-    if (closed) defect(`std.db postgres: ${op} after close()`);
+    if (closed) defect("std.db postgres: a call after close()", { data: { op } });
   };
   const values = async (q: PgPool | PgClient, keys: readonly string[]) => {
     const out = new Map<string, string>();
@@ -105,7 +108,7 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
         }),
       (x) => opFailed("postgres", check ? "commit" : "set", x),
     );
-    return r.ok ? r.value : defect(r.error.message);
+    return r.ok ? r.value : defect("std.db: a storage call failed", { cause: r.error });
   };
   const readKeys = async (keys: readonly string[]) => {
     checkText(keys);
@@ -114,7 +117,7 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
       () => values(pool, keys),
       (x) => opFailed("postgres", "read", x),
     );
-    if (!r.ok) return defect(r.error.message);
+    if (!r.ok) return defect("std.db: a storage call failed", { cause: r.error });
     const found = r.value;
     return keys.map((k) => found.get(k) ?? null);
   };
@@ -134,6 +137,18 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
       await pool.end();
     },
   };
+}
+
+/**
+ * Whether `pool` ended. A failed open ends its pool on the way out; a pool that also fails to end (a refused or lost
+ * connection, or any other answer of the driver) adds nothing to the failure in flight, which is the one reported.
+ */
+async function poolEnded(pool: PgPool): Promise<boolean> {
+  const ended = await attempt(
+    () => pool.end(),
+    (x) => opFailed("postgres", "end", x),
+  );
+  return ended.ok;
 }
 
 /**
@@ -162,7 +177,11 @@ async function inTx(pool: PgPool, fn: (c: PgClient) => Promise<boolean>): Promis
   } finally {
     if (done) c.release(false);
     else {
-      const rolled = await attempt(() => c.query("rollback"));
+      // A rollback that fails, by any answer of the driver, leaves the client broken: it is dropped.
+      const rolled = await attempt(
+        () => c.query("rollback"),
+        (x) => opFailed("postgres", "rollback", x),
+      );
       c.release(!rolled.ok);
     }
   }

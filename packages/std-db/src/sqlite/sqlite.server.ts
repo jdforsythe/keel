@@ -19,11 +19,15 @@ const UPSERT = "insert into keel_kv (key, value) values (?, ?) on conflict (key)
  * Processes on one host may share the file.
  */
 export async function sqlite(url: URL): Promise<DbStorage> {
-  const opened = attempt(() => new DatabaseSync(fileURLToPath(url)));
+  const opened = attempt(
+    () => new DatabaseSync(fileURLToPath(url)),
+    (x) => opFailed("sqlite", "open", x),
+  );
   if (!opened.ok)
     return defect(
       "KEEL_DATABASE_URL: SQLite cannot open the file; check the file: URL and that its folder exists",
       "E2153",
+      { cause: opened.error },
     );
   const db = opened.value;
   let ready = false;
@@ -44,7 +48,8 @@ export async function sqlite(url: URL): Promise<DbStorage> {
       },
       (x) => opFailed("sqlite", "open", x),
     );
-    if (!setUp.ok) return defect("KEEL_DATABASE_URL: SQLite cannot open or set up the database", "E2153");
+    if (!setUp.ok)
+      return defect("KEEL_DATABASE_URL: SQLite cannot open or set up the database", "E2153", { cause: setUp.error });
     ready = true;
   } finally {
     if (!ready) db.close();
@@ -59,12 +64,12 @@ export async function sqlite(url: URL): Promise<DbStorage> {
   };
   const run = async <T>(op: string, texts: readonly (string | undefined)[], fn: () => T): Promise<T> => {
     checkText(texts);
-    if (!db.isOpen) return defect(`std.db sqlite: ${op} after close()`);
+    if (!db.isOpen) return defect("std.db sqlite: a call after close()", { data: { op } });
     const r = attempt(
       () => ({ value: fn() }),
       (x) => opFailed("sqlite", op, x),
     );
-    return r.ok ? r.value.value : defect(r.error.message);
+    return r.ok ? r.value.value : defect("std.db: a storage call failed", { cause: r.error });
   };
   return {
     get: (key) => run("get", [key], () => values([key]).get(key) ?? null),

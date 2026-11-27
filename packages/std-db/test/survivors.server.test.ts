@@ -27,30 +27,54 @@ async function rejection(p: Promise<unknown>): Promise<unknown> {
   throw new Error("the promise resolved");
 }
 const messageOf = (e: unknown): string => (e instanceof Error ? e.message : `not an Error: ${String(e)}`);
+/** The operation a call after `close()` names in its defect's data, when the message is the driver's literal. */
+const closedOp = (e: unknown, driver: string): unknown =>
+  messageOf(e) === `std.db ${driver}: a call after close()`
+    ? Reflect.get(Object(Reflect.get(Object(e), "data")), "op")
+    : e;
+/** A failed call's defect as `<driver> <op> <code>`, read from its cause's data, when its message is the literal. */
+const failedOf = (e: unknown): unknown => {
+  if (messageOf(e) !== "std.db: a storage call failed") return e;
+  const data: unknown = Reflect.get(Object(Reflect.get(Object(e), "cause")), "data");
+  return ["driver", "op", "code"].map((k) => String(Reflect.get(Object(data), k))).join(" ");
+};
 const codeOf = (e: unknown): unknown => (typeof e === "object" && e !== null ? Reflect.get(e, "code") : undefined);
 
 describe("opFailed", () => {
-  test("names the driver, the operation and the database's own error code", () => {
-    expect(opFailed("postgres", "commit", { code: "57P01" }).message).toBe("std.db postgres: commit failed (57P01)");
-    expect(opFailed("sqlite", "read", { errcode: 5 }).message).toBe("std.db sqlite: read failed (sqlite 5)");
+  test("its data names the driver, the operation and the database's own error code; its message no value", () => {
+    expect(opFailed("postgres", "commit", new Error("secret 4111")).message).toBe("std.db: a storage call failed");
+    expect(opFailed("postgres", "commit", { code: "57P01" }).data).toEqual({
+      driver: "postgres",
+      op: "commit",
+      code: "57P01",
+    });
+    expect(opFailed("sqlite", "read", { errcode: 5 }).data).toEqual({ driver: "sqlite", op: "read", code: "sqlite 5" });
     expect(
-      opFailed("sqlite", "set", Object.assign(new Error("x"), { code: "ERR_SQLITE_ERROR", errcode: 19 })).message,
-    ).toBe("std.db sqlite: set failed (sqlite 19)");
+      opFailed("sqlite", "set", Object.assign(new Error("x"), { code: "ERR_SQLITE_ERROR", errcode: 19 })).data,
+    ).toEqual({ driver: "sqlite", op: "set", code: "sqlite 19" });
   });
 
   test("a code that is not a string and an errcode that is not a number are unknown", () => {
-    expect(opFailed("postgres", "set", { code: 7 }).message).toBe("std.db postgres: set failed (unknown)");
-    expect(opFailed("sqlite", "get", { errcode: "5" }).message).toBe("std.db sqlite: get failed (unknown)");
-    expect(opFailed("sqlite", "get", { errcode: "5", code: "C" }).message).toBe("std.db sqlite: get failed (C)");
-    expect(opFailed("postgres", "read", {}).message).toBe("std.db postgres: read failed (unknown)");
-    expect(opFailed("postgres", "read", new Error("secret")).message).toBe("std.db postgres: read failed (unknown)");
+    expect(opFailed("postgres", "set", { code: 7 }).data).toEqual({ driver: "postgres", op: "set", code: "unknown" });
+    expect(opFailed("sqlite", "get", { errcode: "5" }).data).toEqual({ driver: "sqlite", op: "get", code: "unknown" });
+    expect(opFailed("sqlite", "get", { errcode: "5", code: "C" }).data).toEqual({
+      driver: "sqlite",
+      op: "get",
+      code: "C",
+    });
+    expect(opFailed("postgres", "read", {}).data).toEqual({ driver: "postgres", op: "read", code: "unknown" });
+    expect(opFailed("postgres", "read", new Error("secret")).data).toEqual({
+      driver: "postgres",
+      op: "read",
+      code: "unknown",
+    });
   });
 
   test("a thrown value that is not an object is unknown", () => {
     for (const e of [null, undefined, "code", "errcode", 5, true])
-      expect(opFailed("postgres", "read", e).message).toBe("std.db postgres: read failed (unknown)");
+      expect(opFailed("postgres", "read", e).data).toEqual({ driver: "postgres", op: "read", code: "unknown" });
     const fn = Object.assign(() => undefined, { code: "F", errcode: 3 });
-    expect(opFailed("postgres", "read", fn).message).toBe("std.db postgres: read failed (unknown)");
+    expect(opFailed("postgres", "read", fn).data).toEqual({ driver: "postgres", op: "read", code: "unknown" });
   });
 });
 
@@ -61,7 +85,7 @@ describe("checkLayout", () => {
     expect(checkLayout("1")).toBe(false);
   });
 
-  test("a newer layout is E2152 naming both versions", () => {
+  test("a newer layout is E2152, its data both versions", () => {
     for (const [stored, n] of [
       ["2", 2],
       ["10", 10],
@@ -74,7 +98,8 @@ describe("checkLayout", () => {
         thrown = e;
       }
       expect(codeOf(thrown)).toBe("E2152");
-      expect(messageOf(thrown)).toBe(`E2152 database layout ${n} is newer than this std.db's 1; upgrade @keel/std-db`);
+      expect(messageOf(thrown)).toBe("E2152 the database layout is newer than this std.db's; upgrade @keel/std-db");
+      expect(Reflect.get(Object(thrown), "data")).toEqual({ layout: n, known: 1 });
     }
   });
 
@@ -267,7 +292,7 @@ describe("postgres driver over a recording pool", () => {
 
   test("a newer layout rejects E2152 and a layout that is no version E2153, each after a rollback and ending the pool", async () => {
     for (const [value, code, message] of [
-      ["2", "E2152", "E2152 database layout 2 is newer than this std.db's 1; upgrade @keel/std-db"],
+      ["2", "E2152", "E2152 the database layout is newer than this std.db's; upgrade @keel/std-db"],
       ["zero", "E2153", "E2153 KEEL_DATABASE_URL names a database whose keel_meta layout is not a version"],
     ] as const) {
       const fake = fakePool();
@@ -401,12 +426,12 @@ describe("postgres driver over a recording pool", () => {
       if (c.text === LOCK || c.text === SELECT) throw Object.assign(new Error("secret detail"), { code: "57P01" });
       return undefined;
     };
-    expect(messageOf(await rejection(storage.commit([{ key: "a", expect: null, value: "v" }])))).toBe(
-      "std.db postgres: commit failed (57P01)",
+    expect(failedOf(await rejection(storage.commit([{ key: "a", expect: null, value: "v" }])))).toBe(
+      "postgres commit 57P01",
     );
-    expect(messageOf(await rejection(storage.set("a", "v")))).toBe("std.db postgres: set failed (57P01)");
-    expect(messageOf(await rejection(storage.read(["a"])))).toBe("std.db postgres: read failed (57P01)");
-    expect(messageOf(await rejection(storage.get("a")))).toBe("std.db postgres: read failed (57P01)");
+    expect(failedOf(await rejection(storage.set("a", "v")))).toBe("postgres set 57P01");
+    expect(failedOf(await rejection(storage.read(["a"])))).toBe("postgres read 57P01");
+    expect(failedOf(await rejection(storage.get("a")))).toBe("postgres read 57P01");
     expect(texts(fake)).toEqual([BEGIN, LOCK, "rollback", BEGIN, LOCK, "rollback", SELECT, SELECT]);
     expect(fake.released).toEqual([false, false]);
   });
@@ -417,7 +442,7 @@ describe("postgres driver over a recording pool", () => {
       if (c.text === LOCK || c.text === "rollback") throw Object.assign(new Error("gone"), { code: "08006" });
       return undefined;
     };
-    expect(messageOf(await rejection(storage.set("a", "v")))).toBe("std.db postgres: set failed (08006)");
+    expect(failedOf(await rejection(storage.set("a", "v")))).toBe("postgres set 08006");
     expect(fake.released).toEqual([true]);
   });
 
@@ -428,12 +453,12 @@ describe("postgres driver over a recording pool", () => {
     expect(fake.ended).toBe(1);
     await storage.close();
     expect(fake.ended).toBe(1);
-    expect(messageOf(await rejection(storage.commit([{ key: "a", expect: null, value: "v" }])))).toBe(
-      "std.db postgres: commit after close()",
+    expect(closedOp(await rejection(storage.commit([{ key: "a", expect: null, value: "v" }])), "postgres")).toBe(
+      "commit",
     );
-    expect(messageOf(await rejection(storage.set("a", "v")))).toBe("std.db postgres: set after close()");
-    expect(messageOf(await rejection(storage.read(["a"])))).toBe("std.db postgres: read after close()");
-    expect(messageOf(await rejection(storage.get("a")))).toBe("std.db postgres: read after close()");
+    expect(closedOp(await rejection(storage.set("a", "v")), "postgres")).toBe("set");
+    expect(closedOp(await rejection(storage.read(["a"])), "postgres")).toBe("read");
+    expect(closedOp(await rejection(storage.get("a")), "postgres")).toBe("read");
     expect(fake.calls).toEqual([]);
   });
 
@@ -505,7 +530,7 @@ describe("sqlite driver on a file", () => {
 
   test("a newer layout rejects E2152 and a layout that is no version E2153, and neither holds a lock on the file", async () => {
     for (const [value, code, message] of [
-      ["2", "E2152", "E2152 database layout 2 is newer than this std.db's 1; upgrade @keel/std-db"],
+      ["2", "E2152", "E2152 the database layout is newer than this std.db's; upgrade @keel/std-db"],
       ["zero", "E2153", "E2153 KEEL_DATABASE_URL names a database whose keel_meta layout is not a version"],
     ] as const) {
       const file = newFile();
@@ -539,12 +564,10 @@ describe("sqlite driver on a file", () => {
     await s.set("a", "v");
     await s.close();
     await s.close();
-    expect(messageOf(await rejection(s.get("a")))).toBe("std.db sqlite: get after close()");
-    expect(messageOf(await rejection(s.set("a", "v")))).toBe("std.db sqlite: set after close()");
-    expect(messageOf(await rejection(s.read(["a"])))).toBe("std.db sqlite: read after close()");
-    expect(messageOf(await rejection(s.commit([{ key: "a", expect: "v", value: "w" }])))).toBe(
-      "std.db sqlite: commit after close()",
-    );
+    expect(closedOp(await rejection(s.get("a")), "sqlite")).toBe("get");
+    expect(closedOp(await rejection(s.set("a", "v")), "sqlite")).toBe("set");
+    expect(closedOp(await rejection(s.read(["a"])), "sqlite")).toBe("read");
+    expect(closedOp(await rejection(s.commit([{ key: "a", expect: "v", value: "w" }])), "sqlite")).toBe("commit");
   });
 
   test("get rejects a key holding U+0000 or a lone surrogate", async () => {
@@ -557,11 +580,11 @@ describe("sqlite driver on a file", () => {
     const file = newFile();
     const s = await open(file);
     exec(file, "drop table keel_kv");
-    expect(messageOf(await rejection(s.get("a")))).toBe("std.db sqlite: get failed (sqlite 1)");
-    expect(messageOf(await rejection(s.set("a", "v")))).toBe("std.db sqlite: set failed (sqlite 1)");
-    expect(messageOf(await rejection(s.read(["a"])))).toBe("std.db sqlite: read failed (sqlite 1)");
-    expect(messageOf(await rejection(s.commit([{ key: "a", expect: null, value: "v" }])))).toBe(
-      "std.db sqlite: commit failed (sqlite 1)",
+    expect(failedOf(await rejection(s.get("a")))).toBe("sqlite get sqlite 1");
+    expect(failedOf(await rejection(s.set("a", "v")))).toBe("sqlite set sqlite 1");
+    expect(failedOf(await rejection(s.read(["a"])))).toBe("sqlite read sqlite 1");
+    expect(failedOf(await rejection(s.commit([{ key: "a", expect: null, value: "v" }])))).toBe(
+      "sqlite commit sqlite 1",
     );
     exec(file, "create table keel_kv (key text primary key, value text not null)");
     expect(await s.commit([{ key: "a", expect: null, value: "v" }])).toBe(true);
@@ -582,7 +605,7 @@ describe("sqlite driver on a file", () => {
           { key: "boom", expect: null, value: "B" },
         ]),
       );
-      expect(messageOf(e)).toMatch(/^std\.db sqlite: commit failed \(sqlite (19|1811)\)$/);
+      expect(failedOf(e)).toMatch(/^sqlite commit sqlite (19|1811)$/);
       expect(await s.read(["a", "boom"])).toEqual([null, null]);
       expect(await s.commit([{ key: "a", expect: null, value: "A2" }])).toBe(true);
       expect(await s.get("a")).toBe("A2");
