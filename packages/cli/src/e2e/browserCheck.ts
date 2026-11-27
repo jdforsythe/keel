@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Diag } from "../internal/Diag.ts";
 import { makeDiag } from "../internal/makeDiag.ts";
+import { playwrightAt } from "./playwrightAt.ts";
 
 /** The `playwright-core` version `@keel/testing` pins as its optional peer (k.e2e Browser). */
 function pinned(): string {
@@ -23,25 +24,11 @@ function pinned(): string {
 }
 
 /**
- * The `playwright-core` folder the project's own `node_modules` holds, at `cwd` or a folder above it, as Node's lookup
- * walks; `NODE_PATH` and global folders do not count (a package manager's run sets one).
- */
-function installed(cwd: string): string | undefined {
-  for (let dir = cwd; ; ) {
-    const at = join(dir, "node_modules", "playwright-core");
-    if (existsSync(join(at, "package.json"))) return at;
-    const up = dirname(dir);
-    if (up === dir) return undefined;
-    dir = up;
-  }
-}
-
-/**
  * The browser check of `keel test --e2e` (k.e2e Browser), before any file runs: `playwright-core` resolved from the
  * project's folder, then the engine's browser installed. Either missing is one E1734 at `package.json`.
  */
 export async function browserCheck(cwd: string, engine: "chromium" | "firefox" | "webkit"): Promise<Diag | undefined> {
-  const at = installed(cwd);
+  const at = playwrightAt(cwd);
   if (at === undefined)
     return makeDiag("E1734", "playwright-core is not installed", {
       path: "package.json",

@@ -57,4 +57,5 @@ export type Input = {
   readonly check?: boolean;
   readonly e2e?: boolean;
   readonly engine?: "chromium" | "firefox" | "webkit";
+  readonly "no-sandbox"?: boolean;
 };

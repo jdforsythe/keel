@@ -69,6 +69,7 @@ export const operations: readonly Operation[] = [
       paths,
       e2e: s.boolean().optional(),
       engine: s.enum(["chromium", "firefox", "webkit"]).optional(),
+      "no-sandbox": s.boolean().optional(),
       ...diagnostic,
     }),
     output: outputOf(),

@@ -1339,15 +1339,15 @@ const ROWS: readonly Row[] = [
   [
     "E1734",
     "keel test --e2e: playwright-core or the engine's browser is not installed, or Chromium cannot start its sandbox",
-    "The run fails before any file runs; no test is reported skipped.",
-    "add playwright-core to devDependencies, then playwright-core install <engine>",
-    "k.e2e",
+    "The run fails before any file runs; no test is reported skipped. The sandbox is never turned off to get through.",
+    "add playwright-core and install the browser; for the sandbox allow user namespaces (the fix names the sysctls) or pass --no-sandbox",
+    "k.e2e-run",
   ],
   [
     "W1734",
-    "keel test --e2e: the Chromium sandbox is off (Linux as root)",
-    "Chromium cannot start its sandbox as root, so page code runs with this process's rights; the run goes on.",
-    "run keel test --e2e as a user other than root, as a CI container's USER line sets",
+    "keel test --e2e: the Chromium sandbox is off (--no-sandbox, or Linux as root)",
+    "Page code runs with this process's rights; printed on every run.",
+    "drop --no-sandbox and allow user namespaces; as root, run as another user (a container's USER line)",
     "k.e2e-run",
   ],
   [

@@ -17,7 +17,8 @@ let home: string | undefined;
  * The test file's browser (k.e2e-run Browser): started headless on the file's first `open` and closed when the file
  * ends, with the run's environment allowlist and its `HOME` and temporary folders in a folder of its own inside the run
  * folder (`TMPDIR`), where Playwright also makes its new, empty profile. Chromium runs with its sandbox on unless the
- * runner turned it off (`KEEL_E2E_SANDBOX=0`, Linux as root, W1734) and trusts the run's key alone by its SPKI hash;
+ * runner ran without it (`--no-sandbox` or Linux as root, each with W1734: `KEEL_E2E_UNSANDBOXED=1`, which the runner
+ * always sets, so no value of the developer's environment reaches it) and trusts the run's key alone by its SPKI hash;
  * Firefox and WebKit contexts that map an origin skip certificate checks instead (`open`).
  */
 export function fileBrowser(): Promise<Browser> {
@@ -29,7 +30,7 @@ export function fileBrowser(): Promise<Browser> {
     const env = baseEnv(home);
     if (engine === "firefox") return pw.firefox.launch({ headless: true, env });
     if (engine === "webkit") return pw.webkit.launch({ headless: true, env });
-    const sandbox = process.env.KEEL_E2E_SANDBOX !== "0";
+    const sandbox = process.env.KEEL_E2E_UNSANDBOXED !== "1";
     try {
       return await pw.chromium.launch({
         headless: true,
@@ -42,14 +43,9 @@ export function fileBrowser(): Promise<Browser> {
       if (
         sandbox &&
         e instanceof Error &&
-        /No usable sandbox|Target page, context or browser has been closed/.test(e.message)
+        /No usable sandbox|SUID sandbox|new namespace|user namespace/i.test(e.message)
       )
-        throw e2eError(
-          "E1734",
-          "chromium cannot start its sandbox here: allow unprivileged user namespaces (sysctl kernel.apparmor_restrict_unprivileged_userns=0, or a container's seccomp profile that permits them)",
-          {},
-          "k.e2e-run",
-        );
+        throw e2eError("E1734", "chromium cannot start its sandbox here", {}, "k.e2e-run");
       throw e;
     }
   })();
