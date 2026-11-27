@@ -355,7 +355,7 @@ function pass(
     if (app) {
       for (const u of calleeUses(sf, checker, program, ownerOf, inKernel(file.path)))
         push(u.code, u.at, u.message, u.see);
-      for (const p of unprovenPredicates(sf, checker)) push("E1762", p.at, p.message, "k.unsafe");
+      for (const p of unprovenPredicates(sf, checker)) push("E1762", p.at, p.message, "k.identity");
     }
   }
   const held = new Map(
