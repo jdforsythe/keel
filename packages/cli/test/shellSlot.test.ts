@@ -1,10 +1,10 @@
 // The registered shell target is held per `./tools` file, so per project root (k.shell Shell target): one process
 // (an LSP or MCP) serving two projects whose shell packages differ reads each project's own target, and a package
 // registering one shell twice reports E1053 (k.cli), not E1159. Stub packages in real temp folders.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, test } from "vitest";
 import { shellTargets } from "../src/internal/shellTargets.ts";
 
@@ -27,7 +27,7 @@ const target = (file: string): string =>
  * real path is outside one and the test runner loads it with the registry the test reads.
  */
 function project(body: string): string {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-shell-slot-")));
+  const root = realpathSync(tempDir("keel-shell-slot-"));
   made.push(root);
   const pkg = join(root, "stub");
   mkdirSync(pkg, { recursive: true });

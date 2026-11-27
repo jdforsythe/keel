@@ -4,7 +4,8 @@
 // with `keel build`. Then: at 320px the document does not scroll sideways; body has the brand's font, colour and
 // background; Tab focus on the link, the button and the input shows the 2px solid brand ring at 2px offset and a mouse
 // click on the button shows none; the Box `direction={{ base: 'column', md: 'row' }}` stacks at 390px and is a row
-// sharing a top edge at 1024px.
+// sharing a top edge at 1024px; and the k.values Stylesheet invariant (`cssKept.mjs`): Chromium keeps every rule the
+// compiler emits, and each attack value is refused before emission.
 // Usage: node --disable-warning=ExperimentalWarning tooling/smoke/brand.mjs. Nothing is written inside the repo; the
 // file server and the browser are stopped on every path, and a crash prints the steps it had.
 import { createReadStream, statSync } from "node:fs";
@@ -15,6 +16,7 @@ import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
 import { fixedTime } from "../test-time.ts";
 import { buildIn, copyApp, freePort, recorder, root } from "./built.mjs";
+import { cssKept } from "./cssKept.mjs";
 
 const LIMIT_MS = fixedTime(240_000);
 const { step, finish } = recorder();
@@ -193,6 +195,7 @@ try {
         narrow.tops[1] < narrow.tops[2],
       `${narrow.display} ${narrow.dir} tops ${narrow.tops.map(Math.round).join(",")}`,
     );
+    await cssKept(page, step);
     step("no page or console errors", errors.length === 0, `${errors.length} errors`);
   }
 } catch (e) {

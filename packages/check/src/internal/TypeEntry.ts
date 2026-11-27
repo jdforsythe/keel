@@ -12,4 +12,6 @@ export type TypeEntry = {
   readonly probes: readonly Probe[];
   readonly items: readonly (Diagnostic | FormatSite)[];
   readonly dates: ReadonlyMap<string, ReadonlySet<number>>;
+  /** Per file path, the offsets of the elements and calls the checker resolves to `@keel/ui`'s `SchemeSelect` (E1814). */
+  readonly schemeSelects: ReadonlyMap<string, ReadonlySet<number>>;
 };

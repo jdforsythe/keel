@@ -12,6 +12,7 @@ export { on } from "./on.ts";
 export { parts } from "./parts.ts";
 export { prop } from "./prop.ts";
 export { resume } from "./resume.ts";
+export { reveal } from "./reveal.ts";
 export { slot } from "./slot.ts";
 export { template } from "./template.ts";
 export { text } from "./text.ts";

@@ -4,9 +4,9 @@
 import fs from "node:fs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import os from "node:os";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { type ViteDevServer, createServer } from "vite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -18,7 +18,7 @@ const write = (rel: string, text: string): void => {
   fs.writeFileSync(path.join(root, rel), text);
 };
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-dev-styles-"));
+  root = tempDir(".tmp-dev-styles-", import.meta.dirname);
   write(
     "topology.ts",
     `export default { web: { modules: ["a"], adapter: "client", styles: ["brand-faces/fonts"] } };\n`,
@@ -71,7 +71,7 @@ describe("keel dev styles", () => {
   });
 
   it("serves a styles entry whose package is linked from outside the served roots, and its url()s", async () => {
-    const outside = fs.mkdtempSync(path.join(os.tmpdir(), "keel-linked-faces-"));
+    const outside = tempDir("keel-linked-faces-");
     try {
       fs.cpSync(path.join(root, "node_modules/brand-faces"), outside, { recursive: true });
       fs.rmSync(path.join(root, "node_modules/brand-faces"), { recursive: true });

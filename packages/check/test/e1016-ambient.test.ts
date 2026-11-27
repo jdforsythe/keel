@@ -1,8 +1,9 @@
 // k.boundary Ambient types (E1016): the directive scan against TypeScript's own parse, and the declaration edges.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
@@ -24,7 +25,7 @@ const link = (path: string, target: string): void => {
   symlinkSync(target, join(dir, path));
 };
 beforeAll(() => {
-  dir = mkdtempSync(join(realpathSync(tmpdir()), "keel-e1016-"));
+  dir = tempDir("keel-e1016-", realpathSync(tmpdir()));
   link("node_modules/@keel/compiler", COMPILER);
   link("node_modules/@types/node", NODE_TYPES);
   link("node_modules/vite", VITE);
@@ -151,7 +152,7 @@ describe("the declaration", () => {
   });
 
   test("the type cache gives the same findings", () => {
-    const cache = mkdtempSync(join(realpathSync(tmpdir()), "keel-e1016-cache-"));
+    const cache = tempDir("keel-e1016-cache-", realpathSync(tmpdir()));
     try {
       const files = [f("modules/a/A.ts", "import 'wrap-aug'\nexport const a = 1\n")];
       const run = () =>

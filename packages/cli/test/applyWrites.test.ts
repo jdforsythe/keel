@@ -1,18 +1,10 @@
 // applyWrites against symlinks: a write whose nearest existing ancestor resolves outside the project, or whose target
 // is a symlink, refuses the whole set (E1357 through the binary); nothing outside the project changes. Real temp
 // directories under the OS tmpdir, removed after each test.
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { WriteRefused } from "../src/internal/WriteRefused.ts";
 import { applyWrites } from "../src/internal/applyWrites.ts";
@@ -20,7 +12,7 @@ import { refusedRun } from "../src/internal/refusedRun.ts";
 
 const made: string[] = [];
 const tmp = (): string => {
-  const d = mkdtempSync(join(tmpdir(), "keel-apply-"));
+  const d = tempDir("keel-apply-");
   made.push(d);
   return d;
 };

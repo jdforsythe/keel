@@ -71,7 +71,12 @@ test(
   "a declared ./tools that does not import is one E1159 naming the tools file",
   () => {
     const dir = app({
-      "package.json": PKG({ ".": { keel: "./src/index.ts", default: "./index.js" }, "./tools": "./dist/tools.js" }),
+      // k.entries: `./tools` holds `keel` first, its source; Node imports its other condition, here not yet built.
+      "package.json": PKG({
+        ".": { keel: "./src/index.ts", default: "./index.js" },
+        "./tools": { keel: "./src/tools.ts", default: "./dist/tools.js" },
+      }),
+      "src/tools.ts": "export {}\n",
     });
     const found = diags(keel(dir, ["check"]), "E1159");
     expect(found.map((d) => d.message)).toEqual([`${NAME} ./tools ./dist/tools.js does not import; build it`]);

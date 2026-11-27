@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { checkUnit, justify, originalText, shapeProblems } from "../mutate-justified.mjs";
 
@@ -107,7 +107,7 @@ describe("checkUnit", () => {
   };
   const codes = () => checkUnit(root, "packages/p").diags.map((d) => d.code);
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-justified-"));
+    root = tempDir("keel-justified-");
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 

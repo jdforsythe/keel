@@ -1,0 +1,13 @@
+# k.entries: Library entries
+status: proposed
+
+What a library's `package.json` may say about where its code is, so that the file `keel check` reads as source is the file every surface loads (k.library, k.looks).
+
+**Shape.** A listed library's `package.json` `exports` is an object, and each entry is an object whose first key is `keel` and whose `keel` value is a string naming a file under `src/` or `unsafe/` (`./tools` included, whose other conditions Node reads). Anything else is E1815 at each `deps` entry naming the library: an `exports` that is a string or an array (`<name> exports is no object`); an entry that is a string, an array or `null` (`<name> exports "<key>" is no object with keel first`); `keel` after another key (`<name> exports "<key>" lists keel after another condition`) or only deeper (`<name> exports "<key>" nests keel under another condition`); a `keel` value that is no string or names no such file (`<name> exports "<key>" keel names no file`); a key with `*` that matches a subpath a file check reads imports from the library (`<name> exports "<key>" matches "<subpath>"; give it an entry`), unless an entry of its own names that subpath, which Node prefers and which is judged instead. E1815 is judged from `package.json`'s text before anything of the project is evaluated or bundled, and while one stands no file of that library is evaluated or bundled and `tokens.ts` is not evaluated, so the file check reads is the one every surface loads.
+
+**Rules.** E1815 a listed library's `exports` out of shape (Shape; fix: none). A diagnostic at a `deps` entry lies on it, from its opening quote to its closing one.
+
+**Conformance.** The fixture is k.looks' fixed project.
+- `"./tokens":{"default":"./evil.js","keel":"./src/acmeTokens.ts"}` is one E1815 at the `'@acme/ui'` entry with message `@acme/ui exports "./tokens" lists keel after another condition`, and `evil.js`, which writes a file when run, writes none during `keel check`; `"./tokens":{"import":{"keel":"./src/acmeTokens.ts"}}` and `".":{"node":"./index.js","keel":"./src/index.ts"}` are each one E1815.
+- Each of `"./tokens":["./evil.js",{"keel":"./src/acmeTokens.ts"}]`, `"./tokens":"./evil.js"`, `"./tokens":null`, `"./tokens":{"keel":{"default":"./evil.js"}}`, `"./tokens":{"keel":"./lib/t.ts"}` and `exports` `"./evil.js"` is one E1815 at the `'@acme/ui'` entry, and `evil.js` writes no file during `keel check` or `keel build`.
+- With no `./tokens` entry and `"./*":{"keel":"./src/*.ts","default":"./evil.js"}`, `tokens.ts`'s import of `@acme/ui/tokens` is one E1815 with message `@acme/ui exports "./*" matches "./tokens"; give it an entry`, and `evil.js` writes no file during `keel check` or `keel build`.

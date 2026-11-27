@@ -38,7 +38,7 @@ function library(name: string, id: string, deps: string[] = []): Files {
     {
       path: `${root}/src/Badge.tsx`,
       source:
-        "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) { return <Box id={`${props.id}.box`} p=\"2\" /> }\n",
+        "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) { return <Box id={`${props.id}.box`} /> }\n",
     },
     { path: `${root}/.keel/ledger.json`, source: LEDGER },
   ];

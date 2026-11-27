@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -176,7 +176,7 @@ describe("staleFiles for an app", () => {
 
 describe("mutationUnits", () => {
   it("lists packages by name and apps as apps/<name>, those with a Stryker config", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-units-"));
+    const dir = tempDir("keel-units-");
     try {
       for (const d of ["packages/p", "packages/q", "apps/g", "apps/h"])
         fs.mkdirSync(path.join(dir, d), { recursive: true });

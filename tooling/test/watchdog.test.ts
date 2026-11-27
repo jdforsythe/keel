@@ -3,8 +3,8 @@
 // its own process group, and each test kills that group in `finally`, so a failing test leaves nothing behind.
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { fixedTime, testTime } from "../test-time.ts";
 
@@ -13,8 +13,11 @@ const fixtures = path.join(import.meta.dirname, "..", "fixtures", "watchdog");
 const vitest = path.join(root, "node_modules", "vitest", "vitest.mjs");
 // testTimeout and hookTimeout 200 ms (the fixture config): allowed 200 + 2 * 200, bound 600 * 2 + 500 = 1.7 s. The
 // fixture's times are the watchdog's input, so the child vitest runs them unscaled; this file's own waits scale.
+// A killed child run leaves its own temp root and vitest's spool behind: they go in a folder of this file's.
+const childTmp = tempDir("keel-watchdog-tmp-");
 const env = {
   ...process.env,
+  TMPDIR: childTmp,
   KEEL_WATCHDOG_GRACE_MS: "500",
   KEEL_WATCHDOG_TICK_MS: "100",
   KEEL_AGENT: "1",
@@ -171,7 +174,7 @@ describe("watchdog", () => {
   it(
     "kills an orphaned worker once vitest itself is gone",
     async () => {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-watchdog-"));
+      const dir = tempDir("keel-watchdog-");
       const ready = path.join(dir, "ready");
       const child = run("orphan.fixture.ts", { KEEL_WATCHDOG_READY: ready });
       try {
@@ -208,7 +211,7 @@ describe("watchdog", () => {
       it(
         `does not outlive the worker when ${how}`,
         async () => {
-          const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-watchdog-"));
+          const dir = tempDir("keel-watchdog-");
           const ready = path.join(dir, "ready");
           const child = run("child.fixture.ts", { KEEL_WATCHDOG_READY: ready });
           let pids: number[] = [];

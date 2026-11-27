@@ -12,6 +12,7 @@ import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
 import { hardTimes } from "./hard-times.mjs";
 import { parseArgs, run } from "./output.ts";
 import { untimedPropertyTests } from "./property-times.ts";
+import { rawTempDirs } from "./raw-temp-dirs.mjs";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 import { stdEntryDiags } from "./std-entries.mjs";
 import { unseededProperties } from "./unseeded-properties.mjs";
@@ -166,6 +167,15 @@ for (const e of [...unseen.values()].flat())
     1,
     `${e.text} is listed in hard-times-conformance.json and no longer in the file`,
   );
+
+// S0018: a raw `mkdtemp` in a package's, tooling's, app's or example's test files (raw-temp-dirs.mjs); the folder is
+// made with `tempDir` (test-tmp.ts). Conformance files are the conformance-writer's and are not judged.
+const TEST_FILES = /^(?:packages\/[^/]+\/test|tooling\/test|(?:apps|examples)\/.+\/test)\//;
+for (const file of new Set([...files, ...appCode].filter((f) => TEST_FILES.test(rel(root, f))))) {
+  const src = fs.readFileSync(file, "utf8");
+  if (!src.includes("mkdtemp")) continue;
+  for (const d of rawTempDirs(src, file)) add("S0018", file, d.line, d.col, d.message);
+}
 
 // S0017: a property case vitest's flat 5 s default bounds. keelConfig gives each test that runs `properties`,
 // `simulate` or fast-check's `assert` and declares no options a timeout from its runs (property-times.ts); an app's,

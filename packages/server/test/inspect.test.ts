@@ -2,7 +2,6 @@
 // The dev inspect route of createApp (k.cli Inspect, RFC 0017): live graph and stores of the process, artifacts
 // from the `.keel` directory, CORS only for an admitted origin, absent in production, one `req` record per request.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
@@ -10,6 +9,7 @@ import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { inspectResponse } from "../src/internal/inspectResponse.ts";
@@ -21,7 +21,7 @@ const routes = manifest(c, { "orders.list": { component: () => document.createEl
 
 let dir = "";
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-inspect-"));
+  dir = tempDir("keel-inspect-");
 });
 afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true });

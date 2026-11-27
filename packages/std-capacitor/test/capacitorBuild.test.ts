@@ -1,19 +1,10 @@
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 // The Capacitor shell build (std.capacitor Build) against fake tools: a temp build folder and a fake `npx` and
 // `xcodebuild` on PATH stand in for the Capacitor CLI and the platform builds. Covers the build folder, the policy in
 // the page, the scheme registered in the platform file, the cleartext rule and the artifacts.
 import type { ShellBuild } from "@keel/cli";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, test } from "vitest";
 import { returnScheme } from "../src/returnScheme.ts";
 import { capacitorBuild } from "../src/tools/capacitorBuild.ts";
@@ -66,7 +57,7 @@ function project(
   files: Record<string, string> = {},
   over: Partial<ShellBuild> = {},
 ): { root: string; dir: string; at: ShellBuild } {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-cap-build-")));
+  const root = realpathSync(tempDir("keel-cap-build-"));
   made.push(root);
   const all: Record<string, string> = {
     "bin/npx": NPX,

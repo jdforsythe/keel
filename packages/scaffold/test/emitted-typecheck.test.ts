@@ -1,9 +1,9 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { type Files, apply } from "./helpers.ts";
 
@@ -71,7 +71,7 @@ function scaffolded(): Files {
 }
 
 function typecheck(files: Files): { status: number | null; out: string } {
-  const dir = fs.mkdtempSync(nodePath.join(os.tmpdir(), "keel-scaffold-tsc-"));
+  const dir = tempDir("keel-scaffold-tsc-");
   try {
     for (const [p, text] of files) {
       fs.mkdirSync(nodePath.dirname(nodePath.join(dir, p)), { recursive: true });

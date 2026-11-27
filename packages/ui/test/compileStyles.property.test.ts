@@ -117,7 +117,9 @@ describe("compileStyles properties", () => {
     expect(at(".k-p-1{")).toBeLessThan(at("(min-width: 768px)"));
     expect(at("(min-width: 768px)")).toBeLessThan(at("(min-width: 1024px)"));
     expect(at("(min-width: 1024px)")).toBeLessThan(at(".k-hover-p-1:hover"));
-    expect(css).toContain("@media (prefers-color-scheme: dark){\n:root{--k-color-fg:#eee;--k-color-bg:#111}\n}");
+    expect(css).toContain(
+      '@media (prefers-color-scheme: dark){\n:root:not([data-k-scheme="light"]){--k-color-fg:#eee;--k-color-bg:#111}\n}',
+    );
   });
 
   it("flex props imply display:flex", () => {
@@ -155,7 +157,9 @@ describe("compileStyles properties", () => {
     expect(code(() => compileStyles({ tokens, usages: [{ props: { p: "16px" } }] }))).toBe("E1801");
     expect(code(() => compileStyles({ tokens, usages: [{ props: { direction: "diagonal" } }] }))).toBe("E1801");
     expect(code(() => compileStyles({ tokens, usages: [{ props: { p: "1" }, breakpoint: "xl" }] }))).toBe("E1801");
-    const bad = defineTokens({ space: { 1: "1px}body{color:red" } });
+    // A value outside its group's form (k.values) is refused by `defineTokens` and by `compileStyles` alike.
+    const bad = { space: { 1: "1px}body{color:red" } };
+    expect(code(() => defineTokens(bad))).toBe("E1807");
     expect(code(() => compileStyles({ tokens: bad, usages: [] }))).toBe("E1807");
   });
 });

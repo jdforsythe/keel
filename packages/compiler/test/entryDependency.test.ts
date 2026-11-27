@@ -1,9 +1,9 @@
 // An app need not list a kernel package only generated or tooling code imports: `@keel/store` and its subpaths resolve
 // from the compiler (the client and server entries) or from the module the caller names (the CLI's surface evaluation).
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { entryDependency } from "../src/entry/entryDependency.ts";
 
@@ -11,7 +11,7 @@ const COMPILER = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 let app = "";
 
 beforeEach(() => {
-  app = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-entry-dep-")));
+  app = fs.realpathSync(tempDir("keel-entry-dep-"));
   fs.writeFileSync(
     path.join(app, "package.json"),
     `${JSON.stringify({ name: "fx", private: true, type: "module" })}\n`,

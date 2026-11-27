@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 // k.a11y Artifacts: under `keel test` a render given no `artifacts` takes the project's; given `artifacts`, those alone.
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { Text, defineTokens } from "@keel/ui";
 import { afterEach, describe, expect, it } from "vitest";
 import { harnessArtifacts } from "../src/internal/harnessArtifacts.ts";
@@ -14,7 +15,7 @@ import { render } from "../src/render.ts";
 const dirs: string[] = [];
 const project = (files: Readonly<Record<string, string>>): string => {
   // Inside the package: the test runner loads a module only from within its workspace.
-  const dir = mkdtempSync(join(import.meta.dirname, ".tmp-artifacts-"));
+  const dir = tempDir(".tmp-artifacts-", import.meta.dirname);
   dirs.push(dir);
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(join(dir, path, ".."), { recursive: true });

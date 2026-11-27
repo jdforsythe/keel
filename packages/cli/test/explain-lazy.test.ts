@@ -1,11 +1,11 @@
 // The explanation table (`@keel/check/explain`) loads when `explain` runs and not for another command: the binary is
 // run as a child process with a loader hook that appends every module URL it loads to a file.
 import { execFile } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
@@ -13,7 +13,7 @@ const EXPLAIN_MODULE = "/packages/check/src/explain.ts";
 
 let dir = "";
 beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), "keel-explain-lazy-"));
+  dir = tempDir("keel-explain-lazy-");
   writeFileSync(
     join(dir, "hooks.mjs"),
     [

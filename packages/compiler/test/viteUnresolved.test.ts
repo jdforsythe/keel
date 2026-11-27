@@ -3,11 +3,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 let root = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-vite-unresolved-"));
+  root = tempDir(".tmp-vite-unresolved-", import.meta.dirname);
   vi.spyOn(process, "cwd").mockReturnValue(root);
 });
 afterEach(() => {

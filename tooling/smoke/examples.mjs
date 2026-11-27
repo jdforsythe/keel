@@ -559,6 +559,18 @@ const proofs = {
       await server.stop();
     }
   },
+  /** The library ships its look: a `./tokens` entry whose first condition is `keel`, and the ledger lists its four components. */
+  async "library-looks"(dir) {
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+    const entry = pkg.exports?.["./tokens"] ?? {};
+    const ledger = JSON.parse(readFileSync(join(dir, ".keel", "ledger.json"), "utf8"));
+    const names = (ledger.exports ?? []).map((e) => e.name).sort();
+    const parts = ["Badge", "Card", "Switch", "Toggle"];
+    return [
+      Object.keys(entry)[0] === "keel" && entry.keel === "./src/acmeTokens.ts" && parts.every((n) => names.includes(n)),
+      `./tokens first ${Object.keys(entry)[0]}, exports ${names.join(",")}`,
+    ];
+  },
   /** The library's packed ledger holds its one `Host` element and the four exports of its `src/` files. */
   async "library-charts"(dir) {
     const ledger = JSON.parse(readFileSync(join(dir, ".keel", "ledger.json"), "utf8"));

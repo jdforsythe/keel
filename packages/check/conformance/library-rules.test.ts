@@ -1,10 +1,11 @@
 // k.library the clauses on `check()` reading a library's files, each quoted whole (the project of the first clause: `modules/shop/module.ts` lists `'@acme/charts'`, `node_modules/@acme/charts/` holds the library, `modules/shop/Page.tsx` renders `<Badge id="shop.badge" />`)
 // Spec: k.library, clause "In that project, `<box />` in `src/Badge.tsx` is one E1805 in the app's `keel check`, at `node_modules/@acme/charts/src/Badge.tsx`, with no `fix`."
-// Spec: k.library, clause "In that project, `<Box p=\"2\" />`, `<Box id=\"box\" />`, `<Box id={`box`} />` and `Box({ p: '2' })` in `src/Badge.tsx` are each one E1161; `<Box id={`${props.id}.box`} />` and `<Box id={partId('box')} />`, `partId` the closure ``(k) => `${props.id}.${k}` ``, are not; with `partId` `(k) => k`, it is one E1161."
+// Spec: k.library, clause "In that project, `<Box />`, `<Box id=\"box\" />`, `<Box id={`box`} />` and `Box({})` in `src/Badge.tsx` are each one E1161; `<Box id={`${props.id}.box`} />` and `<Box id={partId('box')} />`, `partId` the closure ``(k) => `${props.id}.${k}` ``, are not; with `partId` `(k) => k`, it is one E1161."
 // Spec: k.library, clause "In that project, a cast `x as string` in `src/Badge.tsx` is one E1757 at `node_modules/@acme/charts/src/Badge.tsx`, and an import of `@keel/store/internal` there is one E1576."
 // Spec: k.library, clause "In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier."
 // Rules: "E1161 an element in a library file whose `id` Ids does not accept (fix: none)"
 // Rules: "E1163 a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier, or a library manifest `deps` entry that does not begin with `@`, at the entry (fix: none; the entry names no module, so it is no E1153 edge and no E1165)" (the manifest half is in library-manifest.test.ts)
+// Spec text (k.a11y-static): "**Library contrast.** In an app, an E1804 at an element of a library file, or at a library look (a key of the `look` group alone, whatever other groups hold the same name), is reported in `tokens.ts` and not at the library's file: at the opening quote of the app's key for its `fg` when the app writes one, else for its `bg`, else at the spread `...<id>Tokens.color`, else line 1, column 1; once per pair and scheme however many elements and looks hold it; message `<fg> on <bg> is <ratio>:1 in <scheme>, needs <need>:1; override in tokens.ts`."
 // In an app: "`keel check` runs every rule but E1106 (k.formats Who declares) over them, the type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Where a section reads app code or `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as `modules/<id>/<f>`, its `unsafe/` files with their lifted ranges. A diagnostic in one is the app's, at `node_modules/<name>/<f>`, with no `fix`; nothing turns a rule off there. A bare import there resolves from the library's folder, to one of its `dependencies`, and is no E1163."
 // Ids: "**Ids.** Each `@keel/ui` base element (k.ui, `Host` among them) and `@keel/ui/aria` `Part` a library file renders, as JSX or a call, takes an `id` check reads as built from its component's `id` prop (`<id>.<part>`, k.component IDs; a derived id holds the file's path, which changes with the installer): `<p>.id`, `<p>` a top-level function's first parameter; a name bound to such a value or destructured as `id`; a template literal with one; a conditional of two; a call whose callee check reads (a function of the library's or another library's files, a closure, a member of an object it reads back to a literal or a call) and whose every returned expression is one, parameters standing for the arguments and closure names read where bound (a function met again while its read is open, or past eight calls, is not read); or such an `id` in an object literal, spread or not, no later unreadable spread follows. Anything else is E1161: none, a literal, a concatenation, a call of a global, a parameter or a package that is no library."
 // Seed 1337
@@ -19,9 +20,10 @@ import { check } from "@keel/check";
 import { repoRoot } from "@keel/tooling/repo-root";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { CODE_FIXTURES } from "./fixtures-by-code.ts";
-import { type Files, SEED, manifestFile } from "./module-support.ts";
 import { CHECK_CASE_BOUND } from "./check-time.ts";
+import { CODE_FIXTURES } from "./fixtures-by-code.ts";
+import { atText } from "./library-looks-support.ts";
+import { type Files, SEED, manifestFile } from "./module-support.ts";
 
 const NO_TYPES = { types: false } as const;
 const NAME = "@acme/charts";
@@ -52,7 +54,7 @@ function project(extra: Files = [], name = NAME, id = "charts"): Files {
     { path: `${root}/index.js`, source: "export {}\n" },
     manifestFile({ id, deps: [], exports: ["Badge"] }, root),
     { path: `${root}/src/index.ts`, source: "export { default as Badge } from './Badge.tsx'\n" },
-    { path: `${root}/src/Badge.tsx`, source: badge('<Box id={`${props.id}.box`} p="2" />') },
+    { path: `${root}/src/Badge.tsx`, source: badge("<Box id={`${props.id}.box`} />") },
     { path: `${root}/.keel/ledger.json`, source: LEDGER },
   ];
   const own = new Set(extra.map((x) => x.path));
@@ -114,10 +116,10 @@ test(
 );
 
 const E1161_BAD: ReadonlyArray<readonly [string, string]> = [
-  ['<Box p="2" />', badge('<Box p="2" />')],
+  ["<Box />", badge("<Box />")],
   ['<Box id="box" />', badge('<Box id="box" />')],
   ["<Box id={`box`} />", badge("<Box id={`box`} />")],
-  ["Box({ p: '2' })", badge("Box({ p: '2' })")],
+  ["Box({})", badge("Box({})")],
 ];
 for (const [what, source] of E1161_BAD) {
   test(
@@ -829,9 +831,13 @@ const ONE_FILE = Object.entries(CODE_FIXTURES).flatMap(([code, fx]) => {
     : [{ code, source: only.source, base: only.path.split("/").at(-1) ?? "x.ts", opts: optsOf(fx) }];
 });
 /** Rules only a library has (k.library Rules): reported in a library file, never in an app's. */
-const LIBRARY_ONLY = new Set(["E1161", "E1162", "E1163", "E1166"]);
+const LIBRARY_ONLY = new Set(["E1161", "E1162", "E1163", "E1166", "E1811"]);
+/** A library file's token name its shipped tokens lack is E1811 "in place of E1801" (k.looks Needs): an app's E1801 is missing from the library's codes when an E1811 stands for it. */
+const replacedBy1811 = (code: string, inLib: readonly string[]): boolean => code === "E1801" && inLib.includes("E1811");
 /** `keel check` runs every rule but E1106 (k.formats Who declares) over a library's files (k.library In an app): E1106 is left out of the comparison. */
 const NOT_OVER_LIBRARY = new Set(["E1106"]);
+/** "an E1804 at an element of a library file, or at a library look, is reported in `tokens.ts`" (k.a11y-static Library contrast): not at the library's path, so the library's codes at its own path hold none; the next case asserts where it is. */
+const IN_TOKENS_TS = new Set(["E1804"]);
 
 // The space is finite (every one-file fixture of the table), so each is visited once, not sampled.
 test(
@@ -847,12 +853,34 @@ test(
       inApplication.codes = inApplication.codes.filter((c) => !NOT_OVER_LIBRARY.has(c));
       if (inApplication.codes.length > 0) reportedInApp++;
       const extra = inLib.codes.filter((c) => !inApplication.codes.includes(c) && !LIBRARY_ONLY.has(c));
-      const missing = inApplication.codes.filter((c) => !inLib.codes.includes(c));
+      const missing = inApplication.codes.filter(
+        (c) => !inLib.codes.includes(c) && !replacedBy1811(c, inLib.codes) && !IN_TOKENS_TS.has(c),
+      );
       if (extra.length > 0 || missing.length > 0 || inLib.fixes > 0)
         differs.push(`${code}: library [${inLib.codes}] app [${inApplication.codes}] fixes ${inLib.fixes}`);
     }
     expect(reportedInApp, "fixtures the app twin reports on").toBeGreaterThan(30);
     expect(differs).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "an E1804 at an element of a library file, as the by-code fixture of E1804 places one, is reported in `tokens.ts` at the opening quote of the app's key for its `fg`, once, with no E1804 at the library's path",
+  () => {
+    const fx = CODE_FIXTURES.E1804;
+    const only = fx === undefined ? undefined : theFile(fx);
+    expect(only, "E1804 is a one-file fixture").toBeDefined();
+    const base = (only?.path ?? "x.ts").split("/").at(-1) ?? "x.ts";
+    const tokensTs = `export const tokens = {\n  color: { "white": "#ffffff", "mid": "#949494", "ink": "#111111" },\n};\n`;
+    const files = [...inLibrary(base, only?.source ?? ""), { path: "tokens.ts", source: tokensTs }];
+    const d = hitsOf(files, "E1804", fx === undefined ? {} : optsOf(fx));
+    expect(d.length).toBe(1);
+    expect(d[0]?.path).toBe("tokens.ts");
+    expect(d[0]?.message).toMatch(/^mid on white is [\d.]+:1 in light, needs [\d.]+:1; override in tokens\.ts$/);
+    expect(d[0]?.fix).toBeUndefined();
+    expect(atText(tokensTs, '"mid"', d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
+    expect(d.filter((x) => x.path.startsWith("node_modules/"))).toEqual([]);
   },
   CHECK_CASE_BOUND,
 );

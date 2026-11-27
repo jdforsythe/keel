@@ -2,6 +2,7 @@
 // worker. The reporter prints one T0001 line per dead worker at its file, naming the test and what ended it.
 import { type ChildProcess, type SpawnSyncReturns, fork, spawnSync } from "node:child_process";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { fixedTime, testTime } from "../test-time.ts";
 import { crashDiags, endDiags, isCrash } from "../vitest-reporter.ts";
@@ -10,6 +11,8 @@ import { describeExit, lastSaid, requestFiles, watchWorkerExits, workerExits } f
 const root = path.join(import.meta.dirname, "..", "..");
 const fixtures = path.join(import.meta.dirname, "..", "fixtures", "crash");
 const vitest = path.join(root, "node_modules", "vitest", "vitest.mjs");
+// A killed child run leaves its own temp root and vitest's spool behind: they go in a folder of this file's.
+const childTmp = tempDir("keel-crash-tmp-");
 
 /**
  * An assertion's message: how the child ended, its T0001 and trailer lines and what its stderr said last, on one
@@ -26,7 +29,7 @@ describe("a worker that dies mid-run", () => {
     () => {
       const r = spawnSync(process.execPath, [vitest, "run"], {
         cwd: fixtures,
-        env: { ...process.env, KEEL_AGENT: "1" },
+        env: { ...process.env, KEEL_AGENT: "1", TMPDIR: childTmp },
         encoding: "utf8",
         timeout: testTime(60_000),
       });
@@ -56,7 +59,7 @@ describe("a run vitest fails with no failed test", () => {
     () => {
       const r = spawnSync(process.execPath, [vitest, "run", "matches-no-file"], {
         cwd: fixtures,
-        env: { ...process.env, KEEL_AGENT: "1" },
+        env: { ...process.env, KEEL_AGENT: "1", TMPDIR: childTmp },
         encoding: "utf8",
         timeout: testTime(60_000),
       });

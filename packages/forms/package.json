@@ -34,6 +34,7 @@
   "devDependencies": {
     "@keel/ctx": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
-    "@keel/tooling": "workspace:*"
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22"
   }
 }

@@ -2,10 +2,9 @@ import { spawnSync } from "node:child_process";
 // Enforces tooling/budgets.json: output token budgets and package size budgets.
 import fs from "node:fs";
 import path from "node:path";
-import zlib from "node:zlib";
-import { build } from "esbuild";
 import { buildDocs, listPackages, readAreas, readSections } from "./docs-pack.mjs";
 import { run } from "./output.ts";
+import { entryOf, gzipBytes } from "./size.mjs";
 
 const root = path.join(import.meta.dirname, "..");
 const budgets = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "budgets.json"), "utf8"));
@@ -166,40 +165,16 @@ await run("budgets", async () => {
     } else skipped++;
   }
 
-  // Package size: the package's own code bundled from src/index.ts (minified esm, dependencies external), gzipped.
+  // Package size: the package's own code bundled from src/index.ts (minified esm, dependencies external), gzipped; a
+  // browser entry loads each server-only file as its browser stub (size.mjs).
   // The tsc dist entry is a re-export file of ~100 bytes and measured nothing (backlog 0035).
   for (const [name, limit] of Object.entries(budgets.size ?? {})) {
     const max = typeof limit === "string" ? limit : limit.max;
     const platform = typeof limit === "string" ? "browser" : (limit.platform ?? "browser");
     const m = /^(\d+(?:\.\d+)?)\s*kb$/i.exec(max);
-    // A subpath export (`@keel/router/match`) is its own entry: `packages/<pkg>/src/<subpath>/index.ts` (rfc:0071).
-    const [pkg, ...sub] = name.replace(/^@keel\//, "").split("/");
-    // A subpath with no folder index is the file `packages/<pkg>/src/<subpath>.ts` (`@keel/std-sessions/routes`, 0093).
-    const nested = path.join(root, "packages", pkg, "src", ...sub, "index.ts");
-    const file = path.join(root, "packages", pkg, "src", `${sub.join("/")}.ts`);
-    // A library's `exports` entry names its source under `keel` (`./src/index.server.ts`, k.library-pack).
-    const pj = path.join(root, "packages", pkg, "package.json");
-    const target = fs.existsSync(pj)
-      ? JSON.parse(fs.readFileSync(pj, "utf8")).exports?.[sub.length > 0 ? `./${sub.join("/")}` : "."]?.keel
-      : undefined;
-    const entry =
-      typeof target === "string"
-        ? path.join(root, "packages", pkg, target)
-        : sub.length > 0 && !fs.existsSync(nested)
-          ? file
-          : nested;
-    if (!m || !fs.existsSync(entry)) continue;
-    const bundle = await build({
-      entryPoints: [entry],
-      bundle: true,
-      minify: true,
-      format: "esm",
-      platform,
-      packages: "external",
-      write: false,
-      logLevel: "silent",
-    });
-    const bytes = zlib.gzipSync(bundle.outputFiles[0].contents).length;
+    const entry = entryOf(root, name);
+    if (!m || entry === undefined) continue;
+    const bytes = await gzipBytes(entry, platform);
     measured++;
     if (bytes > Number(m[1]) * 1024)
       breach(name, relp(entry), bytes, `${m[1]}kb (${Math.round(Number(m[1]) * 1024)} bytes)`, "bytes gzip");

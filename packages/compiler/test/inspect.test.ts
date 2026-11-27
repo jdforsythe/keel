@@ -4,6 +4,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { parseSync } from "oxc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { entryCode } from "../src/internal/entryCode.ts";
@@ -49,7 +50,7 @@ const REPORT = {
 };
 
 beforeEach(async () => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-inspect-"));
+  root = tempDir(".tmp-inspect-", import.meta.dirname);
   await listen();
 });
 afterEach(async () => {

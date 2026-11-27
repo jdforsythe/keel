@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { routeLiterals } from "../src/routeLiterals.ts";
 import type { SourceFile } from "../src/types/SourceFile.ts";
@@ -61,7 +62,7 @@ const api = { file: "modules/api/api.contract.ts", layout: null, guard: null, pa
 
 let root = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-channel-routes-"));
+  root = tempDir(".tmp-channel-routes-", import.meta.dirname);
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))

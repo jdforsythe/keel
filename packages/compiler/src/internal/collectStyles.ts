@@ -54,7 +54,9 @@ const STYLE_PROPS: readonly string[] = [
 const STATES: readonly State[] = [
   "selected",
   "checked",
+  "pressed",
   "expanded",
+  "current",
   "highlighted",
   "hover",
   "focusVisible",

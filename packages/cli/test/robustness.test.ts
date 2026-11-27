@@ -1,8 +1,8 @@
 // Review fixes: one throw never silences a server; JSON-RPC error codes; malformed LSP frames; file scope and
 // effects owned by the engine; writes confined to the project; mcp/lsp streamed through `run`.
-import { mkdtempSync, readFileSync, statSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { lsp, mcp, run } from "../src/index.ts";
 import { applyWrites } from "../src/internal/applyWrites.ts";
@@ -146,7 +146,7 @@ describe("engine owns file scope and effects", () => {
 
 describe("applyWrites", () => {
   it("writes inside the project, read-only when asked; anything resolving outside rejects the whole set", () => {
-    const dir = mkdtempSync(join(tmpdir(), "keel-cli-"));
+    const dir = tempDir("keel-cli-");
     applyWrites(dir, [{ path: ".keel/a.json", content: "{}\n", readonly: true }]);
     expect(readFileSync(join(dir, ".keel/a.json"), "utf8")).toBe("{}\n");
     expect(statSync(join(dir, ".keel/a.json")).mode & 0o777).toBe(0o444);

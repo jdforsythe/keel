@@ -1,9 +1,9 @@
 // Backlog 0144 (rfc:0055): in a workspace, `keel check` compares every app's `.keel/` with that app's own sources,
 // and reports the same files from the root as from inside the app. Runs the engine over a temp workspace on disk.
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { applyWrites } from "../src/internal/applyWrites.ts";
 import { readProject } from "../src/internal/readProject.ts";
@@ -47,7 +47,7 @@ const A = 'import { Box } from "@keel/ui"\nexport default function A() {\n  retu
 const B = 'import { Box } from "@keel/ui"\nexport default function B() {\n  return <Box id="b.p">b</Box>\n}\n';
 
 beforeAll(async () => {
-  root = realpathSync(mkdtempSync(join(tmpdir(), "keel-workspace-")));
+  root = realpathSync(tempDir("keel-workspace-"));
   put("package.json", "{}\n");
   put("apps/a/package.json", "{}\n");
   // The temporary workspace has no `@keel/ui` to resolve, so each app types the import itself.
@@ -65,7 +65,7 @@ describe("keel check in a workspace (0144)", () => {
   it("counts the same files for an app from the root and from inside it, artifacts included, all genuine", async () => {
     const inside = await check(join(root, "apps/a"), []);
     const fromRoot = await check(root, ["apps/a"]);
-    expect(inside.files).toBe(7); // src/A.tsx, src/uiTypes.ts and the five artifacts `keel build` writes
+    expect(inside.files).toBe(8); // src/A.tsx, src/uiTypes.ts and the six artifacts `keel build` writes
     expect(fromRoot).toEqual(inside);
     expect((await check(root, [])).e1005).toEqual([]);
   });

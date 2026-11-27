@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   blocksOf,
@@ -33,7 +34,7 @@ afterEach(() => {
   for (const d of scratch.splice(0)) fs.rmSync(d, { recursive: true, force: true });
 });
 const tmp = () => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "docs-check-test-"));
+  const d = tempDir("docs-check-test-");
   scratch.push(d);
   return d;
 };

@@ -18,8 +18,8 @@ import { defineRule } from '@keel/check'
 export const noRawMoney = defineRule({
   code: 'E2101', message: 'money as number; use Money', see: 'std.money',
   explain: 'Amounts are Money values, not numbers.',
-  check: ({ file, ast, artifacts, project }) => findings,   // { path, line, col, data? }[]
-  fix: (finding, { file }) => edits,                         // rendered as a unified diff
+  check: ({ file, ast, artifacts, project }) => findings, // { path, line, col, data? }[]
+  fix: (finding, { file }) => edits, // rendered as a unified diff
 })
 ```
 An optional `sql: (file) => findings` reads each module migration, `modules/<id>/migrations/*.sql` (path and text, no fix); `check` sees code files only. Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule that throws is reported as E1756 and the other rules still run.
@@ -38,7 +38,7 @@ An optional `sql: (file) => findings` reads each module migration, `modules/<id>
 
 **Conformance.**
 - Every E code in a kernel section's Rules or in `reportedCodes()` has an `explain` entry of at most 120 tokens. Each one `check()` reports (`reportedCodes()`) has a fixture that triggers exactly that code (E1756: a registered rule that throws); each other Rules code comes from another command and a conformance test of its own package asserts it (outside comments and test titles).
-- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot.
+- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, E1808 and E1810 carry one; RFC 0035 lists why the others cannot.
 - The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits.
 - `check()` never evaluates app code: a module that throws at top level yields only static diagnostics.
 - Two runs on an unchanged tree produce identical output.
