@@ -51,11 +51,27 @@ function attr(attrs: readonly JSXAttributeItem[], name: string): [JSXAttribute, 
   return hit;
 }
 
+/** The `print` key of a responsive value written as an object literal, when that key is a string literal. */
+function printKey(e: Expression): string | null {
+  if (e.type !== "ObjectExpression") return null;
+  let hit: string | null = null;
+  for (const p of e.properties) {
+    if (p.type === "SpreadElement") hit = null;
+    else if (
+      !p.computed &&
+      (p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" ? p.key.value : "") === "print"
+    )
+      hit = p.value.type === "Literal" && typeof p.value.value === "string" ? p.value.value : null;
+  }
+  return hit;
+}
+
 /**
  * The prop `name` as written: its string literal, `null` when written another way or when a spread follows it or
- * stands in for it, `"absent"` when not written.
+ * stands in for it, `"absent"` when not written. When `printing`, a responsive value's `print` key written as a string
+ * literal (k.themes Combinations).
  */
-function written(attrs: readonly JSXAttributeItem[], name: string): string | null | "absent" {
+function written(attrs: readonly JSXAttributeItem[], name: string, printing = false): string | null | "absent" {
   let spread = -1;
   attrs.forEach((a, i) => {
     if (a.type === "JSXSpreadAttribute") spread = i;
@@ -68,6 +84,8 @@ function written(attrs: readonly JSXAttributeItem[], name: string): string | nul
   if (v?.type === "Literal" && typeof v.value === "string") return v.value;
   if (v?.type === "JSXExpressionContainer" && v.expression.type === "Literal" && typeof v.expression.value === "string")
     return v.expression.value;
+  if (printing && v?.type === "JSXExpressionContainer" && v.expression.type !== "JSXEmptyExpression")
+    return printKey(v.expression);
   return null;
 }
 
@@ -154,48 +172,59 @@ export function judgeElements(
   const first = combos[0];
   const isOverlay = (name: Value): boolean =>
     typeof name === "string" && first !== undefined && overOf(first, name) !== undefined;
-  const frames: Frame[] = [];
+  type Mode = "screen" | "print";
+  const stacks: Record<Mode, Frame[]> = { screen: [], print: [] };
   new Visitor({
     JSXElement: (el) => {
       const n = el.openingElement;
       const name = n.name.type === "JSXIdentifier" ? n.name.name : "";
-      const parent = frames.at(-1) ?? EDGE;
       if (!STYLED.has(name)) {
-        frames.push(PASS.has(name) ? parent : EDGE);
+        for (const m of ["screen", "print"] as const) {
+          const parent = stacks[m].at(-1) ?? EDGE;
+          stacks[m].push(PASS.has(name) ? parent : EDGE);
+        }
         return;
       }
       const roleName = BASE_ROLE[name];
       const role = roleName === undefined ? undefined : base[roleName];
       const look = written(n.attributes, "look");
       const set = typeof look === "string" && look !== "absent" ? looks[look] : undefined;
-      const resolve = (prop: (typeof PROPS)[number]): Value => {
-        const own = written(n.attributes, prop);
-        if (own !== "absent") return own;
-        if (look === null) return null;
-        return setToken(set, prop) ?? setToken(role, prop) ?? parent[prop];
-      };
-      const exempt =
-        parent.exempt ||
-        on(n.attributes, "hidden") ||
-        on(n.attributes, "disabled") ||
-        written(n.attributes, "aria-disabled") === "true";
+      const exempt0 =
+        on(n.attributes, "hidden") || on(n.attributes, "disabled") || written(n.attributes, "aria-disabled") === "true";
       const sch = name === "Box" ? written(n.attributes, "scheme") : "absent";
       const med = written(n.attributes, "media");
-      const bg = resolve("bg");
-      // A `bg` overlay this element sets sits on the `bg` its parent's chain found (k.a11y-static Overlays).
-      const fresh = bg !== parent.bg && isOverlay(bg);
-      const under = fresh ? parent.bg : bg === parent.bg ? parent.under : undefined;
-      const frame: Frame = {
-        fg: resolve("fg"),
-        bg,
-        fontSize: resolve("fontSize"),
-        weight: resolve("weight"),
-        exempt,
-        scheme: sch === "light" || sch === "dark" ? sch : parent.scheme,
-        media: med === "screen" || med === "print" ? med : parent.media,
-        under,
+      // Each element is read twice: on screen, where a responsive value stays unread, and printing, where its `print`
+      // key is read (k.themes Combinations).
+      const frameOf = (m: Mode): Frame => {
+        const parent = stacks[m].at(-1) ?? EDGE;
+        const resolve = (prop: (typeof PROPS)[number]): Value => {
+          const own = written(n.attributes, prop, m === "print");
+          if (own !== "absent") return own;
+          if (look === null) return null;
+          return setToken(set, prop) ?? setToken(role, prop) ?? parent[prop];
+        };
+        const bg = resolve("bg");
+        // A `bg` overlay this element sets sits on the `bg` its parent's chain found (k.a11y-static Overlays).
+        const fresh = bg !== parent.bg && isOverlay(bg);
+        return {
+          fg: resolve("fg"),
+          bg,
+          fontSize: resolve("fontSize"),
+          weight: resolve("weight"),
+          exempt: parent.exempt || exempt0,
+          scheme: sch === "light" || sch === "dark" ? sch : parent.scheme,
+          media: med === "screen" || med === "print" ? med : parent.media,
+          under: fresh ? parent.bg : bg === parent.bg ? parent.under : undefined,
+        };
       };
-      frames.push(frame);
+      const screenParent = stacks.screen.at(-1) ?? EDGE;
+      const frames = { screen: frameOf("screen"), print: frameOf("print") };
+      stacks.screen.push(frames.screen);
+      stacks.print.push(frames.print);
+      const frame = frames.screen;
+      const bg = frame.bg;
+      const under = frame.under;
+      const fresh = bg !== screenParent.bg && isOverlay(bg);
       if (fresh && typeof bg === "string" && typeof under === "string" && first !== undefined) {
         const at = valueAt(n.attributes, "bg") ?? n.start;
         if (isOverlay(under))
@@ -203,22 +232,27 @@ export function judgeElements(
         else if (!(overOf(first, bg) ?? []).includes(under))
           backdrops.push({ at, bad: { prop: "bg", overlay: bg, backdrop: under, kind: "missing" } });
       }
-      if (exempt || !holdsText(el.children)) return;
-      const fg = frame.fg === undefined ? pageFg : frame.fg;
-      if (fg === null || frame.bg === null || frame.bg === undefined || frame.under === null) return;
-      // A backdrop E1817 reports is not judged for contrast: its composite is no value the tokens allow.
-      const misplaced =
-        typeof frame.under === "string" &&
-        first !== undefined &&
-        (isOverlay(frame.under) || !(overOf(first, frame.bg) ?? [frame.under]).includes(frame.under));
-      if (misplaced) return;
-      const size = frame.fontSize === undefined ? pageSize : frame.fontSize;
-      const weight = frame.weight === undefined ? pageWeight : frame.weight;
-      const bad = failing(tokens, combosFor(combos, frame), fg, frame.bg, size, weight, frame.under);
+      if (frame.exempt || !holdsText(el.children)) return;
+      const judge = (f: Frame, printing: boolean): Readonly<Record<string, string>> | undefined => {
+        const fg = f.fg === undefined ? pageFg : f.fg;
+        if (fg === null || f.bg === null || f.bg === undefined || f.under === null) return undefined;
+        // A backdrop E1817 reports is not judged for contrast: its composite is no value the tokens allow.
+        const misplaced =
+          typeof f.under === "string" &&
+          first !== undefined &&
+          (isOverlay(f.under) || !(overOf(first, f.bg) ?? [f.under]).includes(f.under));
+        if (misplaced) return undefined;
+        const size = f.fontSize === undefined ? pageSize : f.fontSize;
+        const weight = f.weight === undefined ? pageWeight : f.weight;
+        const judged = combosFor(combos, f).filter((c) => c.printing === printing);
+        return failing(tokens, judged, fg, f.bg, size, weight, f.under);
+      };
+      const bad = judge(frames.screen, false) ?? judge(frames.print, true);
       if (bad !== undefined) out.push({ at: n.start, bad });
     },
     "JSXElement:exit": () => {
-      frames.pop();
+      stacks.screen.pop();
+      stacks.print.pop();
     },
   }).visit(ast);
   return { contrast: out, backdrops };

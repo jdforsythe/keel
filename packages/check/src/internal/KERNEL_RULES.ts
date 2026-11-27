@@ -1,5 +1,6 @@
 import { blankLabel } from "../rules/blankLabel.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
+import { checkTimeEntries } from "../rules/checkTimeEntries.ts";
 import { componentCtxSignature } from "../rules/componentCtxSignature.ts";
 import { dynamicImport } from "../rules/dynamicImport.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
@@ -116,6 +117,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   libraryTokenName,
   schemeSelectOneScheme,
   themeSelectChoice,
+  checkTimeEntries,
   blankLabel,
   hostCodeImport,
   stylesheetImport,

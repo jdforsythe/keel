@@ -4,6 +4,7 @@ import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 import type { RuleInput } from "../types/RuleInput.ts";
 import { applyEdits } from "./applyEdits.ts";
+import { fixElsewhere } from "./fixElsewhere.ts";
 import { ruleThrew } from "./ruleThrew.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
@@ -18,6 +19,8 @@ function toDiagnostic(rule: RuleDef, f: Finding, input: RuleInput): Diagnostic {
     message: clipMessage(text, 89),
   };
   const withSee: Diagnostic = rule.see === undefined ? base : { ...base, see: rule.see };
+  const elsewhere = fixElsewhere.get(f);
+  if (elsewhere !== undefined && elsewhere !== "") return { ...withSee, fix: elsewhere };
   const edits = rule.fix?.(f, { file: input.file, ast: input.ast }) ?? null;
   if (edits === null || edits.length === 0) return withSee;
   const fix = unifiedDiff(input.file.path, input.file.source, applyEdits(input.file.source, edits));

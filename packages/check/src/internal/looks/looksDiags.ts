@@ -3,6 +3,7 @@ import { type ObjectExpression, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { applyEdits } from "../applyEdits.ts";
+import { fitNames } from "../fitNames.ts";
 import { keyName } from "../keyName.ts";
 import { moduleDiag } from "../modules/moduleDiag.ts";
 import { parseFile } from "../parseFile.ts";
@@ -111,14 +112,16 @@ export function looksDiags(
   // E1810 for themes: the app's `contrast` and `print` themes hold the names the shipped ones hold.
   for (const lib of looks.listed) {
     if (lib.entry !== "ok" || lib.shipped === null) continue;
-    const local = `${lib.id}Tokens`;
     for (const gap of themeGaps(lib.shipped, value.themes)) {
       const [first] = gap.missing;
       if (first === undefined) continue;
       const [group, token] = first;
       const more = gap.missing.length > 1 ? ` and ${gap.missing.length - 1} more` : "";
-      const spread = `${local}.themes.${gap.key}.${group}`;
-      const message = `${lib.name} needs themes.${gap.theme} ${group} "${token}"${more}; spread ${spread}`;
+      const message = fitNames(
+        ([name, theme, t, id]) =>
+          `${name} needs themes.${theme} ${group} "${t}"${more}; spread ${id}Tokens.themes.${gap.key}.${group}`,
+        [lib.name, gap.theme, token, lib.id],
+      );
       if (tokensFile === undefined) {
         for (const { path, entry } of looks.entries.get(lib.name) ?? []) {
           const file = byPath.get(path);
