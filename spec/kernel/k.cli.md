@@ -11,7 +11,7 @@ status: conformance-covered
 | `dev [--port N]` | dev server and log stream (Vite's `server.host`, else 127.0.0.1; `server.port`, else 5173; in use: E1560) |
 | `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
 | `explain <code>` | <= 120 tokens: meaning, fix pattern |
-| `inspect [url]` | a dev app's inspect summary |
+| `inspect [url]` | a dev app's summary |
 | `render <routeId\|Component> [--props json]` | one render's a11y tree |
 | `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
 | `ledger` | emit, diff the ledger |
@@ -29,7 +29,7 @@ Every command takes `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--v
 import { inspector } from '@keel/compiler/inspect/inspector'
 inspector({ id: 'orders.recent', schema: Recent, read: recent })
 ```
-Each `read` gets the request's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged).
+`read` gets the request's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged).
 
 **Output.** Exactly OUTPUT.md. Exit: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 
