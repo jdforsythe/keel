@@ -11,7 +11,7 @@ const FIX =
   "on the host, sysctl kernel.apparmor_restrict_unprivileged_userns=0 (Ubuntu 23.10 and later) or " +
   "sysctl kernel.unprivileged_userns_clone=1 (Debian); in a container, a seccomp profile that allows clone with " +
   "CLONE_NEWUSER, or docker run --security-opt seccomp=unconfined, which lifts every syscall filter from the " +
-  "container; last, --no-sandbox, an unsandboxed browser with a warning on every run";
+  "container; last, --no-sandbox, an unsandboxed browser with W1734 on every run";
 
 /** The one E1734 of a Chromium that cannot start its sandbox (k.e2e-run Browser), its fix naming the settings. */
 const sandboxRefused = (): Diag =>
