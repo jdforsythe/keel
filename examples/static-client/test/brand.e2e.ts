@@ -9,6 +9,7 @@ import { cp, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { build, serve } from "@keel/testing/e2e";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 
 const here = join(import.meta.dirname, "..");
@@ -20,7 +21,6 @@ import { Box, Button, Input, Link, Text } from "@keel/ui";
 import { Home } from "./Home.schema.ts";
 import { Note } from "./Note.schema.ts";
 import { app } from "./app.contract.ts";
-import { tempDir } from "@keel/tooling/test-tmp";
 
 export const Props = s.object({ data: Home });
 
