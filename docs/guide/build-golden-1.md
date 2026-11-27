@@ -2820,11 +2820,10 @@ export type RecountInput = s.infer<typeof RecountInput>;
 export const LATEST_KEY = "digest.latest";
 ```
 
-`attempt` is the one sanctioned way to catch: it turns a throw into `err` with `keel.unexpected`, or, given a second argument `expect`, into the `KeelError` `expect` returns for a thrown value it recognizes. App code never writes `throw` (E1451) or `try`/`catch` (E1452), inside `unsafe(` or out; a bug is `defect(message)`, which reaches the nearest `Boundary` as a throw does, and `try`/`finally` cleans up.
+Stored text is read with the schema's `parseJson`: it returns a `Result`, and a text that is no JSON is `err` like any other value the schema refuses. A bare `JSON.parse` is E1457, since it throws on bad text. App code never writes `throw` (E1451) or `try`/`catch` (E1452), inside `unsafe(` or out; a bug is `defect(message)`, which reaches the nearest `Boundary` as a throw does, and `try`/`finally` cleans up.
 
 ```ts title="modules/digest/readLatest.ts"
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
 import { Digest } from "./Digest.schema.ts";
 import { LATEST_KEY } from "./LATEST_KEY.ts";
 
@@ -2838,9 +2837,8 @@ const NONE: Digest = { open: 0, done: 0, at: 0 };
 export async function readLatest(ctx: Ctx): Promise<Digest> {
   const raw = await ctx.storage.get(LATEST_KEY);
   if (raw === null) return NONE;
-  const json = attempt((): unknown => JSON.parse(raw));
-  const parsed = json.ok ? Digest.parse(json.value) : undefined;
-  return parsed?.ok ? parsed.value : NONE;
+  const parsed = Digest.parseJson(raw);
+  return parsed.ok ? parsed.value : NONE;
 }
 ```
 
@@ -2959,9 +2957,19 @@ export const loadDigest = loader(digest, "digest.show", {}, async (_args, ctx) =
 
 The loader of an `events: true` entry is live: its `fn` is an async generator, and a plain function there is E1515. A document or JSON GET takes its first yield; a GET with `accept: text/event-stream` gets every yield as a `data:` line until the request ends. Live loaders need a `node` deployable (E1558).
 
+`attempt(fn, expect)` is the one catch. `expect` is given what `fn` threw and returns the `KeelError` it stands for, or `undefined` for a value it does not expect, which goes on as thrown. Here the only expected throw is the wait ending because the request closed; the error it becomes is declared like any other:
+
+```ts title="modules/digest/FeedClosed.schema.ts"
+import { s } from "@keel/schema";
+
+/** `digest.feedClosed`: the feed's wait for the next read ended because the request or the deployable closed. */
+export const FeedClosed = s.error("digest.feedClosed", s.object({}));
+```
+
 ```ts title="modules/digest/feedDigest.server.ts"
 import { loader } from "@keel/router";
 import { attempt, ok } from "@keel/schema";
+import { FeedClosed } from "./FeedClosed.schema.ts";
 import { digest } from "./digest.contract.ts";
 import { readLatest } from "./readLatest.ts";
 
@@ -2976,7 +2984,10 @@ export const feedDigest = loader(digest, "digest.feed", {}, async function* ({ s
   let last = await readLatest(ctx);
   yield ok(last);
   while (!signal.aborted) {
-    const waited = await attempt(() => ctx.clock.after(POLL_MS, signal));
+    const waited = await attempt(
+      () => ctx.clock.after(POLL_MS, signal),
+      (x) => (signal.aborted && x === signal.reason ? FeedClosed.make({}) : undefined),
+    );
     if (!waited.ok) return;
     const now = await readLatest(ctx);
     if (now.at !== last.at || now.open !== last.open || now.done !== last.done) {
@@ -3310,7 +3321,7 @@ Every line is `CODE path:line:col message`. Errors start with `E`, warnings with
 | E1258 | gave a component an element made before the call, as `children` or another prop | make it inside a thunk: `icon: () => <Icon />` |
 | E1301 | ran a transaction a component's `uses` does not list | add it to `uses` |
 | E1302 | read `ctx` or a global in a transaction | pass the value in the payload |
-| E1451, E1452 | `throw`, or `try`/`catch` | `return err(…)` or `defect(…)`, `attempt(…)` |
+| E1451, E1452 | `throw`, or `try`/`catch` | `return err(…)` or `defect(…)`, `attempt(fn, expect)` |
 | E1601 | `Date`, `Math.random`, `fetch`, `localStorage` in app code | `ctx.clock`, `ctx.random`, an endpoint, `ctx.storage` |
 | E1515 | a binding that misses an entry of the contract, names one it lacks, or holds a handler written for another id | bind every entry once, under the id its handler names |
 | E1514 | a contract file importing a component, handler or `routes.ts` | import `*.schema.ts` files and packages only |
