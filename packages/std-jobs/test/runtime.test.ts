@@ -1,11 +1,12 @@
 // std.jobs Run, Restart, Inspect: the outcome codes of a run, leases, order, the retained keys and failures, and the
 // runner's start and stop. Seed 1337
 import { type Ctx, type KeyValueStorage, createCtx } from "@keel/ctx";
-import { type KeelError, type Result, err, ok, s } from "@keel/schema";
+import { type KeelError, type Result, err, isDefect, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { job, queue } from "../src/index.ts";
 import { State } from "../src/internal/State.schema.ts";
+import { dataOf } from "./dataOf.ts";
 
 const SEED = 1337;
 const KEY = "std.jobs.orders";
@@ -405,9 +406,9 @@ test("enqueue names the job id a queue lacks, and a refused input with its messa
     "orders.work": job({ input: s.object({ a: s.object({ n: s.int() }) }) }, async () => ok(null)),
   });
   const wide: { enqueue(ctx: Ctx, id: string, input: unknown): Promise<unknown> } = jobs;
-  await expect(wide.enqueue(ctx, "orders.gone", { n: 1 })).rejects.toThrow(
-    "std.jobs: no job orders.gone in this queue",
-  );
+  const gone = await wide.enqueue(ctx, "orders.gone", { n: 1 }).catch((e: unknown) => e);
+  expect(isDefect(gone)).toBe(true);
+  expect(Reflect.get(Object(gone), "data")).toEqual({ job: "orders.gone" });
   const bad: { a: { n: number } } = { a: { n: 1.5 } };
   const r = await jobs.enqueue(ctx, "orders.work", bad);
   expect(r).toEqual({ ok: false, error: { code: "keel.fields", message: "keel.fields", data: { "a.n": "int" } } });
@@ -425,13 +426,9 @@ test("An enqueued job's id is the ctx's next Job id, and its key is stored with 
 
 test("A queue refuses an input holding s.secret naming the job and the path, and an empty table is a queue of module ''", async () => {
   const root = job({ input: s.secret(s.string()) }, async () => ok(null));
-  expect(() => queue({ "orders.a": root })).toThrow(
-    "E2503 job orders.a input holds s.secret at (root); a job's input is stored",
-  );
+  expect(dataOf(() => queue({ "orders.a": root }))).toEqual({ job: "orders.a", at: "(root)" });
   const nested = job({ input: s.object({ pw: s.secret(s.string()) }) }, async () => ok(null));
-  expect(() => queue({ "orders.b": nested })).toThrow(
-    "E2503 job orders.b input holds s.secret at pw; a job's input is stored",
-  );
+  expect(dataOf(() => queue({ "orders.b": nested }))).toEqual({ job: "orders.b", at: "pw" });
   const ctx = sim();
   const empty = queue({});
   const r = start(empty, ctx);

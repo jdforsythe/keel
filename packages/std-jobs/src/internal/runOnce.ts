@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { type JsonValue, attempt } from "@keel/schema";
 import type { Job } from "../Job.type.ts";
+import { Thrown } from "./Thrown.ts";
 
 /**
  * One run of a job: its stored input parsed, `fn` raced against `timeoutMs` on `ctx.clock` (then `a` aborts). Resolves
@@ -18,15 +19,19 @@ export async function runOnce(
   if (!parsed.ok) return "keel.fields";
   const t = new AbortController();
   a.signal.addEventListener("abort", () => t.abort(), { once: true });
-  const raced = await attempt(() =>
-    Promise.race([j.fn(parsed.value, ctx, a.signal), ctx.clock.after(j.timeoutMs, t.signal).then(() => null)]),
+  const raced = await attempt(
+    () =>
+      Promise.race([
+        j.fn(parsed.value, ctx, a.signal),
+        ctx.clock.after(j.timeoutMs, t.signal).then(() => "timeout" as const),
+      ]),
+    (x) => (x instanceof Error ? Thrown.make({}) : undefined),
   );
   t.abort();
-  if (!raced.ok) return "jobs.thrown";
-  const r = raced.value;
-  if (r === null) {
+  if (!raced.ok) return raced.error.code;
+  if (raced.value === "timeout") {
     a.abort();
     return "jobs.timeout";
   }
-  return r.ok ? undefined : r.error.code;
+  return undefined;
 }

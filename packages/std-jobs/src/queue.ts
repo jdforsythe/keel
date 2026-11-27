@@ -11,7 +11,10 @@ import { runQueue } from "./internal/runQueue.ts";
 export function queue<T extends JobTable>(table: T): Queue<T> {
   for (const [id, j] of Object.entries(table)) {
     const at = secretPath(j.input);
-    if (at !== null) defect(`job ${id} input holds s.secret at ${at || "(root)"}; a job's input is stored`, "E2503");
+    if (at !== null)
+      defect("a job's input holds an s.secret; a job's input is stored", "E2503", {
+        data: { job: id, at: at || "(root)" },
+      });
   }
   const module = Object.keys(table)[0]?.split(".")[0] ?? "";
   return {

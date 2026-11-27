@@ -23,8 +23,8 @@ export function transact<T>(ctx: Ctx, module: string, fn: (st: State) => T): Pro
     try {
       for (;;) {
         const [raw = null] = await ctx.storage.read([key]);
-        const r = State.parse(raw === null ? { q: [], done: [], failed: [] } : JSON.parse(raw));
-        if (!r.ok) defect(`std.jobs: ${key} does not hold a queue`);
+        const r = raw === null ? State.parse({ q: [], done: [], failed: [] }) : State.parseJson(raw);
+        if (!r.ok) defect("std.jobs: the stored value does not hold a queue", { data: { key }, cause: r.error });
         const out = fn(r.value);
         const text = JSON.stringify(r.value);
         if (text === raw || (await ctx.storage.commit([{ key, expect: raw, value: text }]))) {

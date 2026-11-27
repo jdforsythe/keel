@@ -19,7 +19,7 @@ export async function enqueue(
   opts: EnqueueOptions,
 ): Promise<Result<Id<"Job">, KeelError<string, unknown>>> {
   const j = table[id];
-  if (j === undefined) defect(`std.jobs: no job ${id} in this queue`);
+  if (j === undefined) defect("std.jobs: no such job in this queue", { data: { job: id } });
   const r = j.input.parse(input);
   if (!r.ok) {
     const data = Object.fromEntries(r.error.data.issues.map((i) => [pathToString(i.path), i.rule]));

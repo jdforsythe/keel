@@ -16,6 +16,7 @@ export function job<I>(
     ["attempts", attempts],
     ["timeoutMs", timeoutMs],
   ] as const)
-    if (!Number.isSafeInteger(n) || n <= 0) defect(`job ${name} ${String(n)} is not a positive integer`, "E2505");
+    if (!Number.isSafeInteger(n) || n <= 0)
+      defect("a job option is not a positive integer", "E2505", { data: { option: name, value: String(n) } });
   return { input: opts.input, attempts, timeoutMs, fn };
 }
