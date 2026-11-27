@@ -7,6 +7,7 @@ import { tx } from "@keel/store";
 import { Box } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
 import type { ToastItem } from "./ToastItem.ts";
+import { Cancelled } from "./internal/Cancelled.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
 import { toastKey } from "./internal/toastKey.ts";
 import { stableRows } from "./stableRows.ts";
@@ -71,7 +72,10 @@ export function Toaster(
       timer = run;
       const duration = props.duration;
       const waiting = ctx.clock.after(Math.max(LEAST, duration), run.signal);
-      void attempt(() => waiting).then((waited) => {
+      void attempt(
+        () => waiting,
+        (x) => (x === run.signal.reason ? Cancelled.make({}) : undefined),
+      ).then((waited) => {
         if (!waited.ok) return;
         void tx(c.events.expire, {});
         after();
