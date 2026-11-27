@@ -11,7 +11,7 @@ status: conformance-covered
 | `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
 | `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
-| `inspect [url]` | summarize a dev app's inspect document |
+| `inspect [url]` | summarize a dev app's inspect document (k.inspect) |
 | `render <routeId\|Component> [--props json]` | a11y tree of one render |
 | `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
 | `ledger` | emit and diff the ledger |
@@ -22,15 +22,6 @@ status: conformance-covered
 
 Every command takes `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic commands also `--code <code>`.
 
-**Inspect.** In dev, `GET /__keel/inspect` is JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `inspect()` outside a request scope, `{ [id]: { state, log } }` from `stores()` unredacted, the `.keel/` artifacts. A node deployable's `createApp` with `mode: 'dev'` serves it, else the compiler plugin's dev and preview servers, where the page's dev entry posts `{ graph, stores, sections, deployable }` on mount and change (`live: false` before). `keel dev` adds `deployables` (k.topology). Both answer a loopback or listed `Host` with its own or a listed `Origin` (`createApp({ inspect: { origins } })`; plugin: comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port; CORS echoed), no `Origin` for GET only; else 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) prints an `inspect.store` per store, an `inspect.section` per section (per deployable given `deployables`) and counts.
-
-**Inspector hooks** (extension point).
-```ts
-import { inspector } from '@keel/compiler/inspect/inspector'
-inspector({ id: 'orders.recent', schema: Recent, read: (ctx) => recent(ctx) })
-```
-Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged).
-
 **Output.** Exactly OUTPUT.md. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 
 **Formatter registry** (extension point).
@@ -40,7 +31,7 @@ formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}
 ```
 Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, `review`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
-**Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, flag value invalid for the input schema, or a required input missing, named as typed (`--to <module>`) with a line passing it · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
+**Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, flag value invalid for the input schema, or a required input missing, named as typed (`--to <module>`) with a line passing it · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter.
 
 **Command form.** A line `keel` prints names each `keel <command>` in the form the reader runs it from: when `npm_config_user_agent` names pnpm, npm, yarn or bun, that manager's (`pnpm keel build`, `npx --no keel build`, `yarn keel build`, `bun run keel build`), since a `keel` on PATH may be another program; with none, `keel build`. A `keel` already in a manager's form is left as it is. Compact and pretty only; json keeps each record's text.
 
@@ -56,15 +47,8 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - With 20 diagnostics of one code, compact prints 5 plus one `... +15 more` line; `--limit 2` prints 2.
 - `keel nope` emits E1051 and exits 2.
 - `keel docs k.cli` prints <= 1,500 tokens.
-- `GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the `inspect()` graph; in production mode it is the route table's 404.
 - `keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1.
 - An MCP `build` writes the `.keel/` files `keel build` writes.
-- `keel inspect` against an unreachable url emits E1056 and exits 1.
-- A `POST /__keel/inspect` without `Origin` on a dev `createApp` gets 403 `keel.denied`.
-- A dev `createApp` serves each section as `{ doc, value }`; a value failing its schema is `{ doc, error }` with E1057; a second `inspector` with that id throws E1057.
-- The served `graph` equals `inspect()` taken outside the request.
-- `keel inspect` prints one `inspect.section` per section; an `error` one is E1057, exit 1.
 - `respond` of a record of a kind with no formatter yields E1054.
 - After `stdCommand('session', op)`, `keel session` parses argv with `op.input`, runs `op` and emits its records, and the MCP tools include `session`; unfilled, I1055, exit 0; filling it with another `op` throws E1053.
-- `keel inspect` of a document with `deployables` prints one `inspect.section` per deployable and section.
 - Run with `npm_config_user_agent` `pnpm/10.0.0`, `keel check` in a project with a stale generated deploy file prints its E1005 line naming `pnpm keel build`; with `npm/10.0.0`, `npx --no keel build`; with none, `keel build`; with `--format=json` the record text is the same in each.

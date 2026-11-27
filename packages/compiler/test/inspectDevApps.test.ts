@@ -1,4 +1,4 @@
-// `GET /__keel/inspect` under `keel dev` (k.cli Inspect, Inspector hooks; k.topology Local topology): the document
+// `GET /__keel/inspect` under `keel dev` (k.inspect, Inspector hooks; k.topology Local topology): the document
 // holds the inspector sections of the `node` deployables' dev apps beside the open page's report, and each deployable's
 // own sections under `deployables`.
 import fs from "node:fs";

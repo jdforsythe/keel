@@ -1,4 +1,4 @@
-// Inspector hooks under `keel dev` (k.cli Inspector hooks, k.topology Local topology): a module that registers a
+// Inspector hooks under `keel dev` (k.inspect Inspector hooks, k.topology Local topology): a module that registers a
 // section at its top level and is evaluated again replaces that section, while two registrations of one id within
 // one load still throw E1057.
 import fs from "node:fs";

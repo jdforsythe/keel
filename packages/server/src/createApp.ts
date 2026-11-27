@@ -75,7 +75,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * cap a `diag` keeps the server's own prefix (`loader <id> threw: `) and is one mark after it (`scrubbedDiag`). `mode` defaults to `production`.
  * With no DOM global (plain Node) it installs the DOM-free server tree (`installServerDom`) so components that build
  * DOM render documents. A JSON or FormData action body over `maxBodyBytes` (default 1 MiB) gets 413 `keel.payloadTooLarge`.
- * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table and before
+ * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.inspect) before the route table and before
  * any request scope (its `graph` holds the app's scopes only; inspector section E1057s go to `log`), to a loopback
  * or listed host and an absent (GET only), same, or listed (`inspect.origins`) `Origin` only; others, and any other
  * method without an allowed `Origin`, get 403 `keel.denied`.

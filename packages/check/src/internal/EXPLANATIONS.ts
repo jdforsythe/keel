@@ -162,14 +162,14 @@ const ROWS: readonly Row[] = [
     "inspect or report target unreachable, not 2xx, or not the document the command reads",
     "The url must be a running dev app serving GET /__keel/inspect, or for keel report with a path or a query, a route answering a Tally or an array of them as JSON, bare or as the ok value of a loader's answer.",
     "keel inspect http://localhost:5173 (start the app in dev first)",
-    "k.cli",
+    "k.inspect",
   ],
   [
     "E1057",
     "inspector section id registered twice, or a section that throws or fails its schema",
     "A section's read gets the app ctx; its value must fit its schema.",
     "inspector({ id: 'orders.recent', schema: Recent, read: (ctx) => recent(ctx) }) once per id",
-    "k.cli",
+    "k.inspect",
   ],
   [
     "E1060",

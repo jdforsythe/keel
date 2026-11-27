@@ -1,4 +1,4 @@
-// `keel inspect [url]` (k.cli Inspect, RFC 0017): fetches GET /__keel/inspect through `io.fetch` and summarizes it.
+// `keel inspect [url]` (k.inspect, RFC 0017): fetches GET /__keel/inspect through `io.fetch` and summarizes it.
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 

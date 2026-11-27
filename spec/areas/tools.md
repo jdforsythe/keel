@@ -5,7 +5,8 @@
 | k.check-cache | cross-process cache of the type pass, its key and entries |
 | k.explain | `explain(code)` entry, explanation table and agent file text |
 | k.host | rules against app reads of host zone, locale and Node globals, E1758 and E1759 |
-| k.cli | operations behind the CLI, MCP and LSP, command table, inspector and output |
+| k.cli | operations behind the CLI, MCP and LSP, command table, formatters and output |
+| k.inspect | the dev inspect document, `keel inspect` and inspector hooks |
 | k.docs | `keel docs` over installed packages: packed files, areas, forms and resolution |
 | k.scaffold | scaffold generators, codemods, edit sets and the clean check guarantee |
 | k.scaffold-service | `keel scaffold service` for services no module serves, inputs, edits and E1358 |

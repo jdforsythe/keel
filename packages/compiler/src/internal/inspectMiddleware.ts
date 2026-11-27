@@ -92,7 +92,7 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
 };
 
 /**
- * `GET|POST /__keel/inspect` for the Vite dev and preview servers (k.cli Inspect, RFC 0017).
+ * `GET|POST /__keel/inspect` for the Vite dev and preview servers (k.inspect, RFC 0017).
  * GET returns `{ live, graph, stores, ids, a11y, routes, sections }`: artifacts read from `<root>/.keel/` per request, the live
  * half from the last report the open page posted (`live: false`, empty graph, stores and sections, until one arrives). Under
  * `keel dev`, `apps` gives the `node` deployables' dev apps by name: the document then also holds `deployables`,

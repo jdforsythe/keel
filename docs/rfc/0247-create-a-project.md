@@ -1,6 +1,6 @@
 # RFC 0247: start a Keel project from an empty folder with one command
 
-Status: implemented (slices 1 to 3; slice 4 waits on RFC 0244 and RFC 0251). Accepted by the orchestrator on 2026-11-26 with For the operator 1 to 4 as recommended (ADR-0292). New section k.create; amends k.scaffold (the `project` generator, Conformance), k.explain (Agent files), the map. From W17, "The end user's seat" in `tasks/p1/TODO.md`: two hands-on reviews found that starting from an empty folder is the weakest five minutes.
+Status: implemented (slices 1 to 3; slice 4 waits on RFC 0244 and RFC 0251). Accepted by the orchestrator on 2026-11-26 with For the operator 1 to 4 as recommended (ADR-0292). New sections k.create and k.inspect; amends k.scaffold (the `project` generator, Conformance), k.explain (Agent files), k.cli (its inspect material moves to k.inspect), the map. From W17, "The end user's seat" in `tasks/p1/TODO.md`: two hands-on reviews found that starting from an empty folder is the weakest five minutes.
 
 ## Decisions
 - D1: the command is `pnpm create @keel/app [folder] [flags]`, which runs the package `@keel/create-app`. npm, yarn and bun run the same package: `npm create @keel/app [folder] -- [flags]`, `yarn create @keel/app`, `bun create @keel/app`. The binary `keel` is run through the project (`pnpm keel ...`); the docs recommend against a global install.
@@ -150,6 +150,8 @@ Applied in this commit.
 - k.explain Agent files: the library block and `keel scaffold library`'s agent files.
 - `spec/areas/tools.md`: the row `| k.create | `pnpm create @keel/app`: flags, files per kind, package manager, workspace, E1360 to E1365 |`; `pnpm spec --for E1360` finds the section by its Rules.
 - `tooling/docs-owners.json`: `k.create` owned by `@keel/scaffold`, which holds `createPlan` and packs the section, so `keel docs k.create` works in every project.
+- k.scaffold Generators, `route`: an id the contract already holds is E1351 naming that id, not `--path`; a derived path another route holds is E1351 naming that route, fix `--path <path>`. A taken id and a taken path are two mistakes, and each message names its own. Its `route` Conformance clause takes an id a fresh project lacks: `{ id: 'app.start' }` beside a route at `/start`, since the `project` generator's home route is `app.home`.
+- New `spec/kernel/k.inspect.md`, status `conformance-covered`: k.cli's Inspect and Inspector hooks paragraphs, Rules E1056 and E1057, and its seven inspect Conformance clauses, each moved whole with no word changed. k.cli keeps the `inspect [url]` row, pointing at k.inspect, and no longer holds them: `keel docs k.cli` prints about 1,184 tokens, under its clause's 1,500, and k.inspect about 621. `spec/areas/tools.md` gains the k.inspect row; `tooling/docs-owners.json` gives it to `@keel/cli`; E1056 and E1057's explanations and `keel inspect`'s diagnostics cite k.inspect. A clause's item is its section and its text (k.ledger-items), so the seven are new items under k.inspect and their evidence comes from the re-cited tests.
 
 ## Conformance diff
 The conformance-writer writes from k.create, k.scaffold and k.explain's text alone:
@@ -159,13 +161,15 @@ The conformance-writer writes from k.create, k.scaffold and k.explain's text alo
 - `packages/cli/conformance/agent-files-library.test.ts`: k.explain's library block and `keel scaffold library`'s agent files, W1356 and `--sync` there.
 - After the review's corrections, to re-quote: k.create's permission-model clause and its `--existing` clause (several files in one E1361's `paths`); `create-bin.test.ts` adds the probes.
 - After the build's corrections, to re-quote: k.create clauses 11 and 22, and Package's input (`create-plan-support.ts` passes `skills`, the names in `packages/cli/skills/` read as `AgentSkill`s); `create-plan.test.ts`'s library list ends `pnpm keel pack`; `agent-files-library.test.ts` quotes k.explain's three new clauses.
+- k.inspect, to re-cite (the quote unchanged, the section `k.inspect` in place of `k.cli`): `packages/cli/conformance/inspect-deployables-0190.test.ts:1`, `inspect-endpoint.test.ts:1`, `inspect-sections.test.ts:1`, `inspect.test.ts:4`; `packages/server/conformance/inspect-graph-request-scope.test.ts:1`, `inspect-post-origin.test.ts:1`, `inspect-sections.test.ts:1`. Their notes naming `k.cli Inspect` become `k.inspect`.
+- `packages/scaffold/conformance/route-entry.test.ts`: re-based on k.scaffold's `route` clause as it reads (`app.start` beside `/start`).
 - The kit clause is `tooling/smoke/create.mjs`, which the conformance file cites by clause text; it is a smoke, not a conformance file, because it needs the packed kit.
 
 ## Migration
 None. No migration notes for unreleased changes. Projects and apps in the repo that `keel scaffold project` made keep their files; the evals' fresh projects gain the home route.
 
 ## Token impact
-k.create about 2,750 of 3,100 tokens. k.scaffold 2,638 to about 2,735; k.explain 730 to about 780. The area row adds one line to `pnpm spec tools` and one entry to `keel docs tools`; `spec.map` and `docs.map` are unchanged and within their limits. New output: a default create prints about 40 lines, about 300 tokens.
+k.create about 2,750 of 3,100 tokens. `keel docs k.cli` about 1,738 to about 1,184 of its 1,500; k.inspect about 621. k.scaffold 2,638 to about 2,735; k.explain 730 to about 780. The area row adds one line to `pnpm spec tools` and one entry to `keel docs tools`; `spec.map` and `docs.map` are unchanged and within their limits. New output: a default create prints about 40 lines, about 300 tokens.
 
 ## Build plan
 1. `@keel/scaffold`: `project` gains `version`, the home route and page through `route`, `engines`, `packageManager` and the workspace input; `library` gains `.gitignore`; the CI workflow's install per manager; the `./create` entry with `createPlan`. `@keel/cli`: `keel scaffold project` passes its version, user agent and workspace reading; `keel scaffold library` adds the agent files; the library block. The explain rows for E1360 to E1365.

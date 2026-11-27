@@ -7,7 +7,7 @@ import { LogEntry } from "./LogEntry.schema.ts";
 import { RouteEntry } from "./RouteEntry.schema.ts";
 
 /**
- * `GET /__keel/inspect` as served (k.cli Inspect). A store's `state` is any JSON (`s.json()`); `loadInspect` turns it
+ * `GET /__keel/inspect` as served (k.inspect). A store's `state` is any JSON (`s.json()`); `loadInspect` turns it
  * into JSON text for `StoreView`. `sections` (inspector hooks) is absent from a client-only app's document.
  */
 export const InspectDoc = s.object({

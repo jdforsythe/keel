@@ -9,6 +9,7 @@
     "k.errors",
     "k.escapes",
     "k.evidence",
+    "k.inspect",
     "k.ledger",
     "k.ledger-items",
     "k.library",

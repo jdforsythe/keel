@@ -1,4 +1,4 @@
-// The dev inspect endpoint of the Vite plugin (k.cli Inspect, RFC 0017) and the dev entry's live reporter.
+// The dev inspect endpoint of the Vite plugin (k.inspect, RFC 0017) and the dev entry's live reporter.
 import fs from "node:fs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
