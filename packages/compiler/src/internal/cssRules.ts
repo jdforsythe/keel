@@ -3,7 +3,11 @@ import type { CssRule } from "../types/CssRule.ts";
 /** At-rules whose block holds rules; any other at-rule's block (`@font-face`, `@keyframes`, `@property`) is skipped. */
 const GROUPING = new Set(["media", "layer", "supports", "container", "scope", "document", "starting-style"]);
 
-type Context = { readonly layers: readonly string[]; readonly media: readonly string[]; readonly supports: readonly string[] };
+type Context = {
+  readonly layers: readonly string[];
+  readonly media: readonly string[];
+  readonly supports: readonly string[];
+};
 
 /**
  * The style rules of `text` that declare something, in document order, nested at-rules and nested style rules

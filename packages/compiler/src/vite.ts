@@ -1245,7 +1245,8 @@ export default function (): {
         if (command !== "build" || this?.environment?.config.consumer !== "client") return;
         const at = path.resolve(root, this.environment.config.build?.outDir ?? "dist");
         builtOut = at;
-        for (const f of Object.values(bundle)) if (f.fileName.endsWith(".css")) builtCss.push(path.join(at, f.fileName));
+        for (const f of Object.values(bundle))
+          if (f.fileName.endsWith(".css")) builtCss.push(path.join(at, f.fileName));
         const values = Object.entries(process.env).filter(
           (e): e is [string, string] => e[0].startsWith("KEEL_") && !PUBLIC_ENV.test(e[0]) && (e[1] ?? "").length >= 8,
         );
@@ -1271,7 +1272,13 @@ export default function (): {
       // The built CSS holds, for each color, a value check judged (k.gamut CSS): read as written, after every plugin's
       // hooks; a difference fails the build and leaves nothing for the deployable.
       const files = builtCss.splice(0).filter((f) => fs.existsSync(f));
-      const problem = files.length === 0 ? undefined : builtCssProblem(css, files.map((f) => fs.readFileSync(f, "utf8")));
+      const problem =
+        files.length === 0
+          ? undefined
+          : builtCssProblem(
+              css,
+              files.map((f) => fs.readFileSync(f, "utf8")),
+            );
       if (problem !== undefined) {
         const name = process.env.KEEL_DEPLOYABLE;
         const out = name === undefined ? builtOut : path.join(root, "dist", name);

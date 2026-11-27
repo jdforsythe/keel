@@ -60,7 +60,8 @@ export function builtCssProblem(compiled: string, files: readonly string[]): str
   const verified = (prop: string, value: string): boolean =>
     prop.startsWith("--k-") && (COLOR_PROP.test(prop) || colorProps.has(prop) || COLOR.test(value));
   for (const r of own)
-    for (const d of r.decls) if (d.prop.startsWith("--k-") && (COLOR_PROP.test(d.prop) || COLOR.test(d.value))) colorProps.add(d.prop);
+    for (const d of r.decls)
+      if (d.prop.startsWith("--k-") && (COLOR_PROP.test(d.prop) || COLOR.test(d.value))) colorProps.add(d.prop);
   own.forEach((r, k) => {
     const key = keyOf(r);
     for (const d of r.decls) {
@@ -70,7 +71,11 @@ export function builtCssProblem(compiled: string, files: readonly string[]): str
       expected.set(key, at);
     }
     const before = own[k - 1];
-    if (before !== undefined && r.media.some((m) => condKey(m).includes(P3)) && r.decls.some((d) => colorProps.has(d.prop)))
+    if (
+      before !== undefined &&
+      r.media.some((m) => condKey(m).includes(P3)) &&
+      r.decls.some((d) => colorProps.has(d.prop))
+    )
       p3After.set(key, keyOf(before));
   });
   const seen = new Set<string>();
@@ -82,9 +87,11 @@ export function builtCssProblem(compiled: string, files: readonly string[]): str
       for (const d of r.decls) {
         if (d.prop.startsWith("--k-")) declares = true;
         if (!verified(d.prop, d.value)) continue;
-        if (r.supports.length > 0) return fit((f) => `${d.prop} is ${f} under @supports in the built CSS, expected none`, d.value, "");
+        if (r.supports.length > 0)
+          return fit((f) => `${d.prop} is ${f} under @supports in the built CSS, expected none`, d.value, "");
         const want = expected.get(key)?.get(d.prop);
-        if (want === undefined) return fit((f) => `${d.prop} is ${f} in the built CSS where Keel declares none`, d.value, "");
+        if (want === undefined)
+          return fit((f) => `${d.prop} is ${f} in the built CSS where Keel declares none`, d.value, "");
         if (!want.some((w) => sameCssValue(w, d.value)))
           return fit((f, e) => `${d.prop} is ${f} in the built CSS, expected ${e}`, d.value, want[0] ?? "");
         seen.add(JSON.stringify([key, d.prop]));

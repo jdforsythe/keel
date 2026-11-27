@@ -24,9 +24,9 @@ const COMPILED = [
   "@media (prefers-contrast: more){\n:root{--k-color-b:#111111}\n}",
   "}",
   "@layer keel.print{",
-  '@media print{\n:root{color-scheme:light;print-color-adjust:exact;--k-color-a:rgb(0 133 127)}\n}',
+  "@media print{\n:root{color-scheme:light;print-color-adjust:exact;--k-color-a:rgb(0 133 127)}\n}",
   "}",
-  '@layer keel.base{\nbody{color:var(--k-color-a)}\n}',
+  "@layer keel.base{\nbody{color:var(--k-color-a)}\n}",
   ".k-a{color:var(--k-color-a)}",
   "",
 ].join("\n");
@@ -66,7 +66,10 @@ describe("builtCssProblem", () => {
     expect(builtCssProblem(COMPILED, [dropped])).toBe(
       "--k-color-a is missing from the built CSS, expected color(display-p3 0 0.52 0.5)",
     );
-    const moved = COMPILED.replace("@media screen and (color-gamut: p3){", ".y{color:red}\n@media screen and (color-gamut: p3){");
+    const moved = COMPILED.replace(
+      "@media screen and (color-gamut: p3){",
+      ".y{color:red}\n@media screen and (color-gamut: p3){",
+    );
     expect(builtCssProblem(COMPILED, [moved])).toBe(
       "--k-color-a's P3 block does not follow its sRGB block in the built CSS",
     );
@@ -91,7 +94,10 @@ describe("sameCssValue", () => {
         }),
         fc.constantFrom("%", "", "deg"),
         (channels, unit) => {
-          const nums = channels.map(([a, b]) => [`${a}.${String(b).padStart(4, "0")}${unit}`, `${Number(`${a}.${String(b).padStart(4, "0")}`)}${unit}`]);
+          const nums = channels.map(([a, b]) => [
+            `${a}.${String(b).padStart(4, "0")}${unit}`,
+            `${Number(`${a}.${String(b).padStart(4, "0")}`)}${unit}`,
+          ]);
           const written = `color(display-p3 ${nums.map((n) => n[0]).join(" ")} / 0.5)`;
           const minified = `color(display-p3 ${nums.map((n) => (n[1] ?? "").replace(/^0\./, ".")).join(" ")}/.5)`;
           expect(sameCssValue(written, minified)).toBe(true);
