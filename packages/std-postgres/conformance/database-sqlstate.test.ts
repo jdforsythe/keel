@@ -11,11 +11,23 @@ import { NoRows, sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { FOLDER_BOUND, MODES, SEED, errOf, fresh, migrationsOf, okOf, sqlName } from "./fixtures.ts";
+import { FOLDER_BOUND, MODES, SEED, errOf, fresh, migrationsOf, okOf, sqlName, tpl } from "./fixtures.ts";
 
 const REAL = MODES.filter((m) => m.name !== "sim");
 const Value = s.object({ v: s.string() });
 const Sleep = s.object({ pg_sleep: s.string() });
+const Shown = s.object({ statement_timeout: s.string() });
+
+/** The value a promise rejected with, `undefined` when it resolved. */
+const thrownBy = (p: Promise<unknown>): Promise<unknown> =>
+  p.then(
+    () => undefined,
+    (e: unknown) => e,
+  );
+const expectE2461 = (v: unknown, sqlstate: string): void => {
+  expect(isDefect(v, "E2461")).toBe(true);
+  expect(v instanceof Error && v.message).toBe(`E2461 std.postgres: the database answered SQLSTATE ${sqlstate}`);
+};
 
 /** A database whose migrations make `raise_it()` and `raise_with(code)`, named per call so files share one server. */
 function setup() {
@@ -77,26 +89,119 @@ for (const m of REAL) {
       FOLDER_BOUND,
     );
 
-    test(
-      "inside a `transaction` after `set local statement_timeout = 1`, `select pg_sleep(1)` is `err` `postgres.database` `{ sqlstate: '57014' }`",
-      async () => {
-        const x = setup();
-        const mode = m.make();
-        try {
-          const ctx = await mode.ctx(x.cap);
-          const r = await x.db(ctx).transaction(async (tx) => {
-            okOf(await tx.run(sql(NoRows)`set local statement_timeout = 1`));
-            return tx.query(sql(Sleep)`select pg_sleep(1) as pg_sleep`);
-          });
-          const e = errOf(r);
-          expect(e.code).toBe("postgres.database");
-          expect(dataOf(e)).toEqual({ sqlstate: "57014" });
-        } finally {
-          mode.done();
-        }
-      },
-      FOLDER_BOUND,
-    );
+    if (m.name !== "pglite") {
+      test(
+        "on Postgres 17, inside a `transaction` after `set local statement_timeout = 1`, `select pg_sleep(1)` is `err` `postgres.database` `{ sqlstate: '57014' }`",
+        async () => {
+          const x = setup();
+          const mode = m.make();
+          try {
+            const ctx = await mode.ctx(x.cap);
+            const r = await x.db(ctx).transaction(async (tx) => {
+              okOf(await tx.run(sql(NoRows)`set local statement_timeout = 1`));
+              return tx.query(sql(Sleep)`select pg_sleep(1) as pg_sleep`);
+            });
+            const e = errOf(r);
+            expect(e.code).toBe("postgres.database");
+            expect(dataOf(e)).toEqual({ sqlstate: "57014" });
+          } finally {
+            mode.done();
+          }
+        },
+        FOLDER_BOUND,
+      );
+    }
+
+    if (m.name === "pglite") {
+      test(
+        "on a `pglite:` folder, inside a `transaction`, `set local statement_timeout = 1` is E2461 naming `0A000`",
+        async () => {
+          const x = setup();
+          const mode = m.make();
+          try {
+            const ctx = await mode.ctx(x.cap);
+            const v = await thrownBy(
+              x.db(ctx).transaction(async (tx) => {
+                okOf(await tx.run(sql(NoRows)`set local statement_timeout = 1`));
+                return tx.query(sql(Sleep)`select pg_sleep(1) as pg_sleep`);
+              }),
+            );
+            expectE2461(v, "0A000");
+          } finally {
+            mode.done();
+          }
+        },
+        FOLDER_BOUND,
+      );
+
+      // Edge: the refusal is read from the statement's text. The clause says the `set local` form is E2461;
+      // std.postgres Modes says "setting `statement_timeout` there resets it and is E2461 (`0A000`)", which covers
+      // the session form, any case and spacing, and the reset. A value of 0 leaves the engine as it is (RFC 0242 D19:
+      // a statement that leaves it other than 0 is refused), so it is not refused.
+      const refused = [
+        ["set statement_timeout = 1", "the session form"],
+        ["SET LOCAL STATEMENT_TIMEOUT = 1", "upper case"],
+        ["SeT   LoCaL \n\t statement_timeout   =\n 1", "mixed case and extra whitespace"],
+        ["set statement_timeout to 5000", "the `to` form"],
+      ] as const;
+      for (const [text, what] of refused) {
+        test(
+          `on a \`pglite:\` folder, \`${text.replace(/\s+/g, " ")}\` (${what}) is E2461 naming \`0A000\``,
+          async () => {
+            const x = setup();
+            const mode = m.make();
+            try {
+              const ctx = await mode.ctx(x.cap);
+              const v = await thrownBy(x.db(ctx).transaction(async (tx) => tx.run(sql(NoRows)(tpl([text])))));
+              expectE2461(v, "0A000");
+            } finally {
+              mode.done();
+            }
+          },
+          FOLDER_BOUND,
+        );
+      }
+
+      test(
+        "on a `pglite:` folder, a refused `set statement_timeout = 1` resets it: `show statement_timeout` afterwards is `0`",
+        async () => {
+          const x = setup();
+          const mode = m.make();
+          try {
+            const ctx = await mode.ctx(x.cap);
+            const db = x.db(ctx);
+            expectE2461(await thrownBy(db.run(sql(NoRows)`set statement_timeout = 1`)), "0A000");
+            const r = await db.query(sql(Shown)`show statement_timeout`);
+            expect(okOf(r)).toEqual([{ statement_timeout: "0" }]);
+          } finally {
+            mode.done();
+          }
+        },
+        FOLDER_BOUND,
+      );
+
+      for (const text of [
+        "set statement_timeout = 0",
+        "SET LOCAL statement_timeout = 0",
+        "set statement_timeout to default",
+      ]) {
+        test(
+          `on a \`pglite:\` folder, \`${text}\` leaves it at 0 and is not refused`,
+          async () => {
+            const x = setup();
+            const mode = m.make();
+            try {
+              const ctx = await mode.ctx(x.cap);
+              const r = await x.db(ctx).transaction(async (tx) => tx.run(sql(NoRows)(tpl([text]))));
+              okOf(r);
+            } finally {
+              mode.done();
+            }
+          },
+          FOLDER_BOUND,
+        );
+      }
+    }
 
     test(
       "`select raise_it()`, a function doing `raise exception 'x'`, is `err` `postgres.database` `{ sqlstate: 'P0001' }`, and no `data` holds more keys than `sqlstate`",
