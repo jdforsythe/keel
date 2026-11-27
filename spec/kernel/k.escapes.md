@@ -11,7 +11,8 @@ status: implemented
 | R1011 | high, opt-in | an `allow` property of the object a `createApp(` call takes, or the word `KEEL_ALLOW_ORIGINS` in a tracked file but Markdown |
 | R1012 | high, opt-in | a `reveal` call |
 | R1013 | medium | a `defect` call (k.errors) reachable only when a `Result` is not ok: read as TypeScript narrows `ok`, without types, on any name, member or call whose `.ok` is tested (`!`, `===` or `!==` against a boolean, `&&`, `\|\|`, `?:`, `if`/`else`, and the statements after `if (x.ok)` whose branch always returns) |
-| R1015 | low | a function whose return type is a type predicate or assertion (k.unsafe Type predicates) outside an `unsafe(` call |
+| R1015 | low | a type predicate or assertion proven by structure or by its module's own set (k.identity) |
+| R1017 | medium | an `attempt` whose `expect` returns an error for a value tested only by `instanceof Error`, or by no class or property of it (k.attempt) |
 | R1014 | high, opt-in | a `handle` property of the object an `identity(` call takes, or of `createApp(`'s `identity` object |
 | R1050 | medium | a cast (not `as const`), `any`, `!` or ts-suppression comment (a negative type test's expectation aside, k.unsafe) in a test file, a `.d.ts`, a `*.config.*` file, or a file under `unsafe/` or `.keel/` |
 | R1051 | medium | a comment that starts `eslint-disable`, `biome-ignore` or `oxlint-disable` |
@@ -52,4 +53,5 @@ status: implemented
 - A test file losing one `expect` call between `<base>` and `<head>` is one R1060; a test file renamed unchanged is none.
 - A file kept by the range with one `.pii(` call fewer is one R1108.
 - R1013 is one finding each for `if (!r.ok) return defect('x')`, `if (r.ok) use(r.value); else defect('x')`, `const v = r.ok ? r.value : defect('x')`, `if (r.ok) return r.value; return defect('x')`, `r.ok || defect('x')`, `!r.ok && defect('x')`, `if (r.ok !== true) defect('x')` and `if (!g().ok) defect('x')` in `modules/m/a.ts`; `return rows[0] ?? defect('x')`, `if (r.ok) defect('x')` and `r.ok && defect('x')` are none.
-- R1015 is one finding for `function isT(x: unknown): x is T { return true }` in `modules/m/a.ts` and none for the same inside an `unsafe(` call's function in `modules/m/unsafe/a.ts`.
+- R1015 is one finding for `(x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'` in `modules/m/a.ts` and none for `(x: unknown): x is Store<unknown> => isStore(x)` there.
+- R1017 is one finding each for `attempt(f, (x) => (x instanceof Error ? T : undefined))` and `attempt(f, (x) => (x ? T : undefined))` in `modules/m/a.ts`, and none for `attempt(f, (x) => (x instanceof RangeError ? T : undefined))` or `attempt(f, (x) => (x instanceof Error && x.name === 'CardError' ? T : undefined))`.

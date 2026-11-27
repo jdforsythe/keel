@@ -3,6 +3,7 @@
 |-|-|
 | k.check | static checker pipeline, diagnostic records, rule registry and flags |
 | k.check-cache | cross-process cache of the type pass, its key and entries |
+| k.fixes | when a diagnostic carries a fix, per code, and fix chains |
 | k.explain | `explain(code)` entry, explanation table and agent file text |
 | k.host | rules against app reads of host zone, locale and Node globals, E1758 and E1759 |
 | k.cli | operations behind the CLI, MCP and LSP, command table, inspector and output |
