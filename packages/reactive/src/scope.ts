@@ -29,7 +29,7 @@ export function scope(
   if (!detached && rt.owner === null)
     defect(
       "scope() with no owner outside a module root; nest it, run it in a captured scope, or in a test pass detached: true",
-      "E1208",
+      { code: "E1208" },
     );
   const outer = { owner: rt.owner, reaction: rt.reaction };
   if (detached) rt.owner = null;

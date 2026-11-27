@@ -29,7 +29,7 @@ describe("defect", () => {
     fc.assert(
       fc.property(fc.string(), fc.integer({ min: 1, max: 6 }), fc.boolean(), (m, depth, coded) => {
         const calls = { n: 0 };
-        const thrown = coded ? () => defect(m, "E2801") : () => defect(m);
+        const thrown = coded ? () => defect(m, { code: "E2801" }) : () => defect(m);
         const run = nested(thrown, depth, calls, () => true);
         let out: unknown;
         try {
@@ -71,7 +71,7 @@ describe("defect", () => {
         const code: `E${number}` = `E${n}`;
         let v: unknown;
         try {
-          defect("x", code);
+          defect("x", { code });
         } catch (e) {
           v = e;
         }

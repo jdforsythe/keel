@@ -13,7 +13,8 @@ export function migrationFiles(name: string, migrations: Readonly<Record<string,
   for (const [key, text] of Object.entries(migrations)) {
     const m = KEY.exec(key);
     if (m === null || typeof text !== "string")
-      return defect("std.postgres: a migration key is not ./migrations/NNNN-<kebab>.sql", "E2453", {
+      return defect("std.postgres: a migration key is not ./migrations/NNNN-<kebab>.sql", {
+        code: "E2453",
         data: { database: name, key },
       });
     const digest = createHash("sha256").update(text).digest("hex");
@@ -22,7 +23,8 @@ export function migrationFiles(name: string, migrations: Readonly<Record<string,
   out.sort((a, b) => a.id - b.id);
   for (const [i, f] of out.entries())
     if (f.id !== i + 1)
-      return defect("std.postgres: a migration number is missing or repeated", "E2453", {
+      return defect("std.postgres: a migration number is missing or repeated", {
+        code: "E2453",
         data: { database: name, number: String(i + 1).padStart(4, "0"), found: f.name },
       });
   return out;

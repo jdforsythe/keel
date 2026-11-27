@@ -69,7 +69,8 @@ function holding<E extends object>(
 ): Contract<string, Readonly<Record<string, E>>> {
   const members = differing(c, id, want, nothing);
   if (members.length === 0) return holds<E>(c);
-  return defect("channelRoute: a contract entry is not its channel's", "E1515", {
+  return defect("channelRoute: a contract entry is not its channel's", {
+    code: "E1515",
     data: { module: c.module, entry: id, members },
   });
 }
@@ -119,7 +120,8 @@ export function channelRoute<P, M, S>(
   const { module } = contract;
   const { path, params: query, events: output, body, message } = channel;
   if (publish !== undefined && (message === undefined || body === undefined)) {
-    return defect("channelRoute: the channel declares no message, so publish has nothing to publish", "E1510", {
+    return defect("channelRoute: the channel declares no message, so publish has nothing to publish", {
+      code: "E1510",
       data: { channel: channel.name, publish },
     });
   }

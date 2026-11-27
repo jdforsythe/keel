@@ -14,7 +14,7 @@ import { withFactory } from "./internal/withFactory.ts";
  */
 export async function findRaces(group: SessionGroup, options: FindRacesOptions): Promise<FindRacesResult> {
   // The scope the caller runs in, kept for after the replay's `await`, when no owner runs: the factories' stores nest in it.
-  const at = owner() ?? defect("findRaces() outside a scope or a module top level", "E1203");
+  const at = owner() ?? defect("findRaces() outside a scope or a module top level", { code: "E1203" });
   const replay = await replayGroup(group, { user: options.user, serve: options.serve });
   const races: Race[] = [];
   const unchecked: Unchecked[] = [];

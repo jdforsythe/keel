@@ -4,6 +4,6 @@ import { defect } from "@keel/schema";
 export function distinctKeys(writes: readonly { readonly key: string }[]): string[] {
   const keys = writes.map((w) => w.key).sort();
   for (let i = 1; i < keys.length; i++)
-    if (keys[i] === keys[i - 1]) return defect("commit names one key twice", "E1606");
+    if (keys[i] === keys[i - 1]) return defect("commit names one key twice", { code: "E1606" });
   return keys;
 }

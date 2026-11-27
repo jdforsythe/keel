@@ -5,7 +5,7 @@ import { serving } from "./serving.ts";
 
 /** The E1256 defect (k.shared): `node` the written node's `inspect` id, or a module store's id. */
 const refused = (node: number | string, kind: "signal" | "root" | "store"): never =>
-  defect("write to module state during a request", "E1256", { data: { node, kind } });
+  defect("write to module state during a request", { code: "E1256", data: { node, kind } });
 
 /**
  * Refuses a write to module state while a request or work it scheduled runs (`serving`, which follows async context,

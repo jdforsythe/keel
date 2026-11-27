@@ -44,7 +44,7 @@ describe("a render throw a route boundary catches", () => {
   });
 
   it("logs a defect by its class and code", async () => {
-    const { diags } = await run("production", () => defect("no row", "E2801", { data: { id: "jane" } }));
+    const { diags } = await run("production", () => defect("no row", { code: "E2801", data: { id: "jane" } }));
     expect(diags).toHaveLength(1);
     expect(diags[0]?.startsWith("render app.e threw: Defect E2801 #")).toBe(true);
     expect(diags.join("\n")).not.toContain("jane");

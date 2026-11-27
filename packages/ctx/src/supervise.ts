@@ -62,7 +62,7 @@ export function supervise(
   fn: () => unknown,
   failed: Failure,
 ): Result<unknown, Failure> | Promise<Result<unknown, Failure>> {
-  if (!isFailure(failed)) defect("supervise takes a KeelError as failed", "E1458");
+  if (!isFailure(failed)) defect("supervise takes a KeelError as failed", { code: "E1458" });
   // Made before `fn` runs, so a `failed` read again later cannot turn a supervised throw into a throw of the call.
   const failure = err(failed);
   const threw = (thrown: unknown): Result<never, Failure> => {

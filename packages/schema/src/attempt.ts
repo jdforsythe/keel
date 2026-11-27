@@ -39,7 +39,7 @@ export function attempt(
   fn: () => unknown,
   expect: (thrown: unknown) => Failure | undefined,
 ): Result<unknown, Failure> | Promise<Result<unknown, Failure>> {
-  if (typeof expect !== "function") defect("attempt needs expect", "E1452");
+  if (typeof expect !== "function") defect("attempt needs expect", { code: "E1452" });
   const settle = (thrown: unknown): Result<never, Failure> => {
     if (wrapsDefect(thrown)) throw thrown;
     const e = expect(thrown);

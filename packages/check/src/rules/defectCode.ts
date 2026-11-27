@@ -17,6 +17,10 @@ type Span = { readonly start: number; readonly end: number };
 /** Where the `Result` named `name` is known not ok. */
 type Failed = Span & { readonly name: string };
 
+/** Whether a property key is `name`, written as a name or a string. */
+const keyIs = (k: Node, name: string): boolean =>
+  (k.type === "Identifier" && k.name === name) || (k.type === "Literal" && k.value === name);
+
 const inside = (x: Span, y: Span): boolean => x.start >= y.start && x.end <= y.end;
 
 /** The name `X` of a test `X.ok`, else `undefined`. */
@@ -38,12 +42,12 @@ function notOkOf(n: Node): string | undefined {
 
 /**
  * E1455 (k.defects): a call of `defect` from `@keel/schema` (any alias, or `<namespace>.defect`) whose message is no
- * string literal or template without substitutions, whose code argument is no string literal of `E` and four digits,
- * or whose detail is no object literal, at that argument; the second argument is the detail when it is an object
- * literal, else the code. These spellings are read without the type pass; with it, `calleeUses` finds `defect` by its
- * symbol (k.unsafe One path). In both, a `defect` call with no `cause` where a `Result` named `r` is known not ok
- * (`if (!r.ok)`, the `else` of `if (r.ok)`, the failing arm of `r.ok ? a : b` or `r.ok || b`), at the call; its fix
- * (k.fixes Per code), for `defect(message)` and `defect(message, code)`, adds the detail `{ cause: r.error }`.
+ * string literal or template without substitutions, at it; whose detail's `code` is no string literal of `E` and four
+ * digits, at that value; or whose second argument is no object literal without a spread, or that has a third, at it.
+ * These spellings are read without the type pass; with it, `calleeUses` finds `defect` by its symbol (k.unsafe One
+ * path). In both, a `defect` call with no `cause` where a `Result` named `r` is known not ok (`if (!r.ok)`, the `else`
+ * of `if (r.ok)`, the failing arm of `r.ok ? a : b` or `r.ok || b`), at the call; its fix (k.fixes Per code) adds the
+ * detail `{ cause: r.error }`, or to a detail object literal with no spread, `cause: r.error` as its last property.
  */
 export const defectCode: RuleDef = {
   code: "E1455",
@@ -91,7 +95,10 @@ export const defectCode: RuleDef = {
     }).visit(ast);
     for (const n of calls) {
       if (n.type !== "CallExpression") continue;
-      const [message, second, third] = n.arguments;
+      const [message, detail, extra] = n.arguments;
+      const object = detail?.type === "ObjectExpression" ? detail : undefined;
+      const readable =
+        object !== undefined && object.properties.every((p) => p.type !== "SpreadElement" && !p.computed);
       if (types !== true) {
         const spread = n.arguments.find((a) => a.type === "SpreadElement");
         if (spread !== undefined) {
@@ -103,38 +110,46 @@ export const defectCode: RuleDef = {
           (message.type === "Literal" && typeof message.value === "string") ||
           (message.type === "TemplateLiteral" && message.expressions.length === 0);
         if (!literal) out.push(findingAt(file, message.start, { kind: "message" }));
-        const detailSecond = second?.type === "ObjectExpression";
-        if (second !== undefined && !detailSecond) {
-          if (!(second.type === "Literal" && typeof second.value === "string" && CODE.test(second.value)))
-            out.push(findingAt(file, second.start, { kind: "code" }));
-          if (third !== undefined && third.type !== "ObjectExpression")
-            out.push(findingAt(file, third.start, { kind: "detail" }));
-        }
+        if (detail !== undefined && !readable) out.push(findingAt(file, detail.start, { kind: "detail" }));
+        const code = readable
+          ? object.properties.find((p) => p.type === "Property" && keyIs(p.key, "code"))
+          : undefined;
+        const value = code?.type === "Property" ? code.value : undefined;
+        if (
+          value !== undefined &&
+          !(value.type === "Literal" && typeof value.value === "string" && CODE.test(value.value))
+        )
+          out.push(findingAt(file, value.start, { kind: "code" }));
+        if (extra !== undefined) out.push(findingAt(file, extra.start, { kind: "detail" }));
       }
-      const detail = second?.type === "ObjectExpression" ? second : third;
+      // A detail check cannot read may hold a `cause`.
       const hasCause =
-        detail === undefined
-          ? false
-          : detail.type !== "ObjectExpression" ||
-            detail.properties.some(
-              (p) =>
-                p.type === "SpreadElement" ||
-                p.computed ||
-                (p.key.type === "Identifier" && p.key.name === "cause") ||
-                (p.key.type === "Literal" && p.key.value === "cause"),
-            );
+        detail !== undefined &&
+        (!readable || object.properties.some((p) => p.type === "Property" && keyIs(p.key, "cause")));
       if (hasCause) continue;
       const hit = failed.find(
         (r) => inside(n, r) && !fns.some((f) => inside(f, r) && inside(n, f) && f.start > r.start),
       );
       if (hit === undefined) continue;
-      const last = n.arguments[n.arguments.length - 1];
+      const last = object?.properties[object.properties.length - 1];
+      // The fix's edit: the detail `{ cause: r.error }` after the message, in place of `{}`, or `cause` after the
+      // detail's last property.
+      const edit =
+        n.arguments.length > 2 || message === undefined
+          ? undefined
+          : object === undefined
+            ? { start: message.end, end: message.end, text: `, { cause: ${hit.name}.error }` }
+            : last === undefined
+              ? { start: object.start, end: object.end, text: `{ cause: ${hit.name}.error }` }
+              : { start: last.end, end: last.end, text: `, cause: ${hit.name}.error` };
       out.push(
         findingAt(file, n.start, {
           kind: "failed",
           name: hit.name,
-          fixable: detail === undefined && last !== undefined ? 1 : 0,
-          after: last?.end ?? -1,
+          fixable: edit === undefined ? 0 : 1,
+          start: edit?.start ?? -1,
+          end: edit?.end ?? -1,
+          text: edit?.text ?? "",
         }),
       );
     }
@@ -142,8 +157,8 @@ export const defectCode: RuleDef = {
   },
   fix: (f) => {
     if (str(f.data, "kind") !== "failed" || num(f.data, "fixable", 0) !== 1) return null;
-    const after = num(f.data, "after");
-    if (after < 0) return null;
-    return [{ start: after, end: after, text: `, { cause: ${str(f.data, "name")}.error }` }];
+    const start = num(f.data, "start");
+    if (start < 0) return null;
+    return [{ start, end: num(f.data, "end"), text: str(f.data, "text") }];
   },
 };

@@ -32,14 +32,14 @@ export function chart<
   const problem = analyze(shapeOf({ ...spec, states: declared }))[0];
   if (problem !== undefined) {
     const data = { chart: id, problem: problem.message };
-    if (problem.code === "E2751") defect("chart is not well formed", "E2751", { data });
-    if (problem.code === "E2753") defect("chart is not well formed", "E2753", { data });
-    defect("chart is not well formed", "E2754", { data });
+    if (problem.code === "E2751") defect("chart is not well formed", { code: "E2751", data });
+    if (problem.code === "E2753") defect("chart is not well formed", { code: "E2753", data });
+    defect("chart is not well formed", { code: "E2754", data });
   }
   const names: S[] = [];
   for (const name in spec.states) names.push(name);
   const [first, ...rest] = names;
-  if (first === undefined) defect("chart declares no states", "E2751", { data: { chart: id } });
+  if (first === undefined) defect("chart declares no states", { code: "E2751", data: { chart: id } });
   const guards = loosen<D, boolean>(spec.guards);
   const actions = loosen<D, D>(spec.actions);
   const pick = (cur: ChartState<string, D>, event: string, payload: unknown) => {
@@ -93,7 +93,7 @@ export function chart<
     return { store: st, events: asEvents(table), enabled };
   };
   // At a module's top level `owner()` is the compiler's module root, so the store lives as long as the module.
-  const at = owner() ?? defect("chart() outside a scope or a module top level", "E1203");
+  const at = owner() ?? defect("chart() outside a scope or a module top level", { code: "E1203" });
   const own = at.run(() => compile(id));
   return { ...own, data: spec.data, states: spec.states, initial: spec.initial, next, taken, [compileKey]: compile };
 }

@@ -32,11 +32,10 @@ export async function sqlite(url: URL): Promise<DbStorage> {
     },
   );
   if (!opened.ok)
-    return defect(
-      "KEEL_DATABASE_URL: SQLite cannot open the file; check the file: URL and that its folder exists",
-      "E2153",
-      { cause: opened.error },
-    );
+    return defect("KEEL_DATABASE_URL: SQLite cannot open the file; check the file: URL and that its folder exists", {
+      code: "E2153",
+      cause: opened.error,
+    });
   const db = opened.value;
   let ready = false;
   try {
@@ -62,7 +61,10 @@ export async function sqlite(url: URL): Promise<DbStorage> {
       },
     );
     if (!setUp.ok)
-      return defect("KEEL_DATABASE_URL: SQLite cannot open or set up the database", "E2153", { cause: setUp.error });
+      return defect("KEEL_DATABASE_URL: SQLite cannot open or set up the database", {
+        code: "E2153",
+        cause: setUp.error,
+      });
     ready = true;
   } finally {
     if (!ready) db.close();

@@ -35,7 +35,8 @@ export function outbox<const C extends Contract>(
     const name = entry.slice(contract.module.length + 1);
     const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
-      return defect("an outbox endpoint body holds an s.secret", "E2651", {
+      return defect("an outbox endpoint body holds an s.secret", {
+        code: "E2651",
         data: { outbox: id, endpoint: name, at: at || "(root)" },
       });
     }
@@ -82,7 +83,7 @@ export function outbox<const C extends Contract>(
     return c;
   };
   // At a module's top level `owner()` is the compiler's module root; the store is made in it now.
-  const at = owner() ?? defect("outbox() outside a scope or a module top level", "E1203");
+  const at = owner() ?? defect("outbox() outside a scope or a module top level", { code: "E1203" });
   at.onDispose(() => {
     if (c) c.live = false;
   });

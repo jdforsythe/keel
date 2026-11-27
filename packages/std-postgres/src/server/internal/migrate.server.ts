@@ -39,11 +39,13 @@ export async function migrate(
         const n = Number(id);
         const now = files[n - 1];
         if (now === undefined)
-          return defect("std.postgres: an applied migration is gone from migrations", "E2454", {
+          return defect("std.postgres: an applied migration is gone from migrations", {
+            code: "E2454",
             data: { database: name, file },
           });
         if (now.digest !== digest)
-          return defect("std.postgres: an applied migration changed since it ran (its SHA-256 differs)", "E2454", {
+          return defect("std.postgres: an applied migration changed since it ran (its SHA-256 differs)", {
+            code: "E2454",
             data: { database: name, file },
           });
         done.add(n);

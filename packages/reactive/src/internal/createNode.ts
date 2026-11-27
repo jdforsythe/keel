@@ -7,7 +7,7 @@ import { rt } from "./rt.ts";
 export function createNode(kind: Node["kind"], fn: (() => boolean) | undefined, writes: readonly unknown[]): Node {
   const owner = rt.owner;
   if (owner === null && kind !== "scope")
-    defect("reactive primitive created outside any scope; wrap it in scope(fn)", "E1203");
+    defect("reactive primitive created outside any scope; wrap it in scope(fn)", { code: "E1203" });
   const n: Node = {
     id: ++rt.lastId,
     kind,

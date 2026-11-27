@@ -13,12 +13,13 @@ const MAX_BYTES = 7_900;
 export function changeText<P>(capability: string, channel: ChangedChannel<P>, params: P): string {
   const parsed = channel.params.parse(params);
   if (!parsed.ok)
-    return defect("std.postgres: changed params do not fit the channel's params schema", "E2460", {
+    return defect("std.postgres: changed params do not fit the channel's params schema", {
+      code: "E2460",
       data: { channel: channel.name },
       cause: parsed.error,
     });
   const text = payloadOf(capability, channel.name, canonicalJson(channel.params.encode(parsed.value)));
   if (Buffer.byteLength(text, "utf8") > MAX_BYTES)
-    return defect("std.postgres: a change is over 7,900 bytes", "E2460", { data: { channel: channel.name } });
+    return defect("std.postgres: a change is over 7,900 bytes", { code: "E2460", data: { channel: channel.name } });
   return text;
 }

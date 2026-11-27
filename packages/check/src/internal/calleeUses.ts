@@ -118,6 +118,17 @@ const NOT_MESSAGE = "error message is not a literal: pass values as data";
 const NESTED = NESTED_RESULT_MESSAGE;
 const CODE = /^E\d{4}$/;
 const NOT_LITERAL = DEFECT_CODE_MESSAGE;
+
+/** The value of a defect detail's `code` property (`{ code }` gives the name), else `undefined` (k.defects). */
+function detailCode(detail: ts.ObjectLiteralExpression): ts.Expression | undefined {
+  for (const p of detail.properties) {
+    const named =
+      p.name !== undefined && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && p.name.text === "code";
+    if (!named) continue;
+    return ts.isPropertyAssignment(p) ? p.initializer : p.name;
+  }
+  return undefined;
+}
 const UNREADABLE = "defect code check cannot read";
 const NOT_TEXT = DEFECT_TEXT_MESSAGE;
 const NOT_DETAIL = DEFECT_DETAIL_MESSAGE;
@@ -505,14 +516,25 @@ export function calleeUses(
       else if (use.unread !== undefined) add("E1455", use.unread, UNREADABLE, "k.errors");
       else if (spreadBefore !== undefined) add("E1455", use.holder ?? spreadBefore, UNREADABLE, "k.errors");
       else {
-        const [message, second, third] = args;
+        const [message, detail, extra] = args;
         if (message !== undefined && !ts.isStringLiteral(message) && !ts.isNoSubstitutionTemplateLiteral(message))
           add("E1455", message, NOT_TEXT, "k.errors");
-        if (second !== undefined && !ts.isObjectLiteralExpression(bareExpression(second))) {
-          if (!(ts.isStringLiteral(second) && CODE.test(second.text))) add("E1455", second, NOT_LITERAL, "k.errors");
-          if (third !== undefined && !ts.isSpreadElement(third) && !ts.isObjectLiteralExpression(bareExpression(third)))
-            add("E1455", third, NOT_DETAIL, "k.errors");
+        if (detail !== undefined) {
+          const object = bareExpression(detail);
+          if (
+            !ts.isObjectLiteralExpression(object) ||
+            object.properties.some(
+              (p) => ts.isSpreadAssignment(p) || (p.name !== undefined && ts.isComputedPropertyName(p.name)),
+            )
+          )
+            add("E1455", detail, NOT_DETAIL, "k.errors");
+          else {
+            const code = detailCode(object);
+            if (code !== undefined && !(ts.isStringLiteral(code) && CODE.test(code.text)))
+              add("E1455", code, NOT_LITERAL, "k.errors");
+          }
         }
+        if (extra !== undefined) add("E1455", extra, NOT_DETAIL, "k.errors");
       }
       if (inFinally(use.call)) add("E1452", ref, catchMessage("defect-finally"), "k.errors");
     } else if (target === "scope" && !kernel) {

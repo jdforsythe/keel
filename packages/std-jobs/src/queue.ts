@@ -12,7 +12,8 @@ export function queue<T extends JobTable>(table: T): Queue<T> {
   for (const [id, j] of Object.entries(table)) {
     const at = secretPath(j.input);
     if (at !== null)
-      defect("a job's input holds an s.secret; a job's input is stored", "E2503", {
+      defect("a job's input holds an s.secret; a job's input is stored", {
+        code: "E2503",
         data: { job: id, at: at || "(root)" },
       });
   }

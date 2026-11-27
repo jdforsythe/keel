@@ -23,23 +23,24 @@ export function schedule<T extends JobTable>(
     const why = entryError(e.cron, zone);
     const cron = parseCron(e.cron);
     if (why !== undefined || typeof cron === "string")
-      defect("a schedule entry's cron or zone does not parse", "E2551", {
+      defect("a schedule entry's cron or zone does not parse", {
+        code: "E2551",
         data: { schedule: id, reason: typeof cron === "string" ? cron : (why ?? "") },
       });
     const mod = id.split(".")[0];
     const target = Object.hasOwn(queue.table, e.job) ? queue.table[e.job] : undefined;
     if (target === undefined)
-      defect("a schedule entry's job is not in the queue", "E2554", {
+      defect("a schedule entry's job is not in the queue", {
+        code: "E2554",
         data: { schedule: id, job: String(e.job).slice(0, 40) },
       });
     if (!String(e.job).startsWith(`${mod}.`))
-      defect("a schedule entry's job belongs to another module", "E2554", {
+      defect("a schedule entry's job belongs to another module", {
+        code: "E2554",
         data: { schedule: id, job: String(e.job).slice(0, 40) },
       });
     if (!target.input.parse(e.input).ok)
-      defect("a schedule entry's input is refused by its job", "E2554", {
-        data: { schedule: id, job: e.job },
-      });
+      defect("a schedule entry's input is refused by its job", { code: "E2554", data: { schedule: id, job: e.job } });
     plan.push({ id, cron, zone, job: e.job, input: e.input, once: e.missed !== "skip" });
   }
   const module = Object.keys(table)[0]?.split(".")[0] ?? "";
