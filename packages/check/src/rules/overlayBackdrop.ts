@@ -1,7 +1,7 @@
 import { combosIn } from "../internal/contrast/combosIn.ts";
 import { judgeElements } from "../internal/contrast/judgeElements.ts";
 import { findingAt } from "../internal/findingAt.ts";
-import { fitNames } from "../internal/fitNames.ts";
+import { fitNames } from "@keel/schema/internal";
 import { fixElsewhere } from "../internal/fixElsewhere.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { projectLooks } from "../internal/looks/projectLooks.ts";
@@ -14,7 +14,7 @@ import type { RuleDef } from "../types/RuleDef.ts";
  * backdrop its `over` does not hold, or a backdrop that is itself an overlay, at the opening quote of the overlay's
  * literal. From `keel check` only: the render check composites over the painted backdrop. The message fits 89 units by
  * clipping its names (`fitNames`). Fix (k.themes Fixes): for a missing backdrop, `"<backdrop>"` added after the last
- * element of the overlay's `over` in `tokens.ts` when that is an array literal of fewer than 8 names; an overlay on an
+ * element of the overlay's `over` in `tokens.ts` when that is an array literal, bare or `as const`, of fewer than 8 names; an overlay on an
  * overlay has none. Tokens come from the `tokens` project artifact; without it the rule reports nothing.
  */
 export const overlayBackdrop: RuleDef = {

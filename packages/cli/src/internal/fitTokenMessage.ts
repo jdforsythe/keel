@@ -1,13 +1,13 @@
-/** `s`'s first `n` UTF-16 units, one fewer when the last would be the first half of a surrogate pair. */
-const head = (s: string, n: number): string => {
-  const c = s.charCodeAt(n - 1);
-  return s.slice(0, c >= 0xd800 && c <= 0xdbff ? n - 1 : n);
-};
+import { fitNames } from "@keel/schema/internal";
+
+/** A `<what>` holding a quoted name: the text up to its first `"`, the name, and the text from its last `"`. */
+const QUOTED = /^([^"]*")(.*)("[^"]*)$/s;
 
 /**
  * E1807's message `<path>: <what>` in at most `max` units (k.themes Token errors): the path drops leading segments
- * behind one `.../` until it fits, and a last segment still too long keeps its first units and `...`, so `: <what>`
- * is never cut.
+ * behind one `.../` until it fits; then its last segment, and a quoted name in `<what>` (`names no color token
+ * "<name>"`), the longer first, keep their first units and `...` (`fitNames`), so no word of `: <what>` and neither
+ * quote is cut.
  */
 export function fitTokenMessage(path: readonly string[], what: string, max = 89): string {
   const tail = `: ${what}`;
@@ -17,8 +17,10 @@ export function fitTokenMessage(path: readonly string[], what: string, max = 89)
     const cut = `.../${path.slice(k).join(".")}${tail}`;
     if (cut.length <= max) return cut;
   }
-  const last = path.at(-1) ?? "";
   const lead = path.length > 1 ? ".../" : "";
-  const room = Math.max(1, max - lead.length - tail.length - 3);
-  return `${lead}${head(last, room)}...${tail}`;
+  const last = path.at(-1) ?? "";
+  const q = QUOTED.exec(what);
+  if (q === null) return fitNames(([s]) => `${lead}${s ?? ""}${tail}`, [last], max);
+  const [, before = "", name = "", after = ""] = q;
+  return fitNames(([s, n]) => `${lead}${s ?? ""}: ${before}${n ?? ""}${after}`, [last, name], max);
 }
