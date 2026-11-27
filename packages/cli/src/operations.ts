@@ -151,7 +151,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "tokens",
-    description: "Design tokens into tokens.design.ts, or one value into tokens.ts (k.cli Tokens).",
+    description: "Import design tokens or set one (k.design-tokens).",
     input: s.object({ op: s.string().optional(), args: s.array(s.string()).optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["op", "args"],
