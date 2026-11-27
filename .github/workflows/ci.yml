@@ -74,6 +74,9 @@ jobs:
         with:
           path: "~/.cache/ms-playwright"
           key: "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+      - name: "unprivileged user namespaces for Chromium's sandbox, which Ubuntu 24.04's AppArmor refuses by default (k.e2e-run Browser)"
+        if: "steps.browser.outputs.browser == 'true'"
+        run: "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0"
       - name: "Chromium for the end-to-end conformance of this shard (k.e2e-run Browser): a cached browser is not downloaded again"
         if: "steps.browser.outputs.browser == 'true'"
         run: pnpm exec playwright-core install --with-deps chromium
@@ -236,6 +239,8 @@ jobs:
         with:
           path: "~/.cache/ms-playwright"
           key: "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+      - name: "unprivileged user namespaces for Chromium's sandbox, which Ubuntu 24.04's AppArmor refuses by default (k.e2e-run Browser)"
+        run: "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0"
       - name: "Chromium for the end-to-end tests (k.e2e-run Browser): a cached browser is not downloaded again"
         run: pnpm exec playwright-core install --with-deps chromium
       - name: "golden-1 end to end: persistence, restart, the removal workflow on SQLite and Postgres 17, monitor, content security policy"

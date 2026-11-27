@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Browser } from "playwright-core";
 import { baseEnv } from "./baseEnv.ts";
+import { e2eError } from "./e2eError.ts";
 import { engineOf } from "./engineOf.ts";
 import { fileEnds } from "./fileEnds.ts";
 import { runKey } from "./runKey.ts";
@@ -28,12 +29,29 @@ export function fileBrowser(): Promise<Browser> {
     const env = baseEnv(home);
     if (engine === "firefox") return pw.firefox.launch({ headless: true, env });
     if (engine === "webkit") return pw.webkit.launch({ headless: true, env });
-    return pw.chromium.launch({
-      headless: true,
-      env,
-      chromiumSandbox: process.env.KEEL_E2E_SANDBOX !== "0",
-      args: [`--ignore-certificate-errors-spki-list=${createHash("sha256").update(runKey().spki).digest("base64")}`],
-    });
+    const sandbox = process.env.KEEL_E2E_SANDBOX !== "0";
+    try {
+      return await pw.chromium.launch({
+        headless: true,
+        env,
+        chromiumSandbox: sandbox,
+        args: [`--ignore-certificate-errors-spki-list=${createHash("sha256").update(runKey().spki).digest("base64")}`],
+      });
+    } catch (e) {
+      // The sandbox is never turned off to get through (k.e2e-run Browser): a machine that cannot start it says so.
+      if (
+        sandbox &&
+        e instanceof Error &&
+        /No usable sandbox|Target page, context or browser has been closed/.test(e.message)
+      )
+        throw e2eError(
+          "E1734",
+          "chromium cannot start its sandbox here: allow unprivileged user namespaces (sysctl kernel.apparmor_restrict_unprivileged_userns=0, or a container's seccomp profile that permits them)",
+          {},
+          "k.e2e-run",
+        );
+      throw e;
+    }
   })();
   current = made;
   fileEnds().push(async () => {

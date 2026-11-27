@@ -1338,7 +1338,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1734",
-    "keel test --e2e: playwright-core or the engine's browser is not installed",
+    "keel test --e2e: playwright-core or the engine's browser is not installed, or Chromium cannot start its sandbox",
     "The run fails before any file runs; no test is reported skipped.",
     "add playwright-core to devDependencies, then playwright-core install <engine>",
     "k.e2e",
