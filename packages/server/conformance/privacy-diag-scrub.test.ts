@@ -6,6 +6,7 @@
 // Input schemas are generated objects of string fields (some nested), some nodes marked
 // `.pii(class)`; the action throws an Error whose message holds every input value. Marked values are lowercase letters,
 // unmarked ones digits, so no unmarked text can hide or mimic a marked value.
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
@@ -65,7 +66,7 @@ const leaves = (n: Node, prefix: string, under: boolean): Leaf[] => {
 const words = fc.array(fc.stringMatching(/^[a-z]{12,20}$/), { minLength: 8, maxLength: 8 });
 
 describe("k.privacy server log", () => {
-  for (const mode of ["dev", "production"] as const) {
+  for (const mode of ["dev"] as const) {
     it(
       `an action throwing an Error whose message holds a marked input value logs a diag record holding [pii] and not the value, in ${mode}`,
       async () => {
@@ -117,7 +118,7 @@ describe("k.privacy server log", () => {
     "the revealed value": (v: string) => v,
     "an Error whose message holds the revealed value": (v: string) => new Error(`bad ${v}`),
   } as const;
-  for (const mode of ["dev", "production"] as const) {
+  for (const mode of ["dev"] as const) {
     for (const [how, make] of Object.entries(throwers)) {
       it(`An action throwing the revealed value of a \`Secret\` input or \`bearer\`, as a string or in an \`Error\` message, logs a \`diag\` record holding \`[secret]\` and not the value, in ${mode}: it throws ${how}, and no line holds its base64 or encodeURIComponent form`, async () => {
         const orders = contract("orders", {

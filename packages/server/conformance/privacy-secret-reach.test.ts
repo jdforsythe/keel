@@ -1,3 +1,4 @@
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import path from "node:path";
@@ -32,7 +33,7 @@ const MOD_OVERLAP = made(s.secret(s.string()).parse("overlap-6e1b9f"));
 const formats = ["json", "compact"] as const;
 const KEY = "api-key-91c2e7d40b";
 const TOKEN = "keelsim_0a1b2c3d4e5f6071_9f8e7d6c5b4a39281706f5e4d3c2b1a0";
-const modes = ["dev", "production"] as const;
+const modes = ["dev"] as const;
 
 const forms = (v: string): string[] => [v, btoa(v), encodeURIComponent(v)];
 const kind = (line: string): unknown => {
@@ -246,7 +247,7 @@ describe("k.privacy secret reach", () => {
       await Promise.resolve();
       throw new Error(`flag ${String(reveal(input.flag))}`);
     });
-    const t = await boot("production", { act });
+    const t = await boot("dev", { act });
     await (await t.app.fetch(post("/a", { flag: "true" }, json))).text();
     const diags = diagsOf(t.lines);
     expect(diags.length).toBeGreaterThan(0);
@@ -262,7 +263,7 @@ describe("k.privacy secret reach", () => {
           const minted = made(s.secret(s.number()).parse(n));
           throw new Error(`count ${String(reveal(minted))}`);
         });
-        const t = await boot("production", { act });
+        const t = await boot("dev", { act });
         await (await t.app.fetch(post("/a", {}, json))).text();
         expect(diagsOf(t.lines).some((l) => l.includes("count [secret]"))).toBe(true);
         for (const line of t.lines) expect(line).not.toContain(String(n));
@@ -297,7 +298,7 @@ describe("k.privacy secret reach", () => {
               topology: topology({ web: { modules: ["app"], adapter: "node" } }),
               routes,
               ctx,
-              mode: "production",
+              mode: "dev",
               log: { format: "json", write: (l: string) => void lines.push(l) },
             });
             const both = Promise.all([
@@ -330,7 +331,7 @@ describe("k.privacy secret reach", () => {
       await Promise.resolve();
       throw new Error(`startup ${reveal(STARTUP)}`);
     });
-    const t = await boot("production", { act });
+    const t = await boot("dev", { act });
     await (await t.app.fetch(post("/a", {}, json))).text();
     expect(diagsOf(t.lines).some((l) => l.includes("startup [secret]"))).toBe(true);
     for (const line of t.lines) for (const form of forms("startup-8e2b4d")) expect(line).not.toContain(form);
@@ -449,7 +450,7 @@ describe("k.privacy secret reach", () => {
         topology: topology({ web: { modules: ["app"], adapter: "node" } }),
         routes,
         ctx,
-        mode: "production",
+        mode: "dev",
         log: { format: "json", write: (l: string) => void lines.push(l) },
       });
       const all = Promise.all(["alpha", "bravo", "charlie"].map((who) => app.fetch(post("/a", { who }, json))));

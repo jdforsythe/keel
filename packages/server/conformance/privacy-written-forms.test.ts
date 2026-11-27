@@ -5,6 +5,7 @@
 // k.privacy, Sinks "Base64: in the standard and the URL-safe alphabet. A value under 8 bytes is matched as its own padded encoding, whole. A value of 8 bytes or more is matched at each of the three byte alignments, alone or inside any longer encoding, as the characters whose six bits all come from its bytes; the mark takes in the character before and the character after that hold some of its bits, at that alignment, and the `=` padding after them. So a base64url JWT payload whose JSON holds the value as is holds a copy."
 // Seed: 1337.
 // Each case runs in dev and production, in compact and json log formats; a json record is read through its parsed `message`.
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -16,7 +17,7 @@ import { SEED, createApp, post } from "./fixtures.ts";
 import { made } from "./privacy-secret-reach-helper.ts";
 
 const view = (): Node => document.createElement("main");
-const modes = ["dev", "production"] as const;
+const modes = ["dev"] as const;
 const formats = ["compact", "json"] as const;
 const Nothing = s.object({});
 
