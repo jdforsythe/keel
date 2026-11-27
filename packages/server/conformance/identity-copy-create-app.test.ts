@@ -13,7 +13,7 @@ import { SEED, createApp } from "./fixtures.ts";
 
 const A = s.object({ a: s.string() });
 const Page = s.object({ title: s.string() });
-const Denied = s.error("p.denied", s.object({}));
+const Denied = s.error("keel.denied", s.object({}));
 const c = contract("p", { "p.b": { path: "/b" }, "p.login": { path: "/login" } });
 const view = () => document.createElement("main");
 
