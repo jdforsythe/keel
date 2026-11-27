@@ -475,6 +475,17 @@ describe("mcpCall", () => {
     const missingArgs = await mcpCall({ name: "check" }, io);
     expect(missingArgs.isError).toBe(false);
   });
+
+  it("every tool takes the shared flags its inputSchema leaves out, and refuses a value their schemas refuse with E1052", async () => {
+    for (const args of [{ format: "json" }, { quiet: true }, { limit: 3 }, { verbose: true }]) {
+      expect((await mcpCall({ name: "check", arguments: args }, io)).isError, JSON.stringify(args)).toBe(false);
+    }
+    for (const args of [{ format: "xml" }, { quiet: "yes" }, { limit: 0 }, { limit: 1.5 }, { verbose: 1 }]) {
+      const r = await mcpCall({ name: "check", arguments: args }, io);
+      expect(r.isError, JSON.stringify(args)).toBe(true);
+      expect(r.content[0]?.text, JSON.stringify(args)).toMatch(/^E1052 /);
+    }
+  });
 });
 
 describe("serveStream", () => {
