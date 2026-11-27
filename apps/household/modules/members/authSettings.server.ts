@@ -1,5 +1,6 @@
 import { dirname, join } from "node:path";
-import { type Result, err, ok } from "@keel/schema";
+import { type Result, type s, err, ok } from "@keel/schema";
+import { MissingSecret } from "./MissingSecret.schema.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -24,21 +25,16 @@ const DEV_SECRET = "household-dev-secret-never-used-in-production";
  * is required, else `err` naming the variable and never a value; the database is `AUTH_DATABASE_PATH`, else
  * `auth.sqlite` beside the web storage file (`--localstorage-file`), else in the working directory.
  */
-export function authSettings(
-  env: Env,
-  execArgv: readonly string[],
-): Result<Settings, { code: string; message: string; data: null }> {
+export function authSettings(env: Env, execArgv: readonly string[]): Result<Settings, s.infer<typeof MissingSecret>> {
   const origin = env.KEEL_ORIGIN;
   if (env.AUTH_FIXTURE === "test") return ok({ secret: TEST_SECRET, database: ":memory:", origin, quiet: true });
   if (env.AUTH_FIXTURE === "dev")
     return ok({ secret: DEV_SECRET, database: join(".keel-dev", "auth.sqlite"), origin, quiet: false });
   const secret = env.BETTER_AUTH_SECRET ?? "";
   if (secret.length < 32)
-    return err({
-      code: "members.secret",
-      message: "BETTER_AUTH_SECRET is missing or under 32 characters; set it where the server runs",
-      data: null,
-    });
+    return err(
+      MissingSecret.make({}, "BETTER_AUTH_SECRET is missing or under 32 characters; set it where the server runs"),
+    );
   const storage = execArgv.find((a) => a.startsWith("--localstorage-file="))?.slice("--localstorage-file=".length);
   const database =
     env.AUTH_DATABASE_PATH ?? (storage === undefined ? "auth.sqlite" : join(dirname(storage), "auth.sqlite"));

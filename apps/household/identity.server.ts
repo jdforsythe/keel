@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import type { RouteTable } from "@keel/router";
 import { pageHref } from "@keel/router/match";
-import { attempt, defect } from "@keel/schema";
+import { defect } from "@keel/schema";
 import { identity } from "@keel/server";
 import { NoRows, sql } from "@keel/std-postgres";
 import mount from "./identity.ts";
@@ -24,7 +24,9 @@ if (!settings.ok) {
 /** The library, or a rejection that the server answers 500 `keel.unexpected`. */
 async function library(ctx: Ctx) {
   const auth = await authOf(ctx);
-  return auth.ok ? auth.value : defect(auth.error.code);
+  return auth.ok
+    ? auth.value
+    : defect("the sign-in library did not open", { data: { code: auth.error.code }, cause: auth.error });
 }
 
 /**
@@ -46,15 +48,14 @@ async function identify(args: { readonly request: Request }, ctx: Ctx): Promise<
  */
 async function remember(path: string, res: Response, ctx: Ctx): Promise<Response> {
   if (path !== `${mount.path}/sign-in/email` || !res.ok) return res;
-  const json = await attempt(() => res.clone().json());
-  const signed = SignedInUser.parse(json.ok ? json.value : null);
+  const signed = SignedInUser.parseJson(await res.clone().text());
   if (!signed.ok) return defect("sign-in answer without a user");
   const { id, email, name } = signed.value.user;
   const saved = await membersDb(ctx).run(
     sql(NoRows)`insert into members (user_id, email, name) values (${id}, ${email}, ${name})
                 on conflict (user_id) do update set email = excluded.email`,
   );
-  return saved.ok ? res : defect(saved.error.code);
+  return saved.ok ? res : defect("the member could not be saved", { cause: saved.error });
 }
 
 /** A post a page's `<Form>` made natively, as opposed to a JSON call to the library's API. */
@@ -73,7 +74,7 @@ const refusal = (res: Response): SignError => (res.status === 401 ? "credentials
  */
 async function handle(request: Request, ctx: Ctx, at: { readonly routes: RouteTable }): Promise<Response> {
   const auth = await library(ctx);
-  const url = new URL(request.url);
+  const url = URL.parse(request.url) ?? defect("a request has an address");
   if (!isFormPost(request)) return remember(url.pathname, await auth.handler(request), ctx);
   const headers = new Headers(request.headers);
   headers.set("content-type", "application/json");
