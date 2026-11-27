@@ -1,7 +1,7 @@
 import { routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
-import type { ObjectExpression } from "oxc-parser";
 import { clipMessage } from "@keel/schema/internal";
+import type { ObjectExpression } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { isRecord } from "./compat/isRecord.ts";
