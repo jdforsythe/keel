@@ -33,9 +33,15 @@ const AllowOrigins = s.format("keel.allowOrigins", s.string({ min: 1 }), {
   gen: { from: s.string({ min: 1 }), map: (host) => `https://${host}` },
 });
 
+/** An http(s) origin (`KEEL_ORIGIN`, k.deploy Refusals at start): scheme, host and port, no path. */
+const Origin = s.format("keel.origin", s.string({ min: 1 }), {
+  check: (v) => originOf(v) !== undefined,
+  gen: { from: s.string({ min: 1 }), map: (host) => `https://${host}` },
+});
+
 /**
  * The production environment of a `node` deployable (k.topology Build): `PORT` (default 8080), `KEEL_ORIGIN` (the
- * public origin), `KEEL_SECRET` (32+ UTF-8 bytes, shared by the app's deployables) and `KEEL_PEER_<NAME>` per peer, an
+ * public http(s) origin), `KEEL_SECRET` (32+ UTF-8 bytes, shared by the app's deployables) and `KEEL_PEER_<NAME>` per peer, an
  * absolute http(s) URL; `KEEL_ALLOW_ORIGINS`, the origins `createApp({ allow })` grants (k.hosting Allowed origins);
  * `KEEL_DATABASE_URL` (k.deploy Storage): a `file:` URL, optional, for `'sqlite'`, a `postgres:` or `postgresql:` one,
  * required, for `'postgres'`, not read for `'file'`.
@@ -52,7 +58,7 @@ export const DeployEnv = (
 }> =>
   s.object({
     PORT: s.int({ min: 0, max: 65535 }).optional(),
-    KEEL_ORIGIN: s.string({ min: 1 }).optional(),
+    KEEL_ORIGIN: Origin.optional(),
     KEEL_SECRET: Secret,
     KEEL_ALLOW_ORIGINS: AllowOrigins.optional(),
     ...Object.fromEntries(peers.map((p) => [peerKey(p), PeerUrl])),

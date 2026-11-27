@@ -1,5 +1,3 @@
-import { isDefect } from "@keel/schema";
-import { attempted } from "./attempted.ts";
 import { unexpectedOf } from "./unexpectedOf.ts";
 
 /**
@@ -8,12 +6,5 @@ import { unexpectedOf } from "./unexpectedOf.ts";
  * fingerprint and the full-text record. Never throws.
  */
 export function thrownText(thrown: unknown): string {
-  const text = unexpectedOf(thrown).data.cause;
-  const data = attempted((): string => {
-    if (!isDefect(thrown)) return "";
-    const value: unknown = Object.getOwnPropertyDescriptor(thrown, "data")?.value;
-    const json: unknown = value === undefined ? undefined : JSON.stringify(value);
-    return typeof json === "string" ? ` ${json}` : "";
-  });
-  return data.ok ? text + data.value : text;
+  return unexpectedOf(thrown).data.cause;
 }

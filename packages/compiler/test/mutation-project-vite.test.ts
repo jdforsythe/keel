@@ -118,7 +118,7 @@ describe("vite: which ids are app code", () => {
   it("compiles app code, also with a query string", () => {
     const p = keel();
     p.configResolved({ root });
-    expect(p.transform(SRC, path.join(root, "src/A.tsx"))?.map).toBeNull();
+    expect(p.transform(SRC, path.join(root, "src/A.tsx"))?.map).toContain('"sources":["src/A.tsx"]');
     expect(p.transform(SRC, `${path.join(root, "src/A.tsx")}?v=1`)?.code).toContain("template(");
     expect(p.transform(SRC, path.join(root, "src/A.tsx"))?.code).toContain("template(");
     for (const ext of ["ts", "tsx", "js", "jsx", "mts", "cts", "mjs", "cjs"])

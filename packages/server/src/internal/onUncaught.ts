@@ -16,7 +16,8 @@ const REMOVE = Symbol.for("keel.server.onUncaught.remove");
  * Process): each writes one E1577 `diag`, `uncaught <exception|rejection> in work of route <id>: ` then the thrown
  * value's form (`thrownForm`, k.serverlog Thrown values, fingerprinted under `KEEL_SECRET`, else a key drawn at install),
  * `<id>` the route of the request whose async context the failing work ran in (`serving`), else `-`, with the error's
- * app `frames` read against `artifacts`; with `dev` the thrown text (`thrownText`) follows in that record, scrubbed of
+ * app `frames` read against `artifacts`; while `full()` holds (`keel dev`, or production before the
+ * instant `KEEL_LOG_THROWN` names) the thrown text (`thrownText`) follows in that record, scrubbed of
  * that request's values and cut (k.serverlog). Then it
  * calls `then`. The production entry (`start`) and the `keel dev` module call it; `createApp` never does.
  *
@@ -27,7 +28,7 @@ const REMOVE = Symbol.for("keel.server.onUncaught.remove");
 export function onUncaught(
   log: { readonly format: "compact" | "json"; readonly write: (line: string) => void },
   artifacts: string,
-  dev: boolean,
+  full: () => boolean,
   then: () => void,
 ): void {
   if (installed) return;
@@ -44,7 +45,7 @@ export function onUncaught(
     const at = frames(e);
     const { head, site, tail } = thrownForm(e, at, fingerprint);
     const form = head + site + tail;
-    const d = { code: "E1577", lead, message: dev ? `${lead}${form} ${thrownText(e)}` : lead + form, frames: at };
+    const d = { code: "E1577", lead, message: full() ? `${lead}${form} ${thrownText(e)}` : lead + form, frames: at };
     log.write(diagLine(log.format, scrubbedDiag(d, rq ?? { pii: new Set(), secrets: new Set() })));
     then();
   };

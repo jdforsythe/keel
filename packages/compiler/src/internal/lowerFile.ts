@@ -611,15 +611,22 @@ export function lowerFile(
     );
     if (tagsOnly) ms.remove(i.start, i.end);
   }
-  const body = ms.toString() + attachedExports(a);
-  const ops = body.includes(`${ns}.`);
-  if (!ops && headerImports.length === 0) return { code: body, bindings };
+  ms.append(attachedExports(a));
+  // The map from the lowered text to the source, so a frame's site names the source line (k.serverlog).
+  const mapped = (): Lowered => ({
+    code: ms.toString(),
+    map: ms.generateMap({ hires: true, source: a.path }).toString(),
+    bindings,
+  });
+  const ops = ms.toString().includes(`${ns}.`);
+  if (!ops && headerImports.length === 0) return mapped();
   const header = [
     ...(ops ? [`import * as ${ns} from ${q(OPS_MODULE)};`] : []),
     ...new Set(headerImports),
     ...templates.map((html, i) => `const ${ns}t${i} = ${ns}.template(${q(html)});`),
   ].join("\n");
-  return { code: `${header}\n${body}`, bindings };
+  ms.prepend(`${header}\n`);
+  return mapped();
 }
 
 /**

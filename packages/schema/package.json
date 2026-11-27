@@ -15,6 +15,10 @@
     "./internal": {
       "types": "./src/internal/index.ts",
       "default": "./src/internal/index.ts"
+    },
+    "./internal/refusal": {
+      "types": "./src/internal/refusalGuard.ts",
+      "default": "./src/internal/refusalGuard.ts"
     }
   },
   "publishConfig": {
@@ -30,6 +34,10 @@
       "./internal": {
         "types": "./dist/src/internal/index.d.ts",
         "default": "./dist/src/internal/index.js"
+      },
+      "./internal/refusal": {
+        "types": "./dist/src/internal/refusalGuard.d.ts",
+        "default": "./dist/src/internal/refusalGuard.js"
       }
     }
   },

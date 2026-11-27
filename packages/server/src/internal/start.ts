@@ -3,11 +3,14 @@ import { join } from "node:path";
 import { serve } from "@hono/node-server";
 import { peerKey } from "@keel/compiler/hosting/peerKey";
 import { createCtx } from "@keel/ctx";
+import { isRefusal } from "@keel/schema/internal/refusal";
 import { createApp } from "@keel/server";
 import { onUncaught } from "@keel/server/internal/onUncaught";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
 import { diagLine } from "./diagLine.ts";
+import { logThrownUntil } from "./logThrownUntil.ts";
+import { refusedLine } from "./refusedLine.ts";
 
 const line = (text: string): void => {
   process.stdout.write(`${text}\n`);
@@ -21,7 +24,8 @@ const line = (text: string): void => {
  * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, its storage the driver `open` opened on
  * `KEEL_DATABASE_URL` when given (k.deploy Storage; a std.db E2152 or E2153 prints that diag and exits 1), and on
  * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0, or 1 when either rejects (nothing is printed);
- * a second signal during shutdown does nothing. Every `uncaughtException` and `unhandledRejection` prints one E1577
+ * a second signal during shutdown does nothing. A coded refusal before it listens (E1596, E1552, E1555, E1560, E1765)
+ * prints one `diag` with its own code, message and `see` and exits 1, with no E1577 (k.deploy Refusals at start). Every `uncaughtException` and `unhandledRejection` prints one E1577
  * `diag` with none of the thrown text (`onUncaught`, k.leave Process); the first then stops listening, lets requests in
  * flight finish for at most 10,000 ms, awaits `close()` and the driver's `close()`, and exits 1; a later one prints its
  * record only.
@@ -69,68 +73,91 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
       process.exit(fault || !a || !st ? 1 : 0);
     })();
   };
-  onUncaught({ format, write: line }, o.dir, false, () => stop(true));
-  const fail = (message: string, code = "E1560"): never => {
-    line(diagLine(format, { code, message }));
-    return process.exit(1);
-  };
-  const [major = 0, minor = 0] = node.split(".").map(Number);
-  if (storage === "sqlite" && major * 1e3 + minor < 22013)
-    return fail(`storage 'sqlite' needs Node 22.13 or newer; this is ${node}`);
-  const env = DeployEnv(peers, storage).decodeStrings(given);
-  if (!env.ok) {
-    const key = String(env.error.data.issues[0]?.path[0] ?? "environment");
-    return fail(`${key} fails DeployEnv (${env.error.data.issues[0]?.rule ?? "invalid"}); set it where the image runs`);
+  // The text window of an uncaught throw's record opens once the ctx clock reads the start (k.serverlog).
+  let clock: { now(): number } | undefined;
+  let until: number | undefined;
+  onUncaught(
+    { format, write: line },
+    o.dir,
+    () => clock !== undefined && until !== undefined && clock.now() < until,
+    () => stop(true),
+  );
+  try {
+    await serveIt();
+  } catch (e) {
+    // A coded refusal before the server listens is Keel's own text (k.deploy Refusals at start).
+    if (!isRefusal(e) || live.server?.listening === true) throw e;
+    line(refusedLine(format, e));
+    process.exit(1);
   }
-  // The URL is a secret (k.deploy Storage): parsed only after DeployEnv accepted it, and never printed.
-  const url = env.value.KEEL_DATABASE_URL;
-  const opened = await (o.open === undefined
-    ? undefined
-    : o.open(new URL(typeof url === "string" ? url : "file:/data/keel.sqlite")).catch((e: unknown) => {
-        const code: unknown = Reflect.get(Object(e), "code");
-        if (code !== "E2152" && code !== "E2153") throw e;
-        return fail(e instanceof Error ? e.message.replace(/^E215[23] /, "") : String(code), code);
-      }));
-  if (opened !== undefined) live.opened = opened;
-  const std = join(o.dir, "std.json");
-  const app = await createApp({
-    topology: o.topology,
-    origins: o.origins ?? {},
-    deployable: o.deployable,
-    routes: o.routes,
-    ctx: createCtx({ mode: "real", ...(opened === undefined ? {} : { drivers: { storage: opened } }) }),
-    runners: o.runners,
-    identity: o.identity,
-    peers: Object.fromEntries(peers.map((p) => [p, String(env.value[peerKey(p)])])),
-    secret: env.value.KEEL_SECRET,
-    assets: o.dir,
-    artifacts: o.dir,
-    log: { format, write: line },
-    ...(existsSync(std) ? { std } : {}),
-    ...(env.value.KEEL_ORIGIN === undefined ? {} : { origin: env.value.KEEL_ORIGIN }),
-    ...(env.value.KEEL_ALLOW_ORIGINS === undefined
-      ? {}
-      : {
-          allow: env.value.KEEL_ALLOW_ORIGINS.split(",").map((o) => o.trim()),
-        }),
-  });
-  live.app = app;
-  const port = env.value.PORT ?? 8080;
-  const srv = serve({ fetch: app.fetch, port }, (a) => {
-    line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
-  });
-  live.server = srv;
-  srv.on("request", (_q, res) => {
-    busy++;
-    res.on("close", () => {
-      if (--busy === 0) idle();
+  async function serveIt(): Promise<void> {
+    const fail = (message: string, code = "E1560"): never => {
+      line(diagLine(format, { code, message }));
+      return process.exit(1);
+    };
+    const [major = 0, minor = 0] = node.split(".").map(Number);
+    if (storage === "sqlite" && major * 1e3 + minor < 22013)
+      return fail(`storage 'sqlite' needs Node 22.13 or newer; this is ${node}`);
+    const env = DeployEnv(peers, storage).decodeStrings(given);
+    if (!env.ok) {
+      const key = String(env.error.data.issues[0]?.path[0] ?? "environment");
+      return fail(
+        `${key} fails DeployEnv (${env.error.data.issues[0]?.rule ?? "invalid"}); set it where the image runs`,
+      );
+    }
+    // The URL is a secret (k.deploy Storage): parsed only after DeployEnv accepted it, and never printed.
+    const url = env.value.KEEL_DATABASE_URL;
+    const opened = await (o.open === undefined
+      ? undefined
+      : o.open(new URL(typeof url === "string" ? url : "file:/data/keel.sqlite")).catch((e: unknown) => {
+          const code: unknown = Reflect.get(Object(e), "code");
+          if (code !== "E2152" && code !== "E2153") throw e;
+          return fail(e instanceof Error ? e.message.replace(/^E215[23] /, "") : String(code), code);
+        }));
+    if (opened !== undefined) live.opened = opened;
+    const std = join(o.dir, "std.json");
+    const ctx = createCtx({ mode: "real", ...(opened === undefined ? {} : { drivers: { storage: opened } }) });
+    until = logThrownUntil(process.env.KEEL_LOG_THROWN, ctx.clock.now());
+    clock = ctx.clock;
+    const app = await createApp({
+      topology: o.topology,
+      origins: o.origins ?? {},
+      deployable: o.deployable,
+      routes: o.routes,
+      ctx,
+      runners: o.runners,
+      identity: o.identity,
+      peers: Object.fromEntries(peers.map((p) => [p, String(env.value[peerKey(p)])])),
+      secret: env.value.KEEL_SECRET,
+      assets: o.dir,
+      artifacts: o.dir,
+      log: { format, write: line },
+      ...(existsSync(std) ? { std } : {}),
+      ...(env.value.KEEL_ORIGIN === undefined ? {} : { origin: env.value.KEEL_ORIGIN }),
+      ...(env.value.KEEL_ALLOW_ORIGINS === undefined
+        ? {}
+        : {
+            allow: env.value.KEEL_ALLOW_ORIGINS.split(",").map((o) => o.trim()),
+          }),
     });
-  });
-  // Only an error before the server listens is the bind failure.
-  srv.on("error", (e) => {
-    if (srv.listening) return;
-    fail(`PORT ${port} fails to bind (${"code" in e ? e.code : "error"}); free it or set another PORT`);
-  });
-  process.on("SIGTERM", () => stop(false));
-  process.on("SIGINT", () => stop(false));
+    live.app = app;
+    const port = env.value.PORT ?? 8080;
+    const srv = serve({ fetch: app.fetch, port }, (a) => {
+      line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
+    });
+    live.server = srv;
+    srv.on("request", (_q, res) => {
+      busy++;
+      res.on("close", () => {
+        if (--busy === 0) idle();
+      });
+    });
+    // Only an error before the server listens is the bind failure.
+    srv.on("error", (e) => {
+      if (srv.listening) return;
+      fail(`PORT ${port} fails to bind (${"code" in e ? e.code : "error"}); free it or set another PORT`);
+    });
+    process.on("SIGTERM", () => stop(false));
+    process.on("SIGINT", () => stop(false));
+  }
 }

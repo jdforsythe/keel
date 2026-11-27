@@ -10,4 +10,6 @@ export type Diag = {
   readonly tail?: string;
   readonly message: string;
   readonly frames?: readonly string[];
+  /** The section a coded refusal names (k.deploy Refusals at start); else the one owning the code (`seeOf`). */
+  readonly see?: string;
 };

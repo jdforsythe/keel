@@ -312,7 +312,7 @@ export default function (): {
   renderStart: () => void;
   generateBundle: { order: "post"; handler: (this: Ctx, options: unknown, bundle: Record<string, Emitted>) => void };
   closeBundle: () => void;
-  transform: (code: string, id: string, options?: HookOptions) => { code: string; map: null } | null;
+  transform: (code: string, id: string, options?: HookOptions) => { code: string; map: string | null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
@@ -1239,9 +1239,10 @@ export default function (): {
         liftedLibraries !== undefined && command === "build" && options?.ssr === true
           ? rewriteLiftedReads(id, code, liftedLibraries)
           : null;
-      // A census module in the server bundle names its own file, so two copies inlined from two folders differ
-      // (k.realm One copy).
-      const census = command === "build" && options?.ssr === true ? censusSource(id, lifted ?? code) : undefined;
+      // A census module in a bundle names its own file, so two copies inlined from two folders differ (k.realm One
+      // copy): in the server bundle by its URL, in a browser bundle by its path from the project.
+      const census =
+        command !== "build" ? undefined : censusSource(id, lifted ?? code, options?.ssr === true ? undefined : root);
       const kept =
         census !== undefined ? { code: census, map: null } : lifted === null ? null : { code: lifted, map: null };
       const rel = relOf(id);
@@ -1252,7 +1253,7 @@ export default function (): {
         .map((d) => `E1404 ${rel} duplicate element id "${d.id.slice(0, 30)}" (also in another module)`);
       const failures = [...entry.failures, ...dupes];
       if (failures.length > 0) throw new Error(failures.join("\n"));
-      return entry.output === undefined ? kept : { code: entry.output.code, map: null };
+      return entry.output === undefined ? kept : { code: entry.output.code, map: entry.output.map ?? null };
     },
     watchChange(id, change) {
       const rel = relOf(id);

@@ -14,9 +14,6 @@ export function logThrownUntil(value: string | undefined, start: number): number
   if (value === undefined) return undefined;
   const at = isoInstantMs(value.trim());
   if (at === undefined || at - start > MAX_AHEAD_MS)
-    throw codedError(
-      "E1596",
-      "KEEL_LOG_THROWN: set it to an ISO 8601 instant at most 24 hours ahead, like 2026-01-02T15:00:00Z, or unset it",
-    );
+    throw codedError("E1596", "KEEL_LOG_THROWN: set an ISO 8601 instant at most 24 hours ahead, or unset it");
   return at;
 }
