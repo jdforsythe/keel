@@ -21,6 +21,7 @@ Personas: A2 and its agent form (edit, check, done), A7 (`keel test` after an ed
 | --- | --- | --- | --- |
 | `.keel/a11y.json`, `ids.json`, `deps.json`, `styles.json` | `keel build`; the Vite plugin under `keel dev`, `keel test` and `vite build` | `keel check` (E1005 only: its rules get the compile in memory); `keel test`'s setup (`a11y.json`, E1702); dev inspect | the project's sources and its libraries' files |
 | `.keel/std.json` | as above | `keel check` (E1005); the Vite plugin (copied into `dist/`) | each manifest's `std` entries |
+| `.keel/schemes.json` | `keel build`; the Vite plugin | `keel check` (E1005); a `node` deployable's first paint | the evaluated tokens (k.schemes): a compiled view, gitignored |
 | `.keel/routes.json` | the Vite plugin; `keel build` (`buildRoutes`, node-only topologies); scaffold refresh | `keel check` (E1005 against literals, W1005, E1511's evaluated entries); `keel ledger` (projects, page routes, W1731); dev inspect | the evaluated route tables and contracts |
 | `.keel/surface.json` | `keel build` only (`surfaceRun`); scaffold refresh | `keel check` (E1005 by `sources`; the current side of `--base`); CI's `git show origin/<base>:.keel/surface.json` | contracts, route tables, store factories, evaluated, and every file they load |
 | `deploy/**`, the CI workflow | `keel build`; scaffold | `keel check` (E1005) | `topology.ts`, libraries' manifests |
@@ -93,7 +94,7 @@ There is no `keel check --check`. `keel pack --check` (k.library-pack) is the on
 | --- | --- | --- |
 | `.keel/surface.json` | yes | the base the generated CI compares against (`git show origin/<base>:.keel/surface.json`), and a reviewer reads an API or stored-state change in its diff |
 | `deploy/**`, the CI workflow | yes | they are what runs in deployment and CI; a reviewer reads them |
-| `.keel/a11y.json`, `ids.json`, `deps.json`, `styles.json`, `std.json`, `routes.json` | no | caches of the compile and the route evaluation; nothing reads them; committing them adds a churn line to most pull requests and a merge conflict between any two that touch components |
+| `.keel/a11y.json`, `ids.json`, `deps.json`, `styles.json`, `std.json`, `schemes.json`, `routes.json` | no | caches of the compile and the route evaluation; nothing reads them; committing them adds a churn line to most pull requests and a merge conflict between any two that touch components |
 | `.keel/ledger.json`, `.keel/monitored.json` | as k.ledger says | not derived from the tree |
 
 `keel scaffold project` writes the six view names into `.gitignore`. The repository's apps stop tracking them (Build plan, slice 2).
