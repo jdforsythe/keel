@@ -57,7 +57,7 @@ async function rig(identify: (() => string) | undefined, open = true) {
     yield* route.loader.live(a, cx);
   });
   const bump = action(c, "cost.bump", { stores: factory }, async (_b, { stores }) => {
-    void tx(stores.bump, {});
+    expect(tx(stores.bump, {}).ok).toBe(true);
     return ok({});
   });
   const source =

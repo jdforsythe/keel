@@ -221,10 +221,10 @@ const guarded = () =>
 async function entered(self: boolean, stay: boolean): Promise<number> {
   const wf = inRoot(() => workflow(nextId("pick"), { chart: guarded() }));
   const r = await commitStores(sim(), wf.stores, (S) => {
-    void tx(S.start, { id: "f", data: { self: false, stay: false } });
-    void tx(S.events.go, { id: "f", payload: {} });
-    void tx(S.events.set, { id: "f", payload: { self, stay } });
-    void tx(S.events.pick, { id: "f", payload: {} });
+    expect(tx(S.start, { id: "f", data: { self: false, stay: false } }).ok).toBe(true);
+    expect(tx(S.events.go, { id: "f", payload: {} }).ok).toBe(true);
+    expect(tx(S.events.set, { id: "f", payload: { self, stay } }).ok).toBe(true);
+    expect(tx(S.events.pick, { id: "f", payload: {} }).ok).toBe(true);
     return ok(S.store.get("instances").f?.entered ?? -1);
   });
   if (!r.ok) throw new Error(r.error.code);

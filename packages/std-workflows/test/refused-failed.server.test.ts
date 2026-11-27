@@ -64,11 +64,12 @@ async function runOne(f: ReturnType<typeof flow>) {
   });
   const id = ctx.random.id("Flow");
   const data: Data = { n: 1, freed: 0, code: "needle-4711" };
-  void (await commitStores(ctx, f.wf.stores, (S) => {
-    void tx(S.start, { id, data });
-    void tx(S.events.begin, { id, payload: {} });
+  const begun = await commitStores(ctx, f.wf.stores, (S) => {
+    expect(tx(S.start, { id, data }).ok).toBe(true);
+    expect(tx(S.events.begin, { id, payload: {} }).ok).toBe(true);
     return ok(null);
-  }));
+  });
+  expect(begun.ok).toBe(true);
   await settle();
   await pass(ctx, 120_000);
   const r = await commitStores(ctx, f.wf.stores, (S) => ok(structuredClone(S.store.get("instances")[id])));

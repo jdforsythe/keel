@@ -324,7 +324,7 @@ test("An enqueue wakes an idle runner without the clock moving", async () => {
   });
   const r = start(jobs, ctx);
   await settle();
-  void (await jobs.enqueue(ctx, "orders.work", { n: 7 }));
+  expect((await jobs.enqueue(ctx, "orders.work", { n: 7 })).ok).toBe(true);
   await settle();
   expect(ran).toEqual([7]);
   await r.end();
@@ -345,9 +345,9 @@ test("For any timing of a running job's result against an enqueue, every job run
         }),
       });
       const r = start(jobs, ctx);
-      void (await jobs.enqueue(ctx, "orders.work", { n: 1 }));
+      expect((await jobs.enqueue(ctx, "orders.work", { n: 1 })).ok).toBe(true);
       await settle();
-      void (await jobs.enqueue(ctx, "orders.work", { n: 2 }));
+      expect((await jobs.enqueue(ctx, "orders.work", { n: 2 })).ok).toBe(true);
       await turns(lag);
       gates[0]?.();
       await settle();
@@ -436,6 +436,6 @@ test("A queue refuses an input holding s.secret naming the job and the path, and
   await r.end();
   expect(await ctx.storage.get("std.jobs.")).not.toBeNull();
   const dotted = queue({ "orders.a.b": job({ input }, async () => ok(null)) });
-  void (await dotted.enqueue(ctx, "orders.a.b", { n: 1 }));
+  expect((await dotted.enqueue(ctx, "orders.a.b", { n: 1 })).ok).toBe(true);
   expect(await ctx.storage.get(KEY)).not.toBeNull();
 });

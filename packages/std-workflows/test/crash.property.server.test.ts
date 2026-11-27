@@ -91,11 +91,12 @@ test("Crashes at generated points of a looping step record each entry's effect o
           });
         const id = ctx.random.id("Flow");
         let app = await boot();
-        void (await commitStores(ctx, wf.stores, (S) => {
-          void tx(S.start, { id, data: { n: 2, freed: 0, loops } });
-          void tx(S.events.begin, { id, payload: {} });
+        const begun = await commitStores(ctx, wf.stores, (S) => {
+          expect(tx(S.start, { id, data: { n: 2, freed: 0, loops } }).ok).toBe(true);
+          expect(tx(S.events.begin, { id, payload: {} }).ok).toBe(true);
           return ok(null);
-        }));
+        });
+        expect(begun.ok).toBe(true);
         for (const at of crashes) {
           await turns(at);
           await close(app);

@@ -6,6 +6,7 @@ import { scope } from "@keel/reactive";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
+import { expect } from "vitest";
 import { Write, drain, outbox, writeFor } from "../src/index.ts";
 
 export const SEED = 1337;
@@ -136,7 +137,7 @@ export function createServer() {
     },
     /** A write by another caller: moves the server's head. */
     other(todoId: string, title: string): void {
-      void tx(st.edit, { todoId, title });
+      expect(tx(st.edit, { todoId, title }).ok).toBe(true);
     },
     /** While gated, every post waits for `release()` before the server answers it. */
     gated(on: boolean): void {

@@ -14,6 +14,7 @@ import { flows, workflow } from "@keel/std-workflows";
 import { tx } from "@keel/store";
 import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
+import { expect } from "vitest";
 import { afterAll } from "vitest";
 
 /** A root a test file makes (`scope(fn, { detached: true })`): the charts and workflows it builds live in it and it is disposed when the file's tests end. */
@@ -143,22 +144,22 @@ export const readRows = (ctx: Sim, f: Flow) => mutate(ctx, f, rowsOf);
 
 export const start = (ctx: Sim, f: Flow, id: string, data: Data) =>
   mutate(ctx, f, (S) => {
-    void tx(S.start, { id, data });
+    expect(tx(S.start, { id, data }).ok).toBe(true);
   });
 /** `begin` for `id`; returns the instance's `entered` once it is in the step state. */
 export const begin = (ctx: Sim, f: Flow, id: string) =>
   mutate(ctx, f, (S) => {
-    void tx(S.events.begin, { id, payload: {} });
+    expect(tx(S.events.begin, { id, payload: {} }).ok).toBe(true);
     return rowsOf(S)[id]?.entered ?? -1;
   });
 export const hide = (ctx: Sim, f: Flow, id: string) =>
   mutate(ctx, f, (S) => {
-    void tx(S.events.hide, { id, payload: {} });
+    expect(tx(S.events.hide, { id, payload: {} }).ok).toBe(true);
     return rowsOf(S)[id]?.entered ?? -1;
   });
 export const undo = (ctx: Sim, f: Flow, id: string) =>
   mutate(ctx, f, (S) => {
-    void tx(S.events.undo, { id, payload: {} });
+    expect(tx(S.events.undo, { id, payload: {} }).ok).toBe(true);
     return rowsOf(S)[id]?.entered ?? -1;
   });
 
@@ -182,13 +183,13 @@ export const dataArb: fc.Arbitrary<Data> = fc.record({
 export function fire(S: Stores, id: string, ev: Ev): void {
   switch (ev.name) {
     case "purged":
-      void tx(S.events.purged, { id, payload: { freed: ev.freed } });
+      expect(tx(S.events.purged, { id, payload: { freed: ev.freed } }).ok).toBe(true);
       return;
     case "stuck":
-      void tx(S.events.stuck, { id, payload: { code: ev.code } });
+      expect(tx(S.events.stuck, { id, payload: { code: ev.code } }).ok).toBe(true);
       return;
     default:
-      void tx(S.events[ev.name], { id, payload: {} });
+      expect(tx(S.events[ev.name], { id, payload: {} }).ok).toBe(true);
   }
 }
 

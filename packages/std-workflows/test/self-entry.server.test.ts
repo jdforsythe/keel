@@ -103,11 +103,15 @@ async function launch(ctx: Sim, f: Poll, first: "go" | "nap", max: number) {
     runners: { api: [f.jobs, flows(f.jobs, [f.wf])] },
   });
   const id = ctx.random.id("Flow");
-  void (await commitStores(ctx, f.wf.stores, (S) => {
-    void tx(S.start, { id, data: { n: 0, max, marks: 0 } });
-    void tx(S.events[first], { id, payload: {} });
-    return ok(null);
-  }));
+  expect(
+    (
+      await commitStores(ctx, f.wf.stores, (S) => {
+        expect(tx(S.start, { id, data: { n: 0, max, marks: 0 } }).ok).toBe(true);
+        expect(tx(S.events[first], { id, payload: {} }).ok).toBe(true);
+        return ok(null);
+      })
+    ).ok,
+  ).toBe(true);
   return { app, id };
 }
 
@@ -168,16 +172,16 @@ test("A target with no `to`, or a guarded self target not taken, stays in the en
   const ctx = sim();
   const r = await commitStores(ctx, f.wf.stores, (S) => {
     const id = "f1";
-    void tx(S.start, { id, data: { n: 0, max: 3, marks: 0 } });
-    void tx(S.events.go, { id, payload: {} });
-    void tx(S.attempt, { id, entered: 1 });
+    expect(tx(S.start, { id, data: { n: 0, max: 3, marks: 0 } }).ok).toBe(true);
+    expect(tx(S.events.go, { id, payload: {} }).ok).toBe(true);
+    expect(tx(S.attempt, { id, entered: 1 }).ok).toBe(true);
     const at = () => structuredClone(S.store.get("instances")[id]);
     const before = at();
-    void tx(S.events.note, { id, payload: {} });
+    expect(tx(S.events.note, { id, payload: {} }).ok).toBe(true);
     const noted = at();
-    void tx(S.events.probe, { id, payload: {} });
+    expect(tx(S.events.probe, { id, payload: {} }).ok).toBe(true);
     const probed = at();
-    void tx(S.events.tick, { id, payload: {} });
+    expect(tx(S.events.tick, { id, payload: {} }).ok).toBe(true);
     return ok({ before, noted, probed, ticked: at() });
   });
   if (!r.ok) throw new Error(r.error.code);
