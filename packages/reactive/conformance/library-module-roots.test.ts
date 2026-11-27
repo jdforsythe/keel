@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Spec: k.reactive, clause "In a library package's own folder (`"keel": "library"` in its `package.json`) under `keelConfig`, a `src` module whose top level is `export const r = owner()` gives `r` a scope whose `parent` is undefined, and a test file there whose top level is `const t = owner()` gives `t` undefined."
+// Spec: k.reactive, clause "In a library package's own folder (`\"keel\": \"library\"` in its `package.json`) under `keelConfig`, a `src` module whose top level is `export const r = owner()` gives `r` a scope whose `parent` is undefined, and a test file there whose top level is `const t = owner()` gives `t` undefined."
 // Seed 1337 (no generated inputs: one fixture).
 // Method: a child `vitest run` under `keelConfig` in a folder whose `package.json` has `"keel": "library"`, holding `src/mod.ts` (`export const r = owner()`) and a test file (`const t = owner()`); the fixture test writes what it saw to a file the outer test reads. The fixture folder is made inside this package so `@keel/reactive` and `@keel/tooling` resolve.
 import { fixedTime } from "@keel/tooling/test-time";
