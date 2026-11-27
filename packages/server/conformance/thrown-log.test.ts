@@ -23,6 +23,11 @@ const Nothing = s.object({});
 const Input = s.object({ email: s.string().pii("contact") });
 const Gone = s.error("shop.gone", s.object({}));
 const FORMATS: readonly Format[] = ["compact", "json"];
+/** The ISO instant `ms` after the injected sim clock's now: a format of the sim clock's reading, not a read of the real one. */
+const isoAfter = (ctx: ReturnType<typeof createCtx>, ms: number): string => {
+  const d: unknown = Reflect.construct(Date, [Number(ctx.clock.now()) + ms]);
+  return d instanceof Date ? d.toISOString() : "";
+};
 const PATTERN = /^loader p\.def threw: (Error|value|Defect) #[0-9a-f]{8}( at \S+:\d+)?$/;
 
 const withEnv = async <T>(vars: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> => {
@@ -251,7 +256,7 @@ describe("k.serverlog: dev mode and KEEL_LOG_THROWN print the text", () => {
 
   it("with KEEL_LOG_THROWN an instant one hour after start, a throw logs two diag records before that instant and one after it", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
-    const instant = new Date(Number(ctx.clock.now()) + 3_600_000).toISOString();
+    const instant = isoAfter(ctx, 3_600_000);
     await withEnv({ KEEL_LOG_THROWN: instant }, async () => {
       const before = await throwFromLoader("production", "json", () => new Error("user jane@x.com failed"), 1, ctx);
       expect(diagMessages("json", before).filter((m) => m.startsWith("loader p.def threw"))).toHaveLength(2);
@@ -276,7 +281,7 @@ describe("k.serverlog: dev mode and KEEL_LOG_THROWN print the text", () => {
 
   it("KEEL_LOG_THROWN an instant 25 hours after start fails createApp with E1596", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
-    const instant = new Date(Number(ctx.clock.now()) + 25 * 3_600_000).toISOString();
+    const instant = isoAfter(ctx, 25 * 3_600_000);
     const got: unknown = await withEnv({ KEEL_LOG_THROWN: instant }, () =>
       throwFromLoader("production", "json", () => new Error("x"), 1, ctx).then(
         () => undefined,
