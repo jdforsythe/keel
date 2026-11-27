@@ -12,7 +12,7 @@ const FIX =
   "CLONE_NEWUSER; or pass --no-sandbox to accept an unsandboxed browser";
 
 /** The one E1734 of a Chromium that cannot start its sandbox (k.e2e-run Browser), its fix naming the settings. */
-export const sandboxRefused = (): Diag =>
+const sandboxRefused = (): Diag =>
   makeDiag("E1734", "chromium cannot start its sandbox here", { fix: FIX, see: "k.e2e-run" });
 
 type Launcher = { launch(o: object): Promise<{ close(): Promise<void> }> };
