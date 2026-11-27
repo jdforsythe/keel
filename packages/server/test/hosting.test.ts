@@ -3,13 +3,13 @@
 // response headers, the write proof), W1567 once per origin, a host answers unmatched documents with the client's
 // index.html, `KEEL_ALLOW_ORIGINS` parses as a list of origins, and `topology()` throws E1566. Seed 1337.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import type { Topology } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -205,7 +205,7 @@ describe("host fallback", () => {
     for (const d of made.splice(0)) fs.rmSync(d, { recursive: true, force: true });
   });
   const built = (index: boolean): string => {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-host-"));
+    const d = tempDir("keel-host-");
     made.push(d);
     const files: Record<string, string> = {
       ".vite/manifest.json": JSON.stringify({
@@ -277,7 +277,7 @@ describe("host fallback", () => {
       other: { modules: ["b"], adapter: "node" },
       web: { modules: ["w"], adapter: "client", servedBy: "api" },
     });
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-host-art-"));
+    const dir = tempDir("keel-host-art-");
     made.push(dir);
     fs.writeFileSync(
       path.join(dir, "routes.json"),
@@ -304,7 +304,7 @@ describe("host fallback", () => {
       other: { modules: ["b"], adapter: "node" },
       web: { modules: ["w"], adapter: "client", servedBy: "api" },
     });
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-host-art-"));
+    const dir = tempDir("keel-host-art-");
     made.push(dir);
     fs.writeFileSync(
       path.join(dir, "routes.json"),

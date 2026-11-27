@@ -135,3 +135,18 @@ export const Toggle = Object.assign(
   },
   { Props: s.object({}) },
 );
+
+/** A field whose root takes its element id from an `id` prop, as `@keel/ui` parts do. */
+export const Field = Object.assign(
+  (props: { readonly id: string; readonly label: string }): Node => {
+    const root = clone(template('<div><label for=""></label><input id=""></div>'));
+    const label = root.children[0];
+    const input = root.children[1];
+    if (label === undefined || input === undefined) throw new Error("test support: Field template changed");
+    attr(label, "for", () => props.id);
+    text(label, () => props.label);
+    attr(input, "id", () => props.id);
+    return root;
+  },
+  { Props: s.object({ id: s.string({ min: 1, max: 12 }), label: s.string({ min: 1, max: 12 }) }) },
+);

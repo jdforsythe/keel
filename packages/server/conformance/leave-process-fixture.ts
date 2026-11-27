@@ -5,7 +5,7 @@ import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { REPO, deployEnv } from "./topology-build-fixture.ts";
+import { REPO, childOutput, deployEnv } from "./topology-build-fixture.ts";
 
 export const SEED = 1337;
 /** The text a defect raised by the fixture carries; no record may hold it. The fixture raises defects, the one way app code fails (k.errors Defects). */
@@ -186,7 +186,7 @@ export function buildLeaveFixture(): string {
     encoding: "utf8",
     env: { ...process.env, KEEL_AGENT: "1" },
   });
-  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)})\n${r.stdout}\n${r.stderr}`);
+  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   return fixture;
 }
 

@@ -2,8 +2,8 @@
 // appFrames and caught (k.server Log): app positions only, relative to the folder holding `artifacts`, at most 5, in
 // stack order; `server.mjs` positions through its map; none without `artifacts`; the KeelError holds no stack. Seed 1337.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { appFrames } from "../src/internal/appFrames.ts";
@@ -70,7 +70,7 @@ describe("appFrames", () => {
   });
 
   it("maps a server.mjs position through server.mjs.map, read once, and drops one it cannot map", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-frames-map-"));
+    const dir = tempDir("keel-frames-map-");
     const bundle = path.join(dir, "server.mjs");
     // Line 1: col 1 from modules/a/a.server.ts 1:1, col 11 from ../packages/x.ts 5:3.
     const map = {
@@ -102,7 +102,7 @@ describe("appFrames", () => {
 
 describe("appFrames beside a built server.mjs", () => {
   const withBundle = (use: (dir: string) => void): void => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-frames-built-"));
+    const dir = tempDir("keel-frames-built-");
     try {
       fs.writeFileSync(path.join(dir, "server.mjs"), "");
       use(dir);

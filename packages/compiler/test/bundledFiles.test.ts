@@ -1,17 +1,18 @@
 // k.server-deps Files a bundled package reads: what a server build copies beside `server.mjs`, and what fails it (E1014).
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, expect, it } from "vitest";
 import { bundledFiles } from "../src/internal/bundledFiles.ts";
+import { rewriteLiftedReads } from "../src/internal/rewriteLiftedReads.ts";
 
-const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-bundled-")));
+const root = fs.realpathSync(tempDir("keel-bundled-"));
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
 /** A package `node_modules/p` under a fresh folder: `files` relative to it; returns the absolute path of `index.js`. */
 function pkg(files: Record<string, string>): string {
-  const dir = fs.mkdtempSync(path.join(root, "app-"));
+  const dir = tempDir("app-", root);
   for (const [rel, text] of Object.entries(files)) {
     const at = path.join(dir, "node_modules", "p", rel);
     fs.mkdirSync(path.dirname(at), { recursive: true });
@@ -52,8 +53,8 @@ it("an absolute URL, the folder itself, another base and a file outside node_mod
 it("a missing file, a path leaving the folder and a first argument of any other form are each one E1014 at the package file", () => {
   const cases: [string, string][] = [
     ["'./gone.bin'", "reads ./gone.bin, which is missing"],
-    ["'../up.bin'", "reads ../up.bin, outside its own folder"],
-    ["'/abs.bin'", "reads /abs.bin, outside its own folder"],
+    ["'../up.bin'", "reads ../up.bin, outside its package"],
+    ["'/abs.bin'", "reads /abs.bin, outside its package"],
     ["name", "reads new URL(x, import.meta.url) with x no string literal"],
     ["`./${name}.bin`", "reads new URL(x, import.meta.url) with x no string literal"],
     ["'a' + '.bin'", "reads new URL(x, import.meta.url) with x no string literal"],
@@ -90,12 +91,12 @@ function libraryAt(at: string, bytes: string): string {
 it("a library's file is read wherever its real folder is: installed, linked through node_modules, or inside the project", () => {
   fc.assert(
     fc.property(fc.constantFrom("installed" as const, "linked" as const, "project" as const), (where) => {
-      const app = fs.mkdtempSync(path.join(root, "app-"));
+      const app = tempDir("app-", root);
       const real =
         where === "installed"
           ? path.join(app, "node_modules", "@acme", "store")
           : where === "linked"
-            ? fs.mkdtempSync(path.join(root, "workspace-"))
+            ? tempDir("workspace-", root)
             : path.join(app, "libs", "store");
       const file = libraryAt(real, "D");
       if (where === "linked") {
@@ -118,8 +119,8 @@ it("a library's file is read wherever its real folder is: installed, linked thro
 });
 
 it("two libraries shipping a file of one name with other bytes is one E1014; with equal bytes, one copy", () => {
-  const a = fs.mkdtempSync(path.join(root, "a-"));
-  const b = fs.mkdtempSync(path.join(root, "b-"));
+  const a = tempDir("a-", root);
+  const b = tempDir("b-", root);
   const libraries = [
     { name: "@acme/a", dir: a },
     { name: "@acme/b", dir: b },
@@ -133,4 +134,51 @@ it("two libraries shipping a file of one name with other bytes is one E1014; wit
   });
   fs.writeFileSync(path.join(b, "src", "data.bin"), "1");
   expect(bundledFiles(ids, libraries).problems).toEqual([]);
+});
+
+it("property: a literal ../ read inside the package is copied without its leading ../ and its argument rewritten; above the package it is E1014", () => {
+  fc.assert(
+    fc.property(
+      fc.constantFrom("contrib", "a/b", "@s/q"),
+      fc.constantFrom("ext.tar.gz", "data/x.bin"),
+      fc.boolean(),
+      (dir, file, scoped) => {
+        const up = "../".repeat(dir.split("/").length);
+        const name = scoped ? "@acme/p" : "p";
+        const base = tempDir("lift-", root);
+        const folder = path.join(base, "node_modules", ...name.split("/"));
+        const reader = path.join(folder, ...dir.split("/"), "r.js");
+        fs.mkdirSync(path.dirname(reader), { recursive: true });
+        fs.mkdirSync(path.dirname(path.join(folder, file)), { recursive: true });
+        fs.writeFileSync(path.join(folder, file), "Z");
+        const code = `// ${up}${file}\n${url(`'${up}${file}'`)}`;
+        fs.writeFileSync(reader, code);
+        const r = bundledFiles([reader]);
+        expect(r.problems).toEqual([]);
+        expect(r.copies.map((c) => [c.rel.split(path.sep).join("/"), c.from])).toEqual([
+          [file, path.join(folder, file)],
+        ]);
+        expect(rewriteLiftedReads(reader, code, [])).toBe(`// ${up}${file}\n${url(JSON.stringify(`./${file}`))}`);
+        const out = `../${up}${file}`;
+        fs.writeFileSync(reader, url(`'${out}'`));
+        const shownAt = `node_modules/${name}/${dir}/r.js`;
+        expect(bundledFiles([reader]).problems).toEqual([`E1014 ${shownAt} reads ${out}, outside its package`]);
+        expect(rewriteLiftedReads(reader, url(`'${out}'`), [])).toBeNull();
+      },
+    ),
+    { seed: 1337, numRuns: 12 },
+  );
+});
+
+it("a file outside node_modules and no library's is not rewritten; a library's real folder is its package's", () => {
+  const app = path.join(root, "plain.js");
+  expect(rewriteLiftedReads(app, url("'../x.bin'"), [])).toBeNull();
+  const lib = tempDir("lib-", root);
+  fs.mkdirSync(path.join(lib, "src"), { recursive: true });
+  fs.writeFileSync(path.join(lib, "x.bin"), "X");
+  const file = path.join(lib, "src", "a.js");
+  fs.writeFileSync(file, url("'../x.bin'"));
+  const held = [{ name: "@acme/lib", dir: lib }];
+  expect(rewriteLiftedReads(file, url("'../x.bin'"), held)).toBe(url('"./x.bin"'));
+  expect(bundledFiles([file], held).copies.map((c) => c.rel)).toEqual(["x.bin"]);
 });

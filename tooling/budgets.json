@@ -4,9 +4,11 @@
     "test.failing3": 400,
     "spec.section": 3100,
     "spec.map": 1660,
+    "spec.area": 500,
     "explain": 300,
     "mcp.tools-list": 2150,
     "docs.map": 1690,
+    "docs.area": 500,
     "docs.section": 3100,
     "docs.skill": 3700,
     "docs.for": 400,
@@ -14,7 +16,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "95kb",
+      "max": "98kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -22,11 +24,11 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "39kb",
+      "max": "39.5kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
-      "max": "3kb",
+      "max": "4.5kb",
       "platform": "node"
     },
     "@keel/cli/shell": {
@@ -202,15 +204,15 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "22.25kb",
+      "max": "22.5kb",
       "platform": "node"
     },
     "@keel/testing/prove": {
       "max": "8.25kb",
       "platform": "node"
     },
-    "@keel/ui": "5.6kb",
-    "@keel/ui/aria": "3.6kb"
+    "@keel/ui": "8kb",
+    "@keel/ui/aria": "3.75kb"
   },
   "mutate": {
     "default": 30

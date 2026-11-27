@@ -3,6 +3,7 @@
 // The TypeScript compiler is the oracle: one in-memory module, type-checked with packages/store/tsconfig.json, holds
 // real `tx(...)` calls with no pinned type arguments and transactions whose types are inferred from their schemas, so
 // any overload that admits a bad payload (or rejects an `unknown` one) turns a case red. No suppression comments.
+import { fixedTime } from "@keel/tooling/test-time";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { scope } from "@keel/reactive";
@@ -100,7 +101,7 @@ describe(`k.store: ${CLAUSE}`, () => {
 
   beforeAll(() => {
     errors = typeErrors(source);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   it("the probe's imports resolve and its prelude type-checks (every error is on a case line)", () => {
     expect(errors.filter((e) => e.code === 2307)).toEqual([]);

@@ -26,6 +26,7 @@ import { probeRecorder } from "./probeRecorder.ts";
 import { probesHold } from "./probesHold.ts";
 import { referenceDirectives } from "./referenceDirectives.ts";
 import { resultDiscards } from "./resultDiscards.ts";
+import { schemeSelectReads } from "./schemeSelectReads.ts";
 import { textNodes } from "./textNodes.ts";
 import { tsCode } from "./tsCode.ts";
 import { tsCompilerOptions } from "./tsCompilerOptions.ts";
@@ -128,7 +129,7 @@ function keyOf(
 function resolve(entry: TypeEntry, code: readonly SourceFile[], scope: ReadonlySet<string>): Typed {
   const sources: ReadonlyMap<string, string> = new Map(code.map((f) => [f.path, f.source]));
   const diagnostics = entry.items.flatMap((i) => (i.kind === "diag" ? [i] : judgeFormat(i, sources, scope)));
-  return { diagnostics, dates: entry.dates };
+  return { diagnostics, dates: entry.dates, schemeSelects: entry.schemeSelects };
 }
 
 function remember(key: string, entry: TypeEntry): void {
@@ -170,7 +171,7 @@ export function typeCheck(
 ): Typed {
   const code = files.filter((f) => isCodePath(f.path));
   const decls = files.filter((f) => DECLARATION.test(f.path) && !LIBRARY.test(f.path));
-  if (code.length === 0 && decls.length === 0) return { diagnostics: [], dates: new Map() };
+  if (code.length === 0 && decls.length === 0) return { diagnostics: [], dates: new Map(), schemeSelects: new Map() };
   const base = norm(path.resolve(root));
   const library = code.filter((f) => isLibrary(f.path)).map((f) => f.path);
   const key = keyOf([...code, ...decls], base, skip, library, packages);
@@ -279,6 +280,7 @@ function pass(
 
   const out: (Diagnostic | FormatSite)[] = [];
   const dates = new Map<string, ReadonlySet<number>>();
+  const schemeSelects = new Map<string, ReadonlySet<number>>();
   for (const [fileName, file] of byName) {
     const sf = program.getSourceFile(fileName);
     if (sf === undefined) continue;
@@ -323,6 +325,8 @@ function pass(
       });
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
     const app = isAppPath(file.path) || library.has(file.path);
+    if (file.path.endsWith("x"))
+      schemeSelects.set(file.path, new Set(schemeSelectReads(sf, checker).map(view.original)));
     if (file.path.endsWith("x") && app)
       for (const t of textNodes(sf, checker))
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
@@ -341,5 +345,5 @@ function pass(
   const libDir = norm(path.dirname(host.getDefaultLibFileName(options)));
   out.push(...importMetaDeclarations(program, host, base, held, { libDir, nodeTypes, clientTypes }));
   const probes = rec.probes();
-  return { entry: { key, probes: probes ?? [], items: out, dates }, whole: probes !== undefined };
+  return { entry: { key, probes: probes ?? [], items: out, dates, schemeSelects }, whole: probes !== undefined };
 }

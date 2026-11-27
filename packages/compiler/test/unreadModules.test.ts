@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { unreadModules } from "../src/internal/unreadModules.ts";
 import { routeLiterals } from "../src/routeLiterals.ts";
@@ -30,7 +31,7 @@ const files: SourceFile[] = [
 const node = (modules: string[]) => ({ web: { modules, adapter: "node" as const } });
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "keel-unread-"));
+  root = tempDir("keel-unread-", fs.realpathSync(os.tmpdir()));
   for (const f of files) put(f.path, f.source);
   put("node_modules/@keel/std-x/package.json", JSON.stringify({ exports: { "./module": "./module.ts" } }));
   put("node_modules/@keel/std-x/module.ts", `export default module({ id: "x", capabilities: [] });\n`);

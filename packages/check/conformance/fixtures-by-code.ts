@@ -4,7 +4,22 @@ import fs from "node:fs";
 import path from "node:path";
 import type { check } from "@keel/check";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { defineTokens } from "@keel/ui";
+import { brandTokens } from "@keel/ui/brand";
 import { BASE, sharedRoot } from "./E1013-support.ts";
+import {
+  PACKAGE_JSON as ACME_PACKAGE_JSON,
+  ROOT as ACME_ROOT,
+  SHIPPED as ACME_SHIPPED,
+  BRAND_ONLY,
+  app as acmeApp,
+  badgeSource,
+  composed,
+  fixedTokens,
+  optsFor,
+  packageJson,
+  shippedSource,
+} from "./library-looks-support.ts";
 import type { Files } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
@@ -14,6 +29,8 @@ export interface CodeFixture {
   opts?: Options;
   badOpts?: Options;
   cleanOpts?: Options;
+  /** Options for the re-check of the bad files a fix patched, when the fix changes what an artifact evaluates to. */
+  fixedOpts?: Options;
   bad: Files;
   clean: Files;
 }
@@ -79,6 +96,7 @@ const library = (id: string, deps: string[], ledger = true): Files[number][] => 
     "node_modules/@acme/charts/module.ts",
     `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [${deps.map((d) => `'${d}'`).join(", ")}], capabilities: [], public: { exports: [] } })\n`,
   ),
+  f("node_modules/@acme/charts/src/index.ts", "export {}\n"),
   ...(ledger
     ? [
         f(
@@ -410,13 +428,13 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   },
   // E1161 (rfc:0163): a base element in a library file whose `id` is missing; the clean counterpart builds it from the component's `id` prop.
   E1161: {
-    opts: NO_TYPES,
+    opts: { types: false, artifacts: { tokens: { space: { 2: "8px" } } } },
     bad: [
       mod("shop", ["@acme/charts"], []),
       ...library("charts", []),
       f(
         "node_modules/@acme/charts/src/Badge.tsx",
-        `${UI}export default function Badge(props: { id: string }) { return <Box p="2" /> }\n`,
+        `${UI}export default function Badge(props: { id: string }) { return <Box /> }\n`,
       ),
     ],
     clean: [
@@ -424,7 +442,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ...library("charts", []),
       f(
         "node_modules/@acme/charts/src/Badge.tsx",
-        `${UI}export default function Badge(props: { id: string }) { return <Box id={\`\${props.id}.box\`} p="2" /> }\n`,
+        `${UI}export default function Badge(props: { id: string }) { return <Box id={\`\${props.id}.box\`} /> }\n`,
       ),
     ],
   },
@@ -1529,7 +1547,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [f("C.tsx", `${UI}export default function C() { return <Button look="primary">Save</Button> }\n`)],
   },
   E1809: {
-    opts: NO_TYPES,
+    opts: { types: false, artifacts: { tokens: { space: { 2: "8px" } } } },
     bad: [f("C.tsx", `${UI}export default function C() { return <Box gap="2"><Text>a</Text><Text>b</Text></Box> }\n`)],
     clean: [
       f(
@@ -1693,6 +1711,73 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f(
         "modules/notes/mongoNotes.server.ts",
         "import { register } from '@keel/ctx'\nconst impl = () => ({})\nexport const mongoNotes = register('notes.mongo', { real: impl, shell: impl, sim: impl })\n",
+      ),
+    ],
+  },
+  // E1810 (rfc:0243): the `@acme/ui` the app lists ships tokens its `tokens.ts` does not compose; its fix writes the import and the spreads, and the clean counterpart is the file the fix writes.
+  E1810: {
+    badOpts: optsFor(brandTokens),
+    fixedOpts: optsFor(composed()),
+    cleanOpts: optsFor(composed()),
+    bad: acmeApp(BRAND_ONLY),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1811 (rfc:0243): a library file's `p="2"` its shipped tokens lack; the clean counterpart names a shipped token.
+  E1811: {
+    opts: optsFor(composed()),
+    bad: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' p="2"'))]),
+    clean: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' fg="acme.ink"'))]),
+  },
+  // E1812 (rfc:0243): a spread in the shipped tokens file, at the spread; the clean counterpart is the literal.
+  E1812: {
+    opts: optsFor(composed()),
+    bad: acmeApp(fixedTokens(), [
+      f(ACME_SHIPPED, shippedSource("...other, 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF'")),
+    ]),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1813 (rfc:0243): an override key `'zed.x'` no listed library ships; the clean counterpart overrides a shipped token.
+  E1813: {
+    badOpts: optsFor(composed({ "zed.x": "#000000" })),
+    cleanOpts: optsFor(composed({ "acme.accent": "#b8420d" })),
+    bad: acmeApp(fixedTokens(", 'zed.x': '#000000'")),
+    clean: acmeApp(fixedTokens(", 'acme.accent': '#b8420d'")),
+  },
+  // E1815 (rfc:0243): the `@acme/ui` the app lists writes `default` before `keel` in its `./tokens` entry; the clean counterpart holds `keel` first.
+  E1815: {
+    opts: optsFor(composed()),
+    bad: acmeApp(fixedTokens(), [
+      f(ACME_PACKAGE_JSON, packageJson({ default: "./evil.js", keel: "./src/acmeTokens.ts" })),
+    ]),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1814 (rfc:0243): a `SchemeSelect` where the tokens have light only; the clean counterpart's tokens hold a color pair of their own.
+  E1814: {
+    opts: { types: false, artifacts: { tokens: brandTokens } },
+    cleanOpts: {
+      types: false,
+      artifacts: {
+        tokens: defineTokens({
+          ...brandTokens,
+          color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } },
+        }),
+      },
+    },
+    bad: [
+      f(
+        "C.tsx",
+        "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
+      ),
+      f("tokens.ts", BRAND_ONLY),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
+      ),
+      f(
+        "tokens.ts",
+        'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } } });\n',
       ),
     ],
   },

@@ -1,12 +1,13 @@
 // @vitest-environment node
 import { type ChildProcess, execFile, spawn } from "node:child_process";
-import { cp, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
-import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCtx } from "@keel/ctx";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 // The production entry on `storage: 'sqlite'` (k.deploy Storage, std.db): a copy of the app is built with `keel build`
@@ -59,7 +60,7 @@ const call = (url: string, init?: RequestInit): Promise<Response> => ctx.net.fet
 const json = { accept: "application/json", "content-type": "application/json", "x-keel": "1" };
 
 beforeAll(async () => {
-  dir = await mkdtemp(join(tmpdir(), "golden-1-sqlite-"));
+  dir = tempDir("golden-1-sqlite-");
   built = join(dir, "app");
   await cp(app, built, { recursive: true, filter: (src) => src === app || !SKIP.has(basename(src)) });
   // The copy's packages are links to the app's. A tool launcher finds its package relative to its own path, which a
@@ -85,7 +86,7 @@ beforeAll(async () => {
     ),
   );
   expect(out).toMatch(/^ok build/m);
-}, 120_000);
+}, fixedTime(120_000));
 
 afterAll(async () => {
   for (const c of children) if (c.exitCode === null && c.signalCode === null) c.kill("SIGKILL");
@@ -93,55 +94,63 @@ afterAll(async () => {
 });
 
 describe("dist/api/server.mjs on storage 'sqlite'", () => {
-  it("serves the board from a SQLite file, keeps it across a restart, and exits 0 on SIGTERM", async () => {
-    const file = join(dir, "keel.sqlite");
-    const url = pathToFileURL(file).href;
-    const port = await freePort();
-    const base = `http://127.0.0.1:${port}`;
-    const first = serve(port, url);
-    try {
-      expect(await until(() => first.lines.some((l) => l.startsWith("ok listening")))).toBe(true);
-      const posted = await call(`${base}/api/lists`, {
-        method: "POST",
-        headers: json,
-        body: JSON.stringify({ name: "Home", write: { key: "w1", base: 0, owner: "" } }),
-      });
-      expect(posted.status).toBe(200);
-      const lists = await (await call(`${base}/api/lists`, { headers: { accept: "application/json" } })).json();
-      expect(lists.results["api.lists"].value.lists.map((l: { name: string }) => l.name)).toEqual(["Home"]);
-    } finally {
-      first.stop();
-    }
-    expect(await first.exited).toBe(0);
-    expect(first.lines.join("\n")).not.toContain(url);
+  it(
+    "serves the board from a SQLite file, keeps it across a restart, and exits 0 on SIGTERM",
+    async () => {
+      const file = join(dir, "keel.sqlite");
+      const url = pathToFileURL(file).href;
+      const port = await freePort();
+      const base = `http://127.0.0.1:${port}`;
+      const first = serve(port, url);
+      try {
+        expect(await until(() => first.lines.some((l) => l.startsWith("ok listening")))).toBe(true);
+        const posted = await call(`${base}/api/lists`, {
+          method: "POST",
+          headers: json,
+          body: JSON.stringify({ name: "Home", write: { key: "w1", base: 0, owner: "" } }),
+        });
+        expect(posted.status).toBe(200);
+        const lists = await (await call(`${base}/api/lists`, { headers: { accept: "application/json" } })).json();
+        expect(lists.results["api.lists"].value.lists.map((l: { name: string }) => l.name)).toEqual(["Home"]);
+      } finally {
+        first.stop();
+      }
+      expect(await first.exited).toBe(0);
+      expect(first.lines.join("\n")).not.toContain(url);
 
-    // The file holds the board's snapshot under its storage key, as std.db's `keel_kv` table.
-    const db = new DatabaseSync(file, { readOnly: true });
-    const row = db.prepare("select value from keel_kv where key = ?").get(BOARD_KEY);
-    const layout = db.prepare("select value from keel_meta where name = 'layout'").get();
-    db.close();
-    const stored = typeof row?.value === "string" ? row.value : "";
-    expect(JSON.parse(stored).state.lists.map((l: { name: string }) => l.name)).toEqual(["Home"]);
-    expect(layout?.value).toBe("1");
+      // The file holds the board's snapshot under its storage key, as std.db's `keel_kv` table.
+      const db = new DatabaseSync(file, { readOnly: true });
+      const row = db.prepare("select value from keel_kv where key = ?").get(BOARD_KEY);
+      const layout = db.prepare("select value from keel_meta where name = 'layout'").get();
+      db.close();
+      const stored = typeof row?.value === "string" ? row.value : "";
+      expect(JSON.parse(stored).state.lists.map((l: { name: string }) => l.name)).toEqual(["Home"]);
+      expect(layout?.value).toBe("1");
 
-    const second = serve(port, url);
-    try {
-      expect(await until(() => second.lines.some((l) => l.startsWith("ok listening")))).toBe(true);
-      const again = await (await call(`${base}/api/lists`, { headers: { accept: "application/json" } })).json();
-      expect(again.results["api.lists"].value.lists.map((l: { name: string }) => l.name)).toEqual(["Home"]);
-    } finally {
-      second.stop();
-    }
-    expect(await second.exited).toBe(0);
-  }, 60_000);
+      const second = serve(port, url);
+      try {
+        expect(await until(() => second.lines.some((l) => l.startsWith("ok listening")))).toBe(true);
+        const again = await (await call(`${base}/api/lists`, { headers: { accept: "application/json" } })).json();
+        expect(again.results["api.lists"].value.lists.map((l: { name: string }) => l.name)).toEqual(["Home"]);
+      } finally {
+        second.stop();
+      }
+      expect(await second.exited).toBe(0);
+    },
+    fixedTime(60_000),
+  );
 
-  it("exits 1 with one E2153 naming KEEL_DATABASE_URL and no part of it when the file cannot be opened", async () => {
-    const url = pathToFileURL(join(dir, "missing", "folder", "keel.sqlite")).href;
-    const p = serve(await freePort(), url);
-    expect(await p.exited).toBe(1);
-    const diags = p.lines.filter((l) => l.startsWith("E2153"));
-    expect(diags).toHaveLength(1);
-    expect(diags[0]).toContain("KEEL_DATABASE_URL");
-    expect(p.lines.join("\n")).not.toContain("missing");
-  }, 30_000);
+  it(
+    "exits 1 with one E2153 naming KEEL_DATABASE_URL and no part of it when the file cannot be opened",
+    async () => {
+      const url = pathToFileURL(join(dir, "missing", "folder", "keel.sqlite")).href;
+      const p = serve(await freePort(), url);
+      expect(await p.exited).toBe(1);
+      const diags = p.lines.filter((l) => l.startsWith("E2153"));
+      expect(diags).toHaveLength(1);
+      expect(diags[0]).toContain("KEEL_DATABASE_URL");
+      expect(p.lines.join("\n")).not.toContain("missing");
+    },
+    fixedTime(30_000),
+  );
 });

@@ -1,10 +1,11 @@
 // The explanation table (`@keel/check/explain`) loads when `explain` runs and not for another command: the binary is
 // run as a child process with a loader hook that appends every module URL it loads to a file.
 import { execFile } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
@@ -12,7 +13,7 @@ const EXPLAIN_MODULE = "/packages/check/src/explain.ts";
 
 let dir = "";
 beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), "keel-explain-lazy-"));
+  dir = tempDir("keel-explain-lazy-");
   writeFileSync(
     join(dir, "hooks.mjs"),
     [
@@ -49,16 +50,24 @@ const keel = (args: string[], tag: string): Promise<Run> =>
 const loadsExplain = (r: Run): boolean => r.loaded.some((u) => u.endsWith(EXPLAIN_MODULE));
 
 describe("explanation table", () => {
-  it("is not loaded by a command other than explain", async () => {
-    const r = await keel(["docs"], "docs");
-    expect(r.loaded.some((u) => u.endsWith("/packages/cli/src/bin.ts"))).toBe(true);
-    expect(loadsExplain(r)).toBe(false);
-  }, 60_000);
+  it(
+    "is not loaded by a command other than explain",
+    async () => {
+      const r = await keel(["docs"], "docs");
+      expect(r.loaded.some((u) => u.endsWith("/packages/cli/src/bin.ts"))).toBe(true);
+      expect(loadsExplain(r)).toBe(false);
+    },
+    fixedTime(60_000),
+  );
 
-  it("is loaded by keel explain, which prints the explanation", async () => {
-    const r = await keel(["explain", "E1757"], "explain");
-    expect(loadsExplain(r)).toBe(true);
-    expect(r.stdout).toMatch(/^[^\n]+\n(?:[\s\S]*\n)?ok explain E1757\n$/);
-    expect(r.stdout).toContain("E1757");
-  }, 60_000);
+  it(
+    "is loaded by keel explain, which prints the explanation",
+    async () => {
+      const r = await keel(["explain", "E1757"], "explain");
+      expect(loadsExplain(r)).toBe(true);
+      expect(r.stdout).toMatch(/^[^\n]+\n(?:[\s\S]*\n)?ok explain E1757\n$/);
+      expect(r.stdout).toContain("E1757");
+    },
+    fixedTime(60_000),
+  );
 });

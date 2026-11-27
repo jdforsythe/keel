@@ -3,6 +3,7 @@
 // ASSUMED shape (k.server Log): `frames` is an array of strings in json mode; stdout carries one json record per line.
 // Pattern of topology-server-mjs.test.ts: symlinked workspace packages, the real CLI builds once, the listening wait is a
 // bounded retry of `fetch` (no timers), the port is one the OS just freed; the child is stopped in a `finally`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -10,7 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { REPO, deployEnv } from "./topology-build-fixture.ts";
+import { REPO, childOutput, deployEnv } from "./topology-build-fixture.ts";
 
 const COUNTER = `import { signal } from "@keel/reactive";
 import { Box, Button, Text } from "@keel/ui";
@@ -97,7 +98,7 @@ function buildFixture(): string {
     encoding: "utf8",
     env: { ...process.env, KEEL_AGENT: "1" },
   });
-  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)})\n${r.stdout}\n${r.stderr}`);
+  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   return fixture;
 }
 
@@ -113,7 +114,7 @@ const freePort = (): Promise<number> =>
 let fixture = "";
 beforeAll(() => {
   fixture = buildFixture();
-}, 90_000);
+}, fixedTime(90_000));
 afterAll(() => fs.rmSync(fixture, { recursive: true, force: true }));
 
 interface Served {
@@ -161,24 +162,28 @@ const records = (text: string): unknown[] =>
 const isDiag = (r: unknown): boolean => typeof r === "object" && r !== null && Reflect.get(r, "kind") === "diag";
 
 describe("k.deploy: frames through server.mjs.map", () => {
-  test("a loader throwing in `modules/a/a.server.ts` of a `keel build` fixture logs, from `node dist/<name>/server.mjs` in json, `frames` starting `modules/a/a.server.ts:`", async () => {
-    await serving(async ({ port, out }) => {
-      const res = await fetch(`http://127.0.0.1:${port}/a`);
-      expect(res.status).toBe(500);
-      const diag = records(out()).find(isDiag);
-      expect(diag).toBeDefined();
-      const frames: unknown = Reflect.get(Object(diag), "frames");
-      expect(Array.isArray(frames)).toBe(true);
-      const list: unknown[] = Array.isArray(frames) ? frames : [];
-      expect(list.length).toBeGreaterThan(0);
-      expect(list.length).toBeLessThanOrEqual(5);
-      expect(String(list[0])).toMatch(/^modules\/a\/a\.server\.ts:\d+:\d+$/);
-      for (const f of list) {
-        expect(String(f)).not.toMatch(/server\.mjs|^packages\/|node_modules\/|^\//);
-        expect(String(f)).toMatch(/:\d+:\d+$/);
-      }
-    });
-  }, 120_000);
+  test(
+    "a loader throwing in `modules/a/a.server.ts` of a `keel build` fixture logs, from `node dist/<name>/server.mjs` in json, `frames` starting `modules/a/a.server.ts:`",
+    async () => {
+      await serving(async ({ port, out }) => {
+        const res = await fetch(`http://127.0.0.1:${port}/a`);
+        expect(res.status).toBe(500);
+        const diag = records(out()).find(isDiag);
+        expect(diag).toBeDefined();
+        const frames: unknown = Reflect.get(Object(diag), "frames");
+        expect(Array.isArray(frames)).toBe(true);
+        const list: unknown[] = Array.isArray(frames) ? frames : [];
+        expect(list.length).toBeGreaterThan(0);
+        expect(list.length).toBeLessThanOrEqual(5);
+        expect(String(list[0])).toMatch(/^modules\/a\/a\.server\.ts:\d+:\d+$/);
+        for (const f of list) {
+          expect(String(f)).not.toMatch(/server\.mjs|^packages\/|node_modules\/|^\//);
+          expect(String(f)).toMatch(/:\d+:\d+$/);
+        }
+      });
+    },
+    fixedTime(120_000),
+  );
 
   test("`server.mjs.map` has no `sourcesContent`", () => {
     const map: unknown = JSON.parse(fs.readFileSync(path.join(fixture, "dist", "web", "server.mjs.map"), "utf8"));
@@ -192,30 +197,34 @@ describe("k.deploy: frames through server.mjs.map", () => {
     expect(sources).toContain("modules/a/a.server.ts");
   });
 
-  test("no response to `GET /server.mjs.map` contains its `mappings`", async () => {
-    const map: unknown = JSON.parse(fs.readFileSync(path.join(fixture, "dist", "web", "server.mjs.map"), "utf8"));
-    const mappings: unknown = Reflect.get(Object(map), "mappings");
-    expect(typeof mappings === "string" && mappings.length > 0).toBe(true);
-    const needle = String(mappings).slice(0, 64);
-    await serving(async ({ port }) => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.constantFrom(
-            "/server.mjs.map",
-            "/assets/server.mjs.map",
-            "//server.mjs.map",
-            "/server.mjs.map?x=1",
-            "/%73erver.mjs.map",
+  test(
+    "no response to `GET /server.mjs.map` contains its `mappings`",
+    async () => {
+      const map: unknown = JSON.parse(fs.readFileSync(path.join(fixture, "dist", "web", "server.mjs.map"), "utf8"));
+      const mappings: unknown = Reflect.get(Object(map), "mappings");
+      expect(typeof mappings === "string" && mappings.length > 0).toBe(true);
+      const needle = String(mappings).slice(0, 64);
+      await serving(async ({ port }) => {
+        await fc.assert(
+          fc.asyncProperty(
+            fc.constantFrom(
+              "/server.mjs.map",
+              "/assets/server.mjs.map",
+              "//server.mjs.map",
+              "/server.mjs.map?x=1",
+              "/%73erver.mjs.map",
+            ),
+            fc.constantFrom("GET", "HEAD"),
+            async (route, method) => {
+              const res = await fetch(`http://127.0.0.1:${port}${route}`, { method });
+              const body = await res.text();
+              expect(body).not.toContain(needle);
+            },
           ),
-          fc.constantFrom("GET", "HEAD"),
-          async (route, method) => {
-            const res = await fetch(`http://127.0.0.1:${port}${route}`, { method });
-            const body = await res.text();
-            expect(body).not.toContain(needle);
-          },
-        ),
-        { seed: 1337, numRuns: 10 },
-      );
-    });
-  }, 120_000);
+          { seed: 1337, numRuns: 10 },
+        );
+      });
+    },
+    fixedTime(120_000),
+  );
 });

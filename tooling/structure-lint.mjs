@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0018 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.unsafe) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.unsafe) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
@@ -13,6 +13,7 @@ import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
 import { hardTimes } from "./hard-times.mjs";
 import { parseArgs, run } from "./output.ts";
 import { untimedPropertyTests } from "./property-times.ts";
+import { rawTempDirs } from "./raw-temp-dirs.mjs";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 import { stdEntryDiags } from "./std-entries.mjs";
 import { unseededProperties } from "./unseeded-properties.mjs";
@@ -128,7 +129,8 @@ for (const file of [...files, ...appTests()]) {
 }
 
 // S0016: a hard-coded time in test code (hard-times.mjs): package tests and conformance, tooling's tests and smokes,
-// and every app's and example's test files. A conformance file's times are listed in hard-times-conformance.json
+// and every app's and example's test files (a library's tests run under its own vitest config, which scales nothing).
+// A conformance file's times are listed in hard-times-conformance.json
 // (path and text) until the conformance-writer moves each through testTime or fixedTime; a listed time no longer in
 // its file is an S0016 too, so the list only shrinks.
 const TEST_CODE = /^(?:packages\/[^/]+\/(?:test|conformance)|tooling\/(?:test|smoke)|(?:apps|examples)\/.+\/test)\//;
@@ -142,7 +144,13 @@ for (const e of listed) {
 const appCode = ["apps", "examples"].flatMap((top) =>
   walk(path.join(root, top)).filter((f) => CODE_EXT.test(f) && TEST_CODE.test(rel(root, f))),
 );
-for (const file of [...new Set([...files.filter((f) => TEST_CODE.test(rel(root, f))), ...appTests(), ...appCode])]) {
+for (const file of [
+  ...new Set([
+    ...files.filter((f) => TEST_CODE.test(rel(root, f))),
+    ...appTests().filter((f) => !rel(root, f).startsWith("libraries/")),
+    ...appCode,
+  ]),
+]) {
   const r = rel(root, file);
   const src = fs.readFileSync(file, "utf8");
   for (const d of hardTimes(src, file)) {
@@ -160,6 +168,15 @@ for (const e of [...unseen.values()].flat())
     1,
     `${e.text} is listed in hard-times-conformance.json and no longer in the file`,
   );
+
+// S0018: a raw `mkdtemp` in a package's, tooling's, app's or example's test files (raw-temp-dirs.mjs); the folder is
+// made with `tempDir` (test-tmp.ts). Conformance files are the conformance-writer's and are not judged.
+const TEST_FILES = /^(?:packages\/[^/]+\/test|tooling\/test|(?:apps|examples)\/.+\/test)\//;
+for (const file of new Set([...files, ...appCode].filter((f) => TEST_FILES.test(rel(root, f))))) {
+  const src = fs.readFileSync(file, "utf8");
+  if (!src.includes("mkdtemp")) continue;
+  for (const d of rawTempDirs(src, file)) add("S0018", file, d.line, d.col, d.message);
+}
 
 // S0017: a property case vitest's flat 5 s default bounds. keelConfig gives each test that runs `properties`,
 // `simulate` or fast-check's `assert` and declares no options a timeout from its runs (property-times.ts); an app's,
@@ -256,7 +273,7 @@ function lineColOf(source, at) {
   return { line: before.length, col: (before.at(-1)?.length ?? 0) + 1 };
 }
 
-// S0018 (k.errors Rules E1452): a `return`, `break` or `continue` whose target lies outside the `finally` block
+// S0020 (k.errors Rules E1452): a `return`, `break` or `continue` whose target lies outside the `finally` block
 // holding it, in every package's `src/` and `unsafe/`.
 const OWN = /^packages\/[^/]+\/(?:src|unsafe)\//;
 for (const f of sources) {
@@ -265,7 +282,7 @@ for (const f of sources) {
   if (!parsed.ok) continue;
   for (const at of finallyExits(parsed.program)) {
     const { line, col } = lineColOf(f.source, at);
-    add("S0018", path.join(root, f.path), line, col, "control leaves finally and drops its throw");
+    add("S0020", path.join(root, f.path), line, col, "control leaves finally and drops its throw");
   }
 }
 

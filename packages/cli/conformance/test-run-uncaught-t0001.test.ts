@@ -3,7 +3,7 @@
 // The real `keel` binary runs `keel test` (compact) over a temp project (OS tmpdir). No generated inputs; seed n/a.
 // The fixture's timer is spelled so its source is data here. A second test of the fixture waits, so the throw lands after the first test ended.
 // The column is read as the position of the `throw` keyword or of the `new Error` it throws (V8 reports the latter); the spec says only "at the `throw`".
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -55,7 +55,7 @@ beforeAll(() => {
   });
   status = r.status;
   out = r.stdout;
-}, 180_000);
+}, fixedTime(180_000));
 
 afterAll(() => {
   removeProject(dir);

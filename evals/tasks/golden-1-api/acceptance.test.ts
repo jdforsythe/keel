@@ -32,6 +32,7 @@ import { drain, send } from "@keel/std-offline";
 import { coverage } from "@keel/std-statecharts";
 import { tx as commit, isolate } from "@keel/store";
 import { SimRun, explore, simulate } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, describe, expect, it } from "vitest";
 // @keel/std-sessions is no dependency of golden-1: the group API is read from the workspace package.
 import { type SessionGroup, openGroup, replayGroup } from "../../../packages/std-sessions/src/group/index.ts";
@@ -493,82 +494,86 @@ const todo = (board: unknown, id: string): unknown => {
 };
 
 describe("golden-1 race", () => {
-  it("two users on one server: the live view, the outbox, the policies, replay and the race report", async () => {
-    const twin = planted();
-    const run = await race(twin);
-    const file = written(run.group);
-    expect(JSON.parse(fs.readFileSync(file, "utf8"))).toEqual(run.group);
+  it(
+    "two users on one server: the live view, the outbox, the policies, replay and the race report",
+    async () => {
+      const twin = planted();
+      const run = await race(twin);
+      const file = written(run.group);
+      expect(JSON.parse(fs.readFileSync(file, "utf8"))).toEqual(run.group);
 
-    // Live: user 1 saw Milk done; its todos.view gained one todos.hydrate and nothing else.
-    expect(run.seen).toBe(true);
-    expect(tx(run.group.users[1], run.toggledAt, run.toggledAt + 1)).toEqual(["todos.hydrate"]);
-    // Offline: the edit, then the toggle, queued at base 3.
-    expect(field(run.queuedEdit, "entries")).toMatchObject([{ endpoint: "editTodo", state: "queued", base: 3 }]);
-    expect(field(run.queued, "entries")).toMatchObject([
-      { endpoint: "editTodo", state: "queued", base: 3 },
-      { endpoint: "toggleTodo", state: "queued", base: 3 },
-    ]);
-
-    if (twin) {
-      // The planted twin: the edit lands as a rebased entry over user 0's rename, which is lost.
-      expect(field(run.afterFlush.outbox, "entries")).toEqual([]);
-      expect(entryOf(run.afterFlush.board, 6)).toMatchObject({ name: "api.editTodo", base: 3, key: run.key });
-      expect(entryOf(run.afterFlush.board, 7)).toMatchObject({ name: "api.toggleTodo", base: 3 });
-      expect(todo(run.afterFlush.board, "t1")).toMatchObject({ title: "Milk", priority: "high" });
-    } else {
-      // Shipped: the edit is refused at head 5 and waits as a conflict; the toggle rebases as entry 6.
-      expect(field(run.afterFlush.outbox, "entries")).toMatchObject([
-        { endpoint: "editTodo", state: "conflict", base: 3, head: 5 },
+      // Live: user 1 saw Milk done; its todos.view gained one todos.hydrate and nothing else.
+      expect(run.seen).toBe(true);
+      expect(tx(run.group.users[1], run.toggledAt, run.toggledAt + 1)).toEqual(["todos.hydrate"]);
+      // Offline: the edit, then the toggle, queued at base 3.
+      expect(field(run.queuedEdit, "entries")).toMatchObject([{ endpoint: "editTodo", state: "queued", base: 3 }]);
+      expect(field(run.queued, "entries")).toMatchObject([
+        { endpoint: "editTodo", state: "queued", base: 3 },
+        { endpoint: "toggleTodo", state: "queued", base: 3 },
       ]);
-      expect(run.buttons).toEqual(["Keep mine", "Keep theirs"]);
-      expect(entryOf(run.afterFlush.board, 6)).toMatchObject({ name: "api.toggleTodo", base: 3 });
-      expect(entryOf(run.afterFlush.board, 7)).toBeUndefined();
-      expect(todo(run.afterFlush.board, "t1")).toMatchObject({ title: "Oat milk", priority: "normal" });
-      expect(todo(run.afterFlush.board, "t2")).toMatchObject({ done: true });
-      // Keep theirs empties the outbox and leaves the server as it was.
-      expect(field(run.final.outbox, "entries")).toEqual([]);
-      expect(run.final.board).toEqual(run.afterFlush.board);
-    }
 
-    // Replay: reproduced, the same server board and user states, and two replays byte-equal.
-    const replayed = await replayGroup(run.group, { user: USER, serve });
-    expect(replayed.reproduced).toBe(true);
-    expect(replayed.users.map((u) => u.unapplied)).toEqual([null, null]);
-    expect(replayed.server["api.board"]).toEqual(run.final.board);
-    expect(replayed.users.map((u) => u.state)).toEqual(run.states);
-    expect(JSON.stringify(await replayGroup(run.group, { user: USER, serve }))).toBe(JSON.stringify(replayed));
+      if (twin) {
+        // The planted twin: the edit lands as a rebased entry over user 0's rename, which is lost.
+        expect(field(run.afterFlush.outbox, "entries")).toEqual([]);
+        expect(entryOf(run.afterFlush.board, 6)).toMatchObject({ name: "api.editTodo", base: 3, key: run.key });
+        expect(entryOf(run.afterFlush.board, 7)).toMatchObject({ name: "api.toggleTodo", base: 3 });
+        expect(todo(run.afterFlush.board, "t1")).toMatchObject({ title: "Milk", priority: "high" });
+      } else {
+        // Shipped: the edit is refused at head 5 and waits as a conflict; the toggle rebases as entry 6.
+        expect(field(run.afterFlush.outbox, "entries")).toMatchObject([
+          { endpoint: "editTodo", state: "conflict", base: 3, head: 5 },
+        ]);
+        expect(run.buttons).toEqual(["Keep mine", "Keep theirs"]);
+        expect(entryOf(run.afterFlush.board, 6)).toMatchObject({ name: "api.toggleTodo", base: 3 });
+        expect(entryOf(run.afterFlush.board, 7)).toBeUndefined();
+        expect(todo(run.afterFlush.board, "t1")).toMatchObject({ title: "Oat milk", priority: "normal" });
+        expect(todo(run.afterFlush.board, "t2")).toMatchObject({ done: true });
+        // Keep theirs empties the outbox and leaves the server as it was.
+        expect(field(run.final.outbox, "entries")).toEqual([]);
+        expect(run.final.board).toEqual(run.afterFlush.board);
+      }
 
-    // The race report, and its compact line.
-    const found = await findRaces(run.group, { user: USER, serve, stores: [boardStores] });
-    const lines = respond(raceRecords(GROUP_FILE, found, found.replay.server), { format: "compact" })
-      .stdout.split("\n")
-      .filter((l) => l !== "");
-    expect(found.unchecked).toEqual([]);
-    if (twin) {
-      expect(found.races).toEqual([
-        {
-          store: "api.board",
-          kind: "order",
-          entry: { id: 6, name: "api.editTodo", key: run.key },
-          against: [
-            { id: 4, name: "api.editTodo", key: field(entryOf(run.final.board, 4), "key") },
-            { id: 5, name: "api.addTodo", key: field(entryOf(run.final.board, 5), "key") },
-          ],
-        },
-      ]);
-      expect(lines).toEqual([
-        `E2701 ${GROUP_FILE}:1:1 race api.editTodo #6 over api.editTodo #4, api.addTodo #5 on api.board`,
-      ]);
-      const again = await findRaces(run.group, { user: USER, serve, stores: [boardStores] });
-      expect(JSON.stringify(again)).toBe(JSON.stringify(found));
-    } else {
-      expect(found.races).toEqual([]);
-      expect(lines).toEqual([]);
-    }
+      // Replay: reproduced, the same server board and user states, and two replays byte-equal.
+      const replayed = await replayGroup(run.group, { user: USER, serve });
+      expect(replayed.reproduced).toBe(true);
+      expect(replayed.users.map((u) => u.unapplied)).toEqual([null, null]);
+      expect(replayed.server["api.board"]).toEqual(run.final.board);
+      expect(replayed.users.map((u) => u.state)).toEqual(run.states);
+      expect(JSON.stringify(await replayGroup(run.group, { user: USER, serve }))).toBe(JSON.stringify(replayed));
 
-    // Live parity: a second live run under the same seed gives a byte-equal group.
-    expect(JSON.stringify((await race(twin)).group)).toBe(JSON.stringify(run.group));
-  }, 600_000);
+      // The race report, and its compact line.
+      const found = await findRaces(run.group, { user: USER, serve, stores: [boardStores] });
+      const lines = respond(raceRecords(GROUP_FILE, found, found.replay.server), { format: "compact" })
+        .stdout.split("\n")
+        .filter((l) => l !== "");
+      expect(found.unchecked).toEqual([]);
+      if (twin) {
+        expect(found.races).toEqual([
+          {
+            store: "api.board",
+            kind: "order",
+            entry: { id: 6, name: "api.editTodo", key: run.key },
+            against: [
+              { id: 4, name: "api.editTodo", key: field(entryOf(run.final.board, 4), "key") },
+              { id: 5, name: "api.addTodo", key: field(entryOf(run.final.board, 5), "key") },
+            ],
+          },
+        ]);
+        expect(lines).toEqual([
+          `E2701 ${GROUP_FILE}:1:1 race api.editTodo #6 over api.editTodo #4, api.addTodo #5 on api.board`,
+        ]);
+        const again = await findRaces(run.group, { user: USER, serve, stores: [boardStores] });
+        expect(JSON.stringify(again)).toBe(JSON.stringify(found));
+      } else {
+        expect(found.races).toEqual([]);
+        expect(lines).toEqual([]);
+      }
+
+      // Live parity: a second live run under the same seed gives a byte-equal group.
+      expect(JSON.stringify((await race(twin)).group)).toBe(JSON.stringify(run.group));
+    },
+    fixedTime(600_000),
+  );
 });
 
 // ---- 3. the correctness twins -----------------------------------------------------------------------------------
@@ -670,27 +675,31 @@ describe("golden-1 twins", () => {
     expect(coverage(editorChart, r)).toEqual({ unreached: [], dead });
   });
 
-  it("boardOutbox under 100 generated schedules, seed 11", async () => {
-    const go = () => simulate(outboxScenario, { runs: 100, seed: 11 });
-    if (TWIN !== "schedule") {
-      expect(await go()).toEqual({ seed: 11, runs: 100 });
-      return;
-    }
-    const first = failure(await caught(go));
-    expect(first.code).toBe("E1704");
-    const [reason, json] = first.message.split("\n");
-    const run = SimRun.parse(JSON.parse(json ?? "null"));
-    if (!run.ok) throw new Error(`shrunk run does not parse: ${run.error.message}`);
-    const { net, storage, offline } = run.value.schedule;
-    expect(net.filter((s) => s.fault !== "none").map((s) => s.fault)).toEqual(["lost"]);
-    expect(storage.filter((s) => s === "fail")).toEqual([]);
-    expect(offline).toEqual([]);
-    const replayed = failure(await caught(() => simulate(outboxScenario, { replay: run.value })));
-    expect(replayed.code).toBe("E1704");
-    expect(replayed.message.split(" (seed")[0]).toBe(reason?.split(" (seed")[0]);
-    const second = failure(await caught(go));
-    expect(second.message).toBe(first.message);
-  }, 300_000);
+  it(
+    "boardOutbox under 100 generated schedules, seed 11",
+    async () => {
+      const go = () => simulate(outboxScenario, { runs: 100, seed: 11 });
+      if (TWIN !== "schedule") {
+        expect(await go()).toEqual({ seed: 11, runs: 100 });
+        return;
+      }
+      const first = failure(await caught(go));
+      expect(first.code).toBe("E1704");
+      const [reason, json] = first.message.split("\n");
+      const run = SimRun.parse(JSON.parse(json ?? "null"));
+      if (!run.ok) throw new Error(`shrunk run does not parse: ${run.error.message}`);
+      const { net, storage, offline } = run.value.schedule;
+      expect(net.filter((s) => s.fault !== "none").map((s) => s.fault)).toEqual(["lost"]);
+      expect(storage.filter((s) => s === "fail")).toEqual([]);
+      expect(offline).toEqual([]);
+      const replayed = failure(await caught(() => simulate(outboxScenario, { replay: run.value })));
+      expect(replayed.code).toBe("E1704");
+      expect(replayed.message.split(" (seed")[0]).toBe(reason?.split(" (seed")[0]);
+      const second = failure(await caught(go));
+      expect(second.message).toBe(first.message);
+    },
+    fixedTime(300_000),
+  );
 });
 
 // 4. Storage and workflows across processes (k.persist, std.workflows): two `api` apps on one sim ctx behave as two
@@ -731,24 +740,28 @@ describe("golden-1 on shared storage", () => {
     expect(field(saved, "state", "todos", "0", "title")).toBe(won);
     for (const app of apps) await app.close();
   });
-  it("a removal served by two processes' runners purges once", async () => {
-    const { ctx, apps } = await twoApps(true);
-    expect((await apps[0]?.fetch(post("/api/lists/l1/remove")))?.status).toBe(200);
-    for (let t = 0; t < 700_000; t += 1000) {
-      ctx.clock.advance(1000);
-      await settle();
-    }
-    const saved: unknown = JSON.parse((await ctx.storage.get(BOARD_KEY)) ?? "null");
-    const names = (v: unknown): string[] => {
-      const log = field(v, "log");
-      return Array.isArray(log) ? log.map((e: unknown) => String(field(e, "name"))) : [];
-    };
-    expect(names(saved).filter((n) => n === "api.purgeList")).toHaveLength(1);
-    expect(field(saved, "state", "lists")).toEqual([]);
-    const flows: unknown = JSON.parse((await ctx.storage.get("keel.store.api.removal")) ?? "null");
-    expect(names(flows).filter((n) => n === "api.removal.purged")).toHaveLength(1);
-    for (const app of apps) await app.close();
-  }, 120_000);
+  it(
+    "a removal served by two processes' runners purges once",
+    async () => {
+      const { ctx, apps } = await twoApps(true);
+      expect((await apps[0]?.fetch(post("/api/lists/l1/remove")))?.status).toBe(200);
+      for (let t = 0; t < 700_000; t += 1000) {
+        ctx.clock.advance(1000);
+        await settle();
+      }
+      const saved: unknown = JSON.parse((await ctx.storage.get(BOARD_KEY)) ?? "null");
+      const names = (v: unknown): string[] => {
+        const log = field(v, "log");
+        return Array.isArray(log) ? log.map((e: unknown) => String(field(e, "name"))) : [];
+      };
+      expect(names(saved).filter((n) => n === "api.purgeList")).toHaveLength(1);
+      expect(field(saved, "state", "lists")).toEqual([]);
+      const flows: unknown = JSON.parse((await ctx.storage.get("keel.store.api.removal")) ?? "null");
+      expect(names(flows).filter((n) => n === "api.removal.purged")).toHaveLength(1);
+      for (const app of apps) await app.close();
+    },
+    fixedTime(120_000),
+  );
 });
 
 describe("golden-1 temp folders", () => {

@@ -1,13 +1,13 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { createCtx } from "../src/index.ts";
 import { fileStorage } from "../src/node/index.ts";
 
 const dirs: string[] = [];
 const dir = (): string => {
-  const d = mkdtempSync(join(tmpdir(), "keel-ctx-storage-"));
+  const d = tempDir("keel-ctx-storage-");
   dirs.push(d);
   return d;
 };

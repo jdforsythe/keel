@@ -1,15 +1,6 @@
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, realpathSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 
 /** The nearest folder above `dir` that holds a `node_modules`, where module resolution from `dir` goes on to. */
 function outerModules(dir: string): string | undefined {
@@ -27,7 +18,7 @@ function outerModules(dir: string): string | undefined {
  * never reaches the app. `remove` deletes the folder.
  */
 export function linkedProject(app: string): { root: string; remove: () => void } {
-  const outer = realpathSync(mkdtempSync(join(tmpdir(), "keel-cli-project-")));
+  const outer = realpathSync(tempDir("keel-cli-project-"));
   const above = outerModules(app);
   if (above !== undefined) symlinkSync(above, join(outer, "node_modules"));
   const root = join(outer, "project");

@@ -4,7 +4,8 @@
 // with `keel build`. Then: at 320px the document does not scroll sideways; body has the brand's font, colour and
 // background; Tab focus on the link, the button and the input shows the 2px solid brand ring at 2px offset and a mouse
 // click on the button shows none; the Box `direction={{ base: 'column', md: 'row' }}` stacks at 390px and is a row
-// sharing a top edge at 1024px.
+// sharing a top edge at 1024px; and the k.values Stylesheet invariant (`cssKept.mjs`): Chromium keeps every rule the
+// compiler emits, and each attack value is refused before emission.
 // Usage: node --disable-warning=ExperimentalWarning tooling/smoke/brand.mjs. Nothing is written inside the repo; the
 // file server and the browser are stopped on every path, and a crash prints the steps it had.
 import { createReadStream, statSync } from "node:fs";
@@ -13,10 +14,11 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
-import { testTime } from "../test-time.ts";
+import { fixedTime } from "../test-time.ts";
 import { buildIn, copyApp, freePort, recorder, root } from "./built.mjs";
+import { cssKept } from "./cssKept.mjs";
 
-const LIMIT_MS = testTime(240_000);
+const LIMIT_MS = fixedTime(240_000);
 const { step, finish } = recorder();
 let tmp;
 let server;
@@ -30,13 +32,13 @@ const stopAll = async () => {
 };
 const limit = setTimeout(async () => {
   step("time limit", false, `${LIMIT_MS / 1000}s`);
-  await Promise.race([stopAll(), new Promise((r) => setTimeout(r, testTime(5000)))]);
+  await Promise.race([stopAll(), new Promise((r) => setTimeout(r, fixedTime(5000)))]);
   finish("brand");
   process.exit(1);
 }, LIMIT_MS);
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, async () => {
-    await Promise.race([stopAll(), new Promise((r) => setTimeout(r, testTime(5000)))]);
+    await Promise.race([stopAll(), new Promise((r) => setTimeout(r, fixedTime(5000)))]);
     process.exit(130);
   });
 }
@@ -123,7 +125,7 @@ try {
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
     page.on("pageerror", (e) => errors.push(String(e)));
     await page.goto(`${base}/`);
-    await page.locator('[id="app.home.row"]').waitFor({ timeout: testTime(15_000) });
+    await page.locator('[id="app.home.row"]').waitFor({ timeout: fixedTime(15_000) });
 
     const width = await page.evaluate(() => document.documentElement.scrollWidth);
     step("320px: no sideways scroll with a 200-character string", width <= 320, `scrollWidth ${width}`);
@@ -193,6 +195,7 @@ try {
         narrow.tops[1] < narrow.tops[2],
       `${narrow.display} ${narrow.dir} tops ${narrow.tops.map(Math.round).join(",")}`,
     );
+    await cssKept(page, step);
     step("no page or console errors", errors.length === 0, `${errors.length} errors`);
   }
 } catch (e) {

@@ -8,6 +8,7 @@ import { drain, send } from "@keel/std-offline";
 // and in any order under generated schedules. Each time: exactly one edit is stored, A's lost edit stays in the outbox as
 // a conflict reached through 409 `keel.conflict`, and A's page ends showing the stored board.
 import { type A11yNode, renderRoute, simulate } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, describe, expect, it } from "vitest";
 import { boardChannel } from "../modules/api/boardChannel.schema.ts";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
@@ -126,85 +127,89 @@ describe("an offline edit and the other user's edit of the same todo", () => {
 describe("under generated schedules", () => {
   // The shell's wiring (`AppShell`): the board's live view and the outbox drain in one page scope, so each run controls
   // when the edit is queued; `connectionLoss.sim.test.ts` renders the list page under generated schedules.
-  it("one edit is stored, the other is a visible 409 keel.conflict, and A ends showing the stored board", async () => {
-    const outcomes = new Map<string, number>();
-    await simulate(
-      async ({ ctx, run }) => {
-        open?.dispose();
-        open = undefined;
-        fresh();
-        await seedBoard(shared);
-        const app = await apiApp();
-        const a = browser(ctx, app);
-        const b = browser(createCtx({ mode: "sim", seed: 2 }), app);
-        const origin = location.origin;
-        let status = (): LiveStatus => "connecting";
-        const page = scope(
-          () => {
-            status = live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
-            void drain(ctx, boardOutbox, { owner: "" });
-          },
-          { detached: true },
-        );
-        open = page;
-        await run();
-        // A goes offline and edits Milk over the head its page holds.
-        ctx.net.setOnline(false);
-        const mine = send(
-          ctx,
-          boardOutbox,
-          "editTodo",
-          { params: milk(), body: { title: "Milk", priority: "high" } },
-          { base: view.get("head"), owner: "" },
-        ).catch(() => null);
-        // B edits at a time and A reconnects at a time this run draws, in either order.
-        const tB = Math.floor(ctx.random.float() * 4000);
-        const tA = Math.floor(ctx.random.float() * 4000);
-        const theirs = ctx.clock.after(tB).then(() => otherEdit(b.ctx, "Oat milk", "b1", 0));
-        void ctx.clock.after(tA).then(() => ctx.net.setOnline(true));
-        await run();
-        // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
-        for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
-          ctx.clock.advance(60_000);
+  it(
+    "one edit is stored, the other is a visible 409 keel.conflict, and A ends showing the stored board",
+    async () => {
+      const outcomes = new Map<string, number>();
+      await simulate(
+        async ({ ctx, run }) => {
+          open?.dispose();
+          open = undefined;
+          fresh();
+          await seedBoard(shared);
+          const app = await apiApp();
+          const a = browser(ctx, app);
+          const b = browser(createCtx({ mode: "sim", seed: 2 }), app);
+          const origin = location.origin;
+          let status = (): LiveStatus => "connecting";
+          const page = scope(
+            () => {
+              status = live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
+              void drain(ctx, boardOutbox, { owner: "" });
+            },
+            { detached: true },
+          );
+          open = page;
           await run();
-        }
-        await mine;
-        const other = await theirs;
-
-        const board = await readBoard();
-        const stored = board.todos.find((t) => t.id === "t1");
-        const left = boardOutbox.get("entries");
-        expect(await commits("api.editTodo")).toBe(1);
-        const outcome = left.length === 0 ? "A stored" : `B stored, A ${left[0]?.state ?? ""}`;
-        outcomes.set(outcome, (outcomes.get(outcome) ?? 0) + 1);
-        if (left.length === 0) {
-          // A's edit landed first: B's was refused with 409 keel.conflict (to B's service, `api.status` 409).
-          expect(stored).toMatchObject({ title: "Milk", priority: "high" });
-          expect(other.ok ? "" : other.error.code).toBe("api.status");
-          expect(b.answers).toEqual([{ call: EDIT, status: 409, code: "keel.conflict" }]);
-        } else {
-          // A's edit is kept in the outbox; reached as a conflict, it came from a 409 keel.conflict.
-          expect(other.ok).toBe(true);
-          expect(stored).toMatchObject({ title: "Oat milk", priority: "normal" });
-          expect(left).toHaveLength(1);
-          const [e] = left;
-          expect(["conflict", "failed"]).toContain(e?.state);
-          if (e?.state === "conflict") {
-            expect(e.head).toBe(await storedHead());
-            expect(a.answers).toContainEqual({ call: EDIT, status: 409, code: "keel.conflict" });
+          // A goes offline and edits Milk over the head its page holds.
+          ctx.net.setOnline(false);
+          const mine = send(
+            ctx,
+            boardOutbox,
+            "editTodo",
+            { params: milk(), body: { title: "Milk", priority: "high" } },
+            { base: view.get("head"), owner: "" },
+          ).catch(() => null);
+          // B edits at a time and A reconnects at a time this run draws, in either order.
+          const tB = Math.floor(ctx.random.float() * 4000);
+          const tA = Math.floor(ctx.random.float() * 4000);
+          const theirs = ctx.clock.after(tB).then(() => otherEdit(b.ctx, "Oat milk", "b1", 0));
+          void ctx.clock.after(tA).then(() => ctx.net.setOnline(true));
+          await run();
+          // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
+          for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
+            ctx.clock.advance(60_000);
+            await run();
           }
-        }
-        // What A sees is what is stored, and A's page follows the board again.
-        expect(view.get("todos")).toEqual(board.todos);
-        expect(view.get("head")).toBe(await storedHead());
-        expect(status()).toBe("live");
-        page.dispose();
-        open = undefined;
-      },
-      { runs: 100, seed: 23 },
-    );
-    // The runs reached both orders: A's edit first, and B's first with A's refused as a conflict.
-    expect(outcomes.get("A stored")).toBeGreaterThan(0);
-    expect(outcomes.get("B stored, A conflict")).toBeGreaterThan(0);
-  }, 300_000);
+          await mine;
+          const other = await theirs;
+
+          const board = await readBoard();
+          const stored = board.todos.find((t) => t.id === "t1");
+          const left = boardOutbox.get("entries");
+          expect(await commits("api.editTodo")).toBe(1);
+          const outcome = left.length === 0 ? "A stored" : `B stored, A ${left[0]?.state ?? ""}`;
+          outcomes.set(outcome, (outcomes.get(outcome) ?? 0) + 1);
+          if (left.length === 0) {
+            // A's edit landed first: B's was refused with 409 keel.conflict (to B's service, `api.status` 409).
+            expect(stored).toMatchObject({ title: "Milk", priority: "high" });
+            expect(other.ok ? "" : other.error.code).toBe("api.status");
+            expect(b.answers).toEqual([{ call: EDIT, status: 409, code: "keel.conflict" }]);
+          } else {
+            // A's edit is kept in the outbox; reached as a conflict, it came from a 409 keel.conflict.
+            expect(other.ok).toBe(true);
+            expect(stored).toMatchObject({ title: "Oat milk", priority: "normal" });
+            expect(left).toHaveLength(1);
+            const [e] = left;
+            expect(["conflict", "failed"]).toContain(e?.state);
+            if (e?.state === "conflict") {
+              expect(e.head).toBe(await storedHead());
+              expect(a.answers).toContainEqual({ call: EDIT, status: 409, code: "keel.conflict" });
+            }
+          }
+          // What A sees is what is stored, and A's page follows the board again.
+          expect(view.get("todos")).toEqual(board.todos);
+          expect(view.get("head")).toBe(await storedHead());
+          expect(status()).toBe("live");
+          page.dispose();
+          open = undefined;
+        },
+        { runs: 100, seed: 23 },
+      );
+      // The runs reached both orders: A's edit first, and B's first with A's refused as a conflict.
+      expect(outcomes.get("A stored")).toBeGreaterThan(0);
+      expect(outcomes.get("B stored, A conflict")).toBeGreaterThan(0);
+    },
+    fixedTime(300_000),
+  );
 });

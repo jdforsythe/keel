@@ -8,6 +8,7 @@
 // Assumption: as for std.jobs E2501, `check()` imports nothing, so the rules register by importing `@keel/std-workflows/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`; the workflow file is `modules/api/removal.server.ts`, the chart file `modules/api/removalChart.ts`.
 // Assumption: a diagnostic's JSON holds the step names it names (W2353 "names both"); the fix field is a git patch, as for the other rules.
+import { fixedTime } from "@keel/tooling/test-time";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -111,38 +112,50 @@ export const runners = ${p.runners ?? "[jobs, flows(jobs, [removal])]"}
 const word = fc.stringMatching(/^[a-z]{3,10}$/);
 
 describe("std.workflows: keel check rules", () => {
-  test("E2351 fires on a `workflow` id not prefixed by its module and not on its clean twin.", () => {
-    expect(found(project(), "E2351")).toEqual([]);
-    fc.assert(
-      fc.property(word, (name) => {
-        expect(found(project({ id: name }), "E2351").length).toBe(1);
-        expect(found(project({ id: `api.${name}` }), "E2351").length).toBe(0);
-      }),
-      { seed: 1337, numRuns: 20 },
-    );
-  }, 30_000);
+  test(
+    "E2351 fires on a `workflow` id not prefixed by its module and not on its clean twin.",
+    () => {
+      expect(found(project(), "E2351")).toEqual([]);
+      fc.assert(
+        fc.property(word, (name) => {
+          expect(found(project({ id: name }), "E2351").length).toBe(1);
+          expect(found(project({ id: `api.${name}` }), "E2351").length).toBe(0);
+        }),
+        { seed: 1337, numRuns: 20 },
+      );
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2351 fires on a `workflow` outside `*.server.ts` and not on its clean twin.", () => {
-    const files = project({ workflowPath: "modules/api/removal.ts" });
-    expect(found(files, "E2351").length).toBe(1);
-    expect(found(project(), "E2351").length).toBe(0);
-  }, 30_000);
+  test(
+    "E2351 fires on a `workflow` outside `*.server.ts` and not on its clean twin.",
+    () => {
+      const files = project({ workflowPath: "modules/api/removal.ts" });
+      expect(found(files, "E2351").length).toBe(1);
+      expect(found(project(), "E2351").length).toBe(0);
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2351's fix prefixes the id with the module id, and re-checking the patched file reports no E2351.", () => {
-    fc.assert(
-      fc.property(word, (name) => {
-        const files = project({ id: name });
-        const d = found(files, "E2351");
-        expect(d.length).toBe(1);
-        const fix = d[0]?.fix;
-        expect(fix).toBeDefined();
-        const patched = applyFix(files, fix ?? "");
-        expect(patched.find((f) => f.path === "modules/api/removal.server.ts")?.source).toContain(`'api.${name}'`);
-        expect(found(patched, "E2351").length).toBe(0);
-      }),
-      { seed: 1337, numRuns: 15 },
-    );
-  }, 30_000);
+  test(
+    "E2351's fix prefixes the id with the module id, and re-checking the patched file reports no E2351.",
+    () => {
+      fc.assert(
+        fc.property(word, (name) => {
+          const files = project({ id: name });
+          const d = found(files, "E2351");
+          expect(d.length).toBe(1);
+          const fix = d[0]?.fix;
+          expect(fix).toBeDefined();
+          const patched = applyFix(files, fix ?? "");
+          expect(patched.find((f) => f.path === "modules/api/removal.server.ts")?.source).toContain(`'api.${name}'`);
+          expect(found(patched, "E2351").length).toBe(0);
+        }),
+        { seed: 1337, numRuns: 15 },
+      );
+    },
+    fixedTime(30_000),
+  );
 
   const e2352: Record<string, Parts> = {
     "a step naming no state": { steps: "{ nowhere: { run: purgeList, done: 'purged', failed: 'stuck' } }" },
@@ -157,17 +170,21 @@ describe("std.workflows: keel check rules", () => {
     "a wait naming a final state": { waits: "{ gone: { ms: 600_000, event: 'expired' } }" },
     "a wait whose event is not in the state's `on`": { waits: "{ hidden: { ms: 600_000, event: 'begin' } }" },
   };
-  test("E2352 fires on a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on`, and not on its clean twin.", () => {
-    expect(found(project(), "E2352")).toEqual([]);
-    fc.assert(
-      fc.property(fc.constantFrom(...Object.keys(e2352)), (name) => {
-        const d = found(project(e2352[name]), "E2352");
-        expect(d.length, name).toBe(1);
-        expect(d[0]?.fix, name).toBeUndefined();
-      }),
-      { seed: 1337, numRuns: 30 },
-    );
-  }, 30_000);
+  test(
+    "E2352 fires on a step or wait naming no state or a final state, or whose `done`, `failed` or wait event is not in that state's `on`, and not on its clean twin.",
+    () => {
+      expect(found(project(), "E2352")).toEqual([]);
+      fc.assert(
+        fc.property(fc.constantFrom(...Object.keys(e2352)), (name) => {
+          const d = found(project(e2352[name]), "E2352");
+          expect(d.length, name).toBe(1);
+          expect(d[0]?.fix, name).toBeUndefined();
+        }),
+        { seed: 1337, numRuns: 30 },
+      );
+    },
+    fixedTime(30_000),
+  );
 
   test("`workflow` throws E2352 for the same fixtures and not for the clean twin.", () => {
     const noop = async () => ok({ freed: 0 });
@@ -218,37 +235,53 @@ describe("std.workflows: keel check rules", () => {
         : f,
     ),
   ];
-  test("W2353 fires on a step whose `failed` target is final while another step's `done` lies on a path to it, naming both, and not on its clean twin.", () => {
-    const bad = found(saga("stuck", ""), "W2353");
-    expect(bad.length).toBe(1);
-    const text = JSON.stringify(bad[0]);
-    expect(text).toContain("reserving");
-    expect(text).toContain("charging");
-    const clean = saga("undoing", "\n    undoing: { on: { released: 'reversed' } },\n    reversed: { final: true },");
-    expect(found(clean, "W2353")).toEqual([]);
-  }, 30_000);
+  test(
+    "W2353 fires on a step whose `failed` target is final while another step's `done` lies on a path to it, naming both, and not on its clean twin.",
+    () => {
+      const bad = found(saga("stuck", ""), "W2353");
+      expect(bad.length).toBe(1);
+      const text = JSON.stringify(bad[0]);
+      expect(text).toContain("reserving");
+      expect(text).toContain("charging");
+      const clean = saga("undoing", "\n    undoing: { on: { released: 'reversed' } },\n    reversed: { final: true },");
+      expect(found(clean, "W2353")).toEqual([]);
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2354 fires on a module whose `queue` lacks a workflow's `jobs` and not on its clean twin.", () => {
-    expect(found(project({ queue: "{}" }), "E2354").length).toBe(1);
-    expect(found(project(), "E2354").length).toBe(0);
-  }, 30_000);
+  test(
+    "E2354 fires on a module whose `queue` lacks a workflow's `jobs` and not on its clean twin.",
+    () => {
+      expect(found(project({ queue: "{}" }), "E2354").length).toBe(1);
+      expect(found(project(), "E2354").length).toBe(0);
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2354 fires on a module whose `runners` lack a workflow's `flows` and not on its clean twin.", () => {
-    expect(found(project({ runners: "[jobs]" }), "E2354").length).toBe(1);
-    expect(found(project({ runners: "[]" }), "E2354").length).toBeGreaterThanOrEqual(1);
-    expect(found(project(), "E2354").length).toBe(0);
-  }, 30_000);
+  test(
+    "E2354 fires on a module whose `runners` lack a workflow's `flows` and not on its clean twin.",
+    () => {
+      expect(found(project({ runners: "[jobs]" }), "E2354").length).toBe(1);
+      expect(found(project({ runners: "[]" }), "E2354").length).toBeGreaterThanOrEqual(1);
+      expect(found(project(), "E2354").length).toBe(0);
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2354's fix adds the `jobs` to the `queue` and the `flows` to `runners`, and re-checking the patched files reports no E2354.", () => {
-    for (const bad of [project({ queue: "{}" }), project({ runners: "[jobs]" })]) {
-      const d = found(bad, "E2354");
-      expect(d.length).toBe(1);
-      const fix = d[0]?.fix;
-      expect(fix).toBeDefined();
-      const patched = applyFix(bad, fix ?? "");
-      expect(found(patched, "E2354")).toEqual([]);
-    }
-  }, 30_000);
+  test(
+    "E2354's fix adds the `jobs` to the `queue` and the `flows` to `runners`, and re-checking the patched files reports no E2354.",
+    () => {
+      for (const bad of [project({ queue: "{}" }), project({ runners: "[jobs]" })]) {
+        const d = found(bad, "E2354");
+        expect(d.length).toBe(1);
+        const fix = d[0]?.fix;
+        expect(fix).toBeDefined();
+        const patched = applyFix(bad, fix ?? "");
+        expect(found(patched, "E2354")).toEqual([]);
+      }
+    },
+    fixedTime(30_000),
+  );
 
   // E2355: the chart's first event is renamed; it leads to the real state `purging`, so no other E235x finding is involved.
   const withEvent = (name: string): Files =>
@@ -278,10 +311,14 @@ describe("std.workflows: keel check rules", () => {
     expect(JSON.stringify(d[0])).toContain("modules/api/removal.server.ts");
   });
 
-  test("E2355 does not fire on the clean twin with the event renamed `begin`.", () => {
-    expect(found(withEvent("begin"), "E2355")).toEqual([]);
-    expect(found(project(), "E2355")).toEqual([]);
-  }, 30_000);
+  test(
+    "E2355 does not fire on the clean twin with the event renamed `begin`.",
+    () => {
+      expect(found(withEvent("begin"), "E2355")).toEqual([]);
+      expect(found(project(), "E2355")).toEqual([]);
+    },
+    fixedTime(30_000),
+  );
 
   test.each(reserved)("`workflow` throws E2355 for a chart event named `%s`.", (name) => {
     expect(() => inRoot(() => workflow(nextId("r"), { chart: chartWith(name), steps: { purging: stepOver } }))).toThrow(
@@ -309,5 +346,5 @@ describe("std.workflows: keel check rules", () => {
       ),
       { seed: 1337, numRuns: 30 },
     );
-  }, 30_000);
+  }, fixedTime(30_000));
 });

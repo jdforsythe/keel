@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // @vitest-environment happy-dom
 // `replay` on the cart fixture, event by event: the replay's own recording equals the session it replays (same
 // events at the same times, an input's effect not applied twice), what `observed` holds, the base it starts from,
@@ -101,7 +102,7 @@ describe("replay: what it reproduces", () => {
       expect(result.observed).toHaveLength(260);
       expect(result.reproduced).toBe(true);
     },
-    2 * 520 * 10,
+    fixedTime(2 * 520 * 10),
   );
 
   test("the base state is the session's: a store it names starts there, and the replay puts the store back after", async () => {

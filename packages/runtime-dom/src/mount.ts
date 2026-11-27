@@ -4,6 +4,7 @@ import { createOwner } from "./internal/createOwner.ts";
 import { createRoot } from "./internal/createRoot.ts";
 import { disposeOwner } from "./internal/disposeOwner.ts";
 import { rootFallback } from "./internal/rootFallback.ts";
+import { showRevealed } from "./internal/showRevealed.ts";
 import { stampOf } from "./internal/stampOf.ts";
 import { withCx } from "./internal/withCx.ts";
 import { boundary } from "./ops/boundary.ts";
@@ -60,6 +61,8 @@ export function mount(component: Component, el: Element, options: MountOptions):
   } catch (error) {
     dispose();
     throw error;
+  } finally {
+    showRevealed();
   }
   return dispose;
 }

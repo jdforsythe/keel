@@ -2,6 +2,7 @@
 // `./routes` files, inside its package; an app binding's spread is never followed. Seed 1337.
 import fs from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { routeLiterals } from "../src/routeLiterals.ts";
@@ -16,7 +17,7 @@ const topology: Topology = { web: { modules: ["m", "frag"], adapter: "node" } };
 let root = "";
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-fragment-"));
+  root = tempDir(".tmp-fragment-", import.meta.dirname);
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });

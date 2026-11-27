@@ -1,10 +1,10 @@
 // k.a11y-static Tokens and Build: every command that runs the check pipeline reads the project's `tokens.ts`, fresh
 // on every run; a broken one is E1807 at tokens.ts 1:1; `keel build` refuses a static a11y error.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { lsp, mcp } from "../src/index.ts";
 import { a11yFindings } from "../src/internal/a11yFindings.ts";
@@ -30,7 +30,7 @@ const LOW = comp(`    <Box bg="bg">\n      <Text fg="low">x</Text>\n    </Box>`)
 
 /** A temp project with every `@keel/*` package linked under its `node_modules`. */
 function project(files: Readonly<Record<string, string>>): string {
-  const dir = mkdtempSync(join(tmpdir(), "keel-static-tokens-"));
+  const dir = tempDir("keel-static-tokens-");
   created.push(dir);
   const all = { "package.json": '{"name":"p","private":true,"type":"module"}\n', "topology.ts": TOPOLOGY, ...files };
   for (const [rel, text] of Object.entries(all)) {

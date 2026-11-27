@@ -2,10 +2,11 @@
 // that bring typescript in load behind the commands that use them. The binary is run as a child process with a loader
 // hook that appends every module URL it loads to a file.
 import { execFile } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
@@ -19,7 +20,7 @@ const HEAVY = [
 
 let dir = "";
 beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), "keel-startup-lazy-"));
+  dir = tempDir("keel-startup-lazy-");
   writeFileSync(
     join(dir, "hooks.mjs"),
     [
@@ -68,11 +69,15 @@ describe("binary start", () => {
       expect(loaded.some((u) => u.endsWith("/packages/cli/src/bin.ts"))).toBe(true);
       expect(heavy(loaded)).toEqual([]);
     },
-    60_000,
+    fixedTime(60_000),
   );
 
-  it("loads typescript and the checker for check", async () => {
-    const loaded = await loadedBy(["check"], "check");
-    expect(heavy(loaded)).toEqual(expect.arrayContaining(["/node_modules/typescript/", "/packages/check/src/"]));
-  }, 60_000);
+  it(
+    "loads typescript and the checker for check",
+    async () => {
+      const loaded = await loadedBy(["check"], "check");
+      expect(heavy(loaded)).toEqual(expect.arrayContaining(["/node_modules/typescript/", "/packages/check/src/"]));
+    },
+    fixedTime(60_000),
+  );
 });

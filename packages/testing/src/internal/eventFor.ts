@@ -1,6 +1,7 @@
 import type { TestEvent } from "../types/TestEvent.ts";
+import { submitterOf } from "./submitterOf.ts";
 
-/** The DOM event `fire` dispatches for `event`; `input` writes `value` to the element first; `mod` is `ctrlKey`. */
+/** The DOM event `fire` dispatches for `event`; `input` writes `value` to the element first; `mod` is `ctrlKey`; a `submit` carries the submit button `el` as its submitter. */
 export function eventFor(el: Element, event: Exclude<TestEvent, { type: "focus" | "blur" | "emit" }>): Event {
   switch (event.type) {
     case "click":
@@ -20,6 +21,6 @@ export function eventFor(el: Element, event: Exclude<TestEvent, { type: "focus" 
         ctrlKey: event.mod === true,
       });
     case "submit":
-      return new Event("submit", { bubbles: true, cancelable: true });
+      return new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: submitterOf(el) });
   }
 }

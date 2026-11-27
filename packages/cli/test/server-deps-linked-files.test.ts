@@ -1,9 +1,9 @@
 // k.server-deps Files a bundled package reads: a library linked through a workspace (a symlink in `node_modules/` to a
 // real folder outside the project) has its bundled files' reads copied beside `server.mjs` as an installed one does.
 // Seed 1337 (no generated input). Binary runs: 2 (`keel build`, then again with the file removed).
-import { mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, renameSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, expect, test } from "vitest";
 import {
   SLOW,
@@ -22,7 +22,7 @@ import {
 
 const DATA = `import { store } from '${STORE}'\nconst accessor = store()\nexport const data = (ctx: Parameters<typeof accessor>[0]): string => accessor(ctx).title()\n`;
 let dir = "";
-const outside = mkdtempSync(join(tmpdir(), "keel-linked-"));
+const outside = tempDir("keel-linked-");
 afterAll(() => {
   cleanup(dir);
   rmSync(outside, { recursive: true, force: true });

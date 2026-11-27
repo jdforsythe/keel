@@ -6,11 +6,12 @@ import { type Schema, s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction } from "@keel/store";
 import { explore } from "@keel/testing";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 const SEED = 1337;
-const LONG = 300_000;
+const LONG = fixedTime(300_000);
 const MAX = 8;
 type State = { xs: boolean[]; m: Record<string, number>; on: boolean; n: number };
 const State = s.object({

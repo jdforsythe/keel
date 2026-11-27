@@ -8,7 +8,17 @@
 // subject alone, after one build, and `keel check` reads the stale surface (no rebuild between).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Run, type Tree, diags, keel, materialize, project, readText, write } from "./compat-support.ts";
+import {
+  type Run,
+  type Tree,
+  childOutput,
+  diags,
+  keel,
+  materialize,
+  project,
+  readText,
+  write,
+} from "./compat-support.ts";
 
 export const SUBJECT = "modules/y/subject.ts";
 export const VIEW = "modules/y/View.tsx";
@@ -90,7 +100,7 @@ export function tree(subject: string = SUBJECT_TEXT, view: string = VIEW_TEXT): 
 export function built(subject?: string, view?: string): { dir: string; surface: string } {
   const dir = materialize(tree(subject, view));
   const run = keel(dir, ["build"]);
-  if (run.status !== 0) throw new Error(`keel build exited ${String(run.status)}`);
+  if (run.status !== 0) throw new Error(`keel build exited ${String(run.status)}: ${childOutput(run)}`);
   return { dir, surface: readText(dir, SURFACE) };
 }
 

@@ -1,13 +1,13 @@
 // std.jobs Run: "at most `concurrency` at once (module `std` config `{ concurrency }`, 1 to 16, default 1)", through a
 // `.keel/std.json` that `stdArtifact` builds (with its content hash) and `createApp({ std })` binds.
 // Seed 1337
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { job, queue } from "../src/index.ts";
@@ -19,7 +19,7 @@ const manifest = (std: string) =>
   `import { module } from "@keel/compiler"\nexport default module({ id: "orders", deps: ["@keel/std-jobs"], capabilities: ["clock", "random", "storage"]${std} })\n`;
 
 async function drive(concurrency: number | undefined, count: number): Promise<{ max: number; done: number }> {
-  const dir = mkdtempSync(join(tmpdir(), "keel-jobs-"));
+  const dir = tempDir("keel-jobs-");
   try {
     const std = concurrency === undefined ? "" : `, std: { "@keel/std-jobs": { concurrency: ${concurrency} } }`;
     const { data, hash } = stdArtifact([{ path: "modules/orders/module.ts", source: manifest(std) }]);

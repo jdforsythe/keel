@@ -3,9 +3,10 @@ import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
-const LONG = 120_000;
+const LONG = fixedTime(120_000);
 let seq = 0;
 const inScope = <R>(mk: (id: string) => R): R => {
   seq += 1;

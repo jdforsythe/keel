@@ -1,6 +1,7 @@
 // Spec: k.compiler, clause "With `@keel/std-health` placed, `keel check` over its `routes.json` gives no E1005 or W1005; a binding spread is W1005."
 // Drives the real binary (packages/cli/src/bin.ts) over temp projects placing the real `@keel/std-health` beside an app module `m`; `.keel/` is built by @keel/compiler/vite.
 // Examples only: fixed projects. No random inputs (a fast-check seed would be 1337).
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -110,21 +111,29 @@ beforeAll(async () => {
   created.push(plain, spread);
   await viteBuild(plain);
   await viteBuild(spread);
-}, 120_000);
+}, fixedTime(120_000));
 afterAll(() => {
   for (const d of created) fs.rmSync(d, { recursive: true, force: true });
 });
 
 describe("k.compiler: routes.json with @keel/std-health placed", () => {
-  it("keel check over a project with `@keel/std-health` placed gives no E1005 or W1005 on its `routes.json`", () => {
-    expect(fs.readFileSync(path.join(plain, ".keel/routes.json"), "utf8")).toContain("health.status");
-    const records = runCheck(plain);
-    expect(diags(records, "E1005")).toEqual([]);
-    expect(diags(records, "W1005")).toEqual([]);
-  }, 120_000);
+  it(
+    "keel check over a project with `@keel/std-health` placed gives no E1005 or W1005 on its `routes.json`",
+    () => {
+      expect(fs.readFileSync(path.join(plain, ".keel/routes.json"), "utf8")).toContain("health.status");
+      const records = runCheck(plain);
+      expect(diags(records, "E1005")).toEqual([]);
+      expect(diags(records, "W1005")).toEqual([]);
+    },
+    fixedTime(120_000),
+  );
 
-  it("a binding spread (`...health.routes`) is W1005", () => {
-    const records = runCheck(spread);
-    expect(diags(records, "W1005").length).toBeGreaterThan(0);
-  }, 120_000);
+  it(
+    "a binding spread (`...health.routes`) is W1005",
+    () => {
+      const records = runCheck(spread);
+      expect(diags(records, "W1005").length).toBeGreaterThan(0);
+    },
+    fixedTime(120_000),
+  );
 });

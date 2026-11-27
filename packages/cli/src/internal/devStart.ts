@@ -1,6 +1,7 @@
 import { setDefaultResultOrder } from "node:dns";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { libraryEntryDiags } from "@keel/check";
 import { INDEX_HTML_IGNORED } from "@keel/compiler/hosting/INDEX_HTML_IGNORED";
 import { operations } from "../operations.ts";
 import type { DevServer } from "./DevServer.ts";
@@ -8,10 +9,12 @@ import { devPoll } from "./devPoll.ts";
 import { devPort } from "./devPort.ts";
 import { errorText } from "./errorText.ts";
 import { hostIo } from "./hostIo.ts";
+import { libraryProjectFiles } from "./libraryProjectFiles.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { parseArgv } from "./parseArgv.ts";
 import { portDiag } from "./portDiag.ts";
 import { portProbe } from "./portProbe.ts";
+import { readProject } from "./readProject.ts";
 import { respond } from "./respond.ts";
 import { summary } from "./summary.ts";
 import { viteServer } from "./viteServer.ts";
@@ -63,6 +66,28 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
       see: "k.topology",
     });
     const r = respond([diag, summary("dev", [diag], { errors: 1 })], hostIo(false), {
+      command: "dev",
+      format: input.format,
+      quiet: input.quiet,
+      limit: input.limit,
+      verbose: input.verbose,
+      code: input.code,
+    });
+    return { code: r.code, stdout: r.stdout, stderr: "", serving: false };
+  }
+  // While a library's entry or shipped tokens file is out of shape (E1815, E1812), nothing is evaluated or bundled
+  // (k.entries): the dev server does not start.
+  const project = readProject(cwd, "query");
+  const refused = libraryEntryDiags([...project, ...libraryProjectFiles(cwd, project)]).map((d) =>
+    makeDiag(d.code, d.message, {
+      path: d.path,
+      line: d.line,
+      col: d.col,
+      ...(d.see === undefined ? {} : { see: d.see }),
+    }),
+  );
+  if (refused.length > 0) {
+    const r = respond([...refused, summary("dev", refused, { errors: refused.length })], hostIo(false), {
       command: "dev",
       format: input.format,
       quiet: input.quiet,

@@ -2,7 +2,7 @@
 // Spec: k.a11y-static, clause "With `brandTokens`, `keel check` reports no E1804 for `<Box bg=\"card\"><Text fg={tone}>x</Text></Box>`, `<Box bg={tone}><Text fg=\"divider\">x</Text></Box>`, `<Box bg=\"card\"><Text {...rest}>x</Text></Box>`, `<Box bg=\"card\"><Panel><Text fg=\"divider\">x</Text></Panel></Box>` with `Panel` an app component, or `<Box bg=\"card\"><Text fg=\"divider\" hidden>x</Text></Box>`, and one for `<Box bg=\"card\"><If when={on}><Text fg=\"divider\">x</Text></If></Box>` and for `<Box bg=\"card\"><Text {...rest} fg=\"divider\" bg=\"card\">x</Text></Box>`."
 // Spec: k.a11y-static, clause "With color tokens `low` `#787878` and `bg` `#ffffff` and `fontSize` `big` `24px`, `<Box bg=\"bg\" fontSize=\"big\"><Text fg=\"low\">x</Text></Box>` reports no E1804 and `<Box bg=\"bg\"><Text fg=\"low\" fontSize={size}>x</Text></Box>` reports none, while `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>` reports one."
 // Spec: k.a11y-static, clause "With color tokens named by 20 `a`s (`#ffffff`) and 20 `b`s (`#ffffff`), `<Text fg=\"<a>\" bg=\"<b>\">x</Text>` reports E1804 with the message `fg \"<a>\" on bg \"<b>\" is 1.00:1 in light, needs 4.5:1` (86 units); with names of 30 characters each the message is 89 units, the first 86 of the whole message and `...`."
-// Spec: k.a11y-static, clause "`keel check` in a project whose `tokens.ts` exports no `tokens`, throws, or exports `tokens` with `color: { fg: 5 }`, reports one E1807 at `tokens.ts` line 1, column 1, no E1804, and exits 1; in a project with no `tokens.ts` it reports neither for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>`."
+// Spec: k.a11y-static, clause "`keel check` in a project whose `tokens.ts` exports no `tokens`, throws, or exports `tokens` with `color: { fg: 5 }`, reports one E1807 at `tokens.ts` line 1, column 1, no E1804, and exits 1; in a project with no `tokens.ts` it reports neither for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>`, and two E1801, at `\"bg\"` and at `\"low\"`, and exits 1."
 // Spec: k.a11y-static, clause "In a project with `node_modules`, after a `keel check` that reports no E1804 for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>` with `low` `#111111`, changing `low` in `tokens.ts` to `#787878` makes the next `keel check` report one E1804, the same stdout as a run with `node_modules/.cache/keel` deleted."
 // Spec: k.a11y-static, clause "`keel build` in a project where `keel check` reports only one E1802, only one E1804, or only one E1820 exits 1, prints that diagnostic and writes no `.keel/` folder and no `dist/` folder."
 // Spec: k.a11y-static, clause "`keel check`, `keel build`, MCP `check` and `keel lsp`'s published diagnostics report the same static E1804 for one project; after a passing `renderRoute` test of page `m.r` given `artifacts: {}` whose module holds that E1804, `keel ledger` gives `a11y:.:m.r#1.4.3` rung `none`."
@@ -19,8 +19,9 @@
 // Seed: 1337 (fixed projects; the message-length pairs are drawn with `fc.sample` at seed 1337; the law over ratios is in the check package's a11y-contrast-inherited.test.ts).
 // The real `keel` binary (`keel check --format=json`) over temp projects, as a11y-project-support.ts. The project's `tokens.ts` is read by the binary itself (k.a11y Artifacts names the project's `tokens.ts` as the default for a render; the Contrast text states static E1804 with no other input), so no tokens are handed in.
 // Assumed: a diagnostic record is `{ kind: "diag", code, path, line, col, message }`, `path` relative to the project, `line` 1-based at the `<Text` element.
-// Spec silent (reported, not asserted): the message of E1804; whether `keel build` refuses an E1804 (k.a11y names no refusal); the static result when `tokens.ts` is absent. The absent case asserts no E1804 and no throw (render checks it, and a render with no `tokens.ts` skips E1804).
+// Spec silent (reported, not asserted): the message of E1804; whether `keel build` refuses an E1804 (k.a11y names no refusal). With no `tokens.ts` the case asserts no E1804 and no throw (k.a11y-static Tokens: nothing is judged for contrast; each token a use names is E1801).
 // 4.4:1 is `#787878` on `#ffffff` (4.41:1); `#111111` passes; 3:1 is `#949494` on white (2.95:1).
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -87,7 +88,7 @@ describe("k.a11y: static E1804 through the real `keel check`", () => {
     const b = keelProject("a11y-static-contrast-none", { ...files() });
     created.push(b);
     noTokens = keel(b, ["check"]);
-  }, 180_000);
+  }, fixedTime(180_000));
 
   it("A `Text` whose `fg` is 4.4:1 against the `bg` of its element is E1804 at the element, with a message", () => {
     const d = at(withTokens, "Fails");
@@ -165,7 +166,7 @@ describe("k.a11y: the brand tokens' divider text on card is E1804 through `keel 
     });
     created.push(dir);
     run = keel(dir, ["check"]);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   it('`<Text fg="divider">` over the `bg="card"` of its ancestor is E1804 at the Text', () => {
     expect(at(run, "PairText")).toHaveLength(1);
@@ -242,7 +243,7 @@ describe("k.a11y-static: brandTokens", () => {
       ),
     });
     run = keel(dir, ["check"]);
-  }, 240_000);
+  }, fixedTime(240_000));
 
   it('With `tokens.ts` exporting `brandTokens`, `keel check` reports one E1804 at the line of the `<Text` of `<Box fg="divider" bg="card"><Text>x</Text></Box>` and none at the `<Box`', () => {
     // the Panel line is inserted at line 2 of the file, so every body line below is one lower than `unit` states: Box 5, Text 6
@@ -337,7 +338,7 @@ export const tokens = defineTokens({
       ...Object.fromEntries(Object.entries(FILES).map(([n, b]) => unit(n, ind(b)))),
     });
     run = keel(dir, ["check"]);
-  }, 240_000);
+  }, fixedTime(240_000));
 
   it("a pair that passes at 4.54:1 reports none and the next step down, 4.48:1, reports one", () => {
     expect(count(run, "StepPass")).toBe(0);
@@ -403,7 +404,7 @@ export const tokens = defineTokens({
       ...Object.fromEntries(Object.entries(FILES).map(([n, b]) => unit(n, ind(b)))),
     });
     run = keel(dir, ["check"]);
-  }, 240_000);
+  }, fixedTime(240_000));
 
   it("the `fg` of a string-literal `look` is judged, and the element's own `fg` prop replaces it either way", () => {
     expect(count(run, "LookFails")).toBe(1);
@@ -439,7 +440,7 @@ describe("k.a11y-static: the message and its 89-unit limit", () => {
       ...Object.fromEntries(PAIRS.map(({ a, b }, i) => unit(`P${i}`, `    <Text fg="${a}" bg="${b}">x</Text>`))),
     });
     run = keel(dir, ["check"]);
-  }, 240_000);
+  }, fixedTime(240_000));
 
   it("a message of 86, of 89 and of 90 units is whole, whole, and cut to its first 86 plus `...`", () => {
     // the fixtures' own lengths, stated so a wrong fixture fails here and not silently
@@ -481,7 +482,7 @@ describe("k.a11y-static: a broken `tokens.ts` is E1807 at 1:1 and nothing is jud
       const dir = project("a11y-static-e1807", { "tokens.ts": src, [COMP[0]]: COMP[1] });
       runs.set(label, keel(dir, ["check"]));
     }
-  }, 360_000);
+  }, fixedTime(360_000));
 
   it("`keel check` in a project whose `tokens.ts` throws, exports no `tokens`, or exports `tokens` with `color: { fg: 5 }`, reports one E1807 at `tokens.ts` line 1, column 1, no E1804, and exits 1", () => {
     expect(runs.size).toBe(3);
@@ -494,27 +495,37 @@ describe("k.a11y-static: a broken `tokens.ts` is E1807 at 1:1 and nothing is jud
     }
   });
 
-  it('in a project with no `tokens.ts` it reports neither E1807 nor E1804 for `<Box bg="bg"><Text fg="low">x</Text></Box>`', () => {
-    // the first suite's `noTokens` project holds that Box and Text as `Fails.tsx`
+  it('in a project with no `tokens.ts` it reports neither E1807 nor E1804 for `<Box bg="bg"><Text fg="low">x</Text></Box>`, and two E1801, at `"bg"` and at `"low"`, and exits 1', () => {
     const none = keel(project("a11y-static-none", { [COMP[0]]: COMP[1] }), ["check"]);
     expect(none.records.filter((r) => r.kind === "diag" && (r.code === "E1807" || r.code === "E1804"))).toEqual([]);
+    const names = none.records.filter((r) => r.kind === "diag" && r.code === "E1801");
+    // the layout of `unit` is stated, not computed: line 4 holds `    <Box bg="bg">` (the literal's quote at column 13), line 5 `      <Text fg="low">x</Text>` (column 16)
+    expect(names.map((r) => [r.path, r.line, r.col])).toEqual([
+      [COMP[0], 4, 13],
+      [COMP[0], 5, 16],
+    ]);
+    expect(none.status).toBe(1);
   });
 });
 
 describe("k.a11y-static: the tokens are read on every run, never from a cache", () => {
-  it("after a `keel check` with no E1804 for `low` `#111111`, changing `low` to `#787878` makes the next `keel check` report one E1804, the same stdout as a run with `node_modules/.cache/keel` deleted", () => {
-    const comp = unit("Fails", `    <Box bg="bg">\n      <Text fg="low">x</Text>\n    </Box>`);
-    const tok = (low: string): string =>
-      `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
-    const dir = project("a11y-static-cache", { "tokens.ts": tok("#111111"), [comp[0]]: comp[1] });
-    expect(e1804(keel(dir, ["check"]))).toEqual([]);
-    writeFiles(dir, { "tokens.ts": tok("#787878") });
-    const changed = keel(dir, ["check"]);
-    expect(at(changed, "Fails")).toHaveLength(1);
-    rmSync(join(dir, "node_modules", ".cache", "keel"), { recursive: true, force: true });
-    const fresh = keel(dir, ["check"]);
-    expect(changed.stdout).toBe(fresh.stdout);
-  }, 240_000);
+  it(
+    "after a `keel check` with no E1804 for `low` `#111111`, changing `low` to `#787878` makes the next `keel check` report one E1804, the same stdout as a run with `node_modules/.cache/keel` deleted",
+    () => {
+      const comp = unit("Fails", `    <Box bg="bg">\n      <Text fg="low">x</Text>\n    </Box>`);
+      const tok = (low: string): string =>
+        `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
+      const dir = project("a11y-static-cache", { "tokens.ts": tok("#111111"), [comp[0]]: comp[1] });
+      expect(e1804(keel(dir, ["check"]))).toEqual([]);
+      writeFiles(dir, { "tokens.ts": tok("#787878") });
+      const changed = keel(dir, ["check"]);
+      expect(at(changed, "Fails")).toHaveLength(1);
+      rmSync(join(dir, "node_modules", ".cache", "keel"), { recursive: true, force: true });
+      const fresh = keel(dir, ["check"]);
+      expect(changed.stdout).toBe(fresh.stdout);
+    },
+    fixedTime(240_000),
+  );
 });
 
 describe("k.a11y-static: E1802, E1804, E1807 and E1820 make `keel build` exit 1 and write nothing", () => {
@@ -545,21 +556,25 @@ describe("k.a11y-static: E1802, E1804, E1807 and E1820 make `keel build` exit 1 
     },
   ];
   for (const { code, files } of cases) {
-    it(`\`keel build\` in a project where \`keel check\` reports only one ${code} exits 1, prints that diagnostic and writes no \`.keel/\` folder and no \`dist/\` folder`, () => {
-      const dir = project(`a11y-static-build-${code}`, files);
-      const checked = keel(dir, ["check"]);
-      const errors = (r: Run): CliRecord[] =>
-        r.records.filter((x) => x.kind === "diag" && String(x.code).startsWith("E"));
-      expect(errors(checked).map((x) => x.code)).toEqual([code]);
-      const built = keel(dir, ["build"]);
-      expect(built.status).toBe(1);
-      expect(
-        errors(built).map((x) => `${x.code} ${x.path}`),
-        built.stdout,
-      ).toEqual([`${code} ${String(errors(checked)[0]?.path)}`]);
-      expect(existsSync(join(dir, ".keel"))).toBe(false);
-      expect(existsSync(join(dir, "dist"))).toBe(false);
-    }, 240_000);
+    it(
+      `\`keel build\` in a project where \`keel check\` reports only one ${code} exits 1, prints that diagnostic and writes no \`.keel/\` folder and no \`dist/\` folder`,
+      () => {
+        const dir = project(`a11y-static-build-${code}`, files);
+        const checked = keel(dir, ["check"]);
+        const errors = (r: Run): CliRecord[] =>
+          r.records.filter((x) => x.kind === "diag" && String(x.code).startsWith("E"));
+        expect(errors(checked).map((x) => x.code)).toEqual([code]);
+        const built = keel(dir, ["build"]);
+        expect(built.status).toBe(1);
+        expect(
+          errors(built).map((x) => `${x.code} ${x.path}`),
+          built.stdout,
+        ).toEqual([`${code} ${String(errors(checked)[0]?.path)}`]);
+        expect(existsSync(join(dir, ".keel"))).toBe(false);
+        expect(existsSync(join(dir, "dist"))).toBe(false);
+      },
+      fixedTime(240_000),
+    );
   }
 });
 
@@ -581,21 +596,25 @@ const mcpCheck = (cwd: string): string => {
 };
 
 describe("k.a11y-static: one static E1804 on every surface, and the claim rule", () => {
-  it("`keel check`, `keel build` and MCP `check` report the same static E1804 for one project", () => {
-    const files = {
-      "tokens.ts": tokensSource("#777777"),
-      ...Object.fromEntries([unit("Fails", `    <Box bg="bg">\n      <Text fg="fg">x</Text>\n    </Box>`)]),
-    };
-    const dir = project("a11y-static-surfaces", files);
-    const viaCheck = at(keel(dir, ["check"]), "Fails");
-    const viaBuild = at(keel(dir, ["build"]), "Fails");
-    expect(viaCheck).toHaveLength(1);
-    expect(viaBuild).toHaveLength(1);
-    expect(viaBuild[0]).toMatchObject({ code: "E1804", line: viaCheck[0]?.line, message: viaCheck[0]?.message });
-    const viaMcp = mcpCheck(dir);
-    expect(viaMcp).toContain("E1804");
-    expect(viaMcp).toContain(String(viaCheck[0]?.message).replaceAll('"', '\\"'));
-  }, 240_000);
+  it(
+    "`keel check`, `keel build` and MCP `check` report the same static E1804 for one project",
+    () => {
+      const files = {
+        "tokens.ts": tokensSource("#777777"),
+        ...Object.fromEntries([unit("Fails", `    <Box bg="bg">\n      <Text fg="fg">x</Text>\n    </Box>`)]),
+      };
+      const dir = project("a11y-static-surfaces", files);
+      const viaCheck = at(keel(dir, ["check"]), "Fails");
+      const viaBuild = at(keel(dir, ["build"]), "Fails");
+      expect(viaCheck).toHaveLength(1);
+      expect(viaBuild).toHaveLength(1);
+      expect(viaBuild[0]).toMatchObject({ code: "E1804", line: viaCheck[0]?.line, message: viaCheck[0]?.message });
+      const viaMcp = mcpCheck(dir);
+      expect(viaMcp).toContain("E1804");
+      expect(viaMcp).toContain(String(viaCheck[0]?.message).replaceAll('"', '\\"'));
+    },
+    fixedTime(240_000),
+  );
 
   const ITEM = "a11y:.:m.r#1.4.3";
   const BAD = unit("Bad", `    <Box bg="bg">\n      <Text fg="fg">x</Text>\n    </Box>`);
@@ -616,24 +635,36 @@ it("renders r given the tokens", async () => {
   const routeProject = (prefix: string, fg: string, test: string): string =>
     project(prefix, { ...moduleFiles(["r"], true), "tokens.ts": tokensSource(fg), "modules/m/test/r.test.ts": test });
 
-  it("a route whose only contrast evidence is static (a clean check, a render given `artifacts: {}`) has `a11y:.:m.r#1.4.3` rung `none`", () => {
-    const dir = routeProject("a11y-static-claim-none", "#111111", EMPTY);
-    expect(buildAndTest(dir).status).toBe(0);
-    expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "none" });
-  }, 360_000);
+  it(
+    "a route whose only contrast evidence is static (a clean check, a render given `artifacts: {}`) has `a11y:.:m.r#1.4.3` rung `none`",
+    () => {
+      const dir = routeProject("a11y-static-claim-none", "#111111", EMPTY);
+      expect(buildAndTest(dir).status).toBe(0);
+      expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "none" });
+    },
+    fixedTime(360_000),
+  );
 
-  it("after a passing `renderRoute` test of `m.r` given `artifacts: {}` whose module holds a static E1804, `keel ledger` gives `a11y:.:m.r#1.4.3` rung `none`", () => {
-    const dir = routeProject("a11y-static-claim-e1804", "#777777", EMPTY);
-    expect(buildAndTest(dir).status).toBe(0);
-    writeFiles(dir, { [BAD[0]]: BAD[1] });
-    expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "none" });
-  }, 360_000);
+  it(
+    "after a passing `renderRoute` test of `m.r` given `artifacts: {}` whose module holds a static E1804, `keel ledger` gives `a11y:.:m.r#1.4.3` rung `none`",
+    () => {
+      const dir = routeProject("a11y-static-claim-e1804", "#777777", EMPTY);
+      expect(buildAndTest(dir).status).toBe(0);
+      writeFiles(dir, { [BAD[0]]: BAD[1] });
+      expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "none" });
+    },
+    fixedTime(360_000),
+  );
 
-  it("a route rendered under `keel test` with the tokens, E1804 among the `rules` of a passing run, has rung `example`, and a static E1804 in its module makes it `none`", () => {
-    const dir = routeProject("a11y-static-claim-example", "#111111", GIVEN);
-    expect(buildAndTest(dir).status).toBe(0);
-    expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "example" });
-    writeFiles(dir, { "tokens.ts": tokensSource("#777777"), [BAD[0]]: BAD[1] });
-    expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "none" });
-  }, 360_000);
+  it(
+    "a route rendered under `keel test` with the tokens, E1804 among the `rules` of a passing run, has rung `example`, and a static E1804 in its module makes it `none`",
+    () => {
+      const dir = routeProject("a11y-static-claim-example", "#111111", GIVEN);
+      expect(buildAndTest(dir).status).toBe(0);
+      expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "example" });
+      writeFiles(dir, { "tokens.ts": tokensSource("#777777"), [BAD[0]]: BAD[1] });
+      expect(itemRecord(keel(dir, ["ledger"]), ITEM)).toMatchObject({ rung: "none" });
+    },
+    fixedTime(360_000),
+  );
 });

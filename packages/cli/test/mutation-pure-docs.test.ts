@@ -17,14 +17,25 @@ const installed = [
   f("package.json", json({ dependencies: { "@keel/router": "*" } })),
   f(`${CLI}/package.json`, json({ name: "@keel/cli", version: "1.2.0" })),
   f(`${CLI}/docs/index.json`, json({ sections: [{ id: "k.cli", title: "CLI", codes: ["E1051"] }] })),
-  f(`${CLI}/docs/k.cli.md`, "# k.cli\nE1051 unknown\n"),
+  f(`${CLI}/docs/k.cli.md`, "# k.cli\nE1051 unknown `keel docs`\n"),
+  f(`${CLI}/docs/glossary.json`, json({ terms: [{ term: "Route Table", text: "the routes", ids: ["k.router"] }] })),
   f(
     `${CLI}/docs/map.json`,
     json({
-      sections: [
-        { id: "k.cli", title: "CLI", package: "@keel/cli" },
-        { id: "k.router", title: "Routes", package: "@keel/router" },
-        { id: "std.tables", title: "Tables", package: "@keel/std-tables" },
+      areas: [
+        {
+          id: "tools",
+          title: "Tools",
+          sections: [{ id: "k.cli", title: "CLI", package: "@keel/cli", holds: "commands" }],
+        },
+        {
+          id: "routes",
+          title: "Routes",
+          sections: [
+            { id: "k.router", title: "Routes", package: "@keel/router", holds: "the route table" },
+            { id: "std.tables", title: "Tables", package: "@keel/std-tables", holds: "tables" },
+          ],
+        },
       ],
     }),
   ),
@@ -50,15 +61,60 @@ const fail = (code: string, message: string) => [
 ];
 
 describe("docsCommand, installed", () => {
-  it("lists map rows, then index-only ids, then skills sorted by name", () => {
+  it("lists the areas, then other for index-only ids, then skills sorted by name", () => {
     expect(docs({}).records).toEqual([
-      { kind: "docs.entry", id: "k.cli", title: "CLI", package: "@keel/cli", installed: true },
-      { kind: "docs.entry", id: "k.router", title: "Routes", package: "@keel/router", installed: true },
-      { kind: "docs.entry", id: "std.tables", title: "Tables", package: "@keel/std-tables", installed: false },
-      { kind: "docs.entry", id: "k.extra", title: "Extra", package: "@keel/router", installed: true },
-      { kind: "docs.entry", id: "keel-a", title: "First skill", package: "@keel/cli", installed: true },
-      { kind: "docs.entry", id: "keel-b", title: "Second skill", package: "@keel/cli", installed: true },
-      { kind: "summary", ok: true, name: "docs", counts: { sections: 4, skills: 2 } },
+      { kind: "docs.area", id: "tools", title: "Tools", sections: 1 },
+      { kind: "docs.area", id: "routes", title: "Routes", sections: 2 },
+      { kind: "docs.area", id: "other", title: "Installed sections the map does not list", sections: 1 },
+      { kind: "docs.entry", id: "keel-a", title: "First skill", package: "@keel/cli", installed: true, holds: "" },
+      { kind: "docs.entry", id: "keel-b", title: "Second skill", package: "@keel/cli", installed: true, holds: "" },
+      { kind: "summary", ok: true, name: "docs", counts: { areas: 3, skills: 2 } },
+    ]);
+  });
+
+  it("lists an area's sections with whether each is installed and what it holds", () => {
+    expect(docs({ id: "routes" }).records).toEqual([
+      { kind: "docs.area", id: "routes", title: "Routes", sections: 2 },
+      {
+        kind: "docs.entry",
+        id: "k.router",
+        title: "Routes",
+        package: "@keel/router",
+        installed: true,
+        holds: "the route table",
+      },
+      {
+        kind: "docs.entry",
+        id: "std.tables",
+        title: "Tables",
+        package: "@keel/std-tables",
+        installed: false,
+        holds: "tables",
+      },
+      { kind: "summary", ok: true, name: "docs routes", counts: { sections: 2 } },
+    ]);
+    expect(docs({ id: "other" }).records[1]).toEqual({
+      kind: "docs.entry",
+      id: "k.extra",
+      title: "Extra",
+      package: "@keel/router",
+      installed: true,
+      holds: "",
+    });
+  });
+
+  it("--for a block, a name and a term: codes in order, the term ignoring case, hits by count", () => {
+    expect(docs({ for: "E14xx" }).records).toEqual([
+      { kind: "docs.code", code: "E1451", ids: ["k.router"] },
+      { kind: "summary", ok: true, name: "docs --for E14xx", counts: { records: 1 } },
+    ]);
+    expect(docs({ for: "route table" }).records).toEqual([
+      { kind: "docs.term", term: "Route Table", text: "the routes", ids: ["k.router"] },
+      { kind: "summary", ok: true, name: "docs --for route table", counts: { records: 1 } },
+    ]);
+    expect(docs({ for: "KEEL" }).records).toEqual([
+      { kind: "docs.hit", name: "KEEL", id: "k.cli", title: "CLI", package: "@keel/cli", count: 1 },
+      { kind: "summary", ok: true, name: "docs --for KEEL", counts: { records: 1 } },
     ]);
   });
 
@@ -104,7 +160,7 @@ describe("docsCommand, installed", () => {
     expect(docs({ id: "n".repeat(40) }).records[0]).toEqual({
       kind: "diag",
       code: "E1052",
-      message: `no section or skill "${"n".repeat(24)}"; see keel docs`,
+      message: `no area, section or skill "${"n".repeat(24)}"; see keel docs`,
       see: "k.docs",
     });
     for (const input of [
@@ -112,7 +168,7 @@ describe("docsCommand, installed", () => {
       { id: "a", sync: true },
       { for: "E1", sync: true },
     ])
-      expect(docs(input).records).toEqual(fail("E1052", "give one of <id>, --for <code>, --sync"));
+      expect(docs(input).records).toEqual(fail("E1052", "give one of <id>, --for <key>, --sync"));
     expect(docs({ id: "k.cli", sync: false }).records[0]).toMatchObject({ kind: "docs.section" });
   });
 
@@ -121,8 +177,8 @@ describe("docsCommand, installed", () => {
       { kind: "docs.cite", code: "E1451", id: "k.router", line: 2, text: "E1451 dup" },
       { kind: "summary", ok: true, name: "docs --for E1451", counts: { lines: 1 } },
     ]);
-    expect(docs({ for: "E9" }).records).toEqual([
-      { kind: "summary", ok: true, name: "docs --for E9", counts: { lines: 0 } },
+    expect(docs({ for: "E9999" }).records).toEqual([
+      { kind: "summary", ok: true, name: "docs --for E9999", counts: { lines: 0 } },
     ]);
     const long = [
       ...installed.filter((x) => !x.path.endsWith("k.router.md")),
@@ -161,31 +217,50 @@ describe("docsCommand, installed", () => {
 
 describe("docsCommand, the Keel repo", () => {
   const repo = [
-    f("spec/00-map.md", "# map\n"),
-    f("spec/kernel/k.a.md", "# k.a\nE1 here\n"),
-    f("spec/std/s.b.md", "# s.b\nE1 std\n"),
+    f("spec/00-map.md", "# map\n| area | holds |\n|-|-|\n| one | The first |\n"),
+    f("spec/areas/one.md", "# one\n| id | holds |\n|-|-|\n| k.a | what a holds |\n"),
+    f("spec/kernel/k.a.md", "# k.a: Section A\nstatus: proposed\nE1001 here `name`\n"),
+    f("spec/std/s.b.md", "# s.b\nE1001 std `name` and `name`\n"),
+    f("docs/GLOSSARY.md", "# Glossary\n\n- **thing**: see k.a and k.none.\n"),
     f("spec/kernel/both.md", "# kernel both\n"),
     f("spec/std/both.md", "# std both\n"),
     f("packages/cli/skills/keel-a/SKILL.md", "---\nname: keel-a\ndescription: A\n---\n"),
     skill("keel-z", "ignored in the repo"),
   ];
-  it("map with the repo's skills, a section kernel first, a skill, --for over spec/", () => {
+  it("the map, an area joined with its sections' heads, a section kernel first, a skill, --for over spec/", () => {
+    const map = "# map\n| area | holds |\n|-|-|\n| one | The first |\n";
     expect(docs({}, repo).records).toEqual([
-      { kind: "docs.section", id: "map", text: "# map\n" },
-      { kind: "docs.entry", id: "keel-a", title: "A", package: "@keel/cli", installed: true },
+      { kind: "docs.section", id: "map", text: map },
       { kind: "summary", ok: true, name: "docs map", counts: {} },
     ]);
+    expect(docs({ id: "one" }, repo).records[0]).toEqual({
+      kind: "docs.section",
+      id: "one",
+      text: "# one: The first\n| id | title | status | holds |\n|-|-|-|-|\n| k.a | Section A | proposed | what a holds |\n",
+    });
     expect(docs({ id: "both" }, repo).records[0]).toEqual({
       kind: "docs.section",
       id: "both",
       text: "# kernel both\n",
     });
-    expect(docs({ id: "s.b" }, repo).records[0]).toEqual({ kind: "docs.section", id: "s.b", text: "# s.b\nE1 std\n" });
+    expect(docs({ id: "s.b" }, repo).records[0]).toEqual({
+      kind: "docs.section",
+      id: "s.b",
+      text: "# s.b\nE1001 std `name` and `name`\n",
+    });
     expect(docs({ id: "keel-a" }, repo).records[0]).toMatchObject({ kind: "docs.skill", id: "keel-a" });
-    expect(docs({ for: "E1" }, repo).records.map((r) => [r.id, r.line])).toEqual([
-      ["k.a", 2],
+    expect(docs({ for: "E1001" }, repo).records.map((r) => [r.id, r.line])).toEqual([
+      ["k.a", 3],
       ["s.b", 2],
       [undefined, undefined],
+    ]);
+    expect(docs({ for: "E100x" }, repo).records[0]).toEqual({ kind: "docs.code", code: "E1001", ids: ["k.a", "s.b"] });
+    expect(docs({ for: "Thing" }, repo).records.slice(0, -1)).toEqual([
+      { kind: "docs.term", term: "thing", text: "see k.a and k.none.", ids: ["k.a"] },
+    ]);
+    expect(docs({ for: "name" }, repo).records.slice(0, -1)).toEqual([
+      { kind: "docs.hit", name: "name", id: "s.b", title: "s.b", package: "", count: 2 },
+      { kind: "docs.hit", name: "name", id: "k.a", title: "Section A", package: "", count: 1 },
     ]);
     expect(docs({ id: "nope" }, repo).records[0]).toMatchObject({ code: "E1052" });
   });

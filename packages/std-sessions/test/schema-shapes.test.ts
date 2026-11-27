@@ -4,6 +4,7 @@
 // Seed 1337
 import { clientStdData } from "@keel/compiler/std/clientStdData";
 import { s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
@@ -198,21 +199,25 @@ test("SessionRecord: the `session` record, closed, with a nullable error and fil
 });
 
 // The bound covers the first load of the cli's formatter, which this test pays for inside its body.
-test("SessionMonitorRecord: the `session.monitor` record, closed, and its compact and pretty lines", async () => {
-  const { SessionMonitorRecord } = await import("../src/SessionMonitorRecord.ts");
-  const { respond } = await import("@keel/cli/testing");
-  const record = { kind: "session.monitor", origin: "https://app.test", transactions: 3, runs: 12, file: "m.json" };
-  expect(SessionMonitorRecord.parse(record).ok).toBe(true);
-  for (const key of Object.keys(record)) expect(SessionMonitorRecord.parse(without(record, key)).ok, key).toBe(false);
-  expect(SessionMonitorRecord.parse({ ...record, extra: 1 }).ok).toBe(false);
-  expect(SessionMonitorRecord.parse({ ...record, kind: "" }).ok).toBe(false);
-  expect(SessionMonitorRecord.parse({ ...record, runs: "12" }).ok).toBe(false);
-  expect(respond([record]).stdout.split("\n")[0]).toBe("ok session monitor 3 transactions, 12 runs -> m.json");
-  expect(respond([record], { format: "pretty" }).stdout).toContain(
-    "ok session monitor 3 transactions, 12 runs -> m.json\n  origin: https://app.test",
-  );
-  expect(respond([{ ...record, extra: 1 }]).stdout).toContain("E1054");
-}, 20_000);
+test(
+  "SessionMonitorRecord: the `session.monitor` record, closed, and its compact and pretty lines",
+  async () => {
+    const { SessionMonitorRecord } = await import("../src/SessionMonitorRecord.ts");
+    const { respond } = await import("@keel/cli/testing");
+    const record = { kind: "session.monitor", origin: "https://app.test", transactions: 3, runs: 12, file: "m.json" };
+    expect(SessionMonitorRecord.parse(record).ok).toBe(true);
+    for (const key of Object.keys(record)) expect(SessionMonitorRecord.parse(without(record, key)).ok, key).toBe(false);
+    expect(SessionMonitorRecord.parse({ ...record, extra: 1 }).ok).toBe(false);
+    expect(SessionMonitorRecord.parse({ ...record, kind: "" }).ok).toBe(false);
+    expect(SessionMonitorRecord.parse({ ...record, runs: "12" }).ok).toBe(false);
+    expect(respond([record]).stdout.split("\n")[0]).toBe("ok session monitor 3 transactions, 12 runs -> m.json");
+    expect(respond([record], { format: "pretty" }).stdout).toContain(
+      "ok session monitor 3 transactions, 12 runs -> m.json\n  origin: https://app.test",
+    );
+    expect(respond([{ ...record, extra: 1 }]).stdout).toContain("E1054");
+  },
+  fixedTime(20_000),
+);
 
 test("Archive: fingerprint entries of count, first, last and filed sessions, each closed", async () => {
   const { Archive } = await import("../src/Archive.schema.ts");

@@ -1,5 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
@@ -10,6 +9,7 @@ import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store } from "@keel/store";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
 import { channelRoute } from "../src/server/channelRoute.server.ts";
@@ -47,7 +47,7 @@ async function serve(
   const routes = manifest(t, { "t.room": { loader: route.loader }, "t.publish": { action: route.action } });
   let std: string | undefined;
   if (maxStreams !== undefined) {
-    const dir = mkdtempSync(join(tmpdir(), "keel-channels-unit-"));
+    const dir = tempDir("keel-channels-unit-");
     dirs.push(dir);
     std = join(dir, "std.json");
     const source = `import { module } from "@keel/compiler"\nexport default module({ id: "t", deps: ["@keel/std-channels"], capabilities: ["clock", "net", "observe"], std: { "@keel/std-channels": { maxStreams: ${maxStreams} } } })\n`;

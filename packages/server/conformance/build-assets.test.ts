@@ -3,6 +3,7 @@
 // k.deploy Rules E1555
 // k.head, Server "a `<link rel=\"stylesheet\">` for each `.css` file under `/assets/` that the build manifest's entry chunk names"
 // Seed: 1337 (no generated inputs; the fixture is built once through the real CLI). In-process createApp, no listening server.
+import { fixedTime } from "@keel/tooling/test-time";
 import type { Ctx } from "@keel/ctx";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -17,6 +18,7 @@ import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { childOutput } from "./topology-build-fixture.ts";
 
 type Component = (props: RouteProps, ctx: Ctx) => Node;
 type Fetcher = { fetch(req: Request): Promise<Response> };
@@ -109,6 +111,11 @@ beforeAll(() => {
   write(fixture, "modules/app/Counter.tsx", BUILT_COUNTER);
   write(
     fixture,
+    "tokens.ts",
+    'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n',
+  );
+  write(
+    fixture,
     "modules/app/routes.ts",
     'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest(app, { "app.home": { component: Counter } });\n',
   );
@@ -123,9 +130,9 @@ beforeAll(() => {
     env: { ...process.env, KEEL_AGENT: "1" },
   });
   if (r.status !== 0) {
-    throw new Error(`keel build failed (status ${String(r.status)})\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   }
-}, 90_000);
+}, fixedTime(90_000));
 
 afterAll(() => {
   for (const dir of tmpRoots) fs.rmSync(dir, { recursive: true, force: true });

@@ -1,5 +1,5 @@
 import { properties, renderRoute } from "@keel/testing";
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime } from "@keel/tooling/test-time";
 import { expect, it } from "vitest";
 import BookPage from "../modules/receipts/BookPage.tsx";
 import { ReceiptsText } from "../modules/receipts/ReceiptsText.schema.ts";
@@ -123,13 +123,13 @@ it("loads a complete message set for each locale", async () => {
 });
 
 const BOOK_RUNS = 100;
-/** One run renders the book and checks its page: 22 ms on a quiet machine, times 8.5 for the CI runner, times 3 for the other workers on its cores. */
-const BOOK_RUN_MS = 600;
+/** One run renders the book and checks its page: 22 ms on a quiet machine, times 8.5 for the CI runner, times 3 for the other workers on its cores. It is the machine's own work, so the bound is fixed time. */
+const BOOK_RUN_MS = fixedTime(600);
 
 it(
   "renders any book the schemas allow",
   async () => {
     await properties(BookPage, { runs: BOOK_RUNS, seed: 5 });
   },
-  BOOK_RUNS * testTime(BOOK_RUN_MS),
+  BOOK_RUNS * fixedTime(BOOK_RUN_MS),
 );

@@ -9,7 +9,9 @@ type State = NonNullable<StyleUsage["state"]>;
 const SEGMENTS: readonly { readonly key: State; readonly segment: string }[] = [
   { key: "selected", segment: "selected" },
   { key: "checked", segment: "checked" },
+  { key: "pressed", segment: "pressed" },
   { key: "expanded", segment: "expanded" },
+  { key: "current", segment: "current" },
   { key: "highlighted", segment: "highlighted" },
   { key: "hover", segment: "hover" },
   { key: "focusVisible", segment: "focus" },

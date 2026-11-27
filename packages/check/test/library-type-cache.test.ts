@@ -1,15 +1,15 @@
 // k.check-cache and k.library In an app: a library's files and the `keel` condition its `package.json` names are part of
 // what a type pass depends on, so a changed library is never answered from a stale entry, in memory or on disk.
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 
 let root = "";
 let cache = "";
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), "keel-library-cache-"));
+  root = tempDir("keel-library-cache-");
   writeFileSync(join(root, "package.json"), "{}");
   cache = join(root, "node_modules", ".cache", "keel");
 });

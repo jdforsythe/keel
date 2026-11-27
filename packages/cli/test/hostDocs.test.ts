@@ -1,13 +1,14 @@
 // hostDocs: the binary's loader for `keel docs` and the agent files, on a real temporary tree outside the repo.
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { hostDocs } from "../src/internal/hostDocs.ts";
 
 const dirs: string[] = [];
 const tree = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(tmpdir(), "keel-hostdocs-"));
+  const dir = tempDir("keel-hostdocs-");
   dirs.push(dir);
   for (const [p, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, p)), { recursive: true });
@@ -108,13 +109,13 @@ describe("hostDocs", () => {
       "node_modules/@keel/router/docs/k.big.md": "",
       "node_modules/@keel/router/docs/k.edge.md": "",
     });
-    truncateSync(join(dir, "node_modules/@keel/router/docs/k.big.md"), 1_000_001);
-    truncateSync(join(dir, "node_modules/@keel/router/docs/k.edge.md"), 1_000_000);
+    truncateSync(join(dir, "node_modules/@keel/router/docs/k.big.md"), fixedTime(1_000_001));
+    truncateSync(join(dir, "node_modules/@keel/router/docs/k.edge.md"), fixedTime(1_000_000));
     const got = paths(dir, "docs");
     expect(got).not.toContain("node_modules/@keel/router/docs/k.big.md");
     expect(got).toContain("node_modules/@keel/router/docs/k.edge.md");
     const repo = tree({ "spec/00-map.md": "# map\n", "packages/cli/skills/keel-a/SKILL.md": "" });
-    truncateSync(join(repo, "packages/cli/skills/keel-a/SKILL.md"), 1_000_001);
+    truncateSync(join(repo, "packages/cli/skills/keel-a/SKILL.md"), fixedTime(1_000_001));
     expect(paths(repo, "docs")).not.toContain("packages/cli/skills/keel-a/SKILL.md");
   });
 });

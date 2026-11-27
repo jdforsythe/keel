@@ -2,9 +2,9 @@
 // signature that does not hold, E1062 naming each file that is missing, changed, unlisted or does not parse, and one
 // evidence record for a bundle that verifies. Seed 1337.
 import { type KeyObject, generateKeyPairSync, sign } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { bundleVerify } from "../src/internal/bundleVerify.ts";
@@ -49,7 +49,7 @@ type Spec = {
   key?: typeof MAIN;
 };
 const bundle = (spec: Spec = {}): { cwd: string; dir: string; id: string } => {
-  const cwd = mkdtempSync(join(tmpdir(), "keel-verify-"));
+  const cwd = tempDir("keel-verify-");
   dirs.push(cwd);
   const dir = join(cwd, "out");
   mkdirSync(dir);
@@ -204,7 +204,7 @@ describe("bundleVerify", () => {
       expect(diags(verify(b)), why).toEqual([
         {
           code: "E1063",
-          message: `signature does not verify with key ${b.id}`,
+          message: `manifest.json or manifest.sig changed (key ${b.id})`,
           path: "out/manifest.sig",
           see: "k.evidence",
         },

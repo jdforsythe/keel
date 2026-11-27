@@ -2,6 +2,7 @@
 // or scanning the remembered keys (k.sync Write key). Seed-free: the writes are a fixed sequence.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
 import { expect, test } from "vitest";
 import { store, transaction, tx } from "../src/index.ts";
 
@@ -29,7 +30,7 @@ function make(keyLimit: number) {
 // The assertions are on the result; the timeout is only a generous safety net against a quadratic cost.
 test(
   `${WRITES} keyed writes under keyLimit 1,000,000 each commit once, retries commit nothing`,
-  { timeout: 30_000 },
+  { timeout: fixedTime(30_000) },
   () => {
     const k = make(1_000_000);
     for (let i = 0; i < WRITES; i++) tx(k.add, { by: 1 }, { key: `w${i}` });
@@ -63,7 +64,7 @@ test("past keyLimit the oldest key is forgotten and commits again; a key restore
 
 test(
   "writes far past keyLimit keep the latest window in order, and an evicted key commits again",
-  { timeout: 30_000 },
+  { timeout: fixedTime(30_000) },
   () => {
     const limit = 50_000;
     const writes = 150_000;

@@ -1,14 +1,14 @@
 // k.library the clauses on the app compiling and checking a library's files, each quoted whole
-// Spec: k.library, clause "In a project whose `modules/shop/module.ts` lists `'@acme/charts'` in `deps`, whose `node_modules/@acme/charts/` holds `package.json` `{\"name\":\"@acme/charts\",\"version\":\"1.0.0\",\"type\":\"module\",\"keel\":\"library\",\"exports\":{\".\":{\"keel\":\"./src/index.ts\",\"default\":\"./index.js\"}}}`, `index.js` holding `export {}`, a `module.ts` with `id: 'charts'`, `deps: []`, `capabilities: []` and `public: { exports: ['Badge'] }`, `src/index.ts` holding `export { default as Badge } from './Badge.tsx'`, `src/Badge.tsx` whose `Badge` renders `<Box id={`${props.id}.box`} p=\"2\" />`, and `.keel/ledger.json` as `keel ledger --write .keel/ledger.json` writes it in that folder, and whose `modules/shop/Page.tsx` imports `Badge` from `'@acme/charts'` and renders `<Badge id=\"shop.badge\" />`, `keel check` reports no diagnostic."
-// Spec: k.library, clause "In that project, with the app's `tokens.ts` and a `static` deployable `site` whose `/` page renders `<Badge id=\"shop.badge\" />`, `keel build`'s `dist/site/index.html` holds an element with id `shop.badge.box`, and a `.css` file under `dist/site/` holds the atomic rule of `p=\"2\"`, which the same build without `p=\"2\"` in the library lacks."
+// Spec: k.library, clause "In a project whose `modules/shop/module.ts` lists `'@acme/charts'` in `deps`, whose `node_modules/@acme/charts/` holds `package.json` `{\"name\":\"@acme/charts\",\"version\":\"1.0.0\",\"type\":\"module\",\"keel\":\"library\",\"exports\":{\".\":{\"keel\":\"./src/index.ts\",\"default\":\"./index.js\"}}}`, `index.js` holding `export {}`, a `module.ts` with `id: 'charts'`, `deps: []`, `capabilities: []` and `public: { exports: ['Badge'] }`, `src/index.ts` holding `export { default as Badge } from './Badge.tsx'`, `src/Badge.tsx` whose `Badge` renders `<Box id={`${props.id}.box`} />`, and `.keel/ledger.json` as `keel ledger --write .keel/ledger.json` writes it in that folder, and whose `modules/shop/Page.tsx` imports `Badge` from `'@acme/charts'` and renders `<Badge id=\"shop.badge\" />`, `keel check` reports no diagnostic."
+// Spec: k.library, clause "In that project, with the library shipping `chartsTokens` as `defineTokens({ space: { 'charts.2': '8px' } })`, `exports` gaining `\"./tokens\":{\"keel\":\"./src/chartsTokens.ts\",\"default\":\"./index.js\"}`, the app's `tokens.ts` as E1810's fix writes it over `brandTokens`, `p=\"charts.2\"` on the Badge's `Box` and a `static` deployable `site` whose `/` page renders `<Badge id=\"shop.badge\" />`, `keel build`'s `dist/site/index.html` holds an element with id `shop.badge.box`, and a `.css` file under `dist/site/` holds the atomic rule of `p=\"charts.2\"`, which a build without it lacks."
 // Spec: k.library, clause "In that project, with `node_modules/@acme/charts` a symbolic link to a folder beside the project holding the same files, `<box />` in its `src/Badge.tsx` is one E1805 at `node_modules/@acme/charts/src/Badge.tsx`."
 // In an app (compiler): "The compiler resolves imports with the `keel` condition on every surface (dev, build, test) and transforms a library's files as the app's, read at `modules/<id>/<f>`: JSX, element ids, and style props into the app's CSS file against the app's `tokens.ts`; the `.keel/` artifacts derive from a library's files at those paths as from the app's, and E1005 compares them over the same files, so a reader of an artifact (E1702, the inspector) judges a library's element as an app's. A linked library's imports resolve from its real folder, as Node's do, so the kernel packages it imports must resolve there to the app's (one workspace install)."
 // In an app (check): "`keel check` runs every rule but E1106 (k.formats Who declares) over them, the type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Where a section reads app code or `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as `modules/<id>/<f>`, its `unsafe/` files with their lifted ranges. A diagnostic in one is the app's, at `node_modules/<name>/<f>`, with no `fix`; nothing turns a rule off there. A bare import there resolves from the library's folder, to one of its `dependencies`, and is no E1163."
 // Real binary over a temporary project (library-support.ts); no std package is imported: the library is written by the test. Seed 1337 (every property).
-// Binary runs: 2 builds shared by the build cases (with and without `p="2"` in the library), 1 build of the linked library, 1 check shared by the six smuggled-file cases, 6 other checks (clause 1 and its
+// Binary runs: 2 builds shared by the build cases (with and without `p="charts.2"` in the library), 1 build of the linked library, 1 check shared by the six smuggled-file cases, 6 other checks (clause 1 and its
 // property of 3 runs, the linked library twice, the folder case).
-// ASSUMPTIONS (spec silent): "the atomic rule of `p=\"2\"`" is the rule of each class the library's element with id `shop.badge.box` carries in `dist/site/index.html` that the build without `p="2"` does not give it,
-// found in the `.css` files under `dist/site/` as `.<class>{...padding...}`; the tokens are `{ color: { fg, bg }, space: { 1, 2, 3 } }`. A folder "beside the project" is `<project>-lib`; it gets a `node_modules/@keel` link so its files
+// ASSUMPTIONS (spec silent): "the atomic rule of `p=\"charts.2\"`" is the rule of each class the library's element with id `shop.badge.box` carries in `dist/site/index.html` that the build without `p="charts.2"` does not give it,
+// found in the `.css` files under `dist/site/` as `.<class>{...padding...}`; the app's tokens are `chartsSiteTree`'s (`brandTokens` with the library's `chartsTokens.space`). A folder "beside the project" is `<project>-lib`; it gets a `node_modules/@keel` link so its files
 // resolve `@keel/ui` from their real path, as a workspace package does (the spec: "one workspace install").
 import { mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -19,14 +19,14 @@ import {
   NAME,
   SEED,
   SLOW,
-  siteTree,
+  badgeSrc,
+  chartsSiteTree,
   type Rec,
   type Tree,
   cleanup,
   diags,
   filesUnder,
   keel,
-  library,
   materialize,
   project,
   write,
@@ -67,7 +67,7 @@ test(
         const tree = {
           ...project(),
           "modules/shop/Page.tsx": `import { Badge } from '${NAME}'\nexport default function Page() {\n  return <Badge id="shop.${id}" />\n}\n`,
-          [BADGE]: badge(`<Box id={\`\${props.id}.${part}\`} p="2" />`),
+          [BADGE]: badge(`<Box id={\`\${props.id}.${part}\`} />`),
         };
         expect(checkOf(tree).diags).toEqual([]);
       }),
@@ -99,8 +99,8 @@ let withP: ReturnType<typeof builtSite> | undefined;
 let without: ReturnType<typeof builtSite> | undefined;
 const dirs: string[] = [];
 beforeAll(() => {
-  const a = materialize(siteTree());
-  const b = materialize(siteTree([library({ files: { "src/Badge.tsx": badge("<Box id={`${props.id}.box`} />") } })]));
+  const a = materialize(chartsSiteTree());
+  const b = materialize(chartsSiteTree(badgeSrc()));
   dirs.push(a, b);
   withP = builtSite(a);
   without = builtSite(b);
@@ -121,11 +121,11 @@ test(
 );
 
 test(
-  'In that project, with the app\'s `tokens.ts`, a `.css` file under `dist/site/` holds the atomic rule of `p="2"`, which the same build without `p="2"` in the library lacks',
+  "In that project, with `chartsTokens` shipped and the app's `tokens.ts` as E1810's fix writes it, a `.css` file under `dist/site/` holds the atomic rule of `p=\"charts.2\"`, which a build without it lacks",
   () => {
     const bare = new Set(classesOf(without?.html ?? "", "shop.badge.box"));
     const own = classesOf(withP?.html ?? "", "shop.badge.box").filter((c) => !bare.has(c));
-    expect(own.length, 'classes the library\'s `p="2"` gives the element').toBeGreaterThan(0);
+    expect(own.length, 'classes the library\'s `p="charts.2"` gives the element').toBeGreaterThan(0);
     for (const cls of own) {
       expect(ruleOf(withP?.css ?? "", cls), `rule of .${cls} with p`).toMatch(/padding/);
       expect(ruleOf(without?.css ?? "", cls), `rule of .${cls} without p`).toBeUndefined();
@@ -169,9 +169,9 @@ test(
 );
 
 test(
-  "In that project, with `node_modules/@acme/charts` a symbolic link to a folder beside the project holding the same files, `keel build` writes the page with `shop.badge.box` and the atomic rule of `p=\"2\"`: the library's imports resolve from its real folder to the app's kernel packages",
+  "In that project, with `node_modules/@acme/charts` a symbolic link to a folder beside the project holding the same files, `keel build` writes the page with `shop.badge.box` and the atomic rule of `p=\"charts.2\"`: the library's imports resolve from its real folder to the app's kernel packages",
   () => {
-    const out = linkedRun(siteTree(), (dir) => builtSite(dir));
+    const out = linkedRun(chartsSiteTree(), (dir) => builtSite(dir));
     expect(out.status).toBe(0);
     expect(out.html).toContain('id="shop.badge.box"');
     const bare = new Set(classesOf(without?.html ?? "", "shop.badge.box"));

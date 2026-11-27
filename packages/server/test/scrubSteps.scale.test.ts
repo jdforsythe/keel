@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // @vitest-environment node
 // The log scrub at scale (k.privacy Cost): texts of 400,000 characters and more, matchers built for sets larger than a
 // scope may hold, and the cap of 65,536 bytes of a scope's distinct values at its exact size. Steps are counted, no
@@ -14,7 +15,7 @@ import { stepBounds } from "./stepBounds.ts";
 
 // Each case builds a matcher of up to 8,000,000 form units or scrubs a text of 400,000 characters or more; a starved
 // worker needs more than the default 5 s.
-const SCALE_MS = 60_000;
+const SCALE_MS = fixedTime(60_000);
 const counter = () => ({ build: 0, walk: 0 });
 const one = (message: string, secrets: readonly string[], pii: readonly string[] = []): string =>
   scrubbed(message, [

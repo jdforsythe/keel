@@ -1,6 +1,7 @@
 // Spec: std.multi, clause "`SessionGroup` refuses a group whose `users[1].id` is `../x`, its first issue's `path` being `['users', 1, 'id']`; `keel session replay` of that group file emits E2007 and exits 1, and `replayGroup` of it throws E2007 before any user opens."
 // Seed 1337
 // A clean group is recorded by `openGroup` (group-fixtures.ts); its `users[1].id` is then set to each bad id.
+import { fixedTime } from "@keel/tooling/test-time";
 import { run } from "@keel/cli";
 import { SessionGroup, openGroup, replayGroup } from "@keel/std-sessions/group";
 import "@keel/std-sessions/tools";
@@ -70,26 +71,40 @@ describe("std.multi: a group's users meet the session-id rule", () => {
     );
   });
 
-  test("`keel session replay` of that group file emits E2007 and exits 1", async () => {
-    const r = await replayFile(withId("../x"));
-    expect(r.stdout).toContain("E2007");
-    expect(r.code).toBe(1);
-  }, 60_000);
+  test(
+    "`keel session replay` of that group file emits E2007 and exits 1",
+    async () => {
+      const r = await replayFile(withId("../x"));
+      expect(r.stdout).toContain("E2007");
+      expect(r.code).toBe(1);
+    },
+    fixedTime(60_000),
+  );
 
-  test("`replayGroup` of it throws E2007 before any user opens", async () => {
-    await expect(replayGroup(typedWithId("../x"), { user: USER, serve })).rejects.toMatchObject({ code: "E2007" });
-  }, 60_000);
+  test(
+    "`replayGroup` of it throws E2007 before any user opens",
+    async () => {
+      await expect(replayGroup(typedWithId("../x"), { user: USER, serve })).rejects.toMatchObject({ code: "E2007" });
+    },
+    fixedTime(60_000),
+  );
 
-  test("hostile ids (`../x`, `a/b`, `a\\b`, empty, 65 characters, a NUL, a space, a dot) in `users[1].id` are refused by `SessionGroup`, the group file and `replayGroup`", async () => {
-    for (const id of hostile) {
-      const label = JSON.stringify(id);
-      expect(SessionGroup.parse(withId(id)).ok, `parse ${label}`).toBe(false);
-      expect((await replayFile(withId(id))).stdout, `file ${label}`).toContain("E2007");
-      await expect(replayGroup(typedWithId(id), { user: USER, serve }), `replayGroup ${label}`).rejects.toMatchObject({
-        code: "E2007",
-      });
-    }
-  }, 120_000);
+  test(
+    "hostile ids (`../x`, `a/b`, `a\\b`, empty, 65 characters, a NUL, a space, a dot) in `users[1].id` are refused by `SessionGroup`, the group file and `replayGroup`",
+    async () => {
+      for (const id of hostile) {
+        const label = JSON.stringify(id);
+        expect(SessionGroup.parse(withId(id)).ok, `parse ${label}`).toBe(false);
+        expect((await replayFile(withId(id))).stdout, `file ${label}`).toContain("E2007");
+        await expect(replayGroup(typedWithId(id), { user: USER, serve }), `replayGroup ${label}`).rejects.toMatchObject(
+          {
+            code: "E2007",
+          },
+        );
+      }
+    },
+    fixedTime(120_000),
+  );
 
   test("a group has no id of its own: its users are named by index (no top-level `id` is part of the encoded group)", () => {
     expect(Object.keys(encoded)).not.toContain("id");

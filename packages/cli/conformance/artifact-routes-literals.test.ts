@@ -1,6 +1,7 @@
 // Spec: k.compiler, clause "Beside a literal `routes.ts`, `keel check` passes a genuine `routes.json`, is E1005 with a route added, W1005 with a computed `path`; `vite build` and a `node`-only `keel build` rewrite a differing one with W1005."
 // Drives the real binary (packages/cli/src/bin.ts) over temp projects with modules/m/routes.ts; genuine `.keel/` is built by @keel/compiler/vite (or by `keel build` in the node-only case).
 // Forged files are self-consistent: data and hash come from a public `compile` with other routes. No fast-check: fixed fixtures; no seed.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -193,80 +194,104 @@ beforeAll(async () => {
   await viteBuild(proj);
   genuine = fs.readFileSync(routesFileOf(proj), "utf8");
   await viteBuild(computedProj);
-}, 120_000);
+}, fixedTime(120_000));
 
 afterAll(() => {
   for (const d of created) fs.rmSync(d, { recursive: true, force: true });
 });
 
 describe("k.compiler: routes.json beside a literal routes.ts", () => {
-  it("keel check passes a genuine routes.json (no W1005, no E1005)", () => {
-    expect(genuine).toContain("/home");
-    // sanity: the public compile reproduces the genuine bytes, so the forged fixture differs only by the added route
-    const g = compile(sources, { routes: { "m.home": HOME } });
-    expect(artifactText(g.artifacts["routes.json"], g.hashes["routes.json"])).toBe(genuine);
-    const r = runCheck(proj);
-    expect(diags(r.records, "W1005")).toEqual([]);
-    expect(diags(r.records, "E1005")).toEqual([]);
-    expect(keelErrors(r.records)).toEqual([]);
-  }, 120_000);
-
-  it("keel check is E1005 at .keel/routes.json for a self-consistent routes.json with a route added (exit 1)", () => {
-    const text = forgedText();
-    expect(text).not.toBe(genuine);
-    try {
-      writeRoutes(proj, text);
+  it(
+    "keel check passes a genuine routes.json (no W1005, no E1005)",
+    () => {
+      expect(genuine).toContain("/home");
+      // sanity: the public compile reproduces the genuine bytes, so the forged fixture differs only by the added route
+      const g = compile(sources, { routes: { "m.home": HOME } });
+      expect(artifactText(g.artifacts["routes.json"], g.hashes["routes.json"])).toBe(genuine);
       const r = runCheck(proj);
-      expect(paths(diags(r.records, "E1005"))).toEqual([".keel/routes.json"]);
       expect(diags(r.records, "W1005")).toEqual([]);
-      expect(r.status).toBe(1);
-    } finally {
-      writeRoutes(proj, genuine);
-    }
-  }, 120_000);
+      expect(diags(r.records, "E1005")).toEqual([]);
+      expect(keelErrors(r.records)).toEqual([]);
+    },
+    fixedTime(120_000),
+  );
 
-  it("keel check is W1005 at .keel/routes.json naming the route for a computed path, and not E1005", () => {
-    const r = runCheck(computedProj);
-    const w = diags(r.records, "W1005");
-    expect(paths(w)).toEqual([".keel/routes.json"]);
-    expect(String(w[0]?.message)).toContain("m.home");
-    expect(diags(r.records, "E1005")).toEqual([]);
-    expect(keelErrors(r.records)).toEqual([]);
-  }, 120_000);
+  it(
+    "keel check is E1005 at .keel/routes.json for a self-consistent routes.json with a route added (exit 1)",
+    () => {
+      const text = forgedText();
+      expect(text).not.toBe(genuine);
+      try {
+        writeRoutes(proj, text);
+        const r = runCheck(proj);
+        expect(paths(diags(r.records, "E1005"))).toEqual([".keel/routes.json"]);
+        expect(diags(r.records, "W1005")).toEqual([]);
+        expect(r.status).toBe(1);
+      } finally {
+        writeRoutes(proj, genuine);
+      }
+    },
+    fixedTime(120_000),
+  );
 
-  it("vite build over a forged routes.json warns one W1005 naming .keel/routes.json and rewrites the genuine content", async () => {
-    writeRoutes(proj, forgedText());
-    const warnings = await viteBuild(proj);
-    const hit = warnings.filter((m) => m.includes("W1005"));
-    expect(hit).toHaveLength(1);
-    expect(hit[0]).toContain(".keel/routes.json");
-    expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(genuine);
-  }, 120_000);
+  it(
+    "keel check is W1005 at .keel/routes.json naming the route for a computed path, and not E1005",
+    () => {
+      const r = runCheck(computedProj);
+      const w = diags(r.records, "W1005");
+      expect(paths(w)).toEqual([".keel/routes.json"]);
+      expect(String(w[0]?.message)).toContain("m.home");
+      expect(diags(r.records, "E1005")).toEqual([]);
+      expect(keelErrors(r.records)).toEqual([]);
+    },
+    fixedTime(120_000),
+  );
 
-  it("vite build over the genuine routes.json emits no W1005", async () => {
-    expect((await viteBuild(proj)).filter((m) => m.includes("W1005"))).toEqual([]);
-    expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(genuine);
-  }, 120_000);
+  it(
+    "vite build over a forged routes.json warns one W1005 naming .keel/routes.json and rewrites the genuine content",
+    async () => {
+      writeRoutes(proj, forgedText());
+      const warnings = await viteBuild(proj);
+      const hit = warnings.filter((m) => m.includes("W1005"));
+      expect(hit).toHaveLength(1);
+      expect(hit[0]).toContain(".keel/routes.json");
+      expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(genuine);
+    },
+    fixedTime(120_000),
+  );
 
-  it("a node-only keel build writes routes.json, rewrites a differing one with W1005, and a further build is silent", () => {
-    const first = runBuild(nodeProj);
-    expect(first.status).toBe(0);
-    const file = routesFileOf(nodeProj);
-    expect(fs.existsSync(file)).toBe(true);
-    const built = fs.readFileSync(file, "utf8");
-    expect(built).toContain("/home");
+  it(
+    "vite build over the genuine routes.json emits no W1005",
+    async () => {
+      expect((await viteBuild(proj)).filter((m) => m.includes("W1005"))).toEqual([]);
+      expect(fs.readFileSync(routesFileOf(proj), "utf8")).toBe(genuine);
+    },
+    fixedTime(120_000),
+  );
 
-    writeRoutes(nodeProj, forgedText());
-    expect(fs.readFileSync(file, "utf8")).not.toBe(built);
-    const second = runBuild(nodeProj);
-    expect(second.status).toBe(0);
-    const hit = second.stderr.split("\n").filter((l) => l.includes("W1005") && l.includes(".keel/routes.json"));
-    expect(hit.length).toBeGreaterThan(0);
-    expect(fs.readFileSync(file, "utf8")).toBe(built);
+  it(
+    "a node-only keel build writes routes.json, rewrites a differing one with W1005, and a further build is silent",
+    () => {
+      const first = runBuild(nodeProj);
+      expect(first.status).toBe(0);
+      const file = routesFileOf(nodeProj);
+      expect(fs.existsSync(file)).toBe(true);
+      const built = fs.readFileSync(file, "utf8");
+      expect(built).toContain("/home");
 
-    const third = runBuild(nodeProj);
-    expect(third.status).toBe(0);
-    expect(third.stderr).not.toContain("W1005");
-    expect(third.stdout).not.toContain("W1005");
-  }, 240_000);
+      writeRoutes(nodeProj, forgedText());
+      expect(fs.readFileSync(file, "utf8")).not.toBe(built);
+      const second = runBuild(nodeProj);
+      expect(second.status).toBe(0);
+      const hit = second.stderr.split("\n").filter((l) => l.includes("W1005") && l.includes(".keel/routes.json"));
+      expect(hit.length).toBeGreaterThan(0);
+      expect(fs.readFileSync(file, "utf8")).toBe(built);
+
+      const third = runBuild(nodeProj);
+      expect(third.status).toBe(0);
+      expect(third.stderr).not.toContain("W1005");
+      expect(third.stdout).not.toContain("W1005");
+    },
+    fixedTime(240_000),
+  );
 });

@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import { check } from "@keel/check";
 import { describe, expect, it } from "vitest";
 // No randomness; fixed sources. Checked through the public `check(files, { types: false })`.
@@ -19,14 +20,22 @@ const clean = [
 ];
 
 describe("k.services: E1651", () => {
-  it("E1651 `ctx.net.fetch` in app code is reported for each file that calls it, and for no clean file", async () => {
-    const r = await check([...bad, ...clean], { types: false });
-    const hit = r.diagnostics.filter((d) => d.code === "E1651").map((d) => d.path);
-    expect(new Set(hit)).toEqual(new Set(bad.map((f) => f.path)));
-  }, 30_000);
+  it(
+    "E1651 `ctx.net.fetch` in app code is reported for each file that calls it, and for no clean file",
+    async () => {
+      const r = await check([...bad, ...clean], { types: false });
+      const hit = r.diagnostics.filter((d) => d.code === "E1651").map((d) => d.path);
+      expect(new Set(hit)).toEqual(new Set(bad.map((f) => f.path)));
+    },
+    fixedTime(30_000),
+  );
 
-  it("E1651 is not reported for code that goes through a declared endpoint", async () => {
-    const r = await check(clean, { types: false });
-    expect(r.diagnostics.filter((d) => d.code === "E1651")).toEqual([]);
-  }, 30_000);
+  it(
+    "E1651 is not reported for code that goes through a declared endpoint",
+    async () => {
+      const r = await check(clean, { types: false });
+      expect(r.diagnostics.filter((d) => d.code === "E1651")).toEqual([]);
+    },
+    fixedTime(30_000),
+  );
 });

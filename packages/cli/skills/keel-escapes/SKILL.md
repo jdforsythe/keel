@@ -5,7 +5,7 @@ description: "Read keel review output and make the calls a rule cannot: is there
 
 # Reading keel review
 
-`keel review` lists each escape in a project: a place where code opts out of a protection by its sanctioned name (an opt-in) or goes around one (a workaround). The command decides where an escape is, what it reaches and whether it is new. You decide what a rule cannot: whether a Keel seam replaces it, whether its reason holds, and whether something was changed so a check would pass. See `keel docs k.review` and `keel docs k.escapes`.
+`keel review` lists each escape in a project: a place where code opts out of a protection by its sanctioned name (an opt-in) or goes around one (a workaround). The command decides where an escape is, what it reaches and whether it is new. You decide what a rule cannot: whether a Keel seam replaces it, whether its reason holds, and whether something was changed so a check would pass. `keel docs security` lists `k.review` and `k.escapes`.
 
 Acceptance is a person's (Never, below).
 

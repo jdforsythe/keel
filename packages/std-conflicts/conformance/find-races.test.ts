@@ -4,6 +4,7 @@
 // Assumptions: `findRaces`'s `stores` is an array of factories (the spec's "a factory in `stores`"); its `races` is the
 // `Race[]` of the replayed store. The group is recorded with `editTodo` `'rebase'`, then replayed against a server and a
 // factory that declare it `'rebase'` (the lost update) or `'reject'`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { openGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -36,7 +37,7 @@ describe("std.conflicts: findRaces", () => {
       }),
       { seed: 1337, numRuns: 3 },
     );
-  }, 120_000);
+  }, fixedTime(120_000));
 
   test("on the same group with that transaction `'reject'` `findRaces` reports none", async () => {
     await fc.assert(
@@ -53,7 +54,7 @@ describe("std.conflicts: findRaces", () => {
       }),
       { seed: 1337, numRuns: 3 },
     );
-  }, 120_000);
+  }, fixedTime(120_000));
 
   test("two runs of `findRaces` on one group are byte-equal", async () => {
     const group = await record("Oat milk", "Soy milk");
@@ -62,5 +63,5 @@ describe("std.conflicts: findRaces", () => {
     const b = await run();
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
     expect(a.races).toHaveLength(1);
-  }, 120_000);
+  }, fixedTime(120_000));
 });

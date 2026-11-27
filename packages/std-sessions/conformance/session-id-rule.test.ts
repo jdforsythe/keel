@@ -4,6 +4,7 @@
 // The rule is `^[A-Za-z0-9_-]{1,64}$`, asserted as a law over arbitrary strings, in a session, in a group's users and in
 // a `sessions.ingest` body (the archive holds what ingest accepted). The archive schema itself is not public; its
 // intake is the ingest POST.
+import { fixedTime } from "@keel/tooling/test-time";
 import { run } from "@keel/cli";
 import { createCtx } from "@keel/ctx";
 import { createApp, topology } from "@keel/server";
@@ -99,42 +100,58 @@ describe("std.sessions: the session-id rule", () => {
     );
   });
 
-  test("a POST of a session to `sessions.ingest` is 422 `keel.fields` exactly when its id fails the rule", async () => {
-    await fc.assert(
-      fc.asyncProperty(ids, async (id) => {
-        const res = await ingest(id);
-        if (RULE.test(id)) {
-          expect(res.status).toBe(200);
-        } else {
-          expect(res.status).toBe(422);
-          const body: unknown = await res.json();
-          expect(Reflect.get(Object(Reflect.get(Object(body), "error")), "code")).toBe("keel.fields");
-        }
-      }),
-      { seed: 1337, numRuns: 20 },
-    );
-  }, 120_000);
+  test(
+    "a POST of a session to `sessions.ingest` is 422 `keel.fields` exactly when its id fails the rule",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(ids, async (id) => {
+          const res = await ingest(id);
+          if (RULE.test(id)) {
+            expect(res.status).toBe(200);
+          } else {
+            expect(res.status).toBe(422);
+            const body: unknown = await res.json();
+            expect(Reflect.get(Object(Reflect.get(Object(body), "error")), "code")).toBe("keel.fields");
+          }
+        }),
+        { seed: 1337, numRuns: 20 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
-  test("`keel session replay` of a session file whose `id` is `../x` emits E2002 and exits 1", async () => {
-    const r = await replayOf(raw("../x"));
-    expect(r.stdout).toContain("E2002");
-    expect(r.code).toBe(1);
-  }, 60_000);
+  test(
+    "`keel session replay` of a session file whose `id` is `../x` emits E2002 and exits 1",
+    async () => {
+      const r = await replayOf(raw("../x"));
+      expect(r.stdout).toContain("E2002");
+      expect(r.code).toBe(1);
+    },
+    fixedTime(60_000),
+  );
 
-  test("a POST of a session whose `id` is `../x` to `sessions.ingest` is 422 `keel.fields`", async () => {
-    const res = await ingest("../x");
-    expect(res.status).toBe(422);
-    const body: unknown = await res.json();
-    expect(Reflect.get(Object(Reflect.get(Object(body), "error")), "code")).toBe("keel.fields");
-  }, 60_000);
+  test(
+    "a POST of a session whose `id` is `../x` to `sessions.ingest` is 422 `keel.fields`",
+    async () => {
+      const res = await ingest("../x");
+      expect(res.status).toBe(422);
+      const body: unknown = await res.json();
+      expect(Reflect.get(Object(Reflect.get(Object(body), "error")), "code")).toBe("keel.fields");
+    },
+    fixedTime(60_000),
+  );
 
-  test("hostile ids (`../x`, `a/b`, `a\\b`, empty, 65 characters, a NUL, a space, a dot) are refused in a session, a group, a session file and an ingest body", async () => {
-    for (const id of hostile) {
-      const label = JSON.stringify(id);
-      expect(Session.parse(raw(id)).ok, `session ${label}`).toBe(false);
-      expect(SessionGroup.parse(rawGroup(id)).ok, `group ${label}`).toBe(false);
-      expect((await replayOf(raw(id))).stdout, `file ${label}`).toContain("E2002");
-      expect((await ingest(id)).status, `ingest ${label}`).toBe(422);
-    }
-  }, 120_000);
+  test(
+    "hostile ids (`../x`, `a/b`, `a\\b`, empty, 65 characters, a NUL, a space, a dot) are refused in a session, a group, a session file and an ingest body",
+    async () => {
+      for (const id of hostile) {
+        const label = JSON.stringify(id);
+        expect(Session.parse(raw(id)).ok, `session ${label}`).toBe(false);
+        expect(SessionGroup.parse(rawGroup(id)).ok, `group ${label}`).toBe(false);
+        expect((await replayOf(raw(id))).stdout, `file ${label}`).toContain("E2002");
+        expect((await ingest(id)).status, `ingest ${label}`).toBe(422);
+      }
+    },
+    fixedTime(120_000),
+  );
 });

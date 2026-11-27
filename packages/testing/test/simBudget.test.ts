@@ -58,28 +58,32 @@ describe("simulate budget", () => {
     expect(String(e).split("\n")[0]).toContain("E1728 the budget ran out with work in flight: none");
   });
 
-  it("throws the failure found before a shrink the budget stopped, not the budget's E1728", async () => {
-    let calls = 0;
-    const e = await simulate(
-      async ({ schedule }) => {
-        calls += 1;
-        // Real time each run takes, so the shrinking outlasts the budget.
-        await wait(fixedTime(150));
-        if (schedule.net.length > 2) throw new Error("more than two net steps");
-      },
-      { runs: 50, seed: 3, budget: fixedTime(1_500), law: false },
-    ).catch((error: unknown) => error);
-    const [head = "", json = ""] = String(e).split("\n");
-    expect(head).toContain("E1704 simulate: more than two net steps");
-    expect(head).toContain("shrunk until the budget ran out");
-    expect(head).not.toContain("E1728");
-    const shrunk: unknown = JSON.parse(json);
-    expect(shrunk).toMatchObject({ schedule: { net: expect.any(Array) } });
-    const net: unknown = Reflect.get(Reflect.get(Object(shrunk), "schedule"), "net");
-    expect(Array.isArray(net) && net.length > 2).toBe(true);
-    // The runs after the spent budget are not run: fast-check's remaining candidates return at once.
-    expect(calls).toBeLessThan(20);
-  }, 20_000);
+  it(
+    "throws the failure found before a shrink the budget stopped, not the budget's E1728",
+    async () => {
+      let calls = 0;
+      const e = await simulate(
+        async ({ schedule }) => {
+          calls += 1;
+          // Real time each run takes, so the shrinking outlasts the budget.
+          await wait(fixedTime(150));
+          if (schedule.net.length > 2) throw new Error("more than two net steps");
+        },
+        { runs: 50, seed: 3, budget: fixedTime(1_500), law: false },
+      ).catch((error: unknown) => error);
+      const [head = "", json = ""] = String(e).split("\n");
+      expect(head).toContain("E1704 simulate: more than two net steps");
+      expect(head).toContain("shrunk until the budget ran out");
+      expect(head).not.toContain("E1728");
+      const shrunk: unknown = JSON.parse(json);
+      expect(shrunk).toMatchObject({ schedule: { net: expect.any(Array) } });
+      const net: unknown = Reflect.get(Reflect.get(Object(shrunk), "schedule"), "net");
+      expect(Array.isArray(net) && net.length > 2).toBe(true);
+      // The runs after the spent budget are not run: fast-check's remaining candidates return at once.
+      expect(calls).toBeLessThan(20);
+    },
+    fixedTime(20_000),
+  );
 
   it("rejects an invalid budget before any run", async () => {
     const scenario = vi.fn(async () => {});

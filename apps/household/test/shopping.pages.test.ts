@@ -1,7 +1,7 @@
 import { createCtx } from "@keel/ctx";
 import { gen } from "@keel/schema/gen";
 import { properties, render, renderRoute } from "@keel/testing";
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, expect, it } from "vitest";
 import { app } from "../modules/app/app.contract.ts";
@@ -144,8 +144,8 @@ const idOf = (n: number) => {
 };
 
 const LIST_RUNS = 50;
-/** One run renders the list page and the list and reads them: 20 ms alone. The bound is 1,000 ms a run: 50 times the work alone, which a runner ten times slower (scale 0.1) cuts to 100 ms, five times the work, beside the machine's other workers. */
-const LIST_RUN_MS = 1_000;
+/** One run renders the list page and the list and reads them: 20 ms alone. The bound is 1,000 ms a run, 50 times the work alone for the machine's other workers; it is the machine's own work, so it is fixed time. */
+const LIST_RUN_MS = fixedTime(1_000);
 
 it(
   "renders the list page and the list for any copy and any items, each with an id as the server mints them",
@@ -180,7 +180,7 @@ it(
       { numRuns: LIST_RUNS, seed: SEED },
     );
   },
-  LIST_RUNS * testTime(LIST_RUN_MS),
+  LIST_RUNS * fixedTime(LIST_RUN_MS),
 );
 
 it("renders the outbox note and the weekly panel for any copy and items the schemas allow", async () => {

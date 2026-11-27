@@ -13,9 +13,9 @@ import { hostCodeImport } from "../rules/hostCodeImport.ts";
 import { identityFile } from "../rules/identityFile.ts";
 import { identityMountElsewhere } from "../rules/identityMountElsewhere.ts";
 import { identityMountMissing } from "../rules/identityMountMissing.ts";
+import { libraryTokenName } from "../rules/libraryTokenName.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
-import { missingLook } from "../rules/missingLook.ts";
 import { negativeTypeTestHome } from "../rules/negativeTypeTestHome.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noAmbientLocale } from "../rules/noAmbientLocale.ts";
@@ -47,9 +47,11 @@ import { revealedValue } from "../rules/revealedValue.ts";
 import { reversedFocusOrder } from "../rules/reversedFocusOrder.ts";
 import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
+import { schemeSelectOneScheme } from "../rules/schemeSelectOneScheme.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
 import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
+import { unknownToken } from "../rules/unknownToken.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
 import { unsafeReasonWords } from "../rules/unsafeReasonWords.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -109,7 +111,9 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   foreignUrlFetch,
   reversedFocusOrder,
   gapWithoutDirection,
-  missingLook,
+  unknownToken,
+  libraryTokenName,
+  schemeSelectOneScheme,
   blankLabel,
   hostCodeImport,
   stylesheetImport,

@@ -1,11 +1,14 @@
-// Every timeout a test file passes to vitest scales with `KEEL_TEST_TIME_SCALE` (test-time.ts). keelConfig adds this
-// transform for test files when the scale is not 1: in a call of `it`, `test`, `describe` or `suite` imported from
-// `vitest` (modifiers and `.each(...)`, `.for(...)`, `.skipIf(...)` chains too), the argument after the name that is
-// not a function (an options object) and the one after the callback (a number or an options object), and the
-// argument after a hook's callback (`beforeAll`, `afterAll`, `beforeEach`, `afterEach`), are wrapped in a call that
-// multiplies a number, or an object's numeric `timeout`, by the scale. Whatever form the bound takes (a literal, a
-// const, an expression), it scales, so a test file cannot set a vitest bound that does not; but for one that calls
-// `testTime` or `fixedTime` itself, which scales its own parts (a protocol's fixed wait plus the work around it).
+// A bound a test file passes to vitest scales with `KEEL_TEST_TIME_SCALE` (test-time.ts) when its text states the time
+// as a number. keelConfig adds this transform for test files when the scale is not 1: in a call of `it`, `test`,
+// `describe` or `suite` imported from `vitest` (modifiers and `.each(...)`, `.for(...)`, `.skipIf(...)` chains too), the
+// argument after the name that is not a function (an options object) and the one after the callback (a number or an
+// options object), and the argument after a hook's callback (`beforeAll`, `afterAll`, `beforeEach`, `afterEach`), are
+// read. A bound written only from numbers (`60_000`, `2 * 30_000`, an options object's `timeout: 9_000`) is a bare
+// number: the wait the test chose, so it is wrapped in a call that multiplies it by the scale. A bound that names
+// anything (a const, an import, a call, an expression over `testTime(...)` or `fixedTime(...)`) is not rewritten: the
+// helper that produced its value already says whether it scales (`testTime` does, `fixedTime` never does), wherever
+// the value is computed. Structure-lint S0016 refuses a bare number in a bound outside a conformance file listed in
+// `hard-times-conformance.json`, so the choice is always stated.
 import type { Plugin } from "vite";
 
 const TESTS = new Set(["it", "test", "describe", "suite"]);
@@ -63,13 +66,25 @@ function baseOf(callee: unknown): string | undefined {
   return undefined;
 }
 
-/** Whether `n` calls `testTime` or `fixedTime` itself: a bound that holds a fixed part (`fixedTime(10_000) + testTime(20_000)`) scales its own parts. */
-function timedByHand(n: Node): boolean {
-  let found = false;
-  walk(n, (c) => {
-    if (c.type === "CallExpression" && (name(c.callee) === "testTime" || name(c.callee) === "fixedTime")) found = true;
-  });
-  return found;
+/** Whether `n` is a number or arithmetic over numbers only: `60_000`, `-1`, `2 * (30 * 1000)`. */
+function numbersOnly(n: unknown): boolean {
+  if (!isNode(n)) return false;
+  if (n.type === "Literal") return typeof n.value === "number";
+  if (n.type === "ParenthesizedExpression") return numbersOnly(n.expression);
+  if (n.type === "UnaryExpression") return numbersOnly(n.argument);
+  if (n.type === "BinaryExpression") return numbersOnly(n.left) && numbersOnly(n.right);
+  return false;
+}
+
+/** The `timeout` property's value of an options object literal, when the object states one. */
+function timeoutOf(n: Node): unknown {
+  if (n.type !== "ObjectExpression" || !Array.isArray(n.properties)) return undefined;
+  for (const p of n.properties) {
+    if (!isNode(p) || p.type !== "Property" || p.computed === true) continue;
+    const k = p.key;
+    if (name(k) === "timeout" || (isNode(k) && k.type === "Literal" && k.value === "timeout")) return p.value;
+  }
+  return undefined;
 }
 
 const isFunction = (n: unknown): boolean =>
@@ -81,7 +96,7 @@ export function scaler(scale: number): string {
   return `((t) => typeof t === "number" ? ${by("t")} : t !== null && typeof t === "object" && typeof t.timeout === "number" ? { ...t, timeout: ${by("t.timeout")} } : t)`;
 }
 
-/** The bound arguments of the vitest calls in `program`: each a `[start, end]` source range. */
+/** The bare numbers a vitest call's bound states (a bound or an options object's `timeout`): each a `[start, end]` source range. */
 export function boundRanges(program: Node): [number, number][] {
   const vitest = vitestNames(program);
   if (vitest.size === 0) return [];
@@ -94,8 +109,10 @@ export function boundRanges(program: Node): [number, number][] {
     const at: number[] = TESTS.has(imported) ? [1, 2] : HOOKS.has(imported) ? [1] : [];
     for (const i of at) {
       const a = args[i];
-      if (!isNode(a) || isFunction(a) || a.type === "SpreadElement" || timedByHand(a)) continue;
-      if (typeof a.start === "number" && typeof a.end === "number") ranges.push([a.start, a.end]);
+      if (!isNode(a) || isFunction(a) || a.type === "SpreadElement") continue;
+      const bound = numbersOnly(a) ? a : timeoutOf(a);
+      if (isNode(bound) && numbersOnly(bound) && typeof bound.start === "number" && typeof bound.end === "number")
+        ranges.push([bound.start, bound.end]);
     }
   });
   return ranges;

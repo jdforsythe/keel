@@ -7,7 +7,7 @@ const OWN = /^(?:module\.ts$|src\/|unsafe\/|test\/)/;
 /**
  * The files of a library's own folder as an app holds the library installed (k.library-pack Own folder), so
  * `keel check` there reads it as every app does: `module.ts`, `src/`, `unsafe/` and `test/` under
- * `node_modules/<name>/`, beside its `package.json` (`pkg`, the text); the root `tokens.ts`, the other files that are
+ * `node_modules/<name>/`, beside its `package.json` (`pkg`, the text), which also stays at the root; the root `tokens.ts`, the other files that are
  * no code, and `.keel/` stay where they are. Any other code file (a `conformance/` folder, a tool's script or
  * configuration) is no file of the library and is not read. `to` maps a folder path to its place in `files`, `back` a
  * place to the folder path.
@@ -24,7 +24,11 @@ export function asInstalled(
   return {
     files: [
       { path: `${at}package.json`, source: pkg },
-      ...files.filter((f) => read(f.path)).map((f) => ({ path: to(f.path), source: f.source })),
+      // The folder's own `package.json` stays too: it marks the folder as the library's own (k.looks Own folder).
+      { path: "package.json", source: pkg },
+      ...files
+        .filter((f) => read(f.path) && f.path !== "package.json")
+        .map((f) => ({ path: to(f.path), source: f.source })),
     ],
     to,
     back,

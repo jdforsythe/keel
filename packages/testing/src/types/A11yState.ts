@@ -4,6 +4,8 @@ export interface A11yState {
   readonly checked?: boolean | "mixed";
   readonly disabled?: boolean;
   readonly expanded?: boolean;
+  /** A toggle button's `aria-pressed`. */
+  readonly pressed?: boolean;
   readonly selected?: boolean;
   readonly invalid?: boolean;
   readonly focused?: boolean;

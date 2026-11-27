@@ -16,4 +16,6 @@ export type RuleInput = {
   readonly project: readonly SourceFile[];
   readonly dates?: ReadonlySet<number>;
   readonly types?: boolean;
+  /** With the type pass on, the offsets in `file` of what the checker resolves to `@keel/ui`'s `SchemeSelect`. */
+  readonly schemeSelects?: ReadonlySet<number>;
 };

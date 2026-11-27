@@ -3,6 +3,7 @@
 // Each case is a base commit and a head commit; the clean twin shares the base and changes only `modules/m/a.ts`. Under `--all`
 // the working tree (the head) is read: the range codes R1060, R1061, R1100, R1103, R1104, R1105, R1107, R1108 are absent;
 // R1101 and R1102 are read from the tree, so a head that holds them still reports them (k.escapes Range codes).
+import { fixedTime } from "@keel/tooling/test-time";
 import { expect, test } from "vitest";
 import { CASES, HARMLESS, cleanBase } from "./review-cases.ts";
 import { PROJECT, ofCode, range, review, withRepo } from "./review-support.ts";
@@ -28,5 +29,5 @@ test.each(CASES.map((c) => [c.code, c] as const))(
       expect(ofCode(review(repo, [range(repo, 0, 1), "--list"]), c.code), `${c.code} on its clean twin`).toEqual([]);
     });
   },
-  120_000,
+  fixedTime(120_000),
 );

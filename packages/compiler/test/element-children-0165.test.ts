@@ -9,6 +9,7 @@ import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 
 const simCtx = createCtx({ mode: "sim", seed: 1 });
@@ -33,7 +34,7 @@ function html(C: Mountable, props: Record<string, unknown>): string {
 }
 
 function apply(source: string, fix: string): string {
-  const dir = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-0165-"));
+  const dir = tempDir(".tmp-0165-", import.meta.dirname);
   try {
     fs.writeFileSync(path.join(dir, "C.tsx"), source);
     fs.writeFileSync(path.join(dir, "fix.patch"), `${fix}\n`);

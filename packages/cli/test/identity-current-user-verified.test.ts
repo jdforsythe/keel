@@ -3,7 +3,6 @@
 // `createApp` under the app's secret, so the call is signed.
 // @vitest-environment node
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { loader, manifest, routesArtifact } from "@keel/router";
@@ -11,6 +10,7 @@ import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
 import { service } from "@keel/services";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, test } from "vitest";
 
 const SECRET = "test-secret-user-0123456789abcdef0123456789abcdef0123";
@@ -32,7 +32,7 @@ test("a stream opened with a verified `x-keel-user: u1` answers `currentUser()` 
     return err(Boom.make({}));
   });
   const t = topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } });
-  const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), "keel-current-user-"));
+  const artifacts = tempDir("keel-current-user-");
   const bRoutes = manifest(b, { "b.live": { loader: live } });
   fs.writeFileSync(path.join(artifacts, "routes.json"), JSON.stringify({ data: routesArtifact(bRoutes), hash: "" }));
   const y = await createApp({

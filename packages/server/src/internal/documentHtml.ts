@@ -6,6 +6,7 @@ import { stateJson } from "./stateJson.ts";
  * chain (wrapped in `<main>` unless it already has one), an optional dev panel, exactly one `<script type="application/json" id="k-state">`, and the
  * resume entry as `<script type="module" src nonce>` only when the page has islands (`entry` is its URL, else null: no islands, no runtime JS); `createApp` serves it (`servedEntry`). `nonce` is the document's
  * (k.security Policy): on the module script and on `<meta property="csp-nonce">`, which Vite's preload helper reads.
+ * `scheme`, the person's pick (k.schemes First paint), is written as `data-k-scheme` on `<html>`.
  */
 export function documentHtml(
   body: string,
@@ -15,11 +16,12 @@ export function documentHtml(
   head: string,
   lang: string,
   nonce: string,
+  scheme?: "light" | "dark",
 ): string {
   const main = /<main[\s>]/i.test(body) ? body : `<main>${body}</main>`;
   const dev = devMessage === null ? "" : `<pre role="alert" data-k-dev="diag">${escapeHtml(devMessage)}</pre>`;
   return [
-    `<!doctype html><html lang="${escapeHtml(lang)}"><head><meta charset="utf-8">`,
+    `<!doctype html><html lang="${escapeHtml(lang)}"${scheme === undefined ? "" : ` data-k-scheme="${scheme}"`}><head><meta charset="utf-8">`,
     `<meta name="viewport" content="width=device-width, initial-scale=1">`,
     `<meta property="csp-nonce" nonce="${escapeHtml(nonce)}">${head}</head><body>`,
     main,

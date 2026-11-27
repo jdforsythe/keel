@@ -1,14 +1,14 @@
 // Spec: k.deploy, clause "With `storage: 'postgres'`, `server.mjs` with `KEEL_DATABASE_URL` unset, or set to a `file:` URL, exits 1 with one E1560 naming `KEEL_DATABASE_URL` and no value."
 // Seed: 1337.
 // ASSUMPTION: the fixture lists `@keel/std-db` in `dependencies` (E1572) and `keel build` needs no database; startup fails in `DeployEnv` before storage opens.
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { REPO, deployEnv } from "./topology-build-fixture.ts";
+import { REPO, childOutput, deployEnv } from "./topology-build-fixture.ts";
 
 function write(root: string, rel: string, content: string): void {
   const file = path.join(root, rel);
@@ -89,40 +89,44 @@ function buildPostgresFixture(): string {
     encoding: "utf8",
     env: { ...process.env, KEEL_AGENT: "1" },
   });
-  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)})\n${r.stdout}\n${r.stderr}`);
+  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   return fixture;
 }
 
 let fixture = "";
 beforeAll(() => {
   fixture = buildPostgresFixture();
-}, 120_000);
+}, fixedTime(120_000));
 afterAll(() => fs.rmSync(fixture, { recursive: true, force: true }));
 
 const SECRET = "s".repeat(32);
 
 describe("k.deploy: KEEL_DATABASE_URL of a 'postgres' deployable", () => {
-  test("With `storage: 'postgres'`, `server.mjs` with `KEEL_DATABASE_URL` unset, or set to a `file:` URL, exits 1 with one E1560 naming `KEEL_DATABASE_URL` and no value.", () => {
-    const entry = path.join(fixture, "dist", "web", "server.mjs");
-    const fileUrl = fc.stringMatching(/^[a-z]{3,12}$/).map((name) => `file:/data/${name}-zqmarker.sqlite`);
-    fc.assert(
-      fc.property(fc.option(fileUrl, { nil: undefined }), (url) => {
-        const env = url === undefined ? { KEEL_SECRET: SECRET } : { KEEL_SECRET: SECRET, KEEL_DATABASE_URL: url };
-        // A child process that exits; spawnSync bounds it, nothing is left running.
-        const r = spawnSync(process.execPath, [entry], {
-          cwd: fixture,
-          encoding: "utf8",
-          env: deployEnv(env),
-          timeout: testTime(30_000),
-        });
-        expect(r.status).toBe(1);
-        const out = `${r.stdout}${r.stderr}`;
-        const lines = out.split("\n").filter((l) => l.includes("E1560"));
-        expect(lines).toHaveLength(1);
-        expect(lines[0]).toContain("KEEL_DATABASE_URL");
-        if (url !== undefined) expect(out).not.toContain("zqmarker");
-      }),
-      { seed: 1337, numRuns: 5 },
-    );
-  }, 30_000);
+  test(
+    "With `storage: 'postgres'`, `server.mjs` with `KEEL_DATABASE_URL` unset, or set to a `file:` URL, exits 1 with one E1560 naming `KEEL_DATABASE_URL` and no value.",
+    () => {
+      const entry = path.join(fixture, "dist", "web", "server.mjs");
+      const fileUrl = fc.stringMatching(/^[a-z]{3,12}$/).map((name) => `file:/data/${name}-zqmarker.sqlite`);
+      fc.assert(
+        fc.property(fc.option(fileUrl, { nil: undefined }), (url) => {
+          const env = url === undefined ? { KEEL_SECRET: SECRET } : { KEEL_SECRET: SECRET, KEEL_DATABASE_URL: url };
+          // A child process that exits; spawnSync bounds it, nothing is left running.
+          const r = spawnSync(process.execPath, [entry], {
+            cwd: fixture,
+            encoding: "utf8",
+            env: deployEnv(env),
+            timeout: testTime(30_000),
+          });
+          expect(r.status).toBe(1);
+          const out = `${r.stdout}${r.stderr}`;
+          const lines = out.split("\n").filter((l) => l.includes("E1560"));
+          expect(lines).toHaveLength(1);
+          expect(lines[0]).toContain("KEEL_DATABASE_URL");
+          if (url !== undefined) expect(out).not.toContain("zqmarker");
+        }),
+        { seed: 1337, numRuns: 5 },
+      );
+    },
+    fixedTime(30_000),
+  );
 });

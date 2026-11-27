@@ -610,6 +610,10 @@ describe("kernelFormatters", () => {
       "evidence",
       "a11y",
       "docs.entry",
+      "docs.area",
+      "docs.code",
+      "docs.term",
+      "docs.hit",
       "docs.section",
       "docs.skill",
       "docs.cite",
@@ -705,13 +709,41 @@ describe("kernelFormatters", () => {
     expect(all("docs.skill", { kind: "docs.skill", id: "s", text: "x" })).toEqual(["x", "x"]);
   });
 
-  it("docs.entry: ` not installed` when the package is absent", () => {
-    const r = { kind: "docs.entry", id: "k.router", title: "Routes", package: "@keel/router", installed: true };
+  it("docs.entry: ` not installed` when the package is absent, `: <holds>` when it holds text", () => {
+    const r = {
+      kind: "docs.entry",
+      id: "k.router",
+      title: "Routes",
+      package: "@keel/router",
+      installed: true,
+      holds: "",
+    };
     expect(all("docs.entry", r)).toEqual(["k.router Routes @keel/router", "k.router         Routes (@keel/router)"]);
     expect(all("docs.entry", { ...r, installed: false })).toEqual([
       "k.router Routes @keel/router not installed",
       "k.router         Routes (@keel/router, not installed)",
     ]);
+    expect(all("docs.entry", { ...r, installed: false, holds: "the table" })).toEqual([
+      "k.router Routes @keel/router not installed: the table",
+      "k.router         Routes (@keel/router, not installed)\n  the table",
+    ]);
+  });
+
+  it("docs.area, docs.code, docs.term and docs.hit", () => {
+    const area = { kind: "docs.area", id: "data", title: "Durable storage", sections: 6 };
+    expect(all("docs.area", area)).toEqual([
+      "data Durable storage, 6 sections",
+      "data       Durable storage (6 sections)",
+    ]);
+    expect(all("docs.area", { ...area, sections: 1 })[0]).toBe("data Durable storage, 1 section");
+    const code = { kind: "docs.code", code: "E1551", ids: ["k.a", "k.b", "k.c", "k.d", "k.e"] };
+    expect(all("docs.code", code)).toEqual(["E1551 k.a k.b k.c +2", "E1551: k.a, k.b, k.c, k.d, k.e"]);
+    expect(all("docs.code", { ...code, ids: ["k.a"] })[0]).toBe("E1551 k.a");
+    const term = { kind: "docs.term", term: "identity mount", text: "the path", ids: ["k.mount"] };
+    expect(all("docs.term", term)).toEqual(["identity mount: the path", "identity mount\n  the path"]);
+    const hit = { kind: "docs.hit", name: "x", id: "k.testing", title: "Harness", package: "@keel/testing", count: 2 };
+    expect(all("docs.hit", hit)).toEqual(["k.testing Harness 2", "k.testing        Harness (2 spans)"]);
+    expect(all("docs.hit", { ...hit, count: 1 })[1]).toBe("k.testing        Harness (1 span)");
   });
 
   it("docs.cite", () => {

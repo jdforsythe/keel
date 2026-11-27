@@ -3,6 +3,7 @@
 // Seed 1337
 // Assumption: as for std.jobs E2503, `check()` imports nothing, so the rule registers by importing `@keel/std-offline/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { check } from "@keel/check";
 import { scope } from "@keel/reactive";
 import { type Schema, s } from "@keel/schema";
@@ -86,12 +87,16 @@ const found = async (files: Files) =>
   (await check(files, { types: false })).diagnostics.filter((d) => d.code === "E2651");
 const word = fc.stringMatching(/^[a-z]{3,10}$/);
 
-test("`keel check` reports E2651 on an outbox whose api body holds an `s.secret` and nothing on its clean twin.", async () => {
-  await fc.assert(
-    fc.asyncProperty(word, async (field) => {
-      expect(await found(project(`${field}: s.object({ inner: s.secret(s.string()) })`))).toHaveLength(1);
-      expect(await found(project(`${field}: s.object({ inner: s.string() })`))).toHaveLength(0);
-    }),
-    { seed: 1337, numRuns: 15 },
-  );
-}, 30_000);
+test(
+  "`keel check` reports E2651 on an outbox whose api body holds an `s.secret` and nothing on its clean twin.",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(word, async (field) => {
+        expect(await found(project(`${field}: s.object({ inner: s.secret(s.string()) })`))).toHaveLength(1);
+        expect(await found(project(`${field}: s.object({ inner: s.string() })`))).toHaveLength(0);
+      }),
+      { seed: 1337, numRuns: 15 },
+    );
+  },
+  fixedTime(30_000),
+);

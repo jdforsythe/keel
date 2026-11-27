@@ -6,6 +6,7 @@ import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
 const text = (t: string): Node => {
@@ -44,9 +45,13 @@ describe("renderRoute with a loader that loads a module", () => {
     t.dispose();
   });
 
-  it("a loader that never resolves rejects with keel.unexpected naming the route", async () => {
-    await expect(renderRoute("dyn.never", { routes, ctx: createCtx({ mode: "sim", seed: 1337 }) })).rejects.toThrow(
-      /^keel\.unexpected fire did not settle: dyn\.never still loading after 200000 macrotask turns/,
-    );
-  }, 30_000);
+  it(
+    "a loader that never resolves rejects with keel.unexpected naming the route",
+    async () => {
+      await expect(renderRoute("dyn.never", { routes, ctx: createCtx({ mode: "sim", seed: 1337 }) })).rejects.toThrow(
+        /^keel\.unexpected fire did not settle: dyn\.never still loading after 200000 macrotask turns/,
+      );
+    },
+    fixedTime(30_000),
+  );
 });

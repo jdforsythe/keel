@@ -1,17 +1,17 @@
 // E1585 through a symlink (k.shell Files): a target's `files` output is untrusted. A path whose target is a symlink,
 // or whose nearest existing ancestor's real path is outside `deploy/<name>/<shell>/`, is E1585 and the deploy
 // generator gets none of that set. Real temp folders and links; a stub `@keel/std-tauri/tools` registers the target.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, test } from "vitest";
 import { linkEscapes } from "../src/internal/linkEscapes.ts";
 import { shellTargets } from "../src/internal/shellTargets.ts";
 
 const made: string[] = [];
 const temp = (): string => {
-  const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-shell-links-")));
+  const d = realpathSync(tempDir("keel-shell-links-"));
   made.push(d);
   return d;
 };

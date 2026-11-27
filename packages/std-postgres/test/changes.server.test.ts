@@ -1,14 +1,13 @@
 // Seed 1337. `changed` and `follow` beyond their conformance: two ctxs on one `pglite:` folder share delivery, a stopped
 // follow gets nothing, the key is the canonical JSON of the params at any depth, and E2460 explains itself.
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { rmSync } from "node:fs";
 import { explain } from "@keel/check/explain";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { database } from "@keel/std-postgres/server";
 import type { FollowEvent } from "@keel/std-postgres/server";
 import "@keel/std-postgres/tools";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { canonicalJson } from "../src/server/internal/canonicalJson.server.ts";
@@ -19,7 +18,7 @@ const before = process.env.KEEL_POSTGRES_URL;
 let dir = "";
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "keel-changes-"));
+  dir = tempDir("keel-changes-");
   process.env.KEEL_POSTGRES_URL = `pglite:${dir}`;
 });
 afterEach(() => {
