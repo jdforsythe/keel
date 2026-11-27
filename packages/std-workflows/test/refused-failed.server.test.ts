@@ -11,7 +11,7 @@ import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { flows, workflow } from "../src/index.server.ts";
-import { type Data, close, nextId, pass, settle, sim } from "./support.server.ts";
+import { type Data, close, inRoot, nextId, pass, settle, sim } from "./support.server.ts";
 
 const Codes = ["api.nope", "workflows.attempts", "schema.invalid"] as const;
 type Code = (typeof Codes)[number];
@@ -22,30 +22,34 @@ type Out = Result<{ freed: number }, KeelError<string, unknown>>;
 /** The removal chart whose `stuck` payload takes only the codes in `allowed`. */
 function flow(allowed: readonly [Code, ...Code[]], run: () => Promise<Out>) {
   const id = nextId("refused");
-  const c = chart(nextId("refusedChart"), {
-    data: DataSchema,
-    start: { n: 0, freed: 0, code: "" },
-    events: {
-      begin: empty,
-      purged: s.object({ freed: s.int({ min: 0, max: 3 }) }),
-      stuck: s.object({ code: s.enum(allowed) }),
-    },
-    actions: {
-      record: (d, p) => ({ ...d, freed: p.freed }),
-      fail: (d, p) => ({ ...d, code: p.code }),
-    },
-    initial: "queued",
-    states: {
-      queued: { on: { begin: "purging" } },
-      purging: { on: { purged: { to: "purged", do: "record" }, stuck: { to: "stuck", do: "fail" } } },
-      purged: { final: true },
-      stuck: { final: true },
-    },
-  });
-  const wf = workflow(id, {
-    chart: c,
-    steps: { purging: { run, done: "purged", failed: "stuck", attempts: 3 } },
-  });
+  const c = inRoot(() =>
+    chart(nextId("refusedChart"), {
+      data: DataSchema,
+      start: { n: 0, freed: 0, code: "" },
+      events: {
+        begin: empty,
+        purged: s.object({ freed: s.int({ min: 0, max: 3 }) }),
+        stuck: s.object({ code: s.enum(allowed) }),
+      },
+      actions: {
+        record: (d, p) => ({ ...d, freed: p.freed }),
+        fail: (d, p) => ({ ...d, code: p.code }),
+      },
+      initial: "queued",
+      states: {
+        queued: { on: { begin: "purging" } },
+        purging: { on: { purged: { to: "purged", do: "record" }, stuck: { to: "stuck", do: "fail" } } },
+        purged: { final: true },
+        stuck: { final: true },
+      },
+    }),
+  );
+  const wf = inRoot(() =>
+    workflow(id, {
+      chart: c,
+      steps: { purging: { run, done: "purged", failed: "stuck", attempts: 3 } },
+    }),
+  );
   return { id, wf, jobs: queue({ ...wf.jobs }) };
 }
 

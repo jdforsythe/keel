@@ -4,6 +4,7 @@
 // Assumption: `<flow>` in the step key `<id>:<flow>:<entered>` is the workflow's id.
 // Assumption: `createApp` needs no `routes` for a deployable whose module only has runners.
 import { type SimCtx, createCtx } from "@keel/ctx";
+import { scope } from "@keel/reactive";
 import { type KeelError, type Result, s } from "@keel/schema";
 import { ok } from "@keel/schema";
 import { commitStores, createApp, topology } from "@keel/server";
@@ -13,6 +14,13 @@ import { flows, workflow } from "@keel/std-workflows";
 import { tx } from "@keel/store";
 import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
+import { afterAll } from "vitest";
+
+/** A root a test file makes (`scope(fn, { detached: true })`): the charts and workflows it builds live in it and it is disposed when the file's tests end. */
+const root = scope(() => undefined, { detached: true });
+afterAll(() => root.dispose());
+/** Runs `fn` with the file's root as owner. */
+export const inRoot = <T>(fn: () => T): T => root.run(fn);
 
 export const settle = async () => {
   for (let i = 0; i < 200; i++) await Promise.resolve();
@@ -50,31 +58,33 @@ const empty = s.object({});
 
 /** The removal chart: `purging` is a step state, `hidden` a wait state; `purged`, `stuck` and `gone` are final. */
 export const removalChart = () =>
-  chart(nextId("removalChart"), {
-    data: DataSchema,
-    start: START,
-    events: {
-      begin: empty,
-      hide: empty,
-      purged: s.object({ freed: s.int({ min: 0, max: 3 }) }),
-      stuck: s.object({ code: s.string() }),
-      expired: empty,
-      undo: empty,
-    },
-    actions: {
-      record: (d, p) => ({ ...d, freed: p.freed }),
-      fail: (d, p) => ({ ...d, code: p.code }),
-    },
-    initial: "queued",
-    states: {
-      queued: { on: { begin: "purging", hide: "hidden" } },
-      purging: { on: { purged: { to: "purged", do: "record" }, stuck: { to: "stuck", do: "fail" } } },
-      hidden: { on: { expired: "gone", undo: "queued" } },
-      purged: { final: true },
-      stuck: { final: true },
-      gone: { final: true },
-    },
-  });
+  inRoot(() =>
+    chart(nextId("removalChart"), {
+      data: DataSchema,
+      start: START,
+      events: {
+        begin: empty,
+        hide: empty,
+        purged: s.object({ freed: s.int({ min: 0, max: 3 }) }),
+        stuck: s.object({ code: s.string() }),
+        expired: empty,
+        undo: empty,
+      },
+      actions: {
+        record: (d, p) => ({ ...d, freed: p.freed }),
+        fail: (d, p) => ({ ...d, code: p.code }),
+      },
+      initial: "queued",
+      states: {
+        queued: { on: { begin: "purging", hide: "hidden" } },
+        purging: { on: { purged: { to: "purged", do: "record" }, stuck: { to: "stuck", do: "fail" } } },
+        hidden: { on: { expired: "gone", undo: "queued" } },
+        purged: { final: true },
+        stuck: { final: true },
+        gone: { final: true },
+      },
+    }),
+  );
 
 export type RunEnv = { signal: AbortSignal; key: string };
 export type Run = (data: Data, ctx: Sim, env: RunEnv) => Promise<Result<{ freed: number }, KeelError<string, unknown>>>;
@@ -85,19 +95,21 @@ export function makeFlow(o: FlowOptions) {
   const id = nextId("removal");
   const c = removalChart();
   const ms = o.ms ?? fixedTime(5000);
-  const wf = workflow(id, {
-    chart: c,
-    steps: {
-      purging: {
-        run: o.run,
-        done: "purged",
-        failed: "stuck",
-        attempts: o.attempts ?? 3,
-        timeoutMs: o.timeoutMs ?? 60_000,
+  const wf = inRoot(() =>
+    workflow(id, {
+      chart: c,
+      steps: {
+        purging: {
+          run: o.run,
+          done: "purged",
+          failed: "stuck",
+          attempts: o.attempts ?? 3,
+          timeoutMs: o.timeoutMs ?? 60_000,
+        },
       },
-    },
-    waits: { hidden: { ms, event: "expired" } },
-  });
+      waits: { hidden: { ms, event: "expired" } },
+    }),
+  );
   const jobs = queue({ ...wf.jobs });
   return { id, chart: c, wf, jobs, ms };
 }

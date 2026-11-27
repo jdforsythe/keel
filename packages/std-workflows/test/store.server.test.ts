@@ -6,13 +6,13 @@ import { queue } from "@keel/std-jobs";
 import { tx } from "@keel/store";
 import { expect, test } from "vitest";
 import { flows, workflow } from "../src/index.server.ts";
-import { close, nextId, pass, removalChart, settle, sim } from "./support.server.ts";
+import { close, inRoot, nextId, pass, removalChart, settle, sim } from "./support.server.ts";
 
 const data = { n: 0, freed: 0, code: "" };
 
 test("`start` past `limit` instances not final fails `store.invariant`", async () => {
   const ctx = sim();
-  const wf = workflow(nextId("limited"), { chart: removalChart(), limit: 2 });
+  const wf = inRoot(() => workflow(nextId("limited"), { chart: removalChart(), limit: 2 }));
   const r = await commitStores(ctx, wf.stores, (S) => {
     const codes = ["a", "b", "c"].map((id) => {
       const t = tx(S.start, { id, data });
@@ -28,7 +28,7 @@ test("`start` past `limit` instances not final fails `store.invariant`", async (
 
 test("A final instance is forgotten `keepMs` after the runner saw it; `forget` leaves one that is not final", async () => {
   const ctx = sim();
-  const wf = workflow(nextId("kept"), { chart: removalChart(), keepMs: 10_000 });
+  const wf = inRoot(() => workflow(nextId("kept"), { chart: removalChart(), keepMs: 10_000 }));
   const jobs = queue({ ...wf.jobs });
   const app = await createApp({
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),

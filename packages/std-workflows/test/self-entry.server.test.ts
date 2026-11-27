@@ -10,54 +10,56 @@ import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { flows, workflow } from "../src/index.server.ts";
-import { type Sim, close, nextId, pass, sim } from "./support.server.ts";
+import { type Sim, close, inRoot, nextId, pass, sim } from "./support.server.ts";
 
 const empty = s.object({});
 
 /** A polling chart: `polling` is a step state, `sleeping` a wait state; each loops back to itself until `n` is `max`. */
 const pollChart = () =>
-  chart(nextId("pollChart"), {
-    data: s.object({ n: s.int({ min: 0, max: 20 }), max: s.int({ min: 1, max: 20 }), marks: s.int({ min: 0 }) }),
-    start: { n: 0, max: 1, marks: 0 },
-    events: {
-      go: empty,
-      nap: empty,
-      tick: empty,
-      again: s.object({ last: s.boolean() }),
-      wake: empty,
-      note: empty,
-      probe: empty,
-      stuck: s.object({ code: s.string() }),
-    },
-    guards: { last: (d) => d.n + 1 >= d.max, said: (_d, p) => p.last, never: () => false },
-    actions: { inc: (d) => ({ ...d, n: d.n + 1 }), mark: (d) => ({ ...d, marks: d.marks + 1 }) },
-    initial: "idle",
-    states: {
-      idle: { on: { go: "polling", nap: "sleeping" } },
-      polling: {
-        on: {
-          tick: [
-            { to: "done", guard: "last", do: "inc" },
-            { to: "polling", do: "inc" },
-          ],
-          again: [{ to: "done", guard: "said" }, "polling"],
-          note: { do: "mark" },
-          probe: { to: "polling", guard: "never" },
-          stuck: "stuck",
-        },
+  inRoot(() =>
+    chart(nextId("pollChart"), {
+      data: s.object({ n: s.int({ min: 0, max: 20 }), max: s.int({ min: 1, max: 20 }), marks: s.int({ min: 0 }) }),
+      start: { n: 0, max: 1, marks: 0 },
+      events: {
+        go: empty,
+        nap: empty,
+        tick: empty,
+        again: s.object({ last: s.boolean() }),
+        wake: empty,
+        note: empty,
+        probe: empty,
+        stuck: s.object({ code: s.string() }),
       },
-      sleeping: {
-        on: {
-          wake: [
-            { to: "done", guard: "last", do: "inc" },
-            { to: "sleeping", do: "inc" },
-          ],
+      guards: { last: (d) => d.n + 1 >= d.max, said: (_d, p) => p.last, never: () => false },
+      actions: { inc: (d) => ({ ...d, n: d.n + 1 }), mark: (d) => ({ ...d, marks: d.marks + 1 }) },
+      initial: "idle",
+      states: {
+        idle: { on: { go: "polling", nap: "sleeping" } },
+        polling: {
+          on: {
+            tick: [
+              { to: "done", guard: "last", do: "inc" },
+              { to: "polling", do: "inc" },
+            ],
+            again: [{ to: "done", guard: "said" }, "polling"],
+            note: { do: "mark" },
+            probe: { to: "polling", guard: "never" },
+            stuck: "stuck",
+          },
         },
+        sleeping: {
+          on: {
+            wake: [
+              { to: "done", guard: "last", do: "inc" },
+              { to: "sleeping", do: "inc" },
+            ],
+          },
+        },
+        done: { final: true },
+        stuck: { final: true },
       },
-      done: { final: true },
-      stuck: { final: true },
-    },
-  });
+    }),
+  );
 
 type Done = "tick" | "again";
 function makePoll(done: Done, max: number) {
@@ -69,24 +71,26 @@ function makePoll(done: Done, max: number) {
     runs += 1;
     return runs;
   };
-  const wf = workflow(id, {
-    chart: pollChart(),
-    steps: {
-      // Each `done` event takes its own payload: `tick` `{}`, `again` `{ last }`.
-      polling:
-        done === "tick"
-          ? {
-              run: async (_data, _ctx, { key }) => {
-                ran(key);
-                return ok({});
-              },
-              done: "tick",
-              failed: "stuck",
-            }
-          : { run: async (_data, _ctx, { key }) => ok({ last: ran(key) >= max }), done: "again", failed: "stuck" },
-    },
-    waits: { sleeping: { ms: 1000, event: "wake" } },
-  });
+  const wf = inRoot(() =>
+    workflow(id, {
+      chart: pollChart(),
+      steps: {
+        // Each `done` event takes its own payload: `tick` `{}`, `again` `{ last }`.
+        polling:
+          done === "tick"
+            ? {
+                run: async (_data, _ctx, { key }) => {
+                  ran(key);
+                  return ok({});
+                },
+                done: "tick",
+                failed: "stuck",
+              }
+            : { run: async (_data, _ctx, { key }) => ok({ last: ran(key) >= max }), done: "again", failed: "stuck" },
+      },
+      waits: { sleeping: { ms: 1000, event: "wake" } },
+    }),
+  );
   return { id, wf, jobs: queue({ ...wf.jobs }), keys };
 }
 type Poll = ReturnType<typeof makePoll>;
