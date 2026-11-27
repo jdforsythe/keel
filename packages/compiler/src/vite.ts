@@ -355,6 +355,8 @@ export default function (): {
    * inside their package are rewritten (`rewriteLiftedReads`, k.server-deps); unset in any other run.
    */
   let liftedLibraries: readonly HeldLibrary[] | undefined;
+  /** A `node` deployable's build: the folder its `server.mjs` is written to; unset in any other run. */
+  let serverDir: string | undefined;
   /** The app modules the client entry's service map names, and the client's own; unset until the entry loads. */
   let mapped: ReadonlySet<string> | undefined;
   const modules = new Map<string, Entry>();
@@ -912,6 +914,7 @@ export default function (): {
       // A `static` deployable's server bundle is the build's alone: it renders the documents and is removed.
       const ssrOut = built ? `node_modules/.keel/prerender/${name}` : out;
       if (!built) liftedLibraries = allLibraries(at);
+      serverDir = path.join(at, ssrOut);
       return {
         ...own,
         build: {
@@ -1240,9 +1243,12 @@ export default function (): {
           ? rewriteLiftedReads(id, code, liftedLibraries)
           : null;
       // A census module in a bundle names its own file, so two copies inlined from two folders differ (k.realm One
-      // copy): in the server bundle by its URL, in a browser bundle by its path from the project.
+      // copy): in a browser bundle by its path from the project, in the server bundle by its path from `server.mjs`,
+      // resolved when it runs.
       const census =
-        command !== "build" ? undefined : censusSource(id, lifted ?? code, options?.ssr === true ? undefined : root);
+        command !== "build"
+          ? undefined
+          : censusSource(id, lifted ?? code, options?.ssr === true ? { bundle: serverDir ?? root } : { project: root });
       const kept =
         census !== undefined ? { code: census, map: null } : lifted === null ? null : { code: lifted, map: null };
       const rel = relOf(id);
