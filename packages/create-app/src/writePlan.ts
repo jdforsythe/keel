@@ -1,4 +1,4 @@
-import { closeSync, existsSync, mkdirSync, openSync, rmSync, rmdirSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, rmSync, rmdirSync, writeFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { MARKER } from "@keel/scaffold/create";
@@ -110,11 +110,20 @@ export async function writePlan(
     madeFiles.push(target);
     return writeFile(target, text, { flag: "r+" });
   };
+  /**
+   * Creates the marker with its whole text in one synchronous write, so a kill no handler sees never leaves it
+   * created and empty: it lists every path before any of them exists.
+   */
+  const createMarker = (target: string, text: string): Promise<void> => {
+    writeFileSync(target, text, { flag: "wx" });
+    madeFiles.push(target);
+    return Promise.resolve();
+  };
   for (const [p, target, text] of steps) {
     let writing: Promise<void>;
     try {
       mkdirs(dirname(target));
-      writing = create(target, text);
+      writing = p === MARKER ? createMarker(target, text) : create(target, text);
     } catch (e) {
       undo();
       return { failed: p, reason: codeOf(e) };
