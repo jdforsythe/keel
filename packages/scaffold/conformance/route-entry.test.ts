@@ -1,6 +1,6 @@
 // k.scaffold, Generators "`route`: contract entry and binding (k.contract), page component, route test (one without `app` passes `identity.ts`'s default export as `mount` when the project has it, k.testing), and a `*.server.ts` loader when a `node` deployable lists the module or `--loader` asks for one (on a `client` deployable it runs in the browser, k.boundary); with `--no-loader`, or by default elsewhere, no loader file and a binding of `component` alone. Without `--path` the path is `/` and the id's segments after the module, each in kebab case, joined by `/` (`app.about` `/about`, `orders.orderHistory` `/order-history`, `orders.list.recent` `/list/recent`), never a param; a derived path another route holds is E1351 naming that route, fix `--path <path>`; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component. Input `{ id, path?, file?, api?, method?, loader?, 'no-loader'? }`; `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; `method` without `api`, `loader` or `no-loader` with `api`, or both, is E1052."
-// Spec: k.scaffold, clause "In the default project `route { id: 'app.about' }` binds `/about`, writes no `*.server.ts` and leaves `keel check` and `keel test` clean; with `loader: true` it writes `modules/app/loadAbout.server.ts`; in the `node` project `{ id: 'app.about' }` writes it; `{ id: 'app.home' }` beside a route at `/home` is E1351 holding `--path`; `loader` with `no-loader` is E1052."
-// Spec: k.scaffold, clause "`scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` it adds an API write entry, its binding and its handler."
+// k.scaffold, Generators "`route`: contract entry and binding (k.contract), page component, route test (one without `app` passes `identity.ts`'s default export as `mount` when the project has it, k.testing), and a `*.server.ts` loader when a `node` deployable lists the module or `--loader` asks for one (on a `client` deployable it runs in the browser, k.boundary); with `--no-loader`, or by default elsewhere, no loader file and a binding of `component` alone. Without `--path` the path is `/` and the id's segments after the module, each in kebab case, joined by `/` (`app.about` `/about`, `orders.orderHistory` `/order-history`, `orders.list.recent` `/list/recent`), never a param; an id the contract already holds is E1351 naming that id, not `--path`; a derived path another route holds is E1351 naming that route, fix `--path <path>`; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component. Input `{ id, path?, file?, api?, method?, loader?, 'no-loader'? }`; `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; `method` without `api`, `loader` or `no-loader` with `api`, or both, is E1052."
+// Spec: k.scaffold, clause "In the default project `route { id: 'app.about' }` binds `/about`, writes no `*.server.ts` and leaves `pnpm keel check` and `pnpm keel test` clean; with `loader: true` it writes `modules/app/loadAbout.server.ts`; in the `node` project `{ id: 'app.about' }` writes it; `{ id: 'app.start' }` beside a route at `/start` is E1351 holding `--path`; `loader` with `no-loader` is E1052."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import {
@@ -190,12 +190,28 @@ it("in the `node` project `{ id: 'app.about' }` writes `modules/app/loadAbout.se
   expect(apply("route", { id: "app.about" }, freshNode()).created).toContain("modules/app/loadAbout.server.ts");
 });
 
-it("`{ id: 'app.home' }` beside a route at `/home` is E1351 holding `--path`", () => {
-  const files = apply("route", { id: "app.start", path: "/home" }, fresh()).files;
-  const r = scaffoldRaw("route", { id: "app.home" }, files);
+it("`{ id: 'app.start' }` beside a route at `/start` is E1351 holding `--path`", () => {
+  const files = apply("route", { id: "app.begin", path: "/start" }, fresh()).files;
+  const r = scaffoldRaw("route", { id: "app.start" }, files);
   expect(r.ok).toBe(false);
   expect(errText(r)).toContain("E1351");
+  expect(errText(r)).toContain("app.begin");
   expect(errText(r)).toContain("--path");
+});
+
+it("an id the contract already holds is E1351 naming that id, not `--path`", () => {
+  fc.assert(
+    fc.property(lowerName, routePath, routePath, (name, p1, p2) => {
+      const id = `orders.${name}`;
+      const files = apply("route", { id, path: p1 }, withOrders()).files;
+      const r = scaffoldRaw("route", { id, path: p2 }, files);
+      expect(r.ok).toBe(false);
+      expect(errText(r)).toContain("E1351");
+      expect(errText(r)).toContain(id);
+      expect(errText(r)).not.toContain("--path");
+    }),
+    { seed: 1337, numRuns: RUNS },
+  );
 });
 
 it("`loader` with `no-loader` is E1052 and writes nothing", () => {

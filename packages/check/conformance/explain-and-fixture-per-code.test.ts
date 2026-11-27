@@ -36,10 +36,37 @@ const codesOf = (files: Parameters<typeof check>[0], opts?: Parameters<typeof ch
 const ASSERTION = /expect\(|toThrow\(|toEqual\(|toMatchObject\(|toContain\(|toBe\(|toMatch\(|code:|\.code\s*===/;
 /** A test or suite title (`it("E1902 …"`), which names a code without asserting it. */
 const TITLE = /\b(?:it|test|describe)(?:\.\w+)*\(\s*(["'`])(?:\\.|(?!\1).)*\1/g;
+/** A source with block comments removed; a `/*` inside a string or template literal (`"@keel/*"`) or a line comment starts none. */
+const stripBlockComments = (src: string): string => {
+  let out = "";
+  let i = 0;
+  while (i < src.length) {
+    const c = src.charAt(i);
+    const two = src.slice(i, i + 2);
+    if (two === "/*") {
+      const end = src.indexOf("*/", i + 2);
+      i = end < 0 ? src.length : end + 2;
+    } else if (two === "//") {
+      const end = src.indexOf("\n", i);
+      const stop = end < 0 ? src.length : end;
+      out += src.slice(i, stop);
+      i = stop;
+    } else if (c === '"' || c === "'" || c === "`") {
+      let j = i + 1;
+      while (j < src.length && src.charAt(j) !== c && (c === "`" || src.charAt(j) !== "\n"))
+        j += src.charAt(j) === "\\" ? 2 : 1;
+      out += src.slice(i, j + 1);
+      i = j + 1;
+    } else {
+      out += c;
+      i += 1;
+    }
+  }
+  return out;
+};
 /** Assertion lines of a source with comments and titles removed (rfc:0065, backlog 0186). */
 const assertions = (src: string): string[] =>
-  src
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+  stripBlockComments(src)
     .split("\n")
     .filter((l) => !l.trim().startsWith("//"))
     .map((l) => l.replace(TITLE, ""))
