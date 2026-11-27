@@ -4,7 +4,7 @@
 | k.ui | design tokens, base elements, style props, scroll regions and standard slots |
 | k.values | token value forms: characters, numbers, lengths, colors, overlays, themes, the stylesheet |
 | k.schemes | light and dark schemes, `SchemeSelect`, `ThemeSelect`, first paint, E1814, E1816 |
-| k.themes | themes per `when`, combinations, library themes, `combinations(tokens)` |
+| k.themes | themes per `when`, combinations, library themes, `combinations(tokens)`, E1807, E1818 |
 | k.looks | library looks: `<id>.<name>` tokens a library ships, needs, E1810 to E1813 |
 | k.a11y | accessibility: required props, contrast, order and focus, render checks, E1802 |
 | k.a11y-static | static contrast checks on token values at check and build |

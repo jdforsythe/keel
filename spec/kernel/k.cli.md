@@ -1,14 +1,14 @@
 # k.cli: CLI, MCP, LSP
 status: conformance-covered
-**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`, served by the `keel` binary (flags parsed by `input`), `keel mcp` (one tool per operation) and `keel lsp` (check diagnostics, fix diffs as code actions, `explain` as hover).
+**One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`, served by the `keel` binary (flags parsed by `input`), `keel mcp` (one tool per operation) and `keel lsp` (diagnostics, fixes as code actions, `explain` as hover).
 
 **Commands.**
 | command | does |
-| --- | --- |
+|-|-|
 | `check [paths]` | k.check over code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
 | `test [paths]` | harness under sim ctx |
 | `build` | production build per deployable |
-| `dev [--port N]` | dev server and log stream (Vite's `server.port`, else 5173; in use: E1560) |
+| `dev [--port N]` | dev server and log stream (Vite's `server.host`, else 127.0.0.1; `server.port`, else 5173; in use: E1560) |
 | `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
 | `explain <code>` | <= 120 tokens: meaning, fix pattern |
 | `inspect [url]` | a dev app's inspect summary |
@@ -22,25 +22,25 @@ status: conformance-covered
 
 Every command takes `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic ones also `--code <code>`.
 
-**Inspect.** In dev, `GET /__keel/inspect` is JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `inspect()` outside a request scope, `{ [id]: { state, log } }` from `stores()` unredacted, the `.keel/` artifacts. A node deployable's `createApp` with `mode: 'dev'` serves it, else the compiler plugin's dev and preview servers, where the dev entry posts `{ graph, stores, sections, deployable }` on mount and change (`live: false` before). `keel dev` adds `deployables` (k.topology). Both answer a loopback or listed `Host` with its own or a listed `Origin` (`createApp({ inspect: { origins } })`; plugin: comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port; CORS echoed), no `Origin` for GET only; else 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) prints an `inspect.store` per store, an `inspect.section` per section (per deployable given `deployables`) and counts.
+**Inspect.** In dev, `GET /__keel/inspect` is JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `inspect()` outside a request scope, `{ [id]: { state, log } }` from `stores()` unredacted, the `.keel/` artifacts. A node deployable's `createApp` with `mode: 'dev'` serves it, else the Vite plugin's dev and preview servers, where the dev entry posts `{ graph, stores, sections, deployable }` on mount and change (`live: false` before). `keel dev` adds `deployables` (k.topology). Both answer a loopback or listed `Host` with its own or a listed `Origin` (`createApp({ inspect: { origins } })`; plugin: comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port; CORS echoed), no `Origin` for GET only; else 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) prints an `inspect.store` per store, an `inspect.section` per section (per deployable given `deployables`) and counts.
 
-**Inspector hooks** (extension point).
+**Inspector hooks.**
 ```ts
 import { inspector } from '@keel/compiler/inspect/inspector'
 inspector({ id: 'orders.recent', schema: Recent, read: recent })
 ```
-Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged).
+Each `read` gets the request's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged).
 
-**Output.** Exactly OUTPUT.md. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
+**Output.** Exactly OUTPUT.md. Exit: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 
-**Formatter registry** (extension point).
+**Formatter registry.**
 ```ts
 import { formatter } from '@keel/cli'
-formatter('orders.report', { schema: Report, compact: (r) => r.id, pretty: (r) => table(r) })
+formatter('orders.report', { schema: Report, compact: (r) => r.id, pretty: table })
 ```
-Each record `kind` has exactly one formatter. `json`: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, `review`, and k.ledger's. `respond(records, { format? })` (`@keel/cli/testing`) renders records as a command does, E1054 included.
+One formatter per record `kind`. `json`: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, `review`, and k.ledger's. `respond(records, { format? })` (`@keel/cli/testing`) renders records as a command does, E1054 included.
 
-**Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, or a value its schema refuses · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
+**Rules.** I1055 command not available in this build · E1051 unknown command · E1052 unknown flag, or a value its schema refuses · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
 **Conformance.**
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
@@ -63,3 +63,4 @@ Each record `kind` has exactly one formatter. `json`: the record encoded by its 
 - `respond` of a record of a kind with no formatter yields E1054.
 - After `stdCommand('session', op)`, `keel session` parses argv with `op.input`, runs `op` and emits its records, and the MCP tools include `session`; unfilled, I1055, exit 0; filling it with another `op` throws E1053.
 - `keel inspect` of a document with `deployables` prints one `inspect.section` per deployable and section.
+- `keel dev` listens on 127.0.0.1 only, or on the Vite config's `server.host`.
