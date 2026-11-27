@@ -85,7 +85,7 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
     return refuse(
       "E1366",
       at(MARKER),
-      "a stopped create-app run left this; remove the files it lists and it, or the folder",
+      "a stopped create-app run left this; remove what it lists, in order, then it; or the folder",
     );
   if (input.existing !== true) {
     const busy = listing.find((p) => !QUIET.has(p.split("/")[0] ?? ""));

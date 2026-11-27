@@ -14,7 +14,7 @@ const codeOf = (e: unknown): string =>
 /**
  * Writes `files` (keyed from the folder) under `abs`, all or nothing (k.create-folder Folder): every target is judged
  * first as k.scaffold Links says (`{ linked }`, E1357, nothing written); then `.keel-create` (`MARKER`) is created,
- * listing every path, each folder is made and each file created only where nothing is (`wx`), never replaced, and the
+ * listing every file, then every folder inside `abs` the run makes (`/`-ended, deepest first), each folder is made and each file created only where nothing is (`wx`), never replaced, and the
  * marker is removed last. The writes are asynchronous, so a signal is handled while one is in flight. A write that
  * fails (`{ failed }`, E1365), or a signal (`{ stopped }`, E1367) that `interrupted` settles with during a write or
  * `stopped` reports between two, removes the files this run made, then the folders it made inside the folder, then
@@ -88,8 +88,14 @@ export async function writePlan(
       madeInner.push(d);
     }
   };
+  // Every folder under `abs` this run will make, `/`-ended, deepest first: listed after the files, so removing what the
+  // marker lists in order (files, then folders, each once empty) leaves the folder as it was (k.create-folder Folder).
+  const folders = new Set<string>();
+  for (const p of paths)
+    for (let at = dirname(p); at !== "." && !existsSync(join(abs, at)); at = dirname(at)) folders.add(`${at}/`);
+  const listed = [...paths, ...[...folders].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))];
   const steps: readonly (readonly [string, string, string])[] = [
-    [MARKER, marker, `${paths.join("\n")}\n`],
+    [MARKER, marker, `${listed.join("\n")}\n`],
     ...paths.map((p): readonly [string, string, string] => [p, join(abs, p), files.get(p) ?? ""]),
   ];
   const never = new Promise<never>(() => {});
