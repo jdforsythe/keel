@@ -72,3 +72,19 @@ describe("badInput: a missing field is named", () => {
     expect(r.ok ? undefined : r.error.data.missing).toBe("id");
   });
 });
+
+describe("scaffold route: a loader that runs in the browser says so", () => {
+  const NOTE = "the loader runs in the browser and its file ships in the client bundle";
+  it("loader in a module only client deployables list carries one note on its file; node and static none", () => {
+    const client = scaffold("route", { id: "app.about", loader: true }, project("client"));
+    expect(client.ok ? client.value.notes : "refused").toEqual([
+      { path: "modules/app/loadAbout.server.ts", note: NOTE },
+    ]);
+    for (const adapter of ["node", "static"]) {
+      const r = scaffold("route", { id: "app.about", loader: true }, project(adapter));
+      expect(r.ok ? r.value.notes : "refused", adapter).toBeUndefined();
+    }
+    const bare = scaffold("route", { id: "app.about" }, project("client"));
+    expect(bare.ok ? bare.value.notes : "refused").toBeUndefined();
+  });
+});

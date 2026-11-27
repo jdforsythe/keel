@@ -11,7 +11,26 @@ describe("E1052 for a missing input", () => {
   it("names a flag with its value and an argument in angle brackets", () => {
     expect(missingInput("move", "to")).toBe("move needs --to <module>, as in keel codemod move OrderCard --to catalog");
     expect(missingInput("library", "name")).toBe("library needs <name>, as in keel scaffold library @acme/charts");
-    expect(missingInput("route", "id")).toBe("route needs <id>, as in keel scaffold route orders.about");
+    expect(missingInput("route", "id")).toBe("route needs <id>, as in keel scaffold route app.about");
+  });
+
+  it("forms a generator's line from the project's first module and its first store", () => {
+    const files = new Map([
+      ["modules/shop/module.ts", ""],
+      ["modules/zed/module.ts", ""],
+      ["modules/shop/todos.store.ts", ""],
+    ]);
+    expect(missingInput("route", "id", files)).toBe("route needs <id>, as in keel scaffold route shop.about");
+    expect(missingInput("store", "id", files)).toBe("store needs <id>, as in keel scaffold store shop.cart");
+    expect(missingInput("component", "id", files)).toBe(
+      "component needs <id>, as in keel scaffold component shop/OrderCard",
+    );
+    expect(missingInput("transaction", "id", files)).toBe(
+      "transaction needs <id>, as in keel scaffold transaction shop.todos.addItem",
+    );
+    expect(missingInput("service", "id", files)).toBe(
+      "service needs <id>: keel scaffold service shop --base https://a.test",
+    );
   });
 
   it("each operation's required inputs fit docs/OUTPUT.md's bound in the longest manager form", () => {

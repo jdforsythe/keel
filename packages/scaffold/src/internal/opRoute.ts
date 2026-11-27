@@ -1,4 +1,4 @@
-import type { Result } from "@keel/schema";
+import { type Result, ok } from "@keel/schema";
 import MagicString from "magic-string";
 import { actionTs } from "../templates/actionTs.ts";
 import { bindingEntry } from "../templates/bindingEntry.ts";
@@ -25,6 +25,9 @@ import { routeId } from "./routeId.ts";
 import { routeTable } from "./routeTable.ts";
 import { targetsGenerated } from "./targetsGenerated.ts";
 import { topologyOf } from "./topologyOf.ts";
+
+/** What `scaffold route --loader` prints about the loader of a module only `client` deployables list. */
+const BROWSER_LOADER = "the loader runs in the browser and its file ships in the client bundle";
 
 const SEGMENT = /^(?::[a-z][a-zA-Z0-9]*|[a-z0-9][a-z0-9-]*)$/;
 
@@ -80,10 +83,10 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   const { id, file, api, method, loader } = r.value;
   const noLoader = r.value["no-loader"] === true;
   if (method !== undefined && api !== true)
-    return fail("E1052", id, "method is for an API route: pass api with method, or drop method");
+    return fail("E1052", id, "--method is for an API route: add --api, or drop --method");
   if ((noLoader || loader === true) && api === true)
-    return fail("E1052", id, "loader and no-loader are for a page route: an API route is its handler; drop it");
-  if (noLoader && loader === true) return fail("E1052", id, "loader and no-loader ask for opposite things; pass one");
+    return fail("E1052", id, "--loader and --no-loader are for a page route: an API route is its handler; drop it");
+  if (noLoader && loader === true) return fail("E1052", id, "--loader and --no-loader ask for opposite things; pass one");
   if (targetsGenerated(id) || (file !== undefined && targetsGenerated(file)))
     return fail("E1005", file ?? id, `${file ?? id} is a generated location`);
   const rid = routeId(id);
@@ -184,5 +187,9 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   if (!bare)
     writes.set(handlerPath, write ? actionTs(handlerName, mod, id) : loaderTs(handlerName, mod, id, api === true));
   if (api !== true) writes.set(pagePath, componentTsx(page));
-  return commit(files, writes);
+  const made = commit(files, writes);
+  // A loader asked for in a module only `client` deployables list runs in the browser (k.boundary Server-only).
+  const lists = Object.values(topologyOf(files) ?? {}).filter((d) => d.modules.includes(mod));
+  const inBrowser = !bare && api !== true && lists.length > 0 && lists.every((d) => d.adapter === "client");
+  return made.ok && inBrowser ? ok({ ...made.value, notes: [{ path: handlerPath, note: BROWSER_LOADER }] }) : made;
 }

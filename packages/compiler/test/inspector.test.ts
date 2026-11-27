@@ -1,4 +1,4 @@
-// Inspector hooks (k.cli, RFC 0042): the registry and the per-request read of every section.
+// Inspector hooks (k.inspect): the registry and the per-request read of every section.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import fc from "fast-check";

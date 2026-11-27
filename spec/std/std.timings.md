@@ -1,7 +1,7 @@
 # std.timings: Timings
 status: conformance-covered
 
-**Extension point.** Inspector hooks (k.cli, RFC 0042). Importing `@keel/std-timings` registers the inspect section `timings.recent`. A dev app's `GET /__keel/inspect` serves it in `sections`, and `keel inspect` prints it as an `inspect.section` record.
+**Extension point.** Inspector hooks (k.inspect). Importing `@keel/std-timings` registers the inspect section `timings.recent`. A dev app's `GET /__keel/inspect` serves it in `sections`, and `keel inspect` prints it as an `inspect.section` record.
 
 **API** (`@keel/std-timings`).
 ```ts

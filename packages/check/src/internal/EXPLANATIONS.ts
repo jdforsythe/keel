@@ -133,14 +133,14 @@ const ROWS: readonly Row[] = [
     "E1051",
     "unknown command",
     "`session` and `report` need their stdlib modules.",
-    "keel help lists the commands",
+    "keel docs k.cli lists the commands",
     "k.cli",
   ],
   [
     "E1052",
     "unknown flag, or flag value invalid for the input schema",
     "",
-    "keel <command> --help shows flags and their schemas",
+    "keel docs k.cli lists each command's flags; keel docs k.scaffold each operation's inputs",
     "k.cli",
   ],
   [

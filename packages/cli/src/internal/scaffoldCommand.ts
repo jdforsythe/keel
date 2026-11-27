@@ -41,8 +41,8 @@ const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   dotted: ["store", "route"],
 };
 
-const refusal = (d: ScaffoldDiag, into: string, op: Op): OutRecord[] => [
-  makeDiag(d.code, d.missing === undefined ? d.message : missingInput(op, d.missing), {
+const refusal = (d: ScaffoldDiag, into: string, op: Op, files: ReadonlyMap<string, string>): OutRecord[] => [
+  makeDiag(d.code, d.missing === undefined ? d.message : missingInput(op, d.missing, files), {
     // A missing input is no file's: the diagnostic names the flag, not a path.
     path: d.path === undefined || d.missing !== undefined ? undefined : `${into}${d.path}`,
     line: d.line,
@@ -128,7 +128,7 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   }
   const label = `${name} ${op}`;
   if (!result.ok) {
-    const rs = refusal(result.error.data, into, op);
+    const rs = refusal(result.error.data, into, op, files);
     return { records: [...rs, summary(label, rs, {})], writes: [] };
   }
   const edit =
@@ -149,6 +149,7 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   for (const p of edit.created) add("create", p);
   for (const p of edit.changed) add("change", p);
   for (const p of edit.removed) add("remove", p);
+  for (const n of edit.notes ?? []) records.push({ kind: "scaffold.note", path: `${into}${n.path}`, note: n.note });
   if (opts?.outside === true)
     records.push(
       makeDiag("W1364", `${into.slice(0, 40)} is not in the workspace's package globs; add it to them`, {

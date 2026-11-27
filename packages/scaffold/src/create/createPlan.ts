@@ -67,14 +67,14 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
         fix === undefined
           ? "a --name of a-z, 0-9 and -"
           : `--name ${fix.length > 40 ? fix.slice(0, 40).replace(/-+$/, "") : fix}`;
-      return refuse("E1352", "package.json", `project name ${cut(name)} is not [a-z][a-z0-9-]*; pass ${hint}`);
+      return refuse("E1352", "", `project name ${cut(name)} is not [a-z][a-z0-9-]*; pass ${hint}`);
     }
     if (name.length > 64)
-      return refuse("E1352", "package.json", "project name is over 64 characters; pass a shorter --name");
+      return refuse("E1352", "", "project name is over 64 characters; pass a shorter --name");
     if (LISTED.has(name))
       return refuse(
         "E1352",
-        "package.json",
+        "",
         `project name ${cut(name)} is a package the project lists; pass another --name`,
       );
   }
@@ -114,7 +114,13 @@ export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError
           skills: input.skills,
           packageManager: member ? undefined : word.packageManager,
         });
-  if (!tree.ok) return refuse(tree.error.data.code, at(tree.error.data.path), tree.error.data.message);
+  // A name is a flag's value or the folder's, in no file yet: its diagnostic names no path (k.create Names).
+  if (!tree.ok)
+    return refuse(
+      tree.error.data.code,
+      tree.error.data.code === "E1352" ? "" : at(tree.error.data.path),
+      tree.error.data.message,
+    );
   const files = tree.value;
   // Where the file system ignores case, `agents.md` is `AGENTS.md` and `Modules/` is `modules/` (k.create-folder Folder).
   const key = (p: string): string => (input.caseless === true ? p.toLowerCase() : p);
