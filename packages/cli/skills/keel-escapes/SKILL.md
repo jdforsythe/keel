@@ -1,6 +1,6 @@
 ---
 name: keel-escapes
-description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1013, R1014, R1015, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151, R2451"
+description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1013, R1014, R1015, R1017, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151, R2451"
 ---
 
 # Reading keel review
@@ -40,7 +40,8 @@ Read the code at `path:line` and the diff around it. Then answer four questions,
 | R1011 | `createApp({ allow })`, `KEEL_ALLOW_ORIGINS` | list only origins the team runs (`keel docs k.hosting`) |
 | R1012 | `reveal` | pass the `Secret` on and reveal at the sink (`keel docs k.reveal`) |
 | R1013 | a `defect` on an `err` path | a failure a caller handles stays an `err` |
-| R1015 | a type predicate | does its body check each property its type names? |
+| R1015 | a predicate proven by structure or its module's set | does its body check each property its type names? |
+| R1017 | an `expect` claiming by `instanceof Error` alone | name the class or code the call throws |
 | R1014 | an identity `handle` | an auth library mounted there; no credential code of the app's own (`keel docs k.user`) |
 | R1050, R1051 | a cast, `any`, `!`, a suppression or lint-off comment | a type guard, `unknown`, a check; fix what the lint reported |
 | R1052 | a directive assembled from strings | delete it and fix what it was hiding |
@@ -48,7 +49,7 @@ Read the code at `path:line` and the diff around it. Then answer four questions,
 | R1055 | a Keel package's `src`, `dist` or `unsafe` files | the package's public entry (`keel docs k.security`) |
 | R1056 | a global by a computed key, an indirect `eval` | the `ctx` capability: `ctx.net`, `ctx.clock`, `ctx.storage` (`keel docs k.ctx`) |
 | R1057 | `process.env`, `fs`, `net`, `http`, `child_process` | `DeployEnv` and `ctx`; a `service` client for the network (`keel docs k.services`) |
-| R1058 | a file under `unsafe/` with no `unsafe(` call | move it out, or wrap the one line that needs it in `unsafe(reason, () => ...)`; the file's other lines are checked as app code |
+| R1058 | a file under `unsafe/` with no `unsafe(` call | move it out, or wrap the one line that needs it in `unsafe(reason, () => ...)` |
 | R1059, R1060 | a skipped or focused test, fewer assertions | restore the test; change the code instead |
 | R1061 | a conformance file changed | the conformance suite changes in its own reviewed change |
 | R1100 | framework source changed with the app | land the framework change on its own |
@@ -67,7 +68,6 @@ One line per finding, then the totals:
 ```
 R1053 modules/charts/load.ts:12:9 replace with: import('./Bar.ts') and import('./Line.ts') in a map by kind
 R1001 modules/charts/unsafe/canvas.ts:4:3 keep: the chart library writes its canvas; the input is a parsed Series
-R1057 modules/accounts/token.server.ts:8:15 needs a person: the provider's key is read from process.env, not DeployEnv
 accepted 3, count only; limits: values passed in from another file, dependency code, runtime data
 ```
 

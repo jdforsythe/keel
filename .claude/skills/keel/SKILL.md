@@ -36,17 +36,17 @@ export default function TodoList(props: Infer<typeof Props>) {
 ```
 
 **Rules.**
-- Failures are values: `err(...)`, never `throw` (E1451), bugs `defect(...)`; catch with `attempt(fn, expect?)` (E1452); never drop a `Result` (E1453).
-- No `Date`, `Math.random`, `crypto.randomUUID`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651). An `import()` is W1608, a load `simulate` does not wait for: import statically.
+- Failures are values: `err(E.make(data))`, never `throw` (E1451); bugs `defect('text')`, values in `data` (E1455); catch by `attempt(fn, expect)` (E1452); JSON by `S.parseJson` (E1457); never drop a `Result` (E1453).
+- No `Date`, `Math.random`, `crypto.randomUUID`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651). An `import()` is W1608, unseen by `simulate`: import statically.
 - No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757), whose reason, 8 words or more, says why the escape holds (E1760). A claim that a call must not compile is a negative type test: `test/<name>.test-d.ts`, each `// @ts-expect-error <what must not compile>` one claim, imported by nothing (E1761); no `@keel/*` import with an `internal` segment (E1576). Import a `modules/` file by a relative path (E1013); code outside the project is a workspace package, never a relative path out of it (E1015).
-- A format value written in source (a store's initial value, a fixture) is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`), E1108 when it does not parse.
+- A format value written in source is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`), E1108 when it does not parse.
 
 **Commands.** `keel check` (E1005 on `.keel/` files after an edit until `keel build` runs) · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` · `keel codemod rename|move|place`, preferred to hand edits.
 
 **Libraries.** A module lists a library in `deps` by scoped name (`'@acme/charts'`); `keel check` checks its files as the app's; to write one: keel-library.
 
 **Skills.** Examples put several exports in one block; in an app each is a file.
-- keel-client: components, pages, forms, action redirects (`ok(href)`), widgets, tables, text.
+- keel-client: components, pages, forms, redirects, widgets, tables, text.
 - keel-server: loaders, actions, server stores, guards, bearer, identity, API routes, services.
 - keel-data: durable storage, concurrent and offline writes, conflicts, realtime, workflows.
 - keel-testing: component and route tests, sim ctx, properties, invariants, rungs.
