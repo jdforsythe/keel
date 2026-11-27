@@ -5,7 +5,7 @@ status: implemented
 
 **One copy.** Each kernel package that makes identities (`@keel/schema`, `@keel/store`, `@keel/router`, `@keel/server`) enters its name and the URL of its file, less query and hash, in the realm's census while its module is evaluated. A bundle writes that URL as the file it inlined, so two folders inlined differ (a browser bundle: the path from the project).
 - A second copy of a name from another file is E1765 at that evaluation: it throws a coded refusal (k.deploy Refusals at start) whose message is `two copies of <name> in one realm: <first url> and <second url>`, and nothing more of the second copy runs. Two copies never disagree in silence about what a schema, a defect or an action is.
-- `keel check` and `keel build` report E1765 at the project's `package.json` when its dependencies resolve one of those names to two folders, with the same message and the folders' paths relative to the project.
+- `keel check` and `keel build` report E1765 at the project's `package.json` when its dependencies resolve one of those names to two folders, with the same message and the folders' paths relative to the project: the one the project resolves first, then the one under a dependency, cut from the front to fit 89 units (k.check Diagnostics).
 - An evaluation from the same file again (a dev reload, a test's module reset) is no second copy. It has a record of its own: a value an earlier evaluation made fails its guards.
 - The census is the map at `globalThis[Symbol.for('keel.census')]`, name to URL. It holds no made value and no record: code that writes it can raise E1765 or hide it, and a hidden second copy's values fail the first copy's guards. It forges nothing.
 
