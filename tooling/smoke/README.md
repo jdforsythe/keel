@@ -1,8 +1,8 @@
 # Built apps in a browser
 
-The browser and built-server proofs of the apps and examples are end-to-end tests in the projects they test (`test/*.e2e.ts`, k.e2e), run by `keel test --e2e` in each: golden-1 (persistence, restart, the removal workflow on SQLite and Postgres, monitor, the document policies), golden-2 (resume in place, `keel dev` sign-in, the personal-data canaries), household, the inspector, the examples and the proof libraries. CI's `built-smokes` job runs them. The scripts that stay here are the shell smokes below, with `built.mjs`, `shellReplay.mjs` and `webdriver.mjs` as their helpers, and `resume.mjs`.
+The browser and built-server proofs of the apps and examples are end-to-end tests in the projects they test (`test/*.e2e.ts`, k.e2e), run by `keel test --e2e` in each: golden-1 (persistence, restart, the removal workflow on SQLite and Postgres, monitor, the document policies), golden-2 (resume in place, `keel dev` sign-in, the personal-data canaries), household, the inspector, the examples and the proof libraries. CI's `built-smokes` job runs them. The scripts that stay here are the shell smokes below, with `built.mjs`, `shellReplay.mjs` and `webdriver.mjs` as their helpers, and `values.mjs`.
 
-`resume.mjs [runs]` resumes golden-2's served pages and household's setup page in Chromium and judges each claim by counting every served element it removes and every element added under an island root (household's event list aside), and checks each page's served markup; the e2e tests carry the rest of what it asserts. CI runs it three times.
+`values.mjs` checks the k.values Stylesheet invariant in Chromium (`cssKept.mjs`): every rule the compiler emits from token values is kept with each declaration, the value grammar's edge cases are refused or take effect, and each attack value is refused before emission. It needs the browser's CSS parser, not an app, so no page by Keel id can make it. CI's `built-smokes` job runs it.
 
 # Shell replay
 
