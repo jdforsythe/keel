@@ -86,3 +86,67 @@ describe("spelling rules", () => {
     expect(codesOf(src, ["E1766"], false)).toEqual(["E1766 2:18"]);
   });
 });
+
+describe("E1766 by what is done (k.realm The keel. names)", { timeout: testTime(120_000) }, () => {
+  const SRC =
+    "declare const o: object\nexport const a1 = Object.getOwnPropertyDescriptors(globalThis)\nexport const a2 = Object.getOwnPropertySymbols(Object(globalThis))\nexport const a3 = Reflect.ownKeys(Reflect.get(globalThis, 'globalThis'))\nexport const a4 = Object.getOwnPropertySymbols(globalThis.globalThis)\nexport const a5 = (g: typeof globalThis) => Reflect.ownKeys(g)\nexport const a6 = ({ ...globalThis })\nexport const a7 = Object.assign({}, globalThis)\nexport const a8 = Reflect.ownKeys(new Object(window))\nexport const c1 = [Object.keys(globalThis), Object.getOwnPropertyNames(globalThis), Object.assign(globalThis, {}), Reflect.ownKeys(o), [...[1]]]\n";
+  it("each listing or copy of the global object is one E1766, by type with the pass and by name without", () => {
+    expect(codesOf(SRC, ["E1766"])).toEqual([
+      "E1766 2:19",
+      "E1766 3:19",
+      "E1766 4:19",
+      "E1766 5:19",
+      "E1766 6:45",
+      "E1766 7:22",
+      "E1766 8:19",
+      "E1766 9:19",
+    ]);
+    expect(codesOf(SRC, ["E1766"], false)).toEqual([
+      "E1766 2:19",
+      "E1766 3:19",
+      "E1766 4:19",
+      "E1766 5:19",
+      "E1766 7:22",
+      "E1766 8:19",
+      "E1766 9:19",
+    ]);
+  });
+});
+
+describe(
+  "a library of the project's tree (k.library Kind, k.supervise Who writes it)",
+  { timeout: testTime(120_000) },
+  () => {
+    const PKG = {
+      path: "libs/sup/package.json",
+      source: JSON.stringify({
+        name: "@fx/sup",
+        version: "0.0.0",
+        type: "module",
+        keel: "library",
+        exports: { ".": { keel: "./src/index.ts" } },
+      }),
+    };
+    const LIB_MANIFEST = {
+      path: "libs/sup/module.ts",
+      source:
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'sup', deps: [], capabilities: [], public: { exports: ['swallow'] } })\n",
+    };
+    const SWALLOW =
+      "import { supervise } from '@keel/ctx'\nimport type { Ctx } from '@keel/ctx'\nimport type { KeelError } from '@keel/schema'\ndeclare const T: KeelError<'sup.t', null>\nexport function swallow(ctx: Ctx, f: () => number) { return supervise(ctx, 'sup.run', f, T) }\n";
+    const e1461 = (files: { path: string; source: string }[], types: boolean) =>
+      check(files, { types })
+        .diagnostics.filter((d) => d.code === "E1461")
+        .map((d) => d.path);
+    it.each([true, false])("in place, its supervise call is no E1461 (types %s)", (types) => {
+      expect(e1461([MANIFEST, PKG, LIB_MANIFEST, { path: "libs/sup/src/swallow.ts", source: SWALLOW }], types)).toEqual(
+        [],
+      );
+    });
+    it("without the marked package.json, the same file is app code: one E1461", () => {
+      expect(e1461([MANIFEST, { path: "libs/sup/src/swallow.ts", source: SWALLOW }], false)).toEqual([
+        "libs/sup/src/swallow.ts",
+      ]);
+    });
+  },
+);
