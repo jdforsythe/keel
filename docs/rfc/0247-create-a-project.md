@@ -1,6 +1,6 @@
 # RFC 0247: start a Keel project from an empty folder with one command
 
-Status: accepted by the orchestrator on 2026-11-26 with For the operator 1 to 4 as recommended (ADR-0292). New section k.create; amends k.scaffold (the `project` generator, Conformance), k.explain (Agent files), the map. From W17, "The end user's seat" in `tasks/p1/TODO.md`: two hands-on reviews found that starting from an empty folder is the weakest five minutes.
+Status: implemented (slices 1 to 3; slice 4 waits on RFC 0244 and RFC 0251). Accepted by the orchestrator on 2026-11-26 with For the operator 1 to 4 as recommended (ADR-0292). New section k.create; amends k.scaffold (the `project` generator, Conformance), k.explain (Agent files), the map. From W17, "The end user's seat" in `tasks/p1/TODO.md`: two hands-on reviews found that starting from an empty folder is the weakest five minutes.
 
 ## Decisions
 - D1: the command is `pnpm create @keel/app [folder] [flags]`, which runs the package `@keel/create-app`. npm, yarn and bun run the same package: `npm create @keel/app [folder] -- [flags]`, `yarn create @keel/app`, `bun create @keel/app`. The binary `keel` is run through the project (`pnpm keel ...`); the docs recommend against a global install.

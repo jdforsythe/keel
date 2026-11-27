@@ -1,5 +1,5 @@
 # k.create: Create a project
-status: proposed
+status: implemented
 `pnpm create @keel/app [folder] [flags]` starts a Keel project from an empty folder. The package manager runs the package `@keel/create-app`; `npm create @keel/app [folder] -- [flags]`, `yarn create @keel/app` and `bun create @keel/app` run the same package. It runs the k.scaffold generators through `@keel/scaffold`, writes the result and prints what to run next. It asks nothing.
 ```sh
 pnpm create @keel/app shop
@@ -11,7 +11,7 @@ pnpm create @keel/app charts --library @acme/charts
 ```ts
 createPlan(input: {
   version: string; nodeVersion: string; skills: readonly AgentSkill[]; // create's version, the running Node's, the skills it ships
-  folder?: string; name?: string; adapter?: 'client' | 'node' | 'static'; library?: string; existing?: boolean; // the flags; folder default '.'
+  folder?: string; name?: string; adapter?: 'client' | 'node' | 'static'; library?: string; existing?: boolean; // the flags
   listing?: readonly string[]; // every entry under the folder, relative, '/'-separated, a folder ending in '/'
   ancestors?: Readonly<Record<string, string>>; // Workspace's files above the folder, keyed from the working folder: '../package.json'
   realPath?: string; gitAbove?: boolean; userAgent?: string; // the folder's real path, a `.git` at or above it, npm_config_user_agent
@@ -43,7 +43,7 @@ It also takes `--format`, `--quiet` and `--limit` (k.cli). It reads no standard 
 
 **Versions.** An app lists each `@keel/*` package at exactly create's version, never a range; a library at `^<version>`, as k.library-pack Scaffold says. An app's `engines.node` is `>=22.15`. A running Node older than 22.15 is E1362, before any other step.
 
-**Package manager.** The manager is the name before `/` in the first word of `npm_config_user_agent` when it is `pnpm`, `npm`, `yarn` or `bun`, and `pnpm` otherwise. An app's `package.json` gets `packageManager: "<name>@<version>"` from that word, none when the variable is absent. Yarn also gets `.yarnrc.yml` holding `nodeLinker: node-modules`, since the checker and `keel docs` read `node_modules`. No lockfile is written. The CI workflow (k.deploy) installs with the frozen form of the manager in `packageManager`, `pnpm` when there is none, and watches its lockfile among the shared files.
+**Package manager.** The manager is the name before `/` in the first word of `npm_config_user_agent` when it is `pnpm`, `npm`, `yarn` or `bun`, and `pnpm` otherwise. An app's `package.json` gets `packageManager: "<name>@<version>"` from that word, none when the variable is absent or names another manager. Yarn also gets `.yarnrc.yml` holding `nodeLinker: node-modules`, since the checker and `keel docs` read `node_modules`. No lockfile is written. The CI workflow (k.deploy) installs with the frozen form of the manager in `packageManager`, `pnpm` when there is none, and watches its lockfile among the shared files.
 | manager | install | a command | CI install | lockfile |
 | --- | --- | --- | --- | --- |
 | pnpm | `pnpm install` | `pnpm keel <c>` | `pnpm install --frozen-lockfile` | `pnpm-lock.yaml` |
@@ -59,7 +59,7 @@ No printed command fetches a package the project's install did not.
 
 **Names.** The name is `--name`, else the folder's last segment (of its real path for `.`). It is `[a-z][a-z0-9-]*`, at most 64 characters, and not a dependency the project lists, else E1352 with the fix `--name <n>`, `n` the name lowercased with each run of other characters one `-`. `--library` takes `@<scope>/<base>`, else E1352.
 
-**Not done.** It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder and reads outside it only the files Workspace names. The proof of the first two is a run under Node's permission model (Conformance) with writes granted only in the folder and no child process or worker granted (from Node 25, no network either): Node refuses each such call, the bin catches no refusal, so a run that made one would not exit 0.
+**Not done.** It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder and reads outside it only the files Workspace names. The proof of the first two is a run under Node's permission model (Conformance) with writes granted only in the folder and no child process or worker granted (from Node 25, no network either): Node refuses each such call, and a refused call ends the run with a nonzero exit, so its exit 0 is the proof.
 
 **Next.** Each written file is a `scaffold.edit` record (`create <path>`), sorted. Then a `create.next` record per command, `{ kind, command, dir? }`, compact `next pnpm install`, `dir` the folder to run it in when it is not the working folder (`next pnpm install (in ../..)`): `cd <folder>` unless `.`; `git init` when no `.git` is at or above the folder; the install; then `keel dev`, `keel check`, `keel test`, `keel build` in the manager's form, or for a library `keel check`, `keel test`, `keel pack` (a fresh library holds no `.keel/ledger.json`, so `keel pack --check` is E1164 until `keel pack` writes it, k.library-pack). The trailer is `ok create <name> <kind> <n> created`, or `ok create --dry-run ...` with nothing written.
 

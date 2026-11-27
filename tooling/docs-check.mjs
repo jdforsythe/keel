@@ -446,9 +446,9 @@ export function checkRepo(repo, names = Object.keys(TARGETS)) {
       ...checkCodes(name, text, known),
       ...checkSections(name, text, ids),
       // packages/create-app/skills is checked wherever that package exists (a test repo may hold only the cli).
-      ...COPY_DIRS.filter((d) => d === COPY_DIR || fs.existsSync(path.join(repo, path.dirname(d), "package.json"))).flatMap(
-        (d) => checkCopy(repo, name, d),
-      ),
+      ...COPY_DIRS.filter(
+        (d) => d === COPY_DIR || fs.existsSync(path.join(repo, path.dirname(d), "package.json")),
+      ).flatMap((d) => checkCopy(repo, name, d)),
     );
   }
   diags.push(...typeCheck(repo, skills));
