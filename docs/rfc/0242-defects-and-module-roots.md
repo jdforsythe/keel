@@ -1,6 +1,6 @@
 # RFC 0242: k.errors and k.reactive: `defect`, `attempt`'s `expect`, module roots; no `unsafe` throws, catches or detached scopes
 
-Status: implemented (ADR-0264) for D1 to D8; D9 to D16 accepted by the orchestrator on 2026-11-26 after review, not built; for the operator to confirm. Under the plan's D191 and D192. Amends k.errors (Split, API, Defects, Rules E1451, E1452, E1455, nine clauses), k.reactive (API, Rules E1203, E1207, E1208, Module roots, Static, clauses #13 and #21 rewritten, #22 to #25), k.check (App code's lifted set), k.escapes (R1013, R1015), k.parity (By kind), k.unsafe (Unsafe, One path, Type predicates, E1762), k.store (Guards), k.schema (Guard), std.postgres (Errors, E2461), std.postgres-changes (`follow`). No new section: `keel docs`' map is at its budget, so each new rule sits in the section that owns its code. New glossary terms: **defect**, **module root**, **key guard**.
+Status: D1 to D20 implemented (ADR-0264). A third review tried to break the build and found the error model wrong at its root: D21 to D40 restate it (Third review, below), written and not built; where they differ from an earlier decision or section of this RFC they replace it. For the operator to confirm. Under the plan's D191 and D192. Amends k.errors (Split, API, Rules, Layers), k.reactive (Static), k.unsafe (Type predicates, One path, E1762), k.escapes (R1015, R1017), k.serverlog (Thrown values, E1596), k.store (Guards), k.schema (Guard, `parseJson`, rule `json`), std.postgres (Errors). New sections: k.attempt, k.defects, k.fixes, k.identity, k.shared, std.postgres-errors. Glossary: **defect**, **module root**, **kernel-held identity** (in place of key guard, which this RFC introduced and no release held), **fix chain**.
 
 ## Decisions
 - D1: `defect(message: string, code?: DefectCode): never` and `isDefect(x: unknown, code?: string): x is Defect`, in `@keel/schema` beside `ok`, `err` and `attempt`. A defect is an `Error` named `Defect`, its message `<code> <message>` when a code is given, its `code` a non-enumerable own property. `DefectCode` is `` `E${number}` ``; E1455 holds a given code to a literal `E` and four digits.
@@ -24,6 +24,28 @@ Status: implemented (ADR-0264) for D1 to D8; D9 to D16 accepted by the orchestra
 - D18 (builder): std.outbox-owner's "declared outside a scope" meant shared by several ctxs, not ownerless: such an outbox is declared at a module's top level (its module root) or, in a test, in a `detached` root. A maker called with no owner stays E1203; the clause's wording follows the rule.
 - D19 (builder): PGlite keeps no statement timer and gives no way to cancel a running statement (it runs in-process, synchronously, and has no cancel request), so a driver timer cannot end one and a check after it returns would report a timeout for a statement whose effects stand. std.postgres' 57014 clause holds on Postgres only; on a `pglite:` engine a statement that leaves `statement_timeout` other than `0` sets it back to `0` and fails with `0A000`, the defect E2461: refused where it is set, never ignored.
 - D20 (builder, at the merge with the main line): structure-lint's code for control leaving a `finally` is S0020, since the main line's S0018 is a raw temp folder in test code; S0019 (E1762) keeps its number.
+
+- D21 (third review): the wall test is this RFC's acceptance test. Ordinary correct code is ported by applying the first fix each diagnostic offers, else the edit its message names, until check is clean; the end is correct or the RFC is wrong. It is conformance: the fix chains of k.fixes.
+- D22: a failure is one of two things in types. Expected: a `KeelError` (code, typed data, optional `cause`) in a `Result`, whose error type is bounded to `KeelError`. Unexpected: anything thrown. `err` takes a `KeelError` only (E1458 at check, a defect at run time).
+- D23: `attempt(fn, expect)`, `expect` required. `fn` returns a value: `ok`. Returns a keel `Result`: that `Result`, never nested. Raises a defect: passed on, unseen. Throws anything else: `expect` decides; `undefined` passes the value on unchanged. A thrown object shaped like a `KeelError` is treated as any other throw. This replaces D2's "without `expect`, as today".
+- D24: an `expect` tests its parameter (E1452 when it has none or never uses it); one that claims by `instanceof Error` alone is R1017 in review.
+- D25: the throwing built-ins an author meets weekly are listed in k.attempt; a bare call is E1457. Keel gives a total form where it is the better product (`S.parseJson(text)`, since parsed JSON needs a schema anyway; `URL.parse` is the platform's), and `attempt(fn, expect)` for the rest.
+- D26: a function that throws today is not rewritten by a fix. E1451's message names both ends: a `Result` return when a caller can act (each caller then returns it on or reads it, E1453 holding them to it, up to an owner that takes a `Result`), a defect when none can.
+- D27: cleanup after a failure is `try`/`finally` with a flag; a library that owns a resource owns its rollback (std.postgres `transaction`). No kernel helper.
+- D28: the cause travels as data. `X.causedBy(cause, data)` wraps, `X.in(e)` finds a typed error on the chain (8 steps); std.postgres' `keel.conflict` carries the `postgres.database` error that caused it.
+- D29: the autofix rule (k.fixes): a fix is offered only when its output compiles in place, behaves as before for every input, callers' failures included, and leaves nothing behind. Per code: E1451 only `throw <KeelError>` where the return type takes the `Result`; E1452 only cleanup-and-rethrow, to the flag form; E1455 only the missing `cause`; every other form, none.
+- D30: E1451's, E1452's, E1453's, E1203's and E1208's messages and explanations are rewritten to name the shape to write (k.errors Rules, k.reactive Static, k.fixes Explanations); every example in an explanation compiles, as conformance.
+- D31: module state on a server (k.shared). While a request is served, a write to any node a module root owns, and making a node in a module root, is the defect E1256: the rule is on the node's owner, so no maker is outside it. Check reports the visible forms: a `set` on a module-level signal in server code (E1256), a write to plain module state there (E1260). Per-request state lives in the request's scope, per-process caches in `processSlot` (RFC 0251).
+- D32: identity is the kernel's record, not a key (k.identity). Each maker records what it made in a `WeakSet` or `WeakMap` in the realm's kernel record; made values are frozen; a copy is not the thing and is refused where handlers are bound (E1515); the server reads schemas and personal-data sets from the maker's record. This replaces D9's key guards and D14's own key.
+- D33: E1762 restated (k.identity Proven predicates): a predicate's body is one of five proofs (a proven predicate, an owned or built-in class, the module's own set with typed adds, a schema's `parse`, a structural check of every property) or it is E1762; a type holding a signature only by the first three; assertions the same.
+- D34: `Secret` has no static member, and the constructor reached from an instance is the defect E1764.
+- D35: a production log holds of a thrown value its class, a code Keel knows, a keyed fingerprint, the top frame and the causes' classes and codes, never its text (k.serverlog Thrown values). Full text only under `mode: 'dev'` or until the instant `KEEL_LOG_THROWN` names, at most 24 hours ahead (E1596).
+- D36: `defect(message, code?, detail?)`: the message a literal (E1455), values in `detail.data`, the failure that led here in `detail.cause`; on a failed `Result`'s branch the cause is required, with a fix.
+- D37: on PGlite the driver reads the effective `statement_timeout`, the per-database and per-role defaults and each function's setting after every statement and refuses any value but `0`, by value and never by text (std.postgres-errors). Class `08`: `08000`, `08001`, `08003`, `08006` are `keel.unreachable`; `08007` is `postgres.database`; `08004`, `08P01` and the rest are the defect E2461.
+- D38: each minor finding has a home (The minors, below).
+- D39: the guarantee is stated in layers (k.errors Layers), as RFC 0245 states its own.
+- D40: six new sections, since k.errors, k.unsafe, k.leave and std.postgres are at their limits. `tooling/budgets.mjs` reports no token line over with them; `keel docs --for E1451` stays within its 400 by naming the code in fewer lines. This replaces D16's "no new section".
+
 
 ## Problem
 The `unsafe` count is 33 on the main line (d829b060) and 41 in `lane-std-formats` (466b3d5a). It was 13 when only the kernel was held to the rules. RFC 0163 put the stdlib on the library format, so each package is read as app code in every app that lists it. The mover lanes met the rules by wrapping, and three wrappers account for 19 of the main line's 33 and 26 of the lane's 41.
@@ -182,6 +204,145 @@ The change, by folder, mechanically: each `scope(fn)` or `scope(fn, { onError })
 - L4 (data library author): a driver keeping k.persist's rejecting contract raises defects for refused keys and lost connections; `attempt(fn, expect)` reads the database's codes. A module-level store, outbox or chart of theirs lives in a module root.
 - Every persona's question 3 ("anything allowed to the stdlib that is refused to them?"): after this RFC, nothing in these three patterns. Question 5 ("the wall"): a throw, a typed catch and module-level state no longer need `unsafe/`.
 
+## Third review: the error model restated
+A reviewer ported five ordinary, correct pieces of code two ways: by the diagnostics and `keel explain` alone, and as an agent does, applying the first offered fix until check is clean. For three of the five the agent's path ended clean and wrong. The same review found a cross-request leak, forgeable router marks, thrown text in production logs, casts E1762 let through, and a timeout PGlite never enforces. The verdict was not to merge. The findings share a root: the first design gave a throw three ways to become a value without anyone naming it (a bare `attempt`, a fix that wrote one, an `err` that took anything), and gave identity to a key anyone can copy. D21 to D40 remove those ways.
+
+### What a failure is
+Two forms, in types (k.attempt).
+- Expected: `KeelError<C, D>`, `{ code, message, data, cause? }`, in `Result<T, E extends KeelError>`. Made by `X.make(data)` of an `s.error`; wrapped by `X.causedBy(cause, data)`; found again by `X.in(e)`.
+- Unexpected: anything thrown. `defect('text', code?, { data, cause })` is the one way code held to the rules throws.
+
+What `attempt(fn, expect)` does with each thing `fn` can do:
+
+| `fn` | result |
+| --- | --- |
+| returns a value | `ok(value)` |
+| returns a keel `Result` | that `Result`: flattened, never `ok(err(..))` |
+| raises a defect, or a value wrapping one | passed on unchanged, `expect` not called |
+| throws a `KeelError`-shaped object | as any other throw: `expect` decides |
+| throws anything else | `expect(x)`: a `KeelError` is the `err`; `undefined` passes `x` on unchanged |
+
+`expect` is required. An unexpected throw stays unexpected and passes through `attempt` unless `expect` claims it, so a bug inside the callback is never a value. `err` refuses what is no `KeelError`, so `return err(new Error(..))` is E1458 and a TypeScript error both.
+
+Wrapping a throwing SDK is the documented path, in the spec (k.attempt Wrapping a throwing library), in E1452's message and in its explanation:
+```ts
+export const CardDeclined = s.error('pay.declined', s.object({ reason: s.enum(['funds', 'expired', 'other']) }))
+export const charge = (p: Charge) =>
+  attempt(
+    () => sdk.charges.create(p),
+    (x) => (x instanceof Error && x.name === 'CardError' ? CardDeclined.make({ reason: reasonOf(x) }) : undefined),
+  )
+```
+The SDK's message (`card declined for jane@x.com`) has nowhere to go: the data's schema is a closed enum.
+
+A `Promise<void>` function that throws: no fix chooses for the author. If a caller can retry, take another path or tell a person, the function returns `Promise<Result<void, E>>`; each caller then writes `if (!r.ok) return r` or reads `r.error`, and E1453 refuses a caller that drops it, so the change ripples exactly to the owner that takes a `Result` (a loader, an action, a `Handler`) and no further. If no caller can act, it is `defect('text')` and no signature moves.
+
+### The wall test, as fix chains
+Each chain is a fixture (k.fixes Fix chains): a start project, the first diagnostic at each step with whether it carries a fix, the edit its message names where it carries none, the end project, and a probe that runs the end.
+
+1. **Retry with backoff.** Start: a loop with `try`/`catch`, `throw new Error('HTTP ' + status)` and a sleep. Steps: E1452, no fix (the catch decides by `i`, then rethrows); E1451, no fix (an `Error`, in a function that returns no `Result`). The messages name `attempt(fn, expect)` and `return err(E.make(data))`. End:
+```ts
+const once = (ctx: Ctx, url: string) =>
+  attempt(async () => {
+    const res = await ctx.net.fetch(new Request(url))
+    return res.ok ? Feed.parseJson(await res.text()) : err(HttpFailed.make({ status: res.status }))
+  }, (x) => (x instanceof TypeError ? Unreachable.make({}) : undefined))
+const again = (e: FeedError): boolean => e.code === 'feed.unreachable' || (e.code === 'feed.http' && e.data.status >= 500)
+export async function fetchRetry(ctx: Ctx, url: string, tries: number) {
+  for (let i = 0; ; i++) {
+    const r = await once(ctx, url)
+    if (r.ok || i === tries - 1 || !again(r.error)) return r
+    await ctx.clock.after(2 ** i * 100)
+  }
+}
+```
+The `err` returned inside the callback is the call's own `err`: one `Result`, typed, its status intact, retried.
+2. **Roll back and rethrow.** Start: `try { await work(db); await db.query('commit') } catch (e) { await db.query('rollback'); throw e }` in a `Promise<void>` function. Step: E1452, with a fix, since the catch only cleans up and rethrows. End, after one fix:
+```ts
+let done = false
+try { await work(db); await db.query('commit'); done = true } finally { if (!done) { await db.query('rollback') } }
+```
+The thrown value goes on as itself, SQLSTATE and all; std.postgres above it names it `postgres.database { sqlstate: '40P01' }`, reruns it, and after the third run answers `keel.conflict` whose `cause` is that error, so `Database.in(r.error)` still reads `40P01` three callers up. No `defect(e.message)` can be written: there is no `e`, and a `defect` message is a literal.
+3. **A throwing SDK.** Start: a `catch` testing `e instanceof Error && e.name === 'CardError'`. Step: E1452, no fix (the catch reads what it caught). End: `charge` above.
+4. **JSON with a fallback.** Start: `try { return JSON.parse(text) } catch { return fallback }`. Steps: E1452, no fix; E1457, no fix. End:
+```ts
+const r = Prefs.parseJson(text)
+if (r.ok) return r.value
+switch (r.error.code) { case 'schema.invalid': return fallback }
+```
+A defect raised inside is not swallowed, since nothing catches. `return r.ok ? r.value : fallback` also passes this RFC's check; RFC 0245's reading rule then asks for the form above, which stops compiling the day `parseJson` gains a second code.
+5. **Cleanup.** `try { use(h) } finally { h.close() }`: no diagnostic, no edit.
+
+The five more an engineer meets weekly are chains too: a validation failure to show (`const r = Draft.parse(input); if (!r.ok) return r`), a not-found (`err(Missing.make({ id }))`), a timeout (`expect` naming `TimeoutError`), a conflict to retry (a loop on `r.error.code === 'keel.conflict'`), and a bug (`row ?? defect('no row', { data: { id } })`).
+
+### Fixes
+The rule and the table per code are k.fixes. What the builder deletes: `noThrow`'s `return err(` rewrite of any thrown expression, and `noTryCatch`'s `attempt` rewrite. Both produced the review's wrong ends. The harness (`fix-diffs.test.ts`) today asserts only that the fixed file no longer holds the code; it gains `tsc` and "no new diagnostic" over every fix-carrying fixture.
+
+### Module state on a server (finding B)
+k.shared. The leak was a module-level `signal` written in a loader; E1256 refused only stores. The rule moves from the maker to the owner: a node owned by a module root is module state, whoever made it, and a request may read it and not write it. `signal.set` gains the hook stores have (`moduleWrites`), asked only when the node's root is a module root and only on a server; in a browser the hook is unset. A maker that makes its state lazily in a module root during a request is refused too, or its first value would be a request's. Check reports what it can see: `set` on a module-level signal in server code, and a write to plain module state (E1260), which has no node for the run time to guard. A cache a request writes on purpose is `processSlot(name, make)`, named and listed by review.
+
+### Identity and predicates (findings C and E)
+k.identity. The marks were enumerable `Symbol.for` keys, made so that a spread would keep its mark; a spread with one member replaced then passed `isAction`, and the server decoded with the forged `input` and scrubbed by it. Now a maker records what it made in the realm's kernel record and freezes it; a spread is a plain object and is refused where handlers are bound; the server decodes and scrubs from what the maker recorded. A wrapper wraps the function before `action` has it.
+
+E1762 no longer asks which shapes cannot be proven; it asks whether the body is one of five proofs. The review's passes all fail it: `typeof x === 'object'` for `{ admin: boolean }` (property `admin` unproven), an empty assertion, `instanceof Promise` for `Promise<number>`, a `Symbol.for` key for a type with methods.
+
+How the lane's key guards and the twelve predicates it moved into `unsafe` end:
+
+| Value | Ends as |
+| --- | --- |
+| `isLoader`, `isAction`, `isGuard`, `isStub` (router), `Secret`'s `is`, `isSchema`, `isStore`, `isTransaction`, `isDefect` | kernel-held identity; the shape tests beside them go |
+| router `objectSchemaOf` | `isObjectSchema` from `@keel/schema`; leaves `unsafe` |
+| runtime-dom `propsSchemaOf` | `isSchema(c.Props)`; leaves `unsafe` |
+| std-sessions `routeTableOf` | `isRouteTable` from `@keel/router`; leaves `unsafe` |
+| reactive `outcomeOf`, ui `readValue`, router `callable`, testing and router `routeStateOf` | stay: each claims a type argument no value proves |
+| compiler `devAppOf`, services `fetcherOf`, `signerOf` | stay: a signature known only from the table that was filled |
+| runtime-dom `nodeOf`, schema `formEntriesOf` | stay: a platform object of another realm, read by shape |
+
+The ledger's `unsafe` count is 33 on this lane; three calls leave, so 30. E1762's stricter reading then runs over every package's `src/` (S0019): a predicate it reports gains the missing checks, becomes a schema's `parse`, or moves into `unsafe` and is counted. The builder records each; the count may rise from 30 and the RFC does not promise it will not.
+
+### What a log holds (finding D)
+k.serverlog Thrown values. The scrub replaces values the request declared; a thrown text holds whatever its author put there. So a production record holds no thrown text at all: `loader p.def threw: Defect E2801 #9f3c21ab at modules/p/def.server.ts:12 <- Result postgres.database`. The class is from a closed list, a code is written only when `s.error` declared it or Keel owns it, and the fingerprint is an HMAC under `KEEL_SECRET`, so equal failures group and a short text (an SSN) cannot be guessed back from it. An operator who needs the text sets `KEEL_LOG_THROWN` to an instant at most 24 hours ahead; until then each throw also logs its text, scrubbed and cut as before. `keel dev` always does. `defect`'s message is then a developer's literal, which check holds (E1455), and values go in `data`, shown only where text is. RFC 0245's E1577 record follows the same paragraph.
+
+### PGlite and class 08 (finding F)
+std.postgres-errors. The refusal read the statement's text for `statement_timeout`; a concatenated name, an escaped identifier and `alter database` passed. The driver now reads the values after every statement (the session's, the per-database and per-role defaults, each function's `set` clause) and refuses any that is not `0`. Cost: one more query in the same process for each statement; estimated at 0.1 to 0.3 ms on PGlite's in-process protocol, to be measured by the builder over 1,000 statements and recorded in the package README. Making the parameter unsettable was weighed: PGlite runs as the one superuser, and Postgres has no way to lock a parameter against it.
+
+### The minors (finding G)
+| Finding | Home |
+| --- | --- |
+| `new Promise((_, r) => r(x))` | refused: E1451 at an executor's second parameter |
+| `void rr()` | refused: E1453 |
+| a dropped inner `attempt` | refused: E1453 inside a function given to `attempt`; a returned inner `Result` is flattened |
+| a `Result` kept in an array or object nothing reads | not held here; RFC 0245's sinks (given to other code) and its Not held |
+| a `defect` in `finally` | refused: E1452 |
+| a throw of a function called in `finally` | not held, listed |
+| `JSON.parse` and the other throwing built-ins | the list in k.attempt; E1457; `parseJson` |
+| `Secret`'s statics | moved out of reach (D34) |
+| class `08` | D37 |
+| E1203's explained fix does not compile | the explanation's example is conformance (k.fixes); it reads `owner() ?? defect('no owner')` |
+| a maker behind a helper after an `await` | the run-time layer: the E1203 defect; stated in k.reactive Static |
+
+### The layers
+k.errors Layers holds the statement. In brief: check refuses every throw but `defect`, every catch but `attempt(fn, expect)`, a discarded `Result`, a defect message that could carry a value, a bare throwing built-in, an `err` of a non-`KeelError`, a visible write to module state in server code, an unproven predicate, and offers a fix only where it is right. The run time, whatever check saw, reports every throw once by code, site and fingerprint and never by text, passes a defect through `attempt`, refuses a write to module state during a request and a value no maker made. Not held, and listed: an `expect` that claims too much, a defect raised for a failure a caller could handle, personal values in unmarked data, a throw inside `finally`'s callee, plain module state written through a helper, a forged identity through the realm record.
+
+### What RFC 0245 takes
+This RFC merges first, and RFC 0245 (k.failures, on `lane-server-up`) cites its E1452. Its text fits but for these, which its lane takes at its merge:
+1. k.failures Fixes: its first two bullets (remove the `try` of an unread catch; rewrite a reading catch to `attempt` with `const e = attempted.error`) give way to k.fixes. Removing a `try` changes which failures the caller sees (the JSON chain), and the rewrite hands the catch a `KeelError` where it tested a thrown value (the SDK chain). Its third bullet is k.fixes' E1451 row.
+2. Its quoted E1452 message becomes this RFC's; its two E1453 messages are already the same.
+3. Its examples `attempt(save)` and `onClick: () => attempt(save)` take an `expect` or drop the `attempt`: a handler's rejected promise already reaches the Boundary.
+4. Its Reading rule then also judges an `expect` (in place of "never uses its parameter" here) and the JSON chain's end.
+5. Its E1577 record is written as k.serverlog Thrown values says.
+
+### Personas, again
+- The agent form of A2 (the strictest reader): every diagnostic on the failure path either carries a fix that is right or names the code to write, word for word, and `keel explain` shows one compiling example per shape. An agent that applies the first fix each time ends correct: that is the conformance of k.fixes, not a hope. Where the agent must decide (a value or a defect; which thrown values are expected), no fix decides for it.
+- A2, human: three words for failures (`err`, `attempt`, `defect`) and one sentence each. The first failing call they wrap is the Stripe example.
+- A3: `expect` is where a team says which failures of a dependency it handles, in one place per call; review lists the wide ones (R1017) and the defects on failed results (R1013).
+- A6 (compliance): "can a thrown value put personal data in a production log" has the answer no, by the record's form, not by a scrub's reach; the window that prints text is bounded and itself a record.
+- A8 (operator): one new environment value, `KEEL_LOG_THROWN`, refused at start when malformed; a fingerprint to group by; the site in every record.
+- A7 (tester): a fix chain is a test anyone can add; a defect's values are asserted on `data`, not parsed from a message.
+- F1: `attempt`'s one-argument form and `err`'s open parameter go before any release held them; identity moves behind the same guards' names.
+- F2 and L1 to L4: a library holds identity the way the kernel does (the module's own set, proof 3), wraps an SDK with `attempt(fn, expect)`, and its module state is under E1256 with no declaration. L3's question (does the app see what a service library reaches) gains: its failures arrive as codes with typed data.
+- L6 (plain npm package): its throws are unexpected until an `expect` names them; its text never reaches a production log.
+
 ## Alternatives
 - **Leave it as `unsafe`.** Twenty-odd files with one reason, "a bug, never an expected failure a Result would carry", counted as escapes. The count then measures how many packages exist, not how much code steps outside the rules; reviewers learn to skip R1001 for these; a third-party library author meets the same wall and writes the same wrapper. D191 and D192 rule it out.
 - **`invariant(cond, message): asserts cond`.** Reads well for a guard but not for `?? fail` or `return fail` in an expression, and a second form beside `defect` would be two ways. `if (!c) return defect(...)` and `x ?? defect(...)` cover both.
@@ -193,6 +354,25 @@ The change, by folder, mechanically: each `scope(fn)` or `scope(fn, { onError })
 - **A `moduleScope()` export, or `detached` sanctioned for libraries.** A module root is what `scope` already makes where no owner runs; a name for it would be a second way, and `detached` under an owner is exactly what E1207 refuses (it escapes the caller's request registry from inside the request).
 - **Close `.then(onOk, onRejected)` as a catch in E1452 here.** It is one (std-offline `flush.ts` uses it), but it is a separate gap in an existing rule; the orchestrator files it.
 
+Rejected in the third review:
+- **Keep `attempt(fn)` catching every throw as `keel.unexpected`.** It swallows a defect raised inside it, nests a returned `Result`, and gives a caller `{ ok: false, error: {} }` with the cause gone: the review's first and fourth cases.
+- **A one-argument `attempt` that lets every throw pass.** It compiles and catches nothing, so a ported `catch` becomes a failed branch that never runs, and check is clean.
+- **Trust a thrown object shaped like a `KeelError`.** SDKs throw objects with a `code`; a shape is a claim anyone makes.
+- **Total versions of every throwing built-in.** Six exports for calls most apps make rarely; `parseJson` earns its place because parsed JSON needs a schema, and `attempt(fn, expect)` covers the rest.
+- **Leave throwing built-ins to the run time.** A person's bad text then answers 500, and nothing teaches the author before it ships.
+- **A kernel cleanup helper (`ensure(cleanup, work)`), or `using`.** `try`/`finally` is in the language, already accepted by E1452 and already what the review found right; a helper beside it is a second way (principle 1). Its one gain, running the undo for a failed `Result` too, is `if (!r.ok) { undo(); return r }`. `using` runs on success as well, so rollback still needs the flag, and it needs a disposable per resource.
+- **A fix that removes the `try` of an unread `catch`, or rewrites a reading `catch` to `attempt`.** The first changes what the caller sees; the second changes what the handler tests. Each ends clean and wrong on a wall-test case.
+- **A list of makers E1256 covers.** Each maker a library adds is then a hole until listed. The owner rule covers a maker not yet written.
+- **A copy of module state per request** (an async-context store behind each module signal). The same module would behave one way on a page and another on a server, and the write that was a bug would pass in silence.
+- **Marks as symbol keys, enumerable or not.** A key is copied by a spread or written by hand; the review forged an action with one.
+- **A `WeakSet` private to each copy of a package.** A second copy of `@keel/schema` in a process would not know the first's defects or schemas (D14's reason). The realm's record keeps one set per realm; reaching it on purpose is listed as not held.
+- **A `wrap(action, around)` export.** A second maker; wrapping the function before `action` needs none.
+- **E1762 by structural reading alone.** Sound for plain data, never for a signature; a schema's `parse` is the same proof with no hand-written checks, so both are accepted and signatures take identity or a class.
+- **Scrub thrown text harder.** The scrub replaces values it was told; a thrown text holds values nobody declared. No amount of matching bounds that.
+- **A plain hash as the fingerprint.** A short text (an SSN, a token) is found by hashing guesses. A keyed one is not.
+- **Log a defect's literal message in production.** Check holds the literal only in code it reads; a kernel package or a plain npm package calls `defect` unchecked, and the run time cannot tell.
+- **Match more spellings of `statement_timeout`.** Any reading of text loses to a function body or a concatenation; the value does not.
+
 ## Spec diff
 Applied in this commit.
 - k.errors (`implemented`): Split names `defect`; the API sample gains `attempt(..., expect)` and `defect`; `attempt` and `try`/`finally` bullets; a **Defects** paragraph; Rules E1451's message, E1455, "an `unsafe(` range lifts neither E1451 nor E1452"; six clauses after the last.
@@ -203,6 +383,16 @@ Applied in this commit.
 - k.unsafe (stays): a library's `unsafe(` holds a cast or a platform read, never a throw or catch.
 - Map: k.errors, k.check, k.escapes read `implemented`. No new section, no new row.
 - `docs/GLOSSARY.md`: **defect**, **module root**.
+
+After the third review, written to `spec/` in this change (every new section `proposed`):
+- New: k.attempt (11 clauses), k.defects (8), k.fixes (12), k.identity (8), k.shared (8), std.postgres-errors (6).
+- k.errors: Split and API name `attempt(fn, expect)`, `parseJson` and the flag form; the Defects paragraph and the `attempt`, `defect` and E1455 clauses move to k.attempt and k.defects; Rules as a list with the rewritten messages, E1451's `new Promise` executor, E1452's `defect` in `finally`, E1453 under `void`; a **Layers** paragraph. Clause #3 rewritten; #8 names every code of Rules; #15 to #23 are replaced by #15 to #19.
+- k.unsafe: Type predicates and the E1762 rule point to k.identity; One path adds E1457 and E1458 and the detail argument; clause #10 rewritten in place.
+- k.reactive: Static's message; Module roots points to k.shared. k.store Guards and k.schema Guard: kernel-held identity; k.schema gains `parseJson` and rule `json`.
+- k.escapes: R1015's row and clause; R1017 and its clause.
+- k.serverlog (`implemented` until covered): **Thrown values**, E1596, six clauses; its earlier clauses that quote thrown text hold of the full-text record.
+- std.postgres: Errors, Modes and E2461 point to std.postgres-errors; its two clauses that quoted the defect's message read `data.sqlstate`.
+- Areas: state, tools, security, data. `tooling/docs-owners.json`: the six sections' owners. Glossary: **kernel-held identity**, **fix chain**; **defect** updated.
 
 ## Conformance diff
 By the `conformance-writer`, from the spec text only, under `rfc:0242`.
@@ -221,6 +411,18 @@ After review, from the new text:
 - `packages/check/conformance/unsafe-type-predicates.test.ts`: k.unsafe#10 and #11 (E1762, its lift). `packages/cli/conformance/`: k.escapes' R1013 clause as rewritten (eight reported forms, three clean) and R1015's.
 - `packages/store/conformance/guards.test.ts`: k.store's last clause; `packages/schema/conformance/is-schema.test.ts`: k.schema's last clause.
 - `packages/std-postgres/conformance/`: std.postgres' two last clauses (`postgres.database` per SQLSTATE on Postgres 17 and PGlite; E2461 for `42P01`) and std.postgres-changes' last (a `follow` that cannot listen gets one `lost`).
+
+After the third review, by the `conformance-writer` from the new text only:
+- `packages/schema/conformance/attempt-expect.test.ts`: rewritten for k.attempt #1 to #4 and k.errors #3; `attempt.test-d.ts` and its run-time half for #5; new `err-keel-error.test.ts` (#7), `cause.test.ts` (#8), `parse-json.test.ts` (#10), `wrap-sdk.test.ts` (#11).
+- `packages/schema/conformance/defect.test.ts` and `defect-key.test.ts`: k.defects #1 to #4 (identity in place of the own key; `data`; `cause`). `secret-statics.test.ts`: k.identity #4. `is-schema.test.ts` and `packages/store/conformance/guards.test.ts`: k.identity #3.
+- `packages/check/conformance/errors-defect-rules.test.ts`: k.errors #15 and k.defects #5 to #8. `finally-exit.test.ts`: k.errors #16. New `throw-forms.test.ts` (#17), `result-discard.test.ts` (#18), `catch-messages.test.ts` (#19), `attempt-rules.test.ts` (k.attempt #6, #7, #9), `module-state-rules.test.ts` (k.shared #7, #8). `unsafe-type-predicates.test.ts`: k.unsafe #10 and k.identity #5 to #7. `reactive-after-await.test.ts`: the message.
+- `packages/check/conformance/fix-diffs.test.ts` and `fixtures-by-code.ts`: k.fixes #1 to #4. E1451's fixture becomes a `throw` of a `KeelError` in a `Result` function, E1452's the cleanup-and-rethrow shape; the no-fix shapes join `NO_FIX` with E1457, E1458 and E1260; every fix-carrying fixture is compiled after its fix.
+- `packages/check/conformance/fix-chains/<chain>/` for `retry`, `rollback`, `sdk`, `json`, `cleanup`, `invalid`, `missing`, `timeout`, `conflict`, `bug`, each with `start/`, `steps.json`, the named edits, `end/` and `probe.test.ts`; `fix-chains.test.ts` walks them (k.fixes #5 to #10 and #12). `explain-examples.test.ts`: #11.
+- `packages/router/conformance/identity.test.ts`: k.identity #1. `packages/server/conformance/identity-record.test.ts`: #2. `packages/server/conformance/module-state.test.ts`: k.shared #1 to #5; `packages/runtime-dom/conformance/module-state-page.test.ts`: #6.
+- `packages/server/conformance/thrown-log.test.ts`: k.serverlog's six new clauses; the existing k.serverlog cases run with `mode: 'dev'` and read the second record.
+- `packages/cli/conformance/`: k.escapes' R1015 clause as rewritten, R1017's, and k.identity #8.
+- `packages/std-postgres/conformance/`: `errors-by-sqlstate.test.ts` (std.postgres-errors #1, #2), `pglite-timeout.test.ts` (#3 to #6), and std.postgres' two edited clauses.
+- Every case citing k.errors #15 to #23 by number moves its `// Spec:` header to the clause's new section and position.
 
 ## Migration
 Nothing is released; no migration notes. The sites, by package (the builder):
@@ -242,6 +444,19 @@ After review, the builder:
 - `packages/testing`: `axeSync`'s predicate back into `unsafe/`; `documentRoute.ts` `isStateOf` into `unsafe/` unless it parses with the matched route's schemas.
 - std-channels: `storesIn` with `isStore`; `holds` into `unsafe/`. std-conflicts: `isStore`, `isTransaction` from `@keel/store`. std-offline: `isWrite` with `isSchema` on `output` and each present `params`, `query`, `body`; `outbox` captures `owner()` (E1203 without one) and makes its store by `run` on first use. std-statecharts: `chart` makes its store in the owner it finds, E1203 without. std-postgres: `classify` gives `postgres.database { sqlstate }` and `keel.unreachable` per class, E2461 for the rest; `listenChanges` reports `lost` instead of its two defects. A maker a test file declares at its top level moves into a `detached` scope or a harness: `keelConfig` compiles no test file.
 
+### After the third review, the builder
+Order: conformance first (above), then by package.
+- `@keel/schema`: `attempt` loses its one-argument overload and `toUnexpected`'s use; it returns a keel `Result` it is given as is; a one-argument call at run time is the defect E1452. `err` bounds its parameter and raises E1458. `KeelError` gains `cause`; `s.error` gains `causedBy` and `in`. `defect` takes the detail; `isDefect`, `isSchema` and the new `isObjectSchema` read the realm record; `DEFECT_KEY.ts` and `SCHEMA_KEY.ts` go. `Secret` loses `of`, `is`, `open`, `innerOf` and `marker` to functions private to the package (seven use sites in `gen.ts`, `internal/seal.ts`, `check.ts`, `secretWalk.ts`, `reveal.ts`, `toJson.ts`), and its constructor raises E1764 without the package's token. `parseJson` on every schema; rule `json`.
+- `@keel/store`: `isStore`, `isTransaction` on the record; `STORE_KEY.ts`, `TRANSACTION_KEY.ts` go. `@keel/reactive`: `moduleRoot` marks its scope; `signal.set` and a module root's `run` ask the `moduleWrites` hook when the node's root is a module root.
+- `@keel/router`: `loader`, `action`, `guard`, `serverOnly` and `manifest` record what they make (a `WeakMap` to the entry, the schemas and a copy of `decl`); `LOADER_KEY.ts`, `ACTION_KEY.ts`, `GUARD_KEY.ts`, `STUB.ts` and `markedFrozen`'s mark go, and with them the shape tests in `isLoader`, `isAction`, `isGuard`; `bindTable` refuses by identity; `isRouteTable` exported; `unsafe/objectSchemaOf.ts` goes.
+- `@keel/server`: `runAction`, `runLoaders` and `notePii` read `input` and `output` from the maker's record; `refuseModuleWrites` covers signals and roots; the log path writes class, code, fingerprint, site and causes (`caught.ts`, `unexpectedOf.ts`, `scrubbedCause` keep the text for the second record only); `KEEL_LOG_THROWN` and E1596 at start.
+- `@keel/check`: `noThrow.ts` and `noTryCatch.ts` lose their fixes and gain the two k.fixes names; `catchMessage.ts` texts; the executor rule; `defect` in `finally`; one-argument `attempt` and the untested `expect`; E1453 under `void`; E1455's message and detail forms and its `cause` fix; E1457, E1458, E1260 and E1256's static form; E1762 as the five proofs (`unprovenPredicates.ts` becomes a recognizer of proofs, anything else reported); `EXPLANATIONS.ts` for each, examples compiled by conformance. `tooling/structure-lint.mjs` S0019 and S0020 follow.
+- `@keel/cli`: R1015 as narrowed, R1017.
+- `@keel/runtime-dom`: `unsafe/propsSchemaOf.ts` goes for `isSchema`. std-sessions: `unsafe/routeTableOf.ts` goes for `isRouteTable`.
+- std-postgres: `classify.server.ts` by the table (class `08` no longer by prefix); `unexpected.server.ts` a literal message with `data`; `keel.conflict` with its cause; `pgliteEngine.server.ts` `refuseTimeout` reads the three places after every statement and at open, its text test deleted; the cost measured and written in the README.
+- Every package and app: each one-argument `attempt` (std-db 10, std-offline 14, std-postgres 13, std-channels 12, services 9, router 7, std-live 3, reactive 3, server 2, and ones and twos elsewhere) takes an `expect` naming what its call throws, or loses the `attempt` where it only guarded a bug; each interpolated `defect` message becomes a literal with `data`; `carriedParams`, `readWithin`, `readJson` and the `Result<_, unknown>` types take a `KeelError`; module-level mutable state in a `*.server.ts` file becomes a `processSlot` or request state.
+- Skills (`keel`, `keel-server`, `keel-library`, `keel-escapes`), the `@keel/schema` and `@keel/check` READMEs and a changeset follow the build; their fenced examples compile against it.
+
 ### The count
 | | main (d829b060) | lane-std-formats (466b3d5a) | after |
 |-|-|-|-|
@@ -260,6 +475,8 @@ What stays `unsafe` and why: casts over values the code built itself (k.unsafe's
 ## Token impact
 After review: k.errors about 3,096 (trimmed to fit, no clause changed); k.reactive about 2,360; k.unsafe about 2,565; k.escapes about 1,850; k.store about 2,260; k.schema about 3,030; std.postgres about 3,075 (its error classes written as one list to fit); std.postgres-changes about 820; no new section; the spec map at about 1,634 of 1,660 and `keel docs`' map unchanged in rows. k.errors 1,545 to about 2,740; k.reactive 1,479 to about 1,910; k.check 3,100 to about 3,085 (the removed lifts pay for the rewritten clause); k.escapes 1,587 to about 1,705; k.parity +22; k.unsafe +14. All under 3,100; the map is unchanged. `@keel/schema` gains two small functions; `@keel/check` gains one rule; budgets are re-based by the builder only if they overrun. `keel explain` gains E1455 under 120 tokens.
 
+After the third review (characters over four, as `tooling/budgets.mjs` counts): k.errors 2,999; k.attempt 2,507; k.defects 1,483; k.fixes 2,088; k.identity 2,249; k.shared 1,522; k.serverlog 2,304; k.unsafe 2,503; k.reactive 2,856; k.schema 3,062; k.escapes 1,897; std.postgres 3,020; std.postgres-errors 1,159. Every one is under 3,100; no limit is raised; `spec.map`, `docs.map` and the four areas pass as measured. `keel explain` gains E1457, E1458, E1260, E1596 and E1764, each under 120 tokens.
+
 ## For the operator
 1. **An `unsafe(` range no longer lifts `throw` or `catch`, in apps too.** Recommended: `defect` and `attempt(fn, expect)` cover every site in the tree, and a lift left in place is a second way to throw. Reverse by keeping E1451 and E1452 lifted in app code only.
 2. **No library or stdlib package may detach a scope (E1207 everywhere but the kernel).** Recommended: every stdlib site is a module root or a nested scope, and a library that detaches under an owner escapes the request registry from inside the request. Reverse by keeping RFC 0238's library-range lift.
@@ -267,3 +484,13 @@ After review: k.errors about 3,096 (trimmed to fit, no clause changed); k.reacti
 4. **Kernel packages keep their own throws.** They are not held to E1451; converting their 148 throwing files to `defect` would make `isDefect` hold of kernel errors too. Recommended as a later sweep, not a requirement here.
 5. **E1762 will raise the count.** Recommended: a predicate that claims a signature is a cast, and the count should say so; the kernel's key guards keep the stdlib's own out of it. Reverse by leaving predicates to review alone (R1015).
 6. **std.db keeps defects behind k.persist's rejecting storage contract.** Recommended for now; a `Result`-returning storage contract is a kernel change for its own RFC, with std-schedules' runner `Result` beside it.
+7. **`expect` is required, and `attempt(fn)` goes.** Recommended. About 81 calls in package `src/`, about 70 in tests and 6 in the golden apps take an `expect` or lose the `attempt`. Reverse by keeping a one-argument form that passes every throw on, which the Alternatives call the worst of the three.
+8. **`Result`'s error type is bounded to `KeelError`, and `err` refuses anything else.** Recommended. Four `err` calls and seven `Result<_, unknown>` or `Result<_, string>` types change.
+9. **A `defect` message is a literal.** Recommended. About 40 of the stdlib's 63 calls move their values into `data`; a test that matched a value in a message reads `data`.
+10. **A production log holds no thrown text; `KEEL_LOG_THROWN` opens at most 24 hours of it.** Recommended. An operator debugging a new failure sets one value and restarts. Reverse by making the window unbounded, which is the state the review found.
+11. **Making a node in a module root during a request is E1256**, so a maker that builds its state lazily builds it at module evaluation on a server. Recommended; the builder audits `outbox` and each lazy maker.
+12. **E1260 names `processSlot`, which RFC 0251 adds on `lane-r-boundary`.** Recommended: this RFC's build holds E1260 until RFC 0251 is merged, and the rest does not wait.
+13. **Identity lives in the realm's kernel record, one per realm, not in a set private to each package copy.** Recommended: a second copy of a kernel package still knows a defect and a schema. Code that reaches the record on purpose can forge; that is listed as not held.
+14. **RFC 0245's two `catch` fixes are withdrawn for k.fixes** (What RFC 0245 takes). Recommended: each ends clean and wrong on a wall-test case.
+15. **E1457 is an error, not a warning.** Recommended: the shortest way to a clean check is then the total form.
+16. **Six new sections.** The token gates pass with them as measured on this lane; if the owner's correction of `spec.map` and `docs.map` lands lower, the rows of the four areas are what to trim.
