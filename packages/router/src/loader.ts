@@ -131,6 +131,7 @@ export function loader(
         return a.stores !== undefined || stores === undefined
           ? yields(gen({ ...at, stores: a.stores }, ctx))
           : liveWithStores(stores, ctx, (st) => yields(gen({ ...at, stores: st }, ctx)));
+      },
     },
     "loader",
   );
