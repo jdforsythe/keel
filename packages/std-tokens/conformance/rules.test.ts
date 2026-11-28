@@ -1,6 +1,6 @@
 // std.tokens, Rules "E2201 `@keel/std-tokens/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix)"
 // std.tokens, Rules "E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix)."
-// Spec: std.tokens, clause "E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens`."
+// Spec: std.tokens, clause "E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens.opaque`."
 // Spec: std.tokens, clause "`import('@keel/std-tokens/server')` outside a `*.server.ts` file is E2201; `import type` from it is not."
 // std.tokens, Rules "Each reads the file's own `import`, `export ... from` and `import()`; a `require` and a helper file re-exporting the entry are not followed."
 // Seed: 1337.
@@ -61,14 +61,14 @@ test("E2202 that import in a module a deployable other than `node` serves, namin
   );
 });
 
-test("E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens`.", () => {
+test("E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens.opaque`.", () => {
   expect(found(project("modules/a/x.ts", IMPORT), "E2201")).toHaveLength(1);
   expect(found(project("modules/a/x.server.ts", IMPORT), "E2201")).toHaveLength(0);
   expect(found(project("modules/a/x.server.ts", IMPORT, "client"), "E2202")).toHaveLength(1);
   expect(found(project("modules/a/x.server.ts", IMPORT, "static"), "E2202")).toHaveLength(1);
   expect(found(project("modules/a/x.server.ts", IMPORT, "node"), "E2202")).toHaveLength(0);
-  expect(capabilities()).toContain("tokens");
-  expect(capabilities().filter((n) => n === "tokens")).toHaveLength(1);
+  expect(capabilities()).toContain("tokens.opaque");
+  expect(capabilities().filter((n) => n === "tokens.opaque")).toHaveLength(1);
 });
 
 test("`import('@keel/std-tokens/server')` outside a `*.server.ts` file is E2201; `import type` from it is not.", () => {

@@ -1,4 +1,4 @@
-import type { Locale } from "./Locale.ts";
+import type { Locale } from "./Locale.schema.ts";
 
 /** The locale's name in its own language (std.i18n), the text of a locale switcher's link: `Deutsch (Deutschland)`. */
 export function localeName(locale: Locale): string {

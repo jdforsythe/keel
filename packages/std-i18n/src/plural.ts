@@ -1,4 +1,4 @@
-import type { Locale } from "./Locale.ts";
+import type { Locale } from "./Locale.schema.ts";
 import type { PluralForms } from "./PluralForms.ts";
 import { formatNumber } from "./formatNumber.ts";
 

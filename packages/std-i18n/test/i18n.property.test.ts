@@ -1,7 +1,7 @@
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Locale } from "../src/Locale.ts";
+import { Locale } from "../src/Locale.schema.ts";
 import { formatNumber } from "../src/formatNumber.ts";
 import { localeName } from "../src/localeName.ts";
 import { plural } from "../src/plural.ts";

@@ -32,19 +32,28 @@ function packageDir(dir: string, name: string): string | undefined {
  * of an app manifest (`modules/<id>/module.ts` at any depth, resolved from its folder), and the `@keel/*` packages
  * their `package.json` `dependencies` and `peerDependencies` name, transitively, and the app's libraries with the
  * `@keel/*` packages theirs name (`libraryFiles`, k.library In an app). A library's formats and rules apply only when
- * it is among them, however long the process has held it. Read from the disk on each call.
+ * it is among them, however long the process has held it. `own` names the library whose own folder `root` is
+ * (k.library-pack Own folder): it is among them, with the `@keel/*` packages its `package.json` names, as for an app
+ * whose manifest lists it. Read from the disk on each call.
  */
-export function stdInScope(files: readonly SourceFile[], root: string): ReadonlySet<string> {
+export function stdInScope(files: readonly SourceFile[], root: string, own?: string): ReadonlySet<string> {
   const out = new Set<string>();
+  const named = (at: string): void => {
+    const pkg = readJson(path.join(at, "package.json"));
+    if (!isRecord(pkg)) return;
+    for (const field of [pkg.dependencies, pkg.peerDependencies])
+      if (isRecord(field)) for (const dep of Object.keys(field)) if (KEEL.test(dep)) visit(at, dep);
+  };
   const visit = (dir: string, name: string): void => {
     if (out.has(name)) return;
     out.add(name);
     const at = packageDir(dir, name);
-    const pkg = at === undefined ? undefined : readJson(path.join(at, "package.json"));
-    if (at === undefined || !isRecord(pkg)) return;
-    for (const field of [pkg.dependencies, pkg.peerDependencies])
-      if (isRecord(field)) for (const dep of Object.keys(field)) if (KEEL.test(dep)) visit(at, dep);
+    if (at !== undefined) named(at);
   };
+  if (own !== undefined) {
+    out.add(own);
+    named(path.resolve(root));
+  }
   for (const f of files) {
     if (!MANIFEST.test(f.path)) continue;
     const parsed = parseFile(f);

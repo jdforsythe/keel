@@ -7,6 +7,7 @@ import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { Outcome } from "./Outcome.ts";
+import { appMarkedLibrary } from "./appMarkedLibrary.ts";
 import { checkCommand } from "./checkCommand.ts";
 import { isError } from "./isError.ts";
 import { isRecord } from "./isRecord.ts";
@@ -81,7 +82,7 @@ function unwritable(cwd: string): string | undefined {
  * `test` (`keel test` there, its run report held, not written) and `ledger` (`keel ledger --write .keel/ledger.json`
  * over that run's report in place of any on disk; with `--check`, the shipped file's
  * `unsafe`, `hostElements` and `exports` as an app reads them, `readLibraryLedger`, against the ones it would write).
- * It stops at the first step that fails: that step's own records, then one E1164 whose message begins with the step's
+ * In an app's folder (`appMarkedLibrary`) it runs no step: one E1170 and the summary. It stops at the first step that fails: that step's own records, then one E1164 whose message begins with the step's
  * name. On success one summary whose `counts` are the written ledger's `{ unsafe, hostElements, exports }`, and, without
  * `--check`, the ledger file as the one write. Nothing else is written, so a failing run leaves the folder as it was.
  */
@@ -91,6 +92,9 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
     records: [...records, diag, summary(name, [diag], {})],
     writes: [],
   });
+  // An app's folder marked a library stops at once with its E1170 alone (k.module).
+  const marked = appMarkedLibrary(io.cwd);
+  if (marked !== undefined) return { records: [marked, summary(name, [marked], {})], writes: [] };
   const k = kind(io.cwd);
   if (!k.ok) return stop([], k.diag);
   const shape = packageShape(io.cwd, k.pkg, k.text);

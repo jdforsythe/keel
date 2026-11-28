@@ -1,6 +1,16 @@
 // Spec: std.i18n, clause "With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments."
 // Seed 1337
-import { formatNumber, localeName, plural } from "@keel/std-i18n";
+import {
+  collate,
+  formatDateTime,
+  formatList,
+  formatNumber,
+  formatUnit,
+  localeName,
+  numberParts,
+  plural,
+  pluralCategories,
+} from "@keel/std-i18n";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
@@ -41,7 +51,18 @@ test("With `process.env.TZ` and `process.env.LANG` changed, every export returns
       fc.constantFrom("C", "de_DE.UTF-8", "ja_JP.UTF-8"),
       (n, l, tz, lang) => {
         const forms = { one: "# a", other: "# b" };
-        const run = () => [formatNumber(n, l), plural(n, l, forms), localeName(l)];
+        const run = () => [
+          formatNumber(n, l),
+          plural(n, l, forms),
+          localeName(l),
+          collate("a", "B", l),
+          numberParts(n, l),
+          numberParts("-0.05", l, "EUR"),
+          formatUnit(n, l, "minute", "long"),
+          formatList(["a", "b", "c"], l, "conjunction", "long"),
+          formatDateTime(0, l, { timeZone: "UTC", month: "2-digit", day: "2-digit", hour: "2-digit" }),
+          pluralCategories(l),
+        ];
         const base = underEnv("UTC", "en_US.UTF-8", run);
         expect(underEnv(tz, lang, run)).toEqual(base);
       },

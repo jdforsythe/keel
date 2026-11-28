@@ -1,7 +1,7 @@
 import { localeFile, missingMessage, placeholderParams, undeclaredKey, unusedKey } from "@keel/std-messages/tools";
 // E2401 to E2405: the exact findings of each rule (position, message, fix edits) and the files it leaves alone.
 import { describe, expect, it } from "vitest";
-import { CLEAN, MODULE } from "../conformance/fixtures/support.ts";
+import { CLEAN, MODULE } from "./support.ts";
 import { applied, at, pos, run } from "./tooling.ts";
 
 const SET = "modules/recipes/RecipesText.schema.ts";

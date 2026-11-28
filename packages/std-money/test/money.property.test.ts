@@ -2,7 +2,7 @@
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Money } from "../src/Money.ts";
+import { Money } from "../src/Money.schema.ts";
 import { addMoney } from "../src/addMoney.ts";
 import { formatMoney } from "../src/formatMoney.ts";
 

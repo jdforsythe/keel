@@ -1,9 +1,13 @@
 import { type Result, err, ok } from "@keel/schema";
 import type { Locale } from "@keel/std-i18n";
-import type { Currency } from "./Currency.ts";
-import { Money } from "./Money.ts";
+import type { Currency } from "./Currency.schema.ts";
+import { Money } from "./Money.schema.ts";
 import type { ParseMoneyError } from "./ParseMoneyError.ts";
+import { CurrencyMismatch } from "./internal/CurrencyMismatch.schema.ts";
 import { EXPONENT } from "./internal/EXPONENT.ts";
+import { Overflow } from "./internal/Overflow.schema.ts";
+import { TooManyDecimals } from "./internal/TooManyDecimals.schema.ts";
+import { Unreadable } from "./internal/Unreadable.schema.ts";
 import { localeMarks } from "./internal/localeMarks.ts";
 import { normalized } from "./internal/normalized.ts";
 
@@ -11,7 +15,7 @@ import { normalized } from "./internal/normalized.ts";
 const LONGEST = 64;
 
 const unreadable = (): Result<never, ParseMoneyError> =>
-  err({ code: "money.unreadable", message: "the text is not an amount in this locale", data: {} });
+  err(Unreadable.make({}, "the text is not an amount in this locale"));
 
 const escaped = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -53,27 +57,16 @@ export function parseMoney(text: string, currency: Currency, locale: Locale): Re
   const number = new RegExp(`^(\\d{1,3}(?:${escaped(group)}\\d{3})+|\\d+)(?:${escaped(decimal)}(\\d+))?$`).exec(rest);
   if (number === null) return unreadable();
   const mark = first ?? last;
-  if (mark !== undefined && mark.currency !== currency) {
-    const data = { left: currency, right: mark.currency };
-    return err({
-      code: "money.currencyMismatch",
-      message: `the text is marked ${mark.currency}, not ${currency}`,
-      data,
-    });
-  }
+  if (mark !== undefined && mark.currency !== currency)
+    return err(CurrencyMismatch.make({ left: currency, right: mark.currency }, "the text is marked another currency"));
   const whole = (number[1] ?? "").split(group).join("");
   const fraction = number[2] ?? "";
   const decimals = EXPONENT[currency];
   if (fraction.length > decimals)
-    return err({
-      code: "money.tooManyDecimals",
-      message: `${currency} takes at most ${decimals} decimals`,
-      data: { currency, decimals },
-    });
+    return err(TooManyDecimals.make({ currency, decimals }, "too many decimals for the currency"));
   const magnitude = Number(`${whole}${fraction.padEnd(decimals, "0")}`);
   const amount = negative && magnitude !== 0 ? -magnitude : magnitude;
   const money = Money.parse({ amount, currency });
-  if (!money.ok)
-    return err({ code: "money.overflow", message: "the amount is outside the amount bounds", data: { amount } });
+  if (!money.ok) return err(Overflow.make({ amount }, "the amount is outside the amount bounds"));
   return ok(money.value);
 }

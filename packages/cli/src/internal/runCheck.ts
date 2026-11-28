@@ -24,7 +24,9 @@ import { relPath } from "./relPath.ts";
  * tokens reach the rules that judge them (E1804, E1809, E1801 over `base` and looks), and one that gives none is E1807.
  * The files of the libraries `project`'s manifests reach join `project` and, with `libraries`, the checked files
  * (`checkInputs`, k.library In an app). `reach` holds the manifests whose `deps` name the libraries read and imported
- * (default `project`; a library's own folder gives its own manifest, k.library-pack Own folder).
+ * (default `project`; a library's own folder gives its own manifest, k.library-pack Own folder). `own` names the
+ * library whose own folder `cwd` is: its own `./tools` is imported and its formats apply as in an app that lists it;
+ * the rules it registers do not run there (`check`'s `own`).
  */
 export async function runCheck(
   cwd: string,
@@ -33,12 +35,13 @@ export async function runCheck(
   base?: unknown,
   libraries = false,
   reach: readonly SourceFile[] = project,
+  own?: string,
 ): Promise<Diag[]> {
   const { all, checked } = checkInputs(cwd, files, project, libraries, reach);
   // While a library's entry lists `keel` other than first (E1815, which check() reports), nothing is evaluated: no
   // package is imported and no `tokens.ts` run, so no file other than the one check reads as source can load.
   const guarded = libraryEntryDiags(all).length > 0;
-  const loaded = guarded ? [] : await importDeps(cwd, reach);
+  const loaded = guarded ? [] : await importDeps(cwd, reach, own);
   const topology = projectTopology(project);
   const options = topology === undefined ? {} : { topology };
   const modules = join(cwd, "node_modules");
@@ -53,6 +56,7 @@ export async function runCheck(
         root: cwd,
         ...options,
         ...cache,
+        ...(own === undefined ? {} : { own }),
         project: all,
         ...(Object.keys(tokens.projectArtifacts).length === 0 ? {} : { projectArtifacts: tokens.projectArtifacts }),
         ...(base === undefined ? {} : { base }),

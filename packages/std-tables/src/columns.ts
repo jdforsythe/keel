@@ -1,14 +1,10 @@
-import { type ObjectSchema, piiPaths } from "@keel/schema";
+import { type ObjectSchema, defect, piiPaths } from "@keel/schema";
 import type { ColumnKind } from "./ColumnKind.ts";
 import type { ColumnSpec } from "./ColumnSpec.ts";
 import type { Columns } from "./Columns.type.ts";
 import type { Field } from "./Field.ts";
 import { fieldsOf } from "./internal/fieldsOf.ts";
 import { kindOf } from "./internal/kindOf.ts";
-
-const fail = (message: string): never => {
-  throw new Error(`E2851 ${message}`);
-};
 
 /**
  * A table over rows of the `s.object` schema `row` (std.tables Columns). Each field's kind comes from its schema;
@@ -25,22 +21,30 @@ export function columns<
   const kinds: Record<string, ColumnKind> = {};
   for (const [name, node] of Object.entries(fields)) kinds[name] = kindOf(node);
   const kind = (list: string, name: string): ColumnKind =>
-    kinds[name] ?? fail(`${list} names ${JSON.stringify(name)}, which is not a field of the row`);
+    kinds[name] ?? defect("a column names no field of the row", { code: "E2851", data: { list, name } });
   const expect = (list: string, names: readonly string[], ok: readonly ColumnKind[], what: string): void => {
     for (const name of names) {
       const k = kind(list, name);
-      if (!ok.includes(k)) fail(`${list} column ${name} is a ${k} column; ${list} takes ${what}`);
+      if (!ok.includes(k))
+        defect("a column is of a kind its list does not take", {
+          code: "E2851",
+          data: { list, name, kind: k, takes: what },
+        });
     }
   };
   const show = spec.show;
-  const rowHeader = spec.rowHeader ?? show[0] ?? fail("show names no column");
+  const rowHeader = spec.rowHeader ?? show[0] ?? defect("show names no column", { code: "E2851" });
   expect("key", [spec.key], ["text", "number"], "text or number");
   // The key is written into every row's element ids.
   const mark = piiPaths(row).find((m) => m.path === spec.key || m.path.startsWith(`${spec.key}.`));
-  if (mark !== undefined) fail(`key ${spec.key} is personal (${mark.class}); keys become element ids`);
+  if (mark !== undefined)
+    defect("the key is personal; keys become element ids", {
+      code: "E2851",
+      data: { key: spec.key, class: mark.class },
+    });
   expect("show", show, ["text", "number", "enum", "boolean", "value"], "any field");
   kind("rowHeader", rowHeader);
-  if (!show.includes(rowHeader)) fail(`rowHeader ${rowHeader} is not in show`);
+  if (!show.includes(rowHeader)) defect("rowHeader is not in show", { code: "E2851", data: { rowHeader } });
   const sort = spec.sort ?? [];
   const search = spec.search ?? [];
   const filter = spec.filter ?? [];
@@ -52,7 +56,8 @@ export function columns<
   const order = <K extends Field<T>>(name: K): void => {
     const fn = given?.[name];
     if (fn !== undefined) compare[name] = (a, b) => fn(a[name], b[name]);
-    else if (kind("sort", name) === "value") fail(`${name} is a value column; sort needs compare.${name}`);
+    else if (kind("sort", name) === "value")
+      defect("a value column in sort needs compare", { code: "E2851", data: { name } });
   };
   for (const name of sort) order(name);
   return { row, key: spec.key, rowHeader, show, sort, search, filter, kinds, compare };

@@ -1,4 +1,4 @@
-import type { Tally } from "./Tally.ts";
+import type { Tally } from "./Tally.schema.ts";
 
 /**
  * Count each distinct non-empty key into a `report.tally` record (std.report): rows by `n` descending, then `key`

@@ -50,7 +50,7 @@ test("calls without a locale, or with `undefined`, are not E2301", () => {
   expect(e2301(files(code))).toEqual([]);
 });
 
-test("a module scopes by its own manifest: a nested module without the dep is not E2301", () => {
+test("a module.ts nested in a module without the dep is no manifest: the files beside it are E2301", () => {
   const code = "export const f = new Intl.NumberFormat('de-DE')\n";
   const fs: Files = [
     ...files(code),
@@ -58,7 +58,7 @@ test("a module scopes by its own manifest: a nested module without the dep is no
     { path: "modules/a/inner/y.ts", source: code },
     { path: "lib/z.ts", source: code },
   ];
-  expect(e2301(fs).map((d) => d.path)).toEqual(["modules/a/x.ts"]);
+  expect(e2301(fs).map((d) => d.path)).toEqual(["modules/a/inner/y.ts", "modules/a/x.ts"]);
 });
 
 test("a manifest whose deps are not a literal string array, or that has no default object, lists nothing", () => {

@@ -1,6 +1,6 @@
 import { inspector } from "@keel/compiler/inspect/inspector";
 import type { Ctx } from "@keel/ctx";
-import { TimingsRecent } from "../TimingsRecent.ts";
+import { TimingsRecent } from "../TimingsRecent.schema.ts";
 
 /** The reader this module instance registered; per module scope, so a second copy of the package does not share it. */
 let registered: ((ctx: Ctx) => TimingsRecent) | undefined;

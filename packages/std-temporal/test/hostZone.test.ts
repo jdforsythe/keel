@@ -1,9 +1,10 @@
-// A host whose Intl lacks a pinned zone: parse and gen still accept it, using it throws RangeError. Seed 1337
+// A host whose Intl lacks a pinned zone: parse and gen still accept it, using it raises a defect. Seed 1337
+import { isDefect } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { Instant } from "../src/Instant.ts";
-import { TimeZone } from "../src/TimeZone.ts";
+import { Instant } from "../src/Instant.schema.ts";
+import { TimeZone } from "../src/TimeZone.schema.ts";
 import { formatInstant } from "../src/formatInstant.ts";
 import { plainDateOf } from "../src/plainDateOf.ts";
 
@@ -42,11 +43,23 @@ test("gen draws the same zones whether or not the host refuses one, and each par
   );
 });
 
-test("plainDateOf and formatInstant throw RangeError naming the zone the host refuses", () => {
+/** What `run` throws, or `undefined`. */
+const thrown = (run: () => unknown): unknown => {
+  try {
+    run();
+  } catch (e) {
+    return e;
+  }
+  return undefined;
+};
+
+test("plainDateOf and formatInstant raise a defect naming the zone the host refuses", () => {
   const i = Instant.parse("2026-11-10T23:30:00.000Z");
   const z = TimeZone.parse(REFUSED);
   expect(i.ok && z.ok).toBe(true);
   if (!(i.ok && z.ok)) return;
-  expect(() => plainDateOf(i.value, z.value)).toThrow(new RangeError(`Invalid time zone specified: ${REFUSED}`));
-  expect(() => formatInstant(i.value, "en-US", z.value, "short")).toThrow(RangeError);
+  const d = thrown(() => plainDateOf(i.value, z.value));
+  expect(isDefect(d)).toBe(true);
+  expect(Reflect.get(Object(d), "data")).toEqual({ timeZone: REFUSED });
+  expect(isDefect(thrown(() => formatInstant(i.value, "en-US", z.value, "short")))).toBe(true);
 });

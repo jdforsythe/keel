@@ -4,12 +4,13 @@
 // the entry. Seed 1337.
 import { ok, s } from "@keel/schema";
 import { commitStores, createApp, topology } from "@keel/server";
-import { queue } from "@keel/std-jobs";
 import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { flows, workflow } from "../src/index.server.ts";
+import { workflow } from "../src/index.server.ts";
+import { jobsOf } from "./modules/api/jobs.server.ts";
+import { runnersOf } from "./modules/api/runners.server.ts";
 import { type Sim, close, inRoot, nextId, pass, sim } from "./support.server.ts";
 
 const empty = s.object({});
@@ -91,7 +92,7 @@ function makePoll(done: Done, max: number) {
       waits: { sleeping: { ms: 1000, event: "wake" } },
     }),
   );
-  return { id, wf, jobs: queue({ ...wf.jobs }), keys };
+  return { id, wf, jobs: jobsOf(wf), keys };
 }
 type Poll = ReturnType<typeof makePoll>;
 
@@ -100,7 +101,7 @@ async function launch(ctx: Sim, f: Poll, first: "go" | "nap", max: number) {
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),
     ctx,
     mode: "dev",
-    runners: { api: [f.jobs, flows(f.jobs, [f.wf])] },
+    runners: { api: runnersOf(f.jobs, f.wf) },
   });
   const id = ctx.random.id("Flow");
   expect(

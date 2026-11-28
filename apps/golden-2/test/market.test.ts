@@ -28,33 +28,33 @@ async function listTab(locale: "en-US" | "de-DE" | "ja-JP", seed: number) {
 
 describe("the nearest market on the shopping list", () => {
   it("names the market closest to the device and its distance, and sends the position nowhere", async () => {
-    const { api, r } = await listTab("en-US", 1);
+    const { api, r } = await listTab("en-US", 21);
     expect(r.find("recipes.market.find").name).toBe("Find the nearest market");
     expect(r.find("recipes.market.nearest")).toMatchObject({ role: "status", text: "" });
     const sent = api.sent.length;
     await r.fire("recipes.market.find", { type: "click" });
     expect(r.find("recipes.market.nearest").text).toBe(
-      "Nearest market: Union Square Greenmarket, New York, 903 km away",
+      "Nearest market: Union Square Greenmarket, New York, 807 km away",
     );
     expect(() => r.find("recipes.market.unavailable")).toThrow();
     expect(api.sent.length).toBe(sent);
   });
   it("names it in de-DE with the locale's digits", async () => {
-    const { r } = await listTab("de-DE", 12);
+    const { r } = await listTab("de-DE", 23);
     await r.fire("recipes.market.find", { type: "click" });
-    expect(r.find("recipes.market.nearest").text).toBe("Nächster Markt: Viktualienmarkt, München, 2.777 km entfernt");
+    expect(r.find("recipes.market.nearest").text).toBe("Nächster Markt: Viktualienmarkt, München, 4.508 km entfernt");
   });
   it("names it in ja-JP with the locale's digits", async () => {
-    const { r } = await listTab("ja-JP", 3);
+    const { r } = await listTab("ja-JP", 2);
     await r.fire("recipes.market.find", { type: "click" });
-    expect(r.find("recipes.market.nearest").text).toBe("最寄りの市場: 築地場外市場（東京）（約 6,444 km）");
+    expect(r.find("recipes.market.nearest").text).toBe("最寄りの市場: 築地場外市場（東京）（約 1,730 km）");
   });
   it("agrees with the position the ctx's geo capability reports", async () => {
-    const { api, r } = await listTab("en-US", 9);
+    const { api, r } = await listTab("en-US", 3);
     const at = await geo(api.ctx).position();
-    expect(at.ok && nearestMarket(at.value)).toEqual({ key: "viktualien", km: 3309 });
+    expect(at.ok && nearestMarket(at.value)).toEqual({ key: "viktualien", km: 5076 });
     await r.fire("recipes.market.find", { type: "click" });
-    expect(r.find("recipes.market.nearest").text).toBe("Nearest market: Viktualienmarkt, Munich, 3,309 km away");
+    expect(r.find("recipes.market.nearest").text).toBe("Nearest market: Viktualienmarkt, Munich, 5,076 km away");
   });
   it("says the location is not available on a device that has no geolocation", async () => {
     const stop = new AbortController();

@@ -32,12 +32,12 @@ test("a reading outside Position is geo.unavailable", async () => {
   expect(r).toEqual({ ok: false, error: { code: "geo.unavailable", message: "reading fails Position", data: {} } });
 });
 
-test("a denied request is geo.unavailable and names the platform's message", async () => {
+test("a denied request is geo.unavailable and carries none of the platform's message", async () => {
   fakeNavigator((_success, fail) => fail({ message: "User denied" }));
   const r = await realGeo().position();
   expect(r).toEqual({
     ok: false,
-    error: { code: "geo.unavailable", message: "geolocation failed: User denied", data: {} },
+    error: { code: "geo.unavailable", message: "geolocation failed", data: {} },
   });
 });
 
@@ -46,12 +46,15 @@ test("a platform that throws is geo.unavailable, never a throw", async () => {
     throw new Error("boom");
   });
   const r = await realGeo().position();
-  expect(r).toEqual({ ok: false, error: { code: "geo.unavailable", message: "geolocation threw: boom", data: {} } });
+  expect(r).toEqual({
+    ok: false,
+    error: { code: "geo.unavailable", message: "geolocation threw", data: {} },
+  });
   fakeNavigator(() => {
     throw "plain";
   });
   const t = await realGeo().position();
-  expect(t).toEqual({ ok: false, error: { code: "geo.unavailable", message: "geolocation threw: plain", data: {} } });
+  expect(t).toEqual({ ok: false, error: { code: "geo.unavailable", message: "geolocation threw", data: {} } });
 });
 
 test("a navigator without geolocation is geo.unavailable", async () => {
@@ -70,11 +73,10 @@ test("no navigator at all is geo.unavailable", async () => {
   expect(r.ok ? "" : r.error.message).toBe("navigator.geolocation is absent");
 });
 
-test("a failure message is cut to one line of at most 89 characters", async () => {
+test("a failure message is the code's own line, never the platform's text", async () => {
   fakeNavigator((_success, fail) => fail({ message: "x".repeat(200) }));
   const r = await realGeo().position();
-  expect(r.ok ? "" : r.error.message).toBe(`geolocation failed: ${"x".repeat(69)}`);
-  expect(r.ok ? 0 : r.error.message.length).toBe(89);
+  expect(r.ok ? "" : r.error.message).toBe("geolocation failed");
 });
 
 test("mulberry32 gives the published sequence for a seed", () => {

@@ -190,6 +190,9 @@ importers:
       '@keel/std-db':
         specifier: workspace:*
         version: link:../../packages/std-db
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../../packages/std-i18n
       '@keel/std-jobs':
         specifier: workspace:*
         version: link:../../packages/std-jobs
@@ -211,6 +214,9 @@ importers:
       '@keel/std-tauri':
         specifier: workspace:*
         version: link:../../packages/std-tauri
+      '@keel/std-temporal':
+        specifier: workspace:*
+        version: link:../../packages/std-temporal
       '@keel/std-workflows':
         specifier: workspace:*
         version: link:../../packages/std-workflows
@@ -1806,13 +1812,22 @@ importers:
 
   packages/std-brands:
     dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2028,17 +2043,28 @@ importers:
         version: 3.23.2
 
   packages/std-geo:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
-    devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
       fast-check:
         specifier: ^3
         version: 3.23.2
@@ -2101,29 +2127,31 @@ importers:
         version: 21.0.4
 
   packages/std-health:
-    dependencies:
+    devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-      '@keel/ui':
-        specifier: workspace:*
-        version: link:../ui
-    devDependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
@@ -2133,6 +2161,9 @@ importers:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/node':
         specifier: ^22
         version: 22.20.5
@@ -2145,16 +2176,25 @@ importers:
 
   packages/std-i18n:
     dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -2252,19 +2292,16 @@ importers:
 
   packages/std-messages:
     dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-      '@keel/std-i18n':
-        specifier: workspace:*
-        version: link:../std-i18n
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2280,9 +2317,15 @@ importers:
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -2306,17 +2349,28 @@ importers:
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
 
   packages/std-money:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../std-i18n
-    devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
       fast-check:
         specifier: ^3
         version: 3.23.2
@@ -2414,29 +2468,34 @@ importers:
         version: 3.23.2
 
   packages/std-report:
-    dependencies:
+    devDependencies:
       '@keel/cli':
         specifier: workspace:*
         version: link:../cli
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-    devDependencies:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
@@ -2594,7 +2653,13 @@ importers:
         version: 3.23.2
 
   packages/std-tables:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
@@ -2610,19 +2675,12 @@ importers:
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
-      '@keel/std-i18n':
-        specifier: workspace:*
-        version: link:../std-i18n
-      '@keel/ui':
-        specifier: workspace:*
-        version: link:../ui
-    devDependencies:
-      '@keel/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@keel/server':
         specifier: workspace:*
         version: link:../server
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
       '@keel/store':
         specifier: workspace:*
         version: link:../store
@@ -2632,6 +2690,9 @@ importers:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/node':
         specifier: ^22
         version: 22.20.5
@@ -2698,17 +2759,25 @@ importers:
         version: 3.23.2
 
   packages/std-temporal:
-    dependencies:
+    devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../std-i18n
-    devDependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -2720,14 +2789,22 @@ importers:
         version: 3.23.2
 
   packages/std-text:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../std-i18n
-    devDependencies:
       '@keel/std-temporal':
         specifier: workspace:*
         version: link:../std-temporal
@@ -2742,23 +2819,28 @@ importers:
         version: 3.23.2
 
   packages/std-timings:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
-      '@keel/schema':
+      '@keel/reactive':
         specifier: workspace:*
-        version: link:../schema
-    devDependencies:
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
@@ -2779,23 +2861,28 @@ importers:
         version: 21.0.4
 
   packages/std-tokens:
-    dependencies:
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
-      '@keel/schema':
+      '@keel/reactive':
         specifier: workspace:*
-        version: link:../schema
-    devDependencies:
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server

@@ -12,7 +12,7 @@ formatDate(addedOn, props.params.locale, 'long') // de-DE: '10. November 2026'
 ```
 - `Instant` is `YYYY-MM-DDTHH:mm:ss.sssZ`, a UTC instant to the millisecond in years 0001 to 9999, as `toISOString` writes it; string order is time order.
 - `PlainDate` is `YYYY-MM-DD`, a proleptic Gregorian date in years 0001 to 9999; string order is date order.
-- `TimeZone` is `UTC` or a Zone or Link name of the pinned IANA tz release, spelled as there, kept as written (`Asia/Kolkata`, `Asia/Calcutta`; not `utc`). `parse` and `gen` (its Zone names) read only that list. `UTC` is exported as a `TimeZone`. `plainDateOf` and `formatInstant` throw `RangeError` for a zone the host's `Intl` lacks.
+- `TimeZone` is `UTC` or a Zone or Link name of the pinned IANA tz release, spelled as there, kept as written (`Asia/Kolkata`, `Asia/Calcutta`; not `utc`). `parse` and `gen` (its Zone names) read only that list. `UTC` is exported as a `TimeZone`. `plainDateOf` and `formatInstant` raise a defect (k.defects) for a zone the host's `Intl` lacks.
 - `Duration` is elapsed time in whole milliseconds, at most 1e15 either way: `PT0S`, or an optional `-`, `PT`, then `<h>H` if at least an hour, `<m>M` if the minutes (1 to 59) are nonzero, and `<s>S` or `<s>.<mmm>S` if the seconds or milliseconds are nonzero (`PT1H30M`, `-PT0.500S`).
 - `DateStyle` is `s.enum(['short', 'medium', 'long', 'full'])`; `UnitStyle` is `s.enum(['long', 'short', 'narrow'])`.
 - `TemporalError` is `KeelError<'temporal.outOfRange', { value: number }>`.
@@ -38,4 +38,4 @@ formatDate(addedOn, props.params.locale, 'long') // de-DE: '10. November 2026'
 - `formatDuration` with `short` is `5 min`, `5 Min.` and `5 分` for `PT5M`, and `1 hr, 30 min`, `1 Std., 30 Min.` and `1 時間 30 分` for `PT1H30M`, in `en-US`, `de-DE` and `ja-JP`; in `en-US`, `-PT1H30M` is `-1 hr, 30 min`, `PT0S` is `0 sec` and `PT1.500S` is `1.5 sec`.
 - With `process.env.TZ` set to `Pacific/Kiritimati` and then `America/Adak`, every export returns equal results for equal arguments.
 - `TimeZone.parse` accepts `Asia/Kolkata`, `Asia/Calcutta` and `Europe/Kyiv` and rejects `asia/kolkata`; one seed gives equal `gen` values on every host.
-- With `Intl.DateTimeFormat` refusing `Europe/Kyiv`, `TimeZone.parse` accepts it; `plainDateOf` and `formatInstant` throw `RangeError`.
+- With `Intl.DateTimeFormat` refusing `Europe/Kyiv`, `TimeZone.parse` accepts it; `plainDateOf` and `formatInstant` each raise a defect.

@@ -4,7 +4,7 @@ const SERVER = "@keel/std-tokens/server";
 
 const isNode = (x: unknown): x is object => typeof x === "object" && x !== null;
 
-/** Push the offset of each `import("@keel/std-tokens/server")` under `node`, at any depth. */
+/** Push the offset of each dynamic import of `SERVER` (a literal `import()` call) under `node`, at any depth. */
 function dynamic(node: unknown, out: number[], seen: WeakSet<object>): void {
   if (!isNode(node) || seen.has(node)) return;
   seen.add(node);

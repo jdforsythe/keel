@@ -3,7 +3,7 @@ status: conformance-covered
 
 **Purpose.** Opaque tokens an app mints and checks: API keys, invite links, one-time links. A fast hash is sound because every stored digest comes from `mint`, which draws 256 random bits. No password is hashed here: sign-in is the identity source's (k.user).
 
-**Extension points.** Capability registry (k.ctx): `tokens`. Schema type registry: `tokens.Digested`. Check rule registry: `@keel/std-tokens/tools` (E2201-E2203). A module that uses the package lists it in `deps`.
+**Extension points.** Capability registry (k.ctx): `tokens.opaque` (k.data E1607: `<id>.<name>`), reached through `tokens(ctx)`. Schema type registry: `tokens.Digested`. Check rule registry: `@keel/std-tokens/tools` (E2201-E2203). A module that uses the package lists it in `deps`.
 
 **API.** `@keel/std-tokens` is client-safe; `@keel/std-tokens/server` is Node only.
 ```ts
@@ -38,7 +38,7 @@ const id = tokens(ctx).idOf(input.token)  // Result<string, E>
 - A row whose `digest` is `$md5$` plus 43 characters, or has `exp=soon`, is `credentials.malformed` `parameters`.
 - Under sim, ctxs with one seed mint equal tokens and digests call by call, and two seeds do not; under real and shell, a sim token is `credentials.mismatch`, and a row with a sim digest or any generated `Digested` is `credentials.malformed` `sim`.
 - In a `*.server.ts` file, with `m` a `mint` result, `tx(t, { token: reveal(m.value.token) })` and `console.log(reveal(m.value.token))` are each one E1112; `tx(t, { id: m.value.id, digest: m.value.digest })`, `reveal(m.value.token)` in a `service` call's `body`, and `check(input.token, find)` are none.
-- E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens`.
+- E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens.opaque`.
 - `import('@keel/std-tokens/server')` outside a `*.server.ts` file is E2201; `import type` from it is not.
 - Under real and sim, `idOf` is `ok` with `id` for a minted token, for it with one `secret` character changed, and under sim for it after expiry.
 - `idOf` of `hunter2`, `''`, a minted token with one hex letter upper-cased, and under real and shell a sim token equals `check`'s `credentials.mismatch` for `hunter2`.

@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 import { expect, test } from "vitest";
-import { Locale } from "../src/Locale.ts";
+import { Locale } from "../src/Locale.schema.ts";
 
 const TAGS = [
   "de-DE",

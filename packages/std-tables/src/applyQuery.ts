@@ -1,3 +1,4 @@
+import { defect } from "@keel/schema";
 import { Locale } from "@keel/std-i18n";
 import type { Columns } from "./Columns.type.ts";
 import type { Field } from "./Field.ts";
@@ -5,10 +6,6 @@ import type { TablePage } from "./TablePage.type.ts";
 import type { TableQuery } from "./TableQuery.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
 import { compareBy } from "./internal/compareBy.ts";
-
-const fail = (message: string): never => {
-  throw new Error(`E2853 ${message}`);
-};
 
 const byKey = (x: unknown, y: unknown): number => {
   if (typeof x === "number" && typeof y === "number") return x - y;
@@ -31,8 +28,10 @@ export function applyQuery<T, S extends Field<T>, F extends Field<T>>(
   opts: { readonly pageSize: number; readonly locale: Locale },
 ): TablePage<T> {
   const { pageSize, locale } = opts;
-  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 500) fail(`pageSize ${pageSize} is outside 1 to 500`);
-  if (!Locale.parse(locale).ok) fail(`locale ${JSON.stringify(locale)} is not a Locale`);
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 500)
+    defect("pageSize is outside 1 to 500", { code: "E2853", data: { pageSize: String(pageSize) } });
+  if (!Locale.parse(locale).ok)
+    defect("locale is not a Locale", { code: "E2853", data: { locale: String(locale).slice(0, 40) } });
   checkKeys(rows.map((row) => row[cols.key]));
   const q = search.q;
   const needle = q === undefined || cols.search.length === 0 ? undefined : q.toLocaleLowerCase(locale);
@@ -51,7 +50,7 @@ export function applyQuery<T, S extends Field<T>, F extends Field<T>>(
   });
   const sort = search.sort;
   if (sort !== undefined && cols.sort.includes(sort)) {
-    const cmp = compareBy(cols, sort, new Intl.Collator(locale));
+    const cmp = compareBy(cols, sort, locale);
     const dir = search.dir === "desc" ? -1 : 1;
     kept.sort((a, b) => dir * cmp(a, b) || byKey(a[cols.key], b[cols.key]));
   }

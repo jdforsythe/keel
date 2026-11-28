@@ -1,6 +1,6 @@
 // k.library the two clauses on a library's manifest and ids, each quoted whole
 // Spec: k.library, clause "In that project, `deps: ['shop']` in the library's `module.ts` is one E1163 at the entry; `deps: ['@acme/other']`, naming a library holding the same files with `id: 'other'`, is not."
-// Spec: k.library, clause "In that project, with `modules/charts/module.ts` an app module of id `charts`, `keel check` reports one E1166 at the `'@acme/charts'` entry, message `module id charts is held by charts and @acme/charts`."
+// Spec: k.library, clause "In that project, with `modules/charts/module.ts` an app module of id `charts`, `keel check` reports one E1166 at the `'@acme/charts'` entry, message `module id charts is held by charts and @acme/charts`, and no other error."
 // Rules: E1163 "a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier, or a library manifest `deps` entry that does not begin with `@`, at the entry" (the manifest half; the import half is in library-rules.test.ts)
 // Rules: E1166 "a library whose `id` is a project module's id or another of the app's libraries' ids, at each `deps` entry that names one of them (message `module id <id> is held by <a> and <b>`)"
 // "That project" is the first Conformance clause of k.library, as `check()` files: `modules/shop/module.ts` listing `'@acme/charts'`, the library's files under `node_modules/@acme/charts/`.
@@ -119,7 +119,7 @@ test("E1163: a library manifest `deps` entry that begins with `@` is never an E1
   );
 });
 
-test("In that project, with `modules/charts/module.ts` an app module of id `charts`, `keel check` reports one E1166 at the `'@acme/charts'` entry, message `module id charts is held by charts and @acme/charts`", () => {
+test("In that project, with `modules/charts/module.ts` an app module of id `charts`, `keel check` reports one E1166 at the `'@acme/charts'` entry, message `module id charts is held by charts and @acme/charts`, and no other error", () => {
   const files = [...shop(["@acme/charts"]), manifestFile({ id: "charts" }), ...library("@acme/charts", "charts")];
   const d = codesOf(files, "E1166");
   expect(d.length).toBe(1);
@@ -128,6 +128,11 @@ test("In that project, with `modules/charts/module.ts` an app module of id `char
     true,
   );
   expect(d[0]?.message).toBe("module id charts is held by charts and @acme/charts");
+  expect(
+    check(files, NO_TYPES)
+      .diagnostics.filter((x) => x.code.startsWith("E") && x.code !== "E1166")
+      .map((x) => `${x.code} ${x.path}: ${x.message}`),
+  ).toEqual([]);
 });
 
 test("E1166: a library whose `id` is a project module's id is one E1166 at the entry naming it, message `module id <id> is held by <a> and <b>`, for any id and package name", () => {
