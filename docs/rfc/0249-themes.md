@@ -586,6 +586,7 @@ By the `conformance-writer`, from the spec text.
 - k.a11y-static #5 re-worded (`color: { fg: 5 }` at the `fg` key): re-quote its case; `packages/cli/conformance/overlay-over-e1807-cli.test.ts` moves its E1807 to the `over` key, message `overlay.scrim.over: names no color token "nope"` (k.values Overlays).
 - k.cli #21 (`keel dev`'s address): `packages/cli/conformance/dev-listen-address.test.ts`.
 - k.deploy #14 (`server.mjs`'s address): `packages/cli/conformance/server-listen-address.test.ts`.
+- k.hosting #10 (a prerendered document lists the themes the client's resume knows): `packages/cli/conformance/static-prerender-themes.test.ts`, on a real `keel build` of a `static` project `site` with `tokens.ts` `defineTokens({ ...brandTokens, themes: { slate: { color: { surface: '#F4F7FB' } } } })` and one module whose route `/` renders `<ThemeSelect id="s.page.theme" label="Theme" labels={{ default: "Keel", slate: "Slate" }} />`: exit 0; `dist/site/index.html`'s `<option>` values are `default`, `slate`; no `schemes.json`, `routes.json` or `std.json` under `dist/site/`; its resume half through `@keel/testing/e2e` `serve` of the build: the page's `problems()` hold no E1253.
 - Owed as eight end-to-end cases for RFC 0244's runner:
   1. The CSS compiled from the `tokens.ts` above parses in Chromium with `cssRules.length` equal to the rules emitted (k.values #5 with themes, overlays and every color form).
   2. With `data-k-theme="slate"` and an emulated dark preference, `getComputedStyle(document.body).backgroundColor` is `#10151C`.

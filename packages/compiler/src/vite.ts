@@ -1007,8 +1007,36 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             const bundled = await b.build(b.environments.ssr);
+            // The artifacts every server render reads beside `server.mjs` (`createApp({ artifacts })`): the routes of
+            // every module, not the project build's (forwarding needs each peer deployable's paths), `std.json`, and the
+            // tokens' schemes and `choice` themes (k.schemes First paint), so a served or prerendered document lists the
+            // themes the client's resume knows. Each deployable is read as `node`, so the client's modules and every
+            // placed stdlib module are listed.
+            const serverArtifacts = async (dir: string): Promise<void> => {
+              const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
+                modules: d.modules,
+                adapter: "node",
+              });
+              const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
+              const all = projectManifests(every, listSources(at), at);
+              const tokensFile = fs.existsSync(path.join(at, "tokens.ts")) ? "tokens.ts" : undefined;
+              const table = await evaluateProject({ root: at, tokensFile, routesFiles: all, usages: [] });
+              if (table.problems.length > 0) throw evaluationFailed(table.problems);
+              fs.writeFileSync(path.join(dir, "routes.json"), artifactText(table.routes));
+              if (fs.existsSync(path.join(at, ".keel", "std.json")))
+                fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(dir, "std.json"));
+              fs.writeFileSync(
+                path.join(dir, "schemes.json"),
+                `${JSON.stringify({ schemes: table.schemes, themes: table.themes })}\n`,
+              );
+            };
             if (built) {
               const std = path.join(at, ".keel", "std.json");
+              // Beside the build entry, which `writeStatic` removes with them.
+              await serverArtifacts(path.join(at, ssrOut)).catch((e: unknown) => {
+                fs.rmSync(path.join(at, ssrOut), { recursive: true, force: true });
+                throw e;
+              });
               const failed = await writeStatic(
                 path.join(at, out),
                 path.join(at, ssrOut, "server.mjs"),
@@ -1030,26 +1058,8 @@ export default function (): {
               throw evaluationFailed(read.problems);
             }
             for (const c of read.copies) fs.cpSync(c.from, path.join(at, out, c.rel), { recursive: true });
-            // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
-            // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
-            const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
-              modules: d.modules,
-              adapter: "node",
-            });
-            const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
-            const all = projectManifests(every, listSources(at), at);
-            // The tokens too, for the schemes the server's first paint reads (k.schemes First paint).
-            const tokensFile = fs.existsSync(path.join(at, "tokens.ts")) ? "tokens.ts" : undefined;
-            const table = await evaluateProject({ root: at, tokensFile, routesFiles: all, usages: [] });
-            if (table.problems.length > 0) throw evaluationFailed(table.problems);
+            await serverArtifacts(path.join(at, out));
             copyMigrations(at, path.join(at, out), top[name]?.modules ?? []);
-            fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
-            if (fs.existsSync(path.join(at, ".keel", "std.json")))
-              fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
-            fs.writeFileSync(
-              path.join(at, out, "schemes.json"),
-              `${JSON.stringify({ schemes: table.schemes, themes: table.themes })}\n`,
-            );
             // Before the `client` deployables it serves join it: each was verified by its own build.
             await verifyBuilt(path.join(at, out), path.join(at, out));
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
