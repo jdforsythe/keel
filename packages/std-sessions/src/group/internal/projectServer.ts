@@ -37,12 +37,11 @@ const hosts = new Map<string, Promise<Project>>();
 
 /**
  * Start a host worker (projectHost.ts) for `config` at `root`, kept under `key` until it ends; resolves once its
- * dev server is up. A host that ends answers every waiting request with an error.
+ * dev server is up. A host that ends answers every waiting request with an error. Shared by every group of the
+ * process, the host keeps the process alive only while it starts or a request waits on it.
  */
 function host(key: string, root: string, config: string | undefined): Promise<Project> {
   const worker = new Worker(entry(), { execArgv: ["--import", loader()], workerData: { root, config } });
-  // Shared by every group of the process, it never keeps the process alive by itself.
-  worker.unref();
   const waiting = new Map<number, Answer>();
   let next = 0;
   return new Promise((resolve, reject) => {
@@ -56,10 +55,12 @@ function host(key: string, root: string, config: string | undefined): Promise<Pr
     worker.on("exit", (code) => fail(new Error(`group: project host exited ${code}`)));
     worker.on("message", (m: unknown) => {
       if (field(m, "ready") === true) {
+        worker.unref();
         resolve({
           invoke: (data) =>
             new Promise((answer) => {
               const id = next++;
+              if (waiting.size === 0) worker.ref();
               waiting.set(id, answer);
               worker.postMessage({ id, data });
             }),
@@ -70,6 +71,7 @@ function host(key: string, root: string, config: string | undefined): Promise<Pr
       const answer = typeof id === "number" ? waiting.get(id) : undefined;
       if (answer === undefined || typeof id !== "number") return;
       waiting.delete(id);
+      if (waiting.size === 0) worker.unref();
       const error = field(m, "error");
       answer(error === undefined ? { result: field(m, "result") } : { error });
     });
