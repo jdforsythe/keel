@@ -26,7 +26,12 @@ const tree = (deps: string[]): Tree =>
     deps,
     libraries: [
       library({ exports: tools, files: { "tools.js": toolsRule("E2991"), "src/tools.ts": toolsRule("E2991") } }),
-      library({ name: EVIL, id: "evil", exports: tools, files: { "tools.js": toolsRule("E2991"), "src/tools.ts": toolsRule("E2991") } }),
+      library({
+        name: EVIL,
+        id: "evil",
+        exports: tools,
+        files: { "tools.js": toolsRule("E2991"), "src/tools.ts": toolsRule("E2991") },
+      }),
     ],
   });
 
