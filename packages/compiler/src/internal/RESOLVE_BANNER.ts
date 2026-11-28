@@ -4,19 +4,19 @@
  * its extensions `.js`, `.json`, `.node`, then a folder's `package.json` `main` and its `index` files; a package name:
  * the nearest `package.json` naming itself, then each `<folder>/node_modules/<name>` walking up, its `exports` under the
  * `node`, `require` and `default` conditions or its files, then `NODE_PATH` and Node's global folders; a `#` name: the
- * nearest `package.json` `imports`) and records every question it asks in `__keelObserved`, each candidate as a `stat`
- * probe, each `node_modules/<name>` a `realpath` probe and each `package.json` a read, the absent ones too, up to the
- * one that answers. It returns the real path of the file found, or undefined when none is: an absent answer whose
- * questions are recorded, so creating any of them is a miss. It asks the real `node:fs`, never Node's own resolver,
- * whose caches outlive the evaluation.
+ * nearest `package.json` `imports`) and asks every question of the command (`__keelAsk`), which records each candidate as a
+ * `stat` probe, each `node_modules/<name>` a `realpath` probe and each `package.json` a read, the absent ones too, up
+ * to the one that answers; Node's global folders are those of the `HOME` and `execPath` it asks. It returns the real path of the file found, or undefined when none is: an absent answer whose
+ * questions are recorded, so creating any of them is a miss. It never asks Node's own resolver, whose answers no
+ * question would record.
  */
 export const RESOLVE_BANNER = [
   "const __keelResolve = (() => {",
   "  const P = __keelPathReal;",
-  "  const kind = (p) => { try { const s = __keelFsReal.statSync(p); return s.isFile() ? 'file' : s.isDirectory() ? 'folder' : 'other'; } catch { return 'no'; } };",
-  "  const isFile = (p) => { __keelObserved.probes.push(['stat', p]); return kind(p) === 'file'; };",
-  "  const isDir = (p) => { __keelObserved.probes.push(['stat', p]); return kind(p) === 'folder'; };",
-  "  const json = (p) => { __keelObserved.reads.push(p); try { return JSON.parse(__keelFsReal.readFileSync(p, 'utf8')); } catch { return undefined; } };",
+  "  const kind = (p, as) => { try { const s = __keelAsk({ k: 'stat', p, as }); return s.kind === 'file' ? 'file' : s.kind === 'dir' ? 'folder' : 'other'; } catch (e) { if (__keelIsRefusal(e)) throw e; return 'no'; } };",
+  "  const isFile = (p) => kind(p) === 'file';",
+  "  const isDir = (p) => kind(p) === 'folder';",
+  "  const json = (p) => { try { return JSON.parse(__keelReadText(p)); } catch (e) { if (__keelIsRefusal(e)) throw e; return undefined; } };",
   "  const asFile = (x) => { for (const c of [x, `${x}.js`, `${x}.json`, `${x}.node`]) if (isFile(c)) return c; return undefined; };",
   "  const asIndex = (x) => ['index.js', 'index.json', 'index.node'].map((n) => P.join(x, n)).find(isFile);",
   "  const asDir = (x) => {",
@@ -65,8 +65,7 @@ export const RESOLVE_BANNER = [
   "    for (let d = from; ; d = P.dirname(d)) {",
   "      if (P.basename(d) !== 'node_modules') {",
   "        const dir = P.join(d, 'node_modules', name);",
-  "        __keelObserved.probes.push(['realpath', dir]);",
-  "        if (kind(dir) === 'folder') {",
+  "        if (kind(dir, 'realpath') === 'folder') {",
   "          const pkg = json(P.join(dir, 'package.json'));",
   "          if (pkg !== null && typeof pkg === 'object' && pkg.exports !== undefined && pkg.exports !== null) return target(dir, mapped(pkg.exports, key), dir);",
   "          const r = sub === '' ? asDir(dir) : at(P.join(dir, sub));",
@@ -76,8 +75,9 @@ export const RESOLVE_BANNER = [
   "      if (P.dirname(d) === d) break;",
   "    }",
   "    const np = __keelProcess.env.NODE_PATH;",
-  "    void __keelProcess.env.HOME;",
-  "    for (const g of [...(typeof np === 'string' && np !== '' ? np.split(P.delimiter) : []), ...__keelModuleReal.globalPaths]) { const r = at(P.resolve(g, id)); if (r !== undefined) return r; }",
+  "    const home = __keelProcess.env.HOME;",
+  "    const globals = [...(typeof home === 'string' && home !== '' ? [P.join(home, '.node_modules'), P.join(home, '.node_libraries')] : []), P.resolve(__keelProcess.execPath, '..', '..', 'lib', 'node')];",
+  "    for (const g of [...(typeof np === 'string' && np !== '' ? np.split(P.delimiter) : []), ...globals]) { const r = at(P.resolve(g, id)); if (r !== undefined) return r; }",
   "    return undefined;",
   "  };",
   "  const imports = (id, from) => { const own = scope(from); if (own === undefined || own[1] === null || typeof own[1] !== 'object') return undefined; return target(own[0], mapped(own[1].imports ?? {}, id), own[0]); };",
@@ -85,8 +85,7 @@ export const RESOLVE_BANNER = [
   "    const path = id === '.' || id === '..' || id.startsWith('./') || id.startsWith('../') || P.isAbsolute(id);",
   "    const found = path ? at(P.resolve(from, id)) : id.startsWith('#') ? imports(id, from) : named(id, from);",
   "    if (found === undefined) return undefined;",
-  "    __keelObserved.probes.push(['realpath', found]);",
-  "    return __keelFsReal.realpathSync(found);",
+  "    return __keelAsk({ k: 'realpath', p: found });",
   "  };",
   "})();",
 ].join("\n");

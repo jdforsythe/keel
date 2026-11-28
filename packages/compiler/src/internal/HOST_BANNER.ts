@@ -1,31 +1,93 @@
 /**
- * The host views of a build-time evaluation bundle, part of `OBSERVE_BANNER` (k.compiler Build-time evaluation), built
- * from `__keelHost` (`HOST_VIEWS`), default deny. `__keelView(name, real, members, kinds, fact)` is one view: a proxy
- * with every trap over a target of its own, whose listed members are pure (the real value), recorded calls, facts or
- * a view of a kind in `kinds`; a member not listed is refused (`__keelRefuse`, E1050): a function at its call or
- * construction (`__keelRefusedFn`), any other value at its read; a name the host object does not have reads as
- * undefined; setting, defining or deleting a member is refused. `__keelBuiltin(id)` is a Node built-in's view, a
- * built-in not listed refused whole. `__keelGlobal` is the global object: every trap, a layer of its own that the
- * bundle's writes go to, and the real global's names through `__keelView`'s rule, so nothing global changes.
- * `__keelRefuse` puts the bundle positions of its caller's frames between two NUL characters after what it refused,
- * which `evaluateProject` maps to the first source file. Written as one raw string: the code holds no template literal.
+ * The host views of a build-time evaluation bundle, part of `OBSERVE_BANNER` (k.evaluator Realm), built from
+ * `__keelHost` (`HOST_VIEWS`), default deny. It takes the evaluator's `ask` and `at` (`EVALUATOR_BOOTSTRAP`) from the
+ * global object and deletes them: `__keelAsk(question)` is the command's answer, or the error the view throws (Node's
+ * code and message; a refusal the command gives is E1050), and `__keelAt(file)` names the entry file being imported.
+ * `__keelView(name, real, members, kinds, fact)` is one view of a Node object of the evaluator: a proxy with every
+ * trap over a target of its own, whose listed members are pure (the real value), calls or facts the command answers
+ * (`call`, `fact`: asked, never read here), or a view of a kind in `kinds`; a member not listed is refused
+ * (`__keelRefuse`, E1050): a function at its call or construction (`__keelRefusedFn`), any other value at its read; a
+ * name the object does not have reads as undefined; setting, defining or deleting a member is refused.
+ * `__keelBuiltin(id)` is a Node built-in's view, a built-in not listed refused whole. `__keelRefuse(what)` throws an
+ * `Error` whose message starts with `what` and whose `keelRefusal` holds `what` and the bundle positions of its
+ * caller's frames, taken with `Error`'s own capture and Keel's limit and formatter, whatever the code set them to.
+ * `__keelRefusalOf(e)` is a throw's refusal (`what`, `frames`): a view's, or Node's `ERR_ACCESS_DENIED` and
+ * `ERR_DLOPEN_DISABLED` and V8's code-generation `EvalError` (Below the views), its frames read from its stack.
+ * Last, `__keelPrepare()` prepares the evaluator's global object in place: each own name `HOST_VIEWS` does not list as
+ * pure becomes an accessor whose getter gives its view (`process`, `console`, `navigator`, `WebAssembly`; `global`
+ * and `globalThis` the object itself) or refuses (a function at its call, any other value at the read), and whose
+ * setter makes it the code's own value. Written as one raw string: the code holds no template literal.
  */
 export const HOST_BANNER = String.raw`
 const __keelSelfUrl = import.meta.url;
-const __keelAt = (stack) => {
-  const at = [];
-  for (const l of String(stack).split('\n').slice(2)) {
-    const i = l.indexOf(__keelSelfUrl);
-    const m = i < 0 ? null : /^:(\d+):(\d+)/.exec(l.slice(i + __keelSelfUrl.length));
-    if (m !== null) at.push(m[1] + ':' + m[2]);
+const __keelGlobalReal = globalThis;
+const __keelErrorReal = Error;
+const __keelCapture = Error.captureStackTrace;
+const __keelRest = ' at build time: Keel cannot see what it reads, so a build-time evaluation does not run it';
+const __keelHand = (() => {
+  const k = Symbol.for('keel.evaluator');
+  const h = Reflect.get(globalThis, k);
+  Reflect.deleteProperty(globalThis, k);
+  return h;
+})();
+const __keelFramesNow = () => {
+  const limit = __keelErrorReal.stackTraceLimit;
+  const format = __keelErrorReal.prepareStackTrace;
+  let sites = [];
+  try {
+    __keelErrorReal.stackTraceLimit = 64;
+    __keelErrorReal.prepareStackTrace = (e, s) => s.map((c) => [c.getFileName(), c.getLineNumber(), c.getColumnNumber()]);
+    const o = {};
+    __keelCapture(o);
+    sites = o.stack;
+  } catch {
+    sites = [];
+  } finally {
+    __keelErrorReal.stackTraceLimit = limit;
+    __keelErrorReal.prepareStackTrace = format;
   }
-  return at.join(' ');
+  return Array.isArray(sites) ? sites.filter((s) => s[0] === __keelSelfUrl).map((s) => [s[1], s[2]]) : [];
 };
 const __keelRefuse = (what) => {
-  const e = new Error(what + '\u0000' + __keelAt(new Error().stack) + '\u0000 at build time: Keel cannot see what it reads, so a build-time evaluation does not run it');
+  const e = new __keelErrorReal(what + __keelRest);
   e.code = 'E1050';
+  Reflect.defineProperty(e, 'keelRefusal', { value: Object.freeze({ what, frames: __keelFramesNow() }) });
   throw e;
 };
+const __keelEvalErrorReal = EvalError;
+const __keelPermission = { FileSystemRead: 'reading a file outside the evaluation', FileSystemWrite: 'writing a file', ChildProcess: 'starting a process', WorkerThreads: 'starting a worker', Addon: 'loading an addon', WASI: 'WASI', Inspector: 'the inspector' };
+const __keelRefusalOf = (e) => {
+  if (e === null || typeof e !== 'object') return undefined;
+  const own = Reflect.getOwnPropertyDescriptor(e, 'keelRefusal');
+  if (own !== undefined) return own.value;
+  let what;
+  if (e.code === 'ERR_ACCESS_DENIED') what = Object.hasOwn(__keelPermission, e.permission) ? __keelPermission[e.permission] : 'a call Node refuses';
+  else if (e.code === 'ERR_DLOPEN_DISABLED') what = 'loading an addon';
+  else if (e instanceof __keelEvalErrorReal && /code generation from strings/i.test(String(e.message))) what = 'code from a string';
+  if (what === undefined) return undefined;
+  const frames = [];
+  for (const l of String(e.stack).split(String.fromCharCode(10)).slice(1)) {
+    const i = l.indexOf(__keelSelfUrl);
+    const m = i < 0 ? null : /^:(\d+):(\d+)/.exec(l.slice(i + __keelSelfUrl.length));
+    if (m !== null) frames.push([Number(m[1]), Number(m[2])]);
+  }
+  return { what, frames };
+};
+const __keelIsRefusal = (e) => e !== null && typeof e === 'object' && Reflect.getOwnPropertyDescriptor(e, 'keelRefusal') !== undefined;
+const __keelAsk = (q) => {
+  if (__keelHand === undefined) __keelRefuse('a question outside an evaluator');
+  const a = __keelHand.ask(q);
+  if (a !== null && typeof a === 'object' && Object.hasOwn(a, 'ok')) return a.ok;
+  const err = a !== null && typeof a === 'object' && a.err !== null && typeof a.err === 'object' ? a.err : { code: 'EIO', message: 'no answer' };
+  if (err.code === 'E1050') __keelRefuse(String(err.message));
+  const e = new __keelErrorReal(String(err.message));
+  e.code = err.code;
+  if (typeof err.errno === 'number') e.errno = err.errno;
+  if (typeof err.syscall === 'string') e.syscall = err.syscall;
+  if (typeof q.p === 'string') e.path = q.p;
+  throw e;
+};
+const __keelAt = (file) => { if (__keelHand !== undefined) __keelHand.at(file); };
 const __keelRefusedFn = (what) => {
   const f = function () {};
   Reflect.defineProperty(f, 'name', { value: what.slice(what.lastIndexOf('.') + 1) });
@@ -51,7 +113,7 @@ const __keelDescOf = (o, k) => {
   }
   return undefined;
 };
-const __keelFact = (name) => { __keelObserved.probes.push(['process', name]); };
+const __keelFact = (name) => __keelAsk({ k: 'fact', n: name });
 const __keelView = (name, real, members, kinds, factOf) => {
   const pure = new Set(members.pure || []);
   const call = new Set(members.call || []);
@@ -71,15 +133,14 @@ const __keelView = (name, real, members, kinds, factOf) => {
     const d = __keelDescOf(real, k);
     if (d === undefined) return Reflect.get(fn ? Function.prototype : Object.prototype, k);
     if (fact.has(k)) {
-      const v = Reflect.get(real, k);
-      if (typeof v !== 'function') { __keelFact(factOf(k)); return v; }
-      const w = function () { if (arguments.length > 0) __keelRefuse(at(k) + ' with arguments'); __keelFact(factOf(k)); return Reflect.apply(v, real, []); };
+      if (!('value' in d) || typeof d.value !== 'function') return __keelFact(factOf(k));
+      const w = function () { if (arguments.length > 0) __keelRefuse(at(k) + ' with arguments'); return __keelFact(factOf(k)); };
       made.set(k, w);
       return w;
     }
     let v;
     if (pure.has(k)) v = Reflect.get(real, k);
-    else if (call.has(k)) v = __keelCalled(name, k, Reflect.get(real, k), real);
+    else if (call.has(k)) v = __keelCalled(name, k);
     else if ('value' in d && typeof d.value === 'function') v = __keelRefusedFn(at(k));
     else __keelRefuse(at(k));
     made.set(k, v);
@@ -112,100 +173,29 @@ const __keelView = (name, real, members, kinds, factOf) => {
   });
   return self;
 };
-const __keelCalled = (mod, k, f, real) => function () {
+const __keelCalled = (mod, k) => function () {
   const a = [...arguments];
   let args;
   try { args = JSON.stringify(a); } catch { args = undefined; }
   if (args === undefined) __keelRefuse(mod + '.' + k + ' with arguments that are not data');
-  __keelObserved.probes.push(['call', mod.replace(/^node:/, '') + '.' + k + ':' + args]);
-  return Reflect.apply(f, real, a);
+  return __keelAsk({ k: 'call', m: mod.replace(/^node:/, ''), f: k, a: JSON.parse(args) });
 };
 const __keelStream = { write() { return true; }, end() { return this; }, on() { return this; }, once() { return this; }, off() { return this; }, removeListener() { return this; }, emit() { return false; }, hasColors() { return false; }, getColorDepth() { return 1; }, isTTY: false, writable: true };
 const __keelConsole = Object.fromEntries(Object.keys(console).map((k) => [k, typeof console[k] === 'function' ? function () {} : console[k]]));
 const __keelConsoleModule = { ...__keelConsole, Console: function Console() { return __keelConsole; } };
-const __keelFsFacts = (() => {
-  const at = (x) => {
-    if (typeof x === 'string') return __keelPathResolve(x);
-    if (x instanceof URL) return x.protocol === 'file:' ? __keelFileUrl(x) : undefined;
-    if (x instanceof Uint8Array) return __keelPathResolve(Buffer.from(x).toString('utf8'));
-    return undefined;
-  };
-  const fds = new Map();
-  const C = __keelFsReal.constants;
-  const WRITE = C.O_WRONLY | C.O_RDWR | C.O_CREAT | C.O_TRUNC | C.O_APPEND;
-  const flagsOk = (f) => f === undefined || f === null || typeof f === 'function' || (typeof f === 'number' ? (f & WRITE) === 0 : ['r', 'rs', 'sr'].includes(f));
-  const readOnly = (kind, o) => kind === 'open' || kind === 'handle' ? flagsOk(o) : o === null || typeof o !== 'object' || flagsOk(o.flag ?? o.flags);
-  const mine = (fd) => { if (typeof fd === 'number' && !fds.has(fd)) __keelRefuse('a read by file descriptor ' + fd + ', which the evaluation did not open,'); return fds.get(fd); };
-  const stats = (kind, f, s) => {
-    if (s === null || typeof s !== 'object' || f === undefined) return s;
-    const field = (k, real, self, what) => {
-      const v = Reflect.get(real, k);
-      if (k !== 'size' && k !== 'mode') __keelObserved.probes.push(['field', kind + ' ' + __keelHost.stats.view[k] + ' ' + f]);
-      return v;
-    };
-    const kinds = new Proxy({}, { get: (t, kind) => (kind === 'bound' ? __keelKinds.bound : field) });
-    return __keelView('node:fs.Stats', s, __keelHost.stats, kinds);
-  };
-  const note = (kind, name, a) => {
-    if (kind === 'fd' || kind === 'fstat') return mine(a[0]);
-    if (kind === 'list' && a[1] !== null && typeof a[1] === 'object' && a[1].recursive === true) __keelRefuse('a recursive folder listing');
-    if ((kind === 'open' || kind === 'handle' || kind === 'stream' || kind === 'read') && !readOnly(kind, a[1])) __keelRefuse(name + ' to write');
-    const o = kind === 'stream' && a[1] !== null && typeof a[1] === 'object' ? a[1].fd : undefined;
-    if (o !== undefined && o !== null) return mine(typeof o === 'object' ? o.fd : o);
-    if (typeof a[0] === 'number') return mine(a[0]);
-    const f = at(a[0]);
-    if (f === undefined) return undefined;
-    if (kind === 'read' || kind === 'open' || kind === 'handle' || kind === 'stream') __keelObserved.reads.push(f);
-    else __keelObserved.probes.push([kind === 'access' ? 'stat' : kind, f]);
-    return f;
-  };
-  const after = (kind, f, v) => {
-    if (kind === 'stat' || kind === 'lstat' || kind === 'fstat') return stats(kind === 'lstat' ? 'lstat' : 'stat', f, v);
-    if (kind === 'open' && typeof v === 'number') fds.set(v, f);
-    if (kind === 'handle' && v !== null && typeof v === 'object') { fds.set(v.fd, f); return __keelView('FileHandle', v, __keelHost.fileHandle, handleKinds(f)); }
-    return v;
-  };
-  const handleKinds = (f) => ({
-    bound: (k, real) => { const m = Reflect.get(real, k); return typeof m === 'function' ? m.bind(real) : m; },
-    fstat: (k, real) => function () { return Reflect.apply(Reflect.get(real, k), real, [...arguments]).then((s) => stats('stat', f, s)); },
-  });
-  const wrap = (fn, kind, name, inner) => {
-    const w = function (...a) {
-      const f = note(kind, name, a);
-      const last = a.length - 1;
-      if (last >= 0 && typeof a[last] === 'function') { const done = a[last]; a[last] = function (err, v) { return err ? done.apply(this, arguments) : done.call(this, err, after(kind, f, v)); }; }
-      const r = fn.apply(this, a);
-      return r !== null && typeof r === 'object' && typeof r.then === 'function' ? r.then((v) => after(kind, f, v)) : after(kind, f, r);
-    };
-    for (const k of Reflect.ownKeys(fn)) {
-      if (k === 'length' || k === 'name' || k === 'prototype' || k === 'arguments' || k === 'caller') continue;
-      const d = Reflect.getOwnPropertyDescriptor(fn, k);
-      if (d === undefined) continue;
-      if (typeof d.value === 'function' && inner !== true) d.value = d.value === fn ? w : wrap(d.value, kind, name + '.' + String(k), true);
-      Reflect.defineProperty(w, k, d);
-    }
-    return w;
-  };
-  return { wrap };
-})();
 const __keelEnv = (() => {
-  const real = globalThis.process.env;
-  const seen = new Set();
   const mine = new Map();
-  const note = (k) => { if (typeof k !== 'string' || seen.has(k)) return; seen.add(k); const v = Reflect.get(real, k); __keelObserved.env.push([k, v === undefined ? null : String(v)]); };
-  const value = (k) => { note(k); return mine.has(k) ? mine.get(k) : Reflect.get(real, k); };
+  const value = (k) => { if (mine.has(k)) return mine.get(k); const v = __keelAsk({ k: 'env', n: k }); return v === null ? undefined : v; };
   return new Proxy({}, {
     get(t, k) { return typeof k === 'string' ? value(k) : undefined; },
     has(t, k) { return typeof k === 'string' && value(k) !== undefined; },
-    set(t, k, v) { note(k); mine.set(k, String(v)); return true; },
-    defineProperty(t, k, d) { note(k); mine.set(k, String(d.value)); return true; },
-    deleteProperty(t, k) { note(k); mine.set(k, undefined); return true; },
+    set(t, k, v) { if (typeof k === 'string') { value(k); mine.set(k, String(v)); } return true; },
+    defineProperty(t, k, d) { if (typeof k === 'string') { value(k); mine.set(k, String(d.value)); } return true; },
+    deleteProperty(t, k) { if (typeof k === 'string') { value(k); mine.set(k, undefined); } return true; },
     getOwnPropertyDescriptor(t, k) { const v = typeof k === 'string' ? value(k) : undefined; return v === undefined ? undefined : { value: v, writable: true, enumerable: true, configurable: true }; },
     ownKeys() {
-      __keelObserved.envListed = true;
-      const keys = new Set(Reflect.ownKeys(real));
+      const keys = new Set(__keelAsk({ k: 'envNames' }));
       for (const [k, v] of mine) if (v === undefined) keys.delete(k); else keys.add(k);
-      for (const k of keys) note(k);
       return [...keys];
     },
     getPrototypeOf() { return Object.prototype; },
@@ -214,18 +204,6 @@ const __keelEnv = (() => {
   });
 })();
 const __keelKinds = {
-  read: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'read', what),
-  open: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'open', what),
-  handle: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'handle', what),
-  stream: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'stream', what),
-  fd: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'fd', what),
-  fstat: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'fstat', what),
-  exists: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'exists', what),
-  stat: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'stat', what),
-  lstat: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'lstat', what),
-  access: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'access', what),
-  realpath: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'realpath', what),
-  list: (k, real, self, what) => __keelFsFacts.wrap(Reflect.get(real, k), 'list', what),
   promises: () => __keelBuiltin('fs/promises'),
   require: () => __keelRequireFor,
   env: () => __keelEnv,
@@ -253,13 +231,18 @@ const __keelKinds = {
   console: () => __keelConsole,
   navigator: () => __keelNavigator(),
   wasm: () => __keelWasm(),
-  self: (k, real, self) => self,
+  self: () => __keelGlobalReal,
 };
-const __keelProcess = __keelView('process', globalThis.process, __keelHost.process, __keelKinds, (k) => k);
+const __keelFsKinds = new Proxy(__keelKinds, { get: (t, kind) => (Object.hasOwn(t, kind) ? t[kind] : (k) => __keelFs[k]) });
+const __keelFsPromisesKinds = new Proxy(__keelKinds, { get: (t, kind) => (Object.hasOwn(t, kind) ? t[kind] : (k) => __keelFsPromises[k]) });
+const __keelProcessReal = globalThis.process;
+const __keelNavigatorReal = globalThis.navigator;
+const __keelWasmReal = globalThis.WebAssembly;
+const __keelProcess = __keelView('process', __keelProcessReal, __keelHost.process, __keelKinds, (k) => k);
 let __keelNav;
-const __keelNavigator = () => { if (__keelNav === undefined && globalThis.navigator !== undefined) __keelNav = __keelView('navigator', globalThis.navigator, __keelHost.navigator, __keelKinds, (k) => 'navigator.' + k); return __keelNav; };
+const __keelNavigator = () => { if (__keelNav === undefined && __keelNavigatorReal !== undefined) __keelNav = __keelView('navigator', __keelNavigatorReal, __keelHost.navigator, __keelKinds, (k) => 'navigator.' + k); return __keelNav; };
 let __keelWa;
-const __keelWasm = () => { if (__keelWa === undefined) __keelWa = __keelView('WebAssembly', WebAssembly, __keelHost.webAssembly, __keelKinds); return __keelWa; };
+const __keelWasm = () => { if (__keelWa === undefined) __keelWa = __keelView('WebAssembly', __keelWasmReal, __keelHost.webAssembly, __keelKinds); return __keelWa; };
 const __keelBuiltins = new Map();
 const __keelBuiltin = (id) => {
   if (!__keelIsBuiltin(String(id))) return undefined;
@@ -267,50 +250,42 @@ const __keelBuiltin = (id) => {
   if (__keelBuiltins.has(name)) return __keelBuiltins.get(name);
   const entry = Object.hasOwn(__keelHost.builtins, name) ? __keelHost.builtins[name] : {};
   const real = () => __keelCreateRequire(import.meta.url)(name.startsWith('node:') ? name : 'node:' + name);
-  const v = entry === 'pure' ? real() : entry === 'console' ? __keelConsoleModule : entry === 'process' ? __keelProcess : __keelView(name.startsWith('node:') ? name : 'node:' + name, real(), entry, __keelKinds);
+  const kinds = name === 'fs' ? __keelFsKinds : name === 'fs/promises' ? __keelFsPromisesKinds : __keelKinds;
+  const v = entry === 'pure' ? real() : entry === 'console' ? __keelConsoleModule : entry === 'process' ? __keelProcess : __keelView(name.startsWith('node:') ? name : 'node:' + name, real(), entry, kinds);
   __keelBuiltins.set(name, v);
   return v;
 };
-const __keelGlobal = (() => {
-  const real = globalThis;
-  const members = __keelHost.globals;
-  const pure = new Set(members.pure);
-  const made = new Map();
-  const gone = new Set();
-  let self;
-  const member = (k) => {
-    if (made.has(k)) return made.get(k);
-    const d = __keelDescOf(real, k);
-    let v;
-    if (pure.has(k)) v = Reflect.get(real, k);
-    else if (Object.hasOwn(members.view, k)) v = __keelKinds[members.view[k]](k, real, self, k);
-    else if ('value' in d && typeof d.value === 'function') v = __keelRefusedFn(k);
-    else __keelRefuse(k);
-    made.set(k, v);
-    return v;
-  };
-  const host = (k) => typeof k === 'string' && !gone.has(k) && __keelDescOf(real, k) !== undefined;
-  const put = (t, k, v) => Reflect.defineProperty(t, k, { value: v, writable: true, enumerable: true, configurable: true });
-  self = new Proxy({}, {
-    get(t, k) { return Object.hasOwn(t, k) || !host(k) ? Reflect.get(t, k) : member(k); },
-    set(t, k, v) { gone.delete(k); return Object.hasOwn(t, k) ? Reflect.set(t, k, v) : put(t, k, v); },
-    defineProperty(t, k, d) { gone.delete(k); return Reflect.defineProperty(t, k, d); },
-    deleteProperty(t, k) { if (Object.hasOwn(t, k)) return Reflect.deleteProperty(t, k); if (host(k)) gone.add(k); return true; },
-    has(t, k) { return Reflect.has(t, k) || host(k); },
-    ownKeys(t) {
-      const keys = Reflect.ownKeys(t);
-      for (const k of Object.getOwnPropertyNames(real)) if (!gone.has(k) && !keys.includes(k)) keys.push(k);
-      return keys;
-    },
-    getOwnPropertyDescriptor(t, k) {
-      const own = Reflect.getOwnPropertyDescriptor(t, k);
-      if (own !== undefined) return own;
-      const d = typeof k === 'string' && !gone.has(k) ? Reflect.getOwnPropertyDescriptor(real, k) : undefined;
-      return d === undefined ? undefined : { get: () => member(k), set: (v) => { put(t, k, v); }, enumerable: d.enumerable, configurable: true };
-    },
-    setPrototypeOf() { __keelRefuse('setting the prototype of globalThis'); },
-    preventExtensions() { __keelRefuse('Object.preventExtensions(globalThis)'); },
-  });
-  return self;
-})();
+const __keelPrepare = () => {
+  const g = __keelGlobalReal;
+  const pure = new Set(__keelHost.globals.pure);
+  const views = __keelHost.globals.view;
+  // Node loads some globals on their first read (Headers, fetch), with code that reads other globals: each is
+  // read once before any name is replaced.
+  const values = new Map();
+  for (const k of Reflect.ownKeys(g)) {
+    if (typeof k !== 'string') continue;
+    try { values.set(k, Reflect.get(g, k)); } catch { values.set(k, undefined); }
+  }
+  for (const k of Reflect.ownKeys(g)) {
+    if (typeof k !== 'string' || pure.has(k)) continue;
+    const d = Reflect.getOwnPropertyDescriptor(g, k);
+    if (d === undefined || d.configurable !== true) continue;
+    let get;
+    if (Object.hasOwn(views, k)) {
+      let v;
+      let made = false;
+      get = () => { if (!made) { v = __keelKinds[views[k]](k, g, g, k); made = true; } return v; };
+    } else {
+      if (typeof values.get(k) === 'function') { const f = __keelRefusedFn(k); get = () => f; }
+      else get = () => __keelRefuse(k);
+    }
+    const enumerable = d.enumerable === true;
+    Reflect.defineProperty(g, k, {
+      get,
+      set(v) { Reflect.defineProperty(g, k, { value: v, writable: true, enumerable, configurable: true }); },
+      enumerable,
+      configurable: true,
+    });
+  }
+};
 `;

@@ -384,10 +384,12 @@ describe("evaluateProject observes what it reads by another way, and refuses wha
       expect((await run("tokens8.ts")).problems).toEqual([]);
       write("tokens11.ts", tokensWith(`${head}\nconst n = String(execSync("true")).length;`, "n"));
       expect((await run("tokens11.ts")).problems.join("\n")).toMatch(
-        /^E1050 node:child_process\.execSync at build time/,
+        /^E1050 tokens11\.ts:4:18 node:child_process\.execSync at build time/,
       );
       write("tokens12.ts", tokensWith(`${head}\nconst n = new net.Socket() ? 1 : 0;`, "n"));
-      expect((await run("tokens12.ts")).problems.join("\n")).toMatch(/^E1050 node:net\.Socket at build time/);
+      expect((await run("tokens12.ts")).problems.join("\n")).toMatch(
+        /^E1050 tokens12\.ts:4:\d+ node:net\.Socket at build time/,
+      );
       write("a.node", "");
       write("tokens13.ts", tokensWith('import a from "./a.node";\nconst n = a;', "n"));
       await expect(run("tokens13.ts")).rejects.toThrow(/tokens13\.ts:1:\d+: ERROR: E1050 the native addon \.\/a\.node/);
@@ -407,13 +409,15 @@ describe("evaluateProject observes what it reads by another way, and refuses wha
         ),
       );
       expect((await run("tokens9.ts")).problems.join("\n")).toMatch(
-        /^E1050 a require or import\(\) of ".*c\.cjs", a code file/,
+        /^E1050 tokens9\.ts:2:\d+ a require or import\(\) of ".*c\.cjs", a code file/,
       );
       write(
         "tokens10.ts",
         tokensWith('import { readFileSync } from "node:fs";\nconst n = readFileSync(0).length;', "n"),
       );
-      expect((await run("tokens10.ts")).problems.join("\n")).toMatch(/^E1050 a read by file descriptor 0/);
+      expect((await run("tokens10.ts")).problems.join("\n")).toMatch(
+        /^E1050 tokens10\.ts:2:\d+ a read by file descriptor 0/,
+      );
     },
   );
 
@@ -471,7 +475,9 @@ describe("evaluateProject observes what it reads by another way, and refuses wha
       ];
       for (const [i, [head, refused]] of cases.entries()) {
         write(`tokens15${i}.ts`, tokensWith(head, "n"));
-        expect((await run(`tokens15${i}.ts`)).problems.join("\n")).toMatch(refused);
+        // Each refusal is placed at the case's own file (k.evaluator Placing), then names what it refused.
+        const placed = new RegExp(`^E1050 tokens15${i}\\.ts:\\d+:\\d+ ${refused.source.slice("^E1050 ".length)}`);
+        expect((await run(`tokens15${i}.ts`)).problems.join("\n")).toMatch(placed);
       }
     },
   );

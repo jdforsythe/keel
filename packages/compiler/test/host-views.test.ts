@@ -1,7 +1,7 @@
-// Seed 1337. The host views of a build-time evaluation (k.compiler Build-time evaluation), default deny: every member
-// `HOST_VIEWS` does not list is refused with E1050, a function at its call and any other value at its read; the global
-// object's reflection reaches only views; the bundle's writes to the global object and `process.env` stay its own;
-// a stat field the code reads is a probe, `atime` refused.
+// Seed 1337. The host views of a build-time evaluation (k.evaluator Realm, k.compiler Build-time evaluation), default
+// deny, in an evaluator: every member `HOST_VIEWS` does not list is refused with E1050, a function at its call and any
+// other value at its read; the prepared global object's reflection reaches only views; the bundle's writes to the
+// global object and `process.env` stay in the evaluation; a stat field the code reads is a probe, `atime` refused.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -20,7 +20,7 @@ afterEach(() => {
 
 type Run = { result: unknown; probes: unknown; leaked: unknown };
 const isRun = (x: unknown): x is Run => typeof x === "object" && x !== null && "result" in x && "leaked" in x;
-/** Runs `code` after the bundle's head in plain Node (vitest's loader gives a module globals Node does not). */
+/** Runs `code` after the bundle's head in an evaluator, started from plain Node. */
 function run(code: string): Run {
   const out = execFileSync(process.execPath, [path.join(import.meta.dirname, "host-views-child.ts"), dir, code], {
     encoding: "utf8",
@@ -47,7 +47,7 @@ test(
   "every member of the global object, `process` and each built-in that `HOST_VIEWS` does not list is refused",
   () => {
     const r = run(`${OPEN}
-const left = [...open(__keelGlobal, globalThis, '', names(__keelHost.globals)), ...open(__keelProcess, process, 'process.', names(__keelHost.process))];
+const left = [...open(globalThis, globalThis, '', names(__keelHost.globals)), ...open(__keelProcess, __keelProcessReal, 'process.', names(__keelHost.process))];
 for (const id of __keelCreateRequire(import.meta.url)('node:module').builtinModules) {
   const entry = __keelHost.builtins[id.replace(/^node:/, '')];
   if (entry === 'pure' || entry === 'console' || entry === 'process' || id.startsWith('_')) continue;
@@ -63,17 +63,17 @@ result = left;`);
 test(
   "a property descriptor's getter on the global object gives the view: `process` the view's, `Function` refused",
   () => {
-    const r = run(`const get = (k) => Object.getOwnPropertyDescriptor(__keelGlobal, k).get.call(__keelGlobal);
+    const r = run(`const get = (k) => Object.getOwnPropertyDescriptor(globalThis, k).get.call(globalThis);
 let fn; try { get('Function')('return 1'); fn = 'ran'; } catch (e) { fn = e.code; }
 let pid; try { void get('process').pid; pid = 'read'; } catch (e) { pid = e.code; }
-result = [get('process') === __keelProcess, fn, pid, Reflect.ownKeys(__keelGlobal).includes('process')];`);
+result = [get('process') === __keelProcess && process === __keelProcess, fn, pid, Reflect.ownKeys(globalThis).includes('process')];`);
     expect(r.result).toEqual([true, "E1050", "E1050", true]);
   },
   fixedTime(30_000),
 );
 
 test(
-  "the bundle's writes to the global object and `process.env` read back in the evaluation and reach neither real one",
+  "the bundle's writes to the global object and `process.env` read back in the evaluation and reach neither the command's global object nor its environment",
   () => {
     const pairs = fc.sample(fc.tuple(fc.stringMatching(/^[a-z]{1,8}$/), fc.stringMatching(/^[a-z0-9]{0,8}$/)), {
       numRuns: 20,
@@ -81,10 +81,9 @@ test(
     });
     const code = `const pairs = ${JSON.stringify(pairs)};
 const back = [];
-__keelGlobal.keelMark = 1; __keelProcess.env.KEEL_MARK = '1';
-for (const [k, v] of pairs) { __keelGlobal['keelMark' + k] = v; __keelProcess.env['KEEL_MARK_' + k] = v; back.push(__keelGlobal['keelMark' + k] === v && __keelProcess.env['KEEL_MARK_' + k] === v); }
-const real = Object.keys(globalThis).filter((k) => k.startsWith('keelMark')).concat(Object.keys(process.env).filter((k) => k.startsWith('KEEL_MARK')));
-result = [__keelGlobal.keelMark, __keelProcess.env.KEEL_MARK, back.every(Boolean), real];`;
+globalThis.keelMark = 1; process.env.KEEL_MARK = '1';
+for (const [k, v] of pairs) { globalThis['keelMark' + k] = v; process.env['KEEL_MARK_' + k] = v; back.push(globalThis['keelMark' + k] === v && process.env['KEEL_MARK_' + k] === v); }
+result = [globalThis.keelMark, process.env.KEEL_MARK, back.every(Boolean), []];`;
     const r = run(code);
     expect(r.result).toEqual([1, "1", true, []]);
     expect(r.leaked).toEqual([]);

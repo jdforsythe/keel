@@ -75,7 +75,7 @@ export function probeAnswer(kind: CacheProbe["kind"], path: string): string | nu
     if (kind === "list")
       return hash(
         readdirSync(path, { withFileTypes: true }).map(
-          (d) => `${d.name}${d.isDirectory() ? "/" : d.isSymbolicLink() ? "@" : ""}`,
+          (d) => `${d.name}${d.isDirectory() ? "/" : d.isSymbolicLink() ? "@" : d.isFile() ? "" : "!"}`,
         ),
       );
     if (kind === "process") return fact(path);

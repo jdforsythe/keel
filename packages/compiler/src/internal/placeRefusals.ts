@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import { SourceMap, type SourceMapPayload } from "node:module";
 import path from "node:path";
+import type { ProblemRecord } from "./ProblemRecord.ts";
 
-/** `E1050 <what>`, NUL, the bundle positions of the refused call's frames, NUL, the rest (`OBSERVE_BANNER`). */
-const MARKED = /^E1050 ([^\0]*)\0([^\0]*)\0 at build time(.*)$/s;
-const MARK = /\0[^\0]*\0/g;
+/** What follows a refusal's `<what>` and its place (`HOST_BANNER`). */
+const REST = ": Keel cannot see what it reads, so a build-time evaluation does not run it";
 /** The longest `<what> at <file>:<line>` kept whole in a message (k.check Diagnostics: 86 units, then `...`). */
 const KEPT = 86;
 
@@ -37,14 +37,19 @@ function packagePath(file: string): string {
 }
 
 /**
- * Each E1050 problem of an evaluation (k.compiler Rules) placed at the first frame of the refused call inside the
- * project or a package, mapped through the bundle's source map (`map`, read only when one is marked): a project file's
- * frame is the problem's position (`E1050 <path>:<line>:<col> <what> ...`), a package's is named in its message
- * (`<what> at <package>/<path>:<line>: ...`, the file cut from its start with `...` when the two do not fit in 86
- * units); with no such frame the message is `<what> at build time: ...`. The marks are taken out of every other
- * problem, one whose code wrapped a refusal's message included.
+ * Each problem record of an evaluation as a problem line (k.evaluator Placing, k.compiler Rules): a refusal (E1050
+ * with `what`) placed at the first of its frames inside the project or a package, mapped through the bundle's source
+ * map (`map`, read only when a refusal has frames): a project file's frame is the problem's position
+ * (`E1050 <path>:<line>:<col> <what> at build time: ...`), a package's is named in its message
+ * (`<what> at <package>/<path>:<line>:<col>: ...`, the file cut from its start with `...` when the two do not fit in
+ * 86 units); a frame in no file on disk (a `data:` module, the banner) is skipped; with no such frame the message is
+ * `<what> at build time: ...`. Any other record is `<code> <message>`.
  */
-export function placeRefusals(problems: readonly string[], map: () => string | undefined, root: string): string[] {
+export function placeRefusals(
+  problems: readonly ProblemRecord[],
+  map: () => string | undefined,
+  root: string,
+): string[] {
   let source: SourceMap | undefined;
   const sourceMap = (): SourceMap | undefined => {
     if (source !== undefined) return source;
@@ -54,26 +59,27 @@ export function placeRefusals(problems: readonly string[], map: () => string | u
     return source;
   };
   return problems.map((p) => {
-    const m = MARKED.exec(p);
-    if (m === null) return p.replace(MARK, "");
-    const [, what = "", at = "", rest = ""] = m;
-    const sm = at === "" ? undefined : sourceMap();
-    for (const pos of at.split(" ")) {
-      const [line = 0, col = 0] = pos.split(":").map(Number);
+    const what = p.what;
+    if (p.code !== "E1050" || what === undefined) return `${p.code} ${p.message ?? ""}`;
+    const frames = p.frames ?? [];
+    const sm = frames.length === 0 ? undefined : sourceMap();
+    for (const [line, col] of frames) {
       const e = sm?.findEntry(line - 1, col - 1);
       if (e === undefined || !("originalSource" in e)) continue;
       const file = e.originalSource;
-      if (file.includes("<") || file.endsWith("keel-evaluate.js")) continue;
+      if (file.includes("<") || file.endsWith("keel-evaluate.js") || file.startsWith("data:")) continue;
       const abs = path.resolve(root, file.startsWith("file:") ? new URL(file).pathname : file);
+      if (!fs.existsSync(abs)) continue;
       const rel = path.relative(root, abs).split(path.sep).join("/");
       const ownLine = e.originalLine + 1;
+      const ownCol = e.originalColumn + 1;
       if (!rel.startsWith("../") && !path.isAbsolute(rel) && !rel.split("/").includes("node_modules"))
-        return `E1050 ${rel}:${ownLine}:${e.originalColumn + 1} ${what} at build time${rest}`;
-      let shown = `${packagePath(abs)}:${ownLine}`;
+        return `E1050 ${rel}:${ownLine}:${ownCol} ${what} at build time${REST}`;
+      let shown = `${packagePath(abs)}:${ownLine}:${ownCol}`;
       const room = KEPT - what.length - " at ".length;
       if (shown.length > room) shown = `...${shown.slice(shown.length - Math.max(room - 3, 1))}`;
-      return `E1050 ${what} at ${shown}${rest}`;
+      return `E1050 ${what} at ${shown}${REST}`;
     }
-    return `E1050 ${what} at build time${rest}`;
+    return `E1050 ${what} at build time${REST}`;
   });
 }
