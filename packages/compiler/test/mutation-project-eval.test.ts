@@ -319,7 +319,7 @@ describe("evaluateProject observes its own reads (k.derived Derivation cache)", 
       write("min.txt", "2");
       write(
         "tokens5.ts",
-        `import { readFileSync, existsSync } from "node:fs";\nimport { defineTokens } from "@keel/ui";\nconst n = Number(readFileSync(${JSON.stringify(path.join(root, "min.txt"))}, "utf8")) + Number(process.env.KEEL_EVAL_PROBE ?? "0");\nexistsSync("absent.txt");\nexport const tokens = defineTokens({ color: { fg: "#111" }, space: { 1: \`\${n}px\` } });`,
+        `import { readFileSync, existsSync } from "node:fs";\nimport { defineTokens } from "@keel/ui/tokens";\nconst n = Number(readFileSync(${JSON.stringify(path.join(root, "min.txt"))}, "utf8")) + Number(process.env.KEEL_EVAL_PROBE ?? "0");\nexistsSync("absent.txt");\nexport const tokens = defineTokens({ color: { fg: "#111" }, space: { 1: \`\${n}px\` } });`,
       );
       const a = await evaluateProject({ root, tokensFile: "tokens5.ts", routesFiles: [], usages: [] });
       const b = await evaluateProject({ root, tokensFile: "tokens.ts", routesFiles: [], usages: [] });
@@ -335,7 +335,7 @@ describe("evaluateProject observes its own reads (k.derived Derivation cache)", 
 
 describe("evaluateProject observes what it reads by another way, and refuses what it cannot observe", () => {
   const tokensWith = (head: string, n: string): string =>
-    `${head}\nimport { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111" }, space: { 1: \`\${${n}}px\` } });`;
+    `${head}\nimport { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { fg: "#111" }, space: { 1: \`\${${n}}px\` } });`;
   const run = (file: string) => evaluateProject({ root, tokensFile: file, routesFiles: [], usages: [] });
 
   it(
