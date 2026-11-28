@@ -17,12 +17,15 @@ function removed(file: string, id: string): void {
   let runs = 0;
   storesReload();
   storesFile(file);
-  const owner = scope(() => {
-    effect(() => {
-      sig.get();
-      runs += 1;
-    });
-  }, { detached: true });
+  const owner = scope(
+    () => {
+      effect(() => {
+        sig.get();
+        runs += 1;
+      });
+    },
+    { detached: true },
+  );
   owner.run(() => void store(Cart, { items: [] }, { id }));
   storesLoaded();
   // the effect is live before the second load
