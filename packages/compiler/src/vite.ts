@@ -448,6 +448,8 @@ export default function (): {
    * evaluates again, a contract file the route tables import included.
    */
   let evaluatedFiles: ReadonlySet<string> = new Set();
+  /** The files outside the root an evaluation read that the dev server's watcher was given, once each. */
+  const watchedOutside = new Set<string>();
   let devApps: DevApp[] = [];
   /** Whether this dev server answers for `node` or `static` deployables (`keel dev` of a topology that has one). */
   let hasNode = false;
@@ -958,7 +960,8 @@ export default function (): {
     const files = [...(r.inputs ?? []), ...(r.observe?.().reads ?? [])].map(onDisk);
     evaluatedFiles = new Set(files);
     // A file outside the root (a linked package's) is watched too, so its change reaches `watchChange`.
-    const outside = files.filter((f) => path.relative(root, f).startsWith(".."));
+    const outside = files.filter((f) => path.relative(root, f).startsWith("..") && !watchedOutside.has(f));
+    for (const f of outside) watchedOutside.add(f);
     if (outside.length > 0) server?.watcher?.add(outside);
     css = r.css;
     looks = r.looks;
