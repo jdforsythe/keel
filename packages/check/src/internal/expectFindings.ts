@@ -361,6 +361,23 @@ export function expectFindings(
     if ((copy && buildsText(c)) || !closed(checker.getTypeAtLocation(c)))
       out.push({ code: "E1460", at: where(c), message: copy ? COPIES : OPEN });
   }
+  /** Whether `e` names a `const` declared outside the `expect`: a value made before it runs holds nothing thrown. */
+  const madeBefore = (e: ts.Expression): boolean => {
+    if (!ts.isIdentifier(e)) return false;
+    const sym = checker.getSymbolAtLocation(e);
+    const s0 = sym !== undefined && (sym.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(sym) : sym;
+    const d = s0?.valueDeclaration;
+    const list = d?.parent;
+    const inFn = d !== undefined && d.getSourceFile() === fn.getSourceFile() && d.pos >= fn.pos && d.end <= fn.end;
+    return (
+      d !== undefined &&
+      !inFn &&
+      ts.isVariableDeclaration(d) &&
+      list !== undefined &&
+      ts.isVariableDeclarationList(list) &&
+      (list.flags & ts.NodeFlags.Const) !== 0
+    );
+  };
   for (const r of returned) {
     if (isUndefined(r.e)) continue;
     const kind = ts.isCallExpression(r.e) ? made(r.e) : undefined;
@@ -371,7 +388,8 @@ export function expectFindings(
       continue;
     }
     if (mentions(r.e)) out.push({ code: "E1460", at: where(r.e), message: BUILDS });
-    else if (!closedData(checker.getTypeAtLocation(r.e))) out.push({ code: "E1460", at: where(r.e), message: OPEN });
+    else if (!madeBefore(r.e) && !closedData(checker.getTypeAtLocation(r.e)))
+      out.push({ code: "E1460", at: where(r.e), message: OPEN });
   }
   return out;
 }
