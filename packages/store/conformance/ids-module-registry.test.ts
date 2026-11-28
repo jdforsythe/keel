@@ -1,4 +1,5 @@
-// Spec: k.store, Ids and invariants: "Outside k.data Dev the module registry never hands a live id to a second store."
+// Spec: k.store, clause "With no `storesReload()` call, a duplicate live id in the module registry throws whatever `storesFile` (`@keel/store/internal`) was called with."
+// k.store, Ids and invariants "Outside k.data Dev the module registry never hands a live id to a second store."
 // Seed 1337 (fixtures `opts`). Outside k.data Dev no `@keel/store/internal` function is called (only the dev server module calls them), so this file calls none.
 // Model: a random sequence of creates and disposals over a small id pool in the module registry; a creation succeeds iff its id is not live, and `stores()` gives each live id its first holder.
 import { type Scope, scope } from "@keel/reactive";
