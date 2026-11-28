@@ -105,6 +105,17 @@ describe("a dev load of the module registry", () => {
     expect(() => make("new.x")).toThrow(/already in use/);
   });
 
+  it("empties the carried set and forgets the file at the load's end", () => {
+    storesReload();
+    storesFile("a.ts");
+    make("clear.x");
+    storesReload();
+    expect(devLoad.carried.size).toBeGreaterThan(0);
+    storesLoaded();
+    expect(devLoad.carried.size).toBe(0);
+    expect(devLoad.file).toBeUndefined();
+  });
+
   it("removes at the load's end each carried id no store took, rerunning stores() readers once", () => {
     storesReload();
     storesFile("a.ts");

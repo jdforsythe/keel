@@ -1,0 +1,20 @@
+{
+  "justified": [
+    {
+      "file": "src/internal/storesLoaded.ts",
+      "mutator": "ConditionalExpression",
+      "original": "sc !== undefined",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "Deleting undefined from a set of scopes changes nothing, so the guard only skips a call that has no effect."
+    },
+    {
+      "file": "src/internal/storesLoaded.ts",
+      "mutator": "OptionalChaining",
+      "original": "devLoad.origins.get(st)?.scope",
+      "replacement": "devLoad.origins.get(st).scope",
+      "reason": "unreachable",
+      "note": "Every store left in the registry at a load's end was created while armed, since an earlier one was carried and either taken over or removed, so origins always holds it."
+    }
+  ]
+}
