@@ -153,13 +153,22 @@ async function until(pred, ms) {
   }
 }
 
-/** Record and replay the session under simulation, in a child with tsx (the group's workers load TypeScript). */
+/**
+ * Record and replay the session under simulation, in a child with tsx (the group's workers load TypeScript), its
+ * module loaded through the app's compiler as the app's tests load it (`compiledImport`).
+ */
 function simulate(out, [file, name]) {
   const tsx = pathToFileURL(createRequire(path.join(root, "package.json")).resolve("tsx")).href;
+  const loader = pathToFileURL(path.join(root, "tooling/smoke/compiledImport.mjs")).href;
   const code = [
     "import fs from 'node:fs';",
-    `const m = await import(${JSON.stringify(file)});`,
-    `fs.writeFileSync(process.env.KEEL_SHELL_SESSION_OUT, JSON.stringify(await m[${JSON.stringify(name)}]()));`,
+    `import { compiledImport } from ${JSON.stringify(loader)};`,
+    `const { module: m, close } = await compiledImport(process.cwd(), ${JSON.stringify(file)});`,
+    "try {",
+    `  fs.writeFileSync(process.env.KEEL_SHELL_SESSION_OUT, JSON.stringify(await m[${JSON.stringify(name)}]()));`,
+    "} finally {",
+    "  await close();",
+    "}",
   ].join("\n");
   const c = child(process.execPath, ["--import", tsx, "--input-type=module", "-e", code], {
     cwd: app,
