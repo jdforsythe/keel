@@ -37,7 +37,7 @@ const q = (s: string): string => JSON.stringify(s);
 
 /**
  * The last compile of each app file a bundle loaded, by its absolute path: its project path, source, syntax errors and
- * output. `compile` of one file is a function of its path and source, so a later evaluation in the process (`keel
+ * the contents the bundle loads. `compile` of one file is a function of its path and source, so a later evaluation in the process (`keel
  * dev`'s refreshes) takes an entry whose path and source are unchanged instead of compiling again.
  */
 const compiled = new Map<
@@ -46,8 +46,8 @@ const compiled = new Map<
     readonly rel: string;
     readonly source: string;
     readonly broken: readonly Diagnostic[];
-    readonly code: string;
-    readonly map: string | undefined;
+    /** What the bundle loads for the file: the compile's code with its own `import.meta` and its map inline. */
+    readonly contents: string;
   }
 >();
 /**
@@ -340,12 +340,13 @@ export async function evaluateProject(input: {
             let c = compiled.get(args.path);
             if (c === undefined || c.rel !== rel || c.source !== source) {
               const r = compile([{ path: rel, source }]);
+              const code = r.outputs[0]?.code ?? "";
+              const map = r.outputs[0]?.map;
               c = {
                 rel,
                 source,
                 broken: r.diagnostics.filter((d) => d.code === "E1000"),
-                code: r.outputs[0]?.code ?? "",
-                map: r.outputs[0]?.map,
+                contents: `${withImportMeta(code, args.path)}${inlineMap(map, args.path)}`,
               };
               compiled.set(args.path, c);
             }
@@ -355,7 +356,7 @@ export async function evaluateProject(input: {
               return { errors: broken.map((d) => ({ text: d.message })) };
             }
             return {
-              contents: `${withImportMeta(c.code, args.path)}${inlineMap(c.map, args.path)}`,
+              contents: c.contents,
               loader: "ts",
               resolveDir: path.dirname(args.path),
             };

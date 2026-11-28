@@ -13,6 +13,9 @@ const LOADER: Readonly<Record<string, "ts" | "tsx" | "jsx">> = {
   jsx: "jsx",
 };
 
+/** Each file's last code and what `withImportMeta` made of it, for the bundles of one process. */
+const seen = new Map<string, { readonly code: string; readonly own: string }>();
+
 /**
  * The last esbuild plugin of a build-time evaluation bundle: a module no earlier plugin loaded that uses
  * `import.meta` gets its own (`withImportMeta`); any other is loaded by esbuild as it is.
@@ -23,7 +26,9 @@ export function importMetaPlugin(): Plugin {
     setup(b) {
       b.onLoad({ filter: CODE }, (args) => {
         const code = fs.readFileSync(args.path, "utf8");
-        const own = withImportMeta(code, args.path);
+        const last = seen.get(args.path);
+        const own = last !== undefined && last.code === code ? last.own : withImportMeta(code, args.path);
+        seen.set(args.path, { code, own });
         if (own === code) return undefined;
         const ext = args.path.slice(args.path.lastIndexOf(".") + 1);
         return { contents: own, loader: LOADER[ext] ?? "js", resolveDir: path.dirname(args.path) };
