@@ -263,7 +263,10 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
   });
 
   it("writes a coded throw's code once when its message starts with it", { timeout: fixedTime(30000) }, async () => {
-    write("r/refused.ts", `throw Object.assign(new Error("E1765 two copies"), { code: "E1765" });\nexport const routes = {};`);
+    write(
+      "r/refused.ts",
+      `throw Object.assign(new Error("E1765 two copies"), { code: "E1765" });\nexport const routes = {};`,
+    );
     expect((await routesOnly("r/refused.ts")).problems).toEqual(["E1765 two copies"]);
   });
 

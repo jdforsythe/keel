@@ -422,9 +422,18 @@ describe("E1601 noAmbientCapability", () => {
         "declared name shadows",
         E("src/a.ts", "const Date = { now: () => 1 }\nexport const t = (ctx: Ctx) => Date.now()\n"),
       ),
-      block("declared fetch", E("src/a.ts", "import { fetch } from './net.ts'\nexport const t = (ctx: Ctx) => fetch('/x')\n")),
-      block("declared Date new", E("src/a.ts", "import { Date } from './d.ts'\nexport const t = (ctx: Ctx) => new Date()\n")),
-      block("declared Date call", E("src/a.ts", "import { Date } from './d.ts'\nexport const t = (ctx: Ctx) => Date()\n")),
+      block(
+        "declared fetch",
+        E("src/a.ts", "import { fetch } from './net.ts'\nexport const t = (ctx: Ctx) => fetch('/x')\n"),
+      ),
+      block(
+        "declared Date new",
+        E("src/a.ts", "import { Date } from './d.ts'\nexport const t = (ctx: Ctx) => new Date()\n"),
+      ),
+      block(
+        "declared Date call",
+        E("src/a.ts", "import { Date } from './d.ts'\nexport const t = (ctx: Ctx) => Date()\n"),
+      ),
       block("new Foo", E("src/a.ts", "export const t = (ctx: Ctx) => new Foo()\n")),
       block("new ns.Date", E("src/a.ts", "export const t = (ctx: Ctx) => new ns.Date()\n")),
       block("test path", E("test/a.test.ts", `export const t = (ctx: Ctx) => ${NOW}()\n`)),

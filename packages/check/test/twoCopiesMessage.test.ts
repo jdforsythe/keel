@@ -27,7 +27,11 @@ describe("twoCopiesMessage", () => {
 
   it("keeps a holder's scope", () => {
     expect(
-      twoCopiesMessage("@keel/schema", "node_modules/@keel/schema", "node_modules/@acme/ui-kit/node_modules/@keel/schema"),
+      twoCopiesMessage(
+        "@keel/schema",
+        "node_modules/@keel/schema",
+        "node_modules/@acme/ui-kit/node_modules/@keel/schema",
+      ),
     ).toBe(`${LEAD}.../schema and .../@acme/ui-kit/.../schema`);
   });
 
@@ -51,16 +55,23 @@ describe("twoCopiesMessage", () => {
     const seg = fc.stringMatching(/^[a-z@.+_-][a-z0-9@.+_-]{0,40}$/);
     const name = fc.constantFrom("@keel/schema", "@keel/store", "@keel/router", "@keel/server");
     fc.assert(
-      fc.property(name, fc.array(seg, { maxLength: 4 }), seg, fc.array(seg, { maxLength: 4 }), seg, (n, p1, h1, p2, h2) => {
-        const first = [...p1, h1, "node_modules", n].join("/");
-        const second = [...p2, h2, "node_modules", n].join("/");
-        const m = twoCopiesMessage(n, first, second);
-        expect(m.length).toBeLessThanOrEqual(89);
-        expect(m.startsWith(`two copies of ${n} in one realm: `)).toBe(true);
-        const [a = "", b = ""] = m.slice(`two copies of ${n} in one realm: `.length).split(" and ");
-        expect(a.endsWith(n.slice("@keel/".length))).toBe(true);
-        expect(b.endsWith(n.slice("@keel/".length))).toBe(true);
-      }),
+      fc.property(
+        name,
+        fc.array(seg, { maxLength: 4 }),
+        seg,
+        fc.array(seg, { maxLength: 4 }),
+        seg,
+        (n, p1, h1, p2, h2) => {
+          const first = [...p1, h1, "node_modules", n].join("/");
+          const second = [...p2, h2, "node_modules", n].join("/");
+          const m = twoCopiesMessage(n, first, second);
+          expect(m.length).toBeLessThanOrEqual(89);
+          expect(m.startsWith(`two copies of ${n} in one realm: `)).toBe(true);
+          const [a = "", b = ""] = m.slice(`two copies of ${n} in one realm: `.length).split(" and ");
+          expect(a.endsWith(n.slice("@keel/".length))).toBe(true);
+          expect(b.endsWith(n.slice("@keel/".length))).toBe(true);
+        },
+      ),
       { seed: 1337, numRuns: 500 },
     );
   });
