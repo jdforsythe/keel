@@ -8,8 +8,10 @@ import { type A11yNode, type Page, serve } from "@keel/testing/e2e";
 import { expect, it } from "vitest";
 import { Board } from "../modules/api/Board.schema.ts";
 
-// The api's board store, named for `state`: its id and schema, made in a scope of the file's own.
-const board = scope(() => undefined).run(() => store(Board, { lists: [], todos: [] }, { id: "api.board" }));
+// The api's board store, named for `state`: its id and schema, made in a detached root of the file's own.
+const board = scope(() => undefined, { detached: true }).run(() =>
+  store(Board, { lists: [], todos: [] }, { id: "api.board" }),
+);
 
 /** The id of the control named `name` in the page's tree (a form field's id is its form's, not written in source). */
 function control(nodes: readonly A11yNode[], name: string): string {
