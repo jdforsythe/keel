@@ -56,6 +56,7 @@ import { typeCheck } from "./internal/typeCheck.ts";
 import { typeReferences } from "./internal/typeReferences.ts";
 import { unifiedDiff } from "./internal/unifiedDiff.ts";
 import { unknownModules } from "./internal/unknownModules.ts";
+import { workspaceLibraries } from "./internal/workspaceLibraries.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
 import type { CheckResult } from "./types/CheckResult.ts";
@@ -128,10 +129,18 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there; E1106 reports
  * in none of them.
  */
-export function check(given: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
+export function check(input: readonly SourceFile[], inputOptions: CheckOptions = {}): CheckResult {
+  // A library of the project's own tree is read once: through `node_modules/<name>/` when the project lists it, else
+  // where it lies, as a library's file (k.library Kind).
+  const ws = workspaceLibraries(inputOptions.project === undefined ? input : [...input, ...inputOptions.project]);
+  const given = input.filter((f) => !ws.twin(f.path));
+  const options: CheckOptions =
+    inputOptions.project === undefined
+      ? inputOptions
+      : { ...inputOptions, project: inputOptions.project.filter((f) => !ws.twin(f.path)) };
   const realAll = options.project === undefined ? given : [...given, ...options.project];
   const libs = libraryFolders(realAll);
-  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined;
+  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined || ws.inPlace(p);
   // Each library's folder (`<p>node_modules/<name>/`): where the k.module pass finds it, and its files' view.
   const libraryRoots = new Set(libs.packages.map((f) => f.path.slice(0, -"package.json".length)));
   const viewed = (f: SourceFile): SourceFile => {
@@ -163,8 +172,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
     // The rules that follow the client's reach follow an import of a library into its files (k.library In an app).
-    const libraryFiles = new Set([...members.keys()].filter((p) => isLibrary(libs.real(p))));
-    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles });
+    const libraryFiles = new Set([...members.keys()].filter((p) => libs.folder(libs.real(p)) !== undefined));
+    const inPlace = new Set([...members.keys()].filter((p) => ws.inPlace(p)));
+    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles, inPlace });
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;

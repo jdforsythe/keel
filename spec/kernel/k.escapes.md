@@ -13,8 +13,8 @@ status: implemented
 | R1013 | medium | a `defect` call (k.errors) reachable only when a `Result` is not ok: read as TypeScript narrows `ok`, without types, on any name, member or call whose `.ok` is tested (`!`, `===` or `!==` against a boolean, `&&`, `\|\|`, `?:`, `if`/`else`, and the statements after `if (x.ok)` whose branch always returns) |
 | R1015 | low | a type predicate or assertion proven by structure or by its module's own set (k.identity) |
 | R1017 | medium | an `attempt` whose `expect` returns an error for a value tested only by `instanceof Error` or `instanceof Object`, by `typeof`, by `!==`, in the branch where its test fails, by no class or property of it, or by a call of a function that is not declared in the project with a body that tests a class or a property (k.expect) |
-| R1018 | medium, opt-in | a `supervise` call (k.supervise) |
-| R1019 | critical | a `Symbol.for` call whose argument does not fold to a string (k.realm) |
+| R1018 | medium, opt-in | a `supervise` call, and an app call of a library function whose body holds one (k.supervise Who writes it) |
+| R1019 | critical | a `Symbol.for` call whose argument does not fold to a string, or an `Object.getOwnPropertySymbols`, `Object.getOwnPropertyDescriptors` or `Reflect.ownKeys` call whose argument is no object or array literal (k.realm) |
 | R1020 | high | `addEventListener` on `globalThis`, `window` or `self`, or bare, or `process.on`, `once`, `addListener` or `prependListener`, with an event name that is no literal (k.unsafe Other spellings) |
 | R1014 | high, opt-in | a `handle` property of the object an `identity(` call takes, or of `createApp(`'s `identity` object |
 | R1050 | medium | a cast (not `as const`), `any`, `!` or ts-suppression comment (a negative type test's expectation aside, k.unsafe) in a test file, a `.d.ts`, a `*.config.*` file, or a file under `unsafe/` or `.keel/` |

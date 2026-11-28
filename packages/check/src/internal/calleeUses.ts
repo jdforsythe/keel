@@ -29,6 +29,7 @@ type Callee =
   | "symbolFor"
   | "ownSymbols"
   | "ownKeys"
+  | "ownDescriptors"
   | "scope"
   | "signal"
   | "computed"
@@ -58,7 +59,13 @@ const LIB: ReadonlyMap<string, ReadonlyMap<string, Callee>> = new Map([
   ["AsyncGenerator", new Map<string, Callee>([["throw", "throw"]])],
   ["Iterator", new Map<string, Callee>([["throw", "throw"]])],
   ["SymbolConstructor", new Map<string, Callee>([["for", "symbolFor"]])],
-  ["ObjectConstructor", new Map<string, Callee>([["getOwnPropertySymbols", "ownSymbols"]])],
+  [
+    "ObjectConstructor",
+    new Map<string, Callee>([
+      ["getOwnPropertySymbols", "ownSymbols"],
+      ["getOwnPropertyDescriptors", "ownDescriptors"],
+    ]),
+  ],
   ["Reflect", new Map<string, Callee>([["ownKeys", "ownKeys"]])],
 ]);
 
@@ -103,14 +110,18 @@ const VALUE_CODE: ReadonlyMap<string, readonly [string, string]> = new Map([
   ["symbolFor", ["E1766", "k.realm"]],
   ["ownSymbols", ["E1766", "k.realm"]],
   ["ownKeys", ["E1766", "k.realm"]],
+  ["ownDescriptors", ["E1766", "k.realm"]],
 ]);
 /** The name a message gives a callee whose own name is no spelling of it. */
 const SPELLED: ReadonlyMap<string, string> = new Map([
   ["symbolFor", "Symbol.for"],
   ["ownSymbols", "Object.getOwnPropertySymbols"],
   ["ownKeys", "Reflect.ownKeys"],
+  ["ownDescriptors", "Object.getOwnPropertyDescriptors"],
 ]);
-/** The names of the global object E1766 refuses to list (k.realm The keel. names). */
+/** The listings of own keys that yield symbol keys or their values (k.realm The keel. names). */
+const LISTINGS: ReadonlySet<Callee> = new Set(["ownSymbols", "ownKeys", "ownDescriptors"]);
+/** The names of the global object E1766 refuses to list, read as names whatever their type (k.realm The keel. names). */
 const GLOBAL_OBJECT: ReadonlySet<string> = new Set(["globalThis", "window", "self", "global"]);
 const KEEL_SYMBOL = KEEL_SYMBOL_MESSAGE;
 const IN_APP = SUPERVISE_MESSAGE;
@@ -196,8 +207,9 @@ function mayDetach(opts: ts.Expression): boolean {
  * E1451 for a generator's or iterator's `throw`; for `attempt`, its `expect` (`expectFindings`: E1452, E1460); E1459
  * for an `ok` argument that holds a keel `Result`; and, unless `kernel`, E1460 for a `make` or `causedBy` message that
  * is no literal (k.expect Message); E1461 for `supervise` of `@keel/ctx` outside a `library` file, and in one for an
- * `id` that is no literal; unless `kernel`, E1766 for `Symbol.for` of a string folding to `keel.…` and for
- * `Object.getOwnPropertySymbols` or `Reflect.ownKeys` of the global object. A value use of `attempt`, `ok`, `make`,
+ * `id` that is no literal; unless `kernel`, E1766 for `Symbol.for` of a string folding to `keel.…`, for
+ * `Object.getOwnPropertySymbols`, `Object.getOwnPropertyDescriptors` or `Reflect.ownKeys` of the global object (`isGlobal`),
+ * and for a spread of it or `Object.assign` given it as a source. A value use of `attempt`, `ok`, `make`,
  * `causedBy`, `supervise` or those three is its code at the use, outside `kernel`. Also
  * E1208 (`scope`) and E1203 (`signal`, `computed`, `effect`, `resource`, `store`) for a call that follows an `await`
  * in the same function body, not inside a function given to a `run` call (k.reactive Static). `ownerOf` names the
@@ -426,6 +438,47 @@ export function calleeUses(
     return t === "make" || t === "causedBy" ? t : undefined;
   };
 
+  /** Whether `t`, or a member of a union or intersection it is, is the global object's type, `typeof globalThis`. */
+  const isGlobalType = (t: ts.Type): boolean => {
+    if (t.isUnionOrIntersection()) return t.types.some(isGlobalType);
+    const s = t.getSymbol();
+    return s !== undefined && s.getName() === "globalThis" && (s.flags & ts.SymbolFlags.ValueModule) !== 0;
+  };
+  /** Whether `e` is a call or `new` of the global `Object`. */
+  const ofObject = (e: ts.Expression): e is ts.CallExpression | ts.NewExpression => {
+    if (!ts.isCallExpression(e) && !ts.isNewExpression(e)) return false;
+    const c = bareExpression(e.expression);
+    return ts.isIdentifier(c) && c.text === "Object" && fromLib(checker.getSymbolAtLocation(c));
+  };
+  /**
+   * Whether `e` is the global object (k.realm The keel. names): one of its names, an expression the type pass types as
+   * `typeof globalThis` (`Window & typeof globalThis` among them), or `Object(e)` or `new Object(e)` of one.
+   */
+  const isGlobal = (e: ts.Expression, depth: number): boolean => {
+    const b = bareExpression(e);
+    if (ts.isIdentifier(b) && GLOBAL_OBJECT.has(b.text)) return true;
+    if (ofObject(b)) {
+      const inner = b.arguments?.[0];
+      return depth < 8 && inner !== undefined && !ts.isSpreadElement(inner) && isGlobal(inner, depth + 1);
+    }
+    return isGlobalType(checker.getTypeAtLocation(b));
+  };
+  /** Whether `call` is `Object.assign`, the lib's, by its symbol. */
+  const isAssign = (call: ts.CallExpression): boolean => {
+    const c = bareExpression(call.expression);
+    if (memberName(c) !== "assign" || !(ts.isPropertyAccessExpression(c) || ts.isElementAccessExpression(c)))
+      return false;
+    const sym = ts.isPropertyAccessExpression(c)
+      ? checker.getSymbolAtLocation(c.name)
+      : checker.getPropertyOfType(checker.getTypeAtLocation(c.expression), "assign");
+    return (sym?.declarations ?? []).some(
+      (d) =>
+        program.isSourceFileDefaultLibrary(d.getSourceFile()) &&
+        ts.isInterfaceDeclaration(d.parent) &&
+        d.parent.name.text === "ObjectConstructor",
+    );
+  };
+
   /** The string `e` folds to: a literal, a template without substitution, a `const` bound to one, `+` of those. */
   const folded = (e: ts.Expression, depth: number): string | undefined => {
     if (depth > 8) return undefined;
@@ -478,14 +531,9 @@ export function calleeUses(
       const key = args[0];
       if (!kernel && key !== undefined && !ts.isSpreadElement(key) && folded(key, 0)?.startsWith("keel.") === true)
         add("E1766", use.call, KEEL_SYMBOL, "k.realm");
-    } else if (target === "ownSymbols" || target === "ownKeys") {
+    } else if (LISTINGS.has(target)) {
       const held = args[0];
-      if (
-        !kernel &&
-        held !== undefined &&
-        ts.isIdentifier(bareExpression(held)) &&
-        GLOBAL_OBJECT.has(bareExpression(held).getText(sf))
-      )
+      if (!kernel && held !== undefined && !ts.isSpreadElement(held) && isGlobal(held, 0))
         add("E1766", use.call, KEEL_SYMBOL, "k.realm");
     } else if (target === "attempt") {
       const expect = args[1];
@@ -588,8 +636,19 @@ export function calleeUses(
     return !(ts.isBindingElement(p) && p.propertyName === n);
   };
 
+  /** E1766 for a copy that carries the global object's symbol keys: a spread of it, or `Object.assign` given it as a source. */
+  const copiesGlobal = (n: ts.Node): void => {
+    if (kernel) return;
+    if ((ts.isSpreadAssignment(n) || ts.isJsxSpreadAttribute(n)) && isGlobal(n.expression, 0))
+      add("E1766", n, KEEL_SYMBOL, "k.realm");
+    else if (ts.isCallExpression(n) && isAssign(n))
+      if (n.arguments.slice(1).some((a) => !ts.isSpreadElement(a) && isGlobal(a, 0)))
+        add("E1766", n, KEEL_SYMBOL, "k.realm");
+  };
+
   const visit = (n: ts.Node): void => {
     if (ts.isTypeNode(n) || ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) return;
+    copiesGlobal(n);
     if (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) return;
     if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) judgeRef(n);
     else if (ts.isIdentifier(n) && isReference(n)) judgeRef(n);

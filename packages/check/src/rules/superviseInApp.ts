@@ -12,8 +12,8 @@ import type { RuleDef } from "../types/RuleDef.ts";
 const PACKAGE = /(?:^|\/)packages\/[^/]+\//;
 
 /**
- * E1461 (k.supervise Rules): `supervise` of `@keel/ctx` called in app code, at the callee; in a library's file (and a
- * workspace package's), an `id` argument that is no string literal or template without substitution, at the argument.
+ * E1461 (k.supervise Rules): `supervise` of `@keel/ctx` called in app code, at the callee; in a library's file (one of
+ * the project's own tree among them, `projectLibraries`' `inPlace`, and a workspace package's), an `id` argument that is no string literal or template without substitution, at the argument.
  * Without the type pass the callee is an import alias, a namespace member or a `const` bound to either
  * (`packageCallee`); with it, `calleeUses` finds it by symbol (k.unsafe One path). No fix.
  */
@@ -24,7 +24,9 @@ export const superviseInApp: RuleDef = {
   check: ({ file, ast, types, project }) => {
     if (types === true || !isAppPath(file.path)) return [];
     const isSupervise = packageCallee(ast, "@keel/ctx", "supervise");
-    const library = projectLibraries.get(project)?.files.has(file.path) === true || PACKAGE.test(file.path);
+    const held = projectLibraries.get(project);
+    const library =
+      held?.files.has(file.path) === true || held?.inPlace.has(file.path) === true || PACKAGE.test(file.path);
     const out: Finding[] = [];
     new Visitor({
       CallExpression: (n) => {

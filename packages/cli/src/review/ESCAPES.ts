@@ -20,8 +20,19 @@ export const ESCAPES: ReadonlyMap<string, Escape> = new Map([
     row("low", false, "k.identity", "a type predicate or assertion proven by structure or its module's own set"),
   ],
   ["R1017", row("medium", false, "k.expect", "an attempt whose expect claims nearly every throw")],
-  ["R1018", row("medium", true, "k.supervise", "supervised work: every throw of code the caller runs is taken")],
-  ["R1019", row("critical", false, "k.realm", "a Symbol.for key that does not fold to a string")],
+  [
+    "R1018",
+    row(
+      "medium",
+      true,
+      "k.supervise",
+      "supervised work, or an app call of it: every throw of code the caller runs is taken",
+    ),
+  ],
+  [
+    "R1019",
+    row("critical", false, "k.realm", "a Symbol.for key that does not fold, or symbol keys listed of an unknown value"),
+  ],
   ["R1020", row("high", false, "k.unsafe", "a listener whose event name is no literal, possibly for uncaught throws")],
   ["R1014", row("high", true, "k.user", "an identity handle answers raw requests")],
   ["R1050", row("medium", false, "k.check", "unsafe syntax where keel check does not read")],

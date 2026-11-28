@@ -711,14 +711,14 @@ const ROWS: readonly Row[] = [
   [
     "E1461",
     "supervise called in app code, or a library's supervise with an id that is no literal",
-    "supervise takes every throw; a library owns supervised work, and app code catches with attempt.",
+    "supervise takes every throw; a library owns supervised work, a workspace package marked library among them, and app code catches with attempt.",
     "\n```ts\nimport { attempt, type KeelError } from '@keel/schema'\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const r = attempt(f, (x) => (x instanceof RangeError ? T : undefined))```",
     "k.supervise",
   ],
   [
     "E1766",
-    "a keel. registered symbol named, or the global object's symbol keys listed",
-    "Registered symbols whose key starts keel. are the kernel's own state.",
+    "a keel. registered symbol named, or the global object's symbol keys listed or copied",
+    "Registered symbols whose key starts keel. are the kernel's own state, on the global object; a listing or a spread of it reaches them.",
     "\n```ts\nexport const key = Symbol.for('app.key')```",
     "k.realm",
   ],
