@@ -16,7 +16,7 @@ status: conformance-covered
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · `keel.unreachable` 502 (names no host) · `keel.busy` 503 · other `err` 400 · uncaught throw 500 `keel.unexpected` (production: message `unexpected`). `mode` defaults to `production`. `#k-state` stores: k.leave.
 
-**Document.** Each route level is a candidate island root by route id. Head, `<html lang>`, the `keel.notFound` alert: k.head. Headers, policy, caller cookie, `/__keel/csp`: k.security.
+**Document.** Each route level is a candidate island root by route id. Head, `<html lang>`, the `keel.notFound` alert: k.head. Headers, policy, caller cookie, `/__keel/csp`: k.security. In dev, or with no `assets` in development/test, a document scripts `/@keel/entry.ts?d=<deployable>`, the resume entry of the islands of `createApp({ deployable })`'s modules (none given: every `node` module's).
 
 **Build.** k.deploy, k.topology.
 
