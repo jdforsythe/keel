@@ -1,5 +1,5 @@
-// Spec: k.cli, clause "`keel inspect` prints one `inspect.section` per section; an `error` one is E1057, exit 1."
-// k.cli Inspect
+// Spec: k.inspect, clause "`keel inspect` prints one `inspect.section` per section; an `error` one is E1057, exit 1."
+// k.inspect Inspect
 // Also: summary counts sections; an absent `sections` key is read as `{}` (the plugin's document has none).
 // Driven through `run(['inspect', url, '--format=json'], { fetch })` with an injected fetch. Seed 1337.
 import { run } from "@keel/cli";

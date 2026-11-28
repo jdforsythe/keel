@@ -23,7 +23,7 @@ export const routes = manifest(m, {
   },
 });
 `;
-const TOKENS = `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" } });\n`;
+const TOKENS = `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" } });\n`;
 const TOPOLOGY = `export default { api: { modules: ["m"], adapter: "node" } };\n`;
 
 const ENV = ["// @vitest", "environment happy-dom"].join("-");

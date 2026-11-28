@@ -1,4 +1,4 @@
-// Spec: k.cli, clause "`GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the
+// Spec: k.inspect, clause "`GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the
 // `inspect()` graph; in production mode it is the route table's 404."
 // Property seed: 1337. Components are never rendered, so no DOM is needed.
 import { createCtx } from "@keel/ctx";

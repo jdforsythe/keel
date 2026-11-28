@@ -13,7 +13,7 @@ export const COMMITTED = "tooling/ledger/ledger.json";
 
 /** `fg` over `#ffffff`: 4.5:1 or better for `#111111`, 4.41:1 for `#787878`, below 3.5:1 for `#8a8a8a`. */
 export const tokensSource = (fg: string): string =>
-  `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "${fg}", bg: "#ffffff" } });\n`;
+  `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { fg: "${fg}", bg: "#ffffff" } });\n`;
 
 /** A temp project with every `@keel/*` package linked. The caller removes it. */
 export function keelProject(prefix: string, files: Readonly<Record<string, string>>): string {

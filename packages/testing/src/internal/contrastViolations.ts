@@ -1,5 +1,5 @@
 import type { BaseRole, StyleProp, Tokens } from "@keel/ui";
-import { contrast } from "@keel/ui/css";
+import { type Combination, type GamutForm, combinations, composite, contrast, formsOf } from "@keel/ui/css";
 import type { ClassMap } from "./ClassMap.ts";
 import type { Violation } from "./Violation.ts";
 import { inDisabledFieldset } from "./inDisabledFieldset.ts";
@@ -7,7 +7,22 @@ import { px } from "./px.ts";
 import { styleIndex } from "./styleIndex.ts";
 import { where } from "./where.ts";
 
-const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+/** The ratio of two colors in one form (k.gamut Judging), or undefined when either reads as none (left unjudged). */
+const ratioOf = (fg: string, bg: string, form: GamutForm): number | undefined => {
+  try {
+    return contrast(fg, bg, form);
+  } catch {
+    return undefined;
+  }
+};
+/** An overlay over its backdrop, or `""` (unjudged) when either reads as none. */
+const blend = (top: string, under: string, form: GamutForm): string => {
+  try {
+    return composite(top, under, form);
+  } catch {
+    return "";
+  }
+};
 const SCHEMES = ["light", "dark"] as const;
 
 const ownsText = (el: Element): boolean =>
@@ -68,40 +83,115 @@ function tokenAt(map: ClassMap, tokens: Tokens, el: Element, prop: StyleProp, at
   return fromSet("page");
 }
 
+/** The combinations judged at render (k.themes Combinations); tokens `combinations` refuses are judged per scheme as written. */
+function combosOf(tokens: Tokens): readonly Combination[] {
+  try {
+    return combinations(tokens);
+  } catch {
+    return SCHEMES.map((scheme) => {
+      const color: Record<string, string> = {};
+      for (const [n, v] of Object.entries(tokens.color ?? {})) color[n] = typeof v === "string" ? v : v[scheme];
+      return {
+        name: scheme,
+        tokens: { ...tokens, color },
+        scheme,
+        printing: false,
+        contrast: false,
+        choice: undefined,
+      };
+    });
+  }
+}
+
+/** The element of `el`'s chain whose own class paints `bg` with `token`, or undefined. */
+function painter(map: ClassMap, el: Element, token: string): Element | undefined {
+  for (let n: Element | null = el; n !== null; n = n.parentElement)
+    for (const cls of Array.from(n.classList)) {
+      const hit = map.byClass.get(cls);
+      if (hit?.prop === "bg" && hit.token === token) return n;
+    }
+  return undefined;
+}
+
+/** Whether a combination applies to `el` inside `root`: its closest `data-k-scheme` and `media` class (k.aria Scheme, Print). */
+function applies(root: Element, el: Element, c: Combination): boolean {
+  const media = el.closest(".k-media-screen, .k-media-print");
+  if (media !== null && root.contains(media)) {
+    if (media.classList.contains("k-media-screen") && c.printing) return false;
+    if (media.classList.contains("k-media-print") && !c.printing) return false;
+  }
+  const fixed = el.closest("[data-k-scheme]");
+  if (fixed === null || !root.contains(fixed) || c.printing) return true;
+  return fixed.getAttribute("data-k-scheme") === c.scheme;
+}
+
 /**
- * E1804 at render (k.a11y Contrast): every visible, enabled element holding text, per scheme and breakpoint, from
+ * E1804 at render (k.a11y Contrast): every visible, enabled element holding text, per combination (k.themes; its
+ * closest `data-k-scheme` and `media` class choose which apply) and breakpoint, from
  * its atomic classes, its role's `base` set and `tokens` (no layout): `fg` its own or inherited, the background the
  * nearest painted ancestor's `bg` (itself included), else `base.page`'s, else `#FFFFFF`; text without an `fg` takes
  * `base.page`'s, else `#000000` in both schemes (the user agent's default text). 4.5:1, or 3:1 when large
  * (`fontSize` >= 24px, or >= 18.66px at `weight` >= 700). Text under `hidden` or disabled is exempt; `aria-hidden`
- * text is visible and judged. A color that is not hex is not judged. One violation per element.
+ * text is visible and judged. Under the `contrast` theme text needs 7:1, or 4.5:1 when large. A `bg` overlay is
+ * composited over the background painted under it, an `fg` overlay over the `bg`. A value no color form reads is not
+ * judged. One violation per element.
  */
 export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
   const map = styleIndex(tokens);
-  const colors = tokens.color ?? {};
+  const combos = combosOf(tokens);
   const out: Violation[] = [];
   for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
     if (!ownsText(el) || exempt(el)) continue;
     let help: string | undefined;
     for (let at = 0; at <= map.breakpoints.length && help === undefined; at++)
-      for (const scheme of SCHEMES) {
+      for (const c of combos) {
+        if (!applies(root, el, c)) continue;
+        const colors = c.tokens.color ?? {};
+        const overlays = c.tokens.overlay ?? {};
+        const pick = (t: string | undefined, none: string): string => {
+          const v = t === undefined ? none : (colors[t] ?? overlays[t]?.value);
+          return typeof v === "string" ? v : "";
+        };
         const fgTok = tokenAt(map, tokens, el, "fg", at);
         const bgTok = tokenAt(map, tokens, el, "bg", at);
-        const pick = (t: string | undefined, none: string): string => {
-          const c = t === undefined ? none : colors[t];
-          return c === undefined || typeof c === "string" ? (c ?? "") : c[scheme];
-        };
-        const fg = pick(fgTok, "#000000");
-        const bg = pick(bgTok, "#FFFFFF");
-        if (!HEX.test(fg) || !HEX.test(bg)) continue;
+        const bgTop = pick(bgTok, "#FFFFFF");
+        const fgTop = pick(fgTok, "#000000");
+        const bgIsOverlay = bgTok !== undefined && overlays[bgTok] !== undefined;
+        const fgIsOverlay = fgTok !== undefined && overlays[fgTok] !== undefined;
+        // A `bg` overlay is composited over the background painted under the element that paints it.
+        let base = "";
+        if (bgIsOverlay) {
+          const holder = painter(map, el, bgTok)?.parentElement ?? null;
+          const under = holder === null ? undefined : tokenAt(map, tokens, holder, "bg", at);
+          base = under !== undefined && overlays[under] !== undefined ? "" : pick(under, "#FFFFFF");
+        }
+        // The pair is judged in each form its colors ship in (k.gamut Judging), a printing combination in sRGB forms
+        // only; an overlay on either side is composited within each form. The lower ratio stands, sRGB's on a tie.
+        const all = formsOf(fgTop, bgTop, ...(base === "" ? [] : [base]));
+        const forms = c.printing ? all.slice(0, 1) : all;
+        let ratio: number | undefined;
+        let shown: GamutForm | undefined;
+        let fg = fgTop;
+        let bg = bgTop;
+        for (const form of forms) {
+          const b = bgIsOverlay ? blend(bgTop, base, form) : bgTop;
+          const f = fgIsOverlay ? blend(fgTop, b, form) : fgTop;
+          const r = ratioOf(f, b, form);
+          if (r === undefined) {
+            ratio = undefined;
+            break;
+          }
+          if (ratio === undefined || r < ratio) [ratio, shown, fg, bg] = [r, form, f, b];
+        }
+        const named = all.length > 1 && shown !== undefined ? `${c.name} (${shown})` : c.name;
         const sizeTok = tokenAt(map, tokens, el, "fontSize", at);
         const weightTok = tokenAt(map, tokens, el, "weight", at);
         const size = px(sizeTok === undefined ? "" : (tokens.fontSize?.[sizeTok] ?? ""));
         const weight = Number(weightTok === undefined ? 400 : tokens.weight?.[weightTok]);
-        const need = size >= 24 || (size >= 18.66 && weight >= 700) ? 3 : 4.5;
-        const ratio = contrast(fg, bg);
-        if (ratio < need) {
-          help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok ?? fg} on ${bgTok ?? bg}, ${scheme})`;
+        const large = size >= 24 || (size >= 18.66 && weight >= 700);
+        const need = c.contrast ? (large ? 4.5 : 7) : large ? 3 : 4.5;
+        if (ratio !== undefined && ratio < need) {
+          help = `is ${ratio.toFixed(2)}:1, below ${need}:1 (fg ${fgTok ?? fg} on ${bgTok ?? bg}, ${named})`;
           break;
         }
       }

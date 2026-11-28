@@ -73,8 +73,17 @@ function parseEntry(text: string): TypeEntry | undefined {
     return undefined;
   const dates = datesOf(v.dates);
   const schemeSelects = datesOf(v.schemeSelects);
+  const themeSelects = datesOf(v.themeSelects);
+  const boxes = datesOf(v.boxes);
   const keelThrows = datesOf(v.keelThrows);
-  if (dates === undefined || schemeSelects === undefined || keelThrows === undefined) return undefined;
+  if (
+    dates === undefined ||
+    schemeSelects === undefined ||
+    themeSelects === undefined ||
+    boxes === undefined ||
+    keelThrows === undefined
+  )
+    return undefined;
   const probes = v.probes.flatMap((p: unknown) => {
     const probe = probeOf(p);
     return probe === undefined ? [] : [probe];
@@ -88,6 +97,8 @@ function parseEntry(text: string): TypeEntry | undefined {
     items,
     dates: sets(dates),
     schemeSelects: sets(schemeSelects),
+    themeSelects: sets(themeSelects),
+    boxes: sets(boxes),
     keelThrows: sets(keelThrows),
   };
 }
@@ -114,6 +125,8 @@ export function typeCache(dir: string, name: string) {
         const dates = [...entry.dates].map(([p, s]) => [p, [...s]]);
         const schemeSelects = [...entry.schemeSelects].map(([p, s]) => [p, [...s]]);
         const keelThrows = [...entry.keelThrows].map(([p, s]) => [p, [...s]]);
+        const themeSelects = [...entry.themeSelects].map(([p, s]) => [p, [...s]]);
+        const boxes = [...entry.boxes].map(([p, s]) => [p, [...s]]);
         const text = JSON.stringify({
           format: CACHE_FORMAT,
           key: entry.key,
@@ -121,6 +134,8 @@ export function typeCache(dir: string, name: string) {
           items: entry.items,
           dates,
           schemeSelects,
+          themeSelects,
+          boxes,
           keelThrows,
         });
         if (Buffer.byteLength(text) > MAX_BYTES) return;

@@ -1,3 +1,4 @@
+import { USES_SCHEME } from "../internal/USES_SCHEME.ts";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
@@ -35,6 +36,8 @@ export function Box(
     readonly id?: string /** Written as the `lang` attribute. */;
     readonly lang?: string;
     readonly children?: Child | Children | undefined;
+    /** Fixes the scheme of this element and what it holds on screen (k.aria Scheme), written as `data-k-scheme`. */
+    readonly scheme?: "light" | "dark";
   } & ((Landmark & { readonly scroll?: undefined; readonly labelledBy?: undefined }) | ScrollRegion),
 ): Node {
   const scroll = props.scroll === "x";
@@ -46,6 +49,8 @@ export function Box(
       attrOf(el, "aria-labelledby", isGetter(props, "labelledBy"), () => props.labelledBy);
     }
     attrOf(el, "aria-label", isGetter(props, "label"), () => props.label);
+    if (USES_SCHEME && (props.scheme === "light" || props.scheme === "dark"))
+      el.setAttribute("data-k-scheme", props.scheme);
     applyStyle(el, props, scroll ? "k-scroll" : undefined);
     appendChildren(el, renderChildren(props.children));
   });

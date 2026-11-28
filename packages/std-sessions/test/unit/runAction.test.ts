@@ -390,7 +390,7 @@ describe("runAction: a replay that does not pass", () => {
     const r = await runAction(w.io);
     expect(r.code).toBe(1);
     expect(r.records.slice(0, -1)).toEqual([
-      { kind: "diag", code: "E1056", message: "github comments list answered 502", see: "k.cli" },
+      { kind: "diag", code: "E1056", message: "github comments list answered 502", see: "k.inspect" },
     ]);
     expect(writes(w.calls)).toEqual([]);
   });
@@ -488,9 +488,9 @@ describe("runAction: a reproduced fingerprint", () => {
     const r = await runAction(w.io);
     expect(r.code).toBe(1);
     expect(r.records.slice(0, -1)).toEqual([
-      { kind: "diag", code: "E1056", message: "github issue create answered 500", see: "k.cli" },
-      { kind: "diag", code: "E1056", message: "github issue update answered 422", see: "k.cli" },
-      { kind: "diag", code: "E1056", message: "github issue create answered 500", see: "k.cli" },
+      { kind: "diag", code: "E1056", message: "github issue create answered 500", see: "k.inspect" },
+      { kind: "diag", code: "E1056", message: "github issue update answered 422", see: "k.inspect" },
+      { kind: "diag", code: "E1056", message: "github issue create answered 500", see: "k.inspect" },
     ]);
     expect(counts(r.records)).toEqual({ fingerprints: 3, created: 0, updated: 0, commented: 0 });
     expect(w.runs).toHaveLength(10);

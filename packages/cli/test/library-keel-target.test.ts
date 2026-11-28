@@ -8,12 +8,12 @@ import { expect, test } from "vitest";
 import { LIB, SLOW, cleanup, keel, library, materialize, project } from "../conformance/library-support.ts";
 
 const SHIPPED =
-  "import { defineTokens } from '@keel/ui'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n";
+  "import { defineTokens } from '@keel/ui/tokens'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n";
 const OTHER = "export const chartsTokens = { space: { 'charts.2': '99px' } };\n";
 const BADGE =
   "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`} p=\"charts.2\" />\n}\n";
 const TOKENS =
-  "import { defineTokens } from '@keel/ui'\nimport { brandTokens } from '@keel/ui/brand'\nimport { chartsTokens } from '@acme/charts/tokens'\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } })\n";
+  "import { defineTokens } from '@keel/ui/tokens'\nimport { brandTokens } from '@keel/ui/brand'\nimport { chartsTokens } from '@acme/charts/tokens'\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } })\n";
 
 test(
   "the file check judges as a library's source is the file the build loads, for `.` and for `./tokens`",

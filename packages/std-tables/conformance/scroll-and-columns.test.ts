@@ -10,7 +10,7 @@ import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { DataTable } from "@keel/std-tables";
 import { renderRoute } from "@keel/testing";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { compileStyles } from "@keel/ui/css";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

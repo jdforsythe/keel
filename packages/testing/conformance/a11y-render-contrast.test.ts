@@ -5,7 +5,8 @@
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { renderRoute } from "@keel/testing";
-import { Box, Text, defineTokens } from "@keel/ui";
+import { Box, Text } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, codeOf, messageOf, simCtx, thrown } from "./fixtures.ts";

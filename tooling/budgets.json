@@ -16,15 +16,15 @@
   },
   "size": {
     "@keel/check": {
-      "max": "98kb",
+      "max": "104.5kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "22.5kb",
+      "max": "24.8kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "39.5kb",
+      "max": "43.2kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -42,30 +42,30 @@
     "@keel/ctx": "4.7kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "15.25kb",
-    "@keel/router/contract": "3.5kb",
+    "@keel/router": "14.7kb",
+    "@keel/router/contract": "3.25kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "11.25kb",
+    "@keel/runtime-dom/ops": "11kb",
     "@keel/scaffold": {
-      "max": "23.5kb",
+      "max": "26.5kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {
-      "max": "1.5kb",
+      "max": "2.35kb",
       "platform": "node"
     },
-    "@keel/schema": "7kb",
+    "@keel/schema": "6.5kb",
     "@keel/server": {
-      "max": "30.5kb",
+      "max": "31kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
     "@keel/server/internal/start": {
-      "max": "2.5kb",
+      "max": "3.5kb",
       "platform": "node"
     },
-    "@keel/services": "4.6kb",
+    "@keel/services": "4.1kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
       "max": "3.25kb",
@@ -198,13 +198,13 @@
     },
     "@keel/std-temporal": "5kb",
     "@keel/std-text": "1.5kb",
-    "@keel/store": "4.1kb",
+    "@keel/store": "4kb",
     "@keel/store/internal": {
       "max": "2.25kb",
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "22.5kb",
+      "max": "23.2kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

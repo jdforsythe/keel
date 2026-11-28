@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding and no type predicate E1762 reports, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.identity) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding and no type predicate E1762 reports, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.identity) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs; S0021 (create-app's reach names a process or network API, k.create) is create-quiet.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
@@ -10,6 +10,7 @@ import { liftedRanges } from "../packages/check/src/internal/liftedRanges.ts";
 import { packagePredicates } from "../packages/check/src/internal/packagePredicates.ts";
 import { parseFile } from "../packages/check/src/internal/parseFile.ts";
 import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
+import { createQuiet } from "./create-quiet.mjs";
 import { hardTimes } from "./hard-times.mjs";
 import { parseArgs, run } from "./output.ts";
 import { untimedPropertyTests } from "./property-times.ts";
@@ -336,5 +337,7 @@ for (const d of result.diagnostics) {
 }
 
 diags.push(...(await stdEntryDiags(root)).diags);
+if (fs.existsSync(path.join(root, "packages", "create-app", "src", "bin.ts")))
+  diags.push(...(await createQuiet(root)).diags);
 
 await run("structure-lint", () => ({ diags, counts: { files: files.length } }));

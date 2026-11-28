@@ -37,6 +37,7 @@ export async function* events(
     target.sign,
     target.user,
     target.keel,
+    target.server === true,
   );
   if (!req.ok) {
     yield req;

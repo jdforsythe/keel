@@ -31,16 +31,18 @@ import {
   bindMounts,
   dockerProblem,
   resultPath,
-  runsAfterFailure,
   slowContainer,
   slowEnv,
   slowExecArgs,
   slowParallel,
   slowRunArgs,
   slowSetupScript,
+  slowBrowserDepsScript,
   slowShards,
   slowSteps,
   stepName,
+  stepRuns,
+  parseOutputs,
   verdict,
   versionCheck,
   workspaceGlobs,
@@ -366,6 +368,7 @@ async function runInstance(name, job, inst, rule, needs) {
     runnerOs: "macOS",
     runnerArch: os.arch() === "arm64" ? "ARM64" : "X64",
     needs,
+    steps: {},
   };
   const env = baseEnv();
   const temp = path.join(dir, "runner-temp");
@@ -425,12 +428,17 @@ async function runInstance(name, job, inst, rule, needs) {
     for (const [i, step] of steps.entries()) {
       const sname = stepName(step);
       const log = path.join(dir, `${String(i + 1).padStart(2, "0")}-${slug(sname)}.log`);
-      if (failed && !runsAfterFailure(step)) {
+      if (!stepRuns(step, failed, ctx.steps)) {
         record.steps.push({ name: sname, status: "not-run" });
         continue;
       }
       const s0 = performance.now();
+      // A runner gives each step a file of its own for `GITHUB_OUTPUT`; what it wrote answers the later `steps.<id>.outputs.<name>`.
+      const outputFile = path.join(temp, `output-${String(i + 1).padStart(2, "0")}`);
+      fs.writeFileSync(outputFile, "");
+      env.GITHUB_OUTPUT = outputFile;
       const res = await runStep(step, { env, ctx, log, deadline });
+      if (step.id !== undefined) ctx.steps[step.id] = parseOutputs(fs.readFileSync(outputFile, "utf8"));
       const lines = res.status === "ok" && fs.existsSync(log) ? failLines(fs.readFileSync(log, "utf8")) : [];
       const status = res.status === "ok" && lines.length === 0 ? "ok" : "fail";
       const entry = { name: sname, status, seconds: (performance.now() - s0) / 1000, log, ...res.detail };
@@ -524,6 +532,8 @@ async function runStep(step, { env, ctx, log, deadline }) {
 }
 
 // ---- the slow-machine job: the test shards in a Linux container with constrained CPUs ----
+/** Where a step in the slow container writes its `GITHUB_OUTPUT`; each step starts it empty. */
+const SLOW_OUTPUT = "/tmp/runner-temp/github-output";
 const shq = (a) => `'${a.replaceAll("'", "'\\''")}'`;
 
 /** A docker command bounded by `ms`; a failure or a hang throws a message that names the command. */
@@ -568,11 +578,15 @@ async function runSlow() {
   const prep = make(SLOW_JOB);
   const results = [];
   const t = performance.now();
-  const exec = async (container, record, label, script, stepEnv, deadline, index) => {
+  const exec = async (container, record, label, script, stepEnv, deadline, index, outputs) => {
     const log = path.join(dir, `${String(index).padStart(3, "0")}-${slug(label)}.log`);
     const s0 = performance.now();
     const load = await waitForLoad();
-    const args = slowExecArgs(container, { ...env, ...stepEnv }, script);
+    const args = slowExecArgs(
+      container,
+      { ...env, ...stepEnv, GITHUB_OUTPUT: SLOW_OUTPUT },
+      `mkdir -p ${path.posix.dirname(SLOW_OUTPUT)} && : > ${SLOW_OUTPUT}\n${script}`,
+    );
     const r = await runScript(`exec docker ${args.map(shq).join(" ")}`, {
       cwd: rootDir,
       env: baseEnv(),
@@ -587,6 +601,10 @@ async function runSlow() {
     record.steps.push(entry);
     record.load = Math.max(record.load, load);
     if (status === "fail") record.status = "fail";
+    if (outputs !== undefined) {
+      const written = docker(["exec", container, "cat", SLOW_OUTPUT]);
+      if (written.status === 0) outputs(parseOutputs(written.stdout));
+    }
     return status === "ok";
   };
   // One shard in a container of its own: the job's `timeout-minutes` to itself, as on a runner of its own.
@@ -596,9 +614,13 @@ async function runSlow() {
     const s0 = performance.now();
     let good = true;
     let i = shard * 100;
+    const seen = {};
     for (const step of slowSteps(source, shard).steps) {
-      if (!good) break;
-      good = await exec(container, rec, step.name, step.run, step.env, Date.now() + shardMs, i++);
+      if (!stepRuns(step, !good, seen)) continue;
+      const ran = await exec(container, rec, step.name, step.run, step.env, Date.now() + shardMs, i++, (o) => {
+        if (step.id !== undefined) seen[step.id] = o;
+      });
+      good = good && ran;
     }
     rec.seconds = (performance.now() - s0) / 1000;
     return rec;
@@ -634,6 +656,7 @@ async function runSlow() {
     let ok = await exec(name, prep, "pnpm version", "pnpm --version", {}, Date.now() + 600_000, i++);
     for (const step of first.install)
       ok = ok && (await exec(name, prep, step.name, step.run, step.env, Date.now() + 1_800_000, i++));
+    if (ok) dockerBounded(["exec", "-u", "0", name, "bash", "-c", slowBrowserDepsScript(shards)], SLOW.limits.pull);
     // The builds CI's check job leaves in the turbo cache, outside the shards' times.
     ok = ok && (await exec(name, prep, "pnpm build", "pnpm build", {}, Date.now() + 3_600_000, i++));
     prep.seconds = (performance.now() - t) / 1000;

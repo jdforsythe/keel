@@ -4,7 +4,7 @@ import { scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import type { CaughtError } from "@keel/runtime-dom";
-import { harnessed, hosts } from "@keel/runtime-dom/internal";
+import { harnessed, hosts, rendered } from "@keel/runtime-dom/internal";
 import type { Snapshot, Store } from "@keel/store";
 import type { A11yNode } from "../types/A11yNode.ts";
 import type { Found } from "../types/Found.ts";
@@ -47,6 +47,8 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
   const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
+  // The render given this ctx: capabilities that act on its page (k.schemes Choice) read its document and tokens.
+  rendered.set(ctx, { document, artifacts: { tokens: artifacts?.tokens } });
   if (page) pageRoots.add(container);
   const unrecord =
     setup.documents === undefined ? undefined : recordDocuments(container, setup.documents, setup.follow);
@@ -90,6 +92,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
         else
           unmount = mount(setup.view, container, {
             ctx: setup.run ?? ctx,
+            artifacts: { tokens: artifacts?.tokens },
             onError: (error) => {
               caught.push(error);
             },

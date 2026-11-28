@@ -23,7 +23,7 @@ Durable background jobs per module: enqueue, retry with backoff, lease and resta
 
 ## Extension points
 
-Uses the **module manifest** (k.module: stdlib module `jobs` and `std` config `{ concurrency }`), an **inspector hook** (k.cli: section `jobs.queue`) and the **check rule registry** (k.check: E2501 to E2506 from `./tools`).
+Uses the **module manifest** (k.module: stdlib module `jobs` and `std` config `{ concurrency }`), an **inspector hook** (k.inspect: section `jobs.queue`) and the **check rule registry** (k.check: E2501 to E2506 from `./tools`).
 
 ## Unsafe
 

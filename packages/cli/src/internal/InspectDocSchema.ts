@@ -7,7 +7,7 @@ const Section = s.union([
 ]);
 
 /**
- * The parts of `GET /__keel/inspect` (k.cli Inspect) that `keel inspect` summarizes. Store `state` and the artifact
+ * The parts of `GET /__keel/inspect` (k.inspect) that `keel inspect` summarizes. Store `state` and the artifact
  * entries are not read, so they are declared only as objects. `sections` (inspector hooks, RFC 0042) is absent from
  * the plugin's document and read as `{}`; each is `{ doc, error }` (E1057 in the target) or `{ doc, value }`.
  * `deployables` (`keel dev` of a topology with a `node` deployable) holds each deployable's own sections.

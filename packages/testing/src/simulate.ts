@@ -10,6 +10,7 @@ import { codeOf } from "./internal/codeOf.ts";
 import { drive } from "./internal/drive.ts";
 import { fail } from "./internal/fail.ts";
 import { firstLine } from "./internal/firstLine.ts";
+import { notInE2e } from "./internal/notInE2e.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import type { Scenario } from "./types/Scenario.ts";
 import type { SimulateOptions } from "./types/SimulateOptions.ts";
@@ -36,6 +37,7 @@ const HORIZON = 600_000;
  * one `SimRun` once. Success resolves `{ seed, runs, checked }`.
  */
 export async function simulate(scenario: Scenario, options: SimulateOptions = {}): Promise<SimulateResult> {
+  notInE2e("simulate");
   const seed = seedFrom(options.seed);
   const horizon = options.horizon ?? HORIZON;
   const law = options.law ?? process.env.KEEL_TEST === "1";

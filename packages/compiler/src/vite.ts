@@ -22,6 +22,8 @@ import { addSchemeScript } from "./internal/addSchemeScript.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
 import { browserStub } from "./internal/browserStub.ts";
+import { builtCssProblem } from "./internal/builtCssProblem.ts";
+import { builtTextFiles } from "./internal/builtTextFiles.ts";
 import { bundledFiles } from "./internal/bundledFiles.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
@@ -30,6 +32,8 @@ import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
+import { firstPaint } from "./internal/firstPaint.ts";
+import { guardP3 } from "./internal/guardP3.ts";
 import { hostClient } from "./internal/hostClient.ts";
 import { indexHtml } from "./internal/indexHtml.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
@@ -37,6 +41,7 @@ import { isNodeBuiltin } from "./internal/isNodeBuiltin.ts";
 import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
 import { keelMark } from "./internal/keelMark.ts";
+import { lacksColorFunction } from "./internal/lacksColorFunction.ts";
 import { libraryRegisters } from "./internal/libraryRegisters.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
@@ -56,6 +61,7 @@ import { shortPath } from "./internal/shortPath.ts";
 import { stylesMiddleware } from "./internal/stylesMiddleware.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
+import { usesFlagCode } from "./internal/usesFlagCode.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { writeStatic } from "./internal/writeStatic.ts";
 import { allLibraries } from "./std/allLibraries.ts";
@@ -71,6 +77,7 @@ import type { Artifacts } from "./types/Artifacts.ts";
 import type { Library } from "./types/Library.ts";
 import type { Output } from "./types/Output.ts";
 import type { RouteEntry } from "./types/RouteEntry.ts";
+import type { StyleUsage } from "./types/StyleUsage.ts";
 import type { Topology } from "./types/Topology.ts";
 
 const CODE = /\.[cm]?[jt]sx?$/;
@@ -100,6 +107,12 @@ const shellOf = (
   return { kind, origin: given, id, connect };
 };
 const CSS_IMPORT = "virtual:keel.css";
+/**
+ * The CSS each browser build loaded (`keel.css`, its P3 blocks guarded for an old `cssTarget`), by its output folder:
+ * what that output must hold (k.gamut CSS). Module-wide, since a deployable's `buildApp` runs in a plugin instance
+ * other than the one its client environment loads through.
+ */
+const SHIPPED = new Map<string, string>();
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
 const PG_BANNER =
   "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
@@ -254,6 +267,11 @@ type Config = {
 } & (BuildConfig | ClientConfig | Record<never, never>);
 /** What the plugin reads of the project's config before Vite resolves it. */
 type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
+/**
+ * The CSS minifier a browser build gets when the project sets none (k.gamut CSS): esbuild's keeps each custom
+ * property's value as written, whatever the `cssTarget`. Whatever minifies, `keel build` verifies the built CSS.
+ */
+type CssMinify = "esbuild";
 
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
@@ -285,7 +303,7 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * deployable's route matches is answered by that deployable's dev app (`DEV_ENTRY`, `devMiddleware`), anything else by
  * Vite; a changed app source closes the dev apps and the next request loads them again, after they have closed.
  *
- * Dev and preview servers serve `/__keel/inspect` (k.cli Inspect): the `.keel/` artifacts plus the live graph and
+ * Dev and preview servers serve `/__keel/inspect` (k.inspect): the `.keel/` artifacts plus the live graph and
  * stores the open page's dev entry last posted, to the server's own origin and those `KEEL_INSPECT_ORIGINS` lists.
  */
 export default function (): {
@@ -294,8 +312,12 @@ export default function (): {
   config: (user: UserConfig, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
   configEnvironment: (
     name: string,
-    env: { consumer?: "client" | "server"; resolve?: { conditions?: string[] } },
-  ) => { resolve: { conditions: string[] } } | null;
+    env: {
+      consumer?: "client" | "server";
+      resolve?: { conditions?: string[] };
+      build?: { cssMinify?: unknown; minify?: unknown };
+    },
+  ) => { resolve?: { conditions: string[] }; build?: { cssMinify: CssMinify } } | null;
   configResolved: (config: {
     root: string;
     command?: "build" | "serve";
@@ -311,7 +333,7 @@ export default function (): {
   buildEnd: (this: Ctx, error?: Error) => void;
   renderStart: () => void;
   generateBundle: { order: "post"; handler: (this: Ctx, options: unknown, bundle: Record<string, Emitted>) => void };
-  closeBundle: () => void;
+  closeBundle: { order: "post"; handler: () => Promise<void> };
   transform: (code: string, id: string, options?: HookOptions) => { code: string; map: string | null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
@@ -337,6 +359,7 @@ export default function (): {
   let looks: Readonly<Record<string, unknown>> | undefined;
   // The tokens' color schemes (k.schemes First paint).
   let schemes: readonly string[] = ["light"];
+  let themes: readonly string[] = [];
   let schemesRead = false;
   let looksKey = "";
   let stale = true;
@@ -374,6 +397,12 @@ export default function (): {
   const urlEdges = new Map<string, Set<string>>();
   /** Whether the project's own config sets `envPrefix` or `define` (k.bundle Environment), and whether this is an SSR build. */
   let projectEnv = false;
+  /**
+   * A browser build's output folder, set when its bundle is generated, that `closeBundle` verifies once written (k.gamut
+   * CSS); a `node` or `static` deployable's whole folder is verified by its `buildApp` instead (`appVerifies`).
+   */
+  let builtOut = "";
+  let appVerifies = false;
   let ssrBuild = false;
   /** Each file's path as its name on disk has it (`realpath`), and the root's, for the name tests and E1010. */
   const disk = new Map<string, string>();
@@ -767,7 +796,7 @@ export default function (): {
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
     // Written once the tokens are evaluated, so a run that compiles no CSS leaves the file as it is.
-    if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes] })]);
+    if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes], themes: [...themes] })]);
     for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
@@ -839,10 +868,27 @@ export default function (): {
     return parts.join("\n");
   };
 
+  /**
+   * Built output folder `out` against the CSS its browser build loaded (`builtCssProblem`, k.gamut CSS): a difference
+   * removes `drop` and fails the build with E1819. A build that loaded none is read against the evaluated CSS.
+   */
+  const verifyBuilt = async (out: string, drop: string): Promise<void> => {
+    const shipped = SHIPPED.get(out);
+    if (shipped === undefined && stale) await refresh();
+    const problem = builtCssProblem(shipped ?? css, builtTextFiles(out));
+    if (problem === undefined) return;
+    fs.rmSync(drop, { recursive: true, force: true });
+    throw evaluationFailed([`E1819 ${problem}`]);
+  };
+
+  /** Every compiled module's style usages, merged. */
+  const styleUsages = (): readonly StyleUsage[] =>
+    mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts["styles.json"].usages;
+
   /** Re-evaluate tokens and route manifests: `keel.css` and `routes.json`. */
   const refresh = async (): Promise<void> => {
     stale = false;
-    const usages = mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts["styles.json"].usages;
+    const usages = styleUsages();
     const r = await evaluateProject({
       root,
       tokensFile: exists("tokens.ts") ? "tokens.ts" : undefined,
@@ -854,6 +900,7 @@ export default function (): {
     css = r.css;
     looks = r.looks;
     schemes = r.schemes;
+    themes = r.themes;
     schemesRead = true;
     looksKey = canonicalJson(r.looks);
     routes = r.routes;
@@ -908,6 +955,7 @@ export default function (): {
       const adapter = top[name]?.adapter;
       if (adapter !== "node" && adapter !== "static") return own;
       clientBuild = true;
+      appVerifies = true;
       const built = adapter === "static";
       const pg = !built && top[name]?.storage === "postgres";
       const at = path.resolve(user.root ?? process.cwd());
@@ -956,8 +1004,36 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             const bundled = await b.build(b.environments.ssr);
+            // The artifacts every server render reads beside `server.mjs` (`createApp({ artifacts })`): the routes of
+            // every module, not the project build's (forwarding needs each peer deployable's paths), `std.json`, and the
+            // tokens' schemes and `choice` themes (k.schemes First paint), so a served or prerendered document lists the
+            // themes the client's resume knows. Each deployable is read as `node`, so the client's modules and every
+            // placed stdlib module are listed.
+            const serverArtifacts = async (dir: string): Promise<void> => {
+              const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
+                modules: d.modules,
+                adapter: "node",
+              });
+              const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
+              const all = projectManifests(every, listSources(at), at);
+              const tokensFile = fs.existsSync(path.join(at, "tokens.ts")) ? "tokens.ts" : undefined;
+              const table = await evaluateProject({ root: at, tokensFile, routesFiles: all, usages: [] });
+              if (table.problems.length > 0) throw evaluationFailed(table.problems);
+              fs.writeFileSync(path.join(dir, "routes.json"), artifactText(table.routes));
+              if (fs.existsSync(path.join(at, ".keel", "std.json")))
+                fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(dir, "std.json"));
+              fs.writeFileSync(
+                path.join(dir, "schemes.json"),
+                `${JSON.stringify({ schemes: table.schemes, themes: table.themes })}\n`,
+              );
+            };
             if (built) {
               const std = path.join(at, ".keel", "std.json");
+              // Beside the build entry, which `writeStatic` removes with them.
+              await serverArtifacts(path.join(at, ssrOut)).catch((e: unknown) => {
+                fs.rmSync(path.join(at, ssrOut), { recursive: true, force: true });
+                throw e;
+              });
               const failed = await writeStatic(
                 path.join(at, out),
                 path.join(at, ssrOut, "server.mjs"),
@@ -968,6 +1044,7 @@ export default function (): {
               );
               if (failed.length > 0) throw evaluationFailed(failed);
               if (await offersScheme(at)) addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
+              await verifyBuilt(path.join(at, out), path.join(at, out));
               return;
             }
             // The files bundled package files read beside themselves (k.server-deps); a problem fails the build, which
@@ -978,23 +1055,10 @@ export default function (): {
               throw evaluationFailed(read.problems);
             }
             for (const c of read.copies) fs.cpSync(c.from, path.join(at, out, c.rel), { recursive: true });
-            // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
-            // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
-            const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
-              modules: d.modules,
-              adapter: "node",
-            });
-            const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
-            const all = projectManifests(every, listSources(at), at);
-            // The tokens too, for the schemes the server's first paint reads (k.schemes First paint).
-            const tokensFile = fs.existsSync(path.join(at, "tokens.ts")) ? "tokens.ts" : undefined;
-            const table = await evaluateProject({ root: at, tokensFile, routesFiles: all, usages: [] });
-            if (table.problems.length > 0) throw evaluationFailed(table.problems);
+            await serverArtifacts(path.join(at, out));
             copyMigrations(at, path.join(at, out), top[name]?.modules ?? []);
-            fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
-            if (fs.existsSync(path.join(at, ".keel", "std.json")))
-              fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
-            fs.writeFileSync(path.join(at, out, "schemes.json"), `${JSON.stringify({ schemes: table.schemes })}\n`);
+            // Before the `client` deployables it serves join it: each was verified by its own build.
+            await verifyBuilt(path.join(at, out), path.join(at, out));
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
@@ -1003,14 +1067,19 @@ export default function (): {
     },
     // Every environment (dev, build, test) resolves with the `keel` condition beside its own, so a library's entry is
     // its source (k.library In an app); one that sets none gets Vite's defaults with it.
+    // A browser environment that sets no CSS minifier gets esbuild's, which keeps every color as compiled (k.gamut CSS).
     configEnvironment(name, env) {
       const own = env.resolve?.conditions;
-      if (own?.includes("keel") === true) return null;
       const client = env.consumer === "client" || (env.consumer === undefined && name === "client");
+      const unset = env.build?.cssMinify === undefined && env.build?.minify !== false;
+      const cssMinify: CssMinify = "esbuild";
+      const build = client && unset ? { build: { cssMinify } } : {};
+      if (own?.includes("keel") === true) return client && unset ? build : null;
       return {
         resolve: {
           conditions: ["keel", ...(own === undefined ? (client ? CLIENT_CONDITIONS : SERVER_CONDITIONS) : [])],
         },
+        ...build,
       };
     },
     configResolved(config) {
@@ -1024,10 +1093,9 @@ export default function (): {
       // build before bundling, as does a prefix another plugin merged into the lock.
       const prefix = [config.envPrefix ?? NO_ENV].flat();
       const locked = prefix.length === 1 && prefix[0] === NO_ENV;
+      const configName = config.configFile === undefined ? "vite.config.ts" : show(config.configFile);
       if (command === "build" && !ssrBuild && (projectEnv || !locked))
-        throw new Error(
-          `E1007 server code in browser build: environment config: ${config.configFile === undefined ? "vite.config.ts" : show(config.configFile)}`,
-        );
+        throw new Error(`E1007 server code in browser build: environment config: ${configName}`);
       readTopology();
     },
     configureServer(s) {
@@ -1087,6 +1155,11 @@ export default function (): {
       return null;
     },
     async load(this: unknown, id, options) {
+      // A build serves `@keel/ui`'s `USES_*` flags from the usages `buildStart` collected (k.compiler Build).
+      if (command === "build") {
+        const flag = usesFlagCode(id, styleUsages());
+        if (flag !== null) return flag;
+      }
       if (options?.ssr === false) {
         const stub = browserLoad(id, forBrowser(this, options));
         if (stub !== null) return stub;
@@ -1098,7 +1171,16 @@ export default function (): {
       if (shown !== undefined) return indexHtml(shown, ENTRY_PATH);
       if (id === CSS_ID) {
         if (stale) await refresh();
-        return css;
+        const config = Object(Reflect.get(Object(Reflect.get(Object(this), "environment")), "config"));
+        if (command !== "build" || Reflect.get(config, "consumer") !== "client") return css;
+        // A target older than `color()` gets each P3 block under `@supports` (k.gamut CSS).
+        const target = Reflect.get(Object(Reflect.get(config, "build")), "cssTarget");
+        const shipped = lacksColorFunction(target) ? guardP3(css) : css;
+        SHIPPED.set(
+          path.resolve(root, String(Reflect.get(Object(Reflect.get(config, "build")), "outDir") ?? "dist")),
+          shipped,
+        );
+        return shipped;
       }
       const q = keyed(id);
       if (q?.path === ISLANDS_PATH)
@@ -1123,7 +1205,8 @@ export default function (): {
       const d = deployable(q.d);
       if (d === undefined) throw new Error(noDeployable(ENTRY_PATH, topology, q.d ?? process.env.KEEL_DEPLOYABLE));
       const mode = command === "serve" ? "dev" : "production";
-      if (!d.client) return styleImports(q.d ?? d.name) + resumeEntry(q.d, mode, CSS_IMPORT);
+      if (!d.client)
+        return styleImports(q.d ?? d.name) + resumeEntry(q.d, mode, CSS_IMPORT, (await firstPaint(root)).themes);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       const targets = served ? calledByClient(all, d.modules) : {};
@@ -1140,6 +1223,7 @@ export default function (): {
           exists("identity.ts"),
           served,
           d.name,
+          (await firstPaint(root)).themes,
         )
       );
     },
@@ -1204,6 +1288,8 @@ export default function (): {
       // After bundling, no emitted browser file holds a `KEEL_*` value of 8 characters or more (k.bundle Environment).
       handler(_options, bundle) {
         if (command !== "build" || this?.environment?.config.consumer !== "client") return;
+        const at = path.resolve(root, this.environment.config.build?.outDir ?? "dist");
+        builtOut = at;
         const values = Object.entries(process.env).flatMap(([k, v]): [string, string][] =>
           k.startsWith("KEEL_") && !PUBLIC_ENV.test(k) && v !== undefined && v.length >= 8 ? [[k, v]] : [],
         );
@@ -1225,15 +1311,25 @@ export default function (): {
       // keeps serving (k.compiler Build-time evaluation).
       if (command === "build" && problems.length > 0) throw evaluationFailed(problems);
     },
-    async closeBundle() {
-      // A `client` document loads the first-paint scheme script when the app has both schemes (k.schemes First paint).
-      const index = path.join(root, "dist", hosting ?? "", "index.html");
-      if (hosting !== undefined && shellOf() === undefined && fs.existsSync(index) && (await offersScheme(root)))
-        addSchemeScript(path.dirname(index), ["index.html"]);
-      const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
-      // A failed build wrote no `dist/<name>/`, and gets no mark either.
-      if (hosting !== undefined && fs.existsSync(path.dirname(mark)) && !fs.existsSync(mark))
-        fs.writeFileSync(mark, keelMark());
+    closeBundle: {
+      order: "post",
+      async handler() {
+        // A browser build's output, as written once every plugin's hooks have run, holds Keel's CSS as compiled (k.gamut
+        // CSS); a `node` or `static` deployable's is verified whole when its `buildApp` has written everything.
+        const built = builtOut;
+        builtOut = "";
+        const name = process.env.KEEL_DEPLOYABLE;
+        if (built !== "" && !appVerifies)
+          await verifyBuilt(built, name === undefined ? built : path.join(root, "dist", name));
+        // A `client` document loads the first-paint scheme script when the app has both schemes (k.schemes First paint).
+        const index = path.join(root, "dist", hosting ?? "", "index.html");
+        if (hosting !== undefined && shellOf() === undefined && fs.existsSync(index) && (await offersScheme(root)))
+          addSchemeScript(path.dirname(index), ["index.html"]);
+        const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
+        // A failed build wrote no `dist/<name>/`, and gets no mark either.
+        if (hosting !== undefined && fs.existsSync(path.dirname(mark)) && !fs.existsSync(mark))
+          fs.writeFileSync(mark, keelMark());
+      },
     },
     transform(this: unknown, code, id, options) {
       if (options?.ssr === false) note(code, id);

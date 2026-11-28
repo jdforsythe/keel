@@ -13,7 +13,7 @@ const literalOf = (e: Expression): { readonly text: string; readonly start: numb
 
 /**
  * Every token name a file writes as a string literal on a base element or `Part` (k.a11y-static Token names): each
- * token prop's literal (directly, as a responsive object's value, under `states`), each responsive key but `base`,
+ * token prop's literal (directly, as a responsive object's value, under `states`), each responsive key but `base` and `print`,
  * each literal `look`, and the same in each part style of `styles={{ part: {...} }}`. A computed value is not read;
  * a keyword prop is closed by its type. In source order.
  */
@@ -30,7 +30,8 @@ export function tokenLiterals(ast: Program): TokenLiteral[] {
     for (const p of e.properties) {
       if (p.type !== "Property") continue;
       const key = keyName(p);
-      if (key !== null && key !== "base") out.push({ kind: "breakpoint", value: key, at: p.key.start });
+      if (key !== null && key !== "base" && key !== "print")
+        out.push({ kind: "breakpoint", value: key, at: p.key.start });
       const v = literalOf(p.value);
       if (v !== undefined) prop(name, v.text, v.start);
     }

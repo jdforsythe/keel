@@ -1,5 +1,6 @@
 // Properties of contrastTable: symmetric in ratio, 21 on black and white, skips colors it cannot measure. Seed 1337.
-import { contrastTable, defineTokens } from "@keel/ui";
+import { contrastTable } from "@keel/ui/css";
+import { defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 

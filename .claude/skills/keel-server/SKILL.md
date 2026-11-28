@@ -5,11 +5,11 @@ description: "Keel server state: loaders and actions over server stores, guards 
 
 # Server state and API
 
-A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs server` lists them: `k.server`, `k.store`, `k.guards`, `k.contract`, `k.api`, `k.services`, `k.openapi`, `k.user`, `k.mount`.
+A `node` deployable owns the data; `client` ones call it. `keel docs server` lists the sections; `keel docs --for <code>` finds a code, `keel explain <code>` explains it.
 
 ## Loaders, actions, stores
 
-`loader` and `action` live in `*.server.ts` (E1551), a `guard` in `*.guard.ts` (E1009). A handler names its contract entry: `loader(contract, id, decl, fn)` and `action(contract, id, decl, fn)`, `fn` never annotated; a handler bound under another id is E1515, so two entries need two loaders over a shared helper. A `node` deployable's browser build stubs those files; in a module only `client` deployables list they ship and run in the browser (k.boundary). Naming `stores`, or a live loader (an async generator, only on an `events: true` GET entry), in a module only a `client` or `static` deployable serves is E1558. Request state is a `store` or `signal` made in its handler; config or a pool, a module-level `const`. A request's write to a module store or signal is E1256; to a module-level `let`, `Map` or array it is not refused and the next request reads it: keep none; cache in `ctx.storage`.
+`loader` and `action` live in `*.server.ts` (E1551), a `guard` in `*.guard.ts` (E1009). A handler names its contract entry: `loader(contract, id, decl, fn)` and `action(contract, id, decl, fn)`, `fn` never annotated; a handler bound under another id is E1515, so two entries need two loaders (share a helper). A `node` deployable's browser build stubs those files; in a module only `client` deployables list, they ship to the browser (k.boundary). Naming `stores`, or a live loader (an async generator, only on an `events: true` GET entry), in a module only a `client` or `static` deployable serves is E1558. Request state is made in its handler; config or a pool is a module `const`. A request's write to a module store or signal is E1256; a module `let`, `Map` or array leaks to the next request: keep none (cache in `ctx.storage`).
 
 `stores` names a factory with explicit store `id`s, run once per request and restored from `ctx.storage`. A request holds one live store per id: a layout's loader and its page's that read one store name the same factory; a second factory that creates that id again is E1550 at `keel check`, `keel build` and `createApp`. An action's `ok` saves the changed stores in one commit; `err` or a throw saves none; another request's save since this one began is 409 `keel.conflict`. `caller` is an anonymous per-browser hash that grants nothing; put it in `tx` meta, and `stores.board.undoWhere((e) => e.meta?.caller === caller)` undoes its writes.
 
@@ -18,13 +18,15 @@ A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs
 import { s } from '@keel/schema'
 export const Board = s.object({ todos: s.array(s.object({ id: s.id('Todo'), title: s.string() })) })
 ```
-A write that answers nothing has `output: s.object({})` and returns `ok({})`. A client view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); after a write, re-read through the service and `tx` the answer into a `hydrate` transaction in the handler. A `tx` in a component body is E1304. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
+A client view store starts from loader data as its `initial`, created in the component (`keel docs k.store`, View stores); after a write, re-read through the service and `tx` the answer into a `hydrate` transaction in the handler. A `tx` in a component body is E1304. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
 
 ## API routes
 
 A module that serves routes has one client-safe file, `modules/<id>/<id>.contract.ts`, exporting `contract('<id>', {...})` from `@keel/router/contract`, which imports `*.schema.ts` files and packages only (E1514). Each key is a route id; an API entry (`method`, `path`, `output`; optional `params`, `query`, `body`, `errors`, `timeout`, `events`) is `<module>.<name>`, one lowerCamel segment that names its client method (E1513). It answers JSON and is never in a module a `client` deployable serves (E1511). A member its kind refuses is E1510.
 
-**Static reading.** `keel check` reads the contract without running it. Keys are literal; each entry is an object whose `method`, `path`, `layout` and `events` are literals and whose `params`, `search` and `query` are schemas reached through consts and imports; other members are any expression. A spread or a call in place of the entries or of an entry is W1005 and E1111. A channel's entries are written out the same way (keel-data).
+`local: true` on a page or API entry (a dev tool) answers only this machine's loopback connections, never a forwarded or `service` request (403 `keel.denied`), but your server code's own loopback `ctx.net.fetch` (in `unsafe`) reaches it; off a `node` deployable, E1511.
+
+**Static reading.** `keel check` reads the contract unrun: literal keys; per entry, literal `method`, `path`, `layout` and `events`, and `params`, `search` and `query` schemas reached through consts and imports. A spread or a call in place of the entries or an entry is W1005 and E1111. A channel's entries are written out the same way (keel-data).
 
 ```ts
 // modules/api/api.contract.ts
@@ -71,7 +73,7 @@ export const routes = manifest(api, { 'api.board': { loader: loadBoard }, 'api.a
 ```
 A GET entry binds `loader`, a write `action`, each with an optional `guard`; a page entry binds `component` and its verbs (keel-client). `routeTable(...tables)` joins a deployable's modules. `output` is parsed before any save (E1554) and holds no `s.secret` (E1113: `reveal` it). An API `query` may require keys; after the guard, a failing `query` or `body` is 422 `keel.fields` and nothing runs. A loader or action denies with `err(keelError.denied.make({}))`, answered 403.
 
-**Bearer.** An API entry's guard, loader and action get `bearer: Secret<string> | undefined`, from `Authorization: Bearer`; a page's get `undefined`. Keel only parses it; check it once, in the handler that uses the token's row (`tokens(ctx).check`, keel-compliance, `idOf`). A guard's result reaches no handler, so use one only to admit. A guard without `redirect` is for API routes (on a page: E1508); denial is 403.
+**Bearer.** An API entry's guard, loader and action get `bearer: Secret<string> | undefined`, from `Authorization: Bearer`; a page's get `undefined`. Keel only parses it; check it once, in the handler that uses the token's row (`tokens(ctx).check`, keel-compliance, `idOf`). A guard's result reaches no handler: it only admits. A guard without `redirect` is for API routes (on a page: E1508); denial is 403.
 
 ```ts
 // modules/api/admit.guard.ts
@@ -84,11 +86,11 @@ export const admit = guard({}, async ({ bearer, user }) =>
     : ok(null))
 ```
 
-Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (`guard({ redirect: 'app.login' }, ...)`); guarded pages share its route's `params` (E1508). A guard lives in a `*.guard.*` file of a module and is bound by value import, so the binder lists that module in `deps`. A guard bound by modules that link to one another (a link imports the binder's contract) lives in a module of its own with no pages and no `deps` on its binders; a guard in one of them is E1153 `module deps cycle through guard <name>`. A `redirect` is a route id, no `deps` entry.
+Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (`guard({ redirect: 'app.login' }, ...)`); guarded pages share its route's `params` (E1508). A guard lives in a `*.guard.*` file of a module and is bound by value import, so the binder lists that module in `deps`. A guard bound by modules that link to one another lives in a module of its own with no pages and no `deps` on its binders; one in a binder is E1153 `module deps cycle through guard <name>`. A `redirect` is a route id, no `deps` entry.
 
 ## Identity
 
-Keel authenticates no one. `identity.ts` beside `topology.ts` default-exports `identityMount('/api/auth')`; `identity.server.ts` default-exports `identity({ identify, handle? })`. `identify` returns the user id (`''` for no one), once per request; handlers get it as `user`. A live loader keeps the `user` it opened with; its `currentUser()` runs `identify` again on the opening request (`''` with no identity source). `handle: { path, fn }` hosts an auth library's endpoints and cookies; `fn(request, ctx, { routes })`, and a sign-in's 303 goes to `pageHref(routes, next)` (`@keel/router/match`: `ok` is an `Href` of a page, `err` an unknown or hostile `next`; never copy `next` into `location`); no route sits under it, and it is not `/assets` or under it, where the built files are (E1579, E1580).
+Keel authenticates no one. `identity.ts` beside `topology.ts` default-exports `identityMount('/api/auth')`; `identity.server.ts` default-exports `identity({ identify, handle? })`. `identify` returns the user id (`''` for no one), once per request; handlers get it as `user`. A live loader keeps the `user` it opened with; its `currentUser()` runs `identify` again on the opening request (`''` with no identity source). `handle: { path, fn }` hosts an auth library's endpoints and cookies; `fn(request, ctx, { routes })`, and a sign-in's 303 goes to `pageHref(routes, next)` (`@keel/router/match`: `ok` is an `Href` of a page, `err` an unknown or hostile `next`; never copy `next` into `location`); no route sits under it, and it is not at or under `/assets`, the built files (E1579, E1580).
 
 ```ts fragment
 // identity.server.ts
@@ -125,4 +127,4 @@ export async function addOne(ctx: Ctx, token: Secret<string>) {
 
 ## Runners and tests
 
-`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores` elsewhere): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`, `std: '.keel/std.json'`, else std config is empty) over a sim ctx (no runner runs without `runners: { <module>: runners }`), then `app.fetch(new Request(url, init))`; `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write answers the `Result` itself, `{ ok: true, value }`.
+`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores`): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`, `std: '.keel/std.json'`, else no std config; package README) over a sim ctx (no runner runs without `runners: { <module>: runners }`), then `app.fetch(new Request(url, init))`; a harness `fetch` with no connection is refused by a `local: true` route (403). `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write the `Result`, `{ ok: true, value }`. See keel-testing, keel-data, keel-compliance, keel-deploy.

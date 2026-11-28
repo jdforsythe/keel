@@ -31,12 +31,15 @@ for (const [name, mk] of projects) {
       fc.assert(
         fc.property(lowerName, routePath, (n, path) => {
           const id = `orders.${n}`;
-          const out = apply("route", { id, path, "no-loader": true }, mk());
+          const project = mk();
+          const held = new Set(project.keys());
+          const out = apply("route", { id, path, "no-loader": true }, project);
           expect(out.created).toHaveLength(2);
           expect(out.created.filter((p) => /\.tsx$/.test(p) && !/\.test\.tsx$/.test(p))).toHaveLength(1);
           expect(out.created.filter((p) => /\.test\.tsx?$/.test(p))).toHaveLength(1);
           expect(out.created.filter((p) => /\.server\.tsx?$/.test(p))).toEqual([]);
-          expect([...out.files.keys()].filter((p) => /\.server\.tsx?$/.test(p))).toEqual([]);
+          // the node project holds its own `modules/app/loadHome.server.ts`; the route adds none
+          expect([...out.files.keys()].filter((p) => !held.has(p) && /\.server\.tsx?$/.test(p))).toEqual([]);
           expect(out.changed).toContain("modules/orders/orders.contract.ts");
           expect(out.changed).toContain("modules/orders/routes.ts");
           expect(read(out.files, "modules/orders/orders.contract.ts")).toMatch(new RegExp(`["']${esc(id)}["']\\s*:`));

@@ -7,16 +7,20 @@ import type { OutRecord } from "../types/OutRecord.ts";
 import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { buildCommand } from "./buildCommand.ts";
+import { cliVersion } from "./cliVersion.ts";
 import { isError } from "./isError.ts";
 import { isRecord } from "./isRecord.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { missingInput } from "./missingInput.ts";
 import { openapiInput } from "./openapiInput.ts";
 import { projectFiles } from "./projectFiles.ts";
+import { projectOptions } from "./projectOptions.ts";
 import { scaffoldInput } from "./scaffoldInput.ts";
 import { summary } from "./summary.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 import { withAgentFiles } from "./withAgentFiles.ts";
+import { withLibraryFiles } from "./withLibraryFiles.ts";
 
 const GENERATORS: readonly Op[] = [
   "project",
@@ -37,17 +41,21 @@ const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   dotted: ["store", "route"],
 };
 
-const refusal = (d: ScaffoldDiag, into: string): OutRecord[] => [
-  makeDiag(d.code, d.message, {
-    path: d.path === undefined ? undefined : `${into}${d.path}`,
-    line: d.line,
-    col: d.col,
-    see: d.see,
-  }),
-  ...(d.cause === undefined
-    ? []
-    : [makeDiag(d.cause.code, d.cause.message, { path: d.cause.path, line: d.cause.line, col: 1, see: "k.check" })]),
-];
+const refusal = (d: ScaffoldDiag, into: string, op: Op, files: ReadonlyMap<string, string>): OutRecord[] => {
+  const missing = d.missing === undefined ? undefined : missingInput(op, d.missing, files);
+  return [
+    makeDiag(d.code, missing?.message ?? d.message, {
+      // A missing input is no file's: the diagnostic names the flag, not a path.
+      path: d.path === undefined || d.missing !== undefined ? undefined : `${into}${d.path}`,
+      line: d.line,
+      col: d.col,
+      see: missing?.see ?? d.see,
+    }),
+    ...(d.cause === undefined
+      ? []
+      : [makeDiag(d.cause.code, d.cause.message, { path: d.cause.path, line: d.cause.line, col: 1, see: "k.check" })]),
+  ];
+};
 
 /**
  * `keel scaffold <op> ...` / `keel codemod <op> ...` over `io.files` through `@keel/scaffold`, which is pure, so
@@ -55,7 +63,8 @@ const refusal = (d: ScaffoldDiag, into: string): OutRecord[] => [
  * `keel build` then refreshes what `keel check` reads (k.scaffold Refresh): the edit set is applied, `buildCommand`
  * runs up to the bundles over the new tree, its diagnostics follow the edit lines, and the trailer counts `artifacts` as that run of `keel build` does. The edit set comes back as `scaffold.edit` records (unified diffs
  * under `--dry-run`) plus writes for the binary (`project <name>`: under `<name>/`, with the agent files of the running
- * `@keel/cli` unless `--workspace`); a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
+ * `@keel/cli` unless `--workspace`, its version, and k.create-manager's rules, `projectOptions`;
+ * `library`: with `.gitignore` and the agent files in `<base>/`); a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
  * `--kind` tries component then schema (PascalCase) or store then route (dotted), first one that finds `from`.
  */
 export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: Io): Promise<Outcome> {
@@ -89,7 +98,26 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
       : undefined;
   if (generated !== undefined && !generated.ok)
     return { records: [generated.diag, summary(`${name} ${op}`, [generated.diag], {})], writes: [] };
-  const base = scaffoldInput(op, input, generated?.value, (d) => d !== "" && existsSync(join(io.cwd, d)));
+  const given = scaffoldInput(op, input, generated?.value, (d) => d !== "" && existsSync(join(io.cwd, d)));
+  // `project` outside the Keel monorepo follows k.create's Versions and k.create-manager's rules.
+  const opts = op === "project" && input.workspace !== true ? projectOptions(io, into.slice(0, -1)) : undefined;
+  if (opts?.cli !== undefined && opts.cli !== cliVersion()) {
+    const d = makeDiag(
+      "E1363",
+      `@keel/cli ${opts.cli.slice(0, 16)} is above, this is ${cliVersion().slice(0, 16)}; run that version's keel`,
+      { see: "k.create" },
+    );
+    return { records: [d, summary(`${name} ${op}`, [d], {})], writes: [] };
+  }
+  const base =
+    opts === undefined
+      ? given
+      : {
+          ...given,
+          version: cliVersion(),
+          member: opts.member,
+          ...(opts.packageManager === undefined ? {} : { packageManager: opts.packageManager }),
+        };
   const from = typeof base.from === "string" ? base.from : "";
   const kinds =
     op === "rename" && input.kind === undefined
@@ -103,10 +131,15 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   }
   const label = `${name} ${op}`;
   if (!result.ok) {
-    const rs = refusal(result.error.data, into);
+    const rs = refusal(result.error.data, into, op, files);
     return { records: [...rs, summary(label, rs, {})], writes: [] };
   }
-  const edit = op === "project" && input.workspace !== true ? await withAgentFiles(result.value, io) : result.value;
+  const edit =
+    op === "project" && input.workspace !== true
+      ? await withAgentFiles(result.value, io)
+      : op === "library" && typeof base.name === "string"
+        ? await withLibraryFiles(result.value, io, base.name)
+        : result.value;
   const after = (p: string): string | null => edit.files.get(p) ?? null;
   const records: OutRecord[] = [];
   const writes: Write[] = [];
@@ -119,6 +152,13 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   for (const p of edit.created) add("create", p);
   for (const p of edit.changed) add("change", p);
   for (const p of edit.removed) add("remove", p);
+  for (const n of edit.notes ?? []) records.push({ kind: "scaffold.note", path: `${into}${n.path}`, note: n.note });
+  if (opts?.outside === true)
+    records.push(
+      makeDiag("W1364", `${into.slice(0, 40)} is not in the workspace's package globs; add it to them`, {
+        see: "k.create",
+      }),
+    );
   const counts = { created: edit.created.length, changed: edit.changed.length, removed: edit.removed.length };
   const built = into === "" && [...files.keys()].some((p) => BUILT.test(p));
   // `shell` refreshes nothing: the new shell package is not installed yet, so its target cannot load (k.scaffold-shell).

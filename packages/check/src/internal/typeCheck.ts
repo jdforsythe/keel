@@ -32,11 +32,11 @@ import { probeRecorder } from "./probeRecorder.ts";
 import { probesHold } from "./probesHold.ts";
 import { referenceDirectives } from "./referenceDirectives.ts";
 import { resultDiscards } from "./resultDiscards.ts";
-import { schemeSelectReads } from "./schemeSelectReads.ts";
 import { textNodes } from "./textNodes.ts";
 import { tsCode } from "./tsCode.ts";
 import { tsCompilerOptions } from "./tsCompilerOptions.ts";
 import { typeCache } from "./typeCache.ts";
+import { uiElementReads } from "./uiElementReads.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 import { unprovenPredicates } from "./unprovenPredicates.ts";
 
@@ -137,7 +137,14 @@ function keyOf(
 function resolve(entry: TypeEntry, code: readonly SourceFile[], scope: ReadonlySet<string>): Typed {
   const sources: ReadonlyMap<string, string> = new Map(code.map((f) => [f.path, f.source]));
   const diagnostics = entry.items.flatMap((i) => (i.kind === "diag" ? [i] : judgeFormat(i, sources, scope)));
-  return { diagnostics, dates: entry.dates, schemeSelects: entry.schemeSelects, keelThrows: entry.keelThrows };
+  return {
+    diagnostics,
+    dates: entry.dates,
+    schemeSelects: entry.schemeSelects,
+    themeSelects: entry.themeSelects,
+    boxes: entry.boxes,
+    keelThrows: entry.keelThrows,
+  };
 }
 
 function remember(key: string, entry: TypeEntry): void {
@@ -180,7 +187,14 @@ export function typeCheck(
   const code = files.filter((f) => isCodePath(f.path));
   const decls = files.filter((f) => DECLARATION.test(f.path) && !LIBRARY.test(f.path));
   if (code.length === 0 && decls.length === 0)
-    return { diagnostics: [], dates: new Map(), schemeSelects: new Map(), keelThrows: new Map() };
+    return {
+      diagnostics: [],
+      dates: new Map(),
+      schemeSelects: new Map(),
+      themeSelects: new Map(),
+      boxes: new Map(),
+      keelThrows: new Map(),
+    };
   const base = norm(path.resolve(root));
   const library = code.filter((f) => isLibrary(f.path)).map((f) => f.path);
   const key = keyOf([...code, ...decls], base, skip, library, packages);
@@ -290,6 +304,8 @@ function pass(
   const out: (Diagnostic | FormatSite)[] = [];
   const dates = new Map<string, ReadonlySet<number>>();
   const schemeSelects = new Map<string, ReadonlySet<number>>();
+  const themeSelects = new Map<string, ReadonlySet<number>>();
+  const boxes = new Map<string, ReadonlySet<number>>();
   const throws = new Map<string, ReadonlySet<number>>();
   const HAND_MADE = "KeelError written by hand: declare it with s.error and pass X.make(data)";
   const E1458 = "err takes a KeelError: declare it with s.error(code, data) and pass X.make(data)";
@@ -356,8 +372,12 @@ function pass(
       });
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
     if (app) throws.set(file.path, new Set(keelThrows(sf, checker, ownerOf).map(view.original)));
-    if (file.path.endsWith("x"))
-      schemeSelects.set(file.path, new Set(schemeSelectReads(sf, checker).map(view.original)));
+    if (file.path.endsWith("x")) {
+      const reads = (name: string) => new Set(uiElementReads(sf, checker, name).map(view.original));
+      schemeSelects.set(file.path, reads("SchemeSelect"));
+      themeSelects.set(file.path, reads("ThemeSelect"));
+      boxes.set(file.path, reads("Box"));
+    }
     if (file.path.endsWith("x") && app)
       for (const t of textNodes(sf, checker))
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
@@ -390,7 +410,7 @@ function pass(
   out.push(...importMetaDeclarations(program, host, base, held, { libDir, nodeTypes, clientTypes }));
   const probes = rec.probes();
   return {
-    entry: { key, probes: probes ?? [], items: out, dates, schemeSelects, keelThrows: throws },
+    entry: { key, probes: probes ?? [], items: out, dates, schemeSelects, themeSelects, boxes, keelThrows: throws },
     whole: probes !== undefined,
   };
 }

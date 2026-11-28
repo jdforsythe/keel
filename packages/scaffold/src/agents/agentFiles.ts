@@ -1,5 +1,6 @@
 import { type Result, ok } from "@keel/schema";
 import { fail } from "../internal/fail.ts";
+import { managerOf } from "../internal/managerOf.ts";
 import { sortedKeys } from "../internal/sortedKeys.ts";
 import { agentsBlock } from "../templates/agentsBlock.ts";
 import type { AgentSkill } from "../types/AgentSkill.ts";
@@ -10,12 +11,23 @@ import { AGENTS_START } from "./AGENTS_START.ts";
 
 const lineIs = (marker: string) => (l: string) => l.replace(/\r$/, "") === marker;
 
+/** A string field of a `package.json` text; undefined when absent or unreadable. */
+function field(text: string | undefined, key: string): string | undefined {
+  try {
+    const pkg: unknown = JSON.parse(text ?? "null");
+    const v: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, key) : undefined;
+    return typeof v === "string" ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * The agent files of a project tree (path -> text) that differ from what `keel docs --sync` writes, sorted by path
  * (k.scaffold Agent files): `AGENTS.md` with the Keel block replaced in place or appended after the user's text,
  * `CLAUDE.md` (`@AGENTS.md`) only when absent, and `.claude/skills/<name>/SKILL.md` for each skill. An `AGENTS.md`
  * whose markers are not one start line followed by one end line is E1355; nothing is written. A CRLF `AGENTS.md` gets
- * the block in CRLF.
+ * the block in CRLF. A tree whose `package.json` has `"keel": "library"` gets the library's block (k.explain Agent files); its commands are in the form of `package.json`'s `packageManager`, pnpm's when none.
  */
 export function agentFiles(
   files: ReadonlyMap<string, string>,
@@ -23,7 +35,9 @@ export function agentFiles(
 ): Result<DeployDrift[], ScaffoldError> {
   const have = files.get("AGENTS.md");
   const nl = have?.includes("\r\n") === true ? "\r\n" : "\n";
-  const block = agentsBlock(skills).replaceAll("\n", nl);
+  const pkg = files.get("package.json");
+  const run = managerOf(field(pkg, "packageManager")).run;
+  const block = agentsBlock(skills, field(pkg, "keel") === "library", run).replaceAll("\n", nl);
   const lines = (have ?? "").split("\n");
   const starts = lines.flatMap((l, i) => (lineIs(AGENTS_START)(l) ? [i] : []));
   const ends = lines.flatMap((l, i) => (lineIs(AGENTS_END)(l) ? [i] : []));

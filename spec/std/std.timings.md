@@ -1,7 +1,7 @@
 # std.timings: Timings
 status: conformance-covered
 
-**Extension point.** Inspector hooks (k.cli, RFC 0042). Importing `@keel/std-timings` registers the inspect section `timings.recent`. A dev app's `GET /__keel/inspect` serves it in `sections`, and `keel inspect` prints it as an `inspect.section` record.
+**Extension point.** Inspector hooks (k.inspect). Importing `@keel/std-timings` registers the inspect section `timings.recent`. A dev app's `GET /__keel/inspect` serves it in `sections`, and `keel inspect` prints it as an `inspect.section` record.
 
 **API** (`@keel/std-timings`).
 ```ts
@@ -14,7 +14,7 @@ const rows = await time(ctx, 'orders.load', () => db.rows())
 - `TimingsRecent` is `s.object({ timings: Timings, dropped: s.int({ min: 0 }) }, { closed: true })`: `timingsOf(ctx)` and the count of names the ctx evicted (their stats are gone; a move between segments is not counted).
 - The section is `inspector({ id: 'timings.recent', schema: TimingsRecent, read })`.
 
-**Rules.** None. A second registration of `timings.recent` is E1057 (k.cli).
+**Rules.** None. A second registration of `timings.recent` is E1057 (k.inspect).
 
 **Conformance.**
 - Under a sim ctx, `time` around a `fn` that advances the clock by `d` records `lastMs` `d`. For generated duration lists of one name, `count`, `totalMs` and `maxMs` are the list's length, sum and maximum.

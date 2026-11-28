@@ -14,6 +14,8 @@ import { USERS_KEY } from "./USERS_KEY.ts";
  * Over the net a redirect is not followed (`redirect: "manual"`): a 3xx is `api.status` as it is in process.
  * A `createApp`'s binding also gives the target its `x-keel-user` signer (k.user Across deployables), and with it the
  * user a call naming none carries, when a `renderRoute` harness signed in on `ctx` is open (`USERS_KEY`, k.user Testing).
+ * With that signer the call is a server's, so its request carries `x-keel-forwarded: 1`, in process or by URL, and a
+ * `local` route refuses it (k.topology Calls and peers).
  */
 export function moduleTarget(ctx: Ctx, module: string): Target {
   const loc: unknown = Reflect.get(globalThis, "location");
@@ -27,6 +29,7 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   const users: unknown = Reflect.get(globalThis, USERS_KEY);
   const given: unknown = sign !== undefined && users instanceof WeakMap ? users.get(ctx) : undefined;
   const user = typeof given === "string" ? given : undefined;
+  const server = sign === undefined ? {} : { server: true as const };
   const net = (base: string): Target => {
     const cross = origin !== undefined && base !== origin && !base.startsWith(`${origin}/`);
     return {
@@ -35,6 +38,7 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
       keel: true,
       sign,
       user,
+      ...server,
       send: (req) =>
         ctx.net.fetch(
           new Request(req, cross ? { redirect: "manual", credentials: "include" } : { redirect: "manual" }),
@@ -51,6 +55,7 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
       keel: true,
       sign,
       user,
+      ...server,
       send: (req) => app.fetch(req),
     };
   if (bound === undefined && origin !== undefined) return net(origin);

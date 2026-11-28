@@ -1,5 +1,8 @@
 import type { OutRecord } from "@keel/cli";
 
+const seeOf = (code: string): string =>
+  code === "E2010" ? "std.monitor" : code.startsWith("E20") ? "std.sessions" : code === "E1056" ? "k.inspect" : "k.cli";
+
 /** A `keel session` diagnostic (E2002-E2004 at the session file, 1:1; E1056, E2010 and I1055 at no path), `see` set. */
 export function sessionDiag(code: string, message: string, file?: string): OutRecord {
   const text = message.length > 89 ? `${message.slice(0, 86)}...` : message;
@@ -9,6 +12,6 @@ export function sessionDiag(code: string, message: string, file?: string): OutRe
     code,
     ...at,
     message: text,
-    see: code === "E2010" ? "std.monitor" : code.startsWith("E20") ? "std.sessions" : "k.cli",
+    see: seeOf(code),
   };
 }

@@ -24,7 +24,7 @@ Durable multi-step workflows: a state chart run per instance in one server store
 
 ## Extension points
 
-Uses the **module manifest** (k.module: stdlib module `workflows`), an **inspector hook** (k.cli: section `workflows.instances`) and the **check rule registry** (k.check: E2351 to E2355 from `./tools`).
+Uses the **module manifest** (k.module: stdlib module `workflows`), an **inspector hook** (k.inspect: section `workflows.instances`) and the **check rule registry** (k.check: E2351 to E2355 from `./tools`).
 
 ## Unsafe
 

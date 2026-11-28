@@ -1,5 +1,6 @@
 import { blankLabel } from "../rules/blankLabel.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
+import { checkTimeEntries } from "../rules/checkTimeEntries.ts";
 import { componentCtxSignature } from "../rules/componentCtxSignature.ts";
 import { defectCode } from "../rules/defectCode.ts";
 import { dynamicImport } from "../rules/dynamicImport.ts";
@@ -40,6 +41,7 @@ import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { nodePageWithoutApp } from "../rules/nodePageWithoutApp.ts";
 import { oneExport } from "../rules/oneExport.ts";
+import { overlayBackdrop } from "../rules/overlayBackdrop.ts";
 import { passwordField } from "../rules/passwordField.ts";
 import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
 import { piiInRouteUrl } from "../rules/piiInRouteUrl.ts";
@@ -56,6 +58,7 @@ import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
 import { superviseInApp } from "../rules/superviseInApp.ts";
 import { throwingBuiltin } from "../rules/throwingBuiltin.ts";
+import { themeSelectChoice } from "../rules/themeSelectChoice.ts";
 import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unknownToken } from "../rules/unknownToken.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
@@ -107,6 +110,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   componentCtxSignature,
   noEagerElement,
   lowContrast,
+  overlayBackdrop,
   resourceViaMatch,
   noDetachedScope,
   noRuntimeOpImport,
@@ -126,6 +130,8 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   unknownToken,
   libraryTokenName,
   schemeSelectOneScheme,
+  themeSelectChoice,
+  checkTimeEntries,
   blankLabel,
   hostCodeImport,
   stylesheetImport,

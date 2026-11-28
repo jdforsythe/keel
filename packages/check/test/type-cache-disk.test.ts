@@ -38,6 +38,8 @@ const entry: TypeEntry = {
   ],
   dates: new Map([["a.ts", new Set([3, 7])]]),
   schemeSelects: new Map([["a.tsx", new Set([5])]]),
+  themeSelects: new Map(),
+  boxes: new Map(),
   keelThrows: new Map([["a.ts", new Set([11])]]),
 };
 

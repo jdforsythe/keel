@@ -10,7 +10,7 @@ The text `keel explain` prints (k.check **explain and docs**) lives in an entry 
 
 **Budgets.** `tooling/budgets.json` has a size line for each entry, `@keel/check` and `@keel/check/explain`, each measured as that entry bundled alone (minified esm, dependencies external, gzip). Explanation text counts against the explain line, and the checker's code against the main line.
 
-**Agent files** (k.scaffold generator `project`), from the running `@keel/cli`: `AGENTS.md` with the Keel block (`<!-- keel:start -->` to `<!-- keel:end -->`, <= 600 tokens: `keel docs`, `keel explain`, commands, rules, skill paths), `CLAUDE.md` holding `@AGENTS.md` when nothing exists there (an existing one is never written, a dangling symlink is E1357), and a copy of each skill `keel docs` lists at `.claude/skills/<name>/SKILL.md`. `keel docs --sync` writes them all or none, replacing or appending the block. Where `AGENTS.md` has the block, `keel check` reports W1356 for it or any copy `--sync` would change.
+**Agent files** (k.scaffold generator `project`), from the running `@keel/cli`: `AGENTS.md` with the Keel block (`<!-- keel:start -->` to `<!-- keel:end -->`, <= 600 tokens: `keel docs`, `keel explain`, commands, rules, skill paths; every command in the form of `package.json`'s `packageManager`, pnpm's when none, and one line saying a skill's bare `keel <command>` means that form, since the skill copies stay the kit's bytes), `CLAUDE.md` holding `@AGENTS.md` when nothing exists there (an existing one is never written, a dangling symlink is E1357), and a copy of each skill `keel docs` lists at `.claude/skills/<name>/SKILL.md`. In a folder whose `package.json` has `"keel": "library"` the block says it is a Keel library and lists `keel-library` first; `keel scaffold library` writes the same files in `<base>/` (k.create). `keel docs --sync` writes them all or none, replacing or appending the block. Where `AGENTS.md` has the block, `keel check` reports W1356 for it or any copy `--sync` would change.
 
 **Rules.** None.
 
@@ -21,3 +21,7 @@ The text `keel explain` prints (k.check **explain and docs**) lives in an entry 
 - `tooling/budgets.json` has a size line for `@keel/check` and one for `@keel/check/explain`.
 - `explain('E1762')` ends with the line `see: k.identity`, and no `explain(code)` of a kernel code holds `...` or `…` in its `see` line.
 - No `spec/kernel/*.md` section, `proposed` ones included, names in its Rules a code `explain` answers as unknown.
+- `keel scaffold library @acme/charts` writes in `charts/` `.gitignore`, `AGENTS.md`, `CLAUDE.md` holding `@AGENTS.md` and one `.claude/skills/<name>/SKILL.md` per skill `keel docs` lists, each equal to `keel docs <name>`.
+- In that library the block's first sentence holds `Keel library` and the first skill path it lists is `keel-library`'s; the block of `keel scaffold project` holds no `Keel library`; each block is at most 600 tokens.
+- In that library `keel check` reports no W1356; an edited skill copy or block is one W1356, `keel docs --sync` restores it and keeps the text outside the block, and a second `--sync` writes nothing.
+- In a project whose `package.json` has `packageManager` `npm@10.9.0`, every command the block names is `npx --no keel <command>` and its second line says to run a skill's `keel <command>` that way; with none, `pnpm keel <command>`.

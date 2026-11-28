@@ -63,4 +63,6 @@ export type Served = {
   readonly framed?: Set<string>;
   /** Whether the app has both color schemes (`schemes.json`, k.schemes): documents then follow `keel-scheme`. */
   readonly schemes?: boolean;
+  /** The app's `choice` themes (`schemes.json`, k.schemes): documents then follow `keel-theme` when it names one. */
+  readonly themes?: readonly string[];
 };

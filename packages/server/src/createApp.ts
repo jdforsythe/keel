@@ -38,6 +38,7 @@ import { keepRunning } from "./internal/keepRunning.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { loadStd } from "./internal/loadStd.ts";
 import { logThrownUntil } from "./internal/logThrownUntil.ts";
+import { localAllowed } from "./internal/localAllowed.ts";
 import { logUnwritable } from "./internal/logUnwritable.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
@@ -47,6 +48,7 @@ import { peerPaths } from "./internal/peerPaths.ts";
 import { readSchemes } from "./internal/readSchemes.ts";
 import { redacted } from "./internal/redacted.ts";
 import { refuseModuleWrites } from "./internal/refuseModuleWrites.ts";
+import { remoteOf } from "./internal/remoteOf.ts";
 import { reportSource } from "./internal/reportSource.ts";
 import { reqLine } from "./internal/reqLine.ts";
 import { requestSecrets } from "./internal/requestSecrets.ts";
@@ -59,6 +61,7 @@ import { serving } from "./internal/serving.ts";
 import { slotSince } from "./internal/slotSince.ts";
 import { tallyOf } from "./internal/tallyOf.ts";
 import { thrownLog } from "./internal/thrownLog.ts";
+import { targetOf } from "./internal/targetOf.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -81,7 +84,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * cap a `diag` keeps the server's own prefix (`loader <id> threw: `) and is one mark after it (`scrubbedDiag`). `mode` defaults to `production`.
  * With no DOM global (plain Node) it installs the DOM-free server tree (`installServerDom`) so components that build
  * DOM render documents. A JSON or FormData action body over `maxBodyBytes` (default 1 MiB) gets 413 `keel.payloadTooLarge`.
- * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.cli Inspect) before the route table and before
+ * In `dev` mode `GET /__keel/inspect` returns the inspect document (k.inspect) before the route table and before
  * any request scope (its `graph` holds the app's scopes only; inspector section E1057s go to `log`), to a loopback
  * or listed host and an absent (GET only), same, or listed (`inspect.origins`) `Origin` only; others, and any other
  * method without an allowed `Origin`, get 403 `keel.denied`.
@@ -254,7 +257,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     days: top[name]?.caller?.days,
     origins: top[name]?.origins,
     framed: new Set(),
-    schemes,
+    schemes: schemes.both,
+    themes: schemes.themes,
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, top, Object.keys(peers));
@@ -283,7 +287,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     const peer = inspecting || raw.headers.has("x-keel-forwarded") ? undefined : peerOf(forwards, path);
     const matched = inspecting ? null : matchUrl(served, path, mountPath).route;
     if (matched !== null) routeOf.set(raw, matched.id);
-    const at = peer === undefined || matched !== null ? undefined : peers[peer];
+    const at = peer === undefined || matched !== null ? undefined : peers[peer.deployable];
     const gate = inspecting ? inspectAllowed(raw, sv.inspectOrigins) : undefined;
     // An allowed origin (k.hosting): granted on API routes only, by exact match of its serialized origin.
     const from = raw.headers.get("origin") ?? "";
@@ -325,20 +329,24 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
       );
     // A preflight from an allowed origin to an API route: no guard, loader or action runs.
     const pre = api !== undefined && raw.method === "OPTIONS" && raw.headers.has("access-control-request-method");
-    const ran = pre
-      ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
-      : path === CSP_PATH
-        ? await attempted(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
-        : at !== undefined
-          ? await attempted(() => forward(raw, at, sv))
-          : gate === undefined || (gate.ok && raw.method !== "GET")
-            ? await routed()
-            : await attempted(() =>
-                (gate.ok
-                  ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
-                  : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
-                ).then((r) => ({ ...r, route: undefined })),
-              );
+    // A `local: true` route answers this machine alone (k.contract Local routes): checked before anything of it runs.
+    const refusedLocal = matched?.def.local === true && !localAllowed(raw, remoteOf(c.env), targetOf(c.env));
+    const ran = refusedLocal
+      ? { ok: true as const, value: { response: denied("local route refused"), route: matched?.id, diags: [] } }
+      : pre
+        ? { ok: true as const, value: { response: new Response(null, { status: 204 }), route: hit?.id, diags: [] } }
+        : path === CSP_PATH
+          ? await attempted(() => cspReport(raw, sv, log, reportSource(raw, c.env)))
+          : at !== undefined
+            ? await attempted(() => forward(raw, at, sv))
+            : gate === undefined || (gate.ok && raw.method !== "GET")
+              ? await routed()
+              : await attempted(() =>
+                  (gate.ok
+                    ? inspectResponse(opts.artifacts, gate.allow, sv.ctx)
+                    : Promise.resolve({ response: denied("inspect origin refused"), diags: [] })
+                  ).then((r) => ({ ...r, route: undefined })),
+                );
     // A server bug's thrown text is scrubbed whole before it is clipped for the dev body (`scrubbedCause`).
     const h = ran.ok ? ran.value : crashed(sv.mode, scrubbedCause(ran.error, { secrets, pii }));
     // Every API-route response varies by origin once any origin is allowed, so a shared cache keeps them apart.
@@ -381,8 +389,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
       log?.write(diagLine(log.format, scrubbedDiag(d, { secrets: new Set(), pii: new Set() })));
   });
   const app: ServerApp = {
-    fetch: async (req) => {
-      const r = await attempted(() => hono.fetch(req));
+    fetch: async (req, connection) => {
+      const r = await attempted(() => hono.fetch(req, connection));
       return r.ok ? r.value : lastResort(req);
     },
     close: async () => {

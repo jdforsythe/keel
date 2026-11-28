@@ -39,7 +39,11 @@ it("reports a library pair's contrast failure in tokens.ts, never under node_mod
   const failing = { ...tokens, color: { ...tokens.color, "acme.onAccent": "#cccccc" } };
   const result = check([...appFiles, ...libraryFiles], { root: app, types: false, artifacts: { tokens: failing } });
   const contrast = result.diagnostics.filter((diag) => diag.code === "E1804");
-  expect(contrast.map((diag) => diag.path)).toEqual(["tokens.ts"]);
-  expect(contrast[0]?.message.endsWith("; override in tokens.ts")).toBe(true);
+  // One finding per pair and combination (k.a11y-static Library contrast), each in tokens.ts.
+  expect(contrast.length).toBeGreaterThan(0);
+  expect(new Set(contrast.map((diag) => diag.path))).toEqual(new Set(["tokens.ts"]));
+  expect(new Set(contrast.map((diag) => diag.message)).size).toBe(contrast.length);
+  // A message over 89 units keeps its first 86 and ends `...` (k.a11y-static Message).
+  for (const diag of contrast) expect(diag.message).toMatch(/; override in tokens\.ts$|\.\.\.$/);
   expect(result.diagnostics.filter((diag) => diag.path.startsWith("node_modules/"))).toEqual([]);
 });

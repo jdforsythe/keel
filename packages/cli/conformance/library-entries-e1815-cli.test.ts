@@ -38,7 +38,7 @@ function project(entry: unknown, marker: string, key = "./tokens", whole?: unkno
     ...staticTree(),
     "modules/s/module.ts":
       "import { module } from '@keel/compiler'\nexport default module({ id: 's', deps: ['@acme/ui'], capabilities: [], public: { exports: [] } })\n",
-    "tokens.ts": `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n${side}\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n});\n`,
+    "tokens.ts": `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "@acme/ui/tokens";\n${side}\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color },\n  look: { ...brandTokens.look, ...acmeTokens.look },\n});\n`,
     [`${root}/package.json`]: JSON.stringify(
       { name: "@acme/ui", version: "1.0.0", type: "module", keel: "library", exports },
       null,
@@ -53,7 +53,7 @@ function project(entry: unknown, marker: string, key = "./tokens", whole?: unkno
     [`${root}/src/Badge.tsx`]:
       "import { Text } from '@keel/ui'\nexport default function Badge(props: { id: string }) { return <Text id={`${props.id}.text`} look=\"acme.badge\">x</Text> }\n",
     [`${root}/src/acmeTokens.ts`]:
-      "import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } } })\n",
+      "import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' }, look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } } })\n",
     [`${root}/.keel/ledger.json`]: LEDGER,
   };
 }

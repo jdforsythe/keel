@@ -12,7 +12,7 @@ status: conformance-covered
 
 **Entries.** The main entry, `Tally` and `tallyOf`, imports `@keel/schema` alone and registers nothing, so server and browser code import it. `@keel/std-report/tools` is the CLI-time half (k.module **Std config**): it has no exports, calls `formatter('report.tally', ...)` and `stdCommand('report', op)`, and `keel check`, `keel build` and `keel report` load it when a module's `deps` has the package.
 
-**Reaching a person.** An app serves a tally as an inspect section (k.cli **Inspector hooks**):
+**Reaching a person.** An app serves a tally as an inspect section (k.inspect **Inspector hooks**):
 ```ts
 inspector({ id: 'orders.status', schema: Tally, read: (ctx) => tallyOf('orders.status', statuses(ctx)) })
 ```

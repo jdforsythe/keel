@@ -47,6 +47,7 @@ export function scaffoldInput(
         file: input.file,
         api: input.api,
         method: input.method,
+        loader: input.loader,
         "no-loader": input["no-loader"],
       });
     case "library":

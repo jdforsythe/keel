@@ -15,6 +15,8 @@ const strip = (s: string): string => s.replace(ANSI, "");
 const firstLine = (s: string): string => strip(s).split("\n")[0] ?? "";
 /** A T0001 message by the k.check rule (89 UTF-16 code units). */
 const clip89 = (s: string): string => clipMessage(s, 89);
+/** An end-to-end test file (k.e2e Files). */
+const E2E = /\.e2e\.[cm]?[jt]sx?$/;
 const FRAME = /(?:^|[\s(])(?:file:\/\/)?((?:\/|[A-Za-z]:[\\/])[^():]+):(\d+):(\d+)\)?$/;
 
 const isApp = (f: string): boolean =>
@@ -143,8 +145,10 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         // A harness failure (E1702-E1710) keeps its code; it is located at the test's own frame when it has one.
         const raw = str(e.code) ?? "";
         const coded: `E17${string}` | undefined = /^E17\d\d$/.test(raw) ? `E17${raw.slice(3)}` : undefined;
+        const e2e = E2E.test(file);
         const all = frames(e);
-        const own = coded === undefined ? -1 : all.findIndex((f) => f.file === file);
+        // A coded failure, and any e2e one, is located at the test file's own frame when it has one.
+        const own = coded === undefined && !e2e ? -1 : all.findIndex((f) => f.file === file);
         const fs = (own > 0 ? [...all.slice(own, own + 1), ...all.slice(0, own), ...all.slice(own + 1)] : all).slice(
           0,
           5,
@@ -153,22 +157,35 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         const more = fs.slice(1).map((f) => `at ${relative(cwd, f.file)}:${f.line}:${f.col}`);
         const whole = str(e.message) ?? "test failed";
         const said = firstLine(whole);
+        // In an e2e test, an error neither Keel's nor an assertion's (a Node system error, a driver's) is
+        // `uncaught: <code> <first line>`, its app frames below it and never under `fix:` (k.e2e-run Output).
+        const foreign = e2e && !/^[EWT]\d{4}$/.test(raw) && str(e.name) !== "AssertionError";
+        // An e2e test's failure is one T0001 whose message is the code and its line (k.e2e-page Failure output).
         const message = clip89(
-          coded === undefined
-            ? `${name.join(" > ")}: ${said}`
-            : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
+          foreign
+            ? `uncaught: ${raw === "" ? "" : `${raw} `}${said}`
+            : coded === undefined
+              ? `${name.join(" > ")}: ${said}`
+              : e2e
+                ? said
+                : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
         );
-        const fix = [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
-          .filter((x): x is string => typeof x === "string")
-          .join("\n");
+        const kept = Array.isArray(e.keelDetail) ? e.keelDetail.filter((l): l is string => typeof l === "string") : [];
+        const lines = foreign ? [...more, ...kept] : kept;
+        const fix = foreign
+          ? ""
+          : [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
+              .filter((x): x is string => typeof x === "string")
+              .join("\n");
         diagnostics.push({
           kind: "diag",
-          code: coded ?? "T0001",
+          code: e2e ? "T0001" : (coded ?? "T0001"),
           path: relative(cwd, top?.file ?? file),
           line: top?.line ?? 1,
           col: top?.col ?? 1,
           message,
-          ...(fix === "" ? {} : { fix }),
+          ...(fix === "" || (e2e && coded !== undefined) ? {} : { fix }),
+          ...(lines.length === 0 ? {} : { detail: lines.map((l) => clipMessage(l, DETAIL)).join("\n") }),
         });
       } else if (state === "skip" || state === "todo" || node.mode === "skip" || node.mode === "todo") skipped++;
     }

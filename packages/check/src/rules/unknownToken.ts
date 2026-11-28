@@ -75,7 +75,14 @@ export const unknownToken: RuleDef = {
           g === "space" && AUTO_IGNORED.includes(t.prop) && Reflect.get(Object(tokens?.space), t.value) === "auto";
         if (!groups.some((g) => has(g, t.value) && !ignored(g)))
           out.push(
-            findingAt(file, t.at, { kind: "prop", prop: t.prop, value: t.value, groups: groups.join(" or "), ...none }),
+            findingAt(file, t.at, {
+              kind: "prop",
+              prop: t.prop,
+              value: t.value,
+              // An overlay is a color with alpha (k.values Overlays): the message names the color group alone.
+              groups: groups.filter((g) => g !== "overlay").join(" or "),
+              ...none,
+            }),
           );
       } else if (t.kind === "breakpoint") {
         if (!has("breakpoint", t.value))

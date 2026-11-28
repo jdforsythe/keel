@@ -5,7 +5,8 @@
 import { element } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
-import { Box, Button, defineTokens } from "@keel/ui";
+import { Box, Button } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { stateOf } from "../src/internal/stateOf.ts";

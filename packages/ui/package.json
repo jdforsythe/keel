@@ -12,6 +12,10 @@
       "types": "./src/css/index.ts",
       "default": "./src/css/index.ts"
     },
+    "./tokens": {
+      "types": "./src/tokens/index.ts",
+      "default": "./src/tokens/index.ts"
+    },
     "./brand": {
       "types": "./src/brand/index.ts",
       "default": "./src/brand/index.ts"
@@ -31,6 +35,10 @@
       "./css": {
         "types": "./dist/src/css/index.d.ts",
         "default": "./dist/src/css/index.js"
+      },
+      "./tokens": {
+        "types": "./dist/src/tokens/index.d.ts",
+        "default": "./dist/src/tokens/index.js"
       },
       "./brand": {
         "types": "./dist/src/brand/index.d.ts",

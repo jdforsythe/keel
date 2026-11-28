@@ -16,7 +16,7 @@ async function artifact(dir: string | undefined, name: string): Promise<unknown>
 }
 
 /**
- * `GET /__keel/inspect` of a dev `createApp` (k.cli Inspect): `{ live: true, graph: inspect(), stores,
+ * `GET /__keel/inspect` of a dev `createApp` (k.inspect): `{ live: true, graph: inspect(), stores,
  * ids, a11y, routes, sections }`. `stores` holds every live store of the process (`stores()`) as `{ state, log }`; the
  * artifacts are read from `artifacts` per request; `sections` are the inspector hooks read with `ctx`, and
  * `diags` their E1057s for the dev log. Called outside any request scope, so `graph` is the app's alone. `allow` (an

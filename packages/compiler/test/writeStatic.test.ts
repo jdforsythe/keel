@@ -177,6 +177,16 @@ describe("writeStatic", () => {
     expect(JSON.parse(text("index.html"))).toEqual([out, null]);
   });
 
+  it("calls render with the entry's folder as the artifacts folder", async () => {
+    build(
+      [],
+      "export const render = (out, std, artifacts) => [{ id: 'args', path: '/', status: 200, html: JSON.stringify(artifacts ?? null) }]",
+    );
+    const at = path.dirname(entry);
+    expect(await run()).toEqual([]);
+    expect(JSON.parse(text("index.html"))).toBe(at);
+  });
+
   it("removes the manifest folder and the entry's folder when it succeeds", async () => {
     build([doc("home", "/", 200, "<head></head>")]);
     await run();

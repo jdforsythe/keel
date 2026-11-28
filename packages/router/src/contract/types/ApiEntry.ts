@@ -12,4 +12,6 @@ export type ApiEntry = {
   readonly errors?: Readonly<Record<number, Schema<unknown, boolean>>>;
   readonly timeout?: number;
   readonly events?: boolean;
+  /** Answered only over a loopback connection with a loopback `Host` and an own-site navigation (k.contract Local routes). */
+  readonly local?: true;
 };

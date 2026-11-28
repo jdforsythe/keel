@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { observed, report } from "@keel/ctx/internal";
+import type { RenderArtifacts } from "../types/RenderArtifacts.ts";
 import type { Root } from "./Root.ts";
 import { SECRET_FIELDS } from "./SECRET_FIELDS.ts";
 import { dispatch } from "./dispatch.ts";
@@ -16,9 +17,14 @@ const told = new WeakSet<Event>();
  * A delegation root on `el` (or detached until `attach`): at most one listener per event type. With a `ctx`, capture
  * listeners report each input event on an element with an id to its observers before any handler runs (rfc:0070);
  * nothing is built while nothing observes. A field that was ever a password field (type or autocomplete) under
- * this ctx is reported masked from then on, also after a show-password toggle (red-team 0207). `mode` `"dev"` sets `dev`.
+ * this ctx is reported masked from then on, also after a show-password toggle (red-team 0207). `mode` `"dev"` sets `dev`; `artifacts` are kept as given.
  */
-export function createRoot(el: Element | null, ctx?: Ctx, mode?: "dev" | "production"): Root {
+export function createRoot(
+  el: Element | null,
+  ctx?: Ctx,
+  mode?: "dev" | "production",
+  artifacts?: RenderArtifacts,
+): Root {
   let target = el;
   const types = new Map<string, (e: Event) => void>();
   const tap = (e: Event): void => {
@@ -36,6 +42,7 @@ export function createRoot(el: Element | null, ctx?: Ctx, mode?: "dev" | "produc
   for (const t of taps) target?.addEventListener(t, tap, true);
   return {
     ctx,
+    artifacts,
     dev: mode === "dev",
     tell: tap,
     listen(type) {

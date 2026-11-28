@@ -78,6 +78,11 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       const { scaffoldCommand } = await import("./scaffoldCommand.ts");
       return await scaffoldCommand(op.name, input, io);
     }
+    case "tokens": {
+      // Loaded only when the command runs: it brings in the parser and the project's `@keel/ui`.
+      const { tokensCommand } = await import("@keel/cli/tokens");
+      return tokensCommand(input, io);
+    }
     case "dev":
       return only(unavailable(op.name, "vite.config.ts and the keel binary (vite dev server)", "k.server"));
     case "inspect":

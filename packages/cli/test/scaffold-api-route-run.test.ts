@@ -1,4 +1,4 @@
-// `scaffold project` + `scaffold module orders` + `scaffold route orders.list --api`, written to a temporary
+// `scaffold project --adapter node` (an API route needs a node deployable) + `scaffold module orders` + `scaffold route orders.list --api`, written to a temporary
 // directory and its generated route test run with `keel test` (k.scaffold, k.api): the test passes in that project.
 import { existsSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -45,7 +45,7 @@ const step = async (args: string[], cwd: string, files: Files): Promise<Files> =
 it(
   "the test scaffold route --api generates passes in a scaffolded project",
   async () => {
-    let files = await step(["scaffold", "project", "shop"], "/work", []);
+    let files = await step(["scaffold", "project", "shop", "--adapter", "node"], "/work", []);
     files = await step(["scaffold", "module", "orders"], "/work/shop", files);
     files = await step(["scaffold", "route", "orders.list", "--path", "/api/orders", "--api"], "/work/shop", files);
     expect(files.map((f) => f.path)).toContain("modules/orders/list.route.test.ts");

@@ -1,5 +1,5 @@
-import { TokenSchema } from "@keel/ui";
 import { type Scheme, schemesOf } from "@keel/ui/css";
+import { TokenSchema } from "@keel/ui/tokens";
 
 const memo = new WeakMap<object, readonly Scheme[]>();
 const BOTH: readonly Scheme[] = ["light", "dark"];

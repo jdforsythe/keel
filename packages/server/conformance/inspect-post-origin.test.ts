@@ -1,4 +1,4 @@
-// Spec: k.cli, clause "A `POST /__keel/inspect` without `Origin` on a dev `createApp` gets 403 `keel.denied`."
+// Spec: k.inspect, clause "A `POST /__keel/inspect` without `Origin` on a dev `createApp` gets 403 `keel.denied`."
 // @vitest-environment happy-dom
 // Lives in the server package because createApp is there. No generated inputs.
 import { expect, test } from "vitest";

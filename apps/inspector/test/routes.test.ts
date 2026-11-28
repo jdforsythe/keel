@@ -1,10 +1,13 @@
-import { createCtx } from "@keel/ctx";
+import { type Ctx, createCtx } from "@keel/ctx";
+import { routeTable } from "@keel/router";
+import { createApp } from "@keel/server";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { InspectDoc } from "../modules/inspector/InspectDoc.schema.ts";
 import { Inspection } from "../modules/inspector/Inspection.schema.ts";
 import { loadInspect } from "../modules/inspector/loadInspect.server.ts";
 import { routes } from "../modules/inspector/routes.ts";
+import topology from "../topology.ts";
 
 const TARGET = "http://localhost:4180";
 /** What a golden-1 dev build serves at `/__keel/inspect` after one `todos.addList`. */
@@ -51,6 +54,8 @@ const simWith = (url: string, res: () => Response) => {
   ctx.net.route(url, res);
   return ctx;
 };
+/** The `web` deployable over `ctx`; `inspector.index` is `local: true`, so a request with no connection is refused. */
+const appOn = (ctx: Ctx) => createApp({ topology, routes: routeTable(routes), ctx, deployable: "web" });
 const json =
   (body: unknown, status = 200) =>
   () =>
@@ -95,58 +100,158 @@ describe("inspector.index", () => {
   });
 
   it("a non-2xx answer or a body that is not an inspect document renders InspectError", async () => {
+    const downCtx = simWith(`${TARGET}/__keel/inspect`, json({}, 500));
     const down = await renderRoute("inspector.index", {
       routes,
       search: { url: TARGET },
-      ctx: simWith(`${TARGET}/__keel/inspect`, json({}, 500)),
+      ctx: downCtx,
     });
-    expect(down.find("inspector.error.message").text).toBe(`${TARGET} answered 500`);
+    expect(down.find("inspector.error.message").text).toBe(`no inspect document at ${TARGET}`);
     expect(down.a11y("inspector.error.title").role).toBe("heading");
     down.dispose();
+    const badCtx = simWith(`${TARGET}/__keel/inspect`, json({ live: true }));
     const bad = await renderRoute("inspector.index", {
       routes,
       search: { url: TARGET },
-      ctx: simWith(`${TARGET}/__keel/inspect`, json({ live: true })),
+      ctx: badCtx,
     });
-    expect(bad.find("inspector.error.message").text).toBe(`${TARGET} did not return an inspect document`);
+    expect(bad.find("inspector.error.message").text).toBe(`no inspect document at ${TARGET}`);
     bad.dispose();
   });
 });
 
 describe("loadInspect", () => {
-  const HERE = "http://inspector.test:5555/?from=1";
+  const HERE = "http://127.0.0.1:5555/?from=1";
+  /** The loader run directly, as a request to `HERE`. */
+  const call = (search: { url?: string }, ctx: Ctx) =>
+    loadInspect.run({ params: {}, search, url: HERE, caller: "", stores: undefined }, ctx);
+  /** A sim ctx answering every path of `origin` with the document, counting what it was asked for. */
+  const counting = (origin: string) => {
+    const ctx = createCtx({ mode: "sim", seed: 1 });
+    const asked: string[] = [];
+    for (const path of ["/__keel/inspect", "/admin/delete-all", "/admin/delete-all%23", "/", "/x"])
+      ctx.net.route(`${origin}${path}`, (req: Request) => {
+        asked.push(new URL(req.url).pathname);
+        return json(DOC)();
+      });
+    return { ctx, asked };
+  };
+
   it("without search.url inspects the origin of the request url, not location (RFC 0027)", async () => {
-    const ctx = simWith("http://inspector.test:5555/__keel/inspect", json(DOC));
-    const r = await loadInspect.run({ params: {}, search: {}, url: HERE, caller: "", stores: undefined }, ctx);
-    expect(r.ok ? r.value.url : r.error).toBe("http://inspector.test:5555");
+    const ctx = simWith("http://127.0.0.1:5555/__keel/inspect", json(DOC));
+    const r = await call({}, ctx);
+    expect(r.ok ? r.value.url : r.error).toBe("http://127.0.0.1:5555");
   });
   it("returns an Inspection with each store's state as JSON text; network failure is inspector.unreachable", async () => {
     expect(InspectDoc.parse(DOC).ok).toBe(true);
     const ctx = simWith(`${TARGET}/__keel/inspect`, json(DOC));
-    const r = await loadInspect.run(
-      { params: {}, search: { url: TARGET }, url: HERE, caller: "", stores: undefined },
-      ctx,
-    );
+    const r = await call({ url: TARGET }, ctx);
     expect(r.ok && Inspection.parse(r.value).ok).toBe(true);
     expect(r.ok ? r.value.stores["todos.board"]?.state : "").toBe(
       '{"lists":[{"id":"l1","name":"Groceries"}],"todos":[]}',
     );
     const { sections: _, ...plain } = DOC;
-    const noSections = simWith(`${TARGET}/__keel/inspect`, json(plain));
-    const p = await loadInspect.run(
-      { params: {}, search: { url: TARGET }, url: HERE, caller: "", stores: undefined },
-      noSections,
-    );
+    const p = await call({ url: TARGET }, simWith(`${TARGET}/__keel/inspect`, json(plain)));
     expect(p.ok ? p.value.sections : p.error).toEqual({});
     const failing = createCtx({ mode: "sim", seed: 1 });
     failing.net.route(`${TARGET}/__keel/inspect`, () => Promise.reject(new TypeError("fetch failed")));
-    const e = await loadInspect.run(
-      { params: {}, search: { url: TARGET }, url: HERE, caller: "", stores: undefined },
-      failing,
-    );
+    const e = await call({ url: TARGET }, failing);
     expect(e.ok ? "" : e.error).toMatchObject({
       code: "inspector.unreachable",
-      data: { url: TARGET, why: "unreachable" },
+      data: { url: TARGET, why: "document" },
     });
+  });
+  it("takes only the origin of a loopback app: anything more or another host is refused and nothing is fetched", async () => {
+    for (const url of ["http://localhost:4180", "https://127.0.0.1", "http://[::1]:9", "http://localhost:4180/"]) {
+      const origin = new URL(url).origin;
+      const r = await call({ url }, simWith(`${origin}/__keel/inspect`, json(DOC)));
+      expect(r.ok ? r.value.url : r.error).toBe(origin);
+    }
+    const refused = [
+      `${TARGET}/admin/delete-all%23`,
+      `${TARGET}/admin/delete-all#`,
+      `${TARGET}/?q=x`,
+      `${TARGET}?`,
+      `${TARGET}#`,
+      `${TARGET}/x`,
+      "http://127.0.0.1.evil.example:4180",
+      "http://localhost.evil.example",
+      "http://evil.example/127.0.0.1",
+      "http://user@127.0.0.1:4180",
+      "http://user:pw@localhost",
+      "ftp://127.0.0.1",
+      "file:///etc/passwd",
+      "http://10.0.0.1",
+      "http://[::2]",
+      "localhost:4180",
+      "not a url",
+    ];
+    for (const url of refused) {
+      const { ctx, asked } = counting(URL.canParse(url) ? new URL(url).origin : TARGET);
+      const r = await call({ url }, ctx);
+      expect(r.ok ? "" : r.error, url).toMatchObject({
+        code: "inspector.unreachable",
+        data: { url: "", why: "origin" },
+      });
+      expect(asked, url).toEqual([]);
+    }
+  });
+  it("is a local route: the server answers a loopback connection with a loopback Host and an own-site navigation, else keel.denied with nothing fetched", async () => {
+    const over = (remoteAddress: string | undefined) =>
+      remoteAddress === undefined ? undefined : { incoming: { socket: { remoteAddress } } };
+    const ask = async (remote: string | undefined, host: string, site: string | undefined) => {
+      const { ctx, asked } = counting(TARGET);
+      const app = await appOn(ctx);
+      const headers: Record<string, string> = {
+        host,
+        accept: "text/html",
+        ...(site === undefined ? {} : { "sec-fetch-site": site }),
+      };
+      const res = await app.fetch(
+        new Request(`http://${host}/?url=${encodeURIComponent(TARGET)}`, { headers }),
+        over(remote),
+      );
+      const body = await res.text();
+      await app.close();
+      return { status: res.status, body, asked };
+    };
+    for (const [remote, host, site] of [
+      ["127.0.0.1", "127.0.0.1:5555", "none"],
+      ["::1", "localhost:5555", "same-origin"],
+      ["::ffff:127.0.0.1", "[::1]:5555", "none"],
+    ] as const) {
+      const r = await ask(remote, host, site);
+      expect(r.status, `${remote} ${host}`).toBe(200);
+      expect(r.asked).toEqual(["/__keel/inspect"]);
+    }
+    for (const [remote, host, site] of [
+      [undefined, "127.0.0.1:5555", "none"],
+      ["127.0.0.1", "127.0.0.1:5555", "cross-site"],
+      ["127.0.0.1", "127.0.0.1:5555", "same-site"],
+      ["127.0.0.1", "127.0.0.1:5555", undefined],
+      ["127.0.0.1", "evil.example:5555", "same-origin"],
+      ["127.0.0.1", "127.0.0.1", "none"],
+      ["192.168.1.5", "localhost:5555", "same-origin"],
+    ] as const) {
+      const r = await ask(remote, host, site);
+      expect(r.status, `${remote} ${host} ${site}`).toBe(403);
+      expect(r.body).toContain("keel.denied");
+      expect(r.asked).toEqual([]);
+    }
+  });
+  it("gives one text for every failure: a status, a redirect not followed, a body that is no inspect document", async () => {
+    const answers = [
+      () => new Response(null, { status: 302, headers: { location: "http://evil.example/__keel/inspect" } }),
+      json({}, 500),
+      json({ live: true }),
+      () => new Response("hello", { status: 200 }),
+    ];
+    for (const answer of answers) {
+      const r = await call({ url: TARGET }, simWith(`${TARGET}/__keel/inspect`, answer));
+      expect(r.ok ? "" : r.error).toMatchObject({
+        code: "inspector.unreachable",
+        data: { url: TARGET, why: "document" },
+      });
+    }
   });
 });

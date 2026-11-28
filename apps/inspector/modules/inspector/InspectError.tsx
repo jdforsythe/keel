@@ -31,7 +31,7 @@ export default function InspectError(props: Infer<typeof Props>) {
           {textOf(props.error)}
         </Text>
         <Text as="p" id="inspector.error.hint" m="0">
-          Start the app with its Vite dev or preview server and pass its origin as ?url=
+          Start the app on this machine with keel dev and pass its origin as ?url=
         </Text>
       </Box>
     </Box>

@@ -25,8 +25,9 @@ const FAILED = JSON.stringify("@keel/server/internal/startFailed");
  * origin the runtime value of `topology.ts` adds.
  *
  * For a `static` deployable (k.hosting Static) the entry is the build's, never shipped: it imports no runners and no
- * driver, sets no `KEEL_APP_DIR`, and exports `render(dir, std)`, which calls `prerender` (`@keel/server/internal/prerender`)
- * with the same inputs, `dir`, the deployable's client build, and `std`, the path of `.keel/std.json` or undefined.
+ * driver, sets no `KEEL_APP_DIR`, and exports `render(dir, std, artifacts)`, which calls `prerender`
+ * (`@keel/server/internal/prerender`) with the same inputs, `dir`, the deployable's client build, `std`, the path of
+ * `.keel/std.json` or undefined, and `artifacts`, the folder of the artifacts a server render reads.
  */
 export function serverEntryCode(
   root: string,
@@ -65,7 +66,7 @@ export function serverEntryCode(
   if (id !== "") lines.push(`const { default: identity } = await import(${abs("identity.server.ts")});`);
   if (built) {
     lines.push(
-      `export const render = (dir, std) => prerender({ topology, origins: ${JSON.stringify(origins)}, deployable: ${JSON.stringify(name)}, routes: routeTable(${routes.join(", ")})${id}, dir, std });`,
+      `export const render = (dir, std, artifacts) => prerender({ topology, origins: ${JSON.stringify(origins)}, deployable: ${JSON.stringify(name)}, routes: routeTable(${routes.join(", ")})${id}, dir, std, artifacts });`,
     );
     return `${lines.join("\n")}\n`;
   }
