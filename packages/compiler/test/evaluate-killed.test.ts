@@ -37,9 +37,9 @@ function childrenOf(pid: number): number[] {
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** Whether `ok` holds within `ms`, asked every 25 ms (counted polls, no clock read). */
 async function until(ok: () => boolean, ms: number): Promise<boolean> {
-  const end = performance.now() + ms;
-  while (performance.now() < end) {
+  for (let left = Math.ceil(ms / 25); left > 0; left--) {
     if (ok()) return true;
     await sleep(25);
   }

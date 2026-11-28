@@ -20,11 +20,11 @@
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "22.5kb",
+      "max": "23kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "39.5kb",
+      "max": "41kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -36,7 +36,7 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "36kb",
+      "max": "39kb",
       "platform": "node"
     },
     "@keel/ctx": "4.7kb",

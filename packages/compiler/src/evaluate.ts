@@ -141,7 +141,7 @@ export function evaluate(input: EvaluateInput): Promise<EvaluateResult> {
         if (isRecord(m)) onRecord(m);
       }
     });
-    // A write to a child that has just ended fails; its end is what decides the result.
+    // A write to a child that has ended fails; its end is what decides the result.
     answers?.on("error", () => undefined);
     child.stdin?.on("error", () => undefined);
     child.on("error", (e) => {
