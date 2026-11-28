@@ -163,12 +163,44 @@ function locator(source: string): (at: number) => { line: number; col: number } 
   };
 }
 
+/** The own-key listings that yield symbol keys (R1019 when their argument is no literal, k.realm). */
+const LISTINGS: readonly (readonly [string, string])[] = [
+  ["Object", "getOwnPropertySymbols"],
+  ["Object", "getOwnPropertyDescriptors"],
+  ["Reflect", "ownKeys"],
+];
+
+/** The names a file imports, local name to specifier and imported name, and its namespace imports, local to specifier. */
+function importsOf(program: Program): { named: Map<string, [string, string]>; spaces: Map<string, string> } {
+  const named = new Map<string, [string, string]>();
+  const spaces = new Map<string, string>();
+  for (const st of program.body) {
+    if (st.type !== "ImportDeclaration" || st.importKind === "type") continue;
+    for (const sp of st.specifiers) {
+      if (sp.type === "ImportNamespaceSpecifier") spaces.set(sp.local.name, st.source.value);
+      else if (sp.type === "ImportDefaultSpecifier") named.set(sp.local.name, [st.source.value, "default"]);
+      else if (sp.importKind !== "type")
+        named.set(sp.local.name, [
+          st.source.value,
+          sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value,
+        ]);
+    }
+  }
+  return { named, spaces };
+}
+
 /**
  * The escapes one code file holds (k.escapes): every row read by syntax. A file that does not parse is one R1150 and
  * nothing else. `kind` says where the file sits; it decides R1050, R1057, R1058, R1059 and R1010. R2451 is an `allow` of
  * the object a `.transaction(` call takes: `'lost updates'` high, any other value the row's medium; `reason` its reason.
+ * `supervisor` names, for an imported name, the library file whose function of that name supervises (R1018's app call).
  */
-export function codeEscapes(path: string, source: string, kind: FileKind): Raw[] {
+export function codeEscapes(
+  path: string,
+  source: string,
+  kind: FileKind,
+  supervisor: (spec: string, name: string) => string | undefined = () => undefined,
+): Raw[] {
   const parsed = parseSync(path, source, { sourceType: "module", lang: langOf(path) });
   const at = locator(source);
   const first = parsed.errors[0];
@@ -183,6 +215,20 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
   const envs = new Set<number>();
   let unsafeCalls = 0;
   const defects = defectNames(parsed.program);
+  const imported = importsOf(parsed.program);
+  /** The library file a call's callee, an imported name or a namespace member, supervises in; app code only. */
+  const supervisedBy = (c: Expression): { name: string; at: string } | undefined => {
+    if (!kind.app && !kind.unsafeDir) return undefined;
+    let ref: readonly [string, string] | undefined;
+    if (c.type === "Identifier") ref = imported.named.get(c.name);
+    else if (c.type === "MemberExpression" && !c.computed && c.object.type === "Identifier") {
+      const spec = imported.spaces.get(c.object.name);
+      if (spec !== undefined && c.property.type === "Identifier") ref = [spec, c.property.name];
+    }
+    if (ref === undefined) return undefined;
+    const at = supervisor(ref[0], ref[1]);
+    return at === undefined ? undefined : { name: ref[1], at };
+  };
   /**
    * Spans reachable only where a `Result` is not ok (R1013), as TypeScript narrows `ok`: an `if`'s branch, a
    * conditional's operand, the right of `&&` or `||`, and the statements after an `if` whose other branch always exits.
@@ -290,6 +336,18 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
           c.property.name === "attempt");
       if (attempted && wideExpect(parsed.program, n.arguments[1])) add("R1017", n.start, n.end);
       if (calls(c, "supervise")) add("R1018", n.start, n.end);
+      else {
+        const by = supervisedBy(c);
+        if (by !== undefined) add("R1018", n.start, n.end, { message: `${by.name} supervises its work (${by.at})` });
+      }
+      if (
+        LISTINGS.some(([o, m]) => isMember(c, o, m)) &&
+        arg?.type !== "ObjectExpression" &&
+        arg?.type !== "ArrayExpression"
+      )
+        add("R1019", n.start, n.end, {
+          message: "own symbol keys listed of a value review cannot tell from the global object",
+        });
       if (isMember(c, "Symbol", "for") && (arg === undefined || foldString(arg) === null)) add("R1019", n.start, n.end);
       if (listensUncaught(c) && (arg === undefined || foldString(arg) === null)) add("R1020", n.start, n.end);
       if (c.type === "Identifier") {

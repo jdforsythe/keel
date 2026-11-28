@@ -41,7 +41,7 @@ const TO_A11Y = /(?:^|\/)reports$/;
 
 /**
  * Binary only: read the project under `cwd` into engine files. `query` (check, spec, test): code, each module's
- * `migrations/*.sql`, spec markdown, `.keel` artifacts, generated deploy files and the `package.json` and `index.html` (W1012) beside each `topology.ts` of every project under `cwd`, and the ledger. `ledger`: `query` plus, per project (k.ledger-items Projects), its `package.json`, `reports/mutation/mutation.json`, `reports/tests/*.json` and `mutation-justified.json`, and each project's `reports/a11y.json`.
+ * `migrations/*.sql`, spec markdown, `.keel` artifacts, generated deploy files, the `package.json` and `index.html` (W1012) beside each `topology.ts` of every project under `cwd`, each `package.json` beside a `module.ts` (a library of the tree, k.library Kind), and the ledger. `ledger`: `query` plus, per project (k.ledger-items Projects), its `package.json`, `reports/mutation/mutation.json`, `reports/tests/*.json` and `mutation-justified.json`, and each project's `reports/a11y.json`.
  * `tree` (scaffold, codemod, build): every text file under 1 MB,
  * since structural operations read manifests, `package.json`, `turbo.json` and CI files too.
  */
@@ -52,6 +52,7 @@ export function readProject(cwd: string, scope: "query" | "ledger" | "tree"): { 
       ? TEXT.test(rel) && statSync(abs).size <= MAX_BYTES
       : QUERY(rel) ||
         (/(?:^|\/)(?:package\.json|index\.html)$/.test(rel) && existsSync(join(abs, "..", "topology.ts"))) ||
+        (/(?:^|\/)package\.json$/.test(rel) && existsSync(join(abs, "..", "module.ts"))) ||
         (scope === "ledger" && (PROJECT_REPORT.test(rel) || PROJECT_FILE.test(rel) || A11Y_REPORT.test(rel)));
   const walk = (dir: string, rel: string): void => {
     for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
