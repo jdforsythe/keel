@@ -248,17 +248,50 @@ for (const m of REAL) {
       FOLDER_BOUND,
     );
 
-    // The classes the Errors bullet lists, each sampled with a SQLSTATE the function raises.
+    // The classes the Errors bullet lists, each sampled with a SQLSTATE the function raises: a code Postgres 17 lists
+    // for the class, carried as itself, or one it does not list (`<class>Z<d><d>`), carried as `<class>000`
+    // (std.postgres-errors By SQLSTATE: `sqlstate` is closed).
     const sub = fc.constantFrom("0", "1", "2", "3", "4", "5", "9");
-    const act = fc
-      .oneof(
-        fc
-          .tuple(fc.constantFrom("22", "53", "54", "55", "57"), sub, sub, sub)
-          .map(([c, a, b, d]) => `${c}${a}${b}${d}`),
-        fc.tuple(sub, sub, sub).map(([a, b, d]) => `P0${a}${b}${d}`.slice(0, 5)),
-        fc.constantFrom("40000", "40002", "40003"),
-      )
-      .filter((c) => !["57P01", "57P02", "57P03", "53300"].includes(c));
+    const listed = fc.constantFrom(
+      "22000",
+      "22001",
+      "22003",
+      "22007",
+      "22008",
+      "22012",
+      "22023",
+      "22P02",
+      "40000",
+      "40002",
+      "40003",
+      "53000",
+      "53100",
+      "53200",
+      "53400",
+      "54000",
+      "54001",
+      "54011",
+      "54023",
+      "55000",
+      "55006",
+      "55P02",
+      "55P03",
+      "55P04",
+      "57000",
+      "57014",
+      "P0000",
+      "P0001",
+      "P0002",
+      "P0003",
+      "P0004",
+    );
+    const unlisted = fc
+      .tuple(fc.constantFrom("22", "40", "53", "54", "55", "57", "P0"), sub, sub)
+      .map(([c, a, b]) => `${c}Z${a}${b}`);
+    const act = fc.oneof(
+      listed.map((code) => ({ code, carried: code })),
+      unlisted.map((code) => ({ code, carried: `${code.slice(0, 2)}000` })),
+    );
     // std.postgres-errors By SQLSTATE: 08000, 08001, 08003 and 08006, 57P01 to 57P03 and 53300 are unreachable
     const lost = fc.constantFrom("08000", "08001", "08003", "08006", "57P01", "57P02", "57P03", "53300");
     const bug = fc.oneof(
@@ -267,7 +300,7 @@ for (const m of REAL) {
     );
 
     test(
-      "property: a SQLSTATE of class `22`, `40` (but the reruns), `53`, `54`, `55`, `57` (but `57P01` to `57P03`) or `P0` is `err` `postgres.database` holding that SQLSTATE and nothing else",
+      "property: a SQLSTATE of class `22`, `40` (but the reruns), `53` (but `53300`), `54`, `55`, `57` (but `57P01` to `57P03`) or `P0` is `err` `postgres.database` holding that SQLSTATE, or its class's `<class>000` for a code Postgres 17 does not list, and nothing else",
       async () => {
         const x = setup();
         const mode = m.make();
@@ -275,10 +308,10 @@ for (const m of REAL) {
           const ctx = await mode.ctx(x.cap);
           const db = x.db(ctx);
           await fc.assert(
-            fc.asyncProperty(act, async (code) => {
+            fc.asyncProperty(act, async ({ code, carried }) => {
               const e = errOf(await db.query(sql(Value)`select ${sqlName(x.raiseWith)}(${code}) as v`));
               expect(e.code, code).toBe("postgres.database");
-              expect(dataOf(e), code).toEqual({ sqlstate: code });
+              expect(dataOf(e), code).toEqual({ sqlstate: carried });
             }),
             { seed: SEED, numRuns: 15 },
           );

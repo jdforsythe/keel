@@ -1,5 +1,6 @@
 // Spec: std.postgres-errors, clause "A driver error whose `code` is `08000`, `08001`, `08003`, `08006`, `57P01` or `53300` is `err` `keel.unreachable`; `08007` is `err` `postgres.database` with data `{ sqlstate: '08007' }`; `08004` and `08P01` reject with a value `isDefect(v, 'E2461')` accepts whose `data` is `{ sqlstate }` and whose message is `E2461 std.postgres: the database answered an SQLSTATE no error takes`."
 // Spec: std.postgres-errors, clause "Under sim, a plan of three `conflict` steps makes a `transaction` `err` `keel.conflict` whose `cause` has code `postgres.database` and data `{ sqlstate: '40001' }`; on Postgres 17, a deadlock on each of three runs gives the `cause` `{ sqlstate: '40P01' }`."
+// Spec: std.postgres-errors, clause "A driver error with `severity` `ERROR` and `code` `22012` is `err` `postgres.database` with data `{ sqlstate: '22012' }`, and one with `code` `22Z99` is that error with data `{ sqlstate: '22000' }`."
 // std.postgres-errors, By SQLSTATE: the table, row by row (a row failing its schema, class 23, the reruns, no answer, 08007, the classes that are `postgres.database`, any other SQLSTATE), and "No error, defect or log line holds a parameter, a row value or the database's message text."
 // Seed 1337. Gate: PGlite always; Postgres 17 only with `KEEL_TEST_POSTGRES_URL` (the shared `MODES`); the sim case runs no SQL; no case is skipped by a marker but the Postgres 17 deadlock by `describe.skipIf` as the folder does.
 // Assumption: a driver error of a given SQLSTATE is raised by a plpgsql function (`raise exception '%', msg using errcode = code`), as class-08.test.ts does; the reruns 40001 and 40P01 so raised are run three times and then `keel.conflict`, as a real one is.
@@ -167,6 +168,28 @@ for (const m of MODES.filter((x) => x.name !== "sim")) {
           const e = errOf(await db.query(sql(Value)`select ${sqlName(x.raise)}(${"08007"}, ${"x"}) as v`));
           expect(e.code).toBe("postgres.database");
           expect(prop(e, "data")).toEqual({ sqlstate: "08007" });
+        } finally {
+          mode.done();
+        }
+      },
+      FOLDER_BOUND,
+    );
+
+    test(
+      "a driver error with `severity` `ERROR` and `code` `22012` is `err` `postgres.database` with data `{ sqlstate: '22012' }`, and one with `code` `22Z99` is that error with data `{ sqlstate: '22000' }`",
+      async () => {
+        const x = setup();
+        const mode = m.make();
+        try {
+          const db = x.db(await mode.ctx(x.cap));
+          for (const [code, carried] of [
+            ["22012", "22012"],
+            ["22Z99", "22000"],
+          ]) {
+            const e = errOf(await db.query(sql(Value)`select ${sqlName(x.raise)}(${code}, ${"x"}) as v`));
+            expect(e.code, code).toBe("postgres.database");
+            expect(prop(e, "data"), code).toEqual({ sqlstate: carried });
+          }
         } finally {
           mode.done();
         }
