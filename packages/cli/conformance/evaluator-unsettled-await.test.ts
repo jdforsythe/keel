@@ -3,6 +3,8 @@
 // Also states, k.evaluator Placing: "E1048 and E1049 lie at the entry file whose import had not finished (`tokens.ts`, a contract file or a `routes.ts`), with no line."
 // Seed 1337 (recorded); no random inputs. The household copy of derived-support.ts, built once and cloned per case (`G` of k.evaluator Conformance; evaluator-support.ts `gFixture`).
 // The unsettled await is ended by Node, not by the 30 s deadline: each case asserts the message ends `a top-level await never settles` (the deadline's ends `in <n> ms`). `keel dev` is started on a free port and stopped (its process group, which this file spawned) in `afterAll`.
+// Also states, k.evaluator Rules: "E1048 a build-time evaluation that gave no result, message `<file> did not finish evaluating: a top-level await never settles` or `<file> did not finish evaluating in <n> ms`, `<n>` the deadline; fix: none": the record carries no `fix`.
+// "No other error" counts E codes alone: k.check Diagnostics, "`code` is E (error), W (warning), or I (info) plus four digits"; a warning (W1608 from an installed library) is no error.
 // ASSUMED: "answers a request" is a `GET /` that gets any status; "prints that E1048" is the dev output holding the text `E1048`.
 import { testTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, test } from "vitest";
@@ -16,8 +18,8 @@ const CODE = "await new Promise(() => {}); export default 1";
 let house: Tree | undefined;
 const made: Tree[] = [];
 const devs: Dev[] = [];
-afterAll(() => {
-  for (const d of devs) d.stop();
+afterAll(async () => {
+  for (const d of devs) await d.stop();
   for (const t of made) dropTree(t);
 });
 const copy = (): Tree => {
@@ -45,8 +47,9 @@ describe("k.evaluator: a top-level await that never settles is E1048 at the entr
       ).toBe(true);
       expect(found[0]?.line, "E1048 has no line").toBeUndefined();
       expect(text(found[0]).endsWith("a top-level await never settles"), text(found[0])).toBe(true);
+      expect(found[0]?.fix, "E1048 has fix: none").toBeUndefined();
       expect(
-        out.diags.filter((d) => d.code !== "E1048"),
+        out.diags.filter((d) => d.code.startsWith("E") && d.code !== "E1048"),
         brief(out),
       ).toEqual([]);
       expect(out.stdout + out.stderr).not.toContain("unsettled");
@@ -68,7 +71,7 @@ describe("k.evaluator: a top-level await that never settles is E1048 at the entr
       const answer = await get(dev.port, "/");
       expect(answer, dev.output()).toBeDefined();
       expect(dev.output()).not.toContain("unsettled");
-      dev.stop();
+      await dev.stop();
     },
     SLOW,
   );

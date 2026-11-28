@@ -112,8 +112,8 @@ beforeAll(async () => {
   }
 }, SLOW);
 
-afterAll(() => {
-  dev?.stop();
+afterAll(async () => {
+  await dev?.stop();
   for (const t of made) dropTree(t);
 });
 

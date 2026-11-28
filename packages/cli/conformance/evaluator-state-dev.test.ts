@@ -35,8 +35,8 @@ const API = '"/api/household"';
 let house: Tree | undefined;
 const made: Tree[] = [];
 const devs: Dev[] = [];
-afterAll(() => {
-  for (const d of devs) d.stop();
+afterAll(async () => {
+  for (const d of devs) await d.stop();
   for (const t of made) dropTree(t);
 });
 const copy = (): Tree => {
@@ -113,7 +113,7 @@ describe("k.evaluator: state does not cross evaluations", () => {
         `ms until surface.json matched the build's after the path edit (output: ${dev.output().slice(-300)})`,
       ).toBeLessThanOrEqual(2_000);
       expect(tryRead(served.dir, ".keel/routes.json")).toBe(wantMoved[".keel/routes.json"]);
-      dev.stop();
+      await dev.stop();
     },
     SLOW,
   );
@@ -185,7 +185,7 @@ export const gate = guard({ redirect: "app.start" }, async ({ user }) =>
         testTime(60_000),
       );
       expect(placed, dev.output()).toBe(true);
-      dev.stop();
+      await dev.stop();
     },
     SLOW,
   );

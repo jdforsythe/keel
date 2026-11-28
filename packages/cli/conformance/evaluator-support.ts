@@ -5,6 +5,7 @@
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { request } from "node:http";
 import { testTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { type Raw, pkg } from "./derived-cache-loader-support.ts";
 import { guardFile } from "./derived-cache-observed-support.ts";
 import { BIN, type Out, type Tree, canConnect, childEnv, freePort, parseOut, until } from "./derived-support.ts";
@@ -57,8 +58,8 @@ export function keelBounded(
   return parseOut(r.status, r.stdout, r.stderr);
 }
 
-/** A `keel dev` this file started: its own process group, killed by `stop`. */
-export type Dev = { port: number; child: ChildProcess; output: () => string; stop: () => void };
+/** A `keel dev` this file started: its own process group, killed by `stop`, which resolves once the child has exited; a second `stop` awaits the first. */
+export type Dev = { port: number; child: ChildProcess; output: () => string; stop: () => Promise<void> };
 
 /** The environment the household app's server needs to stay up (`members.secret`, k.members): two secrets of 32 or more characters. */
 export const HOUSEHOLD_ENV: Readonly<Record<string, string>> = {
@@ -67,7 +68,14 @@ export const HOUSEHOLD_ENV: Readonly<Record<string, string>> = {
   KEEL_POSTGRES_URL: "pglite:data/postgres",
 };
 
-/** Starts `keel dev` in `dir` on a free port (with `env` added) and resolves once it listens (or after `ms`). */
+/**
+ * Starts `keel dev` in `dir` on a free port (with `env` added) and resolves once it listens (or after `ms`).
+ * The child's `TMPDIR` is a folder of its own (`tempDir`, removed when the test file ends): `stop` kills the child with
+ * SIGKILL, which no process can clean up after, and the spec promises no removal then (k.evaluator Not held: "A command
+ * killed outright (`SIGKILL`) while its evaluator runs a loop that never yields leaves that process running."), so the
+ * evaluator folders a killed `keel dev` left go with that folder, not with a glob over the run's temp folder.
+ * ASSUMED: `keel dev` makes its evaluator folders under `os.tmpdir()`, which follows `TMPDIR`.
+ */
 export async function startDev(
   dir: string,
   ms: number,
@@ -77,7 +85,7 @@ export async function startDev(
   let out = "";
   const child = spawn(process.execPath, [BIN, "dev", "--port", String(port)], {
     cwd: dir,
-    env: childEnv(env),
+    env: childEnv({ ...env, TMPDIR: tempDir("evaluator-dev-") }),
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -87,15 +95,36 @@ export async function startDev(
   child.stderr?.on("data", (b: Buffer) => {
     out += b.toString("utf8");
   });
+  const exited = new Promise<void>((resolve) => {
+    if (child.exitCode !== null || child.signalCode !== null) resolve();
+    else child.once("exit", () => resolve());
+  });
   await until(() => canConnect(port), testTime(ms));
+  let stopping: Promise<void> | undefined;
   return {
     port,
     child,
     output: () => out,
     stop: () => {
-      if (child.exitCode === null && child.pid !== undefined) process.kill(-child.pid, "SIGKILL");
+      stopping ??= killGroup(child, exited);
+      return stopping;
     },
   };
+}
+
+/** SIGKILLs the process group of `child` (which this file spawned, `detached`) once, then waits for `child` to exit. */
+async function killGroup(child: ChildProcess, exited: Promise<void>): Promise<void> {
+  const ended = child.exitCode !== null || child.signalCode !== null;
+  if (child.pid !== undefined) {
+    try {
+      process.kill(-child.pid, "SIGKILL");
+    } catch (e) {
+      // ESRCH: no process is left in the group; EPERM after the leader ended: macOS's answer for a group of zombies
+      const code: unknown = typeof e === "object" && e !== null ? Reflect.get(e, "code") : undefined;
+      if (!(code === "ESRCH" || (ended && code === "EPERM"))) throw e;
+    }
+  }
+  await exited;
 }
 
 /** A `GET` of `path`: the status and body, `undefined` when nothing answered. */

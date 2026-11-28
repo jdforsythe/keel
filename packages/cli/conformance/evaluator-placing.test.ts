@@ -20,8 +20,8 @@ const RUN = 60_000;
 let house: Tree | undefined;
 const made: Tree[] = [];
 const devs: Dev[] = [];
-afterAll(() => {
-  for (const d of devs) d.stop();
+afterAll(async () => {
+  for (const d of devs) await d.stop();
   for (const t of made) dropTree(t);
 });
 const copy = (): Tree => {
@@ -95,7 +95,7 @@ describe("k.evaluator: a refusal is placed from the source map, whatever the cod
       devs.push(dev);
       const printed = await until(() => dev.output().includes(line ?? "\0"), testTime(60_000));
       expect(printed, dev.output()).toBe(true);
-      dev.stop();
+      await dev.stop();
     },
     SLOW,
   );
