@@ -1,17 +1,17 @@
 # Freeze review (G3)
 
-Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`; six more skip unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, five in `std-postgres/conformance`).
+Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`; seven more skip unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, six in `std-postgres/conformance`).
 
 ## 1. Per section
 
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
-| k.schema | 21 | **conformance-covered** | none |
-| k.formats | 8 | **conformance-covered** | none |
-| k.reactive | 20 | **conformance-covered** | none |
-| k.store | 25 | **conformance-covered** | none |
-| k.ctx | 24 | **conformance-covered** | none |
-| k.errors | 14 | **conformance-covered** | none |
+| k.schema | 22 | implemented | not yet covered by conformance |
+| k.formats | 10 | **conformance-covered** | none |
+| k.reactive | 27 | implemented | not yet covered by conformance |
+| k.store | 26 | implemented | not yet covered by conformance |
+| k.ctx | 25 | **conformance-covered** | none |
+| k.errors | 19 | implemented | not yet covered by conformance |
 | k.compiler | 22 | **conformance-covered** | none |
 | k.component | 17 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
@@ -21,14 +21,14 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.head | 11 | **conformance-covered** | none |
 | k.forms | 19 | **conformance-covered** | none |
 | k.server | 19 | **conformance-covered** | none |
-| k.topology | 17 | **conformance-covered** | none |
+| k.topology | 18 | **conformance-covered** | none |
 | k.compat | 15 | **conformance-covered** | none |
 | k.api | 14 | **conformance-covered** | none |
 | k.services | 17 | **conformance-covered** | none |
-| k.check | 23 | **conformance-covered** | none |
+| k.check | 23 | implemented | not yet covered by conformance |
 | k.check-cache | 13 | **conformance-covered** | none |
 | k.cli | 20 | **conformance-covered** | none |
-| k.module | 22 | **conformance-covered** | none |
+| k.module | 23 | implemented | not yet covered by conformance |
 | k.scaffold | 20 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
@@ -41,11 +41,11 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.drive-law | 11 | **conformance-covered** | none |
 | k.ledger | 19 | implemented | not yet covered by conformance |
 | k.sync | 14 | **conformance-covered** | none |
-| k.deploy | 13 | **conformance-covered** | none |
+| k.deploy | 15 | **conformance-covered** | none |
 | k.review | 8 | **conformance-covered** | none |
-| k.escapes | 9 | **conformance-covered** | none |
+| k.escapes | 14 | implemented | not yet covered by conformance |
 | k.bundle | 13 | **conformance-covered** | none |
-| k.explain | 4 | **conformance-covered** | none |
+| k.explain | 6 | **conformance-covered** | none |
 | k.return | 6 | **conformance-covered** | none |
 | k.opening | 16 | **conformance-covered** | none |
 | k.hosting | 9 | **conformance-covered** | none |
@@ -55,7 +55,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.privacy | 15 | **conformance-covered** | none |
 | k.privacy-reads | 6 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
-| k.aria | 13 | **conformance-covered** | none |
+| k.aria | 13 | implemented | not yet covered by conformance |
 | k.guards | 11 | **conformance-covered** | none |
 | k.persist | 16 | **conformance-covered** | none |
 | k.data | 10 | **conformance-covered** | none |
@@ -65,21 +65,21 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.claim | 9 | **conformance-covered** | none |
 | k.defaults | 6 | **conformance-covered** | none |
 | k.host | 5 | **conformance-covered** | none |
-| k.leave | 14 | **conformance-covered** | none |
+| k.leave | 19 | implemented | not yet covered by conformance |
 | k.mount | 13 | **conformance-covered** | none |
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
-| k.serverlog | 8 | **conformance-covered** | none |
+| k.serverlog | 19 | implemented | not yet covered by conformance |
 | k.user | 16 | **conformance-covered** | none |
 | k.boundary | 12 | **conformance-covered** | none |
 | std.brands | 7 | **conformance-covered** | none |
 | std.channels | 26 | **conformance-covered** | none |
-| std.conflicts | 10 | **conformance-covered** | none |
+| std.conflicts | 11 | **conformance-covered** | none |
 | std.copy | 3 | **conformance-covered** | none |
-| std.db | 13 | **conformance-covered** | none; clause 1 meets Postgres 17 in CI's `postgres` job |
-| std.postgres | 20 | **conformance-covered** | not audited clause by clause; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
-| std.postgres-changes | 6 | **conformance-covered** | not audited clause by clause |
+| std.db | 14 | **conformance-covered** | none; clause 1 meets Postgres 17 in CI's `postgres` job |
+| std.postgres | 22 | implemented | not yet covered by conformance; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
+| std.postgres-changes | 7 | implemented | not yet covered by conformance |
 | std.outbox | 14 | **conformance-covered** | none |
 | std.outbox-owner | 6 | **conformance-covered** | not audited clause by clause |
 | std.geo | 5 | **conformance-covered** | none |
@@ -105,33 +105,43 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.text | 11 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 16 | **conformance-covered** | none |
-| std.workflows | 8 | **conformance-covered** | none |
+| std.workflows | 9 | implemented | not yet covered by conformance |
 | k.contract | 11 | **conformance-covered** | none |
-| k.docs | 13 | **conformance-covered** | none |
+| k.docs | 19 | implemented | not yet covered by conformance |
 | k.host-code | 6 | **conformance-covered** | the Chromium clause: no browser test |
 | k.host-element | 11 | **conformance-covered** | none |
 | k.links | 12 | **conformance-covered** | none |
 | k.mount-scope | 1 | **conformance-covered** | none |
 | k.origins | 12 | **conformance-covered** | none |
 | k.parity | 6 | proposed | clauses 5 and 6: no test; S0013, the kind gates, is not built |
-| k.roles | 14 | **conformance-covered** | none |
-| k.looks | 15 | proposed | none |
+| k.roles | 15 | implemented | not yet covered by conformance |
+| k.looks | 14 | proposed | none |
 | k.schemes | 13 | proposed | none; the first paint and the system preference are owed to an end-to-end runner |
-| k.values | 5 | proposed | none; the Chromium clause runs in tooling/smoke/brand.mjs |
+| k.values | 9 | proposed | none; the Chromium clause runs in tooling/smoke/brand.mjs |
 | k.routes | 10 | **conformance-covered** | none |
 | std.capacitor | 11 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
-| k.unsafe | 9 | **conformance-covered** | none |
-| k.a11y-static | 10 | **conformance-covered** | none |
+| k.unsafe | 14 | implemented | not yet covered by conformance |
+| k.a11y-static | 11 | implemented | not yet covered by conformance |
 | std.channels-limits | 4 | **conformance-covered** | none |
 | std.sessions-redact | 1 | **conformance-covered** | none |
 | k.ledger-items | 14 | implemented | not yet covered by conformance |
 | k.library | 18 | proposed | not yet covered by conformance |
 | k.library-pack | 5 | implemented | not yet covered by conformance |
 | k.server-deps | 11 | implemented | not yet covered by conformance |
-| **total** | **1474** | 115 of 122 covered | |
+| k.attempt | 15 | implemented | not yet covered by conformance |
+| k.defects | 9 | implemented | not yet covered by conformance |
+| k.entries | 3 | proposed | not yet covered by conformance |
+| k.expect | 10 | **conformance-covered** | none |
+| k.fixes | 12 | implemented | not yet covered by conformance |
+| k.identity | 11 | implemented | not yet covered by conformance |
+| k.realm | 11 | implemented | not yet covered by conformance |
+| k.shared | 9 | implemented | not yet covered by conformance |
+| k.supervise | 12 | **conformance-covered** | none |
+| std.postgres-errors | 7 | implemented | not yet covered by conformance |
+| **total** | **1681** | 100 of 135 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -139,7 +149,7 @@ Every audited surface has one way.
 
 | # | where | single way |
 | --- | --- | --- |
-| 1 | `router/src/types/RouteDef.ts`, `guard.ts` | `guard: authGuard` by reference; no name, no registry |
+| 1 | `router/src/types/Binding.ts`, `guard.ts` | `guard: authGuard` by reference; no name, no registry |
 | 2 | `server/src/types/AppOptions.ts`, `server/src/internal/runGuards.ts` | the route holds the guard; `createApp` has no guard table |
 | 3 | `router/src/manifest.ts`, `Form.ts` | `<contract>.href` typed by the contract; `<Form action>` takes an `Href` |
 | 4 | `schema/src/internal/make.ts` | `parse`; there is no `decode` |
@@ -178,7 +188,7 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). 7 of 122 sections are not `conformance-covered`: k.parity (clauses 5 and 6 at `none`) and k.library are `proposed`; k.test-run, k.ledger, k.ledger-items, k.library-pack and k.server-deps are `implemented`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). 35 of 135 sections are not `conformance-covered`: k.entries, k.library, k.looks, k.parity (clauses 5 and 6 at `none`), k.schemes and k.values are `proposed`; k.a11y-static, k.aria, k.attempt, k.check, k.defects, k.docs, k.errors, k.escapes, k.fixes, k.identity, k.leave, k.ledger, k.ledger-items, k.library-pack, k.module, k.reactive, k.realm, k.roles, k.schema, k.server-deps, k.serverlog, k.shared, k.store, k.test-run, k.unsafe, std.postgres, std.postgres-changes, std.postgres-errors and std.workflows are `implemented`.
 
 subject: spec/ packages/*/conformance/
-verified: e9fc92e26772816eb68ea6f538a771381efc460d
+verified: 674109d1c0ddd8e715641413452a7f949f1a852c
