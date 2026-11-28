@@ -36,7 +36,7 @@ function withCallers(surface: Readonly<Record<string, unknown>>, files: readonly
 
 /**
  * The evaluated views of the project at `root` (k.derived Derivations): the bytes of `routes.json` (from its evaluated
- * manifests) and `surface.json`, and the evaluation's problem lines. `files` are the project's root-relative files:
+ * manifests; `entries`, its data) and `surface.json`, and the evaluation's problem lines. `files` are the project's root-relative files:
  * their code paths key the cache, and the contracts' `callers` are read from them. With `<root>/node_modules`, the
  * evaluation is kept in `node_modules/.cache/keel/derived/` and taken from it while every input it loaded is unchanged
  * and every probe gets its answer again (`cacheRead`; `work.cached`); else, or on a miss, it runs once
@@ -53,6 +53,7 @@ export async function deriveEvaluated(
   signal?: AbortSignal,
 ): Promise<{
   routes: string;
+  entries: Readonly<Record<string, unknown>>;
   surface: string;
   problems: readonly string[];
   held: () => boolean;
@@ -61,6 +62,7 @@ export async function deriveEvaluated(
   if (!codePaths.some((p) => EVALUATED.test(p)))
     return {
       routes: artifactText({}),
+      entries: {},
       surface: artifactText(EMPTY_SURFACE),
       problems: [],
       held: () => true,
@@ -101,6 +103,7 @@ export async function deriveEvaluated(
           : `${own?.[1] ?? "E1049"} ${at[1] ?? ""}:${at[2] ?? ""}:${String(Number(at[3] ?? "0") + 1)} ${own?.[2] ?? at[4] ?? ""}`;
       return {
         routes: artifactText({}),
+        entries: {},
         surface: artifactText(EMPTY_SURFACE),
         problems: [problem],
         held: () => true,
@@ -115,6 +118,7 @@ export async function deriveEvaluated(
   const held = (): boolean => cacheHeld(inputs, probes);
   return {
     routes: artifactText(e.routes),
+    entries: e.routes,
     surface: artifactText(withCallers(e.surface, files)),
     problems: e.problems,
     held,

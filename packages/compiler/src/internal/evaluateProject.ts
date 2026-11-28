@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { s } from "@keel/schema";
 import { build } from "esbuild";
 import { EvaluateFailure } from "../EvaluateFailure.ts";
 import { compile } from "../compile.ts";
@@ -27,6 +26,7 @@ import { isNodeBuiltin } from "./isNodeBuiltin.ts";
 import { observePlugin } from "./observePlugin.ts";
 import { pathLinks } from "./pathLinks.ts";
 import { placeRefusals } from "./placeRefusals.ts";
+import { routeEntries } from "./routeEntries.ts";
 import { withImportMeta } from "./withImportMeta.ts";
 
 // Build-time only (D24): the bundle below is resolved from the app root, which depends on these packages.
@@ -86,26 +86,6 @@ type SurfaceInput = {
 
 const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
-const isNullableString = (x: unknown): x is string | null => x === null || typeof x === "string";
-
-const Json = s.json();
-
-function isRouteEntry(x: unknown): x is RouteEntry {
-  return (
-    isRecord(x) &&
-    Array.isArray(x.actions) &&
-    x.actions.every((v) => typeof v === "string") &&
-    isNullableString(x.guard) &&
-    isNullableString(x.layout) &&
-    typeof x.module === "string" &&
-    isNullableString(x.path) &&
-    (x.api === undefined || x.api === true) &&
-    (x.method === undefined || typeof x.method === "string") &&
-    Json.parse(x.params).ok &&
-    Json.parse(x.search).ok
-  );
-}
-
 /** A problem record of the entry's JSON (`ProblemRecord`), or none when it is out of shape. */
 function recordOf(x: unknown): ProblemRecord[] {
   if (!isRecord(x) || typeof x.code !== "string") return [];
@@ -441,11 +421,7 @@ export async function evaluateProject(input: {
     throw internalFailure("build-time evaluation returned no result");
   const internal = json.internal.filter((p) => typeof p === "string");
   if (internal.length > 0) throw internalFailure(`build-time evaluation: ${internal.join("; ")}`);
-  const routes: Record<string, RouteEntry> = Object.create(null);
-  for (const id of Object.keys(json.routes).sort()) {
-    const entry = json.routes[id];
-    if (isRouteEntry(entry)) routes[id] = entry;
-  }
+  const routes = routeEntries(json.routes);
   const looks = isRecord(json.looks) ? json.looks : {};
   const schemes = Array.isArray(json.schemes) ? json.schemes.filter((x) => x === "light" || x === "dark") : ["light"];
   const problems = [...new Set(placeRefusals(json.problems.flatMap(recordOf), map, root))];

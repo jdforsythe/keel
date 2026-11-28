@@ -13,8 +13,9 @@ import { makeDiag } from "./makeDiag.ts";
  * path, a lone contract file among them) or to the code file paths (a code file of the project added or removed; any
  * code file change while the last derivation failed and read none). Runs never overlap: a change during one ends its
  * evaluation (an abort signal) and runs one more after it. An event for a file whose bytes are those of its last event
- * (the watcher reports one write more than once) is no change. Each new input outside the root is watched. `print` gets its W1018 records, and an E1049 when a
- * refresh itself fails.
+ * (the watcher reports one write more than once) is no change. Each new input outside the root is watched. The root project's `routes.json` entries go to the
+ * Vite plugin after each refresh (`derivedRoutes`), so one evaluation per change serves both. `print` gets its W1018
+ * records, and an E1049 when a refresh itself fails.
  */
 export function devRefresh(cwd: string, server: DevServer, print: (diags: readonly Diag[]) => void): void {
   const root = realpathSync(cwd);
@@ -61,6 +62,7 @@ export function devRefresh(cwd: string, server: DevServer, print: (diags: readon
         }
         files = new Set(r.files.map(real));
         server.watch([...files].filter((f) => relative(root, f).startsWith("..")));
+        if (r.routes !== null) server.derivedRoutes(r.routes);
         if (r.diags.length > 0) print(r.diags);
       } while (again);
     } catch (e) {

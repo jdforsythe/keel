@@ -94,6 +94,10 @@ export async function viteServer(
   const watcher = field(server, "watcher");
   const on = typeof field(watcher, "on") === "function" ? method(watcher, "on") : undefined;
   const add = typeof field(watcher, "add") === "function" ? method(watcher, "add") : undefined;
+  const plugins = field(config, "plugins");
+  const keel = Array.isArray(plugins) ? plugins.find((p) => field(p, "name") === "keel") : undefined;
+  const api = field(keel, "api");
+  const derived = typeof field(api, "derivedRoutes") === "function" ? method(api, "derivedRoutes") : undefined;
   return {
     version: typeof version === "string" ? version : "",
     port: field(field(config, "server"), "port"),
@@ -134,6 +138,9 @@ export async function viteServer(
     },
     watch: (files) => {
       if (files.length > 0) add?.([...files]);
+    },
+    derivedRoutes: (routes) => {
+      derived?.(routes);
     },
   };
 }

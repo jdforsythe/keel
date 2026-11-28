@@ -57,6 +57,7 @@ import { readJson } from "./internal/readJson.ts";
 import { registeredIn } from "./internal/registeredIn.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { rewriteLiftedReads } from "./internal/rewriteLiftedReads.ts";
+import { routeEntries } from "./internal/routeEntries.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { shortPath } from "./internal/shortPath.ts";
 import { storesFileMark } from "./internal/storesFileMark.ts";
@@ -348,6 +349,7 @@ export default function (): {
   closeBundle: { order: "post"; handler: () => Promise<void> };
   transform: (code: string, id: string, options?: HookOptions) => { code: string; map: string | null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
+  api: { derivedRoutes: (routes: unknown) => void };
 } {
   let root = process.cwd();
   /** The app's libraries (`appLibraries`), compiled as its own files; read again when a manifest changes. */
@@ -366,6 +368,11 @@ export default function (): {
   let server: DevServer | undefined;
   let topology: Topology | undefined;
   let routes: Record<string, RouteEntry> = {};
+  /**
+   * Whether `keel dev` derives `routes.json` (k.derived Refresh) and hands each derivation over (`api.derivedRoutes`):
+   * then the plugin's evaluation is of the tokens alone, and `routes.json` is no view it writes.
+   */
+  let routesOwned = false;
   let css = "";
   /** The tokens' `look` sets, once evaluated: `compile` lowers a `look` to their classes. */
   let looks: Readonly<Record<string, unknown>> | undefined;
@@ -822,7 +829,10 @@ export default function (): {
     artifacts["routes.json"] = routes;
     // A frozen command (k.derived Frozen) sets `KEEL_FROZEN=1` for its children: no view is written.
     const writes = resolved && !clientBuild && !ownLibrary && process.env.KEEL_FROZEN !== "1";
-    const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
+    const texts: [string, string][] = NAMES.filter((n) => !routesOwned || n !== "routes.json").map((n) => [
+      n,
+      artifactText(artifacts[n]),
+    ]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
     // Written once the tokens are evaluated, so a run that compiles no CSS leaves the file as it is.
     if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes], themes: [...themes] })]);
@@ -931,7 +941,7 @@ export default function (): {
       r = await evaluateProject({
         root,
         tokensFile: exists("tokens.ts") ? "tokens.ts" : undefined,
-        routesFiles: routesFiles(),
+        routesFiles: routesOwned ? [] : routesFiles(),
         usages,
       });
     } catch (e) {
@@ -956,7 +966,7 @@ export default function (): {
     themes = r.themes;
     schemesRead = true;
     looksKey = canonicalJson(r.looks);
-    routes = r.routes;
+    if (!routesOwned) routes = r.routes;
     flush();
     stale = false;
   };
@@ -964,6 +974,22 @@ export default function (): {
   return {
     name: "keel",
     enforce: "pre",
+    api: {
+      /**
+       * `keel dev`'s derivation of the root project's `routes.json` (k.derived Refresh), after each refresh that gave
+       * one: the inspect document holds it (k.derived Readers), and the plugin evaluates the tokens alone and writes no
+       * `routes.json`. `undefined` (a refresh that derived none) gives both back to the plugin.
+       */
+      derivedRoutes: (next: unknown): void => {
+        if (next === undefined) {
+          if (routesOwned) stale = true;
+          routesOwned = false;
+          return;
+        }
+        routesOwned = true;
+        routes = routeEntries(next);
+      },
+    },
     config(user, env) {
       const name = process.env.KEEL_DEPLOYABLE;
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
@@ -1456,7 +1482,9 @@ export default function (): {
       // A file the last evaluation read, or a code file created or deleted (the code file paths), evaluates again.
       const read = evaluatedFiles.has(onDisk(id)) || evaluatedFiles.has(id);
       const paths = change.event !== "update" && rel !== null;
-      if (!read && !paths && (rel === null || !PROJECT_FILE.test(rel))) return;
+      // With `routes.json` owned, a route table or schema file evaluates nothing it did not read.
+      const named = rel !== null && PROJECT_FILE.test(rel) && (!routesOwned || /^(?:tokens|topology)\.ts$/.test(rel));
+      if (!read && !paths && !named) return;
       // The watcher reports one write more than once (an event per environment, a second one for the same bytes): an
       // update whose bytes are those the file had at its last event starts no evaluation.
       const digest = bytesDigest(id);

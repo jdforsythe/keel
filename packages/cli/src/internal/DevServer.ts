@@ -19,4 +19,9 @@ export type DevServer = {
   onChange(listener: (event: string, file: string) => void): void;
   /** Adds files to its watcher (a linked package's, outside the root). */
   watch(files: readonly string[]): void;
+  /**
+   * Hands the Keel plugin `keel dev`'s derivation of the root project's `routes.json` entries, or `undefined` when a
+   * refresh derived none (the plugin's `api.derivedRoutes`); nothing without the plugin.
+   */
+  derivedRoutes(routes: Readonly<Record<string, unknown>> | undefined): void;
 };
