@@ -3,6 +3,9 @@
 // for `fail ` lines and the verdict. Pure: no process, file or network here, so the tests drive it with a fixture.
 import path from "node:path";
 
+/** The Linux kernel setting CI's browser steps change with sudo; this machine has no such setting, so the step does nothing. */
+const SYSCTL = { from: "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0", to: "true" };
+
 /**
  * Every job of the CI source, by name, with what the gate does with it. `run`: runs on every gate. `skip`: the reason
  * it does not; `flag`: `--with <job>` runs it here. `requires`: a tool the job needs on this machine; without it the
@@ -13,7 +16,7 @@ import path from "node:path";
  */
 export const JOBS = {
   check: { run: true },
-  "test-shard": { run: true },
+  "test-shard": { run: true, rewrites: [SYSCTL] },
   test: { run: true },
   postgres: {
     run: true,
@@ -29,7 +32,12 @@ export const JOBS = {
     ],
   },
   ledger: { run: true },
-  "built-smokes": { run: true },
+  "built-smokes": {
+    run: true,
+    requires: "docker",
+    services: { postgres: { container: "keel-gate-pg-smokes", port: "pg-smokes" } },
+    rewrites: [{ from: "127.0.0.1:5432/", to: "127.0.0.1:{port:pg-smokes}/" }, SYSCTL],
+  },
   "create-kit": { run: true },
   build: { run: true },
   budgets: { run: true },
@@ -169,6 +177,9 @@ function slowDecision(skip, only) {
   return { name: SLOW_JOB, decision: "run", rule };
 }
 
+/** The browser step as the user runs it: the system libraries were installed as root (`slowBrowserDepsScript`). */
+const SLOW_WITH_DEPS = { from: "playwright-core install --with-deps chromium", to: "playwright-core install chromium" };
+
 /** The container's name: `keel-gate-slow-<sha>`; a shard's own container adds `-<shard>`. */
 export const slowContainer = (short, shard) => `keel-gate-slow-${short}${shard === undefined ? "" : `-${shard}`}`;
 
@@ -208,6 +219,10 @@ export function slowRunArgs({ name, image, cpus = SLOW.cpus, memory = SLOW.memor
     // A runner is no root user and has an init that reaps orphans: as root, a file mode no longer stops a write, and
     // without an init a killed process stays a zombie that a test for "the process is gone" still sees.
     "--init",
+    // Chromium's user-namespace sandbox stays on, as on a runner after its sysctl; Docker's default seccomp profile
+    // refuses the clone it needs.
+    "--security-opt",
+    "seccomp=unconfined",
     "--user",
     SLOW.user,
     image,
@@ -228,6 +243,18 @@ export const slowSetupScript = [
   `chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`,
   `[ "$(stat -c %U /pnpm-store)" = ${SLOW.user} ] || chown -R ${SLOW.user}:${SLOW.user} /pnpm-store`,
 ].join(" && ");
+
+/**
+ * Run as root in the prepared container after the install: Chromium's system libraries, only when a shard of the run
+ * has a test file that drives a browser (`ci-shards --browser`), so a run without one installs nothing. The browser
+ * itself is downloaded by the shard's own step, as the user, as on a runner.
+ */
+export const slowBrowserDepsScript = (shards) =>
+  [
+    `cd ${SLOW.workdir}`,
+    `for n in ${shards.join(" ")}; do node tooling/ci-shards.mjs --browser "$n" | grep -q '^browser=true$' && need=1; done`,
+    'if [ -n "${need:-}" ]; then node node_modules/playwright-core/cli.js install-deps chromium; fi',
+  ].join("\n");
 
 /** Host paths a `docker run` argument list mounts: `-v`/`--volume`/`--mount` with a source that is not a named volume. */
 export function bindMounts(args) {
@@ -250,12 +277,18 @@ export function bindMounts(args) {
  * The actions of the job (checkout, setup, cache, artifacts) are the container's own setup.
  */
 export function slowSteps(source, shard) {
-  const runs = expandSteps(source, "test-shard").filter((s) => typeof s === "object" && s.run !== undefined);
+  const job = source.jobs["test-shard"];
+  const own = expandSteps(source, "test-shard");
+  // The job's rewrites, the one rule of what does not apply off a runner (the sysctl no-op), as the fast jobs have it.
+  const rewritten = applyRewrites(job, own, [...(JOBS["test-shard"].rewrites ?? []), SLOW_WITH_DEPS], {}).steps;
+  const runs = rewritten.filter((s) => typeof s === "object" && s.run !== undefined);
   const ctx = { matrix: { shard }, workspace: SLOW.workdir, runnerOs: "Linux", runnerArch: "X64" };
   const answer = (s) => ({
     name: stepName({ ...s, run: expr(s.run, ctx) }),
     run: expr(s.run, ctx),
     env: exprEnv(s.env, ctx),
+    ...(s.id === undefined ? {} : { id: s.id }),
+    ...(s.if === undefined ? {} : { if: s.if }),
   });
   const install = runs.filter((s) => /^pnpm install\b/.test(s.run));
   return { install: install.map(answer), steps: runs.filter((s) => !install.includes(s)).map(answer) };
@@ -328,7 +361,8 @@ export function instances(name, job) {
 
 /**
  * `text` with each `${{ expression }}` answered from `ctx`: `matrix.<k>`, `secrets.<k>` and `vars.<k>` (empty: no
- * secret or variable reaches a local run), `github.workspace`, `runner.os`, `runner.arch`, `needs.<job>.result`.
+ * secret or variable reaches a local run), `github.workspace`, `runner.os`, `runner.arch`, `needs.<job>.result`
+ * and `steps.<id>.outputs.<name>` (what the step wrote to its `GITHUB_OUTPUT`, empty when it wrote nothing).
  * Any other expression throws, so a new one is decided here before the gate runs it.
  */
 export function expr(text, ctx) {
@@ -341,20 +375,54 @@ export function expr(text, ctx) {
     if (e === "runner.arch") return ctx.runnerArch ?? "";
     m = /^needs\.([\w-]+)\.result$/.exec(e);
     if (m !== null && Object.hasOwn(ctx.needs ?? {}, m[1])) return ctx.needs[m[1]];
+    m = /^steps\.([\w-]+)\.outputs\.([\w-]+)$/.exec(e);
+    if (m !== null) return ctx.steps?.[m[1]]?.[m[2]] ?? "";
     throw new Error(`unknown expression \${{ ${e} }}: decide in tooling/gate-plan.mjs`);
   });
+}
+
+/**
+ * The outputs a step wrote to its `GITHUB_OUTPUT` file: `name=value` lines and `name<<DELIMITER` blocks that end at
+ * a line that is the delimiter. A later line of the same name wins.
+ */
+export function parseOutputs(text) {
+  const out = {};
+  const lines = String(text).split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = (lines[i] ?? "").replace(/\r$/, "");
+    const block = /^([^=<\s]+)<<(.+)$/.exec(line);
+    if (block !== null) {
+      const body = [];
+      for (i++; i < lines.length && (lines[i] ?? "").replace(/\r$/, "") !== block[2]; i++)
+        body.push((lines[i] ?? "").replace(/\r$/, ""));
+      out[block[1]] = body.join("\n");
+      continue;
+    }
+    const eq = line.indexOf("=");
+    if (eq > 0) out[line.slice(0, eq)] = line.slice(eq + 1);
+  }
+  return out;
+}
+
+/**
+ * Whether a step runs, given whether an earlier step of its job failed and the outputs of the steps so far
+ * (`outputs[<id>][<name>]`). No `if` is `success()`; `always()` runs regardless; `steps.<id>.outputs.<name> ==|!= '<text>'`
+ * compares an output (empty when unset) and, like any condition that is not `always()`, needs the job to be passing.
+ * Any other condition throws.
+ */
+export function stepRuns(step, failed, outputs = {}) {
+  if (step.if === undefined) return !failed;
+  const cond = String(step.if).trim();
+  if (cond === "always()") return true;
+  const m = /^steps\.([\w-]+)\.outputs\.([\w-]+)\s*(==|!=)\s*'([^']*)'$/.exec(cond);
+  if (m === null) throw new Error(`unknown step condition "${step.if}": decide in tooling/gate-plan.mjs`);
+  const same = (outputs[m[1]]?.[m[2]] ?? "") === m[4];
+  return !failed && (m[3] === "==" ? same : !same);
 }
 
 /** Each value of an `env` map through `expr`. */
 export function exprEnv(env, ctx) {
   return Object.fromEntries(Object.entries(env ?? {}).map(([k, v]) => [k, expr(v, ctx)]));
-}
-
-/** Whether a step runs after an earlier one failed: `always()` does; no `if` does not; any other `if` throws. */
-export function runsAfterFailure(step) {
-  if (step.if === undefined) return false;
-  if (String(step.if).trim() === "always()") return true;
-  throw new Error(`unknown step condition "${step.if}": decide in tooling/gate-plan.mjs`);
 }
 
 /**
