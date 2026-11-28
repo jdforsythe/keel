@@ -34,7 +34,11 @@ const check = (agent: string | undefined, format: string): string => {
       env[k] = v;
   }
   if (agent !== undefined) env.npm_config_user_agent = agent;
-  const r = spawnSync(process.execPath, [BIN, "check", "--frozen", `--format=${format}`], { cwd: dir, encoding: "utf8", env });
+  const r = spawnSync(process.execPath, [BIN, "check", "--frozen", `--format=${format}`], {
+    cwd: dir,
+    encoding: "utf8",
+    env,
+  });
   return r.stdout;
 };
 const e1005 = (out: string): string[] => out.split("\n").filter((l) => l.includes("E1005"));
