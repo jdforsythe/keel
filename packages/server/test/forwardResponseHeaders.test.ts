@@ -54,6 +54,7 @@ describe("forwarded response headers", () => {
         nothing: new Set(),
         reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
         frames: () => [],
+        thrown: () => [],
       };
       const out = await forward(new Request("http://x.test/p"), `http://127.0.0.1:${at}`, sv);
       const h = out.response.headers;
@@ -98,6 +99,7 @@ describe("forwarded HEAD response", () => {
       nothing: new Set(),
       reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
       frames: () => [],
+      thrown: () => [],
     };
     return { server, sv, at: port(server.address()) };
   };

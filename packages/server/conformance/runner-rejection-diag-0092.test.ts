@@ -39,7 +39,8 @@ describe("k.topology: runner rejection", () => {
                 .map((l): unknown => JSON.parse(l))
                 .filter((v) => typeof v === "object" && v !== null && "kind" in v && v.kind === "diag");
             expect(starts).toBe(1);
-            expect(diags()).toHaveLength(1);
+            // dev prints the thrown text in a second diag after the first (k.serverlog Thrown values)
+            expect(diags()).toHaveLength(2);
             expect(JSON.stringify(diags()[0])).toContain("keel.unexpected");
             for (let i = 1; i <= rejections; i++) {
               ctx.clock.advance(999);
@@ -49,8 +50,8 @@ describe("k.topology: runner rejection", () => {
               await flush();
               expect(starts).toBe(i + 1);
             }
-            expect(diags()).toHaveLength(rejections);
-            for (const d of diags()) expect(JSON.stringify(d)).toContain("keel.unexpected");
+            expect(diags()).toHaveLength(2 * rejections);
+            for (let i = 0; i < rejections; i++) expect(JSON.stringify(diags()[2 * i])).toContain("keel.unexpected");
             await app.close?.();
           },
         ),

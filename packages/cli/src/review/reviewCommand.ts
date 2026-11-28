@@ -24,6 +24,7 @@ import { openRepo } from "./openRepo.ts";
 import { placed } from "./placed.ts";
 import { rangeEscapes } from "./rangeEscapes.ts";
 import { scopeOf } from "./scopeOf.ts";
+import { supervisorsOf } from "./supervisorsOf.ts";
 import { workTree } from "./workTree.ts";
 
 /** `<base>..<head>`: neither side empty, starting with `.` or ending at a `/` (so `../x` and `a/../b` are paths). */
@@ -43,9 +44,10 @@ function findingsOf(snap: Snapshot, scope: Scope): Map<string, Found[]> {
   const out = new Map<string, Found[]>();
   const paths = snap.paths.filter(scope.has);
   snap.prefetch(paths);
+  const supervisor = supervisorsOf(snap);
   for (const p of paths) {
     const text = snap.text(p);
-    if (text !== undefined) out.set(p, placed(p, fileEscapes(p, text, scope.projectOf(p))));
+    if (text !== undefined) out.set(p, placed(p, fileEscapes(p, text, scope.projectOf(p), supervisor)));
   }
   return out;
 }
@@ -181,6 +183,7 @@ function reviewRange(repo: GitRepo, from: string, to: string, at: readonly strin
   base.prefetch(changes.flatMap((c) => (c.from !== undefined && scope.has(c.path) ? [c.from] : [])));
   const alias = new Map<string, string>();
   const baseFound: Found[] = [];
+  const baseSupervisor = supervisorsOf(base);
   for (const [p, found] of headFound) {
     const c = byPath.get(p);
     if (c === undefined) {
@@ -190,7 +193,7 @@ function reviewRange(repo: GitRepo, from: string, to: string, at: readonly strin
     if (c.from === undefined) continue;
     const text = base.text(c.from);
     if (text === undefined) continue;
-    const raws = fileEscapes(p, text, scope.projectOf(p));
+    const raws = fileEscapes(p, text, scope.projectOf(p), baseSupervisor);
     baseFound.push(...placed(p, raws));
     if (c.from !== p) {
       const own = placed(p, raws);

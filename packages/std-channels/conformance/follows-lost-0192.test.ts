@@ -30,11 +30,14 @@ test("under sim, `subscribe` reopens 1 s later after a `lost` report and the new
   try {
     h.ctx.net.route(`${ORIGIN}/*`, (req) => h.app.fetch(req));
     const events: unknown[] = [];
-    const sc = scope(() => {
-      subscribe(h.ctx, ORIGIN, roomChannel, { room: "a" }, (e) => {
-        events.push(e);
-      });
-    });
+    const sc = scope(
+      () => {
+        subscribe(h.ctx, ORIGIN, roomChannel, { room: "a" }, (e) => {
+          events.push(e);
+        });
+      },
+      { detached: true },
+    );
     await waitFor(() => events.length >= 1);
     expect(events).toEqual([{ kind: "reset" }]);
     h.db.lose();

@@ -2,7 +2,7 @@ import type { Changes } from "./Changes.ts";
 import { localChanges } from "./localChanges.server.ts";
 
 /** Shared by every evaluation of this module in the process, as the engines are: one per `pglite:` URL. */
-const KEY = Symbol.for("keel.postgres.pgliteChanges");
+const KEY = Symbol.for("@keel/std-postgres:pgliteChanges");
 
 function shared(): Map<string, Changes> {
   const found: unknown = Reflect.get(globalThis, KEY);

@@ -1,4 +1,6 @@
 import type { Ctx } from "@keel/ctx";
+import { attempt } from "@keel/schema";
+import { Cancelled } from "./Cancelled.schema.ts";
 import type { Chan } from "./Chan.ts";
 
 /** Wait `ms` on `ctx.clock` (forever for `Infinity`), or until `c` wakes after version `v`, or `signal` aborts. */
@@ -10,7 +12,13 @@ export function idle(ctx: Ctx, c: Chan, v: number, ms: number, signal: AbortSign
   signal.addEventListener("abort", end, { once: true });
   return new Promise<void>((done) => {
     a.signal.addEventListener("abort", () => done(), { once: true });
-    if (ms < Number.POSITIVE_INFINITY) ctx.clock.after(Math.max(0, ms), a.signal).then(end, end);
+    if (ms < Number.POSITIVE_INFINITY) {
+      const waiting = ctx.clock.after(Math.max(0, ms), a.signal);
+      void attempt(
+        () => waiting,
+        (x) => (x === a.signal.reason ? Cancelled.make({}) : undefined),
+      ).then(end);
+    }
   }).finally(() => {
     c.wake.delete(end);
     signal.removeEventListener("abort", end);

@@ -1,9 +1,9 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
-import { tx } from "@keel/store";
 import type { Config } from "./Config.ts";
+import { apply } from "./apply.ts";
 import { fault } from "./fault.ts";
 import { persist } from "./persist.ts";
+import { rewrite } from "./rewrite.ts";
 
 /**
  * Writes the outbox to `ctx.storage` for entry `key`, made `queued` in memory a moment before, and holds that entry
@@ -17,15 +17,15 @@ export function admit(
   c: Config,
   key: string,
 ): Promise<ReturnType<typeof fault<"offline.storage" | "offline.owner">> | undefined> {
-  const written = attempt(() => persist(ctx, c)).then(async (stored) => {
+  const written = persist(ctx, c).then(async (stored) => {
     c.writes.delete(key);
     if (stored.ok)
       return c.store.get("entries").find((x) => x.key === key)?.state === "failed"
         ? fault(c, "offline.owner")
         : undefined;
     const error = fault(c, "offline.storage");
-    void tx(c.settle, { key, state: "failed", error });
-    void (await attempt(() => persist(ctx, c)));
+    apply(c.settle, { key, state: "failed", error });
+    await rewrite(ctx, c);
     return error;
   });
   c.writes.set(key, written);

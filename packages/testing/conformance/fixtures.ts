@@ -119,9 +119,12 @@ const makeStores = () => {
 };
 
 let made: ReturnType<typeof makeStores> | undefined;
-scope(() => {
-  made = makeStores();
-});
+scope(
+  () => {
+    made = makeStores();
+  },
+  { detached: true },
+);
 if (made === undefined) throw new Error("fixture: store scope did not run");
 export const { cart, addItem, badCart, addAny, goodCart, addClamped } = made;
 

@@ -1,6 +1,7 @@
 import { clipMessage } from "@keel/schema/internal";
 import type { Expression, ObjectExpression, StringLiteral } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
+import type { Edit } from "../types/Edit.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
 import type { ModuleContract } from "./ModuleContract.ts";
@@ -18,13 +19,22 @@ import { unifiedDiff } from "./unifiedDiff.ts";
 
 const MAX_HOPS = 8;
 
-type Prefix = { readonly name: string; readonly values: readonly string[]; readonly d: string };
+type Prefix = {
+  readonly name: string;
+  readonly values: readonly string[];
+  readonly d: string;
+  /** The field's schema as written, and the file it is written in. */
+  readonly field: { readonly path: string; readonly text: string };
+};
 type Seg = { readonly param: boolean; readonly text: string };
 type Route = {
   readonly id: string;
   readonly file: SourceFile;
   readonly at: StringLiteral;
   readonly segs: readonly Seg[];
+  readonly entry: ObjectExpression;
+  /** A local name of `@keel/schema`'s `s` in the route's file, when it has one. */
+  readonly s: string | undefined;
   /** Param name -> its field's `pathDefault` enum, for fields that declare one. */
   readonly enums: ReadonlyMap<string, Prefix>;
 };
@@ -112,9 +122,32 @@ function routeOf(
     for (const q of fields.props) {
       const name = keyName(q);
       const e = name === null ? null : enumOf(q.value, src, files, 0);
-      if (name !== null && e !== null && e.d !== undefined) enums.set(name, { name, values: e.values, d: e.d });
+      if (name === null || e === null || e.d === undefined) continue;
+      const field = { path: file.path, text: file.source.slice(q.value.start, q.value.end) };
+      enums.set(name, { name, values: e.values, d: e.d, field });
     }
-  return { id, file, at: path.at, segs, enums };
+  return { id, file, at: path.at, segs, entry, s: [...src.s][0], enums };
+}
+
+/**
+ * The edit that gives route `r` the prefix param's field (E1503 asks for it once the path holds `:<p>`): the field's
+ * schema as the prefixed route writes it, first in `r`'s literal `s.object({...})` params, or a new `params` after its
+ * `path`. None when the schema is written in another file, `r`'s params are not read statically or hold the name, or
+ * `r`'s file has no `s`.
+ */
+function fieldEdit(r: Route, pre: Prefix): Edit[] {
+  if (pre.field.path !== r.file.path) return [];
+  const field = `${pre.name}: ${pre.field.text}`;
+  const fields = paramsFields(r.entry);
+  if (fields === "dynamic") return [];
+  if (fields === "absent") {
+    const path = propertyOf(r.entry, "path");
+    if (path === null || r.s === undefined) return [];
+    return [{ start: path.end, end: path.end, text: `, params: ${r.s}.object({ ${field} })` }];
+  }
+  if (fields.props.some((q) => keyName(q) === pre.name)) return [];
+  const open = fields.fields.start + 1;
+  return [{ start: open, end: open, text: fields.props.length === 0 ? ` ${field} ` : ` ${field},` }];
 }
 
 const prefixOf = (r: Route): Prefix | null => {
@@ -129,7 +162,8 @@ const sameEnum = (a: Prefix, b: Prefix): boolean =>
  * E1509 (k.prefix Rules), over each deployable's route table (`tables`, k.routes), its contracts' entries: a `pathDefault` param that is not first in its path;
  * a second prefix param; a prefixed route whose second segment is a param (no fix); beside a prefixed route, a route whose static first segment is a value of the prefix param,
  * whose first segment is another param, or whose path is a prefixed route's path without the prefix. Only literal
- * paths and statically resolvable params schemas are read. Fix (the last three): prepend `/:<p>` to the path.
+ * paths and statically resolvable params schemas are read. Fix (the last three): prepend `/:<p>` to the path and give
+ * the route the param's field (`fieldEdit`).
  */
 export function prefixCollisions(files: readonly Checked[], tables: readonly ModuleContract[][]): Diagnostic[] {
   return tables.flatMap((t) => collisions(routesOf(t, files)));
@@ -156,7 +190,8 @@ function collisions(routes: readonly Route[]): Diagnostic[] {
       r.segs.length === 0
         ? `/:${pre.name}`
         : `/:${pre.name}/${r.segs.map((s) => (s.param ? `:${s.text}` : s.text)).join("/")}`;
-    const after = applyEdits(r.file.source, [{ start: r.at.start + 1, end: r.at.end - 1, text }]);
+    const edits = [{ start: r.at.start + 1, end: r.at.end - 1, text }, ...fieldEdit(r, pre)];
+    const after = applyEdits(r.file.source, edits);
     out.push({ ...base, fix: unifiedDiff(r.file.path, r.file.source, after) });
   };
   for (const r of routes)

@@ -79,11 +79,14 @@ async function capture(schema: Schema<unknown>, payload: unknown) {
         },
       },
     });
-  scope(() => {
-    const st = store(s.object({ last: s.string() }), { last: "" }, { id });
-    const t = transaction(st, name, schema, (state) => state);
-    built.push({ st, routes: table(() => void tx(t, payload)) });
-  });
+  scope(
+    () => {
+      const st = store(s.object({ last: s.string() }), { last: "" }, { id });
+      const t = transaction(st, name, schema, (state) => state);
+      built.push({ st, routes: table(() => void tx(t, payload)) });
+    },
+    { detached: true },
+  );
   const [b] = built;
   if (b === undefined) throw new Error("capture: build failed");
   const h = await renderRoute("piip.show", { routes: b.routes, ctx, state: [[b.st, { last: "" }]] });

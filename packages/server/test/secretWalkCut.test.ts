@@ -12,6 +12,7 @@ import { createApp, topology } from "../src/index.ts";
 import { noteRequestSecrets } from "../src/internal/noteRequestSecrets.ts";
 import { pastCap } from "../src/internal/pastCap.ts";
 import { requestSecrets } from "../src/internal/requestSecrets.ts";
+import { textRecords } from "./textRecords.ts";
 
 // One array of 1,000,000 items is 1,000,001 values: the read is cut at its last item. Every item is one value, so the
 // set itself stays small.
@@ -52,7 +53,7 @@ describe("a secret whose read is cut", () => {
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
       routes,
       ctx: createCtx({ mode: "sim", seed: 1337 }),
-      mode: "production",
+      mode: "dev",
       log: { format: "json", write: (l) => lines.push(l) },
     });
     const res = await app.fetch(
@@ -63,7 +64,7 @@ describe("a secret whose read is cut", () => {
       }),
     );
     await res.text();
-    const messages = lines
+    const messages = textRecords(lines)
       .map((l): { code: string; message: string } => JSON.parse(l))
       .filter((d) => d.code === "keel.unexpected")
       .map((d) => d.message);

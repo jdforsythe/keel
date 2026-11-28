@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { type Program, parseSync } from "oxc-parser";
+import { devAppOf } from "../unsafe/devAppOf.ts";
 import { compile } from "./compile.ts";
 import { CLIENT_MANIFEST } from "./entry/CLIENT_MANIFEST.ts";
 import { DEV_ENTRY } from "./entry/DEV_ENTRY.ts";
@@ -27,6 +28,7 @@ import { builtTextFiles } from "./internal/builtTextFiles.ts";
 import { bundledFiles } from "./internal/bundledFiles.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
+import { censusSource } from "./internal/censusSource.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
@@ -81,9 +83,12 @@ import type { StyleUsage } from "./types/StyleUsage.ts";
 import type { Topology } from "./types/Topology.ts";
 
 const CODE = /\.[cm]?[jt]sx?$/;
-/** Test code and tool configs are not app code: no rules, no lowering (k.testing lint E1701 covers tests). */
+/**
+ * Test code (k.check App code: `*.test.*`, `*.spec.*`, under `test/`, `tests/`, `conformance/`, `__tests__/`) and tool
+ * configs are not app code: no rules, no lowering (k.testing lint E1701 covers tests).
+ */
 const NOT_APP =
-  /(?:^|\/)(?:test|tests|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
+  /(?:^|\/)(?:test|tests|conformance|__tests__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)vitest(?:\.[\w-]+)?\.config\.[cm]?[jt]s$/;
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 /**
@@ -196,15 +201,6 @@ type DevApp = {
   served(path: string): boolean;
   readonly mount: string | undefined;
 };
-const isDevApp = (v: unknown): v is [string, DevApp["app"], DevApp["served"], DevApp["mount"]] =>
-  Array.isArray(v) &&
-  typeof v[0] === "string" &&
-  typeof v[2] === "function" &&
-  (v[3] === undefined || typeof v[3] === "string") &&
-  typeof v[1] === "object" &&
-  v[1] !== null &&
-  typeof Reflect.get(v[1], "fetch") === "function" &&
-  typeof Reflect.get(v[1], "close") === "function";
 type Warn = (message: string) => void;
 type BuildConfig = {
   build: {
@@ -350,7 +346,7 @@ export default function (): {
   renderStart: () => void;
   generateBundle: { order: "post"; handler: (this: Ctx, options: unknown, bundle: Record<string, Emitted>) => void };
   closeBundle: { order: "post"; handler: () => Promise<void> };
-  transform: (code: string, id: string, options?: HookOptions) => { code: string; map: null } | null;
+  transform: (code: string, id: string, options?: HookOptions) => { code: string; map: string | null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
@@ -394,6 +390,8 @@ export default function (): {
    * inside their package are rewritten (`rewriteLiftedReads`, k.server-deps); unset in any other run.
    */
   let liftedLibraries: readonly HeldLibrary[] | undefined;
+  /** A `node` deployable's build: the folder its `server.mjs` is written to; unset in any other run. */
+  let serverDir: string | undefined;
   /** The app modules the client entry's service map names, and the client's own; unset until the entry loads. */
   let mapped: ReadonlySet<string> | undefined;
   const modules = new Map<string, Entry>();
@@ -473,9 +471,7 @@ export default function (): {
       evaluated = true;
       const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
       const apps: unknown = mod?.apps;
-      return (Array.isArray(apps) ? apps : [])
-        .filter(isDevApp)
-        .map(([name, app, served, mount]) => ({ name, app, served, mount }));
+      return (Array.isArray(apps) ? apps : []).flatMap((a) => devAppOf(a) ?? []);
     })();
     loading = run;
     // Only the load no edit overtook becomes the live apps. One an edit overtook is closed by `reloadDev`, and its
@@ -1014,6 +1010,7 @@ export default function (): {
       // A `static` deployable's server bundle is the build's alone: it renders the documents and is removed.
       const ssrOut = built ? `node_modules/.keel/prerender/${name}` : out;
       if (!built) liftedLibraries = allLibraries(at);
+      serverDir = path.join(at, ssrOut);
       return {
         ...own,
         build: {
@@ -1349,8 +1346,8 @@ export default function (): {
         if (command !== "build" || this?.environment?.config.consumer !== "client") return;
         const at = path.resolve(root, this.environment.config.build?.outDir ?? "dist");
         builtOut = at;
-        const values = Object.entries(process.env).filter(
-          (e): e is [string, string] => e[0].startsWith("KEEL_") && !PUBLIC_ENV.test(e[0]) && (e[1] ?? "").length >= 8,
+        const values = Object.entries(process.env).flatMap(([k, v]): [string, string][] =>
+          k.startsWith("KEEL_") && !PUBLIC_ENV.test(k) && v !== undefined && v.length >= 8 ? [[k, v]] : [],
         );
         if (values.length === 0) return;
         const decoder = new TextDecoder();
@@ -1397,7 +1394,15 @@ export default function (): {
         liftedLibraries !== undefined && command === "build" && options?.ssr === true
           ? rewriteLiftedReads(id, code, liftedLibraries)
           : null;
-      const kept = lifted === null ? null : { code: lifted, map: null };
+      // A census module in a bundle names its own file, so two copies inlined from two folders differ (k.realm One
+      // copy): in a browser bundle by its path from the project, in the server bundle by its path from `server.mjs`,
+      // resolved when it runs.
+      const census =
+        command !== "build"
+          ? undefined
+          : censusSource(id, lifted ?? code, options?.ssr === true ? { bundle: serverDir ?? root } : { project: root });
+      const kept =
+        census !== undefined ? { code: census, map: null } : lifted === null ? null : { code: lifted, map: null };
       const rel = relOf(id);
       if (rel === null || stubbed.has(id) || (devStubbed.has(id) && forBrowser(this, options))) return kept;
       const entry = compileModule(rel, lifted ?? code);
@@ -1406,7 +1411,7 @@ export default function (): {
         .map((d) => `E1404 ${rel} duplicate element id "${d.id.slice(0, 30)}" (also in another module)`);
       const failures = [...entry.failures, ...dupes];
       if (failures.length > 0) throw new Error(failures.join("\n"));
-      const out = entry.output === undefined ? kept : { code: entry.output.code, map: null };
+      const out = entry.output === undefined ? kept : { code: entry.output.code, map: entry.output.map ?? null };
       // k.data Dev: under `keel dev` alone, each app file the server graph loads names itself as its top level begins.
       if (command !== "serve" || !hasNode || options?.ssr !== true || process.env.KEEL_DEV_DIR === undefined)
         return out;

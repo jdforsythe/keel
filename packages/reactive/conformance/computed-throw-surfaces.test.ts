@@ -13,9 +13,12 @@ const distinct = fc
 
 function mk(initial: number) {
   let s: ReturnType<typeof signal<number>> | undefined;
-  scope(() => {
-    s = signal(initial);
-  });
+  scope(
+    () => {
+      s = signal(initial);
+    },
+    { detached: true },
+  );
   if (!s) throw new Error("unreachable");
   return s;
 }
@@ -43,7 +46,7 @@ describe("k.reactive: a computed's throw surfaces in the reading effect", () => 
               }
             });
           },
-          { onError: (e) => received.push(e) },
+          { onError: (e) => received.push(e), detached: true },
         );
         expect(seen).toEqual([init]);
         expect(() => s.set(bad)).not.toThrow();
@@ -77,7 +80,7 @@ describe("k.reactive: a computed's throw surfaces in the reading effect", () => 
               }
             });
           },
-          { onError: (e) => received.push(e) },
+          { onError: (e) => received.push(e), detached: true },
         );
         s.set(bad);
         expect(() => s.set(good)).not.toThrow();

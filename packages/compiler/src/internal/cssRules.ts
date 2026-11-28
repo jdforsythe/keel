@@ -67,5 +67,5 @@ export function cssRules(text: string): CssRule[] {
   };
 
   while (i < src.length) block({ layers: [], media: [], wrappers: [] }, undefined);
-  return slots.filter((r): r is CssRule => r !== undefined);
+  return slots.flatMap((r) => (r === undefined ? [] : [r]));
 }

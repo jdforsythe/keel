@@ -1,8 +1,8 @@
-// k.check, App code "The rules "in app code" read a project's code files (`.d.ts` aside) that are not test code (`*.test.*`, `*.spec.*`, or under `test/`, `tests/`, `conformance/` or `__tests__/`), not `*.config.*` and not under `.keel/` or `node_modules/`. A file under `unsafe/` is app code but for its lifted ranges. A lifted range is the arrow function or function expression written as the second argument of an `unsafe(` call (callee the identifier `unsafe`) whose first argument is a justification string, a string literal or a template without substitutions holding a non-space character, in a file under `unsafe/`: the function from its first character to its last, parameters, return type, comments and nested functions included. A second argument of another form (a name, a call), a call without a justification string (E1754) and a call in a file outside `unsafe/` give no range. Inside a lifted range E1252, E1451, E1452, E1601, E1603, E1651, E1757, E1758, E1759 and W1608 are not reported; every other code reads the range as it reads the rest of the file. Outside its lifted ranges an `unsafe/` file's imports, type declarations, signatures and helpers are checked as `modules/<id>/a.ts` is. A cast, `!` or suppression is written inside the function; a type that holds `any` is declared there too (`() => { type L = Chart<any>; return c as L }`), and a signature takes `unknown` or a type parameter. A stdlib rule that reads app code reads an `unsafe/` file whole: `unsafe` lifts the kernel codes above only."
-// k.check, Rules "E1757 cast, non-null assertion, `any`, or ts-suppression in a code file outside `.keel/`, `node_modules/` and lifted ranges (App code); outside `unsafe/` the message ends `outside unsafe/; use a guard or move it to unsafe/`, in an `unsafe/` file `outside an unsafe() call; use a guard or move it into the call`"
+// k.check, App code "The rules \"in app code\" read a project's code files (`.d.ts` aside) that are not test code (`*.test.*`, `*.spec.*`, or under `test/`, `tests/`, `conformance/` or `__tests__/`), not `*.config.*` and not under `.keel/` or `node_modules/`. A file under `unsafe/` is app code but for its lifted ranges. A lifted range is the arrow function or function expression written as the second argument of an `unsafe(` call (callee the identifier `unsafe`) whose first argument is a justification string, a string literal or a template without substitutions holding a non-space character, in a file under `unsafe/`: the function from its first character to its last, parameters, return type, comments and nested functions included. A second argument of another form (a name, a call), a call without a justification string (E1754) and a call in a file outside `unsafe/` give no range. Inside a lifted range E1252, E1601, E1603, E1651, E1757, E1758, E1759, E1762 and W1608 are not reported; every other code reads the range as it reads the rest of the file. Outside its lifted ranges an `unsafe/` file's imports, type declarations, signatures and helpers are checked as `modules/<id>/a.ts` is. A cast, `!` or suppression is written inside the function; a type that holds `any` is declared there too (`() => { type L = Chart<any>; return c as L }`), and a signature takes `unknown` or a type parameter. A stdlib rule that reads app code reads an `unsafe/` file whole: `unsafe` lifts the kernel codes above only."
+// k.check, Rules "E1757 cast, non-null assertion, `any`, or ts-suppression in a code file outside `.keel/`, `node_modules/`, lifted ranges (App code) and a negative type test's expectations (k.unsafe); outside `unsafe/` the message ends `outside unsafe/; use a guard or move it to unsafe/`, in an `unsafe/` file `outside an unsafe() call; use a guard or move it into the call`"
 // Spec: k.check, clause "In `modules/m/unsafe/a.ts`, `c as T`, `c!` and a TypeScript expect-error directive inside the arrow function given as the second argument of `unsafe('r', () => ...)`, and `any` as that function's return type, are no E1757; each of the four in a function declared at the file's top level is one E1757, the cast's message `type cast outside an unsafe() call; use a guard or move it into the call`."
 // Spec: k.check, clause "In `modules/m/unsafe/a.ts`, `type L = any` and the parameter type of `export function f(v: any) {}`, both at the top level, are one E1757 each, and the same `type L = any` declared inside the arrow function given to `unsafe('r', () => ...)` is none."
-// Spec: k.check, clause "In a project with no `topology.ts`, `Date.now()` (E1601), `document.title` (E1252), `eval(s)` (E1603), `throw e` (E1451), `try { f() } catch { g() }` (E1452), `ctx.net.fetch(r)` (E1651), `n.toLocaleString()` (E1758) and `Buffer.from(s)` (E1759) are each no diagnostic inside the arrow function given to `unsafe('r', () => ...)` in `modules/m/unsafe/a.ts`, and each one diagnostic of its code in a function declared at that file's top level."
+// Spec: k.check, clause "In a project with no `topology.ts`, `Date.now()` (E1601), `document.title` (E1252), `eval(s)` (E1603), `ctx.net.fetch(r)` (E1651), `n.toLocaleString()` (E1758) and `Buffer.from(s)` (E1759) are each no diagnostic inside the arrow function given to `unsafe('r', () => ...)` in `modules/m/unsafe/a.ts`, and each one diagnostic of its code in a function declared at that file's top level; `throw e` (E1451) and `try { f() } catch { g() }` (E1452) are one diagnostic of their code in both places."
 // Spec: k.check, clause "In `modules/m/unsafe/a.ts`, `c as T` stays one E1757 when the arrow function holding it is the second argument of `unsafe('', ...)` (also one E1754), of `unsafe(reason, ...)` with `reason` a parameter (also one E1754), or is `const g = () => c as T` at the top level with `unsafe('r', g)` beside it."
 // Spec: k.check, clause "`unsafe('r', () => c as T)` in `modules/m/a.ts` is one E1757 at the cast, its message `type cast outside unsafe/; use a guard or move it to unsafe/`."
 // Spec: k.check, clause "In `modules/m/unsafe/a.ts`, a second top-level export is one E1752, and `scope(fn, { detached: true })` inside the arrow function given to `unsafe('r', () => ...)` is one E1207."
@@ -50,11 +50,9 @@ type T = number
 `;
 const HEAD = `${DECLS}${HELPER}`;
 
-/** The ten lifted codes, each with one statement that reports it, in a project with no `topology.ts`. */
+/** The eight lifted codes read without the type pass (E1762 is the ninth), each with one statement that reports it, in a project with no `topology.ts`. */
 const LIFTED: readonly (readonly [string, string])[] = [
   ["E1252", "document.title"],
-  ["E1451", "throw e"],
-  ["E1452", "try { f() } catch { g() }"],
   ["E1601", "Date.now()"],
   ["E1603", "eval(s)"],
   ["E1651", "ctx.net.fetch(r)"],
@@ -63,7 +61,7 @@ const LIFTED: readonly (readonly [string, string])[] = [
   ["E1759", "Buffer.from(s)"],
   ["W1608", "void import('./b.ts')"],
 ];
-const EIGHT = LIFTED.filter(([code]) => code !== "E1757" && code !== "W1608");
+const SIX = LIFTED.filter(([code]) => code !== "E1757" && code !== "W1608");
 
 const outsideSrc = (stmt: string, fn: string, why: string) =>
   `${HEAD}function ${fn}() { ${stmt} }\nexport const a = ${call(`'${why}'`, "() => 1")}\n`;
@@ -224,14 +222,22 @@ test("In `modules/m/unsafe/a.ts`, `type L = any` and the parameter type of `expo
   );
 });
 
-test("In a project with no `topology.ts`, `Date.now()` (E1601), `document.title` (E1252), `eval(s)` (E1603), `throw e` (E1451), `try { f() } catch { g() }` (E1452), `ctx.net.fetch(r)` (E1651), `n.toLocaleString()` (E1758) and `Buffer.from(s)` (E1759) are each no diagnostic inside the arrow function given to `unsafe('r', () => ...)`, and each one diagnostic of its code in a function declared at that file's top level", () => {
-  for (const [code, stmt] of EIGHT) {
+test("In a project with no `topology.ts`, `Date.now()` (E1601), `document.title` (E1252), `eval(s)` (E1603), `ctx.net.fetch(r)` (E1651), `n.toLocaleString()` (E1758) and `Buffer.from(s)` (E1759) are each no diagnostic inside the arrow function given to `unsafe('r', () => ...)` in `modules/m/unsafe/a.ts`, and each one diagnostic of its code in a function declared at that file's top level; `throw e` (E1451) and `try { f() } catch { g() }` (E1452) are one diagnostic of their code in both places.", () => {
+  for (const [code, stmt] of SIX) {
     expect(of(diags(`${HEAD}export const a = ${call("'r'", `() => { ${stmt} }`)}\n`), code)).toHaveLength(0);
+    expect(of(diags(`${HEAD}export function a() { ${stmt} }\n`), code)).toHaveLength(1);
+  }
+  for (const [code, stmt] of [
+    ["E1451", "throw e"],
+    ["E1452", "try { f() } catch { g() }"],
+  ] as const) {
+    expect(of(diags(`${HEAD}export const a = ${call("'r'", `() => { ${stmt} }`)}\n`), code)).toHaveLength(1);
     expect(of(diags(`${HEAD}export function a() { ${stmt} }\n`), code)).toHaveLength(1);
   }
 });
 
-test("property: each of the ten lifted codes is reported for a statement outside a range and not for the same statement inside one, in an `unsafe/` file", () => {
+// E1762, the ninth lifted code, reads the claimed type: its inside/outside cases run with the type pass in unsafe-type-predicates.test.ts.
+test("property: each of the eight lifted codes read without the type pass is reported for a statement outside a range and not for the same statement inside one, in an `unsafe/` file", () => {
   fc.assert(
     fc.property(fc.constantFrom(...LIFTED), ident, reason, ([code, stmt], fn, why) => {
       expect(of(diags(outsideSrc(stmt, fn, why)), code)).toHaveLength(1);

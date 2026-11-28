@@ -20,7 +20,7 @@ import { workflow } from "@keel/std-workflows";
 import "@keel/std-workflows/tools";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { nextId, removalChart } from "./fixtures.ts";
+import { nextId, removalChart, inRoot } from "./fixtures.ts";
 
 type Files = Parameters<typeof check>[0];
 const manifest = `import { module } from "@keel/compiler"
@@ -190,16 +190,28 @@ describe("std.workflows: keel check rules", () => {
     const noop = async () => ok({ freed: 0 });
     const c = removalChart();
     const step = (done: "purged" | "expired", failed: "stuck" | "expired") => ({ run: noop, done, failed });
-    expect(() => workflow(nextId("ok"), { chart: c, steps: { purging: step("purged", "stuck") } })).not.toThrow();
+    expect(() =>
+      inRoot(() => workflow(nextId("ok"), { chart: c, steps: { purging: step("purged", "stuck") } })),
+    ).not.toThrow();
     const nowhere = Object.fromEntries([["nowhere", step("purged", "stuck")]]);
-    expect(() => workflow(nextId("e"), { chart: c, steps: nowhere })).toThrow(/E2352/);
-    expect(() => workflow(nextId("e"), { chart: c, steps: { purged: step("purged", "stuck") } })).toThrow(/E2352/);
-    expect(() => workflow(nextId("e"), { chart: c, steps: { purging: step("expired", "stuck") } })).toThrow(/E2352/);
-    expect(() => workflow(nextId("e"), { chart: c, steps: { purging: step("purged", "expired") } })).toThrow(/E2352/);
+    expect(() => inRoot(() => workflow(nextId("e"), { chart: c, steps: nowhere }))).toThrow(/E2352/);
+    expect(() => inRoot(() => workflow(nextId("e"), { chart: c, steps: { purged: step("purged", "stuck") } }))).toThrow(
+      /E2352/,
+    );
+    expect(() =>
+      inRoot(() => workflow(nextId("e"), { chart: c, steps: { purging: step("expired", "stuck") } })),
+    ).toThrow(/E2352/);
+    expect(() =>
+      inRoot(() => workflow(nextId("e"), { chart: c, steps: { purging: step("purged", "expired") } })),
+    ).toThrow(/E2352/);
     const noWait = Object.fromEntries([["nowhere", { ms: 1000, event: "expired" }]]);
-    expect(() => workflow(nextId("e"), { chart: c, waits: noWait })).toThrow(/E2352/);
-    expect(() => workflow(nextId("e"), { chart: c, waits: { gone: { ms: 1000, event: "expired" } } })).toThrow(/E2352/);
-    expect(() => workflow(nextId("e"), { chart: c, waits: { hidden: { ms: 1000, event: "begin" } } })).toThrow(/E2352/);
+    expect(() => inRoot(() => workflow(nextId("e"), { chart: c, waits: noWait }))).toThrow(/E2352/);
+    expect(() =>
+      inRoot(() => workflow(nextId("e"), { chart: c, waits: { gone: { ms: 1000, event: "expired" } } })),
+    ).toThrow(/E2352/);
+    expect(() =>
+      inRoot(() => workflow(nextId("e"), { chart: c, waits: { hidden: { ms: 1000, event: "begin" } } })),
+    ).toThrow(/E2352/);
   });
 
   // reserving and charging are steps; charging's `failed` target is `stuck` (final) and reserving's `done` leads to charging.
@@ -281,13 +293,15 @@ describe("std.workflows: keel check rules", () => {
   const reserved = ["start", "attempt", "forget"] as const;
   const emptyEvent = s.object({});
   const chartWith = (name: string) =>
-    chart(nextId("e2355Chart"), {
-      data: s.object({}),
-      start: {},
-      events: { [name]: emptyEvent, fin: emptyEvent },
-      initial: "queued",
-      states: { queued: { on: { [name]: "purging" } }, purging: { on: { fin: "done" } }, done: { final: true } },
-    });
+    inRoot(() =>
+      chart(nextId("e2355Chart"), {
+        data: s.object({}),
+        start: {},
+        events: { [name]: emptyEvent, fin: emptyEvent },
+        initial: "queued",
+        states: { queued: { on: { [name]: "purging" } }, purging: { on: { fin: "done" } }, done: { final: true } },
+      }),
+    );
   const stepOver = { run: async () => ok({}), done: "fin", failed: "fin" };
 
   test.each(reserved)("E2355 fires once on the workflow's file for a chart event named `%s`, with no fix.", (name) => {
@@ -307,11 +321,15 @@ describe("std.workflows: keel check rules", () => {
   );
 
   test.each(reserved)("`workflow` throws E2355 for a chart event named `%s`.", (name) => {
-    expect(() => workflow(nextId("r"), { chart: chartWith(name), steps: { purging: stepOver } })).toThrow(/^E2355/);
+    expect(() => inRoot(() => workflow(nextId("r"), { chart: chartWith(name), steps: { purging: stepOver } }))).toThrow(
+      /^E2355/,
+    );
   });
 
   test("`workflow` does not throw E2355 for the renamed twin.", () => {
-    expect(() => workflow(nextId("ok"), { chart: chartWith("begin"), steps: { purging: stepOver } })).not.toThrow();
+    expect(() =>
+      inRoot(() => workflow(nextId("ok"), { chart: chartWith("begin"), steps: { purging: stepOver } })),
+    ).not.toThrow();
   });
 
   test(
@@ -323,7 +341,9 @@ describe("std.workflows: keel check rules", () => {
           word.filter((n) => !used.has(n)),
           (name) => {
             expect(found(withEvent(name), "E2355")).toEqual([]);
-            expect(() => workflow(nextId("p"), { chart: chartWith(name), steps: { purging: stepOver } })).not.toThrow();
+            expect(() =>
+              inRoot(() => workflow(nextId("p"), { chart: chartWith(name), steps: { purging: stepOver } })),
+            ).not.toThrow();
           },
         ),
         { seed: 1337, numRuns: 30 },

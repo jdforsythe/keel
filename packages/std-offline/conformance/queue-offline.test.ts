@@ -48,9 +48,12 @@ test("After `setOnline(false)`, three `send`s resolve `queued`, post nothing, an
         next.net.setOnline(false);
         await copyStorage(ctx, next, c.storageKey);
         const c2 = makeClient({ id: c.id });
-        scope(() => {
-          void drain(next, c2.o, { owner: OWNER });
-        });
+        scope(
+          () => {
+            void drain(next, c2.o, { owner: OWNER });
+          },
+          { detached: true },
+        );
         await settle();
         expect(entriesOf(c2.o).map((e) => e.key)).toEqual(saved.map((e) => e.key));
         expect(entriesOf(c2.o).map((e) => e.state)).toEqual(["queued", "queued", "queued"]);

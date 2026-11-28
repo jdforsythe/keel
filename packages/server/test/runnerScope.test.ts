@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { keepRunning } from "../src/internal/keepRunning.ts";
 import { noteRequestSecrets } from "../src/internal/noteRequestSecrets.ts";
 import { requestSecrets } from "../src/internal/requestSecrets.ts";
+import { thrownText } from "../src/internal/thrownText.ts";
 
 const made = <T>(r: { ok: true; value: T } | { ok: false }): T => {
   if (!r.ok) throw new Error("parse failed");
@@ -34,7 +35,7 @@ describe("a runner's scrub scope", () => {
         runner,
         ctx,
         stop.signal,
-        (message, _frames, secrets) => void seen.push({ message, secrets }),
+        (thrown, _frames, secrets) => void seen.push({ message: thrownText(thrown), secrets }),
         () => [],
       ),
     );

@@ -5,18 +5,21 @@ const bindingNames = (name: ts.BindingName, out: Set<string>): void => {
   else for (const el of name.elements) if (ts.isBindingElement(el)) bindingNames(el.name, out);
 };
 
-const isFunctionLike = (n: ts.Node): n is ts.FunctionLikeDeclaration =>
+/** `n` when it is a function, method, constructor or accessor declaration or a function or arrow expression. */
+const functionLike = (n: ts.Node): ts.FunctionLikeDeclaration | undefined =>
   ts.isFunctionDeclaration(n) ||
   ts.isFunctionExpression(n) ||
   ts.isArrowFunction(n) ||
   ts.isMethodDeclaration(n) ||
   ts.isConstructorDeclaration(n) ||
   ts.isGetAccessorDeclaration(n) ||
-  ts.isSetAccessorDeclaration(n);
+  ts.isSetAccessorDeclaration(n)
+    ? n
+    : undefined;
 
 /** The `var` declarations of a function body, not those of the functions and classes inside it. */
 const hoisted = (n: ts.Node, out: Set<string>): void => {
-  if (isFunctionLike(n) || ts.isClassLike(n)) return;
+  if (functionLike(n) !== undefined || ts.isClassLike(n)) return;
   if (ts.isVariableDeclarationList(n) && (n.flags & ts.NodeFlags.BlockScoped) === 0)
     for (const d of n.declarations) bindingNames(d.name, out);
   ts.forEachChild(n, (k) => hoisted(k, out));
@@ -37,10 +40,11 @@ const statementNames = (statements: readonly ts.Statement[], out: Set<string>): 
 /** The names a scope node declares for its own body: parameters, hoisted `var`s, block-level declarations, loop and catch variables. */
 const declared = (n: ts.Node): Set<string> => {
   const out = new Set<string>();
-  if (isFunctionLike(n)) {
-    for (const p of n.parameters) bindingNames(p.name, out);
-    if (ts.isFunctionExpression(n) && n.name !== undefined) out.add(n.name.text);
-    if (n.body !== undefined) hoisted(n.body, out);
+  const fn = functionLike(n);
+  if (fn !== undefined) {
+    for (const p of fn.parameters) bindingNames(p.name, out);
+    if (ts.isFunctionExpression(fn) && fn.name !== undefined) out.add(fn.name.text);
+    if (fn.body !== undefined) hoisted(fn.body, out);
   } else if (ts.isClassExpression(n) && n.name !== undefined) out.add(n.name.text);
   else if (ts.isBlock(n) || ts.isModuleBlock(n)) statementNames(n.statements, out);
   else if (ts.isCaseBlock(n)) for (const c of n.clauses) statementNames(c.statements, out);

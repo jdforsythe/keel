@@ -15,6 +15,10 @@
     "./internal": {
       "types": "./src/internal/index.ts",
       "default": "./src/internal/index.ts"
+    },
+    "./internal/refusal": {
+      "types": "./src/internal/refusal/index.ts",
+      "default": "./src/internal/refusal/index.ts"
     }
   },
   "publishConfig": {
@@ -30,12 +34,16 @@
       "./internal": {
         "types": "./dist/src/internal/index.d.ts",
         "default": "./dist/src/internal/index.js"
+      },
+      "./internal/refusal": {
+        "types": "./dist/src/internal/refusal/index.d.ts",
+        "default": "./dist/src/internal/refusal/index.js"
       }
     }
   },
   "files": ["dist", "docs"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test",
+    "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",

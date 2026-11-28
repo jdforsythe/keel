@@ -216,12 +216,12 @@ export const alive = (needle: string): boolean => {
 }
 `;
 
-/** `test/board.ts` of a module-`a` fixture project: the server store `a.board` the test hands to `state`, `until` and `log`, made in a scope (E1203) once. */
+/** `test/board.ts` of a module-`a` fixture project: the server store `a.board` the test hands to `state`, `until` and `log`, made in a detached scope (E1203; a test's root is `scope(fn, { detached: true })`, E1208, k.reactive) once. */
 export const SUPPORT_BOARD = `import { scope } from '@keel/reactive'
 import { boards } from '../modules/a/boards.ts'
 let made: ReturnType<typeof boards>['board'] | undefined
 export function board(): ReturnType<typeof boards>['board'] {
-  if (made === undefined) made = scope(() => undefined).run(() => boards().board)
+  if (made === undefined) made = scope(() => undefined, { detached: true }).run(() => boards().board)
   return made
 }
 `;

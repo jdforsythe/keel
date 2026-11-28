@@ -1,15 +1,14 @@
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
-import { attempt } from "@keel/schema";
-import { raise } from "../../unsafe/raise.ts";
-import { settleNow } from "../../unsafe/settleNow.ts";
+import { attempt, defect } from "@keel/schema";
 import type { DbStorage } from "../DbStorage.ts";
+import { DbFailed } from "../internal/DbFailed.schema.ts";
 import { LAYOUT } from "../internal/LAYOUT.ts";
 import { checkLayout } from "../internal/checkLayout.ts";
 import { checkText } from "../internal/checkText.ts";
-import { dbError } from "../internal/dbError.ts";
 import { distinctKeys } from "../internal/distinctKeys.ts";
-import { opFailed } from "../internal/opFailed.ts";
+import { driverFault } from "../internal/driverFault.ts";
+import { isDriverFailure } from "../internal/isDriverFailure.ts";
 
 const SELECT = "select key, value from keel_kv where key in (select value from json_each(?))";
 const UPSERT = "insert into keel_kv (key, value) values (?, ?) on conflict (key) do update set value = excluded.value";
@@ -22,33 +21,50 @@ const UPSERT = "insert into keel_kv (key, value) values (?, ?) on conflict (key)
  * Processes on one host may share the file.
  */
 export async function sqlite(url: URL): Promise<DbStorage> {
-  const opened = attempt(() => new DatabaseSync(fileURLToPath(url)));
+  const opened = attempt(
+    () => new DatabaseSync(fileURLToPath(url)),
+    (x) => {
+      return isDriverFailure(x)
+        ? DbFailed.make({ driver: "sqlite", op: "open", ...driverFault(x) }, "std.db: a storage call failed")
+        : undefined;
+    },
+  );
   if (!opened.ok)
-    return raise(
-      dbError(
-        "E2153",
-        "KEEL_DATABASE_URL: SQLite cannot open the file; check the file: URL and that its folder exists",
-      ),
-    );
-  const db = opened.value;
-  const setUp = settleNow(() => {
-    db.exec("pragma busy_timeout = 5000");
-    db.exec("pragma journal_mode = wal");
-    db.exec("pragma synchronous = full");
-    db.exec("pragma secure_delete = on");
-    tx(db, () => {
-      db.exec("create table if not exists keel_kv (key text primary key, value text not null)");
-      db.exec("create table if not exists keel_meta (name text primary key, value text not null)");
-      const row = db.prepare("select value from keel_meta where name = 'layout'").get();
-      if (checkLayout(row?.value))
-        db.prepare("insert into keel_meta (name, value) values ('layout', ?)").run(String(LAYOUT));
+    return defect("KEEL_DATABASE_URL: SQLite cannot open the file; check the file: URL and that its folder exists", {
+      code: "E2153",
+      cause: opened.error,
     });
-  });
-  if (setUp.threw) {
-    db.close();
-    const e = setUp.error;
-    if (e instanceof Error && "code" in e && (e.code === "E2152" || e.code === "E2153")) return raise(e);
-    return raise(dbError("E2153", "KEEL_DATABASE_URL: SQLite cannot open or set up the database"));
+  const db = opened.value;
+  let ready = false;
+  try {
+    const setUp = attempt(
+      () => {
+        db.exec("pragma busy_timeout = 5000");
+        db.exec("pragma journal_mode = wal");
+        db.exec("pragma synchronous = full");
+        db.exec("pragma secure_delete = on");
+        tx(db, () => {
+          db.exec("create table if not exists keel_kv (key text primary key, value text not null)");
+          db.exec("create table if not exists keel_meta (name text primary key, value text not null)");
+          const row = db.prepare("select value from keel_meta where name = 'layout'").get();
+          if (checkLayout(row?.value))
+            db.prepare("insert into keel_meta (name, value) values ('layout', ?)").run(String(LAYOUT));
+        });
+      },
+      (x) => {
+        return isDriverFailure(x)
+          ? DbFailed.make({ driver: "sqlite", op: "open", ...driverFault(x) }, "std.db: a storage call failed")
+          : undefined;
+      },
+    );
+    if (!setUp.ok)
+      return defect("KEEL_DATABASE_URL: SQLite cannot open or set up the database", {
+        code: "E2153",
+        cause: setUp.error,
+      });
+    ready = true;
+  } finally {
+    if (!ready) db.close();
   }
   const select = db.prepare(SELECT);
   const upsert = db.prepare(UPSERT);
@@ -58,11 +74,22 @@ export async function sqlite(url: URL): Promise<DbStorage> {
       if (typeof r.key === "string" && typeof r.value === "string") out.set(r.key, r.value);
     return out;
   };
-  const run = async <T>(op: string, texts: readonly (string | undefined)[], fn: () => T): Promise<T> => {
+  const run = async <T>(
+    op: DbFailed["data"]["op"],
+    texts: readonly (string | undefined)[],
+    fn: () => T,
+  ): Promise<T> => {
     checkText(texts);
-    if (!db.isOpen) return raise(new Error(`std.db sqlite: ${op} after close()`));
-    const r = settleNow(fn);
-    return r.threw ? raise(opFailed("sqlite", op, r.error)) : r.value;
+    if (!db.isOpen) return defect("std.db sqlite: a call after close()", { data: { op } });
+    const r = attempt(
+      () => ({ value: fn() }),
+      (x) => {
+        return isDriverFailure(x)
+          ? DbFailed.make({ driver: "sqlite", op: op, ...driverFault(x) }, "std.db: a storage call failed")
+          : undefined;
+      },
+    );
+    return r.ok ? r.value.value : defect("std.db: a storage call failed", { cause: r.error });
   };
   return {
     get: (key) => run("get", [key], () => values([key]).get(key) ?? null),
@@ -98,12 +125,13 @@ export async function sqlite(url: URL): Promise<DbStorage> {
 /** Runs `fn` in `BEGIN IMMEDIATE`; commits unless it throws or returns `false`. */
 function tx<T>(db: DatabaseSync, fn: () => T): T {
   db.exec("begin immediate");
-  const s = settleNow(() => {
+  let done = false;
+  try {
     const r = fn();
     db.exec(r === false ? "rollback" : "commit");
+    done = true;
     return r;
-  });
-  if (!s.threw) return s.value;
-  if (db.isTransaction) db.exec("rollback");
-  return raise(s.error);
+  } finally {
+    if (!done && db.isTransaction) db.exec("rollback");
+  }
 }

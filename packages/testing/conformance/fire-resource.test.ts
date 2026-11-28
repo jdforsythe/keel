@@ -72,9 +72,12 @@ describe("k.testing: fire resolves only after every resource it triggered has se
 const DoneStore = s.object({ done: s.string() });
 const made = (() => {
   let out: { done: ReturnType<typeof mk>["done"]; setDone: ReturnType<typeof mk>["setDone"] } | undefined;
-  scope(() => {
-    out = mk();
-  });
+  scope(
+    () => {
+      out = mk();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();

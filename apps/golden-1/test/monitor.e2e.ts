@@ -21,8 +21,10 @@ const here = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cli = join(here, "..", "..", "packages", "cli", "src", "bin.ts");
 const SKIP = new Set(["node_modules", "dist", ".keel", ".keel-dev", ".turbo", "reports", ".api.storage"]);
 
-// The api's board store, used as the clock of the wait for a tally: its handle is made in a scope of the file's own.
-const board = scope(() => undefined).run(() => store(Board, { lists: [], todos: [] }, { id: "api.board" }));
+// The api's board store, used as the clock of the wait for a tally: its handle is made in a detached root of the file's own.
+const board = scope(() => undefined, { detached: true }).run(() =>
+  store(Board, { lists: [], todos: [] }, { id: "api.board" }),
+);
 
 /** The field at `keys` of `value`, `undefined` where a step is not an object. */
 function field(value: unknown, ...keys: string[]): unknown {

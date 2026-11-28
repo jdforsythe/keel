@@ -13,9 +13,12 @@ test("Disposing the scope that called `subscribe` aborts its request, and `on` g
       const ctx = simCtx();
       const srv = scripted(ctx);
       const got: unknown[] = [];
-      const sc = scope(() => {
-        subscribe(ctx, ORIGIN, roomChannel, { room: "a" }, (e) => got.push(e));
-      });
+      const sc = scope(
+        () => {
+          subscribe(ctx, ORIGIN, roomChannel, { room: "a" }, (e) => got.push(e));
+        },
+        { detached: true },
+      );
       await waitFor(() => srv.requests.length === 1);
       srv.send({ kind: "reset" });
       for (let i = 1; i <= before; i++) srv.send({ kind: "saved", store: "chan.log", head: i });

@@ -8,6 +8,7 @@ import { OBSERVE_BANNER } from "../internal/OBSERVE_BANNER.ts";
 import { SERVER_ENV } from "../internal/SERVER_ENV.ts";
 import { UNRESOLVED_MARK } from "../internal/UNRESOLVED_MARK.ts";
 import { evaluatorAnswers } from "../internal/evaluatorAnswers.ts";
+import { censusPlugin } from "../internal/censusPlugin.ts";
 import { importMetaPlugin } from "../internal/importMetaPlugin.ts";
 import { observePlugin } from "../internal/observePlugin.ts";
 import type { TokensResult } from "./TokensResult.ts";
@@ -69,7 +70,7 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
       banner: { js: OBSERVE_BANNER },
       define: { "import.meta.env": JSON.stringify(SERVER_ENV), "import.meta": "__keelMeta" },
       supported: { "dynamic-import": false },
-      plugins: [observePlugin(), shippedTokensPlugin(root), importMetaPlugin()],
+      plugins: [observePlugin(), shippedTokensPlugin(root), censusPlugin(), importMetaPlugin()],
     });
     text = out.outputFiles[0]?.text ?? "";
   } catch (e) {

@@ -1,4 +1,5 @@
-const tallies = new WeakMap<
+import { heldMap } from "@keel/schema/internal";
+const tallies = heldMap<
   ReadonlySet<string>,
   { bytes: number; readonly counted: Set<string>; readonly sets: ReadonlySet<string>[] }
 >();

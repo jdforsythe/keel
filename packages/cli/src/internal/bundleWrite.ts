@@ -42,7 +42,8 @@ const whereOf = (r: OutRecord): string => {
 };
 const RUNGS = ["none", "monitored", "example", "probabilistic", "exhaustive", "proven"] as const;
 type Rung = (typeof RUNGS)[number];
-const isRung = (x: unknown): x is Rung => RUNGS.some((r) => r === x);
+/** The rung `x` names, or `undefined`. */
+const rungOf = (x: unknown): Rung | undefined => RUNGS.find((r) => r === x);
 
 const refuse = (code: string, message: string): Outcome => {
   const d = makeDiag(code, message, SEE);
@@ -97,7 +98,10 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
   const failedTests = failed === 0 && trailer?.ok === false ? 1 : failed;
 
   const rungs = new Map(
-    ledger.records.flatMap((r) => (r.kind === "ledger" && isRung(r.rung) ? [[r.item, r.rung]] : [])),
+    ledger.records.flatMap((r) => {
+      const rung = r.kind === "ledger" ? rungOf(r.rung) : undefined;
+      return rung === undefined ? [] : [[r.item, rung]];
+    }),
   );
   const topology = projectTopology(files);
   const topologySource = files.find((f) => f.path === "topology.ts")?.source ?? "";

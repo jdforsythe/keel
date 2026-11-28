@@ -162,7 +162,7 @@ describe("k.leave Snapshots: #k-state carries a request store only when an islan
 
   it("negative: a guard that creates `g` for an auth lookup, then an island page: `g` is absent", async () => {
     const auth = guard({ redirect: "ls.login" }, () => {
-      scope(() => store(Count, { n: 9 }, { id: "ls.g" }));
+      scope(() => store(Count, { n: 9 }, { id: "ls.g" }), { detached: true });
       return Promise.resolve(ok(null));
     });
     const levels = routesOf({

@@ -193,10 +193,13 @@ async function run(script: readonly Step[], refuseAt: readonly boolean[]) {
     (key) => held.o !== undefined && flowOf(configOf(held.o), ctx).owner === entryOf(key)?.owner,
     refuseAt,
   );
-  const sc = scope(() => {
-    held.o = outbox(`interleave${++n}.outbox`, Api);
-    if (held.o !== undefined) void drain(ctx, held.o, { owner: OWNER });
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(`interleave${++n}.outbox`, Api);
+      if (held.o !== undefined) void drain(ctx, held.o, { owner: OWNER });
+    },
+    { detached: true },
+  );
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
   await settle();
@@ -237,7 +240,7 @@ async function run(script: readonly Step[], refuseAt: readonly boolean[]) {
       }
     } else if (step.kind === "owner") {
       const owner = OWNERS[step.who] ?? OWNER;
-      drains.push(scope(() => void drain(ctx, o, { owner })));
+      drains.push(scope(() => void drain(ctx, o, { owner }), { detached: true }));
     } else if (step.kind === "throw") storage.throwNext();
     else if (step.kind === "online") ctx.net.setOnline(step.on);
     else if (step.kind === "write") await storage.pump(step.pick, step.how);

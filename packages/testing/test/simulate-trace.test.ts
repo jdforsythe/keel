@@ -24,11 +24,14 @@ function made(id: string): {
   readonly done: () => void;
 } {
   let out: { st: Store<{ n: number }>; set: (n: number) => void } | undefined;
-  const sc = scope(() => {
-    const st = store(s.object({ n: s.int() }), { n: 0 }, { id });
-    const t = transaction(st, `${id}.set`, s.object({ n: s.int() }), (_, p) => ({ n: p.n }));
-    out = { st, set: (n) => void tx(t, { n }) };
-  });
+  const sc = scope(
+    () => {
+      const st = store(s.object({ n: s.int() }), { n: 0 }, { id });
+      const t = transaction(st, `${id}.set`, s.object({ n: s.int() }), (_, p) => ({ n: p.n }));
+      out = { st, set: (n) => void tx(t, { n }) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("no store");
   return { ...out, done: () => sc.dispose() };
 }

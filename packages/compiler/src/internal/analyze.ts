@@ -10,15 +10,12 @@ import { coverage } from "./coverage.ts";
 import { patternIdents } from "./patternIdents.ts";
 import { patternNames } from "./patternNames.ts";
 
-const INTRINSICS: ReadonlySet<string> = new Set(["If", "For", "Match", "Case", "Boundary"]);
-const REACTIVE: ReadonlySet<string> = new Set(["signal", "computed", "resource"]);
-
 function isIntrinsic(name: string): name is IntrinsicKind {
-  return INTRINSICS.has(name);
+  return name === "If" || name === "For" || name === "Match" || name === "Case" || name === "Boundary";
 }
 
 function isReactiveKind(name: string): name is ReactiveDecl["kind"] {
-  return REACTIVE.has(name);
+  return name === "signal" || name === "computed" || name === "resource";
 }
 
 function langOf(path: string): "js" | "jsx" | "ts" | "tsx" {

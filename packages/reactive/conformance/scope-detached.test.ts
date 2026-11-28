@@ -8,9 +8,12 @@ import type { Scope } from "@keel/reactive";
 
 function mk() {
   let s: ReturnType<typeof signal<number>> | undefined;
-  scope(() => {
-    s = signal(0);
-  });
+  scope(
+    () => {
+      s = signal(0);
+    },
+    { detached: true },
+  );
   if (!s) throw new Error("unreachable");
   return s;
 }
@@ -31,32 +34,41 @@ function codeOf(e: unknown): unknown {
 describe("k.reactive: detached scope", () => {
   it("a detached scope created inside another scope has no parent", () => {
     let inner: Scope | undefined;
-    const outer = scope(() => {
-      inner = scope(() => {}, { detached: true });
-    });
+    const outer = scope(
+      () => {
+        inner = scope(() => {}, { detached: true });
+      },
+      { detached: true },
+    );
     expect(inner).toBeDefined();
     expect(inner?.parent).toBeUndefined();
     expect(outer.parent).toBeUndefined();
-    const plain = scope(() => {
-      inner = scope(() => {});
-    });
+    const plain = scope(
+      () => {
+        inner = scope(() => {});
+      },
+      { detached: true },
+    );
     expect(inner?.parent).toBe(plain);
   });
 
   it("a detached scope survives the enclosing scope's disposal with its effects still running", () => {
     const s = mk();
     let runs = 0;
-    const outer = scope(() => {
-      scope(
-        () => {
-          effect(() => {
-            s.get();
-            runs++;
-          });
-        },
-        { detached: true },
-      );
-    });
+    const outer = scope(
+      () => {
+        scope(
+          () => {
+            effect(() => {
+              s.get();
+              runs++;
+            });
+          },
+          { detached: true },
+        );
+      },
+      { detached: true },
+    );
     expect(runs).toBe(1);
     outer.dispose();
     s.set(1);
@@ -68,17 +80,20 @@ describe("k.reactive: detached scope", () => {
       fc.property(fc.integer({ min: 0, max: 20 }), (n) => {
         const s = mk();
         let runs = 0;
-        const outer = scope(() => {
-          scope(
-            () => {
-              effect(() => {
-                s.get();
-                runs++;
-              });
-            },
-            { detached: true },
-          );
-        });
+        const outer = scope(
+          () => {
+            scope(
+              () => {
+                effect(() => {
+                  s.get();
+                  runs++;
+                });
+              },
+              { detached: true },
+            );
+          },
+          { detached: true },
+        );
         outer.dispose();
         for (let i = 1; i <= n; i++) s.set(i);
         expect(runs).toBe(1 + n);
@@ -101,7 +116,7 @@ describe("k.reactive: detached scope", () => {
           { detached: true },
         );
       },
-      { onError: (e) => outerErrors.push(e) },
+      { onError: (e) => outerErrors.push(e), detached: true },
     );
     const thrown = errorOf(() => s.set(1));
     expect(thrown).toBeInstanceOf(Error);
@@ -123,7 +138,7 @@ describe("k.reactive: detached scope", () => {
           { detached: true, onError: (e) => own.push(e) },
         );
       },
-      { onError: (e) => outerErrors.push(e) },
+      { onError: (e) => outerErrors.push(e), detached: true },
     );
     s.set(1);
     expect(own).toHaveLength(1);
@@ -134,17 +149,20 @@ describe("k.reactive: detached scope", () => {
     const s = mk();
     let runs = 0;
     let inner: Scope | undefined;
-    const outer = scope(() => {
-      inner = scope(
-        () => {
-          effect(() => {
-            s.get();
-            runs++;
-          });
-        },
-        { detached: true },
-      );
-    });
+    const outer = scope(
+      () => {
+        inner = scope(
+          () => {
+            effect(() => {
+              s.get();
+              runs++;
+            });
+          },
+          { detached: true },
+        );
+      },
+      { detached: true },
+    );
     outer.dispose();
     s.set(1);
     expect(runs).toBe(2);
@@ -159,22 +177,25 @@ describe("k.reactive: detached scope", () => {
     const trigger = mk();
     let inner: Scope | undefined;
     let detachedRuns = 0;
-    scope(() => {
-      effect(() => {
-        trigger.get();
-        if (!inner) {
-          inner = scope(
-            () => {
-              effect(() => {
-                s.get();
-                detachedRuns++;
-              });
-            },
-            { detached: true },
-          );
-        }
-      });
-    });
+    scope(
+      () => {
+        effect(() => {
+          trigger.get();
+          if (!inner) {
+            inner = scope(
+              () => {
+                effect(() => {
+                  s.get();
+                  detachedRuns++;
+                });
+              },
+              { detached: true },
+            );
+          }
+        });
+      },
+      { detached: true },
+    );
     trigger.set(1);
     trigger.set(2);
     s.set(1);
@@ -186,18 +207,21 @@ describe("k.reactive: detached scope", () => {
     const s = mk();
     let outerRuns = 0;
     let detachedRuns = 0;
-    scope(() => {
-      effect(() => {
-        outerRuns++;
-        scope(
-          () => {
-            s.get();
-            detachedRuns++;
-          },
-          { detached: true },
-        );
-      });
-    });
+    scope(
+      () => {
+        effect(() => {
+          outerRuns++;
+          scope(
+            () => {
+              s.get();
+              detachedRuns++;
+            },
+            { detached: true },
+          );
+        });
+      },
+      { detached: true },
+    );
     s.set(1);
     s.set(2);
     expect(outerRuns).toBe(1);

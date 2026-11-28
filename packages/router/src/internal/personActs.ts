@@ -1,4 +1,5 @@
 import type { Ctx, FireEvent } from "@keel/ctx";
+import { heldMap, heldSet } from "@keel/schema/internal";
 
 /** The input a browser counts as user activation (k.opening Link-started); a `keydown` of Escape is none. */
 const INPUTS = ["pointerdown", "pointerup", "mousedown", "touchend", "keydown"] as const;
@@ -7,9 +8,9 @@ const INPUTS = ["pointerdown", "pointerup", "mousedown", "touchend", "keydown"] 
  * `linked`, whether it is link-started (a delivered return link was taken since the last act).
  */
 type Acts = { acted: boolean; linked: boolean };
-const states = new WeakMap<Ctx, Acts>();
+const states = heldMap<Ctx, Acts>();
 /** The ctxs whose window listeners are attached. */
-const watched = new WeakSet<Ctx>();
+const watched = heldSet<Ctx>();
 
 /** Whether `e` is a person's act: trusted (`isTrusted`), and not the Escape key. */
 const isAct = (e: Event): boolean =>

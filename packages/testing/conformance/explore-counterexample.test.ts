@@ -16,9 +16,12 @@ const build = () => {
   seq += 1;
   const id = `ce${seq}`;
   let out: ReturnType<typeof mk> | undefined;
-  scope(() => {
-    out = mk(id);
-  });
+  scope(
+    () => {
+      out = mk(id);
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 };

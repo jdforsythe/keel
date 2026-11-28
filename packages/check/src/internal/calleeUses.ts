@@ -1,0 +1,660 @@
+import ts from "typescript";
+import { DEFECT_CODE_MESSAGE } from "./DEFECT_CODE_MESSAGE.ts";
+import { DEFECT_DETAIL_MESSAGE } from "./DEFECT_DETAIL_MESSAGE.ts";
+import { DEFECT_TEXT_MESSAGE } from "./DEFECT_TEXT_MESSAGE.ts";
+import { DETACHED_MESSAGE } from "./DETACHED_MESSAGE.ts";
+import { KEEL_SYMBOL_MESSAGE } from "./KEEL_SYMBOL_MESSAGE.ts";
+import { NESTED_RESULT_MESSAGE } from "./NESTED_RESULT_MESSAGE.ts";
+import { SUPERVISE_MESSAGE } from "./SUPERVISE_MESSAGE.ts";
+import { THROW_MESSAGE } from "./THROW_MESSAGE.ts";
+import { bareExpression } from "./bareExpression.ts";
+import { catchMessage } from "./catchMessage.ts";
+import { expectFindings } from "./expectFindings.ts";
+import { holdsKeelResult } from "./holdsKeelResult.ts";
+
+/** A function the type pass follows by its symbol (k.unsafe One path, k.reactive Static). */
+type Callee =
+  | "reject"
+  | "catch"
+  | "then"
+  | "allSettled"
+  | "any"
+  | "defect"
+  | "attempt"
+  | "ok"
+  | "make"
+  | "causedBy"
+  | "throw"
+  | "supervise"
+  | "symbolFor"
+  | "ownSymbols"
+  | "ownKeys"
+  | "ownDescriptors"
+  | "scope"
+  | "signal"
+  | "computed"
+  | "effect"
+  | "resource"
+  | "store";
+
+/** The TypeScript lib members followed, by interface. */
+const LIB: ReadonlyMap<string, ReadonlyMap<string, Callee>> = new Map([
+  [
+    "PromiseConstructor",
+    new Map<string, Callee>([
+      ["reject", "reject"],
+      ["allSettled", "allSettled"],
+      ["any", "any"],
+    ]),
+  ],
+  [
+    "Promise",
+    new Map<string, Callee>([
+      ["catch", "catch"],
+      ["then", "then"],
+    ]),
+  ],
+  ["PromiseLike", new Map<string, Callee>([["then", "then"]])],
+  ["Generator", new Map<string, Callee>([["throw", "throw"]])],
+  ["AsyncGenerator", new Map<string, Callee>([["throw", "throw"]])],
+  ["Iterator", new Map<string, Callee>([["throw", "throw"]])],
+  ["SymbolConstructor", new Map<string, Callee>([["for", "symbolFor"]])],
+  [
+    "ObjectConstructor",
+    new Map<string, Callee>([
+      ["getOwnPropertySymbols", "ownSymbols"],
+      ["getOwnPropertyDescriptors", "ownDescriptors"],
+    ]),
+  ],
+  ["Reflect", new Map<string, Callee>([["ownKeys", "ownKeys"]])],
+]);
+
+/** The Keel exports followed, by package. */
+const KEEL: ReadonlyMap<string, ReadonlyMap<string, Callee>> = new Map([
+  [
+    "@keel/schema",
+    new Map<string, Callee>([
+      ["defect", "defect"],
+      ["attempt", "attempt"],
+      ["ok", "ok"],
+      ["make", "make"],
+      ["causedBy", "causedBy"],
+    ]),
+  ],
+  [
+    "@keel/reactive",
+    new Map<string, Callee>([
+      ["scope", "scope"],
+      ["signal", "signal"],
+      ["computed", "computed"],
+      ["effect", "effect"],
+      ["resource", "resource"],
+    ]),
+  ],
+  ["@keel/store", new Map<string, Callee>([["store", "store"]])],
+  ["@keel/ctx", new Map<string, Callee>([["supervise", "supervise"]])],
+]);
+
+const NAMES: ReadonlySet<string> = new Set([
+  ...[...LIB.values()].flatMap((m) => [...m.keys()]),
+  ...[...KEEL.values()].flatMap((m) => [...m.keys()]),
+]);
+const MAKERS: ReadonlySet<string> = new Set(["scope", "signal", "computed", "effect", "resource", "store"]);
+/** The code a callee's use as a value is (k.unsafe One path), for the callees `valueUse` does not name itself. */
+const VALUE_CODE: ReadonlyMap<string, readonly [string, string]> = new Map([
+  ["attempt", ["E1452", "k.expect"]],
+  ["ok", ["E1459", "k.attempt"]],
+  ["make", ["E1460", "k.expect"]],
+  ["causedBy", ["E1460", "k.expect"]],
+  ["supervise", ["E1461", "k.supervise"]],
+  ["symbolFor", ["E1766", "k.realm"]],
+  ["ownSymbols", ["E1766", "k.realm"]],
+  ["ownKeys", ["E1766", "k.realm"]],
+  ["ownDescriptors", ["E1766", "k.realm"]],
+]);
+/** The name a message gives a callee whose own name is no spelling of it. */
+const SPELLED: ReadonlyMap<string, string> = new Map([
+  ["symbolFor", "Symbol.for"],
+  ["ownSymbols", "Object.getOwnPropertySymbols"],
+  ["ownKeys", "Reflect.ownKeys"],
+  ["ownDescriptors", "Object.getOwnPropertyDescriptors"],
+]);
+/** The listings of own keys that yield symbol keys or their values (k.realm The keel. names). */
+const LISTINGS: ReadonlySet<Callee> = new Set(["ownSymbols", "ownKeys", "ownDescriptors"]);
+/** The names of the global object E1766 refuses to list, read as names whatever their type (k.realm The keel. names). */
+const GLOBAL_OBJECT: ReadonlySet<string> = new Set(["globalThis", "window", "self", "global"]);
+const KEEL_SYMBOL = KEEL_SYMBOL_MESSAGE;
+const IN_APP = SUPERVISE_MESSAGE;
+const NOT_MESSAGE = "error message is not a literal: pass values as data";
+const NESTED = NESTED_RESULT_MESSAGE;
+const CODE = /^E\d{4}$/;
+const NOT_LITERAL = DEFECT_CODE_MESSAGE;
+
+/** The value of a defect detail's `code` property (`{ code }` gives the name), else `undefined` (k.defects). */
+function detailCode(detail: ts.ObjectLiteralExpression): ts.Expression | undefined {
+  for (const p of detail.properties) {
+    const named =
+      p.name !== undefined && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && p.name.text === "code";
+    if (!named) continue;
+    return ts.isPropertyAssignment(p) ? p.initializer : p.name;
+  }
+  return undefined;
+}
+const UNREADABLE = "defect code check cannot read";
+const NOT_TEXT = DEFECT_TEXT_MESSAGE;
+const NOT_DETAIL = DEFECT_DETAIL_MESSAGE;
+const DETACHED = DETACHED_MESSAGE;
+
+/** One finding: its code, offset in the parsed text, message and spec section. */
+type Use = { readonly code: string; readonly at: number; readonly message: string; readonly see: string };
+
+/**
+ * How a reference to a followed function is run: `call`, the call that runs it; `args`, the arguments it gets, or
+ * `unread`, an arguments value that is no array literal; `holder`, the array literal holding `args`; `bound`, the
+ * `bind` name of a `.bind(...)`, `called` false when that bound function is not called right away.
+ */
+type Call = {
+  readonly call: ts.CallExpression;
+  readonly args?: readonly ts.Expression[];
+  readonly unread?: ts.Expression;
+  readonly holder?: ts.Expression;
+  readonly bound?: ts.Node;
+  readonly called: boolean;
+};
+
+/** `n` with the parentheses around it. */
+function outer(n: ts.Node): ts.Node {
+  let at = n;
+  while (ts.isParenthesizedExpression(at.parent)) at = at.parent;
+  return at;
+}
+
+/** The member name of `a.b` or `a['b']`, else `undefined`. */
+function memberName(m: ts.Node): string | undefined {
+  if (ts.isPropertyAccessExpression(m)) return m.name.text;
+  if (ts.isElementAccessExpression(m) && ts.isStringLiteralLike(m.argumentExpression)) return m.argumentExpression.text;
+  return undefined;
+}
+
+/** `n` when it is a function with a body of its own, else `undefined`. */
+function asFunction(n: ts.Node): ts.FunctionLikeDeclaration | undefined {
+  if (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n)) return n;
+  if (ts.isMethodDeclaration(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n)) return n;
+  return ts.isConstructorDeclaration(n) ? n : undefined;
+}
+
+/** Whether `opts` may make a detached scope: not an object literal, or a `detached` other than `false` (E1207). */
+function mayDetach(opts: ts.Expression): boolean {
+  const o = bareExpression(opts);
+  if (!ts.isObjectLiteralExpression(o)) return true;
+  for (const p of o.properties) {
+    if (ts.isSpreadAssignment(p)) return true;
+    if (p.name !== undefined && ts.isComputedPropertyName(p.name)) return true;
+    const key =
+      p.name === undefined ? undefined : ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : "";
+    if (key !== "detached") continue;
+    if (!ts.isPropertyAssignment(p) || p.initializer.kind !== ts.SyntaxKind.FalseKeyword) return true;
+  }
+  return false;
+}
+
+/**
+ * The type pass's callee findings in one file (k.unsafe One path): E1451 (`Promise.reject`), E1452 (`.catch()`, a
+ * `.then()` given a second argument, `Promise.allSettled`, `Promise.any`), E1455 (`defect`'s code argument) and,
+ * unless `kernel`, E1207 (`scope` that may detach), each callee found by its symbol: through an import alias, a
+ * namespace member, a literal computed member, a `const` alias every use of which runs it, `.call`, `.apply`,
+ * `.bind` and `Reflect.apply`. Any other use of one of these functions as a value is its code at that use. Also
+ * E1451 for a generator's or iterator's `throw`; for `attempt`, its `expect` (`expectFindings`: E1452, E1460); E1459
+ * for an `ok` argument that holds a keel `Result`; and, unless `kernel`, E1460 for a `make` or `causedBy` message that
+ * is no literal (k.expect Message); E1461 for `supervise` of `@keel/ctx` outside a `library` file, and in one for an
+ * `id` that is no literal; unless `kernel`, E1766 for `Symbol.for` of a string folding to `keel.…`, for
+ * `Object.getOwnPropertySymbols`, `Object.getOwnPropertyDescriptors` or `Reflect.ownKeys` of the global object (`isGlobal`),
+ * and for a spread of it or `Object.assign` given it as a source. A value use of `attempt`, `ok`, `make`,
+ * `causedBy`, `supervise` or those three is its code at the use, outside `kernel`. Also
+ * E1208 (`scope`) and E1203 (`signal`, `computed`, `effect`, `resource`, `store`) for a call that follows an `await`
+ * in the same function body, not inside a function given to a `run` call (k.reactive Static). `ownerOf` names the
+ * package a declaration's file belongs to.
+ */
+export function calleeUses(
+  sf: ts.SourceFile,
+  checker: ts.TypeChecker,
+  program: ts.Program,
+  ownerOf: (fileName: string) => string | null,
+  kernel: boolean,
+  library = false,
+): Use[] {
+  const out: Use[] = [];
+  const fromLib = (s: ts.Symbol | undefined): boolean =>
+    (s?.declarations ?? []).some((d) => program.isSourceFileDefaultLibrary(d.getSourceFile()));
+  const resolved = (s: ts.Symbol): ts.Symbol =>
+    (s.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(s) : s;
+
+  const calleeOf = (sym: ts.Symbol | undefined): Callee | undefined => {
+    if (sym === undefined) return undefined;
+    const s = resolved(sym);
+    const name = s.getName();
+    if (!NAMES.has(name)) return undefined;
+    for (const d of s.declarations ?? []) {
+      const file = d.getSourceFile();
+      if (program.isSourceFileDefaultLibrary(file)) {
+        const holder = ts.isInterfaceDeclaration(d.parent)
+          ? d.parent.name.text
+          : ts.isModuleBlock(d.parent) && ts.isIdentifier(d.parent.parent.name)
+            ? d.parent.parent.name.text
+            : undefined;
+        const found = holder === undefined ? undefined : LIB.get(holder)?.get(name);
+        if (found !== undefined) return found;
+        continue;
+      }
+      if (ts.isPropertySignature(d)) continue;
+      const owner = ownerOf(file.fileName);
+      const found = owner === null ? undefined : KEEL.get(owner)?.get(name);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  };
+
+  /** The callee `ref` names itself: an identifier bound to it, or a member whose property is it. */
+  const ownTarget = (ref: ts.Expression): Callee | undefined => {
+    if (ts.isIdentifier(ref)) {
+      const p = ref.parent;
+      const sym =
+        ts.isShorthandPropertyAssignment(p) && p.name === ref
+          ? checker.getShorthandAssignmentValueSymbol(p)
+          : checker.getSymbolAtLocation(ref);
+      return calleeOf(sym);
+    }
+    const name = memberName(ref);
+    if (name === undefined || !NAMES.has(name)) return undefined;
+    if (ts.isPropertyAccessExpression(ref)) return calleeOf(checker.getSymbolAtLocation(ref.name));
+    if (!ts.isElementAccessExpression(ref)) return undefined;
+    const holder = checker.getApparentType(checker.getTypeAtLocation(ref.expression));
+    return calleeOf(checker.getPropertyOfType(holder, name));
+  };
+
+  const isReflectApply = (e: ts.Expression): boolean => {
+    const c = bareExpression(e);
+    if (memberName(c) !== "apply" || !(ts.isPropertyAccessExpression(c) || ts.isElementAccessExpression(c)))
+      return false;
+    const o = bareExpression(c.expression);
+    return ts.isIdentifier(o) && o.text === "Reflect" && fromLib(checker.getSymbolAtLocation(o));
+  };
+
+  const spread = (call: ts.CallExpression, value: ts.Expression | undefined): Call => {
+    if (value === undefined) return { call, args: [], called: true };
+    const v = bareExpression(value);
+    return ts.isArrayLiteralExpression(v)
+      ? { call, args: v.elements, holder: v, called: true }
+      : { call, unread: value, called: true };
+  };
+
+  /** How `ref` is run, or `undefined` when it is used as a value. */
+  const callOf = (ref: ts.Expression): Call | undefined => {
+    const o = outer(ref);
+    const p = o.parent;
+    if (ts.isCallExpression(p) && p.expression === o) return { call: p, args: p.arguments, called: true };
+    if (ts.isCallExpression(p) && p.arguments[0] === o && isReflectApply(p.expression))
+      return spread(p, p.arguments[2]);
+    if (!(ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) || p.expression !== o) return undefined;
+    const name = memberName(p);
+    if (name !== "call" && name !== "apply" && name !== "bind") return undefined;
+    const m = outer(p);
+    const c = m.parent;
+    if (!ts.isCallExpression(c) || c.expression !== m) return undefined;
+    if (name === "call") return { call: c, args: c.arguments.slice(1), called: true };
+    if (name === "apply") return spread(c, c.arguments[1]);
+    const bound = ts.isPropertyAccessExpression(p) ? p.name : p.argumentExpression;
+    const b = outer(c);
+    const later = b.parent;
+    if (ts.isCallExpression(later) && later.expression === b)
+      return { call: later, args: [...c.arguments.slice(1), ...later.arguments], bound, called: true };
+    return { call: c, args: c.arguments.slice(1), bound, called: false };
+  };
+
+  /** Whether `e` names a function as a name does: an identifier, or a member of a namespace import. */
+  const nameLike = (e: ts.Expression): boolean => {
+    const b = bareExpression(e);
+    if (ts.isIdentifier(b)) return true;
+    if (!(ts.isPropertyAccessExpression(b) || ts.isElementAccessExpression(b))) return false;
+    const o = bareExpression(b.expression);
+    const sym = ts.isIdentifier(o) ? checker.getSymbolAtLocation(o) : undefined;
+    return sym !== undefined && (resolved(sym).flags & ts.SymbolFlags.Module) !== 0;
+  };
+
+  const refsOf = new Map<ts.Symbol, ts.Identifier[]>();
+  const references = (decl: ts.VariableDeclaration, name: ts.Identifier): readonly ts.Identifier[] => {
+    const sym = checker.getSymbolAtLocation(name);
+    if (sym === undefined) return [];
+    const held = refsOf.get(sym);
+    if (held !== undefined) return held;
+    const found: ts.Identifier[] = [];
+    const walk = (n: ts.Node): void => {
+      if (ts.isIdentifier(n) && n !== name && n.text === name.text) {
+        const p = n.parent;
+        const at =
+          ts.isShorthandPropertyAssignment(p) && p.name === n
+            ? checker.getShorthandAssignmentValueSymbol(p)
+            : checker.getSymbolAtLocation(n);
+        if (at === sym) found.push(n);
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(decl.getSourceFile());
+    refsOf.set(sym, found);
+    return found;
+  };
+
+  /** The `const` declaration `init` initializes, when it is a non-exported `const x = <name>`. */
+  const aliasDecl = (init: ts.Node): ts.VariableDeclaration | undefined => {
+    const o = outer(init);
+    const d = o.parent;
+    if (!ts.isVariableDeclaration(d) || d.initializer !== o || !ts.isIdentifier(d.name)) return undefined;
+    const list = d.parent;
+    if (!ts.isVariableDeclarationList(list) || (list.flags & ts.NodeFlags.Const) === 0) return undefined;
+    const st = list.parent;
+    if (ts.isVariableStatement(st) && (st.modifiers ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword))
+      return undefined;
+    return nameLike(d.initializer) ? d : undefined;
+  };
+
+  /** Whether `decl` is an alias: every use of the name it declares runs it, or aliases it again. */
+  const isAlias = (decl: ts.VariableDeclaration, depth: number): boolean => {
+    if (depth > 8 || !ts.isIdentifier(decl.name)) return false;
+    return references(decl, decl.name).every((r) => {
+      if (callOf(r)?.called === true) return true;
+      const next = aliasDecl(r);
+      return next !== undefined && isAlias(next, depth + 1);
+    });
+  };
+
+  /** The callee `id` reaches through `const` aliases. */
+  const aliasTarget = (id: ts.Identifier, depth: number): Callee | undefined => {
+    if (depth > 8) return undefined;
+    const sym = checker.getSymbolAtLocation(id);
+    const decl = sym?.valueDeclaration;
+    if (decl === undefined || !ts.isVariableDeclaration(decl) || decl.initializer === undefined) return undefined;
+    if (aliasDecl(decl.initializer) !== decl || !isAlias(decl, 0)) return undefined;
+    const init = bareExpression(decl.initializer);
+    return ownTarget(init) ?? (ts.isIdentifier(init) ? aliasTarget(init, depth + 1) : undefined);
+  };
+
+  const awaitsIn = new Map<ts.Node, readonly (readonly [number, number])[]>();
+  /** The `await` points of `fn`'s own body, nested functions aside: `await` and `for await`. */
+  const awaitsOf = (fn: ts.FunctionLikeDeclaration): readonly (readonly [number, number])[] => {
+    const held = awaitsIn.get(fn);
+    if (held !== undefined) return held;
+    const found: (readonly [number, number])[] = [];
+    const walk = (n: ts.Node): void => {
+      if (asFunction(n) !== undefined) return;
+      if (ts.isAwaitExpression(n)) found.push([n.getStart(sf), n.getEnd()]);
+      if (ts.isForOfStatement(n) && n.awaitModifier !== undefined) found.push([n.getStart(sf), n.expression.getEnd()]);
+      ts.forEachChild(n, walk);
+    };
+    if (fn.body !== undefined) walk(fn.body);
+    awaitsIn.set(fn, found);
+    return found;
+  };
+
+  const givenToRun = (fn: ts.Node): boolean => {
+    const o = outer(fn);
+    const p = o.parent;
+    if (!ts.isCallExpression(p) || !p.arguments.some((a) => a === o)) return false;
+    const c = bareExpression(p.expression);
+    return (ts.isIdentifier(c) && c.text === "run") || memberName(c) === "run";
+  };
+
+  /** Whether `call` follows an `await` of its own function body, outside every function given to `run`. */
+  const afterAwait = (call: ts.CallExpression): boolean => {
+    let own: ts.FunctionLikeDeclaration | undefined;
+    for (let n: ts.Node = call.parent; !ts.isSourceFile(n); n = n.parent) {
+      const fn = asFunction(n);
+      if (fn === undefined) continue;
+      own ??= fn;
+      if (givenToRun(fn)) return false;
+    }
+    if (own === undefined) return false;
+    const start = call.getStart(sf);
+    const end = call.getEnd();
+    return awaitsOf(own).some(([a, b]) => b <= end && !(a <= start && b >= end));
+  };
+
+  /**
+   * Whether `call` lies in a `finally` block, outside a function nested in it (E1452); one in a `return` there is
+   * that `return`'s E1452 alone, a control exit from the `finally`.
+   */
+  const inFinally = (call: ts.Node): boolean => {
+    for (let n: ts.Node = call; !ts.isSourceFile(n.parent); n = n.parent) {
+      if (asFunction(n.parent) !== undefined || ts.isReturnStatement(n.parent)) return false;
+      if (ts.isTryStatement(n.parent) && n.parent.finallyBlock === n) return true;
+    }
+    return false;
+  };
+
+  /** Whether a declaration's file lies with this one: the project's own code, or the same package's (k.expect Readable). */
+  const sameHome = (f: ts.SourceFile): boolean =>
+    !f.fileName.includes("/node_modules/") || ownerOf(f.fileName) === ownerOf(sf.fileName);
+  const made = (call: ts.CallExpression): "make" | "causedBy" | undefined => {
+    const t = ownTarget(bareExpression(call.expression));
+    return t === "make" || t === "causedBy" ? t : undefined;
+  };
+
+  /** Whether `t`, or a member of a union or intersection it is, is the global object's type, `typeof globalThis`. */
+  const isGlobalType = (t: ts.Type): boolean => {
+    if (t.isUnionOrIntersection()) return t.types.some(isGlobalType);
+    const s = t.getSymbol();
+    return s !== undefined && s.getName() === "globalThis" && (s.flags & ts.SymbolFlags.ValueModule) !== 0;
+  };
+  /** `e` when it is a call or `new` of the global `Object`, else `undefined`. */
+  const ofObject = (e: ts.Expression): ts.CallExpression | ts.NewExpression | undefined => {
+    if (!ts.isCallExpression(e) && !ts.isNewExpression(e)) return undefined;
+    const c = bareExpression(e.expression);
+    return ts.isIdentifier(c) && c.text === "Object" && fromLib(checker.getSymbolAtLocation(c)) ? e : undefined;
+  };
+  /**
+   * Whether `e` is the global object (k.realm The keel. names): one of its names, an expression the type pass types as
+   * `typeof globalThis` (`Window & typeof globalThis` among them), or `Object(e)` or `new Object(e)` of one.
+   */
+  const isGlobal = (e: ts.Expression, depth: number): boolean => {
+    const b = bareExpression(e);
+    if (ts.isIdentifier(b) && GLOBAL_OBJECT.has(b.text)) return true;
+    const made = ofObject(b);
+    if (made !== undefined) {
+      const inner = made.arguments?.[0];
+      return depth < 8 && inner !== undefined && !ts.isSpreadElement(inner) && isGlobal(inner, depth + 1);
+    }
+    return isGlobalType(checker.getTypeAtLocation(b));
+  };
+  /** Whether `call` is `Object.assign`, the lib's, by its symbol. */
+  const isAssign = (call: ts.CallExpression): boolean => {
+    const c = bareExpression(call.expression);
+    if (memberName(c) !== "assign" || !(ts.isPropertyAccessExpression(c) || ts.isElementAccessExpression(c)))
+      return false;
+    const sym = ts.isPropertyAccessExpression(c)
+      ? checker.getSymbolAtLocation(c.name)
+      : checker.getPropertyOfType(checker.getTypeAtLocation(c.expression), "assign");
+    return (sym?.declarations ?? []).some(
+      (d) =>
+        program.isSourceFileDefaultLibrary(d.getSourceFile()) &&
+        ts.isInterfaceDeclaration(d.parent) &&
+        d.parent.name.text === "ObjectConstructor",
+    );
+  };
+
+  /** The string `e` folds to: a literal, a template without substitution, a `const` bound to one, `+` of those. */
+  const folded = (e: ts.Expression, depth: number): string | undefined => {
+    if (depth > 8) return undefined;
+    const b = bareExpression(e);
+    if (ts.isStringLiteral(b) || ts.isNoSubstitutionTemplateLiteral(b)) return b.text;
+    if (ts.isBinaryExpression(b) && b.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      const l = folded(b.left, depth + 1);
+      const r = folded(b.right, depth + 1);
+      return l === undefined || r === undefined ? undefined : l + r;
+    }
+    if (!ts.isIdentifier(b)) return undefined;
+    const d = checker.getSymbolAtLocation(b)?.valueDeclaration;
+    if (d === undefined || !ts.isVariableDeclaration(d) || d.initializer === undefined) return undefined;
+    const list = d.parent;
+    if (!ts.isVariableDeclarationList(list) || (list.flags & ts.NodeFlags.Const) === 0) return undefined;
+    return folded(d.initializer, depth + 1);
+  };
+
+  const add = (code: string, at: ts.Node, message: string, see: string): void =>
+    void out.push({ code, at: at.getStart(sf), message, see });
+
+  const nameAt = (ref: ts.Expression): ts.Node =>
+    ts.isPropertyAccessExpression(ref) ? ref.name : ts.isElementAccessExpression(ref) ? ref.argumentExpression : ref;
+
+  const valueUse = (target: Callee, ref: ts.Expression): void => {
+    const message = `${SPELLED.get(target) ?? target} used other than as a call; check cannot follow it`;
+    const coded = VALUE_CODE.get(target);
+    if (coded !== undefined) {
+      if (!kernel) add(coded[0], ref, message, coded[1]);
+      return;
+    }
+    if (target === "reject" || target === "throw") add("E1451", ref, message, "k.errors");
+    else if (target === "defect") add("E1455", ref, message, "k.errors");
+    else if (target === "scope") {
+      if (!kernel) add("E1207", ref, message, "k.reactive");
+    } else if (!MAKERS.has(target)) add("E1452", ref, message, "k.errors");
+  };
+
+  const judgeCall = (target: Callee, ref: ts.Expression, use: Call): void => {
+    const args = use.args ?? [];
+    const spreadBefore = args.slice(0, 2).find((a) => ts.isSpreadElement(a));
+    if (target === "reject") add("E1451", nameAt(ref), THROW_MESSAGE, "k.errors");
+    else if (target === "throw") add("E1451", ref, THROW_MESSAGE, "k.errors");
+    else if (target === "supervise") {
+      const id = args[1];
+      if (!library) add("E1461", ref, IN_APP, "k.supervise");
+      else if (id !== undefined && !ts.isStringLiteral(id) && !ts.isNoSubstitutionTemplateLiteral(id))
+        add("E1461", id, "supervise id is not a literal", "k.supervise");
+    } else if (target === "symbolFor") {
+      const key = args[0];
+      if (!kernel && key !== undefined && !ts.isSpreadElement(key) && folded(key, 0)?.startsWith("keel.") === true)
+        add("E1766", use.call, KEEL_SYMBOL, "k.realm");
+    } else if (LISTINGS.has(target)) {
+      const held = args[0];
+      if (!kernel && held !== undefined && !ts.isSpreadElement(held) && isGlobal(held, 0))
+        add("E1766", use.call, KEEL_SYMBOL, "k.realm");
+    } else if (target === "attempt") {
+      const expect = args[1];
+      if (expect !== undefined && !ts.isSpreadElement(expect) && spreadBefore === undefined)
+        for (const u of expectFindings(expect, checker, sameHome, made)) add(u.code, u.at, u.message, "k.expect");
+    } else if (target === "ok") {
+      const value = args[0];
+      if (value !== undefined && !ts.isSpreadElement(value))
+        if (holdsKeelResult(checker.getTypeAtLocation(value), checker, ownerOf))
+          add("E1459", value, NESTED, "k.attempt");
+    } else if (target === "make" || target === "causedBy") {
+      const message = args[target === "make" ? 1 : 2];
+      const literal =
+        message === undefined ||
+        ts.isSpreadElement(message) ||
+        ts.isStringLiteral(message) ||
+        ts.isNoSubstitutionTemplateLiteral(message);
+      if (!kernel && !literal && !args.slice(0, 2).some((a) => ts.isSpreadElement(a)))
+        add("E1460", message, NOT_MESSAGE, "k.expect");
+    } else if (target === "catch" || target === "allSettled" || target === "any")
+      add("E1452", nameAt(ref), catchMessage(target), "k.errors");
+    else if (target === "then") {
+      if (use.unread !== undefined) add("E1452", ref, catchMessage("value:then"), "k.errors");
+      else if (args.filter((a) => !ts.isOmittedExpression(a)).length >= 2 || args.some((a) => ts.isSpreadElement(a)))
+        add("E1452", nameAt(ref), catchMessage("then"), "k.errors");
+    } else if (target === "defect") {
+      if (use.bound !== undefined) add("E1455", use.bound, UNREADABLE, "k.errors");
+      else if (use.unread !== undefined) add("E1455", use.unread, UNREADABLE, "k.errors");
+      else if (spreadBefore !== undefined) add("E1455", use.holder ?? spreadBefore, UNREADABLE, "k.errors");
+      else {
+        const [message, detail, extra] = args;
+        if (message !== undefined && !ts.isStringLiteral(message) && !ts.isNoSubstitutionTemplateLiteral(message))
+          add("E1455", message, NOT_TEXT, "k.errors");
+        if (detail !== undefined) {
+          const object = bareExpression(detail);
+          if (
+            !ts.isObjectLiteralExpression(object) ||
+            object.properties.some(
+              (p) => ts.isSpreadAssignment(p) || (p.name !== undefined && ts.isComputedPropertyName(p.name)),
+            )
+          )
+            add("E1455", detail, NOT_DETAIL, "k.errors");
+          else {
+            const code = detailCode(object);
+            if (code !== undefined && !(ts.isStringLiteral(code) && CODE.test(code.text)))
+              add("E1455", code, NOT_LITERAL, "k.errors");
+          }
+        }
+        if (extra !== undefined) add("E1455", extra, NOT_DETAIL, "k.errors");
+      }
+      if (inFinally(use.call)) add("E1452", ref, catchMessage("defect-finally"), "k.errors");
+    } else if (target === "scope" && !kernel) {
+      const opts = args[1];
+      if (use.unread !== undefined) add("E1207", use.unread, DETACHED, "k.reactive");
+      else if (spreadBefore !== undefined) add("E1207", use.holder ?? spreadBefore, DETACHED, "k.reactive");
+      else if (opts !== undefined && mayDetach(opts)) add("E1207", opts, DETACHED, "k.reactive");
+    }
+    if (MAKERS.has(target) && afterAwait(use.call))
+      add(
+        target === "scope" ? "E1208" : "E1203",
+        ref,
+        `${target} after await has no owner: take c = owner() before the await, then c.run(...)`,
+        "k.reactive",
+      );
+  };
+
+  const judgeRef = (ref: ts.Expression): void => {
+    const own = ownTarget(ref);
+    const target = own ?? (ts.isIdentifier(ref) ? aliasTarget(ref, 0) : undefined);
+    if (target === undefined) return;
+    const use = callOf(ref);
+    if (use === undefined || (!use.called && target !== "defect")) {
+      if (own === undefined) return;
+      const decl = aliasDecl(ref);
+      if (decl !== undefined && isAlias(decl, 0)) return;
+      valueUse(target, ref);
+      return;
+    }
+    judgeCall(target, ref, use);
+  };
+
+  /** Whether identifier `n` is a reference, not a name a declaration or member access gives. */
+  const isReference = (n: ts.Identifier): boolean => {
+    const p = n.parent;
+    if (ts.isPropertyAccessExpression(p)) return p.expression === n;
+    if (ts.isQualifiedName(p)) return false;
+    if (
+      (ts.isVariableDeclaration(p) ||
+        ts.isParameter(p) ||
+        ts.isFunctionDeclaration(p) ||
+        ts.isFunctionExpression(p) ||
+        ts.isClassDeclaration(p) ||
+        ts.isPropertyAssignment(p) ||
+        ts.isMethodDeclaration(p) ||
+        ts.isPropertyDeclaration(p) ||
+        ts.isBindingElement(p)) &&
+      p.name === n
+    )
+      return false;
+    return !(ts.isBindingElement(p) && p.propertyName === n);
+  };
+
+  /** E1766 for a copy that carries the global object's symbol keys: a spread of it, or `Object.assign` given it as a source. */
+  const copiesGlobal = (n: ts.Node): void => {
+    if (kernel) return;
+    if ((ts.isSpreadAssignment(n) || ts.isJsxSpreadAttribute(n)) && isGlobal(n.expression, 0))
+      add("E1766", n, KEEL_SYMBOL, "k.realm");
+    else if (ts.isCallExpression(n) && isAssign(n))
+      if (n.arguments.slice(1).some((a) => !ts.isSpreadElement(a) && isGlobal(a, 0)))
+        add("E1766", n, KEEL_SYMBOL, "k.realm");
+  };
+
+  const visit = (n: ts.Node): void => {
+    if (ts.isTypeNode(n) || ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) return;
+    copiesGlobal(n);
+    if (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) return;
+    if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) judgeRef(n);
+    else if (ts.isIdentifier(n) && isReference(n)) judgeRef(n);
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return out;
+}

@@ -40,13 +40,16 @@ test("a session file whose store state holds an undeclared key: what to-test wri
     fc.asyncProperty(marker, marker, async (k, v) => {
       const { session } = await play(1337, [{ nav: true }]);
       // A store of an open object, live as `to-test` sees it; the session file carries an undeclared key under it.
-      const dispose = scope(() => {
-        store(
-          s.object({ profile: s.object({ name: s.string() }) }),
-          { profile: { name: "n" } },
-          { id: "leak.profile" },
-        );
-      }).dispose;
+      const dispose = scope(
+        () => {
+          store(
+            s.object({ profile: s.object({ name: s.string() }) }),
+            { profile: { name: "n" } },
+            { id: "leak.profile" },
+          );
+        },
+        { detached: true },
+      ).dispose;
       try {
         const filed: Session = {
           ...session,

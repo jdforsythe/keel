@@ -1,5 +1,7 @@
 import type { KeelError, Result } from "@keel/schema";
 import type { Write } from "./Write.schema.ts";
+import { OwnerMismatch } from "./internal/OwnerMismatch.schema.ts";
+import { Signin } from "./internal/Signin.schema.ts";
 
 /**
  * The `{ key, base }` an action passes to `tx` when `write` was queued under `owner`, the owner its module gives the
@@ -15,6 +17,6 @@ export function writeFor(
 > {
   if (write.owner === owner) return { ok: true, value: { key: write.key, base: write.base } };
   return owner === ""
-    ? { ok: false, error: { code: "offline.signin", message: "signin", data: {} } }
-    : { ok: false, error: { code: "offline.owner", message: "owner", data: {} } };
+    ? { ok: false, error: Signin.make({}, "signin") }
+    : { ok: false, error: OwnerMismatch.make({}, "owner") };
 }

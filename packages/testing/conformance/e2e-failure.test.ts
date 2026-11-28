@@ -9,7 +9,7 @@ import { join } from "node:path";
 // then `screenshot:` per open tab and `trace:` per context, `<file>-<line>-<n>`), are asserted by the cases after the three clauses.
 // Seed: n/a (no generated input). Method: as e2e-serve.test.ts: fixtures/e2e/node-app.ts, `keel test --e2e` in compact format (the failure output is read as text), the report and `reports/e2e/` read per case.
 // The cases need Chromium (e2e-support.ts); none skips. The child run's `KEEL_TEST_TIME_SCALE` is 1 so `1.0s` below is the bound the test names.
-// ASSUMED: (1) the click handler rejects with `new Error('boom')` (app code may not `throw`, E1451), an unhandled rejection the browser reports as a `pageerror`; (2) `<file>` is the test file's name
+// ASSUMED: (1) the click handler rejects with an `Error` `boom`, an `async` function's `defect('boom')` (app code may not `throw` or call `Promise.reject`, E1451; k.defects), an unhandled rejection the browser reports as a `pageerror`; (2) `<file>` is the test file's name
 // without `.ts` (`until.e2e`) and `<line>` the T0001's line (the failing verb's), as the clause now says; (3) "the requests made during that `until`" is a request the test sends while the `until` waits, so it is started right
 // after the verb's call; (4) `E1703` names `color-contrast` in its message; (5) the `warning` page's click handler calls `console.warn('late')`.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

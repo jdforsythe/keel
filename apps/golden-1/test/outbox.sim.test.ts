@@ -50,7 +50,7 @@ describe("boardOutbox under generated schedules", () => {
           await apiCtx().storage.set(BOARD_KEY, JSON.stringify({ state: fixture, log: [], initial: fixture, head: 2 }));
           const app = await apiApp();
           ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
-          const page = scope(() => undefined);
+          const page = scope(() => undefined, { detached: true });
           page.run(() => void drain(ctx, boardOutbox, { owner: "" }));
           // The user marks Bread done on the board at head 2, then edits Milk on the board after that write (head 3).
           const toggled = settled(

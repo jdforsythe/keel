@@ -18,4 +18,6 @@ None. Retries, caching, getting and refreshing tokens, and interceptors are stdl
 
 ## Unsafe
 
-count: 0
+count: 2
+- `unsafe/fetcherOf.ts`: a module's object entry in the bound module table typed as the in-process app it is.
+- `unsafe/signerOf.ts`: the bound module table's `keel.user` function typed as the `x-keel-user` signer.

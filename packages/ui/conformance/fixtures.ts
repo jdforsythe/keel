@@ -29,9 +29,12 @@ export const home = ui.href("ui.home");
 /** Runs `fn` inside an ownership scope (k.reactive E1203); `dispose` frees the scope. */
 export const inScope = <T>(fn: () => T): { value: T; dispose: () => void } => {
   const slot: T[] = [];
-  const sc = scope(() => {
-    slot.push(fn());
-  });
+  const sc = scope(
+    () => {
+      slot.push(fn());
+    },
+    { detached: true },
+  );
   // reduce without a seed yields the single element typed T (throws if fn threw before pushing).
   return { value: slot.reduce((_, x) => x), dispose: () => sc.dispose() };
 };

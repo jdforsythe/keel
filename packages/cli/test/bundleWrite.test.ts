@@ -34,10 +34,14 @@ export const User = s.object({
   age: s.int(),
 });
 `;
+const MODULE = (id: string): string =>
+  `import { module } from "@keel/compiler";\nexport default module({ id: "${id}", deps: [], capabilities: [], public: { exports: [] } });\n`;
 const base = (): Record<string, string> => ({
   "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module" })}\n`,
   "topology.ts":
     "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['a'], adapter: 'node' },\n  app: { modules: ['c'], adapter: 'client' },\n})\n",
+  "modules/a/module.ts": MODULE("a"),
+  "modules/c/module.ts": MODULE("c"),
   "modules/a/User.schema.ts": USER,
 });
 

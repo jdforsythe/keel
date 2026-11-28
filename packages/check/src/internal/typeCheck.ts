@@ -6,18 +6,26 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import type { Annotated } from "./Annotated.ts";
 import { CACHE_FORMAT } from "./CACHE_FORMAT.ts";
 import type { FormatSite } from "./FormatSite.ts";
+import { NESTED_RESULT_MESSAGE } from "./NESTED_RESULT_MESSAGE.ts";
 import type { TypeEntry } from "./TypeEntry.ts";
 import type { Typed } from "./Typed.ts";
 import { annotateProps } from "./annotateProps.ts";
 import { applyEdits } from "./applyEdits.ts";
+import { calleeUses } from "./calleeUses.ts";
 import { dateReads } from "./dateReads.ts";
+import { errArgumentAt } from "./errArgumentAt.ts";
 import { formatLiterals } from "./formatLiterals.ts";
+import { handMadeErrors } from "./handMadeErrors.ts";
 import { importMetaDeclarations } from "./importMetaDeclarations.ts";
+import { inKernel } from "./inKernel.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { isCodePath } from "./isCodePath.ts";
 import { judgeFormat } from "./judgeFormat.ts";
+import { keelThrows } from "./keelThrows.ts";
 import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
+import { nestedResultTypes } from "./nestedResultTypes.ts";
+import { otherSpellings } from "./otherSpellings.ts";
 import { ownCode } from "./ownCode.ts";
 import { packageName } from "./packageName.ts";
 import { probeRecorder } from "./probeRecorder.ts";
@@ -30,6 +38,7 @@ import { tsCompilerOptions } from "./tsCompilerOptions.ts";
 import { typeCache } from "./typeCache.ts";
 import { uiElementReads } from "./uiElementReads.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
+import { unprovenPredicates } from "./unprovenPredicates.ts";
 
 /** Fallback global JSX typing when `@keel/runtime-dom/jsx-runtime` does not resolve from `root`. */
 const JSX_DTS = `declare namespace JSX {
@@ -43,6 +52,8 @@ const DECLARATION = /\.d\.[cm]?ts$/;
 /** Kernel and stdlib code and generated output, at the root: E1576's files are the others. */
 const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
 
+/** A workspace package's own folder: kernel and stdlib code, where `supervise` is a library's call (E1461). */
+const PACKAGE = /(?:^|\/)packages\/[^/]+\//;
 const JSX_SOURCE = "@keel/runtime-dom";
 /**
  * Parsed files (app files, node_modules, workspace packages, TS libs) by compiler options, then path: one is reused
@@ -132,6 +143,7 @@ function resolve(entry: TypeEntry, code: readonly SourceFile[], scope: ReadonlyS
     schemeSelects: entry.schemeSelects,
     themeSelects: entry.themeSelects,
     boxes: entry.boxes,
+    keelThrows: entry.keelThrows,
   };
 }
 
@@ -151,8 +163,9 @@ function remember(key: string, entry: TypeEntry): void {
  * added when `@types/node` resolves from `root`, and `@keel/compiler/client` (k.bundle Types) likewise. Errors that
  * encode a Keel rule are reported under that code (`mapTsDiagnostic`); the rest are E1751. Mapped codes the compiler
  * already reported in the same file are dropped (`skip`). Also finds discarded `Result` expression statements (E1453),
- * the `formatLiteral` calls (E1108), the date receivers E1758 reads and the JSX children that render nothing (E1406),
- * which need types. The project's declaration files are in the program too, and its type reference directives are
+ * the `formatLiteral` calls (E1108), the date receivers E1758 reads, the JSX children that render nothing (E1406),
+ * the callees E1451, E1452, E1455, E1207, E1208 and E1203 find by symbol (`calleeUses`) and the type predicates no
+ * check proves (E1762), which need types. The project's declaration files are in the program too, and its type reference directives are
  * not (`unreferenced`): a declaration of the global `ImportMeta` or `ImportMetaEnv` outside TypeScript's lib,
  * `@types/node` and `@keel/compiler/client` is E1016 (`importMetaDeclarations`).
  *
@@ -174,7 +187,14 @@ export function typeCheck(
   const code = files.filter((f) => isCodePath(f.path));
   const decls = files.filter((f) => DECLARATION.test(f.path) && !LIBRARY.test(f.path));
   if (code.length === 0 && decls.length === 0)
-    return { diagnostics: [], dates: new Map(), schemeSelects: new Map(), themeSelects: new Map(), boxes: new Map() };
+    return {
+      diagnostics: [],
+      dates: new Map(),
+      schemeSelects: new Map(),
+      themeSelects: new Map(),
+      boxes: new Map(),
+      keelThrows: new Map(),
+    };
   const base = norm(path.resolve(root));
   const library = code.filter((f) => isLibrary(f.path)).map((f) => f.path);
   const key = keyOf([...code, ...decls], base, skip, library, packages);
@@ -286,13 +306,35 @@ function pass(
   const schemeSelects = new Map<string, ReadonlySet<number>>();
   const themeSelects = new Map<string, ReadonlySet<number>>();
   const boxes = new Map<string, ReadonlySet<number>>();
+  const throws = new Map<string, ReadonlySet<number>>();
+  const HAND_MADE = "KeelError written by hand: declare it with s.error and pass X.make(data)";
+  const E1458 = "err takes a KeelError: declare it with s.error(code, data) and pass X.make(data)";
   for (const [fileName, file] of byName) {
     const sf = program.getSourceFile(fileName);
     if (sf === undefined) continue;
     const own = skip.get(file.path) ?? new Set<string>();
     const view = views.get(fileName) ?? { text: file.source, original: (p: number) => p };
     const syntactic = own.has("E1000") ? [] : program.getSyntacticDiagnostics(sf);
+    const refused = new Set<number>();
+    const app = isAppPath(file.path) || library.has(file.path);
     for (const d of [...syntactic, ...program.getSemanticDiagnostics(sf)]) {
+      const arg =
+        app && d.category === ts.DiagnosticCategory.Error && d.start !== undefined
+          ? errArgumentAt(sf, d.start, checker, ownerOf)
+          : undefined;
+      const argAt = arg === undefined ? -1 : view.original(arg.getStart(sf));
+      if (arg !== undefined && argAt >= 0) {
+        refused.add(arg.getStart(sf));
+        out.push({
+          kind: "diag",
+          code: "E1458",
+          path: file.path,
+          ...lineCol(file.source, argAt),
+          message: E1458,
+          see: "k.attempt",
+        });
+        continue;
+      }
       const mapped = mapTsDiagnostic(d, sf, file, view.original, checker);
       if (mapped === null || (mapped.code !== "E1751" && own.has(mapped.code))) continue;
       out.push(mapped);
@@ -316,7 +358,7 @@ function pass(
       });
     };
     for (const at of resultDiscards(sf, checker))
-      push("E1453", at, "Result discarded as a statement; narrow on r.ok", "k.errors");
+      push("E1453", at, "Result discarded: narrow on r.ok and handle r.error", "k.errors");
     for (const f of formatLiterals(sf, checker, ownerOf))
       out.push({
         kind: "format",
@@ -329,15 +371,34 @@ function pass(
         pkg: f.pkg,
       });
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
+    if (app) throws.set(file.path, new Set(keelThrows(sf, checker, ownerOf).map(view.original)));
     if (file.path.endsWith("x")) {
       const reads = (name: string) => new Set(uiElementReads(sf, checker, name).map(view.original));
       schemeSelects.set(file.path, reads("SchemeSelect"));
       themeSelects.set(file.path, reads("ThemeSelect"));
       boxes.set(file.path, reads("Box"));
     }
-    if (file.path.endsWith("x") && (isAppPath(file.path) || library.has(file.path)))
+    if (file.path.endsWith("x") && app)
       for (const t of textNodes(sf, checker))
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
+    if (app) {
+      for (const u of calleeUses(
+        sf,
+        checker,
+        program,
+        ownerOf,
+        inKernel(file.path),
+        library.has(file.path) || PACKAGE.test(file.path),
+      ))
+        push(u.code, u.at, u.message, u.see);
+      for (const p of unprovenPredicates(sf, checker)) push("E1762", p.at, p.message, "k.identity");
+      for (const u of otherSpellings(sf, checker, program)) push(u.code, u.at.getStart(sf), u.message, "k.unsafe");
+      for (const t of nestedResultTypes(sf, checker, ownerOf))
+        push("E1459", t.getStart(sf), NESTED_RESULT_MESSAGE, "k.attempt");
+      if (!inKernel(file.path))
+        for (const o of handMadeErrors(sf, checker, ownerOf))
+          if (!refused.has(o.getStart(sf))) push("E1458", o.getStart(sf), HAND_MADE, "k.expect");
+    }
   }
   const held = new Map(
     [...byName, ...declNames].map(([name, f]) => [
@@ -349,7 +410,7 @@ function pass(
   out.push(...importMetaDeclarations(program, host, base, held, { libDir, nodeTypes, clientTypes }));
   const probes = rec.probes();
   return {
-    entry: { key, probes: probes ?? [], items: out, dates, schemeSelects, themeSelects, boxes },
+    entry: { key, probes: probes ?? [], items: out, dates, schemeSelects, themeSelects, boxes, keelThrows: throws },
     whole: probes !== undefined,
   };
 }

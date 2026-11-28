@@ -1,8 +1,7 @@
 import ts from "typescript";
+import { bareExpression } from "./bareExpression.ts";
 
 const FLOW: ReadonlySet<string> = new Set(["If", "For", "Match", "Case", "Boundary"]);
-
-const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
 
 /** The first parameter's name of the innermost capitalized function around `n` (a component), if it is a name. */
 function propsOf(n: ts.Node): string | undefined {
@@ -19,7 +18,7 @@ function propsOf(n: ts.Node): string | undefined {
 /** A slot call as the compiler places it (k.place Prop calls): `children()`, `x.children()`, `slots.x()`, `props.x()`. */
 function isSlotCall(e: ts.Expression, props: string | undefined): boolean {
   if (ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
-    return isSlotCall(bare(e.left), props);
+    return isSlotCall(bareExpression(e.left), props);
   if (!ts.isCallExpression(e)) return false;
   const c = e.expression;
   if (ts.isIdentifier(c)) return c.text === "children";
@@ -65,7 +64,7 @@ export function textNodes(sf: ts.SourceFile, checker: ts.TypeChecker): { at: num
       (ts.isJsxElement(n.parent) || ts.isJsxFragment(n.parent))
     ) {
       const tag = ts.isJsxElement(n.parent) ? n.parent.openingElement.tagName.getText(sf) : "";
-      const e = bare(n.expression);
+      const e = bareExpression(n.expression);
       const skip =
         FLOW.has(tag) ||
         ts.isStringLiteralLike(e) ||

@@ -4,7 +4,7 @@ import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { contract } from "../src/contract/contract.ts";
-import { isHref } from "../src/internal/isHref.ts";
+import { isHref } from "../unsafe/isHref.ts";
 
 const c = contract("ap", {
   "ap.open": { path: "/:a/:b", params: s.object({ a: s.string(), b: s.string() }) },

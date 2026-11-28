@@ -1,11 +1,9 @@
-import type { ObjectSchema } from "@keel/schema";
+import { type ObjectSchema, isObjectSchema, isSchema } from "@keel/schema";
 import type { EntryShape } from "./EntryShape.ts";
 import { codedError } from "./codedError.ts";
 import { compilePath } from "./compilePath.ts";
 import { fieldsOf } from "./fieldsOf.ts";
 import { isMethod } from "./isMethod.ts";
-import { isObjectSchema } from "./isObjectSchema.ts";
-import { isSchema } from "./isSchema.ts";
 import { ownValue } from "./ownValue.ts";
 import { refuseSecret } from "./refuseSecret.ts";
 
@@ -25,7 +23,8 @@ const localOf = (id: string, e: object): { readonly local?: true } => {
 };
 const objectSchema = (id: string, e: object, k: string): ObjectSchema<unknown> | undefined => {
   const v = ownValue(e, k);
-  if (v === undefined || isObjectSchema(v)) return v;
+  if (v === undefined) return undefined;
+  if (isObjectSchema(v)) return v;
   throw codedError("E1510", `${id}: "${k}" is no object schema`);
 };
 

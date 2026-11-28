@@ -3,6 +3,7 @@ import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { job } from "../src/job.ts";
+import { dataOf } from "./dataOf.ts";
 
 const fn = async () => ok(null);
 const input = s.object({});
@@ -25,8 +26,8 @@ test("anything else throws E2505 naming the option", () => {
         fc.double().filter((n) => !Number.isSafeInteger(n)),
       ),
       (n) => {
-        expect(() => job({ input, attempts: n }, fn)).toThrow(/E2505 job attempts/);
-        expect(() => job({ input, timeoutMs: n }, fn)).toThrow(/E2505 job timeoutMs/);
+        expect(dataOf(() => job({ input, attempts: n }, fn))).toEqual({ option: "attempts", value: String(n) });
+        expect(dataOf(() => job({ input, timeoutMs: n }, fn))).toEqual({ option: "timeoutMs", value: String(n) });
       },
     ),
     { seed: 1337 },

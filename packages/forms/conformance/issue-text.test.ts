@@ -26,9 +26,12 @@ type Seen = { rule: string; path: string; min?: number; max?: number; values?: r
 
 function run<T>(fn: (seen: Seen[], Schema: ReturnType<typeof mkSchema>) => T): T {
   const slot: { readonly v: T }[] = [];
-  const sc = scope(() => {
-    slot.push({ v: fn([], mkSchema()) });
-  });
+  const sc = scope(
+    () => {
+      slot.push({ v: fn([], mkSchema()) });
+    },
+    { detached: true },
+  );
   sc.dispose();
   const box = slot[0];
   if (box === undefined) throw new Error("fixture: scope produced nothing");

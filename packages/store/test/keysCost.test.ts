@@ -17,9 +17,12 @@ function make(keyLimit: number) {
     const add = transaction(c, "count.add", Add, (st, { by }) => ({ n: st.n + by }));
     return { c, add };
   };
-  const sc = scope(() => {
-    box.kit = build();
-  });
+  const sc = scope(
+    () => {
+      box.kit = build();
+    },
+    { detached: true },
+  );
   if (box.kit === undefined) throw new Error("scope body did not run");
   return { ...box.kit, dispose: sc.dispose };
 }

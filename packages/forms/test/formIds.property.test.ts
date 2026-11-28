@@ -30,10 +30,13 @@ afterEach(() => {
 function ids(schema: ObjectSchema<object>, id?: string): string[] {
   let out: string[] = [];
   scopes.push(
-    scope(() => {
-      const f = form(schema, id === undefined ? {} : { id });
-      out = Object.keys(schema.node.kind === "object" ? schema.node.fields : {}).map((k) => f.field(k).id);
-    }),
+    scope(
+      () => {
+        const f = form(schema, id === undefined ? {} : { id });
+        out = Object.keys(schema.node.kind === "object" ? schema.node.fields : {}).map((k) => f.field(k).id);
+      },
+      { detached: true },
+    ),
   );
   return out;
 }
@@ -77,12 +80,15 @@ it("duplicate forms in one render root get distinct ids, deterministically", () 
       const run = (): string[] => {
         const out: string[] = [];
         scopes.push(
-          scope(() => {
-            const schema = build(d);
-            for (const k of Object.keys(d)) {
-              out.push(form(schema).field(k).id, form(schema).field(k).id);
-            }
-          }),
+          scope(
+            () => {
+              const schema = build(d);
+              for (const k of Object.keys(d)) {
+                out.push(form(schema).field(k).id, form(schema).field(k).id);
+              }
+            },
+            { detached: true },
+          ),
         );
         return out;
       };

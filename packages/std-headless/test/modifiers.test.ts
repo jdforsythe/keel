@@ -9,7 +9,7 @@ import { fruit, page, simCtx } from "./support.ts";
 
 const text = (): Signal<string> => {
   const made: Signal<string>[] = [];
-  scope(() => void made.push(signal("")));
+  scope(() => void made.push(signal("")), { detached: true });
   const [s] = made;
   if (s === undefined) throw new Error("no signal");
   return s;

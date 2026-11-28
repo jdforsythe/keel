@@ -1,15 +1,15 @@
 import type { Ctx } from "@keel/ctx";
 import type { Contract } from "@keel/router/contract";
-import { attempt, err } from "@keel/schema";
+import { attempt } from "@keel/schema";
 import type { Client } from "./Client.ts";
 import type { ContractClient } from "./ContractClient.ts";
 import type { EndpointMap } from "./EndpointMap.ts";
 import type { ServiceOptions } from "./ServiceOptions.ts";
 import type { Target } from "./internal/Target.ts";
 import { call } from "./internal/call.ts";
+import { endpointOf } from "./internal/endpointOf.ts";
 import { events } from "./internal/events.ts";
 import { fail } from "./internal/fail.ts";
-import { isEndpoint } from "./internal/isEndpoint.ts";
 import { keelOrigin } from "./internal/keelOrigin.ts";
 import { moduleTarget } from "./internal/moduleTarget.ts";
 import { serverBound } from "./internal/serverBound.ts";
@@ -52,8 +52,7 @@ export function service(opts: ServiceOptions): unknown {
   const fallback = positive(opts.timeout ?? DEFAULT_TIMEOUT, "service");
   const limit = bytes(opts.maxBytes ?? DEFAULT_MAX_BYTES);
   const { base, contract } = opts;
-  if (base !== undefined && !attempt(() => new URL(base)).ok)
-    throw new Error(`service base is not an absolute URL: ${base}`);
+  if (base !== undefined && URL.parse(base) === null) throw new Error(`service base is not an absolute URL: ${base}`);
   const target = (ctx: Ctx): Target =>
     contract !== undefined
       ? moduleTarget(ctx, contract.module)
@@ -68,14 +67,17 @@ export function service(opts: ServiceOptions): unknown {
       ? Object.entries(contract.entries).map(([id, e]) => [id.slice(contract.module.length + 1), e])
       : Object.entries(opts.schema ?? {});
   const methods = Object.fromEntries(
-    named.flatMap(([name, e]) => {
-      if (!isEndpoint(e)) return [];
+    named.flatMap(([name, entry]) => {
+      const e = endpointOf(entry);
+      if (e === undefined) return [];
       const ms = e.timeout === undefined ? fallback : positive(e.timeout, name);
       const method = e.events
         ? (input: unknown, ctx: Ctx) => events(e, target(ctx), ms, limit, input, ctx)
         : async (input: unknown, ctx: Ctx) => {
-            const r = await attempt(() => call(e, target(ctx), ms, limit, input, ctx));
-            return r.ok ? r.value : err(fail.network());
+            return attempt(
+              () => call(e, target(ctx), ms, limit, input, ctx),
+              (x) => (x instanceof Error ? fail.network() : undefined),
+            );
           };
       return [[name, method]];
     }),

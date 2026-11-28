@@ -6,31 +6,33 @@ import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { EVENTS, editor, nextId } from "./fixtures.ts";
+import { EVENTS, editor, nextId, inRoot } from "./fixtures.ts";
 
 const Bump = s.object({ by: s.int({ min: 0, max: 3 }) });
 const sorter = () =>
-  chart(nextId("sorter"), {
-    data: s.object({ n: s.int({ min: 0, max: 3 }) }),
-    start: { n: 0 },
-    events: { sort: Bump, never: s.object({}) },
-    guards: { big: (_d, p) => p.by >= 2, nope: () => false },
-    actions: { take: (d, p) => ({ n: d.n + p.by }), zero: () => ({ n: 0 }) },
-    initial: "inbox",
-    states: {
-      inbox: {
-        on: {
-          sort: [
-            { to: "big", guard: "big", do: "take" },
-            { to: "small", do: "take" },
-          ],
-          never: { to: "small", guard: "nope", do: "zero" },
+  inRoot(() =>
+    chart(nextId("sorter"), {
+      data: s.object({ n: s.int({ min: 0, max: 3 }) }),
+      start: { n: 0 },
+      events: { sort: Bump, never: s.object({}) },
+      guards: { big: (_d, p) => p.by >= 2, nope: () => false },
+      actions: { take: (d, p) => ({ n: d.n + p.by }), zero: () => ({ n: 0 }) },
+      initial: "inbox",
+      states: {
+        inbox: {
+          on: {
+            sort: [
+              { to: "big", guard: "big", do: "take" },
+              { to: "small", do: "take" },
+            ],
+            never: { to: "small", guard: "nope", do: "zero" },
+          },
         },
+        big: { final: true },
+        small: { final: true },
       },
-      big: { final: true },
-      small: { final: true },
-    },
-  });
+    }),
+  );
 
 describe("std.statecharts: a transaction takes the first applicable target", () => {
   test("`tx` of an event moves to the first target whose guard holds and applies its `do`", async () => {

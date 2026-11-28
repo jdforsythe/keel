@@ -165,7 +165,13 @@ const writeRoutes = (root: string, text: string): void => {
   fs.writeFileSync(routesFileOf(root), text);
 };
 
-const BASE_FILES = { "src/Badge.tsx": BADGE, "tsconfig.json": TSCONFIG, "modules/m/Page.tsx": PAGE };
+const MODULE_TS = `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`;
+const BASE_FILES = {
+  "src/Badge.tsx": BADGE,
+  "tsconfig.json": TSCONFIG,
+  "modules/m/Page.tsx": PAGE,
+  "modules/m/module.ts": MODULE_TS,
+};
 const created: string[] = [];
 let proj = "";
 let genuine = "";

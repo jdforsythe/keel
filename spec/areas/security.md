@@ -9,4 +9,6 @@
 | std.tokens | opaque token mint and check, token forms, modes and extension points |
 | k.review | `keel review` command, findings, danger, novelty and loudness |
 | k.escapes | escape codes `keel review` reports, with danger and range codes |
+| k.identity | kernel-held identity of made values, proven type predicates, E1762, E1764 |
+| k.realm | one kernel copy per realm, the `keel.` symbol names, E1765, E1766 |
 | k.unsafe | `unsafe(reason, fn)`, reason checks E1754 and E1760, negative type tests |

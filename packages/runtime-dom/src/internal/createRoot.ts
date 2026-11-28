@@ -28,7 +28,7 @@ export function createRoot(
   let target = el;
   const types = new Map<string, (e: Event) => void>();
   const tap = (e: Event): void => {
-    if (!observed(ctx) || told.has(e)) return;
+    if (ctx === undefined || !observed(ctx) || told.has(e)) return;
     told.add(e);
     const id = idOf(e.target instanceof Node ? e.target : null);
     // Every password field rendered so far, and the target if it is one, stays secret for the rest of the ctx.

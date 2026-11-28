@@ -137,6 +137,11 @@ describe("one compile per project (backlog 0149)", () => {
   const ROOT_TOP = f("topology.ts", `export default { api: { modules: ["todos"], adapter: "node" } };`);
   const APP_TOP = f("apps/a/topology.ts", `export default { web: { modules: ["todos"], adapter: "client" } };`);
   const LOAD = (p: string) => f(`${p}modules/todos/load.server.ts`, "export const load = (): number => 1;\n");
+  const MANIFEST = (p: string) =>
+    f(
+      `${p}modules/todos/module.ts`,
+      "import { module } from '@keel/compiler'\nexport default module({ id: 'todos', deps: [], capabilities: [], public: { exports: [] } })\n",
+    );
   const VIEW = (p: string) =>
     f(
       `${p}modules/todos/view.ts`,
@@ -145,12 +150,12 @@ describe("one compile per project (backlog 0149)", () => {
   const topology = parseTopology(ROOT_TOP.source).topology;
 
   it("an app's own topology applies to its files; the root's does not", () => {
-    const all = [ROOT_TOP, APP_TOP, LOAD("apps/a/"), VIEW("apps/a/")];
+    const all = [ROOT_TOP, APP_TOP, MANIFEST("apps/a/"), LOAD("apps/a/"), VIEW("apps/a/")];
     const ds = check(all, { types: false, topology }).diagnostics;
     expect(ds.filter((d) => d.code === "E1004")).toEqual([]);
 
     const appTopology = parseTopology(APP_TOP.source).topology;
-    const alone = check([LOAD(""), VIEW("")], { types: false, topology: appTopology }).diagnostics;
+    const alone = check([MANIFEST(""), LOAD(""), VIEW("")], { types: false, topology: appTopology }).diagnostics;
     const prefixed = alone.map((d) => ({ ...d, path: d.path === "" ? "" : `apps/a/${d.path}` }));
     const inApp = ds.filter((d) => d.path.startsWith("apps/a/"));
     expect(inApp).toEqual(prefixed);

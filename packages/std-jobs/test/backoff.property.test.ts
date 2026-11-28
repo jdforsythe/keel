@@ -33,7 +33,7 @@ test("For generated attempts and clock steps, an always-failing job runs `attemp
       const jobs = queue({ "orders.work": work });
       const ac = new AbortController();
       const running = jobs.run(ctx, ac.signal);
-      void (await jobs.enqueue(ctx, "orders.work", {}));
+      expect((await jobs.enqueue(ctx, "orders.work", {})).ok).toBe(true);
       await settle();
       for (let t = 0; t < 140_000; t += step) {
         ctx.clock.advance(step);

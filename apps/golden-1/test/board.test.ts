@@ -213,9 +213,12 @@ describe("client loaders and actions (through the api deployable)", () => {
     expect(boardOutbox.get("entries").map((e) => [e.endpoint, e.state, e.base])).toEqual([["editTodo", "queued", 0]]);
     expect(sent).toEqual([]);
     ctx.net.setOnline(true);
-    const drained = scope(() => {
-      void drain(ctx, boardOutbox, { owner: "" });
-    });
+    const drained = scope(
+      () => {
+        void drain(ctx, boardOutbox, { owner: "" });
+      },
+      { detached: true },
+    );
     await settled();
     drained.dispose();
     expect(sent).toEqual(["POST /api/todos/t1"]);

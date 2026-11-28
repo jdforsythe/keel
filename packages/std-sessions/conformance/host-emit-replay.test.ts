@@ -23,31 +23,34 @@ const Emit = s.object({ at: s.number() });
 
 const built = (() => {
   const made: { picks: ReturnType<typeof store>; routes: RouteTable }[] = [];
-  scope(() => {
-    const picks = store(s.object({ ats: s.array(s.number()) }), { ats: [] }, { id: "picks" });
-    const pick = transaction(picks, "picks.add", Emit, (st, p) => ({ ats: [...st.ats, p.at] }));
-    const routes = manifest(chart, {
-      "chart.show": {
-        component: () =>
-          Box({
-            as: "main",
-            id: "chart.page",
-            children: () =>
-              Host({
-                id: "chart.host",
-                role: "img",
-                label: "Chart",
-                input: Input,
-                events: Emit,
-                value: { n: 1 },
-                onEvent: (e: { at: number }) => void tx(pick, e),
-                code: () => import("./fixtures/neverLoaded.ts").then((m) => m.neverLoaded),
-              }),
-          }),
-      },
-    });
-    made.push({ picks, routes });
-  });
+  scope(
+    () => {
+      const picks = store(s.object({ ats: s.array(s.number()) }), { ats: [] }, { id: "picks" });
+      const pick = transaction(picks, "picks.add", Emit, (st, p) => ({ ats: [...st.ats, p.at] }));
+      const routes = manifest(chart, {
+        "chart.show": {
+          component: () =>
+            Box({
+              as: "main",
+              id: "chart.page",
+              children: () =>
+                Host({
+                  id: "chart.host",
+                  role: "img",
+                  label: "Chart",
+                  input: Input,
+                  events: Emit,
+                  value: { n: 1 },
+                  onEvent: (e: { at: number }) => void tx(pick, e),
+                  code: () => import("./fixtures/neverLoaded.ts").then((m) => m.neverLoaded),
+                }),
+            }),
+        },
+      });
+      made.push({ picks, routes });
+    },
+    { detached: true },
+  );
   const [first] = made;
   if (first === undefined) throw new Error("fixture: build failed");
   return first;

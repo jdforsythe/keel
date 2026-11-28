@@ -1,5 +1,5 @@
-import { attempt } from "@keel/schema";
 import type { Engine } from "./Engine.ts";
+import { forgetting } from "./forgetting.server.ts";
 import { pgliteEngine } from "./pgliteEngine.server.ts";
 import { pgliteModules } from "./pgliteModules.server.ts";
 
@@ -11,13 +11,16 @@ let shared: Promise<Engine> | undefined;
  */
 export function simEngine(): Promise<Engine> {
   if (shared === undefined) {
-    shared = import("@electric-sql/pglite").then(async ({ PGlite }) =>
-      pgliteEngine(await PGlite.create(await pgliteModules())),
+    const made: Promise<Engine> = forgetting(
+      () =>
+        import("@electric-sql/pglite").then(async ({ PGlite }) =>
+          pgliteEngine(await PGlite.create(await pgliteModules())),
+        ),
+      () => {
+        if (shared === made) shared = undefined;
+      },
     );
-    const made = shared;
-    void attempt(() => made).then((r) => {
-      if (!r.ok) shared = undefined;
-    });
+    shared = made;
   }
   return shared;
 }

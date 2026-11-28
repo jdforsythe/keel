@@ -1,6 +1,7 @@
 import type { JsonValue, Schema } from "@keel/schema";
 import type { TypeNode } from "./internal/TypeNode.ts";
 import { fake } from "./internal/fake.ts";
+import { fieldsOf } from "./internal/fieldsOf.ts";
 import { mask } from "./internal/mask.ts";
 import { pathSegments } from "./internal/pathSegments.ts";
 import { seeded } from "./internal/seeded.ts";
@@ -17,9 +18,6 @@ type Options = {
   /** Called with each original value a path matched (a recorder masks them in later error messages). */
   readonly found?: (original: JsonValue) => void;
 };
-
-const isObject = (v: JsonValue): v is { readonly [k: string]: JsonValue } =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
 
 const matches = (pattern: readonly (string | null)[], at: readonly string[]): boolean =>
   pattern.length === at.length && pattern.every((p, i) => p === null || p === at[i]);
@@ -52,8 +50,11 @@ export function redact(schema: Schema<unknown, boolean>, value: JsonValue, optio
     }
     if (!typed) {
       if (Array.isArray(v)) return v.map((x, i) => walk(node, x, [...at, String(i)], false, marked));
-      if (isObject(v))
-        return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(node, x, [...at, k], false, marked)]));
+      const fields = fieldsOf(v);
+      if (fields !== undefined)
+        return Object.fromEntries(
+          Object.entries(fields).map(([k, x]) => [k, walk(node, x, [...at, k], false, marked)]),
+        );
       return hide(v, at);
     }
     switch (node.kind) {
@@ -70,27 +71,31 @@ export function redact(schema: Schema<unknown, boolean>, value: JsonValue, optio
         return walk(node.base, v, at, true, marked);
       case "array":
         return Array.isArray(v) ? v.map((x, i) => walk(node.item, x, [...at, String(i)], true, marked)) : v;
-      case "record":
-        return isObject(v)
+      case "record": {
+        const fields = fieldsOf(v);
+        return fields !== undefined
           ? Object.fromEntries(
-              Object.entries(v).map(([k, x], i) => {
+              Object.entries(fields).map(([k, x], i) => {
                 if (marked) options.found?.(k);
                 return [marked ? `x${i}` : k, walk(node.value, x, [...at, k], true, marked)];
               }),
             )
           : v;
-      case "object":
+      }
+      case "object": {
         // An undeclared key, and everything under it, is dropped: a recording holds what the schema encodes.
-        return isObject(v)
+        const fields = fieldsOf(v);
+        return fields !== undefined
           ? Object.fromEntries(
-              Object.entries(v).flatMap(([k, x]) => {
+              Object.entries(fields).flatMap(([k, x]) => {
                 const f = Object.hasOwn(node.fields, k) ? node.fields[k] : undefined;
                 return f === undefined ? [] : [[k, walk(f, x, [...at, k], true, marked)]];
               }),
             )
           : v;
+      }
       case "union": {
-        const tag = isObject(v) ? v[node.key] : undefined;
+        const tag = fieldsOf(v)?.[node.key];
         const variant = node.variants.find(
           (n) => n.kind === "object" && n.fields[node.key]?.kind === "literal" && literalOf(n.fields[node.key]) === tag,
         );

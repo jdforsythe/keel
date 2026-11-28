@@ -11,9 +11,12 @@ const Count = s.object({ n: s.number() });
 
 const make = (id: string): number => {
   const out = { n: -1 };
-  scope(() => {
-    out.n = store(Count, { n: 0 }, { id }).get("n");
-  }).dispose();
+  scope(
+    () => {
+      out.n = store(Count, { n: 0 }, { id }).get("n");
+    },
+    { detached: true },
+  ).dispose();
   return out.n;
 };
 const valid = (n: number): unknown => ({ state: { n }, log: [], initial: { n } });

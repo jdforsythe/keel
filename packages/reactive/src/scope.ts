@@ -1,7 +1,10 @@
+import { defect } from "@keel/schema";
 import { createNode } from "./internal/createNode.ts";
 import { dispose } from "./internal/dispose.ts";
 import { disposeOwned } from "./internal/disposeOwned.ts";
 import { fail } from "./internal/fail.ts";
+import { moduleOwned } from "./internal/moduleOwned.ts";
+import { moduleWrites } from "./internal/moduleWrites.ts";
 import { rt } from "./internal/rt.ts";
 import { owner } from "./owner.ts";
 import type { Scope } from "./types/Scope.ts";
@@ -14,13 +17,20 @@ import type { Scope } from "./types/Scope.ts";
  * its descendants (unless a nearer scope declares one); the throwing effect does not run again.
  * `run(fn)` re-enters the scope later (see `Scope.run`). A `detached` scope is a root: no owner disposes it or lends
  * it an `onError`, its `parent` is undefined, and `fn` runs untracked (writes are still checked), so only its own
- * `dispose()` ends it.
+ * `dispose()` ends it. `run` on a module root, or on a scope one owns, asks `moduleWrites` first (k.shared). With no
+ * owner running and no `detached`, `scope` raises the E1208 defect: outside kernel and test code a root exists only
+ * where the compiler makes a module root (`moduleRoot`).
  */
 export function scope(
   fn: () => void,
   options?: { readonly onError?: (error: unknown) => void; readonly detached?: boolean },
 ): Scope {
   const detached = options?.detached === true;
+  if (!detached && rt.owner === null)
+    defect(
+      "scope() with no owner outside a module root; nest it, run it in a captured scope, or in a test pass detached: true",
+      { code: "E1208" },
+    );
   const outer = { owner: rt.owner, reaction: rt.reaction };
   if (detached) rt.owner = null;
   const n = createNode("scope", undefined, []);
@@ -34,6 +44,8 @@ export function scope(
     },
     run<T>(f: () => T): T {
       if (n.gone) throw fail("E1206", "run on a disposed scope");
+      // Making state in a module root is a write to module state (k.shared): asked before `f` runs.
+      if (moduleWrites.check !== null && moduleOwned(n)) moduleWrites.check(n.id, "root");
       const prev = { owner: rt.owner, reaction: rt.reaction };
       rt.owner = n;
       // Untracked, not unchecked: a disposed copy of the running computation. `track` ignores gone

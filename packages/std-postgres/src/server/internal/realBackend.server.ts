@@ -1,9 +1,9 @@
-import { attempt } from "@keel/schema";
 import type { Backend } from "./Backend.ts";
 import type { Changes } from "./Changes.ts";
 import type { Engine } from "./Engine.ts";
 import type { Migration } from "./Migration.ts";
 import { engineFor } from "./engineFor.server.ts";
+import { forgetting } from "./forgetting.server.ts";
 import { listenChanges } from "./listenChanges.server.ts";
 import { migrate } from "./migrate.server.ts";
 import { pgliteChanges } from "./pgliteChanges.server.ts";
@@ -43,14 +43,17 @@ export function realBackend(name: string, files: () => readonly Migration[]): Ba
       const key = `${url ?? ""}\u0000${name}`;
       let done = migrated.get(key);
       if (done === undefined) {
-        const running = migrate(engine, name, files(), async () => {}).then(async (ran) => {
-          if (ran) await reloadTypes(engine);
-        });
+        const running: Promise<void> = forgetting(
+          () =>
+            migrate(engine, name, files(), async () => {}).then(async (ran) => {
+              if (ran) await reloadTypes(engine);
+            }),
+          () => {
+            if (migrated.get(key) === running) migrated.delete(key);
+          },
+        );
         done = running;
         migrated.set(key, running);
-        void attempt(() => running).then((r) => {
-          if (!r.ok) migrated.delete(key);
-        });
       }
       await done;
       return engine;

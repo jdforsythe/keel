@@ -25,9 +25,12 @@ function machine(table: readonly (readonly (readonly number[])[])[]) {
     );
     return { st, txs };
   };
-  scope(() => {
-    out = mk();
-  });
+  scope(
+    () => {
+      out = mk();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("scope did not run");
   return out;
 }

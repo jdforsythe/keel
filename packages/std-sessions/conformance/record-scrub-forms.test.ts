@@ -36,17 +36,20 @@ async function drive(key: string, value: string, via: Via, text: string) {
   const run = (): Promise<ReturnType<typeof ok<object>>> =>
     armed ? Promise.reject(new Error(text)) : Promise.resolve(ok({}));
   const built: { routes: ReturnType<typeof manifest>; st: ReturnType<typeof store<{ p: object }>> }[] = [];
-  const owner = scope(() => {
-    const st = store(Pii, { p: { [key]: value } }, { id: `frm${runs++}` });
-    const page = (): Node => Box({ as: "main", id: "frm.page", children: [] });
-    built.push({
-      st,
-      routes: manifest(c, {
-        "frm.show": { component: page, loader: loader(c, "frm.show", { output: s.object({}) }, run) },
-        "frm.bad": { component: page, loader: loader(c, "frm.bad", { output: s.object({}) }, run) },
-      }),
-    });
-  });
+  const owner = scope(
+    () => {
+      const st = store(Pii, { p: { [key]: value } }, { id: `frm${runs++}` });
+      const page = (): Node => Box({ as: "main", id: "frm.page", children: [] });
+      built.push({
+        st,
+        routes: manifest(c, {
+          "frm.show": { component: page, loader: loader(c, "frm.show", { output: s.object({}) }, run) },
+          "frm.bad": { component: page, loader: loader(c, "frm.bad", { output: s.object({}) }, run) },
+        }),
+      });
+    },
+    { detached: true },
+  );
   const [b] = built;
   if (b === undefined) throw new Error("drive: build failed");
   const h = await renderRoute("frm.show", {

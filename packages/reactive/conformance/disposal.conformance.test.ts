@@ -9,14 +9,17 @@ describe("k.reactive: disposal frees all subscriptions", () => {
   it("after scope dispose, writes trigger no effect runs", () => {
     let runs = 0;
     let set: (v: number) => void = () => {};
-    const h = scope(() => {
-      const s = signal(0);
-      set = (v) => s.set(v);
-      effect(() => {
-        s.get();
-        runs++;
-      });
-    });
+    const h = scope(
+      () => {
+        const s = signal(0);
+        set = (v) => s.set(v);
+        effect(() => {
+          s.get();
+          runs++;
+        });
+      },
+      { detached: true },
+    );
     expect(runs).toBe(1);
     h.dispose();
     set(1);
@@ -27,17 +30,20 @@ describe("k.reactive: disposal frees all subscriptions", () => {
   it("after scope dispose, a computed is not recomputed", () => {
     let computes = 0;
     let set: (v: number) => void = () => {};
-    const h = scope(() => {
-      const s = signal(0);
-      set = (v) => s.set(v);
-      const c = computed(() => {
-        computes++;
-        return s.get() * 2;
-      });
-      effect(() => {
-        c.get();
-      });
-    });
+    const h = scope(
+      () => {
+        const s = signal(0);
+        set = (v) => s.set(v);
+        const c = computed(() => {
+          computes++;
+          return s.get() * 2;
+        });
+        effect(() => {
+          c.get();
+        });
+      },
+      { detached: true },
+    );
     const before = computes;
     h.dispose();
     set(5);
@@ -47,27 +53,33 @@ describe("k.reactive: disposal frees all subscriptions", () => {
   it("disposing an effect handle stops only that effect", () => {
     let a = 0;
     let b = 0;
-    scope(() => {
-      const s = signal(0);
-      const ea = effect(() => {
-        s.get();
-        a++;
-      });
-      effect(() => {
-        s.get();
-        b++;
-      });
-      ea.dispose();
-      s.set(1);
-    });
+    scope(
+      () => {
+        const s = signal(0);
+        const ea = effect(() => {
+          s.get();
+          a++;
+        });
+        effect(() => {
+          s.get();
+          b++;
+        });
+        ea.dispose();
+        s.set(1);
+      },
+      { detached: true },
+    );
     expect(a).toBe(1);
     expect(b).toBe(2);
   });
 
   it("dispose is idempotent", () => {
-    const h = scope(() => {
-      signal(0);
-    });
+    const h = scope(
+      () => {
+        signal(0);
+      },
+      { detached: true },
+    );
     h.dispose();
     expect(() => h.dispose()).not.toThrow();
   });
@@ -78,18 +90,21 @@ describe("k.reactive: disposal frees all subscriptions", () => {
         let runs = 0;
         let computes = 0;
         let set: (v: number) => void = () => {};
-        const h = scope(() => {
-          const s = signal(0);
-          set = (v) => s.set(v);
-          const c = computed(() => {
-            computes++;
-            return s.get();
-          });
-          effect(() => {
-            c.get();
-            runs++;
-          });
-        });
+        const h = scope(
+          () => {
+            const s = signal(0);
+            set = (v) => s.set(v);
+            const c = computed(() => {
+              computes++;
+              return s.get();
+            });
+            effect(() => {
+              c.get();
+              runs++;
+            });
+          },
+          { detached: true },
+        );
         h.dispose();
         const r0 = runs;
         const c0 = computes;

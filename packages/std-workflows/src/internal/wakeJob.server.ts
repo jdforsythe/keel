@@ -12,7 +12,9 @@ export function wakeJob<S extends string, D>(m: Model<S, D>): Job<FlowInput> {
     const r = await commitStores(ctx, m.open, (S) => {
       const row = rowOf(S, input, (s) => m.waits.has(s));
       const t = row === undefined ? undefined : S.events[m.waits.get(row.state)?.event ?? ""];
-      if (t !== undefined) void tx(t, { id: input.id, payload: {} });
+      if (t === undefined) return ok(null);
+      const woke = tx(t, { id: input.id, payload: {} });
+      if (!woke.ok) return woke;
       return ok(null);
     });
     return r.ok ? ok(null) : r;

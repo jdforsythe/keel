@@ -1,17 +1,17 @@
 # Freeze review (G3)
 
-Each section's clauses are the bullets under its **Conformance** paragraph; k.create-manager has none and no row. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Every clause but k.parity's 5 and 6, k.create's 18 and k.hosting's 10 is cited in a conformance header; `conformance-covered` is the status a section's `status:` line states, and a section whose clauses all have a rung stays `implemented` until that line is raised. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`. Others skip by machine: six unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, five in `std-postgres/conformance`); seven with no non-loopback IPv4 address (`cli/conformance/dev-bind.test.ts`, three in `server/conformance/local-routes-remote-address.test.ts`, and through `ctx.skip` after their loopback half two in `cli/conformance/dev-listen-address.test.ts` and one in `cli/conformance/server-listen-address.test.ts`); one with no IPv6 loopback (`server/conformance/local-routes-answered.test.ts`); one under Node 24 or older (the connection half in `create-app/conformance/create-bin.test.ts`); of the k.e2e-run sandbox cases (`cli/conformance/e2e-sandbox-*.test.ts`, `testing/conformance/e2e-run.test.ts`), thirteen skip as root and two run only as root on Linux.
+Each section's clauses are the bullets under its **Conformance** paragraph; k.create-manager has none and no row. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.hosting, k.shell and std.shells were audited clause by clause; the others, k.topology, std.db and std.workflows among them, were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Every clause but k.parity's 5 and 6, k.create's 18 and std.db's 2 is cited in a conformance header; `conformance-covered` is the status a section's `status:` line states, and a section whose clauses all have a rung stays `implemented` until that line is raised. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`. Others skip by machine: seven unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, six in `std-postgres/conformance`); seven with no non-loopback IPv4 address (`cli/conformance/dev-bind.test.ts`, three in `server/conformance/local-routes-remote-address.test.ts`, and through `ctx.skip` after their loopback half two in `cli/conformance/dev-listen-address.test.ts` and one in `cli/conformance/server-listen-address.test.ts`); one with no IPv6 loopback (`server/conformance/local-routes-answered.test.ts`); one under Node 24 or older (the connection half in `create-app/conformance/create-bin.test.ts`); of the k.e2e-run sandbox cases (`cli/conformance/e2e-sandbox-*.test.ts`, `testing/conformance/e2e-run.test.ts`), thirteen skip as root and two run only as root on Linux.
 
 ## 1. Per section
 
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
-| k.schema | 21 | **conformance-covered** | none |
+| k.schema | 22 | implemented | none |
 | k.formats | 10 | **conformance-covered** | none |
-| k.reactive | 21 | implemented | none; status not raised |
-| k.store | 25 | **conformance-covered** | none |
-| k.ctx | 24 | **conformance-covered** | none |
-| k.errors | 14 | **conformance-covered** | none |
+| k.reactive | 27 | implemented | none; status not raised |
+| k.store | 26 | implemented | none |
+| k.ctx | 25 | **conformance-covered** | none |
+| k.errors | 19 | implemented | none |
 | k.compiler | 22 | **conformance-covered** | none |
 | k.component | 17 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
@@ -21,11 +21,11 @@ Each section's clauses are the bullets under its **Conformance** paragraph; k.cr
 | k.head | 11 | **conformance-covered** | none |
 | k.forms | 19 | **conformance-covered** | none |
 | k.server | 19 | **conformance-covered** | none |
-| k.topology | 24 | **conformance-covered** | none |
+| k.topology | 25 | **conformance-covered** | none |
 | k.compat | 15 | **conformance-covered** | none |
 | k.api | 15 | **conformance-covered** | none |
 | k.services | 17 | **conformance-covered** | none |
-| k.check | 23 | **conformance-covered** | none |
+| k.check | 23 | implemented | none; status not raised |
 | k.check-cache | 13 | **conformance-covered** | none |
 | k.check-time | 2 | proposed | none |
 | k.cli | 17 | **conformance-covered** | none |
@@ -46,14 +46,14 @@ Each section's clauses are the bullets under its **Conformance** paragraph; k.cr
 | k.drive-law | 11 | **conformance-covered** | none |
 | k.ledger | 19 | implemented | none; status not raised |
 | k.sync | 14 | **conformance-covered** | none |
-| k.deploy | 15 | **conformance-covered** | none |
+| k.deploy | 17 | **conformance-covered** | none |
 | k.review | 8 | **conformance-covered** | none |
-| k.escapes | 9 | **conformance-covered** | none |
+| k.escapes | 14 | implemented | none; status not raised |
 | k.bundle | 13 | **conformance-covered** | none |
-| k.explain | 8 | **conformance-covered** | none |
+| k.explain | 10 | **conformance-covered** | none |
 | k.return | 6 | **conformance-covered** | none |
 | k.opening | 16 | **conformance-covered** | none |
-| k.hosting | 10 | implemented | clause 10 (a static build with a `choice` theme and a `ThemeSelect`): no test |
+| k.hosting | 10 | implemented | none; status not raised |
 | k.openapi | 3 | **conformance-covered** | none |
 | k.a11y | 23 | **conformance-covered** | none |
 | k.security | 14 | **conformance-covered** | none |
@@ -75,16 +75,16 @@ Each section's clauses are the bullets under its **Conformance** paragraph; k.cr
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
-| k.serverlog | 8 | **conformance-covered** | none |
+| k.serverlog | 19 | implemented | none; status not raised |
 | k.user | 16 | **conformance-covered** | none |
 | k.boundary | 12 | **conformance-covered** | none |
 | std.brands | 7 | **conformance-covered** | none |
 | std.channels | 26 | **conformance-covered** | none |
-| std.conflicts | 10 | **conformance-covered** | none |
+| std.conflicts | 11 | **conformance-covered** | none |
 | std.copy | 3 | **conformance-covered** | none |
-| std.db | 13 | **conformance-covered** | none; clause 1 meets Postgres 17 in CI's `postgres` job |
-| std.postgres | 20 | **conformance-covered** | not audited clause by clause; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
-| std.postgres-changes | 6 | **conformance-covered** | not audited clause by clause |
+| std.db | 14 | implemented | clause 2 (a driver error's closed `db.failed` data): no test; clause 1 meets Postgres 17 in CI's `postgres` job |
+| std.postgres | 22 | implemented | none; status not raised; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
+| std.postgres-changes | 7 | implemented | none; status not raised |
 | std.outbox | 14 | **conformance-covered** | none |
 | std.outbox-owner | 6 | **conformance-covered** | not audited clause by clause |
 | std.geo | 5 | **conformance-covered** | none |
@@ -131,7 +131,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph; k.cr
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
-| k.unsafe | 9 | **conformance-covered** | none |
+| k.unsafe | 14 | implemented | none |
 | k.a11y-static | 15 | implemented | none; status not raised |
 | std.channels-limits | 4 | **conformance-covered** | none |
 | std.sessions-redact | 1 | **conformance-covered** | none |
@@ -143,7 +143,16 @@ Each section's clauses are the bullets under its **Conformance** paragraph; k.cr
 | k.e2e-page | 26 | implemented | none; status not raised |
 | k.e2e-run | 12 | implemented | none; status not raised |
 | k.entries | 4 | proposed | none |
-| **total** | **1724** | 107 of 137 covered | |
+| k.attempt | 15 | implemented | none; status not raised |
+| k.defects | 9 | implemented | none; status not raised |
+| k.expect | 10 | **conformance-covered** | none |
+| k.fixes | 12 | implemented | none; status not raised |
+| k.identity | 11 | implemented | none; status not raised |
+| k.realm | 11 | implemented | none; status not raised |
+| k.shared | 9 | implemented | none; status not raised |
+| k.supervise | 12 | **conformance-covered** | none |
+| std.postgres-errors | 7 | implemented | none; status not raised |
+| **total** | **1865** | 99 of 146 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -151,7 +160,7 @@ Every audited surface has one way.
 
 | # | where | single way |
 | --- | --- | --- |
-| 1 | `router/src/types/RouteDef.ts`, `guard.ts` | `guard: authGuard` by reference; no name, no registry |
+| 1 | `router/src/types/Binding.ts`, `guard.ts` | `guard: authGuard` by reference; no name, no registry |
 | 2 | `server/src/types/AppOptions.ts`, `server/src/internal/runGuards.ts` | the route holds the guard; `createApp` has no guard table |
 | 3 | `router/src/manifest.ts`, `Form.ts` | `<contract>.href` typed by the contract; `<Form action>` takes an `Href` |
 | 4 | `schema/src/internal/make.ts` | `parse`; there is no `decode` |

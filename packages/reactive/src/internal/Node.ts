@@ -15,6 +15,8 @@ export interface Node {
   owned: Node[];
   writes: readonly unknown[];
   gone: boolean;
+  /** Scope nodes only: a module root (`moduleRoot`), whose nodes are module state (k.shared). */
+  module?: boolean;
   /** Scope nodes only: the public handle. */
   handle?: Scope;
   /** Callbacks run on dispose: a scope's `onDispose` hooks; a computed drops its value and error. */

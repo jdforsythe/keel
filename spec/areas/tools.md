@@ -1,10 +1,11 @@
 # tools
 | id | holds |
 |-|-|
-| k.check | pipeline, diagnostic records, rule registry, flags |
+| k.check | pipeline, diagnostics, rule registry, flags |
 | k.check-cache | cross-process type pass cache |
 | k.evaluator | build-time evaluation child: start, realm, questions, end, E1048 |
 | k.derived | views: readers, refresh, frozen, cache |
+| k.fixes | fixes per code, fix chains |
 | k.explain | `explain(code)`, its table, agent file text |
 | k.host | host zone, locale, Node globals: E1758, E1759 |
 | k.cli | operations, commands, formatters, output |

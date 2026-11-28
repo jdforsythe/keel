@@ -1,3 +1,4 @@
+import { defect, s } from "@keel/schema";
 import type { JsonValue } from "@keel/schema";
 import type { ArrayItem } from "./ArrayItem.ts";
 import type { TypeCache } from "./TypeCache.server.ts";
@@ -28,8 +29,10 @@ export function decodeValue(v: unknown, oid: number, types: TypeCache): JsonValu
     return Number.isFinite(n) ? n : text;
   }
   if (JSONS.has(oid)) {
-    const parsed: JsonValue = JSON.parse(text);
-    return parsed;
+    const parsed = s.json.parseJson(text);
+    return parsed.ok
+      ? parsed.value
+      : defect("std.postgres: a json column held text that is no JSON", { data: { oid }, cause: parsed.error });
   }
   const array = types.arrays.get(oid);
   if (array === undefined) return text;

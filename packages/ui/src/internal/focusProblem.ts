@@ -3,7 +3,7 @@ import type { Tokens } from "../types/Tokens.ts";
 import { colorSyntax } from "./colorSyntax.ts";
 import { combine } from "./combine.ts";
 
-const opaque = (v: string | undefined): v is string => v !== undefined && colorSyntax(v)?.alpha === null;
+const opaque = (v: string): boolean => colorSyntax(v)?.alpha === null;
 
 /**
  * Why `base.focus` fails, as E1807 words it after `base.focus: ` (k.a11y Order and focus: under 3:1 against `base.page`'s `bg` in any of the app's screen

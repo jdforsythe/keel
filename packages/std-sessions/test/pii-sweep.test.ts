@@ -40,40 +40,43 @@ async function recorded(source: Source, channel: Channel, k: string, v: string):
     [`${id}.boom`]: { path: `/${id}/boom` },
   });
   const made: { st: ReturnType<typeof store>; routes: ReturnType<typeof manifest>; clear: () => void }[] = [];
-  const owner = scope(() => {
-    const st = store(Pii, source === "initial" ? { p: { [k]: v } } : { p: {} }, { id: `${id}.st` });
-    const set = transaction(st, `${id}.set`, Pii, (state) =>
-      source === "txState" || source === "undo" ? { p: { ...state.p, [k]: v } } : state,
-    );
-    const emptied = transaction(st, `${id}.clear`, s.object({}), () => ({ p: {} }));
-    const thrown = (): never => {
-      if (channel === "throwError") throw new Error(text);
-      throw text;
-    };
-    const routes = manifest(c, {
-      [`${id}.show`]: {
-        component: () =>
-          Box({
-            as: "main",
-            id: `${id}.page`,
-            children: [
-              Button({
-                id: `${id}.go`,
-                children: "Go",
-                onClick: () => void tx(set, source === "payload" ? { p: { [k]: v } } : { p: {} }),
-              }),
-            ],
-          }),
-      },
-      [`${id}.boom`]: {
-        loader: loader(c, `${id}.boom`, { output: s.object({}) }, async () =>
-          channel === "reject" ? Promise.reject(text) : thrown(),
-        ),
-        component: () => Box({ as: "main", id: `${id}.boomed`, children: "boom" }),
-      },
-    });
-    made.push({ st, routes, clear: () => void tx(emptied, {}) });
-  });
+  const owner = scope(
+    () => {
+      const st = store(Pii, source === "initial" ? { p: { [k]: v } } : { p: {} }, { id: `${id}.st` });
+      const set = transaction(st, `${id}.set`, Pii, (state) =>
+        source === "txState" || source === "undo" ? { p: { ...state.p, [k]: v } } : state,
+      );
+      const emptied = transaction(st, `${id}.clear`, s.object({}), () => ({ p: {} }));
+      const thrown = (): never => {
+        if (channel === "throwError") throw new Error(text);
+        throw text;
+      };
+      const routes = manifest(c, {
+        [`${id}.show`]: {
+          component: () =>
+            Box({
+              as: "main",
+              id: `${id}.page`,
+              children: [
+                Button({
+                  id: `${id}.go`,
+                  children: "Go",
+                  onClick: () => void tx(set, source === "payload" ? { p: { [k]: v } } : { p: {} }),
+                }),
+              ],
+            }),
+        },
+        [`${id}.boom`]: {
+          loader: loader(c, `${id}.boom`, { output: s.object({}) }, async () =>
+            channel === "reject" ? Promise.reject(text) : thrown(),
+          ),
+          component: () => Box({ as: "main", id: `${id}.boomed`, children: "boom" }),
+        },
+      });
+      made.push({ st, routes, clear: () => void tx(emptied, {}) });
+    },
+    { detached: true },
+  );
   const [m] = made;
   if (m === undefined) throw new Error("built");
   const h = await renderRoute(`${id}.show`, {

@@ -1,9 +1,9 @@
 import type { Ctx } from "@keel/ctx";
 import { computed } from "@keel/reactive";
 import { instance } from "@keel/std-statecharts";
-import { tx } from "@keel/store";
 import { Box, type Child, Heading, Text } from "@keel/ui";
 import { type KeyInput, Part, type PartStyle } from "@keel/ui/aria";
+import { send } from "./internal/send.ts";
 import { openChart } from "./openChart.ts";
 
 /**
@@ -25,8 +25,8 @@ export function Dialog(
 ): Node {
   const id = props.id;
   const c = instance(openChart, id);
-  const open = (): void => void tx(c.events.open, {});
-  const close = (): void => void tx(c.events.close, {});
+  const open = (): void => send(c.events.open, {});
+  const close = (): void => send(c.events.close, {});
   const onTrigger = (k: KeyInput): boolean => {
     if (k.key !== "Enter" && k.key !== " ") return false;
     open();

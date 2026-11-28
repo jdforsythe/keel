@@ -142,10 +142,13 @@ describe("under generated schedules", () => {
           const b = browser(createCtx({ mode: "sim", seed: 2 }), app);
           const origin = location.origin;
           let status = (): LiveStatus => "connecting";
-          const page = scope(() => {
-            status = live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
-            void drain(ctx, boardOutbox, { owner: "" });
-          });
+          const page = scope(
+            () => {
+              status = live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
+              void drain(ctx, boardOutbox, { owner: "" });
+            },
+            { detached: true },
+          );
           open = page;
           await run();
           // A goes offline and edits Milk over the head its page holds.

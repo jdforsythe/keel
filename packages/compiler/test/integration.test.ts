@@ -163,10 +163,13 @@ C.outside = () => tx(dec, {}).ok;`,
     expect(code).toMatch(/__kscoped\(\(\) => \{ for \(const __ku of uses\) __ku\.store\.uses\(\[__ku\]\);/);
     const C = evaluate(code);
     let outside: unknown;
-    scope(() => {
-      host(C);
-      outside = typeof C === "function" ? Reflect.get(C, "outside")() : undefined;
-    });
+    scope(
+      () => {
+        host(C);
+        outside = typeof C === "function" ? Reflect.get(C, "outside")() : undefined;
+      },
+      { detached: true },
+    );
     // undeclared inside the component (rejected before any write); a sibling scope stays unrestricted
     expect(typeof C === "function" ? Reflect.get(C, "seen") : undefined).toBe("store.undeclared");
     expect(outside).toBe(true);

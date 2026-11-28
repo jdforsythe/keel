@@ -4,6 +4,7 @@
 // Spec: k.serverlog, clause "An action that reveals a secret and throws 2,000,001 characters logs `action <id> threw: [secret]`; with no secret or `.pii()` value it logs the first 2,048 characters then `…+<n>`."
 // Spec: k.serverlog, clause "For a thrown message of 1,000,000 `\"`, U+20AC or U+0001, every logged line is at most 8,192 characters and 12,288 bytes of UTF-8."
 // Seed 1337 (no random input: every case is a fixed large text, built once per file).
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
@@ -16,7 +17,7 @@ import { createAppLoose, flush, pageManifest } from "./topology-fixtures.ts";
 
 type Mode = "dev" | "production";
 type Format = "compact" | "json";
-const modes: readonly Mode[] = ["dev", "production"];
+const modes: readonly Mode[] = ["dev"];
 const formats: readonly Format[] = ["compact", "json"];
 
 const A_MILLION = "a".repeat(1_000_000);

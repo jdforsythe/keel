@@ -188,15 +188,21 @@ let counter = 0;
 export function mount(ctx: SimCtx, read: Read) {
   counter++;
   const made: { view?: ReturnType<typeof makeView> } = {};
-  scope(() => {
-    made.view = makeView(`view.${counter}`);
-  });
+  scope(
+    () => {
+      made.view = makeView(`view.${counter}`);
+    },
+    { detached: true },
+  );
   const view = made.view;
   if (view === undefined) throw new Error("mount: store scope did not run");
   const got: { status?: ReturnType<typeof live> } = {};
-  const sc = scope(() => {
-    got.status = live(ctx, ORIGIN, boardChannel, {}, { read, hydrate: view.hydrate });
-  });
+  const sc = scope(
+    () => {
+      got.status = live(ctx, ORIGIN, boardChannel, {}, { read, hydrate: view.hydrate });
+    },
+    { detached: true },
+  );
   const status = got.status;
   if (status === undefined) throw new Error("mount: live scope did not run");
   return { view: view.store, hydrate: view.hydrate, status, dispose: () => sc.dispose() };

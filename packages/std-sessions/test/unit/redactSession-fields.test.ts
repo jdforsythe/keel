@@ -30,17 +30,20 @@ const routes = manifest(shop, {
 });
 
 beforeAll(() => {
-  scope(() => {
-    const state = store(
-      s.object({ note: s.string(), owner: s.string(), kind: s.enum(["big", "small"]) }),
-      { note: "", owner: "", kind: "big" },
-      { id: "shop" },
-    );
-    transaction(state, "shop.rename", s.object({ note: s.string(), by: s.string() }), (st, p) => ({
-      ...st,
-      note: p.note,
-    }));
-  });
+  scope(
+    () => {
+      const state = store(
+        s.object({ note: s.string(), owner: s.string(), kind: s.enum(["big", "small"]) }),
+        { note: "", owner: "", kind: "big" },
+        { id: "shop" },
+      );
+      transaction(state, "shop.rename", s.object({ note: s.string(), by: s.string() }), (st, p) => ({
+        ...st,
+        note: p.note,
+      }));
+    },
+    { detached: true },
+  );
 });
 
 const error = { code: "shop.full", message: "No room for NOTE", data: { at: "shop.add", who: "OWNER", n: 3 } };

@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { For, If } from "@keel/runtime-dom";
-import { type Infer, type Result, s } from "@keel/schema";
+import { type Infer, type KeelError, type Result, s } from "@keel/schema";
 import { Disclosure, Menu, Tabs, Toaster } from "@keel/std-headless";
 import { type LiveStatus, live } from "@keel/std-live";
 import { drain, send } from "@keel/std-offline";
@@ -26,7 +26,7 @@ export const uses = [show, hydrate];
 
 export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
   const failed = signal(false);
-  const run = (r: Result<unknown, unknown>) => {
+  const run = (r: Result<unknown, KeelError<string, unknown>>) => {
     if (!r.ok) failed.set(true);
   };
   // Every member's page follows the list channel: after each change, its own included, it re-reads the list through
@@ -38,7 +38,7 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
     origin === undefined
       ? (): LiveStatus => "connecting"
       : live(ctx, origin, listChannel, {}, { read: (c, abort) => shoppingApi.items({ signal: abort }, c), hydrate });
-  const change = async (call: Promise<Result<Infer<typeof Items>, unknown>>) => {
+  const change = async (call: Promise<Result<Infer<typeof Items>, KeelError<string, unknown>>>) => {
     const r = await call;
     if (r.ok) run(tx(hydrate, r.value));
     else failed.set(true);

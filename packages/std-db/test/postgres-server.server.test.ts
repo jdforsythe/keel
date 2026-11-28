@@ -4,6 +4,7 @@
 // without it; the TLS cases also need that server to have `ssl` on.
 import { createServer } from "node:net";
 import { setTimeout as sleep } from "node:timers/promises";
+import { isDefect } from "@keel/schema";
 import type { PgPool } from "@keel/std-db/postgres";
 import { postgres } from "@keel/std-db/postgres";
 import { fixedTime, testTime } from "@keel/tooling/test-time";
@@ -235,7 +236,14 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
     await watch.query("select pg_terminate_backend($1)", [pid]);
     const r = await c.result;
     expect(r.ok).toBe(false);
-    expect(r.ok ? "" : String(r.error)).toMatch(/^Error: std\.db postgres: commit failed \(57P01\)$/);
+    const failure: unknown = r.ok ? undefined : r.error;
+    expect(isDefect(failure)).toBe(true);
+    expect(failure instanceof Error ? failure.message : "").toBe("std.db: a storage call failed");
+    expect(Reflect.get(Object(Reflect.get(Object(failure), "cause")), "data")).toEqual({
+      driver: "postgres",
+      op: "commit",
+      code: "57P01",
+    });
     await holder.query("rollback");
     expect(await s.get("lost")).toBeNull();
     expect(await s.commit([{ key: "lost", expect: null, value: "next" }])).toBe(true);
@@ -273,9 +281,13 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
     const s = await postgres(serverUrl(), { clientFactory: () => pool });
     opened.push(s);
     armed = true;
-    await expect(s.commit([{ key: "cut", expect: null, value: "lost" }])).rejects.toThrow(
-      /^std\.db postgres: commit failed \(/,
+    const failed: unknown = await s.commit([{ key: "cut", expect: null, value: "lost" }]).then(
+      () => undefined,
+      (e: unknown) => e,
     );
+    expect(isDefect(failed)).toBe(true);
+    expect(failed instanceof Error ? failed.message : "").toBe("std.db: a storage call failed");
+    expect(Reflect.get(Object(Reflect.get(Object(Reflect.get(Object(failed), "cause")), "data")), "op")).toBe("commit");
     const r = await watch.query("select count(*)::int as n from keel_kv where key = 'cut'");
     expect(r.rows[0]?.n).toBe(0);
     expect(await s.commit([{ key: "cut", expect: null, value: "kept" }])).toBe(true);
@@ -290,7 +302,8 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
       (x: unknown) => x,
     );
     const text = String(e);
-    expect(text).toMatch(/^Error: E2153 KEEL_DATABASE_URL/);
+    expect(isDefect(e, "E2153")).toBe(true);
+    expect(text).toMatch(/E2153 KEEL_DATABASE_URL/);
     for (const part of ["wrongsecretword", u.username, u.port, u.pathname.slice(1)]) expect(text).not.toContain(part);
   });
 });
@@ -350,7 +363,8 @@ test(
         () => null,
         (x: unknown) => x,
       );
-      expect(String(e)).toMatch(/^Error: E2153 KEEL_DATABASE_URL/);
+      expect(isDefect(e, "E2153")).toBe(true);
+      expect(String(e)).toMatch(/E2153 KEEL_DATABASE_URL/);
     } finally {
       for (const s of sockets) s.destroy();
       await new Promise<void>((resolve) => silent.close(() => resolve()));

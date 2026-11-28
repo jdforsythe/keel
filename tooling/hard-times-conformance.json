@@ -228,6 +228,24 @@
     "needs": "fixedTime"
   },
   {
+    "path": "packages/cli/conformance/review-r1013.test.ts",
+    "line": 40,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/review-r1013.test.ts",
+    "line": 44,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/review-r1013.test.ts",
+    "line": 92,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
     "path": "packages/cli/conformance/schema-format-json-schema.test.ts",
     "line": 12,
     "text": "180_000",
@@ -243,6 +261,54 @@
     "path": "packages/cli/conformance/shell-connect.test.ts",
     "line": 53,
     "text": "5 * 120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-finally-exit.test.ts",
+    "line": 81,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-finally-exit.test.ts",
+    "line": 88,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-finally-exit.test.ts",
+    "line": 93,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-finally-exit.test.ts",
+    "line": 102,
+    "text": "240_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-finally-exit.test.ts",
+    "line": 112,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/structure-lint-finally-exit.test.ts",
+    "line": 116,
+    "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/surface-normal-sources.test.ts",
+    "line": 34,
+    "text": "21 * 2 * 40_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/cli/conformance/surface-v2-layout.test.ts",
+    "line": 7,
+    "text": "180_000",
     "needs": "fixedTime"
   },
   {
@@ -393,6 +459,12 @@
     "path": "packages/std-db/conformance/check-deps-dropped-rule.test.ts",
     "line": 14,
     "text": "120_000",
+    "needs": "fixedTime"
+  },
+  {
+    "path": "packages/std-postgres/conformance/follow-unlistened.test.ts",
+    "line": 53,
+    "text": "60_000",
     "needs": "fixedTime"
   },
   {

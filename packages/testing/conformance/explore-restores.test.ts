@@ -15,9 +15,12 @@ const build = () => {
   seq += 1;
   const id = `rs${seq}`;
   let out: ReturnType<typeof mk> | undefined;
-  scope(() => {
-    out = mk(id);
-  });
+  scope(
+    () => {
+      out = mk(id);
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   const { st, step } = out;
   if (!tx(step, { by: 1 }, { meta: { note: "first", n: 1 } }).ok) throw new Error("fixture: first commit failed");

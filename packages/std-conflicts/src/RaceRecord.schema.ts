@@ -4,7 +4,7 @@ import { RefRecord } from "./internal/RefRecord.schema.ts";
 /**
  * Output record kind `conflicts.race` (std.conflicts): one diagnostic at `path` 1:1, the file the analysis read. `code`
  * is E2701 for a race (`reason` `order` or `invalid`, `against` its concurrent entries) and W2702 for an unchecked
- * entry (`reason` `folded` or `undo`, `against` empty).
+ * entry (`reason` `folded`, `undo` or `threw`, `against` empty).
  */
 export const RaceRecord = s.object(
   {
@@ -14,7 +14,7 @@ export const RaceRecord = s.object(
     store: s.string(),
     entry: RefRecord,
     against: s.array(RefRecord),
-    reason: s.enum(["order", "invalid", "folded", "undo"]),
+    reason: s.enum(["order", "invalid", "folded", "undo", "threw"]),
   },
   { closed: true },
 );

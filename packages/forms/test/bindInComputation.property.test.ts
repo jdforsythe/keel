@@ -23,14 +23,17 @@ function edited(served: string, typed: string): HTMLInputElement {
 /** Binds `el` to a fresh form's `title` from inside an effect that declares no writes, as a branch build does. */
 function bindInEffect(el: HTMLInputElement, initial: string) {
   const box: { values?: () => unknown } = {};
-  const root = scope(() => {
-    const f = form(S, { initial: { title: initial } });
-    box.values = f.values;
-    const home = owner();
-    effect(() => {
-      home?.run(() => scope(() => void f.field("title").bind(el)));
-    });
-  });
+  const root = scope(
+    () => {
+      const f = form(S, { initial: { title: initial } });
+      box.values = f.values;
+      const home = owner();
+      effect(() => {
+        home?.run(() => scope(() => void f.field("title").bind(el)));
+      });
+    },
+    { detached: true },
+  );
   return { values: () => box.values?.(), root };
 }
 

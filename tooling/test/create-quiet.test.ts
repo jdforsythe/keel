@@ -1,4 +1,4 @@
-// S0019 (create-quiet.mjs): the reach of create-app's bin names no process or network API.
+// S0021 (create-quiet.mjs): the reach of create-app's bin names no process or network API.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -16,7 +16,7 @@ function fakeRoot(files: Record<string, string>): string {
   return root;
 }
 
-describe("S0019", () => {
+describe("S0021", () => {
   it("passes the repository's create-app", async () => {
     const r = await createQuiet(REPO);
     expect(r.files).toBeGreaterThan(10);
@@ -31,9 +31,9 @@ describe("S0019", () => {
     });
     const r = await createQuiet(root);
     expect(r.diags.map((d: { code: string; path: string; line: number }) => `${d.code} ${d.path}:${d.line}`)).toEqual([
-      "S0019 packages/create-app/src/a.ts:1",
-      "S0019 packages/create-app/src/a.ts:1",
-      "S0019 packages/create-app/src/a.ts:3",
+      "S0021 packages/create-app/src/a.ts:1",
+      "S0021 packages/create-app/src/a.ts:1",
+      "S0021 packages/create-app/src/a.ts:3",
     ]);
   });
 });

@@ -1,10 +1,10 @@
-import type { Ctx } from "@keel/ctx";
+import { type Ctx, supervise } from "@keel/ctx";
 import { computed, owner, signal } from "@keel/reactive";
-import { type Result, attempt } from "@keel/schema";
+import { type KeelError, type Result, attempt, defect } from "@keel/schema";
 import { type Channel, subscribe } from "@keel/std-channels";
 import { type Transaction, tx } from "@keel/store";
-import { outsideScope } from "../unsafe/outsideScope.ts";
 import type { LiveStatus } from "./LiveStatus.schema.ts";
+import { Rejected } from "./Rejected.schema.ts";
 
 const FIRST_MS = 1000;
 const MAX_MS = 30_000;
@@ -29,7 +29,7 @@ const refused = (e: unknown): boolean => {
  * the status is `denied` from then on.
  * Returns the status read.
  */
-export function live<C extends Ctx, T, P, Q, M, E>(
+export function live<C extends Ctx, T, P, Q, M, E extends KeelError<string, unknown>>(
   ctx: C,
   origin: string,
   channel: Channel<Q, M>,
@@ -37,7 +37,7 @@ export function live<C extends Ctx, T, P, Q, M, E>(
   opts: { readonly read: (ctx: C, signal: AbortSignal) => Promise<Result<P, E>>; readonly hydrate: Transaction<T, P> },
 ): () => LiveStatus {
   const sc = owner();
-  if (sc === undefined) return outsideScope();
+  if (sc === undefined) return defect("live() called outside any scope; wrap it in scope(fn)", { code: "E1203" });
   const fresh = signal(false);
   const denied = signal(false);
   let alive = true;
@@ -59,26 +59,40 @@ export function live<C extends Ctx, T, P, Q, M, E>(
     bound = b;
     const s = new AbortController();
     sig = s;
-    const bounded = attempt(() => ctx.clock.after(BOUND_MS, b.signal)).then((w) => {
+    const bounded = attempt(
+      () => ctx.clock.after(BOUND_MS, b.signal),
+      (x) => (x === b.signal.reason ? Rejected.make({}) : undefined),
+    ).then((w) => {
       if (w.ok) s.abort();
     });
-    const r = await Promise.race([attempt(() => opts.read(ctx, s.signal)), bounded]);
+    // The read's `Result` rides in an object so `supervise` hands it back whole, not as its own. A throw of any value,
+    // a defect among them, is reported once and is a failed read (k.supervise `live.read`).
+    const pending = supervise(
+      ctx,
+      "live.read",
+      async () => ({ got: await opts.read(ctx, s.signal) }),
+      Rejected.make({}),
+    );
+    const r = await Promise.race([pending, bounded]);
     b.abort();
     reading = false;
     if (!alive) return;
-    if (r?.ok === true && !r.value.ok && refused(r.value.error)) {
+    if (r?.ok === true && !r.value.got.ok && refused(r.value.got.error)) {
       alive = false;
       denied.set(true);
       return sub.close();
     }
-    const done = r?.ok === true && r.value.ok && tx(opts.hydrate, r.value.value).ok;
+    const done = r?.ok === true && r.value.got.ok && tx(opts.hydrate, r.value.got.value).ok;
     fresh.set(done);
     delay = done ? FIRST_MS : delay;
     if (again) return void read();
     if (done) return;
     const t = new AbortController();
     retry = t;
-    const wait = attempt(() => ctx.clock.after(delay, t.signal));
+    const wait = attempt(
+      () => ctx.clock.after(delay, t.signal),
+      (x) => (x === t.signal.reason ? Rejected.make({}) : undefined),
+    );
     delay = Math.min(delay * 2, MAX_MS);
     if ((await wait).ok && sub.status() === "open") void read();
   };

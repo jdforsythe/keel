@@ -41,17 +41,20 @@ describe("resource properties", () => {
         const states: string[] = [];
         let read: () => { state: string } = () => ({ state: "" });
         let refetch: () => void = () => {};
-        const h = scope(() => {
-          const r = resource(() => {
-            const p = reqs[i++];
-            return p ? p.promise : Promise.reject(new Error("unexpected fetch"));
-          });
-          read = () => r.get();
-          refetch = () => r.refetch();
-          effect(() => {
-            states.push(r.get().state);
-          });
-        });
+        const h = scope(
+          () => {
+            const r = resource(() => {
+              const p = reqs[i++];
+              return p ? p.promise : Promise.reject(new Error("unexpected fetch"));
+            });
+            read = () => r.get();
+            refetch = () => r.refetch();
+            effect(() => {
+              states.push(r.get().state);
+            });
+          },
+          { detached: true },
+        );
         for (let k = 1; k < reqs.length; k++) refetch();
         const latest = reqs.length - 1;
         for (const k of order) {

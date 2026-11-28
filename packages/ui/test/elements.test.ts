@@ -16,9 +16,12 @@ const flush = async (): Promise<void> => {
 };
 const scoped = <T>(make: () => T): { value: T; dispose: () => void } => {
   const box: { value?: T } = {};
-  const sc = scope(() => {
-    box.value = make();
-  });
+  const sc = scope(
+    () => {
+      box.value = make();
+    },
+    { detached: true },
+  );
   if (box.value === undefined) throw new Error("scoped: no value");
   return { value: box.value, dispose: () => sc.dispose() };
 };

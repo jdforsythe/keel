@@ -3,6 +3,7 @@
 // @vitest-environment happy-dom
 // ASSUMED shape (k.server Log): `frames` is an array of strings in json mode. The stack is generated: an app frame whose
 // file name holds the marked `note` value, which is lowercase letters (so no unmarked text can mimic it).
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
@@ -55,7 +56,7 @@ async function framesFor(note: string, mode: "dev" | "production"): Promise<unkn
 }
 
 describe("k.privacy: scrubbed diag frames", () => {
-  for (const mode of ["dev", "production"] as const) {
+  for (const mode of ["dev"] as const) {
     test(
       `an action throwing an Error whose stack names a file path holding a marked input value logs that frame with [pii] in place of the value, in ${mode}`,
       async () => {

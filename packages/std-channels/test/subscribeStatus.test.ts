@@ -29,9 +29,12 @@ test("status is connecting, not open, from a drop until the reopened stream's re
   });
   const kinds: string[] = [];
   const box: { status?: () => string } = {};
-  const sc = scope(() => {
-    box.status = subscribe(ctx, ORIGIN, room, {}, (e) => kinds.push(e.kind)).status;
-  });
+  const sc = scope(
+    () => {
+      box.status = subscribe(ctx, ORIGIN, room, {}, (e) => kinds.push(e.kind)).status;
+    },
+    { detached: true },
+  );
   const status = () => box.status?.();
   await settle();
   expect([kinds, status()]).toEqual([["reset"], "open"]);

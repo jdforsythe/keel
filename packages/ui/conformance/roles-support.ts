@@ -34,7 +34,7 @@ export const flush = async (): Promise<void> => {
 };
 
 /** Signals and computeds are created in a scope (k.reactive E1203). */
-const owner = scope(() => undefined);
+const owner = scope(() => undefined, { detached: true });
 export const owned = <T>(make: () => T): T => owner.run(make);
 export const signal = <T>(v: T) => owned(() => reactive.signal(v));
 export const computed = <T>(fn: () => T) => owned(() => reactive.computed(fn));

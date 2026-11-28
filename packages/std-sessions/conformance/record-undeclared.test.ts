@@ -162,22 +162,25 @@ async function capture(o: {
   const Search = o.searchSchema ?? s.object({ q: s.string().optional() });
   const c = contract("usr", { "usr.show": { path: "/usr/:id", params: Params, search: Search } });
   const built: { st: ReturnType<typeof store>; routes: ReturnType<typeof manifest> }[] = [];
-  const owner = scope(() => {
-    const st = store(o.state, o.initial, { id: storeId });
-    const t = transaction(st, txName, o.payload, (state) => state);
-    const routes = manifest(c, {
-      "usr.show": {
-        component(): Node {
-          return Box({
-            as: "main",
-            id: "usr.page",
-            children: [Button({ id: "usr.go", children: "Go", onClick: () => void tx(t, o.sent) })],
-          });
+  const owner = scope(
+    () => {
+      const st = store(o.state, o.initial, { id: storeId });
+      const t = transaction(st, txName, o.payload, (state) => state);
+      const routes = manifest(c, {
+        "usr.show": {
+          component(): Node {
+            return Box({
+              as: "main",
+              id: "usr.page",
+              children: [Button({ id: "usr.go", children: "Go", onClick: () => void tx(t, o.sent) })],
+            });
+          },
         },
-      },
-    });
-    built.push({ st, routes });
-  });
+      });
+      built.push({ st, routes });
+    },
+    { detached: true },
+  );
   const [b] = built;
   if (b === undefined) throw new Error("capture: build failed");
   const h = await renderRoute("usr.show", {

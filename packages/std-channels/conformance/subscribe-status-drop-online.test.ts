@@ -16,9 +16,12 @@ test("`status()` is `connecting` during the backoff wait after a drop while onli
       const ctx = simCtx();
       const srv = scripted(ctx);
       const box: { handle?: Handle } = {};
-      const sc = scope(() => {
-        box.handle = subscribe(ctx, ORIGIN, roomChannel, { room: "a" }, () => undefined);
-      });
+      const sc = scope(
+        () => {
+          box.handle = subscribe(ctx, ORIGIN, roomChannel, { room: "a" }, () => undefined);
+        },
+        { detached: true },
+      );
       const status = () => box.handle?.status();
       await waitFor(() => srv.requests.length === 1);
       srv.send({ kind: "reset" });

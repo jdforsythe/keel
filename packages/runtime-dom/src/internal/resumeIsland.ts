@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { scope } from "@keel/reactive";
+import { owner as running, scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";
 import type { Island } from "../types/Island.ts";
 import type { Claim } from "./Claim.ts";
@@ -75,7 +75,7 @@ export function resumeIsland(
         () => {
           rendered.node = withCx(owner, claim, () => component(props, ctx));
         },
-        { onError: (error) => report(owner, error, rootAt) },
+        { onError: (error) => report(owner, error, rootAt), detached: running() === undefined },
       );
     } catch (error) {
       // Any throw while claiming is a mismatch: the client re-render below shows a real app error. The thrown text can
@@ -136,7 +136,7 @@ export function resumeIsland(
       () => {
         client.node = withCx(freshOwner, null, () => component(props, ctx));
       },
-      { onError: (error) => report(freshOwner, error, rootAt) },
+      { onError: (error) => report(freshOwner, error, rootAt), detached: running() === undefined },
     );
   } catch (error) {
     // The client render threw: the island's root Boundary shows it in place of the server element, whose queued

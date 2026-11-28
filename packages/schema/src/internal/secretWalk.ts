@@ -1,7 +1,8 @@
-import { Secret } from "../Secret.ts";
+import type { Secret } from "../Secret.ts";
 import type { Node } from "./Node.ts";
 import { fits } from "./fits.ts";
 import { isRecord } from "./isRecord.ts";
+import { secretAccess } from "./secretAccess.ts";
 import { variantOf } from "./variantOf.ts";
 
 /** The most values one read visits; past it the read stops, so a huge value cannot hold it up. */
@@ -60,9 +61,9 @@ export function secretWalk(value: unknown, visits: number = VISITS): { values: s
     let v = next.x;
     let node = next.node;
     let inside = next.inside;
-    while (Secret.is(v)) {
-      node = Secret.innerOf(v);
-      v = Secret.open(v);
+    while (secretAccess.is(v)) {
+      node = secretAccess.innerOf(v);
+      v = secretAccess.open(v);
       inside = true;
     }
     const at = inside && node !== undefined ? resolved(node, v) : undefined;

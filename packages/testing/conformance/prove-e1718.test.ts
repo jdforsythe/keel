@@ -49,11 +49,14 @@ describe("k.prove: E1718", () => {
       const { invariant, store, transaction } = await import("@keel/store");
       const { prove } = await import("@keel/testing/prove");
       let inc: Parameters<typeof prove>[0][number] | undefined;
-      scope(() => {
-        const st = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: "noz3.count" });
-        invariant(st, (state) => state.n >= 0);
-        inc = transaction(st, "noz3.inc", s.object({}), (state) => ({ n: state.n + 1 }));
-      });
+      scope(
+        () => {
+          const st = store(s.object({ n: s.int({ min: 0 }) }), { n: 0 }, { id: "noz3.count" });
+          invariant(st, (state) => state.n >= 0);
+          inc = transaction(st, "noz3.inc", s.object({}), (state) => ({ n: state.n + 1 }));
+        },
+        { detached: true },
+      );
       if (inc === undefined) throw new Error("fixture: scope did not run");
       const t = inc;
       const e = await rejection(() => prove([t]));

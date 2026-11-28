@@ -18,12 +18,13 @@ import { describe, expect, it } from "vitest";
 import Home from "../modules/ops/Home.ts";
 import { routes } from "../modules/ops/routes.ts";
 import topology from "../topology.ts";
+import { Forced } from "./Forced.schema.ts";
 
 const forced = contract("ops", { "ops.home": { path: "/" }, "ops.forced": { path: "/forced" } });
 const failingContract = contract("ops", { "ops.home": { path: "/" } });
 
 /** A loader that always fails with `ops.forced`: the router reports it as an `error` event after its `nav`. */
-const fail = () => err({ code: "ops.forced", message: "forced for the test", data: null });
+const fail = () => err(Forced.make({}, "forced for the test"));
 
 /** The ops home page beside a route whose loader fails. */
 const withForced = manifest(forced, {

@@ -2,6 +2,7 @@
 // Spec: k.serverlog, clause "A thrown message holding a line feed, a carriage return, U+001B, U+0085, U+2028 and U+2026 logs one line per record in compact, with `\u000a`, `\u000d`, `\u001b`, `\u0085`, `\u2028` and `\u2026` in their places; the parsed json message holds those texts."
 // k.serverlog, Parts "Escape. Each control character (U+0000 to U+001F, U+007F to U+009F), U+2028, U+2029 and `…` (U+2026) is written as `\u` and four lowercase hex digits, in compact and json alike; a parsed json value holds those six characters."
 // Seed 1337 (fc.assert below).
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
@@ -14,7 +15,7 @@ import { Params, SEED, createApp, post } from "./fixtures.ts";
 
 type Mode = "dev" | "production";
 type Format = "compact" | "json";
-const modes: readonly Mode[] = ["dev", "production"];
+const modes: readonly Mode[] = ["dev"];
 const formats: readonly Format[] = ["compact", "json"];
 
 const hex = (code: number): string => `\\u${code.toString(16).padStart(4, "0")}`;
@@ -51,8 +52,8 @@ async function thrower(mode: Mode, format: Format) {
       current = text;
       await (await app.fetch(post("/orders/open", {}, { accept: "application/json" }))).text();
       const diags = lines.filter((l) => (format === "json" ? record(l).get("kind") === "diag" : !isReq(l)));
-      expect(diags).toHaveLength(1);
-      const [diag = ""] = diags;
+      expect(diags).toHaveLength(2);
+      const diag = diags[1] ?? "";
       const message = format === "json" ? record(diag).get("message") : diag.slice(diag.indexOf(" ") + 1);
       return { lines: [...lines], message: typeof message === "string" ? message : "" };
     },

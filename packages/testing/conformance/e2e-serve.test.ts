@@ -15,7 +15,7 @@
 // k.e2e Rules (E1736 `page` outside a library's folder, E1737 a deployable that did not start by an exit or a missing `dist/<name>/`) are asserted by the two last cases.
 // Seed: 1337 (the property inside the isolation fixture test, 3 runs). Method: each project below is a built-app fixture (fixtures/e2e/) whose e2e file holds the clause's test;
 // `keel test --e2e` runs it once (e2e-support.ts) and each case reads the run's report. The cases need Chromium (e2e-support.ts says how they are provided); none skips.
-// ASSUMED (the spec names no fixture): the server store `a.board` the test hands to `state`, `until` and `log` is the factory `boards` of `modules/a/boards.ts` made in a scope (test/board.ts: E1203). A form POST to `/` with `accept` html is the page's add (303); `GET /api/a/env` answers `{ results: { 'a.env': { value } } }` as app-data-support.ts reads an API entry.
+// ASSUMED (the spec names no fixture): the server store `a.board` the test hands to `state`, `until` and `log` is the factory `boards` of `modules/a/boards.ts` made in a detached scope (test/board.ts: E1203, E1208). A form POST to `/` with `accept` html is the page's add (303); `GET /api/a/env` answers `{ results: { 'a.env': { value } } }` as app-data-support.ts reads an API entry.
 // The `static` clause's header is read as `csp.txt`'s text with its ends trimmed; `ps` names a process by its command line, which holds the project's path.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {

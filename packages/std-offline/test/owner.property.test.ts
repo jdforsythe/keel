@@ -47,9 +47,12 @@ function setup(ctx: SimCtx) {
 let n = 0;
 function declare() {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox(`own${++n}.outbox`, Api);
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(`own${++n}.outbox`, Api);
+    },
+    { detached: true },
+  );
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc, id: `own${n}.outbox` };
 }
@@ -79,9 +82,12 @@ test("a drain for owner x posts exactly x's well-formed entries in order and fai
           state,
         }));
         await ctx.storage.set(`keel.outbox.${id}`, JSON.stringify({ entries }));
-        const stop = scope(() => {
-          void drain(ctx, o, { owner: who });
-        });
+        const stop = scope(
+          () => {
+            void drain(ctx, o, { owner: who });
+          },
+          { detached: true },
+        );
         await settle();
         const mine = entries.filter((_, i) => kinds[i]?.[0] === who).map((e) => e.key);
         expect(posts).toEqual(mine);
@@ -212,7 +218,7 @@ test("an owner change at any await of a send's flush: never posted for another o
       // Await points, in order: the admit write, the sending write, the request, the recording write, the write after.
       for (let step = 0; step < 6; step++) {
         await settle();
-        if (step === at) drains.push(scope(() => void drain(ctx, o, { owner: "b" })));
+        if (step === at) drains.push(scope(() => void drain(ctx, o, { owner: "b" }), { detached: true }));
         await settle();
         if (step === 2) answers.shift()?.();
         else await held.shift()?.();
@@ -266,7 +272,7 @@ test("a server that refuses a random subset by owner: each refused entry fails a
         for (const i of refuseAt.keys())
           outs.push(await send(ctx, o, "add", { body: { t: `e${i}` } }, { base: 0, owner: "a" }));
         ctx.net.setOnline(true);
-        const d = scope(() => void drain(ctx, o, { owner: "a" }));
+        const d = scope(() => void drain(ctx, o, { owner: "a" }), { detached: true });
         await settle();
         const names = refuseAt.map((_, i) => `e${i}`);
         expect(posts).toEqual(names.map((t) => ({ t, owner: "a" })));
@@ -289,7 +295,7 @@ test("a server that refuses a random subset by owner: each refused entry fails a
         const other = declare();
         const raw = await ctx.storage.get(`keel.outbox.${id}`);
         await next.storage.set(`keel.outbox.${other.id}`, raw ?? "");
-        const d2 = scope(() => void drain(next, other.o, { owner: "a" }));
+        const d2 = scope(() => void drain(next, other.o, { owner: "a" }), { detached: true });
         await settle();
         expect(again).toEqual([]);
         d2.dispose();

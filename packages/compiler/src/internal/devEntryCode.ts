@@ -50,7 +50,7 @@ export function devEntryCode(root: string, topology: Topology): string {
     "export const apps = [];",
     "try {",
     `const log = { format: "compact", write: (l) => process.stdout.write(l + "\\n") };`,
-    `(await import(${UNCAUGHT})).onUncaught(log, ${abs(".keel")}, true, () => undefined);`,
+    `(await import(${UNCAUGHT})).onUncaught(log, ${abs(".keel")}, () => true, () => undefined);`,
     `const { createApp } = await import(${SERVER});`,
     `const { createCtx } = await import(${CTX});`,
     `const { fileStorage } = await import(${CTX_NODE});`,

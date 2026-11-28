@@ -10,6 +10,7 @@ import { createApp, topology } from "../src/index.ts";
 import { keepRunning } from "../src/internal/keepRunning.ts";
 import { refuseModuleWrites } from "../src/internal/refuseModuleWrites.ts";
 import { serving } from "../src/internal/serving.ts";
+import { thrownText } from "../src/internal/thrownText.ts";
 
 const Count = s.object({ n: s.number() });
 function make() {
@@ -17,9 +18,12 @@ function make() {
   return { counter, bump: transaction(counter, "runnerServing.bump", Count, (_state, payload) => payload) };
 }
 const made: { fixture?: ReturnType<typeof make> } = {};
-scope(() => {
-  made.fixture = make();
-});
+scope(
+  () => {
+    made.fixture = make();
+  },
+  { detached: true },
+);
 const fixtureOf = (): ReturnType<typeof make> => {
   if (made.fixture === undefined) throw new Error("fixture: store scope did not run");
   return made.fixture;
@@ -43,7 +47,7 @@ describe("a runner started inside a request", () => {
         runner,
         ctx,
         stop.signal,
-        (message) => void failures.push(message),
+        (thrown) => void failures.push(thrownText(thrown)),
         () => [],
       ),
     );

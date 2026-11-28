@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import type { KeelError, Result, Secret } from "@keel/schema";
+import { madeFrozen } from "./internal/madeFrozen.ts";
 import type { ApiGuard } from "./types/ApiGuard.ts";
 import type { Guard } from "./types/Guard.ts";
 
@@ -25,12 +26,20 @@ type Fn = (
 export function guard(decl: { readonly redirect: string }, fn: Fn): Guard;
 export function guard(decl: Readonly<Record<string, never>>, fn: Fn): ApiGuard;
 export function guard(decl: { readonly redirect?: string }, fn: Fn): ApiGuard {
-  return Object.freeze({
-    kind: "keel.guard",
-    ...decl,
-    run: (
-      req: { readonly url: string; readonly caller?: string; readonly user?: string; readonly bearer?: Secret<string> },
-      ctx: Ctx,
-    ) => fn({ url: req.url, caller: req.caller ?? "", user: req.user ?? "", bearer: req.bearer }, ctx),
-  });
+  return madeFrozen(
+    {
+      kind: "keel.guard" as const,
+      ...decl,
+      run: (
+        req: {
+          readonly url: string;
+          readonly caller?: string;
+          readonly user?: string;
+          readonly bearer?: Secret<string>;
+        },
+        ctx: Ctx,
+      ) => fn({ url: req.url, caller: req.caller ?? "", user: req.user ?? "", bearer: req.bearer }, ctx),
+    },
+    "guard",
+  );
 }

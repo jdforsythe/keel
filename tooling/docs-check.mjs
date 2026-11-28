@@ -58,6 +58,7 @@ export const TARGETS = {
   "keel-escapes": 1700,
   "keel-library": 1200,
   "keel-e2e": 700,
+  "keel-errors": 1100,
 };
 export const MAX_FRAGMENTS = 2;
 

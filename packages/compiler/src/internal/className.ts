@@ -42,7 +42,7 @@ function ident(parts: readonly string[], key: string, readable: boolean): string
  */
 export function className(prop: string, token: string, breakpoint?: string, state?: State): string {
   const seg = SEGMENTS.find((s) => s.key === state)?.segment;
-  const parts = [breakpoint, seg, prop, token].filter((p): p is string => p !== undefined);
+  const parts = [breakpoint, seg, prop, token].filter((p): p is string => typeof p === "string");
   const readable = breakpoint === undefined || !SEGMENTS.some((s) => s.segment === breakpoint);
   return `k-${ident(parts, JSON.stringify([prop, token, breakpoint ?? null, state ?? null]), readable)}`;
 }

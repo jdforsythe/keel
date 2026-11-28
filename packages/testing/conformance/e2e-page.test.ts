@@ -19,7 +19,7 @@
 // ASSUMED: (1) a focus is read from `a11y('a.name')`'s `state.focused`; the caret by a `press('x')` after `resume()`: `Mix` means the caret was at 2 (from `Mi`), `Mixlk` at 2 (from `Milk`).
 // (2) "a live update" is a client store transaction that changes a text with no load; "no command for it" is read as the tab's `requests()` and `documents()` being as before. A browser-side
 // command count is not readable through the public API (UNTESTABLE beyond that). (3) The offline click's `TypeError`: app code may not `fetch` (E1601, E1651), so the page calls its own API through a service and
-// rejects the network failure it gets back as `new TypeError(message)`: the pageerror holds `TypeError`. (4) "an island whose claim replaces the input" is a host element's code replacing it with a copy; "drops its
+// raises the network failure it gets back as an `async` function's defect (k.defects) whose message names the `TypeError`: the pageerror holds `TypeError`. (4) "an island whose claim replaces the input" is a host element's code replacing it with a copy; "drops its
 // `data-k-island` attribute" is a host element's code removing it from the island's root and nothing else (the spec names no other way an app makes a claim do so).
 // (5) The focus ring of the outline case is the `base.focus` of the fixture's tokens.ts (k.ui Base: a 2px solid outline on `:focus-visible`), the one way app code styles a focus outline.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

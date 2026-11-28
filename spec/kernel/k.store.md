@@ -1,5 +1,5 @@
 # k.store: Store and transactions
-status: conformance-covered
+status: implemented
 **API.**
 ```ts
 export const cart = store(CartSchema, { items: [] })
@@ -13,6 +13,7 @@ Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx
 
 **Log meta**. `meta` is a record of JSON values with no schema, copied and frozen onto the entry; it never enters state, and non-JSON meta returns `err(schema.invalid)` with nothing committed. Snapshots reach clients (`#k-state`), so `snapshot()` drops `meta` from every entry; `snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores. `undoWhere(pred)` undoes the latest entry when `pred(entry)` holds for it and returns whether it did; it never undoes an older matching entry.
 
+**Guards.** `isStore(x)` and `isTransaction(x)` (`@keel/store`) are true only of a value `store` or `transaction` made, by the kernel's own record of them and no property of the value (k.identity), so code that holds an `unknown` narrows it to `Store<unknown>` or `Transaction<unknown, unknown>` with no cast.
 **Pure reads.** `snapshotKeys(snapshot)` gives the write keys a `restore` of `snapshot` takes: its `keys` when present, `[]` included (then no key, whatever its log holds), else, when `keys` is absent, its log entries' keys in log order (k.sync). `givenPii(entry)` gives the non-empty strings and numbers under a `.pii()` mark of a committed entry's payload as `tx` was given it (`piiValues`, k.schema), a marked open object's undeclared keys and all under them among them, which the logged payload no longer holds; empty for an unmarked payload schema or an entry this process did not commit. `givenPii(store)` gives the same of the store's state as last given: `initial` at creation; after a `restore`, the snapshot's `state` and `initial` together; after a commit, the state its transaction made; after an undo, what it gave when the entry now latest was committed (with none left, the base's: `initial`, a `restore`'s values, or those of the last entry the log limit folded into it). It is held in memory only and never in a snapshot; a session recorder drops these values from later error text (std.sessions).
 
 **Log limit**. A store keeps at most `logLimit` entries (default 256; not a non-negative integer: `store` throws). A commit past it folds the oldest entry into the base `undo` replays from, which `snapshot()` returns as `initial`; `restore` folds a longer log the same way. State is unchanged. `undo` and `undoWhere` reach only kept entries: with none left they return `false` and change nothing.
@@ -53,3 +54,4 @@ Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx
 - `store()` throws E1303 on a state schema with a nested `s.secret`, not on its clean twin.
 - E1304 fires on `tx` at the top of a component body and in a `For` row function; not on one in an `onClick` arrow, an `effect` callback, or a top-level helper the body calls.
 - A page component creating `store(S, { items: props.data.items }, { id })` in its body shows the loader's items under `renderRoute`, a click handler's `tx` on it updates the page and `state()`, and `resumeDocument` of its `createApp` document gives `state()` for that id equal to the server's.
+- `isStore(cart)` and `isTransaction(addItem)` are true, `isStore(addItem)`, `isTransaction(cart)` and `isStore({ id: 'cart', get() {}, snapshot() {}, restore() {}, head() {} })` false.

@@ -76,7 +76,7 @@ describe("s.* construction guards", () => {
       s.array(s.int()),
       s.record(s.int()),
       s.union("k", [s.object({ k: s.literal("a") })]),
-      s.result(s.int(), s.string()),
+      s.result(s.int(), s.error("a.c", s.int())),
       s.error("a.b", s.int()),
     ];
     for (const b of base) {
@@ -302,33 +302,17 @@ describe("toJson", () => {
 });
 
 describe("attempt", () => {
+  const none = (x: unknown) => (x === THEN ? { code: "t.then", message: "t.then", data: {} } : undefined);
   it("treats thenable objects and functions as async, plain values as sync", async () => {
     const thenable = { [THEN]: (res: (v: number) => void) => res(7) };
     const fnThenable = Object.assign(() => 0, { [THEN]: (res: (v: number) => void) => res(8) });
-    expect(await attempt(() => thenable)).toStrictEqual({ ok: true, value: 7 });
-    expect(await attempt(() => fnThenable)).toStrictEqual({ ok: true, value: 8 });
+    expect(await attempt(() => thenable, none)).toStrictEqual({ ok: true, value: 7 });
+    expect(await attempt(() => fnThenable, none)).toStrictEqual({ ok: true, value: 8 });
     const plain = { [THEN]: 5 };
-    expect(attempt(() => plain)).toStrictEqual({ ok: true, value: plain });
+    expect(attempt(() => plain, none)).toStrictEqual({ ok: true, value: plain });
     const f = () => 1;
-    expect(attempt(() => f)).toStrictEqual({ ok: true, value: f });
-    expect(attempt(() => null)).toStrictEqual({ ok: true, value: null });
-  });
-
-  it("describes whatever was thrown", () => {
-    const cause = (thrown: unknown): unknown => {
-      const r = attempt(() => {
-        throw thrown;
-      });
-      return !r.ok && r.error.data.cause;
-    };
-    expect(cause("boom")).toBe("boom");
-    expect(cause(new TypeError("bad"))).toBe("TypeError: bad");
-    expect(cause({ a: 1 })).toBe('{"a":1}');
-    expect(cause(undefined)).toBe("undefined");
-    expect(cause(10n)).toBe("[object BigInt]");
-    const loop: Record<string, unknown> = {};
-    loop.self = loop;
-    expect(cause(loop)).toBe("[object Object]");
+    expect(attempt(() => f, none)).toStrictEqual({ ok: true, value: f });
+    expect(attempt(() => null, none)).toStrictEqual({ ok: true, value: null });
   });
 });
 

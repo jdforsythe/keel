@@ -1,10 +1,9 @@
 import ts from "typescript";
+import { bareExpression } from "./bareExpression.ts";
 
 /** Date methods E1758 reports on a date receiver: local-time getters and local string conversions. */
 const ON_DATE =
   /^(get(Hours|Minutes|Seconds|Milliseconds|Date|Day|Month|FullYear|Year|TimezoneOffset)|to(String|DateString|TimeString))$/;
-
-const bare = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) ? bare(e.expression) : e);
 
 /**
  * E1758 (k.host): offsets of the expressions whose TypeScript type is the library `Date`, among those the rule asks
@@ -24,15 +23,15 @@ export function dateReads(sf: ts.SourceFile, checker: ts.TypeChecker, program: t
   };
   const ask = (e: ts.Expression | undefined): void => {
     if (e === undefined) return;
-    const b = bare(e);
+    const b = bareExpression(e);
     if (isDate(b)) out.push(b.getStart(sf));
   };
   const visit = (n: ts.Node): void => {
     if (ts.isCallExpression(n)) {
-      const c = bare(n.expression);
+      const c = bareExpression(n.expression);
       if (ts.isIdentifier(c) && c.text === "String") ask(n.arguments[0]);
       else if (ts.isPropertyAccessExpression(c)) {
-        const inner = bare(c.expression);
+        const inner = bareExpression(c.expression);
         if (ON_DATE.test(c.name.text)) ask(c.expression);
         else if (c.name.text === "call" && ts.isPropertyAccessExpression(inner) && ON_DATE.test(inner.name.text))
           ask(n.arguments[0]);

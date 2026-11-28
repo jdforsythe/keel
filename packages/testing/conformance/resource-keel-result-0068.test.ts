@@ -30,10 +30,13 @@ interface Settled {
 /** Runs a resource over `fetcher` in a scope, flushes microtasks, returns the settled state. */
 async function settle(fetcher: () => Promise<unknown>): Promise<Settled> {
   let get: () => Settled = () => ({ state: "unset" });
-  scope(() => {
-    const r = resource(fetcher);
-    get = () => r.get();
-  });
+  scope(
+    () => {
+      const r = resource(fetcher);
+      get = () => r.get();
+    },
+    { detached: true },
+  );
   await flush();
   return get();
 }
@@ -41,7 +44,7 @@ async function settle(fetcher: () => Promise<unknown>): Promise<Settled> {
 describe(`k.reactive: ${CLAUSE_A}`, () => {
   it(`${CLAUSE_A} err(e) settles error with e`, async () => {
     await fc.assert(
-      fc.asyncProperty(fc.anything(), async (e) => {
+      fc.asyncProperty(fc.record({ code: fc.string(), message: fc.string(), data: fc.anything() }), async (e) => {
         const s = await settle(() => Promise.resolve(err(e)));
         expect(s.state).toBe("error");
         expect(Object.is(s.error, e)).toBe(true);
@@ -168,8 +171,8 @@ const GOOD: readonly Case[] = [
     code: "(() => { const r = resource(typedResult); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
   },
   {
-    name: "resource<Result<number, string>>(async () => ok(1)) is Resource<number>",
-    code: "(() => { const r = resource<Result<number, string>>(async () => ok(1)); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
+    name: "resource<Result<number, E0>>(async () => ok(1)) is Resource<number>",
+    code: "(() => { const r = resource<Result<number, E0>>(async () => ok(1)); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
   },
   {
     name: "a fetcher typed () => Promise<{ ok: boolean; value?: string }> is Resource<{ ok: boolean; value?: string }>",

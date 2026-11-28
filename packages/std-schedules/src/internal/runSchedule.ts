@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
+import { attempt, defect } from "@keel/schema";
 import type { JobTable, Queue } from "@keel/std-jobs";
-import { refuse } from "../../unsafe/refuse.ts";
+import { Cancelled } from "./Cancelled.schema.ts";
 import { Marks } from "./Marks.schema.ts";
 import type { Planned } from "./Planned.ts";
 import { seek } from "./seek.ts";
@@ -22,12 +22,13 @@ export async function runSchedule(
 ): Promise<void> {
   const key = `std.schedules.${module}`;
   const raw = await ctx.storage.get(key);
-  const read = Marks.parse(raw === null ? {} : JSON.parse(raw));
-  if (!read.ok) refuse(`std.schedules: ${key} does not hold schedule marks`);
+  const read = raw === null ? Marks.parse({}) : Marks.parseJson(raw);
+  if (!read.ok)
+    defect("std.schedules: the stored value does not hold schedule marks", { data: { key }, cause: read.error });
   const marks = read.value;
   const fire = async (p: Planned, t: number): Promise<void> => {
     const r = await queue.enqueue(ctx, p.job, p.input, { key: `${p.id}@${t}` });
-    if (!r.ok) refuse(`std.schedules: enqueue ${p.job} failed: ${r.error.code}`);
+    if (!r.ok) defect("std.schedules: enqueue failed", { data: { job: p.job }, cause: r.error });
     marks[p.id] = t;
     await ctx.storage.set(key, JSON.stringify(marks));
   };
@@ -45,10 +46,12 @@ export async function runSchedule(
   }
   while (!signal.aborted) {
     const t = Math.min(...[...next.values()].map((x) => x ?? Number.POSITIVE_INFINITY));
-    const waited = await attempt(() =>
-      t < Number.POSITIVE_INFINITY
-        ? ctx.clock.after(Math.max(0, t - ctx.clock.now()), signal)
-        : new Promise((_, reject) => signal.addEventListener("abort", reject, { once: true })),
+    const waited = await attempt(
+      () =>
+        t < Number.POSITIVE_INFINITY
+          ? ctx.clock.after(Math.max(0, t - ctx.clock.now()), signal)
+          : new Promise<void>((done) => signal.addEventListener("abort", () => done(), { once: true })),
+      (x) => (x === signal.reason ? Cancelled.make({}) : undefined),
     );
     if (!waited.ok) return;
     if (ctx.clock.now() < t) continue;

@@ -67,4 +67,4 @@ Uses **capabilities** (`session`), **inspector hooks** (`sessions.live`), the **
 
 ## Unsafe
 
-count: 0
+None.

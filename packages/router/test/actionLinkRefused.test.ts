@@ -10,9 +10,9 @@ import { describe, expect, it } from "vitest";
 import { Form } from "../src/Form.ts";
 import { action } from "../src/action.ts";
 import { createRouterWith } from "../src/internal/createRouterWith.ts";
-import { isHref } from "../src/internal/isHref.ts";
 import { manifest } from "../src/manifest.ts";
 import type { Href } from "../src/types/Href.ts";
+import { isHref } from "../unsafe/isHref.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 
 const settle = async (): Promise<void> => {

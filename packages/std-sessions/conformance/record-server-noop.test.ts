@@ -27,11 +27,14 @@ describe("std.sessions: no document", () => {
         vi.stubGlobal("fetch", fetched);
         const ctx = createCtx({ mode: "sim", seed: 1337 });
         const rec = record(ctx, { upload: new URL("https://example.test/sessions") });
-        scope(() => {
-          const st = store(s.object({ n: s.int() }), { n: 0 }, { id: `cart.${++run}` });
-          const bump = transaction(st, "cart.bump", s.object({ by: s.int() }), (state, p) => ({ n: state.n + p.by }));
-          for (let i = 0; i < count; i++) void tx(bump, { by: 1 });
-        });
+        scope(
+          () => {
+            const st = store(s.object({ n: s.int() }), { n: 0 }, { id: `cart.${++run}` });
+            const bump = transaction(st, "cart.bump", s.object({ by: s.int() }), (state, p) => ({ n: state.n + p.by }));
+            for (let i = 0; i < count; i++) void tx(bump, { by: 1 });
+          },
+          { detached: true },
+        );
         expect(rec.events()).toEqual([]);
         expect(rec.errors()).toEqual([]);
         expect(session(ctx).taken()).toEqual([]);

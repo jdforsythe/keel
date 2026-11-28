@@ -35,7 +35,7 @@ afterEach(() => {
 
 /** Run `make` in a fresh isolated scope (k.store `isolate`), disposed after the test: ids never collide. */
 const inScope = <T>(make: () => T): T => {
-  const sc = scope(() => undefined);
+  const sc = scope(() => undefined, { detached: true });
   isolate(sc);
   scopes.push(sc);
   return sc.run(make);

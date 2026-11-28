@@ -42,16 +42,19 @@ function rig(initial: Value = INITIAL) {
   const size = document.createElement("input");
   size.type = "number";
   scopes.push(
-    scope(() => {
-      const f = form(Edit, { initial });
-      box.f = f;
-      f.field("title").bind(title);
-      f.field("notes").bind(notes);
-      f.field("priority").bind(priority);
-      f.field("done").bind(done);
-      f.field("secret").bind(secret);
-      f.field("size").bind(size);
-    }),
+    scope(
+      () => {
+        const f = form(Edit, { initial });
+        box.f = f;
+        f.field("title").bind(title);
+        f.field("notes").bind(notes);
+        f.field("priority").bind(priority);
+        f.field("done").bind(done);
+        f.field("secret").bind(secret);
+        f.field("size").bind(size);
+      },
+      { detached: true },
+    ),
   );
   const f = box.f;
   if (f === undefined) throw new Error("rig: no form");
@@ -149,12 +152,15 @@ describe("bind keeps an edit made before it (backlog 0180)", () => {
     done.checked = false;
     const box: { f?: FormState<{ title: string; done: boolean }> } = {};
     scopes.push(
-      scope(() => {
-        const f = form(s.object({ title: s.string(), done: s.boolean() }), { initial: { title: "Ada", done: true } });
-        f.field("title").bind(title);
-        f.field("done").bind(done);
-        box.f = f;
-      }),
+      scope(
+        () => {
+          const f = form(s.object({ title: s.string(), done: s.boolean() }), { initial: { title: "Ada", done: true } });
+          f.field("title").bind(title);
+          f.field("done").bind(done);
+          box.f = f;
+        },
+        { detached: true },
+      ),
     );
     expect(title.value).toBe("typed");
     expect(done.checked).toBe(false);

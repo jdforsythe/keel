@@ -17,7 +17,9 @@ The document's title is the matched route's `title`. Without one, when a loader 
 
 **Client.** Scroll: a push or replace to another path goes to the top (or the hash target); back or forward restores each entry's; one that changes only the search, and revalidation, keep it. At `mount`, at `resume` and after each navigation's chain has rendered, the router sets `document.title` and `document.documentElement.lang` by the rules above where they differ. After a navigation to another route it moves focus to the page's first `h1`, setting `tabindex="-1"`, else to `main`; a navigation within one route keeps focus: a kept page (k.router) keeps the focused element, a page rendered anew focuses the element with the same id. Revalidation (an action's `ok(null)`) moves neither focus nor scroll. Neither it nor a kept page rebuilds an element or text node. On a kept page, a focused element the navigation removed hands focus to the element with its id, else, when no widget took it, to the page's first `role="status"` region, else `main` (`tabindex="-1"`).
 
-**Rules.** W1012 a project root holding `index.html`, once per `keel check`, `keel dev` and `keel build`, naming it (fix: move markup into a layout, stylesheets into `styles`). A string literal with a letter returned by `title` in a module that lists `@keel/std-messages` is E2406 (std.messages).
+**Rules.** W1012 a project root holding `index.html`, once per `keel check`, `keel dev` and `keel build`, naming it (fix: move markup into a layout, stylesheets into `styles`).
+
+A string literal with a letter returned by `title` in a module that lists `@keel/std-messages` is E2406 (std.messages).
 
 **Conformance.**
 - A node document for a route with `title` has `<title>` its return value, escaped; for a route without one, after a loader `err`, and for a 404, the deployable's name.

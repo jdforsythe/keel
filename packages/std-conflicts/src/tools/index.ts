@@ -20,6 +20,7 @@ const HINT = {
   invalid: "one order fails an invariant or the schema: declare it 'reject'",
   folded: "its base is older than the kept log: raise logLimit or check an earlier snapshot",
   undo: "an undo lies between the kept log's start and it",
+  threw: "a transaction threw an Error while it was applied: its races are not checked",
 } as const;
 
 /** The compact line, then every entry of `against` and what the reason means. */

@@ -40,7 +40,8 @@ import { valuesOf } from "./valuesOf.ts";
  * action's `ok` value that is neither `null` nor an `Href` (`isHref`) saves nothing and is 500 `keel.unexpected` on
  * either transport, with a `keel.unexpected` diag; neither holds the value. A document `keel.fields` re-renders the page at 422
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
- * A throw is `keel.unexpected` plus a `keel.unexpected` diag; neither holds a `.pii()` value of the decoded input or of
+ * A throw is `keel.unexpected` plus its `keel.unexpected` records (`sv.thrown`: its form, and its text only while full
+ * text is on); none holds a `.pii()` value of the decoded input or of
  * the stores it opened, nor the revealed value of a `Secret` in the decoded input (`notePii`, `noteRequestSecrets`,
  * `scrubbedCause`; k.privacy Server log); its `lead`, `action <id> threw: `, is what `scrubbedDiag` keeps past a scrub cap.
  */
@@ -81,7 +82,11 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const encoded = attempted(() => action.input.encode(decoded.value));
   notePii(rq.pii, action.input, encoded.ok ? encoded.value : decoded.value);
   let refused: Diag | null = null;
-  const { result: ran, frames } = await caught(async () => {
+  const {
+    result: ran,
+    frames,
+    thrown: value,
+  } = await caught(async () => {
     const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
     const at = { params: m.params, url: r.url, caller: rq.caller.id, user: rq.user, stores, routes: r.sv.routes };
     const out =
@@ -120,9 +125,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
       for (const o of h.opened) notePii(rq.pii, o.store.schema, o.store.snapshot().state);
   }
   const clean = ran.ok ? null : scrubbedCause(ran.error, rq);
-  const lead = `action ${id} threw: `;
-  const thrown: Diag[] =
-    clean === null ? [] : [{ code: "keel.unexpected", lead, message: lead + clean.data.cause, frames }];
+  const thrown: Diag[] = clean === null ? [] : sv.thrown("keel.unexpected", `action ${id} threw: `, value, frames);
   if (refused !== null) thrown.push(refused);
   const result = clean === null ? (ran.ok ? ran.value : ran) : err(clean);
   if (!result.ok) rq.held.clear();

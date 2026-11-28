@@ -1,4 +1,4 @@
-import type { Result } from "@keel/schema";
+import type { KeelError, Result } from "@keel/schema";
 
 /**
  * What `changed` takes as a channel (std.postgres-changes): any value with a `name` and a `params` schema, a std.channels
@@ -6,5 +6,5 @@ import type { Result } from "@keel/schema";
  */
 export type ChangedChannel<P> = {
   readonly name: string;
-  readonly params: { parse(input: unknown): Result<P, unknown>; encode(value: unknown): unknown };
+  readonly params: { parse(input: unknown): Result<P, KeelError<string, unknown>>; encode(value: unknown): unknown };
 };

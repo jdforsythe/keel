@@ -101,16 +101,19 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c
           await stream.writeSSE({ data });
         }
       }, sv.frames);
-      // A throw, or an event over the cap, is one scrubbed `keel.unexpected` diag in the log and a last `data:` line
-      // holding its `err`.
+      // A throw is its scrubbed `keel.unexpected` records (`sv.thrown`), an event over the cap one `diag`, each with a
+      // last `data:` line holding its `err`.
       const cause = ran.result.ok ? undefined : ran.result.error;
       const over = `event over ${MAX_EVENT_BYTES} bytes`;
       const failure = cause ?? (tooBig ? unexpectedOf(over) : undefined);
       if (failure !== undefined) {
         const clean = scrubbedCause(failure, rq);
-        const lead = cause === undefined ? `loader ${m.route.id} ` : `loader ${m.route.id} threw: `;
-        const d = { code: "keel.unexpected", lead, message: lead + clean.data.cause, frames: ran.frames };
-        sv.log?.write(diagLine(sv.log.format, scrubbedDiag(d, rq)));
+        const lead = `loader ${m.route.id} `;
+        const records =
+          cause === undefined
+            ? [{ code: "keel.unexpected", lead, message: lead + clean.data.cause }]
+            : sv.thrown("keel.unexpected", `${lead}threw: `, ran.thrown, ran.frames);
+        for (const d of records) sv.log?.write(diagLine(sv.log.format, scrubbedDiag(d, rq)));
         await attempted(() => stream.writeSSE({ data: JSON.stringify(err(publicError(clean, sv.mode))) }));
       }
     } finally {

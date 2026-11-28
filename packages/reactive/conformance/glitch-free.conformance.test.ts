@@ -8,31 +8,37 @@ const SEED = 1337;
 describe("k.reactive: glitch-free propagation", () => {
   it("diamond: one write yields exactly one effect run with a consistent value", () => {
     const seen: number[] = [];
-    scope(() => {
-      const a = signal(1);
-      const b = computed(() => a.get() + 1);
-      const c = computed(() => a.get() * 10);
-      const d = computed(() => b.get() + c.get());
-      effect(() => {
-        seen.push(d.get());
-      });
-      expect(seen).toEqual([12]);
-      a.set(2);
-    });
+    scope(
+      () => {
+        const a = signal(1);
+        const b = computed(() => a.get() + 1);
+        const c = computed(() => a.get() * 10);
+        const d = computed(() => b.get() + c.get());
+        effect(() => {
+          seen.push(d.get());
+        });
+        expect(seen).toEqual([12]);
+        a.set(2);
+      },
+      { detached: true },
+    );
     expect(seen).toEqual([12, 23]);
   });
 
   it("diamond: effect never observes a mix of old and new branch values", () => {
     const pairs: Array<[number, number]> = [];
-    scope(() => {
-      const a = signal(0);
-      const b = computed(() => a.get());
-      const c = computed(() => a.get());
-      effect(() => {
-        pairs.push([b.get(), c.get()]);
-      });
-      for (let i = 1; i <= 5; i++) a.set(i);
-    });
+    scope(
+      () => {
+        const a = signal(0);
+        const b = computed(() => a.get());
+        const c = computed(() => a.get());
+        effect(() => {
+          pairs.push([b.get(), c.get()]);
+        });
+        for (let i = 1; i <= 5; i++) a.set(i);
+      },
+      { detached: true },
+    );
     for (const [x, y] of pairs) expect(x).toBe(y);
     expect(pairs.length).toBe(6);
   });
@@ -52,19 +58,22 @@ describe("k.reactive: glitch-free propagation", () => {
           return vals.reduce((s, v) => s + v, 0);
         };
         const seen: number[] = [];
-        scope(() => {
-          const src = signal(1);
-          const nodes: Array<{ get(): number }> = [src];
-          for (const ds of deps) {
-            const snapshot = [...nodes];
-            nodes.push(computed(() => 1 + ds.reduce((s, k) => s + (snapshot[k]?.get() ?? 0), 0)));
-          }
-          const sink = computed(() => nodes.reduce((s, n) => s + n.get(), 0));
-          effect(() => {
-            seen.push(sink.get());
-          });
-          src.set(1 + bump);
-        });
+        scope(
+          () => {
+            const src = signal(1);
+            const nodes: Array<{ get(): number }> = [src];
+            for (const ds of deps) {
+              const snapshot = [...nodes];
+              nodes.push(computed(() => 1 + ds.reduce((s, k) => s + (snapshot[k]?.get() ?? 0), 0)));
+            }
+            const sink = computed(() => nodes.reduce((s, n) => s + n.get(), 0));
+            effect(() => {
+              seen.push(sink.get());
+            });
+            src.set(1 + bump);
+          },
+          { detached: true },
+        );
         expect(seen).toEqual([model(1), model(1 + bump)]);
       }),
       { seed: SEED, numRuns: 100 },

@@ -76,7 +76,8 @@ const STATES: readonly State[] = [
 /** Base elements whose `styles` hold part styles (`field`, `label`, `error`). */
 const CONTROLS: ReadonlySet<string> = new Set(["Input", "TextArea", "Select", "Checkbox"]);
 
-const isState = (k: string): k is State => STATES.some((s) => s === k);
+/** The state `k` names, or `undefined`. */
+const stateOf = (k: string): State | undefined => STATES.find((s) => s === k);
 
 /** The `look` sets of `tokens.ts` as data (the build evaluates them), by name. */
 type Looks = Readonly<Record<string, unknown>>;
@@ -123,8 +124,9 @@ function lookName(e: Expression | null | undefined): string | undefined {
 function stateKeys(st: ObjectExpression): string[] {
   const out: string[] = [];
   for (const q of st.properties) {
-    const s = keyOf(q);
-    if (s === undefined || q.type !== "Property" || !isState(s)) continue;
+    const k = keyOf(q);
+    const s = k === undefined ? undefined : stateOf(k);
+    if (s === undefined || q.type !== "Property") continue;
     const inner = unparen(q.value);
     if (inner.type === "ObjectExpression")
       for (const r of inner.properties) {
@@ -220,8 +222,9 @@ function statesObject(e: Expression, out: Leaf[]): boolean {
   if (x.type !== "ObjectExpression") return false;
   let fixed = true;
   for (const p of x.properties) {
-    const k = keyOf(p);
-    if (k === undefined || p.type !== "Property" || !isState(k)) {
+    const key = keyOf(p);
+    const k = key === undefined ? undefined : stateOf(key);
+    if (k === undefined || p.type !== "Property") {
       fixed = false;
       continue;
     }

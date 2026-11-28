@@ -1,10 +1,9 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
 import { MODULES_KEY } from "./MODULES_KEY.ts";
 
 function originOf(url: string): string | undefined {
-  const u = attempt(() => new URL(url));
-  return u.ok && /^https?:$/.test(u.value.protocol) ? u.value.origin : undefined;
+  const u = URL.parse(url);
+  return u !== null && /^https?:$/.test(u.protocol) ? u.origin : undefined;
 }
 
 /**

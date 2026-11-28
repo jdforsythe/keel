@@ -212,32 +212,35 @@ async function drive(src: Source, ch: Channel, m: M) {
     routes: ReturnType<typeof manifest>;
     commit: (n: object) => void;
   }[] = [];
-  const owner = scope(() => {
-    const st = store(src.state ?? none, initial, { id: storeId });
-    let next: object = initial;
-    const t = transaction(st, `${storeId}.send`, src.payload ?? none, (state) => state);
-    const mk = transaction(st, `${storeId}.make`, none, () => next);
-    const page =
-      (id: string): (() => Node) =>
-      () =>
-        Box({
-          as: "main",
-          id: "src.page",
-          children: [Button({ id: "src.go", children: id, onClick: () => void tx(t, src.sent?.(m) ?? {}) })],
-        });
-    const routes = manifest(c, {
-      "src.show": { component: page("show"), loader: loader(c, "src.show", { output: s.object({}) }, run) },
-      "src.bad": { component: page("bad"), loader: loader(c, "src.bad", { output: s.object({}) }, run) },
-    });
-    built.push({
-      st,
-      routes,
-      commit: (n) => {
-        next = n;
-        void tx(mk, {});
-      },
-    });
-  });
+  const owner = scope(
+    () => {
+      const st = store(src.state ?? none, initial, { id: storeId });
+      let next: object = initial;
+      const t = transaction(st, `${storeId}.send`, src.payload ?? none, (state) => state);
+      const mk = transaction(st, `${storeId}.make`, none, () => next);
+      const page =
+        (id: string): (() => Node) =>
+        () =>
+          Box({
+            as: "main",
+            id: "src.page",
+            children: [Button({ id: "src.go", children: id, onClick: () => void tx(t, src.sent?.(m) ?? {}) })],
+          });
+      const routes = manifest(c, {
+        "src.show": { component: page("show"), loader: loader(c, "src.show", { output: s.object({}) }, run) },
+        "src.bad": { component: page("bad"), loader: loader(c, "src.bad", { output: s.object({}) }, run) },
+      });
+      built.push({
+        st,
+        routes,
+        commit: (n) => {
+          next = n;
+          void tx(mk, {});
+        },
+      });
+    },
+    { detached: true },
+  );
   const [b] = built;
   if (b === undefined) throw new Error("drive: build failed");
   const h = await renderRoute("src.show", {

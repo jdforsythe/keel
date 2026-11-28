@@ -31,7 +31,8 @@ let arrivals: ((h: Held) => void)[] = [];
 const arrived = (): Promise<Held> => new Promise((r) => arrivals.push(r));
 
 const write = action(t, "t.page", { input: Add, stores: factory }, async ({ text }, { stores }) => {
-  void tx(stores.add, { text });
+  const added = tx(stores.add, { text });
+  if (!added.ok) return added;
   await new Promise<void>((release) => {
     const h = { text, release };
     held.push(h);

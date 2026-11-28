@@ -32,9 +32,12 @@ const Rows = s.object({ rows: s.array(CatalogRow) });
 // store() must run inside a reactive scope.
 const made = (() => {
   let out: Store<Infer<typeof Rows>> | undefined;
-  scope(() => {
-    out = store(Rows, { rows: [] }, { id: "tbl.rows" });
-  });
+  scope(
+    () => {
+      out = store(Rows, { rows: [] }, { id: "tbl.rows" });
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: store scope did not run");
   return out;
 })();

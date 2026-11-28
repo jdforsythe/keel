@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { s } from "@keel/schema";
 import { build } from "esbuild";
 import { EvaluateFailure } from "../EvaluateFailure.ts";
 import { compile } from "../compile.ts";
@@ -17,6 +18,7 @@ import type { ProblemRecord } from "./ProblemRecord.ts";
 import { SERVER_ENV } from "./SERVER_ENV.ts";
 import { UNRESOLVED_MARK } from "./UNRESOLVED_MARK.ts";
 import { bundleFailure } from "./bundleFailure.ts";
+import { censusPlugin } from "./censusPlugin.ts";
 import { contractOf } from "./contractOf.ts";
 import { evaluatorAnswers } from "./evaluatorAnswers.ts";
 import { importMetaPlugin } from "./importMetaPlugin.ts";
@@ -63,6 +65,8 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 const isNullableString = (x: unknown): x is string | null => x === null || typeof x === "string";
 
+const Json = s.json();
+
 function isRouteEntry(x: unknown): x is RouteEntry {
   return (
     isRecord(x) &&
@@ -72,8 +76,10 @@ function isRouteEntry(x: unknown): x is RouteEntry {
     isNullableString(x.layout) &&
     typeof x.module === "string" &&
     isNullableString(x.path) &&
-    "params" in x &&
-    "search" in x
+    (x.api === undefined || x.api === true) &&
+    (x.method === undefined || typeof x.method === "string") &&
+    Json.parse(x.params).ok &&
+    Json.parse(x.search).ok
   );
 }
 
@@ -144,7 +150,7 @@ function entrySource(
     "const coded = (e) => e && typeof e === 'object' && 'code' in e && /^E[0-9]{4}$/.test(String(e.code));",
     // A refusal is a record of its own (k.evaluator Placing); a diagnostic-shaped error keeps its code; any other throw
     // ends the file it came from with `code`, naming it.
-    "const recordOf = (e, code, file) => { const r = __keelRefusalOf(e); if (r !== undefined) return { code: 'E1050', what: String(r.what), frames: r.frames }; if (coded(e)) return { code: String(e.code), message: message(e) }; return { code, message: `${file} failed to evaluate: ${message(e)}` }; };",
+    "const recordOf = (e, code, file) => { const r = __keelRefusalOf(e); if (r !== undefined) return { code: 'E1050', what: String(r.what), frames: r.frames }; if (coded(e)) { const m = message(e); return { code: String(e.code), message: m.startsWith(`${e.code} `) ? m.slice(String(e.code).length + 1) : m }; } return { code, message: `${file} failed to evaluate: ${message(e)}` }; };",
     // From the compiler call, a codeless throw that is no refusal is an internal failure.
     "const report = (e) => { if (__keelRefusalOf(e) !== undefined || coded(e)) problems.push(recordOf(e)); else internal.push(message(e)); };",
   );
@@ -308,6 +314,7 @@ export async function evaluateProject(input: {
     plugins: [
       observePlugin(),
       shippedTokensPlugin(root),
+      censusPlugin(),
       {
         name: "keel-jsx",
         setup(b) {

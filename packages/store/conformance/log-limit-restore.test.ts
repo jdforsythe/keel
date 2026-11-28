@@ -19,9 +19,12 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
 
 function inScope<T>(fn: () => T): T {
   const box: { v: { value: T } | undefined } = { v: undefined };
-  const sc = scope(() => {
-    box.v = { value: fn() };
-  });
+  const sc = scope(
+    () => {
+      box.v = { value: fn() };
+    },
+    { detached: true },
+  );
   if (box.v === undefined) throw new Error("scope body did not run");
   void sc;
   return box.v.value;

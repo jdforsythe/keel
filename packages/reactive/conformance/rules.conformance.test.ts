@@ -16,15 +16,18 @@ describe("k.reactive: rules", () => {
   it("E1201: effect writing to a signal not in its declared writes", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const other = signal(0);
-          effect(
-            () => {
-              other.set(1);
-            },
-            { writes: [] },
-          );
-        });
+        scope(
+          () => {
+            const other = signal(0);
+            effect(
+              () => {
+                other.set(1);
+              },
+              { writes: [] },
+            );
+          },
+          { detached: true },
+        );
       }),
     ).toBe("E1201");
   });
@@ -32,16 +35,19 @@ describe("k.reactive: rules", () => {
   it("E1201: write to a signal declared by a different effect is still rejected", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const a = signal(0);
-          const b = signal(0);
-          effect(
-            () => {
-              b.set(1);
-            },
-            { writes: [a] },
-          );
-        });
+        scope(
+          () => {
+            const a = signal(0);
+            const b = signal(0);
+            effect(
+              () => {
+                b.set(1);
+              },
+              { writes: [a] },
+            );
+          },
+          { detached: true },
+        );
       }),
     ).toBe("E1201");
   });
@@ -49,15 +55,18 @@ describe("k.reactive: rules", () => {
   it("E1201 is not raised for a declared write", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const a = signal(0);
-          effect(
-            () => {
-              a.set(1);
-            },
-            { writes: [a] },
-          );
-        });
+        scope(
+          () => {
+            const a = signal(0);
+            effect(
+              () => {
+                a.set(1);
+              },
+              { writes: [a] },
+            );
+          },
+          { detached: true },
+        );
       }),
     ).toBe("no-throw");
   });
@@ -65,13 +74,16 @@ describe("k.reactive: rules", () => {
   it("E1202: computed dependency cycle", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const holder: { b?: { get(): number } } = {};
-          const a = computed((): number => holder.b?.get() ?? 0);
-          const b = computed((): number => a.get() + 1);
-          holder.b = b;
-          b.get();
-        });
+        scope(
+          () => {
+            const holder: { b?: { get(): number } } = {};
+            const a = computed((): number => holder.b?.get() ?? 0);
+            const b = computed((): number => a.get() + 1);
+            holder.b = b;
+            b.get();
+          },
+          { detached: true },
+        );
       }),
     ).toBe("E1202");
   });
@@ -79,15 +91,18 @@ describe("k.reactive: rules", () => {
   it("E1202: effect that reads and writes its own signal in a loop", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const s = signal(0);
-          effect(
-            () => {
-              s.set(s.get() + 1);
-            },
-            { writes: [s] },
-          );
-        });
+        scope(
+          () => {
+            const s = signal(0);
+            effect(
+              () => {
+                s.set(s.get() + 1);
+              },
+              { writes: [s] },
+            );
+          },
+          { detached: true },
+        );
       }),
     ).toBe("E1202");
   });
@@ -102,12 +117,12 @@ describe("k.reactive: rules", () => {
   });
 
   it("E1203: primitive created after its scope has run (async, outside scope)", async () => {
-    scope(() => {});
+    scope(() => {}, { detached: true });
     await Promise.resolve();
     expect(codeOf(() => void signal(0))).toBe("E1203");
   });
 
   it("creation inside scope does not throw E1203", () => {
-    expect(codeOf(() => void scope(() => void signal(0)))).toBe("no-throw");
+    expect(codeOf(() => void scope(() => void signal(0), { detached: true }))).toBe("no-throw");
   });
 });

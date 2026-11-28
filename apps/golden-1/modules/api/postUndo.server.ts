@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
@@ -9,7 +9,5 @@ import { boardStores } from "./boardStores.ts";
  * never undoes another's write.
  */
 export const postUndo = action(api, "api.undo", { stores: boardStores }, (_input, { caller, stores }) =>
-  stores.board.undoWhere((e) => e.meta?.caller === caller)
-    ? ok({})
-    : err({ code: "keel.denied", message: "Nothing of yours to undo", data: {} }),
+  stores.board.undoWhere((e) => e.meta?.caller === caller) ? ok({}) : err(keelError.denied.make({})),
 );

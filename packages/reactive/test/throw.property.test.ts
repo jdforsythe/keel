@@ -81,94 +81,97 @@ describe("throwing computeds", () => {
         const runs = specs.map(() => 0);
         const readerRuns = readers.map(() => 0);
         const seen: Outcome[][] = readers.map(() => []);
-        const sc = scope(() => {
-          const sources: Signal<number>[] = src.map((v) => signal(v));
-          const nodes: Array<{ get(): number }> = [...sources];
-          specs.forEach((spec, i) => {
-            const snapshot = [...nodes];
-            nodes.push(
-              computed(() => {
-                runs[i] = (runs[i] ?? 0) + 1;
-                let sum = 0;
-                for (const d of spec.deps) sum += snapshot[d]?.get() ?? 0;
-                const v = nodeValue(spec, sum);
-                if (throwsAt(spec, v)) throw new Error(`node ${SOURCES + i}`);
-                return v;
-              }),
-            );
-          });
-          readers.forEach((r, k) => {
-            effect(() => {
-              readerRuns[k] = (readerRuns[k] ?? 0) + 1;
-              try {
-                seen[k]?.push({ err: false, v: nodes[r]?.get() ?? Number.NaN });
-              } catch {
-                seen[k]?.push({ err: true });
-              }
-            });
-          });
-          const first = model(specs, src);
-          let prev = first.out;
-          const tracked = first.reads;
-          const stale = specs.map(() => false);
-          readers.forEach((r, k) => {
-            expect(seen[k]?.at(-1)).toEqual(prev[r]);
-          });
-          for (const writes of commits) {
-            // A source changed when one of this commit's writes gave it a new value (a later write back counts too).
-            const touched = src.map(() => false);
-            for (const [j, v] of writes) {
-              if (src[j] !== v) touched[j] = true;
-              src[j] = v;
-            }
-            const { out: next, reads } = model(specs, src);
-            // Which nodes reran (a source of theirs changed) and which changed (their readers rerun).
-            const changed: boolean[] = [];
-            const reran: boolean[] = [];
-            for (let i = 0; i < total; i++) {
-              if (i < SOURCES) {
-                reran.push(false);
-                changed.push(touched[i] === true);
-                continue;
-              }
-              const r = (tracked[i] ?? []).some((d) => changed[d] === true);
-              if (r) tracked[i] = reads[i] ?? [];
-              reran.push(r);
-              changed.push(r && !same(prev[i], next[i]));
-            }
-            const runsBefore = [...runs];
-            const readerBefore = [...readerRuns];
-            const apply = (): void => {
-              for (const [j, v] of writes) sources[j]?.set(v);
-            };
-            if (writes.length > 1) batch(apply);
-            else apply();
-            // Nodes a reader reaches now: what the readers read, and what those read, as of this commit.
-            const reached = new Set<number>();
-            const visit = (i: number): void => {
-              if (reached.has(i)) return;
-              reached.add(i);
-              for (const d of reads[i] ?? []) visit(d);
-            };
-            for (const r of readers) visit(r);
-            specs.forEach((_, i) => {
-              // Only after a source change since its last run (a node nothing observes catches up lazily on its next
-              // read; a first read evaluates it); exactly once when a reader reaches it, else at most once.
-              const ran = (runs[i] ?? 0) - (runsBefore[i] ?? 0);
-              const fresh = (runsBefore[i] ?? 0) === 0;
-              if (reran[SOURCES + i] === true) stale[i] = true;
-              const due = fresh || stale[i] === true;
-              if (due && reached.has(SOURCES + i)) expect(ran).toBe(1);
-              else expect(ran).toBeLessThanOrEqual(due ? 1 : 0);
-              if (ran > 0) stale[i] = false;
+        const sc = scope(
+          () => {
+            const sources: Signal<number>[] = src.map((v) => signal(v));
+            const nodes: Array<{ get(): number }> = [...sources];
+            specs.forEach((spec, i) => {
+              const snapshot = [...nodes];
+              nodes.push(
+                computed(() => {
+                  runs[i] = (runs[i] ?? 0) + 1;
+                  let sum = 0;
+                  for (const d of spec.deps) sum += snapshot[d]?.get() ?? 0;
+                  const v = nodeValue(spec, sum);
+                  if (throwsAt(spec, v)) throw new Error(`node ${SOURCES + i}`);
+                  return v;
+                }),
+              );
             });
             readers.forEach((r, k) => {
-              expect((readerRuns[k] ?? 0) - (readerBefore[k] ?? 0)).toBe(changed[r] === true ? 1 : 0);
-              expect(seen[k]?.at(-1)).toEqual(next[r]);
+              effect(() => {
+                readerRuns[k] = (readerRuns[k] ?? 0) + 1;
+                try {
+                  seen[k]?.push({ err: false, v: nodes[r]?.get() ?? Number.NaN });
+                } catch {
+                  seen[k]?.push({ err: true });
+                }
+              });
             });
-            prev = next;
-          }
-        });
+            const first = model(specs, src);
+            let prev = first.out;
+            const tracked = first.reads;
+            const stale = specs.map(() => false);
+            readers.forEach((r, k) => {
+              expect(seen[k]?.at(-1)).toEqual(prev[r]);
+            });
+            for (const writes of commits) {
+              // A source changed when one of this commit's writes gave it a new value (a later write back counts too).
+              const touched = src.map(() => false);
+              for (const [j, v] of writes) {
+                if (src[j] !== v) touched[j] = true;
+                src[j] = v;
+              }
+              const { out: next, reads } = model(specs, src);
+              // Which nodes reran (a source of theirs changed) and which changed (their readers rerun).
+              const changed: boolean[] = [];
+              const reran: boolean[] = [];
+              for (let i = 0; i < total; i++) {
+                if (i < SOURCES) {
+                  reran.push(false);
+                  changed.push(touched[i] === true);
+                  continue;
+                }
+                const r = (tracked[i] ?? []).some((d) => changed[d] === true);
+                if (r) tracked[i] = reads[i] ?? [];
+                reran.push(r);
+                changed.push(r && !same(prev[i], next[i]));
+              }
+              const runsBefore = [...runs];
+              const readerBefore = [...readerRuns];
+              const apply = (): void => {
+                for (const [j, v] of writes) sources[j]?.set(v);
+              };
+              if (writes.length > 1) batch(apply);
+              else apply();
+              // Nodes a reader reaches now: what the readers read, and what those read, as of this commit.
+              const reached = new Set<number>();
+              const visit = (i: number): void => {
+                if (reached.has(i)) return;
+                reached.add(i);
+                for (const d of reads[i] ?? []) visit(d);
+              };
+              for (const r of readers) visit(r);
+              specs.forEach((_, i) => {
+                // Only after a source change since its last run (a node nothing observes catches up lazily on its next
+                // read; a first read evaluates it); exactly once when a reader reaches it, else at most once.
+                const ran = (runs[i] ?? 0) - (runsBefore[i] ?? 0);
+                const fresh = (runsBefore[i] ?? 0) === 0;
+                if (reran[SOURCES + i] === true) stale[i] = true;
+                const due = fresh || stale[i] === true;
+                if (due && reached.has(SOURCES + i)) expect(ran).toBe(1);
+                else expect(ran).toBeLessThanOrEqual(due ? 1 : 0);
+                if (ran > 0) stale[i] = false;
+              });
+              readers.forEach((r, k) => {
+                expect((readerRuns[k] ?? 0) - (readerBefore[k] ?? 0)).toBe(changed[r] === true ? 1 : 0);
+                expect(seen[k]?.at(-1)).toEqual(next[r]);
+              });
+              prev = next;
+            }
+          },
+          { detached: true },
+        );
         sc.dispose();
       }),
       { seed: SEED, numRuns: 300 },
@@ -183,33 +186,36 @@ describe("throwing computeds", () => {
         let noneRuns = 0;
         const seen: string[] = [];
         let write: (toGate: boolean, v: number) => void = () => {};
-        const sc = scope(() => {
-          const gate = signal(0);
-          const x = signal(0);
-          write = (toGate, v) => (toGate ? gate.set(v) : x.set(v));
-          const c = computed(() => {
-            runs++;
-            const g = gate.get();
-            if (g % 2 === 1) throw new Error(`gate ${g}`);
-            return g + x.get();
-          });
-          const none = computed((): number => {
-            noneRuns++;
-            throw new Error("none");
-          });
-          effect(() => {
-            try {
-              seen.push(`v${c.get()}`);
-            } catch (e) {
-              seen.push(e instanceof Error ? e.message : "other");
-            }
-            try {
-              none.get();
-            } catch {
-              // Read for its run count only.
-            }
-          });
-        });
+        const sc = scope(
+          () => {
+            const gate = signal(0);
+            const x = signal(0);
+            write = (toGate, v) => (toGate ? gate.set(v) : x.set(v));
+            const c = computed(() => {
+              runs++;
+              const g = gate.get();
+              if (g % 2 === 1) throw new Error(`gate ${g}`);
+              return g + x.get();
+            });
+            const none = computed((): number => {
+              noneRuns++;
+              throw new Error("none");
+            });
+            effect(() => {
+              try {
+                seen.push(`v${c.get()}`);
+              } catch (e) {
+                seen.push(e instanceof Error ? e.message : "other");
+              }
+              try {
+                none.get();
+              } catch {
+                // Read for its run count only.
+              }
+            });
+          },
+          { detached: true },
+        );
         let g = 0;
         let xv = 0;
         let expectedRuns = 1;

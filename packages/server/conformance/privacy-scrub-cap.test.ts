@@ -5,6 +5,7 @@
 // Seed: 1337.
 // The cap counts the UTF-8 bytes of a scope's distinct values, secret and `.pii()` together. Each case runs in dev and production, in json log format; the log is read through its parsed `message` and `path`.
 // A secret too large to post, one with a lone surrogate and one of more than 1,000,000 values are made inside the action, as the neighbouring secret-reach cases do.
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
@@ -184,9 +185,9 @@ describe("k.privacy Cost: once one `Secret` has more than 1,000,000 values to re
   // The value and each value, key, array and object inside it are counted: an array of n strings is n + 1 values.
   const same = (n: number): string[] => new Array<string>(n).fill("abcdefgh");
   const run = (n: number) =>
-    serve("production", { input: {}, mint: () => reveal(made(s.secret(s.array(s.string())).parse(same(n))))[0] ?? "" });
+    serve("dev", { input: {}, mint: () => reveal(made(s.secret(s.array(s.string())).parse(same(n))))[0] ?? "" });
   const nested = (n: number) =>
-    serve("production", {
+    serve("dev", {
       input: {},
       mint: () => reveal(made(s.secret(s.array(s.array(s.string()))).parse([same(n)])))[0]?.[0] ?? "",
     });

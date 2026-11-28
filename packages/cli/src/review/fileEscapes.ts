@@ -13,9 +13,15 @@ const ALLOW_WORD = /\bKEEL_ALLOW_ORIGINS\b/g;
  * Every escape of k.escapes that one file holds at one revision (the range codes aside): code files by syntax,
  * `package.json`, `pnpm-workspace.yaml` and lockfiles by their entries, a tracked `node_modules/` file, a `patches/`
  * file at the git root or a project's root, and `KEEL_ALLOW_ORIGINS` in any text file but Markdown. `dir` is the
- * file's project (a git-root path ending `/`, `""` at the root) or null outside every project.
+ * file's project (a git-root path ending `/`, `""` at the root) or null outside every project. `supervisor` is the
+ * snapshot's (`supervisorsOf`), for R1018's app calls.
  */
-export function fileEscapes(path: string, source: string, dir: string | null): Raw[] {
+export function fileEscapes(
+  path: string,
+  source: string,
+  dir: string | null,
+  supervisor?: (spec: string, name: string) => string | undefined,
+): Raw[] {
   const name = path.slice(path.lastIndexOf("/") + 1);
   if (/(?:^|\/)node_modules\//.test(path))
     return [{ code: "R1101", line: 1, col: 1, text: "", message: "a tracked file under node_modules/" }];
@@ -23,7 +29,7 @@ export function fileEscapes(path: string, source: string, dir: string | null): R
   if (own.startsWith("patches/")) return [{ code: "R1101", line: 1, col: 1, text: "", message: "a dependency patch" }];
   if (source.includes("\u0000")) return [];
   const out: Raw[] = [];
-  if (CODE.test(path)) out.push(...codeEscapes(path, source, kindOf(path, dir)));
+  if (CODE.test(path)) out.push(...codeEscapes(path, source, kindOf(path, dir), supervisor));
   else if (name === "package.json") out.push(...manifestEscapes(source));
   else if (name === "pnpm-workspace.yaml") out.push(...workspaceEscapes(source));
   else if (LOCKS.has(name)) out.push(...lockEscapes(name, source));

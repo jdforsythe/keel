@@ -1,11 +1,28 @@
+import { defect, isDefect } from "@keel/schema";
 // Seed 1337. E2457's words for each kind of value that is not JSON, at any depth and position, and the error's code
 // property (std.postgres API, Errors).
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { codeError } from "../src/internal/codeError.ts";
 import { toParam } from "../src/internal/toParam.ts";
 
 const SEED = 1337;
+
+const THROWERS: Readonly<Record<string, (text: string) => never>> = {
+  E2453: (text) => defect(text, { code: "E2453" }),
+  E2454: (text) => defect(text, { code: "E2454" }),
+  E2455: (text) => defect(text, { code: "E2455" }),
+  E2457: (text) => defect(text, { code: "E2457" }),
+};
+
+/** The defect `THROWERS[code]` throws with `text`. */
+function thrownBy(code: string, text: string): Error {
+  try {
+    THROWERS[code]?.(text);
+  } catch (e) {
+    if (e instanceof Error) return e;
+  }
+  throw new Error("no defect thrown");
+}
 
 class Named {}
 const anonymous = new (class {})();
@@ -34,7 +51,7 @@ const KINDS: [unknown, string][] = [
 const nest = (v: unknown, path: boolean[]): unknown =>
   path.reduce<unknown>((x, inArray) => (inArray ? [1, x] : { k: x }), v);
 
-test("E2457 names the position and the value's kind in words, never the value, at any depth", () => {
+test("E2457's data names the position and the value's kind in words, never the value, at any depth", () => {
   fc.assert(
     fc.property(
       fc.constantFrom(...KINDS.keys()),
@@ -42,9 +59,15 @@ test("E2457 names the position and the value's kind in words, never the value, a
       fc.array(fc.boolean(), { maxLength: 4 }),
       (k, position, path) => {
         const [value, words] = KINDS[k] ?? [undefined, "undefined"];
-        expect(() => toParam(nest(value, path), position)).toThrow(
-          new Error(`E2457 parameter $${position} is not a JSON value: ${words}`),
-        );
+        let thrown: unknown;
+        try {
+          toParam(nest(value, path), position);
+        } catch (e) {
+          thrown = e;
+        }
+        expect(isDefect(thrown, "E2457")).toBe(true);
+        expect(thrown instanceof Error && thrown.message).toBe("E2457 std.postgres: a parameter is not a JSON value");
+        expect(Reflect.get(Object(thrown), "data")).toEqual({ position, kind: words });
       },
     ),
     { seed: SEED, numRuns: 200 },
@@ -62,12 +85,12 @@ test("a value that is JSON comes back equal, as a copy", () => {
   );
 });
 
-test("codeError's message starts with its code; the code property is there and not enumerable", () => {
+test("a coded defect's message starts with its code; the code property is there and not enumerable", () => {
   fc.assert(
     fc.property(fc.constantFrom("E2453", "E2454", "E2455", "E2457"), fc.string(), (code, text) => {
-      const e = codeError(code, text);
+      const e = thrownBy(code, text);
       expect(e.message).toBe(`${code} ${text}`);
-      expect(e.code).toBe(code);
+      expect(Reflect.get(e, "code")).toBe(code);
       expect(Object.keys(e)).toEqual([]);
       expect(Object.getOwnPropertyDescriptor(e, "code")?.enumerable).toBe(false);
       expect(Object.getOwnPropertyDescriptor(e, "")).toBeUndefined();

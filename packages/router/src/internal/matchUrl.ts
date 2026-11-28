@@ -6,6 +6,7 @@ import { parseSearch } from "./parseSearch.ts";
 import { prefixOf } from "./prefixOf.ts";
 import { splitUrl } from "./splitUrl.ts";
 import { toRecord } from "./toRecord.ts";
+import { undecodable } from "./undecodable.ts";
 import { underMount } from "./underMount.ts";
 
 const rank = (segments: readonly Segment[]): string => segments.map((s) => (s.kind === "static" ? "0" : "1")).join("");
@@ -25,8 +26,9 @@ export function matchUrl(table: readonly Located[], url: string, mount?: string)
   const trimmed = path.length > 1 ? path.replace(/\/+$/, "") : path;
   const tail = `${query === "" ? "" : `?${query}`}${hash === "" ? "" : `#${hash}`}`;
   const canonical = `${trimmed === "" ? "/" : trimmed}${tail}`;
-  const decoded = attempt(() =>
-    trimmed === "/" || trimmed === "" ? [] : trimmed.slice(1).split("/").map(decodeURIComponent),
+  const decoded = attempt(
+    () => (trimmed === "/" || trimmed === "" ? [] : trimmed.slice(1).split("/").map(decodeURIComponent)),
+    undecodable,
   );
   if (!decoded.ok || trimmed.includes("\\")) return { kind: "notFound", url: canonical, route: null };
   const parts = decoded.value;

@@ -1,31 +1,57 @@
+import type { KeelError } from "./KeelError.ts";
 import type { Result } from "./Result.ts";
+import { defect } from "./defect.ts";
 import { err } from "./err.ts";
-import type { UnexpectedError } from "./internal/UnexpectedError.ts";
-import { toUnexpected } from "./internal/toUnexpected.ts";
+import { isResult } from "./internal/isResult.ts";
+import { wrapsDefect } from "./internal/wrapsDefect.ts";
 import { ok } from "./ok.ts";
 
-type Attempted<T> = [T] extends [never]
-  ? Result<never, UnexpectedError>
-  : T extends PromiseLike<infer U>
-    ? Promise<Result<U, UnexpectedError>>
-    : Result<T, UnexpectedError>;
+type Failure = KeelError<string, unknown>;
+/** A literal a callback returns stands for its primitive, as it would in a declared return type. */
+type Widen<V> = V extends string ? string : V extends number ? number : V extends boolean ? boolean : V;
+type ValueOf<T> = T extends { readonly ok: true; readonly value: infer U }
+  ? U
+  : T extends { readonly ok: false; readonly error: Failure }
+    ? never
+    : Widen<T>;
+type ErrorOf<T> = T extends { readonly ok: false; readonly error: infer F extends Failure } ? F : never;
+type Flat<T, E extends Failure> = Result<ValueOf<T>, E | ErrorOf<T>>;
+type Settled<T, E extends Failure> = [T] extends [never]
+  ? Result<never, E>
+  : [T] extends [PromiseLike<infer U>]
+    ? Promise<Flat<U, E>>
+    : Flat<T, E>;
 
-const isThenable = (x: unknown): x is PromiseLike<unknown> =>
+const isThenable = (x: unknown): boolean =>
   (typeof x === "object" || typeof x === "function") && x !== null && typeof Reflect.get(x, "then") === "function";
 
+/** A keel `Result` (one `ok` or `err` made) is the call's own; any other value is its `ok`. */
+const settled = (v: unknown): Result<unknown, Failure> => (isResult(v) ? v : ok(v));
+
 /**
- * The only sanctioned catch (k.errors). Runs `fn`; a sync fn gives a Result, an async fn a Promise of one.
- * A throw or rejection becomes `err` with code `keel.unexpected`. Never throws or rejects.
+ * The one catch (k.attempt). Runs `fn`: a value is `ok`, a keel `Result` it returns is the call's own (never nested),
+ * a defect (or a value one is reachable from through `cause` and `errors` in at most 8 steps) is thrown on unseen, and
+ * any other throw goes to `expect`, whose `KeelError` is the `err`; for `undefined` the thrown value goes on unchanged.
+ * An async `fn` settles the same way in a promise. Called with one argument, it raises the defect E1452.
  */
-export function attempt<T>(fn: () => T): Attempted<T>;
+export function attempt<T, E extends Failure>(fn: () => T, expect: (thrown: unknown) => E | undefined): Settled<T, E>;
 export function attempt(
   fn: () => unknown,
-): Result<unknown, UnexpectedError> | Promise<Result<unknown, UnexpectedError>> {
+  expect: (thrown: unknown) => Failure | undefined,
+): Result<unknown, Failure> | Promise<Result<unknown, Failure>> {
+  if (typeof expect !== "function") defect("attempt needs expect", { code: "E1452" });
+  const settle = (thrown: unknown): Result<never, Failure> => {
+    if (wrapsDefect(thrown)) throw thrown;
+    const e = expect(thrown);
+    if (e === undefined) throw thrown;
+    return err(e);
+  };
+  let value: unknown;
   try {
-    const value = fn();
-    if (!isThenable(value)) return ok(value);
-    return Promise.resolve(value).then(ok, (thrown: unknown) => err(toUnexpected(thrown)));
+    value = fn();
   } catch (thrown) {
-    return err(toUnexpected(thrown));
+    return settle(thrown);
   }
+  if (!isThenable(value)) return settled(value);
+  return Promise.resolve(value).then(settled, settle);
 }

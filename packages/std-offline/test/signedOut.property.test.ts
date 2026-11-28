@@ -20,16 +20,22 @@ const settle = async (): Promise<void> => {
 let n = 0;
 function declare() {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox(`out${++n}.outbox`, Api);
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(`out${++n}.outbox`, Api);
+    },
+    { detached: true },
+  );
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc };
 }
 const draining = (ctx: ReturnType<typeof createCtx>, o: ReturnType<typeof declare>["o"], owner: string) =>
-  scope(() => {
-    void drain(ctx, o, { owner });
-  });
+  scope(
+    () => {
+      void drain(ctx, o, { owner });
+    },
+    { detached: true },
+  );
 
 test("writeFor answers offline.signin exactly for a named write owner and no user", () => {
   const key = createCtx({ mode: "sim", seed: 1337 }).random.id("Write");

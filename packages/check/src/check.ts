@@ -50,9 +50,12 @@ import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
 import { topologyNeeds } from "./internal/topologyNeeds.ts";
+import { twoCopies } from "./internal/twoCopies.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
 import { typeReferences } from "./internal/typeReferences.ts";
 import { unifiedDiff } from "./internal/unifiedDiff.ts";
+import { unknownModules } from "./internal/unknownModules.ts";
+import { workspaceLibraries } from "./internal/workspaceLibraries.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
 import type { CheckResult } from "./types/CheckResult.ts";
@@ -80,7 +83,7 @@ function compatTopology(dir: string, all: readonly SourceFile[], opts: CheckOpti
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
- * for a `.keel/` view that differs from its derivation (k.derived In process), E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
+ * for a `.keel/` view that differs from its derivation (k.derived In process), E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, E1765, the k.module pass
  * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over the current surface: `derived`'s, else `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`). Pure and deterministic for equal inputs.
  *
@@ -89,10 +92,21 @@ function compatTopology(dir: string, all: readonly SourceFile[], opts: CheckOpti
  * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there; E1106 reports
  * in none of them.
  */
-export function check(given: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
+export function check(input: readonly SourceFile[], inputOptions: CheckOptions = {}): CheckResult {
+  // A library of the project's own tree is read once: through `node_modules/<name>/` when the project lists it, else
+  // where it lies, as a library's file (k.library Kind).
+  const ws = workspaceLibraries(
+    inputOptions.project === undefined ? input : [...input, ...inputOptions.project],
+    path.resolve(inputOptions.root ?? process.cwd()),
+  );
+  const given = input.filter((f) => !ws.twin(f.path));
+  const options: CheckOptions =
+    inputOptions.project === undefined
+      ? inputOptions
+      : { ...inputOptions, project: inputOptions.project.filter((f) => !ws.twin(f.path)) };
   const realAll = options.project === undefined ? given : [...given, ...options.project];
   const libs = libraryFolders(realAll);
-  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined;
+  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined || ws.inPlace(p);
   // Each library's folder (`<p>node_modules/<name>/`): where the k.module pass finds it, and its files' view.
   const libraryRoots = new Set(libs.packages.map((f) => f.path.slice(0, -"package.json".length)));
   const viewed = (f: SourceFile): SourceFile => {
@@ -124,8 +138,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
     // The rules that follow the client's reach follow an import of a library into its files (k.library In an app).
-    const libraryFiles = new Set([...members.keys()].filter((p) => isLibrary(libs.real(p))));
-    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles, real: libs.real });
+    const libraryFiles = new Set([...members.keys()].filter((p) => libs.folder(libs.real(p)) !== undefined));
+    const inPlace = new Set([...members.keys()].filter((p) => ws.inPlace(p)));
+    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles, inPlace, real: libs.real });
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
@@ -146,10 +161,12 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const needs = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
     const pkg = all.find((f) => f.path === `${dir}package.json`)?.source;
     if (needs !== undefined) out.push(...topologyDiags(dir, needs, top), ...topologyNeeds(dir, needs, top ?? "", pkg));
-    // E1586: a placed stdlib module whose package resolves `./contract` and no `./routes`, at its id in `topology.ts`.
+    // E1586: a placed stdlib module whose package resolves `./contract` and no `./routes`; E1552: a module unknown to
+    // the project; each at its id in `topology.ts`.
     if (needs !== undefined && top !== undefined) {
       const own = project.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
-      out.push(...placedWithoutRoutes(dir, needs, top, own, path.join(opts.root ?? process.cwd(), dir)));
+      const at = path.join(opts.root ?? process.cwd(), dir);
+      out.push(...placedWithoutRoutes(dir, needs, top, own, at), ...unknownModules(dir, needs, top, own, at));
     }
     // E1587: a `styles` entry that is no string literal or no package `.css` export; W1012: an `index.html` Keel never reads.
     if (top !== undefined) out.push(...stylesDiags(dir, top, path.join(opts.root ?? process.cwd(), dir)));
@@ -245,9 +262,11 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
         : {
             ...input,
             dates,
+            types: true,
             schemeSelects: at(typed?.schemeSelects),
             themeSelects: at(typed?.themeSelects),
             boxes: at(typed?.boxes),
+            keelThrows: at(typed?.keelThrows),
           };
     for (const d of runRules(registered, typedInput)) out.push(d);
   }
@@ -279,6 +298,8 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     // E1005 derives each view from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
     ...generatedEdits(files, (dir) => compiledViews(dir, opts.project ?? files, opts), opts.derived),
     ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base, opts.derived),
+    // E1765 (k.realm One copy): a kernel package each project's dependencies reach in two folders.
+    ...[...new Set(["", ...dirs])].flatMap((dir) => twoCopies(dir, realAll, options.root)),
   );
 
   // A diagnostic in a library file is located where the file lies and carries no fix (k.library In an app).
@@ -291,7 +312,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
       const { kind, code, line, col, message, see } = d;
       return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
     });
-  // A lifted range (k.check, App code) reports none of its nine codes.
+  // A lifted range (k.check, App code) reports none of its codes.
   const diagnostics = normalize(dropLifted(located, realCode));
   return { diagnostics, summary: summarize(diagnostics) };
 }

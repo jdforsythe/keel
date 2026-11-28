@@ -1,15 +1,8 @@
 import type { Action } from "../types/Action.ts";
 import type { ApiAction } from "../types/ApiAction.ts";
-import { isObjectSchema } from "./isObjectSchema.ts";
-import { ownValue } from "./ownValue.ts";
+import { records } from "./records.ts";
 
-/** Whether `v` is a value `action(contract, id, decl, fn)` made (a page's or an API entry's). */
+/** Whether `v` is a value `action(contract, id, decl, fn)` made (a page's or an API entry's) in this realm (k.identity), read from the router's record, never from a property. */
 export function isAction(v: unknown): v is Action | ApiAction {
-  return (
-    typeof v === "object" &&
-    v !== null &&
-    ownValue(v, "kind") === "keel.action" &&
-    typeof ownValue(v, "run") === "function" &&
-    isObjectSchema(ownValue(v, "input"))
-  );
+  return typeof v === "object" && v !== null && records.action.has(v);
 }

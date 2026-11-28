@@ -1,4 +1,10 @@
-import type { ArrowFunctionExpression, Function as FunctionNode, ParamPattern, Program } from "oxc-parser";
+import type {
+  ArrowFunctionExpression,
+  ExportDefaultDeclarationKind,
+  Function as FunctionNode,
+  ParamPattern,
+  Program,
+} from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { num } from "../internal/num.ts";
@@ -17,9 +23,9 @@ function pascalFile(path: string): { tsx: boolean } | null {
 /** The function a file exports as default: a declaration, a function or arrow expression, or a same-file binding of one. */
 function defaultFunction(ast: Program): Fn | null {
   const byName = new Map<string, Fn>();
-  const note = (name: string | undefined, e: unknown): void => {
-    if (name === undefined) return;
-    if (isFn(e)) byName.set(name, e);
+  const note = (name: string | undefined, e: ExportDefaultDeclarationKind | null | undefined): void => {
+    const fn = asFn(e);
+    if (name !== undefined && fn !== undefined) byName.set(name, fn);
   };
   for (const st of ast.body) {
     const d = st.type === "ExportNamedDeclaration" ? st.declaration : st;
@@ -31,15 +37,18 @@ function defaultFunction(ast: Program): Fn | null {
   for (const st of ast.body) {
     if (st.type !== "ExportDefaultDeclaration") continue;
     const d = st.declaration;
-    if (isFn(d)) return d;
+    const fn = asFn(d);
+    if (fn !== undefined) return fn;
     if (d.type === "Identifier") return byName.get(d.name) ?? null;
   }
   return null;
 }
 
-function isFn(e: unknown): e is Fn {
-  if (typeof e !== "object" || e === null || !("type" in e)) return false;
-  return e.type === "FunctionDeclaration" || e.type === "FunctionExpression" || e.type === "ArrowFunctionExpression";
+/** `e` when it is a function declaration, function expression or arrow function. */
+function asFn(e: ExportDefaultDeclarationKind | null | undefined): Fn | undefined {
+  return e?.type === "FunctionDeclaration" || e?.type === "FunctionExpression" || e?.type === "ArrowFunctionExpression"
+    ? e
+    : undefined;
 }
 
 /** Whether a parameter is exactly `name: Ctx` (not optional, no default, not destructured). */

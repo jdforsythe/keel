@@ -11,12 +11,15 @@ describe("k.store: reactive reads", () => {
         const k = makeCart();
         let runs = 0;
         const seen: unknown[] = [];
-        scope(() => {
-          effect(() => {
-            seen.push(k.cart.get("items"));
-            runs++;
-          });
-        });
+        scope(
+          () => {
+            effect(() => {
+              seen.push(k.cart.get("items"));
+              runs++;
+            });
+          },
+          { detached: true },
+        );
         expect(runs).toBe(1);
         for (const [i, op] of ops.entries()) {
           applyOp(k, op);

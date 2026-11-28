@@ -63,23 +63,26 @@ describe("k.ui: Box label (RFC 0091 G)", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     let off = () => {};
-    const sc = scope(() => {
-      const sig = signal("Main menu");
-      slot.push(sig);
-      off = mount(
-        () =>
-          Box({
-            id: "x",
-            as: "nav",
-            get label() {
-              return sig.get();
-            },
-            children: "b",
-          }),
-        host,
-        { ctx: simCtx },
-      );
-    });
+    const sc = scope(
+      () => {
+        const sig = signal("Main menu");
+        slot.push(sig);
+        off = mount(
+          () =>
+            Box({
+              id: "x",
+              as: "nav",
+              get label() {
+                return sig.get();
+              },
+              children: "b",
+            }),
+          host,
+          { ctx: simCtx },
+        );
+      },
+      { detached: true },
+    );
     const sig = slot[0];
     if (sig === undefined) throw new Error("fixture: no signal");
     await flush();

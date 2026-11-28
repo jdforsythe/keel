@@ -14,9 +14,12 @@ const CLAUSE =
 type Handle = ReturnType<typeof subscribe>;
 function start(ctx: ReturnType<typeof simCtx>, on: (e: unknown) => void = () => undefined) {
   const box: { handle?: Handle } = {};
-  const sc = scope(() => {
-    box.handle = subscribe(ctx, ORIGIN, roomChannel, { room: "a" }, on);
-  });
+  const sc = scope(
+    () => {
+      box.handle = subscribe(ctx, ORIGIN, roomChannel, { room: "a" }, on);
+    },
+    { detached: true },
+  );
   return {
     sc,
     status: () => box.handle?.status(),

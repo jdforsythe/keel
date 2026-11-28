@@ -90,7 +90,7 @@ describe("Host: the element", () => {
   });
 
   test("a computed `label` binds `aria-label`", () => {
-    const owner = scope(() => undefined);
+    const owner = scope(() => undefined, { detached: true });
     const name = owner.run(() => signal("One"));
     const el = render(() =>
       Host({

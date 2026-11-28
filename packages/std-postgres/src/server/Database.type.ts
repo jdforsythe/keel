@@ -1,6 +1,7 @@
-import type { Result } from "@keel/schema";
+import type { KeelError, Result } from "@keel/schema";
 import type { Conflict } from "../Conflict.ts";
-import type { ConstraintError } from "../ConstraintError.ts";
+import type { ConstraintError } from "../ConstraintError.schema.ts";
+import type { DatabaseError } from "../DatabaseError.schema.ts";
 import type { NoRows } from "../NoRows.schema.ts";
 import type { NotFound } from "../NotFound.ts";
 import type { Query } from "../Query.ts";
@@ -31,10 +32,10 @@ export interface Database {
   query<T>(q: Query<T>): Promise<Result<T[], StatementError>>;
   one<T>(q: Query<T>): Promise<Result<T, StatementError | NotFound>>;
   run(q: Query<NoRows>): Promise<Result<number, StatementError>>;
-  transaction<R extends Result<unknown, unknown>>(
+  transaction<R extends Result<unknown, KeelError<string, unknown>>>(
     fn: (tx: Tx) => Promise<R>,
     opts?: TransactionOptions,
-  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | Unreachable | Conflict>>;
+  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | DatabaseError | Unreachable | Conflict>>;
   changed<P>(channel: ChangedChannel<P>, params: P): Promise<Result<null, StatementError>>;
   follow(channel: { readonly name: string }, key: string, on: (e: FollowEvent) => void): Promise<() => void>;
 }

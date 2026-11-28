@@ -54,8 +54,9 @@ const idKey = (p: BindingProperty): boolean =>
   !p.computed &&
   ((p.key.type === "Identifier" && p.key.name === "id") || (p.key.type === "Literal" && p.key.value === "id"));
 
-const isFn = (e: Expression | null | undefined): e is Fn =>
-  e !== null && e !== undefined && (e.type === "ArrowFunctionExpression" || e.type === "FunctionExpression");
+/** `e` when it is a function or arrow expression. */
+const asFn = (e: Expression | null | undefined): Fn | undefined =>
+  e?.type === "ArrowFunctionExpression" || e?.type === "FunctionExpression" ? e : undefined;
 
 /**
  * The reader E1161 judges a library element's `id` with (k.library Ids): over `files` (the checked files, where they
@@ -110,7 +111,8 @@ export function idReader(
   /** The function `callee` names in `env`, with the scope it was made in. */
   const fnOf = (callee: Expression, env: Env): { fn: Fn; env: Env } | undefined => {
     const x = unwrap(callee);
-    if (isFn(x)) return { fn: x, env };
+    const fn = asFn(x);
+    if (fn !== undefined) return { fn, env };
     if (x.type === "Identifier") {
       const v = lookup(x.name, env);
       if (v !== undefined) return fnOf(v.expr, v.env);
@@ -173,7 +175,7 @@ export function idReader(
       const v = lookup(x.name, env);
       if (v !== undefined) return objectOf(v.expr, v.env);
       const d = declsOf(env.file).get(x.name);
-      return d === null || d === undefined || d.type === "FunctionDeclaration" || isFn(d)
+      return d === null || d === undefined || d.type === "FunctionDeclaration" || asFn(d) !== undefined
         ? undefined
         : objectOf(d, root(env.file));
     }
@@ -216,7 +218,8 @@ export function idReader(
       else if (d?.type === "VariableDeclaration")
         for (const v of d.declarations) {
           const init = v.init === null || v.init === undefined ? undefined : unwrap(v.init);
-          if (isFn(init)) param(init.params[0]);
+          const fn = asFn(init);
+          if (fn !== undefined) param(fn.params[0]);
         }
     }
     const pairs: VariableDeclarator[] = [];
