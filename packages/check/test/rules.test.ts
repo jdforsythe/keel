@@ -37,7 +37,12 @@ const CASES: Case[] = [
   },
   {
     code: "E1451",
-    bad: [f("src/f.ts", "export function f(n: number) {\n  if (n < 0) throw new Error('neg')\n  return n\n}\n")],
+    bad: [
+      f(
+        "src/f.ts",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\ndeclare const neg: KeelError<'m.neg', null>\nexport function f(n: number): Result<number, KeelError<'m.neg', null>> {\n  if (n < 0) throw neg\n  return ok(n)\n}\n",
+      ),
+    ],
     clean: [f("src/f.ts", "export function f(n: number) {\n  return n\n}\n")],
     fix: true,
   },
@@ -46,7 +51,7 @@ const CASES: Case[] = [
     bad: [
       f(
         "src/f.ts",
-        "export async function f(p: Promise<number>) {\n  try {\n    return await p\n  } catch (e) {\n    return 0\n  }\n}\n",
+        "declare function work(): Promise<void>\ndeclare function undo(): Promise<void>\nexport async function f() {\n  try {\n    await work()\n  } catch (e) {\n    await undo()\n    throw e\n  }\n}\n",
       ),
     ],
     clean: [f("src/f.ts", "export function f() {\n  return 1\n}\n")],
@@ -62,13 +67,13 @@ const CASES: Case[] = [
     bad: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nsave()\n",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.x', null>> => ok(1)\nsave()\n",
       ),
     ],
     clean: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nconst r = save()\nvoid r\n",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.x', null>> => ok(1)\nconst r = save()\nvoid r\n",
       ),
     ],
   },
@@ -97,14 +102,14 @@ const CASES: Case[] = [
   },
   {
     code: "E1601",
-    bad: [f("src/roll.ts", "export const roll = () => Math.random()\n")],
+    bad: [f("src/roll.ts", "export const roll = (ctx: Ctx) => Math.random()\n")],
     clean: [f("src/roll.ts", "export const roll = (ctx: { random: { float(): number } }) => ctx.random.float()\n")],
     fix: true,
   },
   {
     code: "E1601",
-    bad: [f("test/a.test.ts", "const r = Math.random()\nvoid r\n")],
-    clean: [f("test/a.test.ts", "const r = 0.5\nvoid r\n")],
+    bad: [f("test/a.test.ts", "const r = (ctx: Ctx) => Math.random()\nvoid r\n")],
+    clean: [f("test/a.test.ts", "const r = (ctx: Ctx) => 0.5\nvoid r\n")],
     fix: true,
   },
   {

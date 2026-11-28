@@ -32,9 +32,12 @@ function here(): Scope {
 
 function mk() {
   let s: ReturnType<typeof signal<number>> | undefined;
-  scope(() => {
-    s = signal(0);
-  });
+  scope(
+    () => {
+      s = signal(0);
+    },
+    { detached: true },
+  );
   if (!s) throw new Error("unreachable");
   return s;
 }
@@ -53,16 +56,19 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("scope: a throwing hook does not stop later hooks of the same scope, and dispose() rethrows it", () => {
     const err = new Error("hook-1");
     const ran: string[] = [];
-    const h = scope(() => {
-      const me = here();
-      me.onDispose(() => {
-        ran.push("a");
-        throw err;
-      });
-      me.onDispose(() => {
-        ran.push("b");
-      });
-    });
+    const h = scope(
+      () => {
+        const me = here();
+        me.onDispose(() => {
+          ran.push("a");
+          throw err;
+        });
+        me.onDispose(() => {
+          ran.push("b");
+        });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(err);
     expect(ran).toEqual(["a", "b"]);
   });
@@ -73,30 +79,33 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
     const log: string[] = [];
     const s = mk();
     const runs = [counter(), counter(), counter()];
-    const h = scope(() => {
-      const me = here();
-      me.onDispose(() => {
-        log.push("scope-1");
-        throw own;
-      });
-      me.onDispose(() => {
-        log.push("scope-2");
-      });
-      for (const r of runs) {
-        scope(() => {
-          if (r === runs[0]) {
-            here().onDispose(() => {
-              log.push("owned-1");
-              throw owned;
-            });
-          }
-          effect(() => {
-            s.get();
-            r.bump();
-          });
+    const h = scope(
+      () => {
+        const me = here();
+        me.onDispose(() => {
+          log.push("scope-1");
+          throw own;
         });
-      }
-    });
+        me.onDispose(() => {
+          log.push("scope-2");
+        });
+        for (const r of runs) {
+          scope(() => {
+            if (r === runs[0]) {
+              here().onDispose(() => {
+                log.push("owned-1");
+                throw owned;
+              });
+            }
+            effect(() => {
+              s.get();
+              r.bump();
+            });
+          });
+        }
+      },
+      { detached: true },
+    );
     expect(runs.map((r) => r.get())).toEqual([1, 1, 1]);
     expect(thrownBy(() => h.dispose())).toBe(owned);
     expect(log).toEqual(["owned-1", "scope-1", "scope-2"]);
@@ -108,15 +117,18 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
     const err = new Error("hook");
     const s = mk();
     const r = counter();
-    const h = scope(() => {
-      here().onDispose(() => {
-        throw err;
-      });
-      effect(() => {
-        s.get();
-        r.bump();
-      });
-    });
+    const h = scope(
+      () => {
+        here().onDispose(() => {
+          throw err;
+        });
+        effect(() => {
+          s.get();
+          r.bump();
+        });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(err);
     s.set(1);
     expect(r.get()).toBe(1);
@@ -125,15 +137,18 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("several throwing hooks: dispose() rethrows the first registered hook's error and drops the rest", () => {
     const errs = [new Error("one"), new Error("two"), new Error("three")];
     const ran: number[] = [];
-    const h = scope(() => {
-      const me = here();
-      errs.forEach((e, i) => {
-        me.onDispose(() => {
-          ran.push(i);
-          throw e;
+    const h = scope(
+      () => {
+        const me = here();
+        errs.forEach((e, i) => {
+          me.onDispose(() => {
+            ran.push(i);
+            throw e;
+          });
         });
-      });
-    });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(errs[0]);
     expect(ran).toEqual([0, 1, 2]);
   });
@@ -141,33 +156,39 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("owned nodes before the node's own hooks: an owned node's error wins over the owner's own hook registered earlier", () => {
     const owned = new Error("owned");
     const own = new Error("own");
-    const h = scope(() => {
-      here().onDispose(() => {
-        throw own;
-      });
-      scope(() => {
+    const h = scope(
+      () => {
         here().onDispose(() => {
-          throw owned;
+          throw own;
         });
-      });
-    });
+        scope(() => {
+          here().onDispose(() => {
+            throw owned;
+          });
+        });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(owned);
   });
 
   it("owned nodes before the node's own hooks: with only the owner's hook throwing, its error surfaces after the owned hooks ran", () => {
     const own = new Error("own");
     const log: string[] = [];
-    const h = scope(() => {
-      here().onDispose(() => {
-        log.push("own");
-        throw own;
-      });
-      scope(() => {
+    const h = scope(
+      () => {
         here().onDispose(() => {
-          log.push("owned");
+          log.push("own");
+          throw own;
         });
-      });
-    });
+        scope(() => {
+          here().onDispose(() => {
+            log.push("owned");
+          });
+        });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(own);
     expect(log).toEqual(["owned", "own"]);
   });
@@ -175,16 +196,19 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("owned nodes are disposed in creation order, so the first created throwing owned node's error surfaces", () => {
     const errs = [new Error("c0"), new Error("c1")];
     const log: number[] = [];
-    const h = scope(() => {
-      errs.forEach((e, i) => {
-        scope(() => {
-          here().onDispose(() => {
-            log.push(i);
-            throw e;
+    const h = scope(
+      () => {
+        errs.forEach((e, i) => {
+          scope(() => {
+            here().onDispose(() => {
+              log.push(i);
+              throw e;
+            });
           });
         });
-      });
-    });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(errs[0]);
     expect(log).toEqual([0, 1]);
   });
@@ -195,27 +219,30 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
     const s = mk();
     const inner = counter();
     let fx: Effect | undefined;
-    scope(() => {
-      fx = effect(() => {
-        errs.forEach((e, i) => {
+    scope(
+      () => {
+        fx = effect(() => {
+          errs.forEach((e, i) => {
+            scope(() => {
+              here().onDispose(() => {
+                log.push(`h${i}`);
+                throw e;
+              });
+            });
+          });
           scope(() => {
             here().onDispose(() => {
-              log.push(`h${i}`);
-              throw e;
+              log.push("last");
+            });
+            effect(() => {
+              s.get();
+              inner.bump();
             });
           });
         });
-        scope(() => {
-          here().onDispose(() => {
-            log.push("last");
-          });
-          effect(() => {
-            s.get();
-            inner.bump();
-          });
-        });
-      });
-    });
+      },
+      { detached: true },
+    );
     expect(inner.get()).toBe(1);
     if (!fx) throw new Error("no effect");
     expect(thrownBy(() => fx?.dispose())).toBe(errs[0]);
@@ -227,19 +254,22 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("effect as owner: disposing the owning scope rethrows an error from a hook in a scope the effect owns, and later hooks run", () => {
     const err = new Error("in-effect");
     const log: string[] = [];
-    const h = scope(() => {
-      here().onDispose(() => {
-        log.push("outer");
-      });
-      effect(() => {
-        scope(() => {
-          here().onDispose(() => {
-            log.push("inner");
-            throw err;
+    const h = scope(
+      () => {
+        here().onDispose(() => {
+          log.push("outer");
+        });
+        effect(() => {
+          scope(() => {
+            here().onDispose(() => {
+              log.push("inner");
+              throw err;
+            });
           });
         });
-      });
-    });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(err);
     expect(log).toEqual(["inner", "outer"]);
   });
@@ -247,25 +277,28 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("computed as owner: a throwing hook in a scope a computed owns stops no disposal and disposing the owning scope rethrows it", () => {
     const errs = [new Error("c0"), new Error("c1")];
     const log: string[] = [];
-    const h = scope(() => {
-      here().onDispose(() => {
-        log.push("outer");
-      });
-      const c = computed(() => {
-        errs.forEach((e, i) => {
-          scope(() => {
-            here().onDispose(() => {
-              log.push(`h${i}`);
-              throw e;
+    const h = scope(
+      () => {
+        here().onDispose(() => {
+          log.push("outer");
+        });
+        const c = computed(() => {
+          errs.forEach((e, i) => {
+            scope(() => {
+              here().onDispose(() => {
+                log.push(`h${i}`);
+                throw e;
+              });
             });
           });
+          return 1;
         });
-        return 1;
-      });
-      effect(() => {
-        c.get();
-      });
-    });
+        effect(() => {
+          c.get();
+        });
+      },
+      { detached: true },
+    );
     expect(thrownBy(() => h.dispose())).toBe(errs[0]);
     expect(log).toEqual(["h0", "h1", "outer"]);
   });
@@ -275,13 +308,16 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
     const hookErr = new Error("hook");
     const log: string[] = [];
     const e = thrownBy(() =>
-      scope(() => {
-        here().onDispose(() => {
-          log.push("hook");
-          throw hookErr;
-        });
-        throw fnErr;
-      }),
+      scope(
+        () => {
+          here().onDispose(() => {
+            log.push("hook");
+            throw hookErr;
+          });
+          throw fnErr;
+        },
+        { detached: true },
+      ),
     );
     expect(e).toBe(fnErr);
     expect(log).toEqual(["hook"]);
@@ -291,19 +327,22 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
     const fnErr = new Error("fn");
     const log: string[] = [];
     const e = thrownBy(() =>
-      scope(() => {
-        here().onDispose(() => {
-          log.push("own");
-          throw new Error("own");
-        });
-        scope(() => {
+      scope(
+        () => {
           here().onDispose(() => {
-            log.push("owned");
-            throw new Error("owned");
+            log.push("own");
+            throw new Error("own");
           });
-        });
-        throw fnErr;
-      }),
+          scope(() => {
+            here().onDispose(() => {
+              log.push("owned");
+              throw new Error("owned");
+            });
+          });
+          throw fnErr;
+        },
+        { detached: true },
+      ),
     );
     expect(e).toBe(fnErr);
     expect(log).toEqual(["owned", "own"]);
@@ -312,11 +351,14 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("scope.run(fn): when fn throws, run rethrows fn's error and the scope's throwing hook surfaces from its later dispose()", () => {
     const fnErr = new Error("fn");
     const hookErr = new Error("hook");
-    const h = scope(() => {
-      here().onDispose(() => {
-        throw hookErr;
-      });
-    });
+    const h = scope(
+      () => {
+        here().onDispose(() => {
+          throw hookErr;
+        });
+      },
+      { detached: true },
+    );
     expect(
       thrownBy(() =>
         h.run(() => {
@@ -330,7 +372,7 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("scope.run(fn): when fn throws out of a nested scope(fn) whose hook throws too, run rethrows fn's error", () => {
     const fnErr = new Error("fn");
     const hookErr = new Error("hook");
-    const outer = scope(() => {});
+    const outer = scope(() => {}, { detached: true });
     const e = thrownBy(() =>
       outer.run(() => {
         scope(() => {
@@ -347,7 +389,7 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
   it("scope.run(fn): a scope disposed after run created hooked nodes rethrows the first hook error and runs every hook", () => {
     const errs = [new Error("r0"), new Error("r1")];
     const ran: number[] = [];
-    const h = scope(() => {});
+    const h = scope(() => {}, { detached: true });
     h.run(() => {
       errs.forEach((e, i) => {
         here().onDispose(() => {
@@ -362,12 +404,15 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
 
   it("a throwing hook leaves the scope disposed: a second dispose() does not rerun hooks", () => {
     const calls = counter();
-    const h = scope(() => {
-      here().onDispose(() => {
-        calls.bump();
-        throw new Error("hook");
-      });
-    });
+    const h = scope(
+      () => {
+        here().onDispose(() => {
+          calls.bump();
+          throw new Error("hook");
+        });
+      },
+      { detached: true },
+    );
     expect(outcomeOf(() => h.dispose()).threw).toBe(true);
     expect(calls.get()).toBe(1);
     expect(outcomeOf(() => h.dispose()).threw).toBe(false);
@@ -405,22 +450,26 @@ describe("k.reactive: a throwing onDispose hook stops no disposal", () => {
         };
         plan(root, "r");
 
-        const build = (t: Tree, id: string) =>
-          scope(() => {
-            const me = here();
-            t.hooks.forEach((throws, i) => {
-              const name = `${id}#${i}`;
-              me.onDispose(() => {
-                ran.push(name);
-                if (throws) throw new Error(name);
+        // Only the root is a test root; each child is built inside its parent's scope and nests there.
+        const build = (t: Tree, id: string, detached = false) =>
+          scope(
+            () => {
+              const me = here();
+              t.hooks.forEach((throws, i) => {
+                const name = `${id}#${i}`;
+                me.onDispose(() => {
+                  ran.push(name);
+                  if (throws) throw new Error(name);
+                });
               });
-            });
-            t.children.forEach((c, i) => {
-              build(c, `${id}.${i}`);
-            });
-          });
+              t.children.forEach((c, i) => {
+                build(c, `${id}.${i}`);
+              });
+            },
+            { detached },
+          );
 
-        const h = build(root, "r");
+        const h = build(root, "r", true);
         const o = outcomeOf(() => h.dispose());
         expect(ran).toEqual(expectedOrder);
         const first = expectedThrows[0];

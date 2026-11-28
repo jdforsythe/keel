@@ -14,7 +14,7 @@ import { toggleTodo } from "../modules/api/toggleTodo.ts";
 
 // The board's invariant (ids unique, every todo in a known list) holds for every state and payload the schemas allow,
 // by induction with Z3 (k.prove): the `proven` rung for these six transactions, beyond the bounded `board.explore`.
-const sc = scope(() => undefined);
+const sc = scope(() => undefined, { detached: true });
 isolate(sc);
 afterAll(() => sc.dispose());
 

@@ -267,6 +267,14 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
     expect((await routesOnly("r/coded.ts")).problems).toEqual(["E1502 dup path"]);
   });
 
+  it("writes a coded throw's code once when its message starts with it", { timeout: fixedTime(30000) }, async () => {
+    write(
+      "r/refused.ts",
+      `throw Object.assign(new Error("E1765 two copies"), { code: "E1765" });\nexport const routes = {};`,
+    );
+    expect((await routesOnly("r/refused.ts")).problems).toEqual(["E1765 two copies"]);
+  });
+
   it(
     "treats a codeless throw while deriving the artifact as internal (E1049)",
     { timeout: fixedTime(30000) },

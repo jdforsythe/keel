@@ -22,23 +22,26 @@ describe("explore", () => {
   });
 
   it("an edge `tx` refuses before the function runs (store.undeclared) fails with E1710 naming it", () => {
-    scope(() => {
-      const st = store(s.object({ n: s.int({ min: 0, max: 1 }) }), { n: 0 }, { id: "ex.undeclared" });
-      const on = transaction(st, "ex.undeclared.on", s.object({}), () => ({ n: 1 }));
-      const off = transaction(st, "ex.undeclared.off", s.object({}), () => ({ n: 0 }));
-      st.uses([on]);
-      let message = "";
-      const code = codeOf(() => {
-        try {
-          explore([on, off]);
-        } catch (e) {
-          message = e instanceof Error ? e.message : "";
-          throw e;
-        }
-      });
-      expect(code).toBe("E1710");
-      expect(message).toContain("ex.undeclared.off answered store.undeclared");
-      expect(st.get("n")).toBe(0);
-    });
+    scope(
+      () => {
+        const st = store(s.object({ n: s.int({ min: 0, max: 1 }) }), { n: 0 }, { id: "ex.undeclared" });
+        const on = transaction(st, "ex.undeclared.on", s.object({}), () => ({ n: 1 }));
+        const off = transaction(st, "ex.undeclared.off", s.object({}), () => ({ n: 0 }));
+        st.uses([on]);
+        let message = "";
+        const code = codeOf(() => {
+          try {
+            explore([on, off]);
+          } catch (e) {
+            message = e instanceof Error ? e.message : "";
+            throw e;
+          }
+        });
+        expect(code).toBe("E1710");
+        expect(message).toContain("ex.undeclared.off answered store.undeclared");
+        expect(st.get("n")).toBe(0);
+      },
+      { detached: true },
+    );
   });
 });

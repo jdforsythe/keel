@@ -1,4 +1,3 @@
-import { attempt } from "@keel/schema";
 import { MAX_NEXT_LENGTH } from "./MAX_NEXT_LENGTH.ts";
 
 const BASE = "http://k";
@@ -19,6 +18,5 @@ const control = (v: string): boolean => {
 export function carriedNext(v: string): boolean {
   if (v.length > MAX_NEXT_LENGTH || control(v)) return false;
   if (!v.startsWith("/") || v.startsWith("//") || v.startsWith("/\\")) return false;
-  const u = attempt(() => new URL(v, BASE));
-  return u.ok && u.value.origin === BASE;
+  return URL.parse(v, BASE)?.origin === BASE;
 }

@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { redacted } from "../src/internal/redacted.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
+import { textRecords } from "./textRecords.ts";
 
 const SEED = 1337;
 const ROOT = "/keel-probe-root";
@@ -33,7 +34,11 @@ async function boot(routes: RouteTable, mode: "dev" | "production", module = "ap
     artifacts: `${ROOT}/.keel`,
     log: { format: "json", write: (l) => void lines.push(l) },
   });
-  const diags = (): unknown[] => lines.map((l): unknown => JSON.parse(l)).filter((d) => field(d, "kind") === "diag");
+  // With full text on (dev), the text records; in production, each throw's one form record (k.serverlog Thrown values).
+  const diags = (): unknown[] =>
+    (mode === "dev" ? textRecords(lines) : lines)
+      .map((l): unknown => JSON.parse(l))
+      .filter((d) => field(d, "kind") === "diag");
   return { app, lines, diags };
 }
 
@@ -45,11 +50,7 @@ const post = (body: string): Request =>
   });
 
 /** An app whose `POST /a` decodes `input` and runs `run` with it. */
-async function actionApp<I>(
-  input: ObjectSchema<I>,
-  run: (v: I) => Promise<never>,
-  mode: "dev" | "production" = "production",
-) {
+async function actionApp<I>(input: ObjectSchema<I>, run: (v: I) => Promise<never>, mode: "dev" | "production" = "dev") {
   const c = contract("app", { "app.a": { path: "/a" } });
   const save = action(c, "app.a", { input }, (v) => run(v));
   const routes = manifest(c, { "app.a": { component: () => document.createElement("main"), POST: save } });
@@ -99,8 +100,10 @@ describe("no secret or pii value makes the scrub throw", () => {
       expect(body).not.toContain("ab\ud800cd");
       const diags = t.diags();
       expect(diags).toHaveLength(1);
-      expect(text(diags[0], "message")).toContain("boom db down [secret]");
+      if (mode === "dev") expect(text(diags[0], "message")).toContain("boom db down [secret]");
+      else expect(text(diags[0], "message")).toMatch(/^action app\.a threw: Error #[0-9a-f]{8}/);
       expect(text(diags[0], "message")).not.toContain("ab\ud800cd");
+      for (const l of t.lines) expect(l).not.toContain("ab\ud800cd");
       expect(printed).toEqual([]);
     });
   }

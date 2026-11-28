@@ -13,4 +13,5 @@ export type Rule =
   | "discriminant"
   | "unknown-key"
   | "secret-missing"
-  | "format";
+  | "format"
+  | "json";

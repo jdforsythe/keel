@@ -5,8 +5,8 @@
  * `uselibpqcompat`, another mode, or no mode, and a string that is not a URL, comes back unchanged.
  */
 export function verifiedSslmode(url: string): string {
-  if (!URL.canParse(url)) return url;
-  const u = new URL(url);
+  const u = URL.parse(url);
+  if (u === null) return url;
   const mode = u.searchParams.get("sslmode");
   if ((mode !== "require" && mode !== "prefer") || u.searchParams.has("uselibpqcompat")) return url;
   u.searchParams.set("sslmode", "verify-full");

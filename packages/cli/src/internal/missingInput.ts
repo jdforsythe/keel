@@ -24,7 +24,7 @@ const VALUE: Readonly<Record<string, string>> = { "move.to": "module", "place.to
 const modulesOf = (files: ReadonlyMap<string, string>): string[] =>
   [...files.keys()]
     .map((p) => /^modules\/([^/]+)\/module\.ts$/.exec(p)?.[1])
-    .filter((m): m is string => m !== undefined)
+    .flatMap((m) => (m === undefined ? [] : [m]))
     .sort();
 
 /** A command line (`keel` bare, for the Command form to spell) and the input it passes to `@keel/scaffold`. */
@@ -64,7 +64,7 @@ const lineOf = (
     .map((p) =>
       p.startsWith(`modules/${mod}/`) ? /^[^/]+\/[^/]+\/([a-z][A-Za-z0-9]*)\.store\.ts$/.exec(p)?.[1] : undefined,
     )
-    .filter((s): s is string => s !== undefined)
+    .flatMap((s) => (s === undefined ? [] : [s]))
     .sort()[0];
   const gen = (o: Op, args: string, input: Readonly<Record<string, unknown>>): Line => ({
     text: `keel scaffold ${o} ${args}`,

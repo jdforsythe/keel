@@ -54,6 +54,12 @@ Canonical names. Changing one requires an RFC.
 - **held work**: a capability's sim work passed to `hold(label, start)`, the work that answers through something made outside the run; it is held until delivered, holds in the order they started (k.sim, k.drive-law).
 - **law check**: with `law` on (the default under `keel test`), each run of `simulate` that passed runs a second time with its `SimRun` and the two traces are compared; traces that differ fail with E1729 (k.drive-law).
 - **type cache**: the results of `keel check`'s type pass kept across processes in `node_modules/.cache/keel/` (or `check()`'s `typeCache` folder), each entry keyed by content and used only when every file system question it recorded gets the same answer; it changes the time a run takes, never its output (k.check-cache).
+- **defect**: a failure no caller is meant to handle (a bug in the calling code, a broken invariant, stored state that fails its own shape, a fault under a contract that throws), raised by `defect(message, detail?)` from `@keel/schema` with a literal message; never a `Result`'s `err`, and never passed to `attempt`'s `expect` (k.defects).
+- **module root**: the scope the compiler runs a module's top-level statement in, with no parent, living as long as the module; the only root code outside the kernel gets, since a scope made while no scope runs elsewhere is E1208 (k.reactive).
+- **kernel-held identity**: the record a maker's package keeps of the values it made (a loader, an action, a guard, a schema, a store, a `Secret`, a defect, a coded refusal), held in the package's own module and reachable by no name, so no copy or hand-written object passes for one; what `isStore`, `isSchema` and `isDefect` read (k.identity, k.realm).
+- **supervisor**: code that runs other code and must outlive whatever it throws (a job runner, a channel route, a live view); it calls `supervise(ctx, id, fn, failed)`, which reports each throw once and gives the supervisor's own failure (k.supervise).
+- **coded refusal**: a value a kernel package raises with one of its own E codes; at start it is printed with its code, message and `see`, never as E1577 (k.deploy).
+- **fix chain**: a fixture that walks from a start project through each diagnostic's offered fix, or the edit its message names, to an end project a probe runs (k.fixes).
 
 subject: spec/ packages/*/package.json
 verified: 73b4d1ef9220bab121ee35682833de03d269bd58

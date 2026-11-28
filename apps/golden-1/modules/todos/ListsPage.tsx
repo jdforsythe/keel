@@ -7,7 +7,7 @@ import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
 import { ListDraft } from "../api/ListDraft.schema.ts";
 import type { TodoList } from "../api/TodoList.schema.ts";
 import { idPart } from "./idPart.ts";
-import { refreshView } from "./refreshView.ts";
+import { reread } from "./reread.ts";
 import { todos } from "./todos.contract.ts";
 import { todosApi } from "./todosApi.ts";
 import { view } from "./view.ts";
@@ -26,12 +26,9 @@ const waiting = () => (view.get("removals") ?? []).filter((r) => r.state === "hi
  * minutes later unless Undo comes first. Both re-read the board.
  */
 export default function ListsPage(_props: Infer<typeof Props>, ctx: Ctx) {
-  const remove = (listId: TodoList["id"]): void => {
-    void todosApi.removeList({ params: { listId } }, ctx).then(() => refreshView(ctx));
-  };
-  const undo = (flow: string): void => {
-    void todosApi.undoRemoval({ params: { flow } }, ctx).then(() => refreshView(ctx));
-  };
+  const remove = (listId: TodoList["id"]): Promise<void> =>
+    todosApi.removeList({ params: { listId } }, ctx).then(() => reread(ctx));
+  const undo = (flow: string): Promise<void> => todosApi.undoRemoval({ params: { flow } }, ctx).then(() => reread(ctx));
   const f = form(ListDraft);
   return (
     <Box as="section" id="todos.lists" direction="column" gap="5">

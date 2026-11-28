@@ -8,8 +8,10 @@ import path from "node:path";
 import { REPO, childOutput, deployEnv } from "./topology-build-fixture.ts";
 
 export const SEED = 1337;
-/** The text a thrown error carries; no record may hold it. */
+/** The text a defect raised by the fixture carries; no record may hold it. The fixture raises defects, the one way app code fails (k.errors Defects). */
 export const THROWN = "planted-thrown-text";
+/** The message of the `Error` the fixture throws 30 ms after a 200 when `LEAVE_THROW` is `error`: it names a person. */
+export const PLANTED_ERROR = "user jane@x.com failed";
 /** What the fixture's own timers are called, spelled so the fixture's source is data here. */
 const TIMER = ["set", "Timeout"].join("");
 
@@ -26,9 +28,14 @@ export default function Home() {
   return Text({ children: "home" });
 }
 `,
-  "unsafe/throwLater.ts": `${LIFT}export const throwLater = (...delays: number[]): void =>
+  "unsafe/throwLater.ts": `import { defect } from "@keel/schema";
+${LIFT}export const throwLater = (...delays: number[]): void =>
   unsafe("the fixture schedules an uncaught throw on purpose", () => {
-    for (const ms of delays) ${TIMER}(() => { throw new Error(${JSON.stringify(THROWN)}); }, ms);
+    for (const ms of delays)
+      ${TIMER}(() => {
+        if (process.env.LEAVE_THROW === "error") AbortSignal.abort(new Error(${JSON.stringify(PLANTED_ERROR)})).throwIfAborted();
+        defect(${JSON.stringify(THROWN)});
+      }, ms);
   });
 `,
   "unsafe/later.ts": `${LIFT}export const later = (ms: number, work: () => void): void =>
@@ -41,10 +48,36 @@ export default function Home() {
     process.stdout.write(text);
   });
 `,
-  "unsafe/rejectOnLoad.ts": `${LIFT}unsafe("the fixture rejects a promise at module scope on purpose", () => {
-  if (process.env.LEAVE_MODE === "reject") void Promise.reject(new Error(${JSON.stringify(THROWN)}));
+  "unsafe/rejectOnLoad.ts": `import { defect } from "@keel/schema";
+${LIFT}unsafe("the fixture rejects a promise at module scope on purpose", () => {
+  if (process.env.LEAVE_MODE === "reject") void (async () => defect(${JSON.stringify(THROWN)}))();
 });
 export const rejectOnLoad = true;
+`,
+  "unsafe/throwOnLoad.ts": `${LIFT}unsafe("the fixture throws as its module is evaluated on purpose", () => {
+  if (process.env.LEAVE_MODE === "throw") AbortSignal.abort(new Error(${JSON.stringify(PLANTED_ERROR)})).throwIfAborted();
+});
+export const throwOnLoad = true;
+`,
+  "Pii.schema.ts": `import { s } from "@keel/schema";
+export const Pii = s.object({ email: s.string().pii("contact") });
+`,
+  "unsafe/throwWith.ts": `${LIFT}export const throwWith = (text: string): void =>
+  unsafe("the fixture schedules an uncaught throw on purpose", () => {
+    ${TIMER}(() => {
+      AbortSignal.abort(new Error(text)).throwIfAborted();
+    }, 30);
+  });
+`,
+  "pii.server.ts": `import { action } from "@keel/router";
+import { app } from "./app.contract.ts";
+import { ok } from "@keel/schema";
+import { Pii } from "./Pii.schema.ts";
+import { throwWith } from "./unsafe/throwWith.ts";
+export const pii = action(app, "app.pii", { input: Pii }, ({ email }) => {
+  throwWith(\`user \${email} failed\`);
+  return Promise.resolve(ok(null));
+});
 `,
   "late.server.ts": `import { loader } from "@keel/router";
 import { app } from "./app.contract.ts";
@@ -98,10 +131,12 @@ import { app } from "./app.contract.ts";
 import { ok } from "@keel/schema";
 import { Data } from "./Data.schema.ts";
 import "./unsafe/rejectOnLoad.ts";
+import "./unsafe/throwOnLoad.ts";
 export const quiet = loader(app, "app.home", { output: Data }, () => Promise.resolve(ok({ title: "quiet" })));
 `,
   "app.contract.ts": `import { contract } from "@keel/router/contract";
 export const app = contract("app", {
+  "app.pii": { path: "/pii" },
   "app.home": { path: "/" },
   "app.late": { path: "/late" },
   "app.twice": { path: "/twice" },
@@ -114,12 +149,14 @@ import { app } from "./app.contract.ts";
 import Home from "./Home.tsx";
 import { hang } from "./hang.server.ts";
 import { late } from "./late.server.ts";
+import { pii } from "./pii.server.ts";
 import { quiet } from "./quiet.server.ts";
 import { slow } from "./slow.server.ts";
 import { twice } from "./twice.server.ts";
 export const routes = manifest(app, {
   "app.home": { component: Home, loader: quiet },
   "app.late": { component: Home, loader: late },
+  "app.pii": { component: Home, POST: pii },
   "app.twice": { component: Home, loader: twice },
   "app.slow": { component: Home, loader: slow },
   "app.hang": { component: Home, loader: hang },

@@ -1,10 +1,9 @@
 // Spec: std.conflicts, clause "A rebased entry setting a todo's title after a concurrent entry setting it to another value is one `order` race whose `against` names that entry."
 // std.conflicts, rule E2701: a rebased entry races its concurrent entries.
 // Seed 1337
-import { races } from "@keel/std-conflicts";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { STORE_ID, boardStores, snapshotOf } from "./fixtures.ts";
+import { STORE_ID, boardStores, snapshotOf, racesInRoot } from "./fixtures.ts";
 
 const title = fc.stringMatching(/^[a-z]{1,8}$/);
 
@@ -19,7 +18,7 @@ describe("std.conflicts: order races", () => {
           { t: "edit", id: "x", title: first, base: 1 },
           { t: "edit", id: "x", title: second, base: 1, key: "w1" },
         ]);
-        const r = races(snap, boardStores());
+        const r = racesInRoot(snap, boardStores());
         expect(r.unchecked).toEqual([]);
         expect(r.races).toHaveLength(1);
         expect(r.races[0]).toMatchObject({
@@ -42,7 +41,7 @@ describe("std.conflicts: order races", () => {
           { t: "edit", id: "x", title: both, base: 1 },
           { t: "edit", id: "x", title: both, base: 1 },
         ]);
-        expect(races(snap, boardStores())).toEqual({ races: [], unchecked: [] });
+        expect(racesInRoot(snap, boardStores())).toEqual({ races: [], unchecked: [] });
       }),
       { seed: 1337, numRuns: 30 },
     );

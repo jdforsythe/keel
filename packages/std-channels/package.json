@@ -60,6 +60,7 @@
     "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/services": "workspace:*",
+    "@keel/store": "workspace:*",
     "fast-check": "^3"
   },
   "devDependencies": {

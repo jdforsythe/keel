@@ -24,9 +24,12 @@ const build = () => {
 // The store and transaction live in one never-disposed root scope (E1203).
 const made = (() => {
   let out: ReturnType<typeof build> | undefined;
-  scope(() => {
-    out = build();
-  });
+  scope(
+    () => {
+      out = build();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();

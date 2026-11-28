@@ -158,7 +158,7 @@ describe("loadInspect", () => {
     const e = await call({ url: TARGET }, failing);
     expect(e.ok ? "" : e.error).toMatchObject({
       code: "inspector.unreachable",
-      message: `no inspect document at ${TARGET}`,
+      data: { url: TARGET, why: "document" },
     });
   });
   it("takes only the origin of a loopback app: anything more or another host is refused and nothing is fetched", async () => {
@@ -191,7 +191,7 @@ describe("loadInspect", () => {
       const r = await call({ url }, ctx);
       expect(r.ok ? "" : r.error, url).toMatchObject({
         code: "inspector.unreachable",
-        message: "?url= is not the origin of an app on this machine",
+        data: { url: "", why: "origin" },
       });
       expect(asked, url).toEqual([]);
     }
@@ -250,7 +250,7 @@ describe("loadInspect", () => {
       const r = await call({ url: TARGET }, simWith(`${TARGET}/__keel/inspect`, answer));
       expect(r.ok ? "" : r.error).toMatchObject({
         code: "inspector.unreachable",
-        message: `no inspect document at ${TARGET}`,
+        data: { url: TARGET, why: "document" },
       });
     }
   });

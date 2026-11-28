@@ -10,6 +10,8 @@ export type Rendered = {
   /** Ids of the stores an island level's render created, looked up through `stores()` or read (k.leave Snapshots). */
   readonly touched: ReadonlySet<string>;
   readonly caught: KeelError<string, unknown> | null;
+  /** What was thrown for `caught`, as thrown, for its log records (k.serverlog Thrown values); `null` with no `caught`. */
+  readonly thrown: { readonly value: unknown } | null;
   /** A level's render placed an element made before the op placing it (E1257). */
   readonly eager: boolean;
   /** A level's render had a text binding that renders nothing (E1406). */

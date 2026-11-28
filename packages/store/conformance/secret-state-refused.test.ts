@@ -40,10 +40,13 @@ describe("k.store: a state schema holding a secret", () => {
   it("`store()` throws E1303 on a state schema with a nested `s.secret`, not on its clean twin", () => {
     fc.assert(
       fc.property(wrapsArb, (wraps) => {
-        const sc = scope(() => {
-          expect(build(true, wraps)).toThrow(/^E1303\b/);
-          expect(build(false, wraps)).not.toThrow();
-        });
+        const sc = scope(
+          () => {
+            expect(build(true, wraps)).toThrow(/^E1303\b/);
+            expect(build(false, wraps)).not.toThrow();
+          },
+          { detached: true },
+        );
         sc.dispose();
       }),
       opts,

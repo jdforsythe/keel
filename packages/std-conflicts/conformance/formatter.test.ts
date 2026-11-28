@@ -7,11 +7,11 @@
 import { formatter } from "@keel/cli";
 import { respond } from "@keel/cli/testing";
 import { s } from "@keel/schema";
-import { raceRecords, races } from "@keel/std-conflicts";
+import { raceRecords } from "@keel/std-conflicts";
 import "@keel/std-conflicts/tools";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { STORE_ID, boardStores, snapshotOf } from "./fixtures.ts";
+import { STORE_ID, boardStores, snapshotOf, racesInRoot } from "./fixtures.ts";
 
 describe("std.conflicts: the conflicts.race formatter", () => {
   test("importing @keel/std-conflicts/tools registers the `conflicts.race` record kind (a second registration is E1053)", () => {
@@ -33,7 +33,7 @@ const raceOf = (n: number) => {
   ];
   // the middle edits carry base = head so they are plain; only the last is rebased
   const snap = snapshotOf({}, ops);
-  const report = races(snap, boardStores());
+  const report = racesInRoot(snap, boardStores());
   return { snap, records: raceRecords(PATH, report, { [STORE_ID]: snap }), n };
 };
 
@@ -44,7 +44,7 @@ const uncheckedOf = () => {
     { t: "edit", id: "x", title: "b", base: 2 },
     { t: "edit", id: "x", title: "c", base: 1 },
   ]);
-  const report = races(snap, boardStores({ logLimit: 2 }));
+  const report = racesInRoot(snap, boardStores({ logLimit: 2 }));
   return raceRecords(PATH, report, { [STORE_ID]: snap });
 };
 

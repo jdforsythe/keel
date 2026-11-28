@@ -17,7 +17,7 @@ import { isOpen, page, simCtx } from "./support.ts";
 
 const held = <T>(start: T): Signal<T> => {
   const made: Signal<T>[] = [];
-  scope(() => void made.push(signal(start)));
+  scope(() => void made.push(signal(start)), { detached: true });
   const [s] = made;
   if (s === undefined) throw new Error("no signal");
   return s;

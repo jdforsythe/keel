@@ -1,3 +1,4 @@
+import { heldMap } from "@keel/schema/internal";
 import type { Automaton } from "./Automaton.ts";
 import { foldTable } from "./foldTable.ts";
 import { formsOf } from "./formsOf.ts";
@@ -209,7 +210,7 @@ const build = (sets: readonly ReadonlySet<string>[], count: Count | undefined): 
   return { fold, go, fail, long, short, depth, pass, before, after };
 };
 
-const cache = new WeakMap<
+const cache = heldMap<
   ReadonlySet<string>,
   { readonly sets: readonly ReadonlySet<string>[]; readonly sizes: readonly number[]; readonly built: Automaton }
 >();

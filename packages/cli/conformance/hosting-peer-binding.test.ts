@@ -49,8 +49,8 @@ import { Box, Text } from "@keel/ui";
 import { api as apiContract } from "../api/api.contract.ts";
 const api = service({ contract: apiContract });
 export default function Page(_props: unknown, ctx: Ctx) {
-  void api.ping({}, ctx);
-  return <Box as="main"><Text>web</Text></Box>;
+  const pending = api.ping({}, ctx);
+  return <Box as="main"><Text>{typeof pending}</Text></Box>;
 }
 `;
 

@@ -79,6 +79,7 @@ async function served(ctx: Ctx): Promise<Served> {
     nothing: new Set(),
     reports: { open: false, logged: 0, dropped: 0, sources: new Map() },
     frames: () => [],
+    thrown: () => [],
   };
 }
 

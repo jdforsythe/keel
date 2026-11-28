@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { join, relative } from "node:path";
+import { extname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
 import { sourceHash } from "@keel/compiler/internal";
 import { entryDependency } from "@keel/compiler/internal/entry/entryDependency";
@@ -8,6 +9,7 @@ import { libraryRel } from "@keel/compiler/std/libraryRel";
 import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
 import { createViteServer } from "vitest/node";
+import type { JsonSchema } from "./JsonSchema.ts";
 import { applyWrites } from "./applyWrites.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { hashOf } from "./hashOf.ts";
@@ -17,6 +19,10 @@ import { surfaceOf } from "./surfaceOf.ts";
 
 const CONTRACT = /^modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
+/** This package's JSON Schema writer, loaded in the evaluation's graph: `.ts` in the source, `.js` as built. */
+const TO_JSON_SCHEMA = fileURLToPath(
+  new URL(`./toJsonSchema${extname(fileURLToPath(import.meta.url))}`, import.meta.url),
+);
 /** A kernel internal the evaluation loads: the project's package, else the CLI's own dependency (`entryDependency`). */
 const kernel = (id: string, root: string): string => entryDependency(id, root, import.meta.url) ?? id;
 const firstLine = (e: unknown): string => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "";
@@ -34,7 +40,10 @@ const failed = (file: string, e: unknown): string => `E1006 ${file} failed to ev
 const routeFailed = (file: string, e: unknown): string => {
   const code = codeOf(e);
   const message: unknown = Reflect.get(Object(e), "message");
-  if (code !== undefined) return `${code} ${typeof message === "string" ? message : ""}\n`;
+  if (code !== undefined) {
+    const text = typeof message === "string" ? message : "";
+    return text.startsWith(`${code} `) ? `${text}\n` : `${code} ${text}\n`;
+  }
   const line = firstLine(e);
   return line.startsWith("E1000 ") ? `${line}\n` : failed(file, e);
 };
@@ -126,6 +135,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
   const bindings: unknown[] = [];
   const byId = new Map<string, Readonly<Record<string, unknown>>>();
   let shapes: unknown;
+  let schemaJson: (x: unknown) => JsonSchema | null = () => null;
   try {
     const server =
       contractFiles.length + routeFiles.length === 0
@@ -200,6 +210,18 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
       const kept: unknown =
         bindings.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/store/internal", root));
       shapes = isRecord(kept) ? kept.storeShapes : undefined;
+      // A schema the app's modules made is known only to the evaluation of `@keel/schema` that made it (k.realm):
+      // the graph's own `isSchema` and this package's `toJsonSchema`, loaded in that graph, read it.
+      const schemaMod: unknown = await server?.ssrLoadModule(kernel("@keel/schema", root));
+      const jsonMod: unknown = await server?.ssrLoadModule(TO_JSON_SCHEMA);
+      const isSchemaIn = isRecord(schemaMod) ? schemaMod.isSchema : undefined;
+      const toJsonIn = isRecord(jsonMod) ? jsonMod.toJsonSchema : undefined;
+      if (typeof isSchemaIn === "function" && typeof toJsonIn === "function")
+        schemaJson = (x) => {
+          if (Reflect.apply(isSchemaIn, undefined, [x]) !== true) return null;
+          const out: unknown = Reflect.apply(toJsonIn, undefined, [Reflect.get(Object(x), "node")]);
+          return isRecord(out) ? out : null;
+        };
       const clashes = isRecord(kept) ? kept.storeIdClashes : undefined;
       if (typeof clashes === "function")
         for (const m of clashes(chainsOf(byId))) if (typeof m === "string") notes.push(`E1550 ${m}\n`);
@@ -208,7 +230,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
     }
     if (notes.length > 0) return { code: 1, notes };
     const storesOf = (factory: unknown): unknown => (typeof shapes === "function" ? shapes(factory) : undefined);
-    const data = surfaceOf({ contracts, bindings, callers: contractCallers(files), storesOf, sources });
+    const data = surfaceOf({ contracts, bindings, callers: contractCallers(files), storesOf, sources, schemaJson });
     const content = `${canonicalJson({ data, hash: hashOf(data) })}\n`;
     applyWrites(root, [{ path: ".keel/surface.json", content, readonly: true }]);
     return { code: 0, notes };

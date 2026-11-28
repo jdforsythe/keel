@@ -86,17 +86,20 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
   harnessed().add(ctx);
   if (setup.run !== undefined) harnessed().add(setup.run);
   try {
-    owner = scope(() => {
-      if ("start" in setup) setup.start(container);
-      else
-        unmount = mount(setup.view, container, {
-          ctx: setup.run ?? ctx,
-          artifacts: { tokens: artifacts?.tokens },
-          onError: (error) => {
-            caught.push(error);
-          },
-        });
-    });
+    owner = scope(
+      () => {
+        if ("start" in setup) setup.start(container);
+        else
+          unmount = mount(setup.view, container, {
+            ctx: setup.run ?? ctx,
+            artifacts: { tokens: artifacts?.tokens },
+            onError: (error) => {
+              caught.push(error);
+            },
+          });
+      },
+      { detached: true },
+    );
   } catch (error) {
     dispose();
     throw error;

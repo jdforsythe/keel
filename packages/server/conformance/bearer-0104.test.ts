@@ -440,8 +440,14 @@ describe("k.api bearer", () => {
       expect(res.status).toBe(500);
       await drain(res);
       const diags = lines.filter((l) => field(JSON.parse(l), "kind") === "diag");
-      expect(diags.length).toBeGreaterThan(0);
-      for (const line of diags) expect(line).toContain("[secret]");
+      // dev writes the thrown text in a second diag, where the mark stands; production writes none, so its record holds neither the value nor a mark (k.privacy Server log)
+      if (mode === "dev") {
+        expect(diags).toHaveLength(2);
+        expect(diags[1]).toContain("[secret]");
+      } else {
+        expect(diags.length).toBeGreaterThan(0);
+        for (const line of diags) expect(line).not.toContain("[secret]");
+      }
       for (const line of lines) for (const form of tokenForms) expect(line).not.toContain(form);
     });
   }
@@ -489,7 +495,7 @@ describe("k.api bearer", () => {
           if (mode === "production") for (const form of tokenForms) expect(body).not.toContain(form);
         }
         for (const line of lines) for (const form of tokenForms) expect(line, `${mode}: ${line}`).not.toContain(form);
-        expect(lines.some((l) => l.includes("[secret]"))).toBe(true);
+        expect(lines.some((l) => l.includes("[secret]"))).toBe(mode === "dev");
       }
       expect(spy).not.toHaveBeenCalled();
     } finally {

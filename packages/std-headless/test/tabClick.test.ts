@@ -17,7 +17,7 @@ const tabs: readonly Option[] = [
 
 const mount = () => {
   const made: Signal<string>[] = [];
-  scope(() => void made.push(signal("a")));
+  scope(() => void made.push(signal("a")), { detached: true });
   const [picked] = made;
   if (picked === undefined) throw new Error("no signal");
   const changes: string[] = [];

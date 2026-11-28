@@ -14,7 +14,7 @@ import { readProject } from "./readProject.ts";
 export function hostIo(stream: boolean): Io {
   const cwd = process.cwd();
   const env = Object.fromEntries(
-    Object.entries(process.env).filter((e): e is [string, string] => typeof e[1] === "string"),
+    Object.entries(process.env).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : [])),
   );
   return {
     cwd,

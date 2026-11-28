@@ -60,9 +60,12 @@ export const shown = (id: string): boolean => {
 /** Runs `make` in a reactive scope (a chart `instance` needs one) and returns what it made. */
 export function inScope<T extends object>(make: () => T): T {
   const made: T[] = [];
-  scope(() => {
-    made.push(make());
-  });
+  scope(
+    () => {
+      made.push(make());
+    },
+    { detached: true },
+  );
   const [out] = made;
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;

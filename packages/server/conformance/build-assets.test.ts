@@ -111,6 +111,11 @@ beforeAll(() => {
   write(fixture, "modules/app/Counter.tsx", BUILT_COUNTER);
   write(
     fixture,
+    "modules/app/module.ts",
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
+  );
+  write(
+    fixture,
     "tokens.ts",
     'import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n',
   );

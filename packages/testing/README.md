@@ -16,4 +16,4 @@ None.
 
 ## Unsafe
 
-count: 2 (`unsafe/axeSync.ts`: axe-core's rule run without its timers, through internals its types omit; `unsafe/evalOnHeap.ts`: z3-solver's Emscripten module, which it types `any`, as the heap members a query needs). The vitest task (`timeout`, `meta`, `onFinished`) and axe's rule list are read as `unknown` and narrowed.
+count: 3 (`unsafe/evalOnHeap.ts`: z3-solver's Emscripten module, which it types `any`, as the heap members a query needs; `unsafe/axeSync.ts`: the axe-core module as the internals the synchronous rule run calls, after a presence check of each member; `unsafe/routeStateOf.ts`: a route state built by `stateAt` as the route table's typed state). The vitest task (`timeout`, `meta`, `onFinished`) and axe's rule list are read as `unknown` and narrowed.

@@ -11,7 +11,7 @@ import { testCtx } from "./testCtx.ts";
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
 };
-const owner = scope(() => undefined);
+const owner = scope(() => undefined, { detached: true });
 afterEach(() => {
   document.body.innerHTML = "";
 });

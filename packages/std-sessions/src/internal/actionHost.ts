@@ -13,7 +13,7 @@ import { clean } from "./clean.ts";
 export function actionHost(): ActionIo {
   const cwd = process.cwd();
   const env = Object.fromEntries(
-    Object.entries(process.env).filter((e): e is [string, string] => typeof e[1] === "string"),
+    Object.entries(process.env).flatMap(([k, v]): [string, string][] => (typeof v === "string" ? [[k, v]] : [])),
   );
   const words = (env.KEEL_COMMAND ?? "").split(/\s+/).filter((w) => w !== "");
   const [bin = "pnpm", ...pre] = words.length > 0 ? words : ["pnpm", "exec", "keel"];

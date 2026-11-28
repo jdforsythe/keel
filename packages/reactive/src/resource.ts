@@ -1,8 +1,8 @@
+import { outcomeOf } from "../unsafe/outcomeOf.ts";
 import type { Outcome } from "./internal/Outcome.ts";
 import { State } from "./internal/State.ts";
 import { fail } from "./internal/fail.ts";
 import { flush } from "./internal/flush.ts";
-import { isKeelResult } from "./internal/isKeelResult.ts";
 import { lastResource } from "./internal/lastResource.ts";
 import { mark } from "./internal/mark.ts";
 import { rt } from "./internal/rt.ts";
@@ -60,15 +60,10 @@ export function resource<T>(fetcher: () => Promise<T | Outcome<T>>): Resource<T>
         pending = Promise.reject(error);
       }
       Promise.resolve(pending).then(
-        (v) =>
-          settle(
-            id,
-            !isKeelResult(v)
-              ? { state: "ready", value: v }
-              : v.ok
-                ? { state: "ready", value: v.value }
-                : { state: "error", error: v.error },
-          ),
+        (v) => {
+          const o = outcomeOf(v);
+          settle(id, o.ok ? { state: "ready", value: o.value } : { state: "error", error: o.error });
+        },
         (error: unknown) => settle(id, { state: "error", error }),
       );
     },

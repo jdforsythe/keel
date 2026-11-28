@@ -1,7 +1,6 @@
 import type { Method } from "../contract/types/Method.ts";
-import { METHODS } from "./METHODS.ts";
 
-/** Whether `v` is an API entry's `method`. */
+/** Whether `v` is an API entry's `method`: one of `METHODS`. */
 export function isMethod(v: unknown): v is Method {
-  return METHODS.some((m) => m === v);
+  return v === "GET" || v === "POST" || v === "PUT" || v === "PATCH" || v === "DELETE";
 }

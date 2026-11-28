@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Targeted examples pinning router navigation, history interaction, link interception, Form and rendering.
 import { createCtx } from "@keel/ctx";
+import { scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { err, ok, s } from "@keel/schema";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -13,13 +14,13 @@ import { guard } from "../src/guard.ts";
 import { afterNavigate } from "../src/internal/afterNavigate.ts";
 import { defaultError } from "../src/internal/defaultError.ts";
 import { formHandle } from "../src/internal/formHandle.ts";
-import { isHref } from "../src/internal/isHref.ts";
 import { renderChildren } from "../src/internal/renderChildren.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import type { FormHandle } from "../src/types/FormHandle.ts";
 import type { Href } from "../src/types/Href.ts";
 import type { RouteTable } from "../src/types/RouteTable.ts";
+import { isHref } from "../unsafe/isHref.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 
 const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -689,19 +690,24 @@ describe("Form", () => {
   });
 
   it("outside a router: renders method, the action Href as given, hidden _method for non-POST, children; no lookup", () => {
-    const fm = to("/fm/4");
-    const post = Form({ method: "POST", action: fm, children: () => "hello" });
-    expect(post.getAttribute("method")).toBe("post");
-    expect(post.getAttribute("action")).toBe("/fm/4");
-    expect(post.querySelector("input")).toBeNull();
-    expect(post.textContent).toBe("hello");
-    const put = Form({ method: "PUT", action: fm, children: () => el("kid") });
-    const hidden = put.querySelector("input");
-    expect(hidden?.getAttribute("type")).toBe("hidden");
-    expect(hidden?.getAttribute("name")).toBe("_method");
-    expect(hidden?.getAttribute("value")).toBe("PUT");
-    expect(put.querySelector('[data-x="kid"]')).not.toBeNull();
-    expect(() => Form({ method: "DELETE", action: to("/nowhere") })).not.toThrow();
+    scope(
+      () => {
+        const fm = to("/fm/4");
+        const post = Form({ method: "POST", action: fm, children: () => "hello" });
+        expect(post.getAttribute("method")).toBe("post");
+        expect(post.getAttribute("action")).toBe("/fm/4");
+        expect(post.querySelector("input")).toBeNull();
+        expect(post.textContent).toBe("hello");
+        const put = Form({ method: "PUT", action: fm, children: () => el("kid") });
+        const hidden = put.querySelector("input");
+        expect(hidden?.getAttribute("type")).toBe("hidden");
+        expect(hidden?.getAttribute("name")).toBe("_method");
+        expect(hidden?.getAttribute("value")).toBe("PUT");
+        expect(put.querySelector('[data-x="kid"]')).not.toBeNull();
+        expect(() => Form({ method: "DELETE", action: to("/nowhere") })).not.toThrow();
+      },
+      { detached: true },
+    ).dispose();
   });
 
   it("inside a router: E1505 when the route the action matches does not declare the method; none matching posts natively", async () => {

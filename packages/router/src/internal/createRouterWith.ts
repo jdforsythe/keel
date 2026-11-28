@@ -5,6 +5,8 @@ import type { CaughtError } from "@keel/runtime-dom";
 import { boundary, list } from "@keel/runtime-dom/ops";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
 import type { ServerState } from "@keel/store/internal";
+import { isHref } from "../../unsafe/isHref.ts";
+import { routeStateOf } from "../../unsafe/routeStateOf.ts";
 import type { Href } from "../types/Href.ts";
 import type { RouteTable } from "../types/RouteTable.ts";
 import type { Router } from "../types/Router.ts";
@@ -29,12 +31,11 @@ import { fieldsError } from "./fieldsError.ts";
 import { formHandle } from "./formHandle.ts";
 import { guardLoop } from "./guardLoop.ts";
 import { guardNext } from "./guardNext.ts";
-import { isHref } from "./isHref.ts";
-import { isRouteStateOf } from "./isRouteStateOf.ts";
 import { matchUrl } from "./matchUrl.ts";
 import { mounted } from "./mounted.ts";
 import { needsBare } from "./needsBare.ts";
 import { notFound } from "./notFound.ts";
+import { owned } from "./owned.ts";
 import { pageHead } from "./pageHead.ts";
 import { publicError } from "./publicError.ts";
 import { renderView } from "./renderView.ts";
@@ -135,7 +136,8 @@ export function createRouterWith<T extends RouteTable>(
     const pending = signal(false);
     const route = computed((): StateOf<T> => {
       const state = { ...place.get(), pending: pending.get() };
-      if (isRouteStateOf<StateOf<T>>(own, state)) return state;
+      const typed = routeStateOf<StateOf<T>>(own, state);
+      if (typed !== undefined) return typed;
       throw new Error(`k.router: route id ${String(state.id)} is not in this route table`);
     });
     return { view, place, pending, route };
@@ -227,9 +229,12 @@ export function createRouterWith<T extends RouteTable>(
     visited: readonly string[],
   ): Result<string, KeelError<string, unknown>> => {
     const carried = carriedParams(id, own.get(id)?.def, params);
-    if (!carried.ok) return err(unexpected(carried.error));
-    const r = attempt(() => encodeHref(id, own.get(id)?.def, carried.value, {}));
-    if (!r.ok) return err(unexpected(`guard redirect to "${id}" failed: ${r.error.message}`));
+    if (!carried.ok) return carried;
+    const r = attempt(
+      () => encodeHref(id, own.get(id)?.def, carried.value, {}),
+      (x) => (x instanceof Error ? unexpected(`guard redirect to "${id}" failed: ${x.name}: ${x.message}`) : undefined),
+    );
+    if (!r.ok) return r;
     const to = withNext(String(r.value), guardNext(table, url));
     const loop = guardLoop(visited, to);
     return loop === null ? ok(to) : err(unexpected(`E1508 ${loop}`));
@@ -360,7 +365,7 @@ export function createRouterWith<T extends RouteTable>(
         const rq = state?.request();
         const from = act.stores;
         await answered();
-        const ran = await attempt(async () => {
+        const ran = await owned(async (): Promise<Result<Href | null, KeelError<string, unknown>>> => {
           const stores = from === undefined ? undefined : await rq?.stores(from);
           const out = await act.run(decoded.value, { params, url, ...who, stores, routes }, ctx);
           // A link that is no `Href` is never followed: `keel.unexpected`, nothing saved, the value in no message.
@@ -370,7 +375,7 @@ export function createRouterWith<T extends RouteTable>(
           return clash ? err(clash) : out;
         });
         rq?.end();
-        result = ran.ok ? ran.value : ran;
+        result = ran;
         if (!result.ok) report(ctx, { kind: "error", error: result.error });
       }
       if (!result.ok) result = err(shown(result.error));

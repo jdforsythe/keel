@@ -131,9 +131,12 @@ describe("k.store: an `unknown` payload is validated at run time", () => {
       items: [...st.items, item],
     }));
   }
-  scope(() => {
-    box.v = { add: makeAdd() };
-  });
+  scope(
+    () => {
+      box.v = { add: makeAdd() };
+    },
+    { detached: true },
+  );
 
   it("a good `unknown` value commits and a bad one is schema.invalid", () => {
     const add = box.v?.add;

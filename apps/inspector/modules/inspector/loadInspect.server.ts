@@ -1,7 +1,8 @@
 import { loader } from "@keel/router";
-import { attempt, err, ok } from "@keel/schema";
+import { defect, err, ok } from "@keel/schema";
 import { service } from "@keel/services";
 import { Inspection } from "./Inspection.schema.ts";
+import { Unreachable } from "./Unreachable.schema.ts";
 import { inspectApi } from "./inspectApi.service.ts";
 import { inspector } from "./inspector.contract.ts";
 
@@ -13,9 +14,9 @@ const LOOPBACK: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"
  * password, no path but `/`, no query and no fragment (`?` or `#` alone count). Anything else is undefined.
  */
 const originOf = (target: string): string | undefined => {
-  const u = attempt(() => new URL(target));
-  if (!u.ok) return undefined;
-  const { protocol, username, password, hostname, pathname, search, hash } = u.value;
+  const u = URL.parse(target);
+  if (u === null) return undefined;
+  const { protocol, username, password, hostname, pathname, search, hash } = u;
   const bare = !/[?#]/.test(target);
   return (protocol === "http:" || protocol === "https:") &&
     username === "" &&
@@ -25,7 +26,7 @@ const originOf = (target: string): string | undefined => {
     search === "" &&
     hash === "" &&
     bare
-    ? u.value.origin
+    ? u.origin
     : undefined;
 };
 
@@ -45,17 +46,11 @@ export const loadInspect = loader(
   "inspector.index",
   { output: Inspection },
   async ({ search, url: at }, ctx) => {
-    const target = search.url ?? new URL(at).origin;
+    const target = search.url ?? (URL.parse(at) ?? defect("a request has an address")).origin;
     const origin = originOf(target);
-    if (origin === undefined)
-      return err({
-        code: "inspector.unreachable",
-        message: "?url= is not the origin of an app on this machine",
-        data: { url: "" },
-      });
+    if (origin === undefined) return err(Unreachable.make({ url: "", why: "origin" }));
     const r = await service({ base: origin, schema: inspectApi }).get({}, ctx);
-    if (!r.ok)
-      return err({ code: "inspector.unreachable", message: `no inspect document at ${origin}`, data: { url: origin } });
+    if (!r.ok) return err(Unreachable.make({ url: origin, why: "document" }));
     const url = origin;
     const d = r.value;
     const stores = Object.fromEntries(

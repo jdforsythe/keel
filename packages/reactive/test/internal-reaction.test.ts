@@ -10,11 +10,14 @@ describe("reaction", () => {
 
   it("is the running effect inside it and null again after", () => {
     const seen: Array<object | null> = [];
-    scope(() => {
-      effect(() => {
-        seen.push(reaction());
-      });
-    });
+    scope(
+      () => {
+        effect(() => {
+          seen.push(reaction());
+        });
+      },
+      { detached: true },
+    );
     expect(seen).toHaveLength(1);
     expect(seen[0]).not.toBeNull();
     expect(reaction()).toBeNull();
@@ -24,18 +27,21 @@ describe("reaction", () => {
     let s: ReturnType<typeof signal<number>> | undefined;
     const a: Array<object | null> = [];
     const b: Array<object | null> = [];
-    scope(() => {
-      const sig = signal(0);
-      s = sig;
-      effect(() => {
-        sig.get();
-        a.push(reaction());
-      });
-      effect(() => {
-        sig.get();
-        b.push(reaction());
-      });
-    });
+    scope(
+      () => {
+        const sig = signal(0);
+        s = sig;
+        effect(() => {
+          sig.get();
+          a.push(reaction());
+        });
+        effect(() => {
+          sig.get();
+          b.push(reaction());
+        });
+      },
+      { detached: true },
+    );
     s?.set(1);
     expect(a).toHaveLength(2);
     expect(a[0]).toBe(a[1]);
@@ -44,13 +50,16 @@ describe("reaction", () => {
 
   it("is the computed while it evaluates", () => {
     let inside: object | null = null;
-    scope(() => {
-      const c = computed(() => {
-        inside = reaction();
-        return 1;
-      });
-      c.get();
-    });
+    scope(
+      () => {
+        const c = computed(() => {
+          inside = reaction();
+          return 1;
+        });
+        c.get();
+      },
+      { detached: true },
+    );
     expect(inside).not.toBeNull();
   });
 });

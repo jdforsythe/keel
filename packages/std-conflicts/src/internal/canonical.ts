@@ -10,9 +10,12 @@ const order = (v: unknown): unknown => {
   if (Array.isArray(v)) {
     if (v.length > 0 && v.every(keyed))
       return v
-        .map((item) => ({ id: item.id, text: JSON.stringify(order(item)) }))
+        .map((item) => {
+          const ordered = order(item);
+          return { id: item.id, text: JSON.stringify(ordered), ordered };
+        })
         .sort(byText)
-        .map((t): unknown => JSON.parse(t.text));
+        .map((t) => t.ordered);
     return v.map(order);
   }
   // `fromEntries` defines own properties, so a key such as `__proto__` is kept, not assigned through the prototype.

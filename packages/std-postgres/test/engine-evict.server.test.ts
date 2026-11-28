@@ -6,7 +6,7 @@ import { testTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, expect, test, vi } from "vitest";
 
-const KEY = Symbol.for("keel.postgres.engines");
+const KEY = Symbol.for("@keel/std-postgres:engines");
 const dir = tempDir("keel-evict-");
 const before: unknown = Reflect.get(globalThis, KEY);
 

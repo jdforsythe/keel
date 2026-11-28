@@ -1,5 +1,5 @@
+import { defect } from "@keel/schema";
 import type { Snapshot } from "@keel/store";
-import { raise } from "../unsafe/raise.ts";
 import type { RaceReport } from "./RaceReport.ts";
 import type { StoresFactory } from "./StoresFactory.ts";
 import { checkStore } from "./internal/checkStore.ts";
@@ -11,7 +11,8 @@ import { withFactory } from "./internal/withFactory.ts";
  * returns whose state schema accepts `snapshot.state` and which declares every logged transaction. Each rebased entry
  * (one holding `base`) is applied with its concurrent entries in both orders from the state at `base`: a failing order
  * against a holding one is an `invalid` race, two holding orders with different states an `order` race (an array of
- * objects with a string `id` compares as a set). An entry whose base state cannot be rebuilt is `unchecked`. Pure:
+ * objects with a string `id` compares as a set). An entry whose base state cannot be rebuilt, or whose transaction
+ * throws an `Error` no TypeError or RangeError, is `unchecked`; a defect passes on. Pure:
  * `snapshot` and every live store stay unchanged.
  */
 export function races(snapshot: Snapshot<unknown>, stores: StoresFactory): RaceReport {
@@ -19,7 +20,10 @@ export function races(snapshot: Snapshot<unknown>, stores: StoresFactory): RaceR
     const st = made.stores.find(
       (x) => x.schema.parse(snapshot.state).ok && snapshot.log.every((e) => x.payloads.has(e.name)),
     );
-    if (st === undefined) return raise("std.conflicts: no store of the factory holds this snapshot");
+    if (st === undefined)
+      return defect("std.conflicts: no store of the factory holds this snapshot", {
+        data: { stores: made.stores.length },
+      });
     return checkStore(st, made.txs, snapshot);
   });
 }

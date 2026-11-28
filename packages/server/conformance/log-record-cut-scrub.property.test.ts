@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.serverlog, clause "With a revealed 64-character secret in a thrown message at each offset that puts the 2,048th written character inside it, no logged line holds 8 consecutive characters of the secret, in compact and json."
 // Seed 1337 (fc.assert below). The secret is 64 characters of A-Z and 0-9; the prefix before it is lowercase ASCII, a double quote or U+0001 (six written characters), padded with `x` so the cut falls after `kept` characters of the secret, `kept` from 1 to 63.
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
@@ -13,7 +14,7 @@ import { Params, SEED, createApp, post } from "./fixtures.ts";
 
 type Mode = "dev" | "production";
 type Format = "compact" | "json";
-const modes: readonly Mode[] = ["dev", "production"];
+const modes: readonly Mode[] = ["dev"];
 const formats: readonly Format[] = ["compact", "json"];
 
 const record = (line: string): ReadonlyMap<string, unknown> => {

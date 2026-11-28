@@ -12,8 +12,8 @@ describe("k.store: isolated registries", () => {
   it("two isolated scopes each hold a live store with the same id; stores() under each lists only its own and outside both lists neither", () => {
     const made: unknown[] = [];
     const seen: unknown[] = [];
-    const a = scope(() => {});
-    const b = scope(() => {});
+    const a = scope(() => {}, { detached: true });
+    const b = scope(() => {}, { detached: true });
     isolate(a);
     isolate(b);
     expect(() => a.run(() => made.push(store(Cart, { items: [] }, { id: ID })))).not.toThrow();
@@ -33,7 +33,7 @@ describe("k.store: isolated registries", () => {
   });
 
   it("a duplicate live id within one isolated scope still throws", () => {
-    const a = scope(() => {});
+    const a = scope(() => {}, { detached: true });
     isolate(a);
     a.run(() => void store(Cart, { items: [] }, { id: ID }));
     expect(() => a.run(() => void store(Cart, { items: [] }, { id: ID }))).toThrow();
@@ -41,7 +41,7 @@ describe("k.store: isolated registries", () => {
   });
 
   it("a nested child scope of an isolated scope registers in the isolated scope's registry", () => {
-    const a = scope(() => {});
+    const a = scope(() => {}, { detached: true });
     isolate(a);
     const child = a.run(() => scope(() => void store(Cart, { items: [] }, { id: ID })));
     expect(a.run(() => stores().has(ID))).toBe(true);
@@ -52,10 +52,13 @@ describe("k.store: isolated registries", () => {
   });
 
   it("disposing an isolated scope drops its stores and leaves a same-id module-level store unaffected", () => {
-    const outer = scope(() => {
-      store(Cart, { items: [] }, { id: ID });
-    });
-    const a = scope(() => {});
+    const outer = scope(
+      () => {
+        store(Cart, { items: [] }, { id: ID });
+      },
+      { detached: true },
+    );
+    const a = scope(() => {}, { detached: true });
     isolate(a);
     a.run(() => void store(Cart, { items: [] }, { id: ID }));
     expect(a.run(() => stores().has(ID))).toBe(true);

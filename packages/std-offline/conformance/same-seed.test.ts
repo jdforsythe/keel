@@ -1,7 +1,7 @@
 import { scope } from "@keel/reactive";
-// Spec: std.outbox-owner, clause "With two ctxs of one seed over one outbox declared outside a scope, sending offline and online under owners `a` and `b` in any order, neither ctx fails, removes, posts or stores the other's entries."
+// Spec: std.outbox-owner, clause "With two ctxs of one seed over one outbox declared in a `detached` scope, sending offline and online under owners `a` and `b` in any order, neither ctx fails, removes, posts or stores the other's entries."
 // Seed 1337 (both ctxs and fast-check)
-// Assumption: two sim ctxs of seed 1337 draw the same write keys; each has its own storage and its own server route; one outbox object (declared with no reactive owner) serves both.
+// Assumption: two sim ctxs of seed 1337 draw the same write keys; each has its own storage and its own server route; one outbox object (declared in a `detached` scope's root) serves both.
 // Assumption: a sent entry leaves the store, so only entries present before a step are checked after it (a still-present entry keeps its state).
 // Assumption: a key may recur across ctxs once the other's entry has left the store, so ownership of entries, posts and stored writes is told by the title each ctx gives its own writes (`c<ctx>-<step>`).
 // Assumption: a send while online flushes; `settle` lets that flush finish.
@@ -30,11 +30,12 @@ const steps = fc.array(
 const snapshot = (o: { get(k: "entries"): readonly unknown[] }): Map<string, string> =>
   new Map(entriesOf(o).map((e) => [e.title ?? "", e.state]));
 
-test("With two ctxs of one seed over one outbox declared outside a scope, sending offline and online under owners `a` and `b` in any order, neither ctx fails, removes, posts or stores the other's entries.", async () => {
+test("With two ctxs of one seed over one outbox declared in a `detached` scope, sending offline and online under owners `a` and `b` in any order, neither ctx fails, removes, posts or stores the other's entries.", async () => {
   await fc.assert(
     fc.asyncProperty(steps, async (plan: Step[]) => {
       const id = `same${++n}.outbox`;
-      const o = outbox(id, Api, {});
+      const root = scope(() => undefined, { detached: true });
+      const o = root.run(() => outbox(id, Api, {}));
       const ctxs = [simCtx(1337), simCtx(1337)] as const;
       const servers = [createServer(), createServer()] as const;
       servers[0].attach(ctxs[0]);
@@ -64,6 +65,7 @@ test("With two ctxs of one seed over one outbox declared outside a scope, sendin
           expect(titles[c].has(e.title ?? "")).toBe(true);
         }
       }
+      root.dispose();
     }),
     { seed: 1337, numRuns: 40 },
   );
@@ -71,7 +73,8 @@ test("With two ctxs of one seed over one outbox declared outside a scope, sendin
 
 test("Ctx A sends offline as `a` and ctx B sends twice as `b` over one outbox of one seed: A's entry stays `queued` and B's storage holds only B's two.", async () => {
   const id = `same${++n}.outbox`;
-  const o = outbox(id, Api, {});
+  const root = scope(() => undefined, { detached: true });
+  const o = root.run(() => outbox(id, Api, {}));
   const a = simCtx(1337);
   const b = simCtx(1337);
   const sa = createServer();
@@ -98,11 +101,13 @@ test("Ctx A sends offline as `a` and ctx B sends twice as `b` over one outbox of
   expect(inA.map((e) => e.key)).toEqual(keysA);
   expect(sa.posts).toHaveLength(0);
   expect(sb.posts).toHaveLength(0);
+  root.dispose();
 });
 
 test("Ctx A queues offline as `a`, ctx B sends online as `b` and gets `sent`: A's entry is still in the store, and a `drain` with `a` on A online posts it.", async () => {
   const id = `same${++n}.outbox`;
-  const o = outbox(id, Api, {});
+  const root = scope(() => undefined, { detached: true });
+  const o = root.run(() => outbox(id, Api, {}));
   const a = simCtx(1337);
   const b = simCtx(1337);
   const sa = createServer();
@@ -125,11 +130,15 @@ test("Ctx A queues offline as `a`, ctx B sends online as `b` and gets `sent`: A'
   expect((await stored(a, `keel.outbox.${id}`)).map((e) => e.key)).toEqual(keysA);
 
   a.net.setOnline(true);
-  const sc = scope(() => {
-    void drain(a, o, { owner: "a" });
-  });
+  const sc = scope(
+    () => {
+      void drain(a, o, { owner: "a" });
+    },
+    { detached: true },
+  );
   await settle();
   expect(sa.posts.map((p) => p.key)).toEqual(keysA);
   expect(sa.entries()).toHaveLength(1);
   sc.dispose();
+  root.dispose();
 });

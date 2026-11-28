@@ -70,9 +70,12 @@ export async function resumeDocument(html: string, options: ResumeDocumentOption
       container.append(...body.childNodes);
       for (const el of container.querySelectorAll("[data-k-island], [data-k-island] *")) served.add(el);
       observer.observe(container, { childList: true, subtree: true });
-      islands.dispose = graph.scope(() => {
-        warnings.push(...graph.resume(container, components, { ctx, stores: Object.fromEntries(live) }).warnings);
-      }).dispose;
+      islands.dispose = graph.scope(
+        () => {
+          warnings.push(...graph.resume(container, components, { ctx, stores: Object.fromEntries(live) }).warnings);
+        },
+        { detached: true },
+      ).dispose;
     },
     ctx,
     seeded,

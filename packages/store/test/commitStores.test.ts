@@ -120,9 +120,12 @@ describe("commitStores", () => {
       return factory();
     };
     let pending: Promise<unknown> = Promise.resolve();
-    scope(() => {
-      pending = commitStores(ctx, probe, () => ok(null));
-    }).dispose();
+    scope(
+      () => {
+        pending = commitStores(ctx, probe, () => ok(null));
+      },
+      { detached: true },
+    ).dispose();
     await pending;
     expect(above).toBeUndefined();
   });

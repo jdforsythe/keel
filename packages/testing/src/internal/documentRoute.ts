@@ -7,6 +7,7 @@ import { matchHref } from "@keel/router/match";
 import { resume } from "@keel/runtime-dom/ops";
 import type { Island } from "@keel/runtime-dom/ops";
 import { stores } from "@keel/store";
+import { routeStateOf } from "../../unsafe/routeStateOf.ts";
 import type { DocumentApp } from "../types/DocumentApp.ts";
 import type { DocumentNavigation } from "../types/DocumentNavigation.ts";
 import type { RouteHarness } from "../types/RouteHarness.ts";
@@ -32,12 +33,6 @@ function stateAt(graph: Graph, routes: RouteTable, path: string): unknown {
   return m === null
     ? { id: null, params: {}, search: {}, pending: false }
     : { id: m.id, params: m.params, search: m.search, pending: false };
-}
-
-/** Narrow a route state built by `stateAt` from a match in `routes` to the table's typed state. */
-function isStateOf<T extends RouteTable>(graph: Graph, routes: RouteTable, x: unknown): x is RouteStateOf<T> {
-  if (typeof x !== "object" || x === null || !("id" in x)) return false;
-  return x.id === null || (typeof x.id === "string" && graph.compileRoutes(routes).table.has(x.id));
 }
 
 /** The client module graph a page resumes in: the test's own, or one `freshGraph` evaluated for this harness. */
@@ -200,14 +195,17 @@ export async function documentRoute<T extends RouteTable>(
     if (lang !== null) document.documentElement.setAttribute("lang", lang);
     host.replaceChildren(...doc.body.childNodes);
     const at = host;
-    islands = graph.scope(() => {
-      const { warnings: said } = graph.resume(at, components, {
-        ctx: page,
-        stores: Object.fromEntries(graph.stores()),
-      });
-      // A mismatch the browser would paper over with a client re-render is a fault the test reports.
-      warnings.push(...said);
-    });
+    islands = graph.scope(
+      () => {
+        const { warnings: said } = graph.resume(at, components, {
+          ctx: page,
+          stores: Object.fromEntries(graph.stores()),
+        });
+        // A mismatch the browser would paper over with a client re-render is a fault the test reports.
+        warnings.push(...said);
+      },
+      { detached: true },
+    );
   };
 
   let pending = 0;
@@ -272,9 +270,9 @@ export async function documentRoute<T extends RouteTable>(
   }
   const route = (): RouteStateOf<T> => {
     const st = stateAt(graph, routes, current);
-    if (!isStateOf<T>(graph, routes, st))
-      throw fail("E1501", `renderRoute: ${current} is no page of routes`, { url: current });
-    return st;
+    const typed = routeStateOf<T>(st, (id) => graph.compileRoutes(routes).table.has(id));
+    if (typed === null) throw fail("E1501", `renderRoute: ${current} is no page of routes`, { url: current });
+    return typed;
   };
   return {
     ...harness,

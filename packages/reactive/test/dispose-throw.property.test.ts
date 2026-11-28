@@ -67,11 +67,14 @@ describe("disposing a tree with throwing hooks", () => {
             for (const f of hooksOf(i)) sc.onDispose(f);
           }
         };
-        const root = scope(() => {
-          const s = signal(0);
-          write = (v) => s.set(v);
-          for (const k of kidsOf(specs, -1)) build(k, () => s.get());
-        });
+        const root = scope(
+          () => {
+            const s = signal(0);
+            write = (v) => s.set(v);
+            for (const k of kidsOf(specs, -1)) build(k, () => s.get());
+          },
+          { detached: true },
+        );
         expect(runs).toEqual(specs.map((s) => (s.effect ? 1 : 0)));
         let error: unknown = null;
         try {

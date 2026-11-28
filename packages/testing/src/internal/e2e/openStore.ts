@@ -6,17 +6,6 @@ import { pathToFileURL } from "node:url";
 import type { StoreReader } from "./StoreReader.ts";
 import type { StoreSource } from "./StoreSource.ts";
 
-type Driver = {
-  readonly get: (key: string) => Promise<unknown>;
-  readonly close: () => Promise<void>;
-  readonly watch?: (on: (report: unknown) => void) => Promise<() => void>;
-};
-const isDriver = (v: unknown): v is Driver =>
-  typeof v === "object" &&
-  v !== null &&
-  typeof Reflect.get(v, "get") === "function" &&
-  typeof Reflect.get(v, "close") === "function";
-
 /** One row of a SQLite file read-only; undefined when the file, the table or the row is absent. */
 function sqliteRow(file: string, sql: string, key: string | Uint8Array): string | Uint8Array | undefined {
   if (!existsSync(file)) return undefined;
@@ -60,14 +49,19 @@ export async function openStore(source: StoreSource): Promise<StoreReader> {
   const open = typeof mod === "object" && mod !== null ? Reflect.get(mod, "postgres") : undefined;
   if (typeof open !== "function") throw new Error("@keel/std-db/postgres exports no postgres driver");
   const driver: unknown = await open(new URL(source.url));
-  if (!isDriver(driver)) throw new Error("the postgres driver gave no storage with get and close");
-  const watch = driver.watch;
+  const member = (name: string): unknown =>
+    typeof driver === "object" && driver !== null ? Reflect.get(driver, name) : undefined;
+  const get = member("get");
+  const close = member("close");
+  const watch = member("watch");
+  if (typeof get !== "function" || typeof close !== "function")
+    throw new Error("the postgres driver gave no storage with get and close");
   return {
     get: async (key) => {
-      const v = await driver.get(key);
+      const v: unknown = await Reflect.apply(get, driver, [key]);
       return typeof v === "string" ? v : undefined;
     },
-    ...(watch === undefined ? {} : { watch: (on: () => void) => watch.call(driver, () => on()) }),
-    close: () => driver.close(),
+    ...(typeof watch === "function" ? { watch: (on: () => void) => Reflect.apply(watch, driver, [() => on()]) } : {}),
+    close: () => Reflect.apply(close, driver, []),
   };
 }

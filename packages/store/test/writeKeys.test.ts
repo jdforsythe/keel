@@ -15,9 +15,12 @@ function make(logLimit?: number) {
     invariant(bag, (st) => st.items.every((v) => v >= 0));
     return { bag, push };
   };
-  const sc = scope(() => {
-    box.kit = build();
-  });
+  const sc = scope(
+    () => {
+      box.kit = build();
+    },
+    { detached: true },
+  );
   if (box.kit === undefined) throw new Error("scope body did not run");
   return { ...box.kit, dispose: sc.dispose };
 }
@@ -53,13 +56,16 @@ describe("@keel/store write keys", () => {
     const k = make();
     tx(k.push, { v: 1 }, { key: "a" });
     let runs = 0;
-    const sc = scope(() => {
-      effect(() => {
-        k.bag.head();
-        k.bag.get("items");
-        runs++;
-      });
-    });
+    const sc = scope(
+      () => {
+        effect(() => {
+          k.bag.head();
+          k.bag.get("items");
+          runs++;
+        });
+      },
+      { detached: true },
+    );
     expect(tx(k.push, { v: 2 }, { key: "a" }).ok).toBe(true);
     expect(runs).toBe(1);
     sc.dispose();

@@ -11,54 +11,63 @@ describe("subscription bookkeeping", () => {
   it("disposal removes the effect from its sources' observer lists", () => {
     let observers = -1;
     let after = -1;
-    scope(() => {
-      const s = createNode("signal", undefined, []);
-      const inner = scope(() => {
-        watch("effect", () => track(s), []);
-      });
-      observers = s.observers.length;
-      inner.dispose();
-      after = s.observers.length;
-    });
+    scope(
+      () => {
+        const s = createNode("signal", undefined, []);
+        const inner = scope(() => {
+          watch("effect", () => track(s), []);
+        });
+        observers = s.observers.length;
+        inner.dispose();
+        after = s.observers.length;
+      },
+      { detached: true },
+    );
     expect([observers, after]).toEqual([1, 0]);
   });
 
   it("reading a node twice in one run subscribes once", () => {
     let observers = -1;
-    scope(() => {
-      const s = createNode("signal", undefined, []);
-      watch(
-        "effect",
-        () => {
-          track(s);
-          track(s);
-        },
-        [],
-      );
-      observers = s.observers.length;
-    });
+    scope(
+      () => {
+        const s = createNode("signal", undefined, []);
+        watch(
+          "effect",
+          () => {
+            track(s);
+            track(s);
+          },
+          [],
+        );
+        observers = s.observers.length;
+      },
+      { detached: true },
+    );
     expect(observers).toBe(1);
   });
 
   it("an effect disposed while running does not subscribe to what it reads afterwards", () => {
     let observers = -1;
-    scope(() => {
-      const s = createNode("signal", undefined, []);
-      let inner: Scope = { dispose: () => {}, parent: undefined, onDispose: () => {}, run: (f) => f() };
-      batch(() => {
-        inner = scope(() => {
-          watch(
-            "effect",
-            () => {
-              inner.dispose();
-              track(s);
-            },
-            [],
-          );
+    scope(
+      () => {
+        const s = createNode("signal", undefined, []);
+        let inner: Scope = { dispose: () => {}, parent: undefined, onDispose: () => {}, run: (f) => f() };
+        batch(() => {
+          inner = scope(() => {
+            watch(
+              "effect",
+              () => {
+                inner.dispose();
+                track(s);
+              },
+              [],
+            );
+          });
         });
-      });
-      observers = s.observers.length;
-    });
+        observers = s.observers.length;
+      },
+      { detached: true },
+    );
     expect(observers).toBe(0);
   });
 });

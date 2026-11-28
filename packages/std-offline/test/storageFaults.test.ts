@@ -14,9 +14,12 @@ const Api = contract("app", {
 let n = 0;
 function declare() {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox(`faults${++n}.outbox`, Api);
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(`faults${++n}.outbox`, Api);
+    },
+    { detached: true },
+  );
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc };
 }
@@ -196,9 +199,12 @@ test("an entry another owner fails while its own write is in flight resolves off
   const storage = holding(ctx);
   const a = send(ctx, o, "add", { body: { t: "a" } }, { base: 0, owner: "a" });
   await settle();
-  const stop = scope(() => {
-    void drain(ctx, o, { owner: "b" });
-  });
+  const stop = scope(
+    () => {
+      void drain(ctx, o, { owner: "b" });
+    },
+    { detached: true },
+  );
   await settle();
   for (let i = 0; i < 4; i++) {
     await storage.land();

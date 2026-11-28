@@ -2,7 +2,7 @@
 // file `keel check` reads only as part of the project, and a guarded self target beside a guarded target with no `to`.
 // Seed 1337.
 import { check } from "@keel/check";
-import { ok, s } from "@keel/schema";
+import { isDefect, ok, s } from "@keel/schema";
 import { commitStores } from "@keel/server";
 import { chart } from "@keel/std-statecharts";
 import "@keel/std-workflows/tools";
@@ -12,19 +12,21 @@ import { parseSync } from "oxc-parser";
 import { expect, test } from "vitest";
 import { workflow } from "../src/index.server.ts";
 import { stepState, undoneStep } from "../src/tools/index.ts";
-import { nextId, sim } from "./support.server.ts";
+import { inRoot, nextId, sim } from "./support.server.ts";
 
 const empty = s.object({});
 
 /** A chart whose event `name` sits beside `go`; `idle` moves to `done` on either. */
 const named = (name: string) =>
-  chart(nextId("named"), {
-    data: s.object({}),
-    start: {},
-    events: { go: empty, [name]: empty },
-    initial: "idle",
-    states: { idle: { on: { go: "done", [name]: "done" } }, done: { final: true } },
-  });
+  inRoot(() =>
+    chart(nextId("named"), {
+      data: s.object({}),
+      start: {},
+      events: { go: empty, [name]: empty },
+      initial: "idle",
+      states: { idle: { on: { go: "done", [name]: "done" } }, done: { final: true } },
+    }),
+  );
 
 const RESERVED = ["start", "attempt", "forget"] as const;
 
@@ -32,16 +34,23 @@ test("A chart event named start, attempt or forget is refused with a diagnostic 
   fc.assert(
     fc.property(fc.constantFrom(...RESERVED), (name) => {
       const id = nextId("reserved");
-      expect(() => workflow(id, { chart: named(name) })).toThrow(
-        `E2355 workflow ${id}: chart event ${name} takes the name of a workflow transaction; rename it`,
-      );
+      const caught = (() => {
+        try {
+          inRoot(() => workflow(id, { chart: named(name) }));
+        } catch (e) {
+          return e;
+        }
+        return undefined;
+      })();
+      expect(isDefect(caught, "E2355")).toBe(true);
+      expect(Reflect.get(Object(caught), "data")).toEqual({ workflow: id, event: name });
     }),
     { seed: 1337, numRuns: 3 },
   );
 });
 
 test("A chart whose events take no transaction name opens its stores", async () => {
-  const wf = workflow(nextId("renamed"), { chart: named("begin") });
+  const wf = inRoot(() => workflow(nextId("renamed"), { chart: named("begin") }));
   const r = await commitStores(sim(), wf.stores, (S) => ok(Object.keys(S.events).sort()));
   expect(r).toEqual({ ok: true, value: ["begin", "go"] });
 });
@@ -187,33 +196,35 @@ test("E2355 reads a chart file that is in the project but not among the checked 
 
 /** `pick` enters `picking` again when `self` holds, stays when `stay` holds (and `self` does not). */
 const guarded = () =>
-  chart(nextId("guarded"), {
-    data: s.object({ self: s.boolean(), stay: s.boolean() }),
-    start: { self: false, stay: false },
-    events: { go: empty, pick: empty, set: s.object({ self: s.boolean(), stay: s.boolean() }), out: empty },
-    guards: { self: (d) => d.self, stay: (d) => d.stay },
-    actions: { set: (_d, p) => ("self" in p ? { self: p.self, stay: p.stay } : _d) },
-    initial: "idle",
-    states: {
-      idle: { on: { go: "picking" } },
-      picking: {
-        on: {
-          pick: [{ to: "picking", guard: "self" }, { guard: "stay" }],
-          set: { do: "set" },
-          out: "done",
+  inRoot(() =>
+    chart(nextId("guarded"), {
+      data: s.object({ self: s.boolean(), stay: s.boolean() }),
+      start: { self: false, stay: false },
+      events: { go: empty, pick: empty, set: s.object({ self: s.boolean(), stay: s.boolean() }), out: empty },
+      guards: { self: (d) => d.self, stay: (d) => d.stay },
+      actions: { set: (_d, p) => ("self" in p ? { self: p.self, stay: p.stay } : _d) },
+      initial: "idle",
+      states: {
+        idle: { on: { go: "picking" } },
+        picking: {
+          on: {
+            pick: [{ to: "picking", guard: "self" }, { guard: "stay" }],
+            set: { do: "set" },
+            out: "done",
+          },
         },
+        done: { final: true },
       },
-      done: { final: true },
-    },
-  });
+    }),
+  );
 
 async function entered(self: boolean, stay: boolean): Promise<number> {
-  const wf = workflow(nextId("pick"), { chart: guarded() });
+  const wf = inRoot(() => workflow(nextId("pick"), { chart: guarded() }));
   const r = await commitStores(sim(), wf.stores, (S) => {
-    void tx(S.start, { id: "f", data: { self: false, stay: false } });
-    void tx(S.events.go, { id: "f", payload: {} });
-    void tx(S.events.set, { id: "f", payload: { self, stay } });
-    void tx(S.events.pick, { id: "f", payload: {} });
+    expect(tx(S.start, { id: "f", data: { self: false, stay: false } }).ok).toBe(true);
+    expect(tx(S.events.go, { id: "f", payload: {} }).ok).toBe(true);
+    expect(tx(S.events.set, { id: "f", payload: { self, stay } }).ok).toBe(true);
+    expect(tx(S.events.pick, { id: "f", payload: {} }).ok).toBe(true);
     return ok(S.store.get("instances").f?.entered ?? -1);
   });
   if (!r.ok) throw new Error(r.error.code);

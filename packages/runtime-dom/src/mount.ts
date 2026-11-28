@@ -1,4 +1,4 @@
-import { scope } from "@keel/reactive";
+import { owner as running, scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";
 import { createOwner } from "./internal/createOwner.ts";
 import { createRoot } from "./internal/createRoot.ts";
@@ -38,22 +38,26 @@ export function mount(component: Component, el: Element, options: MountOptions):
     }
   };
   try {
-    sc = scope(() => {
-      withCx(owner, null, () =>
-        boundary(
-          anchor,
-          () => component({}, options.ctx),
-          (error) => {
-            const fallback = rootFallback(error, options.mode);
-            options.onError?.(error);
-            return fallback;
-          },
-          // A throw at no element of its own (the root component's effect, computed or render): the stamp at the
-          // root's place, as for a resumed island (k.errors).
-          { at: stampOf(el) },
-        ),
-      );
-    });
+    sc = scope(
+      () => {
+        withCx(owner, null, () =>
+          boundary(
+            anchor,
+            () => component({}, options.ctx),
+            (error) => {
+              const fallback = rootFallback(error, options.mode);
+              options.onError?.(error);
+              return fallback;
+            },
+            // A throw at no element of its own (the root component's effect, computed or render): the stamp at the
+            // root's place, as for a resumed island (k.errors).
+            { at: stampOf(el) },
+          ),
+        );
+      },
+      // A root of its own only where none runs (an entry point); under a scope it nests (a request's, k.store).
+      { detached: running() === undefined },
+    );
   } catch (error) {
     dispose();
     throw error;

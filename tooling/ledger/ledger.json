@@ -4,8 +4,8 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2860,
-    "probabilistic": 468,
+    "example": 3009,
+    "probabilistic": 501,
     "exhaustive": 21,
     "proven": 92,
     "monitored": 8
@@ -217,6 +217,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "PurgeFailed",
+      "file": "golden-1:api/PurgeFailed.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
       "name": "Removal",
       "file": "golden-1:api/Removal.schema.ts",
       "rung": "probabilistic"
@@ -226,6 +232,12 @@
       "name": "RemovalData",
       "file": "golden-1:api/RemovalData.schema.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "RestoreFailed",
+      "file": "golden-1:api/RestoreFailed.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -454,6 +466,12 @@
       "name": "Digest",
       "file": "golden-1:digest/Digest.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "FeedClosed",
+      "file": "golden-1:digest/FeedClosed.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -697,6 +715,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "reread",
+      "file": "golden-1:todos/reread.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
       "name": "resolveEdit",
       "file": "golden-1:todos/resolveEdit.ts",
       "rung": "example"
@@ -787,6 +811,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "AuthUnavailable",
+      "file": "golden-2:accounts/AuthUnavailable.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
       "name": "BearerToken",
       "file": "golden-2:accounts/BearerToken.schema.ts",
       "rung": "example"
@@ -814,6 +844,12 @@
       "name": "MintedToken",
       "file": "golden-2:accounts/MintedToken.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "MissingSecret",
+      "file": "golden-2:accounts/MissingSecret.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-2",
@@ -1111,9 +1147,39 @@
     },
     {
       "pkg": "golden-2",
+      "name": "RecipeErrorText",
+      "file": "golden-2:recipes/RecipeErrorText.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "de-DE",
+      "file": "golden-2:recipes/RecipeErrorText/de-DE.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "en-US",
+      "file": "golden-2:recipes/RecipeErrorText/en-US.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ja-JP",
+      "file": "golden-2:recipes/RecipeErrorText/ja-JP.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "RecipeList",
       "file": "golden-2:recipes/RecipeList.tsx",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeNotFound",
+      "file": "golden-2:recipes/RecipeNotFound.schema.ts",
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -1297,6 +1363,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "notFoundText",
+      "file": "golden-2:recipes/notFoundText.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
       "name": "raiseToast",
       "file": "golden-2:recipes/raiseToast.ts",
       "rung": "probabilistic"
@@ -1381,6 +1453,12 @@
     },
     {
       "pkg": "household",
+      "name": "AuthUnavailable",
+      "file": "household:members/AuthUnavailable.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "BearerToken",
       "file": "household:members/BearerToken.schema.ts",
       "rung": "example"
@@ -1414,6 +1492,12 @@
       "name": "MintedToken",
       "file": "household:members/MintedToken.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "MissingSecret",
+      "file": "household:members/MissingSecret.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "household",
@@ -1510,6 +1594,12 @@
       "name": "TokenExpiry",
       "file": "household:members/TokenExpiry.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenExpiryRefused",
+      "file": "household:members/TokenExpiryRefused.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "household",
@@ -2389,6 +2479,18 @@
     },
     {
       "pkg": "inspector",
+      "name": "Unreachable",
+      "file": "inspector:inspector/Unreachable.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
+      "name": "UnreachableData",
+      "file": "inspector:inspector/UnreachableData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
       "name": "inspectApi",
       "file": "inspector:inspector/inspectApi.service.ts",
       "rung": "example"
@@ -2403,6 +2505,12 @@
       "pkg": "inspector",
       "name": "loadInspect",
       "file": "inspector:inspector/loadInspect.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
+      "name": "unreachableText",
+      "file": "inspector:inspector/unreachableText.ts",
       "rung": "none"
     },
     {
@@ -2694,6 +2802,12 @@
       "rung": "probabilistic"
     },
     {
+      "pkg": "ctx",
+      "name": "supervise",
+      "file": "packages/ctx/src/supervise.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "forms",
       "name": "form",
       "file": "packages/forms/src/form.ts",
@@ -2791,6 +2905,12 @@
     },
     {
       "pkg": "router",
+      "name": "isRouteTable",
+      "file": "packages/router/src/isRouteTable.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "router",
       "name": "loader",
       "file": "packages/router/src/loader.ts",
       "rung": "proven"
@@ -2853,12 +2973,18 @@
       "pkg": "schema",
       "name": "Secret",
       "file": "packages/schema/src/Secret.ts",
-      "rung": "probabilistic"
+      "rung": "none"
     },
     {
       "pkg": "schema",
       "name": "attempt",
       "file": "packages/schema/src/attempt.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "defect",
+      "file": "packages/schema/src/defect.ts",
       "rung": "probabilistic"
     },
     {
@@ -2877,6 +3003,24 @@
       "pkg": "schema",
       "name": "gen",
       "file": "packages/schema/src/gen.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "isDefect",
+      "file": "packages/schema/src/isDefect.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "isObjectSchema",
+      "file": "packages/schema/src/isObjectSchema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "schema",
+      "name": "isSchema",
+      "file": "packages/schema/src/isSchema.ts",
       "rung": "probabilistic"
     },
     {
@@ -3187,6 +3331,12 @@
     },
     {
       "pkg": "std-live",
+      "name": "Rejected",
+      "file": "packages/std-live/src/Rejected.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-live",
       "name": "live",
       "file": "packages/std-live/src/live.ts",
       "rung": "example"
@@ -3283,9 +3433,27 @@
     },
     {
       "pkg": "std-postgres",
+      "name": "ConstraintError",
+      "file": "packages/std-postgres/src/ConstraintError.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-postgres",
+      "name": "DatabaseError",
+      "file": "packages/std-postgres/src/DatabaseError.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-postgres",
       "name": "NoRows",
       "file": "packages/std-postgres/src/NoRows.schema.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-postgres",
+      "name": "ResultError",
+      "file": "packages/std-postgres/src/ResultError.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "std-postgres",
@@ -3763,6 +3931,18 @@
     },
     {
       "pkg": "store",
+      "name": "isStore",
+      "file": "packages/store/src/isStore.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "isTransaction",
+      "file": "packages/store/src/isTransaction.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
       "name": "isolate",
       "file": "packages/store/src/isolate.ts",
       "rung": "probabilistic"
@@ -4174,6 +4354,66 @@
       "rung": "example"
     },
     {
+      "item": "k.attempt#e4207c4e",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#b7551491",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#9972cf8d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#d535a651",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#855ffcda",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#5fde96f3",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#45ffd79f",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#d9823e4d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#abce74e5",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#1ce1aa30",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#d8daddfb",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#06084fe7",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#508ddf5d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#5c2659df",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#c40af7e8",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.boundary#224ae0db",
       "rung": "example"
     },
@@ -4394,7 +4634,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.check#78baf2c3",
+      "item": "k.check#9535b727",
       "rung": "probabilistic"
     },
     {
@@ -4990,6 +5230,10 @@
       "rung": "example"
     },
     {
+      "item": "k.ctx#f4bbb0c0",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#56d403f4",
       "rung": "example"
     },
@@ -5122,6 +5366,42 @@
       "rung": "example"
     },
     {
+      "item": "k.defects#5c47e678",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#451068b7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#8e7bccca",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#bf77014d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#1eb4662b",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#c94db915",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#1a0d38f4",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#3a3b2747",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#1614c6b3",
+      "rung": "example"
+    },
+    {
       "item": "k.deploy#9a4ebc5f",
       "rung": "example"
     },
@@ -5171,6 +5451,14 @@
     },
     {
       "item": "k.deploy#d1f26eb4",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#9378f534",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#2d7adf04",
       "rung": "example"
     },
     {
@@ -5682,7 +5970,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.errors#eb6f63ca",
+      "item": "k.errors#275c52d8",
       "rung": "probabilistic"
     },
     {
@@ -5702,7 +5990,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.errors#e8bad4b7",
+      "item": "k.errors#4abe06c4",
       "rung": "example"
     },
     {
@@ -5727,6 +6015,26 @@
     },
     {
       "item": "k.errors#8fa8c50b",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#e5488655",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#a0b7bf7f",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#61bf9a92",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#6d8c0381",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#a987cdfd",
       "rung": "example"
     },
     {
@@ -5763,6 +6071,26 @@
     },
     {
       "item": "k.escapes#7a853aee",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#a3dc8f39",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#12acc760",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#42575237",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#7b5ec7a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#76ea8c84",
       "rung": "example"
     },
     {
@@ -5806,6 +6134,46 @@
       "rung": "example"
     },
     {
+      "item": "k.expect#8996c3b4",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#68d76781",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#cb4da481",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#d5164916",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#a607feb3",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#79570723",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#bcd17112",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.expect#90e988de",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#44282934",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#0fd2ead3",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.explain#30744567",
       "rung": "example"
     },
@@ -5822,6 +6190,14 @@
       "rung": "example"
     },
     {
+      "item": "k.explain#52089f94",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#c4fddb05",
+      "rung": "example"
+    },
+    {
       "item": "k.explain#bea8d924",
       "rung": "example"
     },
@@ -5835,6 +6211,54 @@
     },
     {
       "item": "k.explain#e1314763",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#84e8ad17",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#16de50cd",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#5aa30886",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#e26f90d5",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#442eb6fc",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#c1667b5e",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#0cfdacdc",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.fixes#6b886e32",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.fixes#f1528785",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#48009468",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.fixes#b2a617ac",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#4eed49ad",
       "rung": "example"
     },
     {
@@ -6211,6 +6635,50 @@
     },
     {
       "item": "k.hosting#ff9436ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#44f0ace2",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#56eca3d0",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#7908e52c",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#9622f7c7",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#353d75df",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.identity#d4893cde",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.identity#c429f6f8",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#6d7ad3e2",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#c9668d91",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#e0e57489",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#ab2cb12c",
       "rung": "example"
     },
     {
@@ -7286,7 +7754,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.reactive#e7f24cef",
+      "item": "k.reactive#2669a9f8",
       "rung": "example"
     },
     {
@@ -7318,7 +7786,75 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.reactive#7be0dc11",
+      "item": "k.reactive#8383d7d1",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#2fe5436c",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#bf43dd2a",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#531fcd22",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#7ff038aa",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#37c7906f",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#556199b4",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#2d4b6f60",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#75702f9d",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#9b317324",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#49b48891",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#b8c46db2",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#c3208ccb",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#d4b672b0",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#696c598a",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#f32ab902",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#792c8e2c",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#128276da",
       "rung": "example"
     },
     {
@@ -7990,6 +8526,10 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.schema#57e908a7",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.schemes#62a32a22",
       "rung": "example"
     },
@@ -8274,6 +8814,50 @@
       "rung": "example"
     },
     {
+      "item": "k.serverlog#4cde4143",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#45a67ce0",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#bb0d1901",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#5e1677ee",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#005f6403",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#fadc2851",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#18f3b4b0",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#2d1a9a85",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#b769a43c",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#489f0592",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#8057b810",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.services#2223cfa9",
       "rung": "probabilistic"
     },
@@ -8339,6 +8923,42 @@
     },
     {
       "item": "k.services#51d7d135",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#ef90dc29",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#01488229",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#dd92d294",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#54eeb541",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#06d71013",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#a638d42a",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#2b2c6e3e",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#a4bcfd6e",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#fcd91e9f",
       "rung": "example"
     },
     {
@@ -8567,6 +9187,58 @@
     },
     {
       "item": "k.store#0e228e5f",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#04ad037b",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#a1b57066",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#bcf3f6ef",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#d98b73d4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#635b526d",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#339b7f0f",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#cfe76ea6",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#7c3de0a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#4529b15a",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#8379eaf8",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#53c6d47f",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#d562aaa5",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#4a856ea0",
       "rung": "example"
     },
     {
@@ -8898,6 +9570,10 @@
       "rung": "example"
     },
     {
+      "item": "k.topology#8a59ebfc",
+      "rung": "example"
+    },
+    {
       "item": "k.topology#d4cdb549",
       "rung": "example"
     },
@@ -9075,6 +9751,26 @@
     },
     {
       "item": "k.unsafe#6be68741",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#8db91971",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#e2cecf74",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#17b24e43",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#9b673c1d",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#377a0bae",
       "rung": "example"
     },
     {
@@ -9398,6 +10094,10 @@
       "rung": "example"
     },
     {
+      "item": "std.conflicts#f8161d75",
+      "rung": "example"
+    },
+    {
       "item": "std.conflicts#f866e279",
       "rung": "example"
     },
@@ -9464,6 +10164,10 @@
     {
       "item": "std.db#46f175c5",
       "rung": "example"
+    },
+    {
+      "item": "std.db#cb802f14",
+      "rung": "none"
     },
     {
       "item": "std.db#32d6d02f",
@@ -10014,11 +10718,11 @@
       "rung": "probabilistic"
     },
     {
-      "item": "std.outbox-owner#b306a564",
+      "item": "std.outbox-owner#69b08541",
       "rung": "example"
     },
     {
-      "item": "std.outbox-owner#03c904c7",
+      "item": "std.outbox-owner#6a7de641",
       "rung": "example"
     },
     {
@@ -10102,6 +10806,38 @@
       "rung": "example"
     },
     {
+      "item": "std.postgres-changes#5bb9533e",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#6f14a9b0",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#29e20b0f",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#7e7de244",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#d42cffa2",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#9e20609b",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#3ea1d36e",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#98c54a66",
+      "rung": "example"
+    },
+    {
       "item": "std.postgres#d8b8ac91",
       "rung": "probabilistic"
     },
@@ -10110,7 +10846,7 @@
       "rung": "example"
     },
     {
-      "item": "std.postgres#8bdd070f",
+      "item": "std.postgres#a59ca116",
       "rung": "example"
     },
     {
@@ -10180,6 +10916,14 @@
     {
       "item": "std.postgres#c92778e3",
       "rung": "probabilistic"
+    },
+    {
+      "item": "std.postgres#8f133c3f",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#62a63eb3",
+      "rung": "example"
     },
     {
       "item": "std.report#9cda3196",
@@ -13543,37 +14287,37 @@
     },
     "@keel/std-headless": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-jobs": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-live": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-offline": {
       "version": "0.0.0",
-      "unsafe": 5,
+      "unsafe": 1,
       "hostElements": 0
     },
     "@keel/std-postgres": {
       "version": "0.0.0",
-      "unsafe": 2,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-schedules": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-statecharts": {
       "version": "0.0.0",
-      "unsafe": 4,
+      "unsafe": 2,
       "hostElements": 0
     },
     "@keel/std-workflows": {

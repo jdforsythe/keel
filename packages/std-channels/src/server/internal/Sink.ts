@@ -7,6 +7,9 @@ export interface Sink {
   readonly module: string;
   /** A message published to the sink's instance, already parsed by the channel's `message` schema. */
   post(message: unknown): void;
-  /** A save reported on the server ctx; `read` reads a stored snapshot once per save across sinks. */
-  saved(store: string, head: number, read: (key: string) => Promise<string | null>): void;
+  /**
+   * A save reported on the server ctx; `read` reads a stored snapshot once per save across sinks, `undefined` when not
+   * settled within 5,000 ms on `ctx.clock`.
+   */
+  saved(store: string, head: number, read: (key: string) => Promise<string | null | undefined>): void;
 }

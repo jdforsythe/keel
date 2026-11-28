@@ -46,10 +46,13 @@ const declare = (secret: boolean, wraps: readonly Wrap[]) => () => {
 test("`outbox` throws E2651 for an api with a nested `s.secret` in an endpoint body, and not for its clean twin.", () => {
   fc.assert(
     fc.property(wrapsArb, (wraps) => {
-      const sc = scope(() => {
-        expect(declare(true, wraps)).toThrow(/^E2651\b/);
-        expect(declare(false, wraps)).not.toThrow();
-      });
+      const sc = scope(
+        () => {
+          expect(declare(true, wraps)).toThrow(/^E2651\b/);
+          expect(declare(false, wraps)).not.toThrow();
+        },
+        { detached: true },
+      );
       sc.dispose();
     }),
     { seed: 1337, numRuns: 40 },

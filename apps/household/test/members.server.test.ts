@@ -104,7 +104,7 @@ it("opens the library once per storage, and a different storage gets a library o
 
 it("names the members who may call the API and the pages that need one, and turns away a request no member made", async () => {
   const ctx = createCtx({ mode: "sim", seed: 82 });
-  expect(denied).toEqual({ code: "keel.denied", message: "sign in first", data: null });
+  expect(denied).toEqual({ code: "keel.denied", message: "sign in first", data: {} });
   expect(await member.run({ url: "http://localhost/api/tokens", user: "" }, ctx)).toMatchObject({
     ok: false,
     error: denied,

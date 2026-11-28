@@ -14,7 +14,7 @@ import { fruit, isOpen, page, rendered, simCtx } from "./support.ts";
 
 const flag = (start: boolean): Signal<boolean> => {
   const made: Signal<boolean>[] = [];
-  scope(() => void made.push(signal(start)));
+  scope(() => void made.push(signal(start)), { detached: true });
   const [s] = made;
   if (s === undefined) throw new Error("no signal");
   return s;

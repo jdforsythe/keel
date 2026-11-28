@@ -1,14 +1,15 @@
-// Seed 1337. The internal listener slot @keel/server reads: `Secret.of` calls the one listener `onSecret` holds with
+// Seed 1337. The internal listener slot @keel/server reads: `secretAccess.of` calls the one listener `onSecret` holds with
 // each new `Secret` that `parse`, `decodeStrings` and `gen` make, and calls nothing when no listener is held.
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
-import { Secret } from "../src/Secret.ts";
+import type { Secret } from "../src/Secret.ts";
 import { gen } from "../src/gen.ts";
 import { reveal, s } from "../src/index.ts";
 import { onSecret } from "../src/internal/index.ts";
+import { secretAccess } from "../src/internal/secretAccess.ts";
 
 fc.configureGlobal({ seed: 1337, numRuns: 100 });
 
@@ -24,7 +25,7 @@ afterEach(() => {
 
 /** What `x` holds, read without calling the listener (`reveal` calls it). */
 const shown = (x: Secret<unknown>): unknown => {
-  const v = Secret.open(x);
+  const v = secretAccess.open(x);
   return typeof v === "object" && v !== null ? "object" : v;
 };
 
@@ -38,7 +39,7 @@ describe("onSecret", () => {
     if (!r.ok) return;
     expect(heard[0]).toBe(r.value.a);
     expect(heard[2]).toBe(r.value.b);
-    expect(heard[1]).toBe(Secret.open(r.value.b).c);
+    expect(heard[1]).toBe(secretAccess.open(r.value.b).c);
   });
 
   it("hears each secret decodeStrings makes", () => {

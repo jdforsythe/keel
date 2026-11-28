@@ -10,6 +10,7 @@ import { ok, reveal, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { requestSecrets } from "../src/internal/requestSecrets.ts";
+import { textRecords } from "./textRecords.ts";
 
 const Secretly = s.secret(s.string());
 
@@ -37,12 +38,12 @@ async function stream(ticks: number, width: number): Promise<{ sizes: number[]; 
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),
     routes: manifest(c, { "api.live": { loader: live } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
-    mode: "production",
+    mode: "dev",
     log: { format: "json", write: (l) => lines.push(l) },
   });
   const res = await app.fetch(new Request("http://localhost/api/live", { headers: { accept: "text/event-stream" } }));
   await res.text();
-  const messages = lines
+  const messages = textRecords(lines)
     .map((l): { code: string; message: string } => JSON.parse(l))
     .filter((d) => d.code === "keel.unexpected")
     .map((d) => d.message);

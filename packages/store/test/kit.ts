@@ -56,9 +56,12 @@ export function makeCounter(clock?: () => number, start: Counter = initial) {
       reset: transaction(c, "counter.reset", s.object({}), () => ({ n: 0, tags: [] })),
     };
   };
-  const sc = scope(() => {
-    box.kit = build();
-  });
+  const sc = scope(
+    () => {
+      box.kit = build();
+    },
+    { detached: true },
+  );
   if (box.kit === undefined) throw new Error("scope body did not run");
   return { ...box.kit, dispose: sc.dispose };
 }

@@ -31,14 +31,14 @@ function member(o: ObjectExpression | undefined, name: string): Expression | und
   return found;
 }
 
-/** Whether `node` is `<expression> as const`. */
-function isAsConst(node: Expression | undefined): node is TSAsExpression {
-  return (
-    node?.type === "TSAsExpression" &&
+/** `node` when it is `<expression> as const`, else undefined. */
+function asConst(node: Expression | undefined): TSAsExpression | undefined {
+  return node?.type === "TSAsExpression" &&
     node.typeAnnotation.type === "TSTypeReference" &&
     node.typeAnnotation.typeName.type === "Identifier" &&
     node.typeAnnotation.typeName.name === "const"
-  );
+    ? node
+    : undefined;
 }
 
 /**
@@ -56,7 +56,7 @@ export function overAddFix(project: readonly SourceFile[], overlay: string, back
   const groups = member(root, "overlay");
   const entry = groups?.type === "ObjectExpression" ? member(groups, overlay) : undefined;
   const written = entry?.type === "ObjectExpression" ? member(entry, "over") : undefined;
-  const over = isAsConst(written) ? written.expression : written;
+  const over = asConst(written)?.expression ?? written;
   if (over?.type !== "ArrayExpression" || over.elements.length >= MOST) return undefined;
   if (over.elements.some((e) => e === null || e.type === "SpreadElement")) return undefined;
   const last = over.elements.at(-1);

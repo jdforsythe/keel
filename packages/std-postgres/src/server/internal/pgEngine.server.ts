@@ -1,12 +1,12 @@
 import { attempt } from "@keel/schema";
 import pg from "pg";
-import { raise } from "../../../unsafe/raise.ts";
-import { settle } from "../../../unsafe/settle.ts";
 import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
 import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
 import { TypeCache } from "./TypeCache.server.ts";
+import { errors } from "./errors.server.ts";
+import { isAnswer } from "./isAnswer.server.ts";
 import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
 /** Every column arrives as Postgres's text form; `decodeValue` gives the JSON value, as for PGlite. */
@@ -47,7 +47,8 @@ export function pgEngine(url: string): Engine {
     statement: (text, params) => run(pool, text, params),
     async tx<T>(level: Level, fn: (c: Conn) => Promise<{ readonly value: T; readonly commit: boolean }>) {
       const client = await pool.connect();
-      const s = await settle(async () => {
+      let done = false;
+      try {
         await client.query(`begin isolation level ${level}`);
         const conn: Conn = {
           query: (text, params) => run(client, text, params),
@@ -57,16 +58,20 @@ export function pgEngine(url: string): Engine {
         };
         const out = await fn(conn);
         await client.query(out.commit ? "commit" : "rollback");
+        done = true;
         return out.value;
-      });
-      if (!s.threw) {
-        client.release(false);
-        return s.value;
+      } finally {
+        if (done) client.release(false);
+        else {
+          // A connection whose rollback fails, by the database's answer or the connection's, is broken: released with
+          // `true`, the pool drops it.
+          const rolled = await attempt(
+            () => client.query("rollback"),
+            (x) => (!isAnswer(x, "thrown") ? errors.unreachable : undefined),
+          );
+          client.release(!rolled.ok);
+        }
       }
-      // A connection whose rollback fails is broken: released with `true`, the pool drops it.
-      const rolled = await attempt(() => client.query("rollback"));
-      client.release(!rolled.ok);
-      return raise(s.error);
     },
   };
 }

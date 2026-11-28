@@ -238,7 +238,13 @@ describe("an API entry", () => {
 describe("a contract loaded afresh", () => {
   it("takes every member of a page and an API entry and checks an API id's name", async () => {
     vi.resetModules();
+    const { s: fs } = await import("@keel/schema");
     const fresh = await import("../src/contract/contract.ts");
+    const FId = fs.object({ id: fs.string() });
+    const FQuery = fs.object({ q: fs.string().optional() });
+    const FBody = fs.object({ name: fs.string() });
+    const FNotFound = fs.error("t.notFound", fs.object({}));
+    const fget = { method: "GET", path: "/api/x", output: fs.object({}) };
     const declare = (id: string, entry: object): string | null => {
       try {
         Reflect.apply(fresh.contract, undefined, ["t", { [id]: entry }]);
@@ -247,23 +253,23 @@ describe("a contract loaded afresh", () => {
       }
       return null;
     };
-    expect(declare("t.page", { path: "/x/:id", params: Id, search: Query })).toBeNull();
+    expect(declare("t.page", { path: "/x/:id", params: FId, search: FQuery })).toBeNull();
     const all = {
       method: "POST",
       path: "/api/x/:id",
-      params: Id,
-      query: Query,
-      body: Body,
-      output: Out,
-      errors: { 404: NotFound },
+      params: FId,
+      query: FQuery,
+      body: FBody,
+      output: fs.object({}),
+      errors: { 404: FNotFound },
       timeout: fixedTime(100),
       events: false,
     };
     expect(declare("t.all", all)).toBeNull();
-    for (const name of ["a", "read", "readAll", "r2D2"]) expect(declare(`t.${name}`, get)).toBeNull();
+    for (const name of ["a", "read", "readAll", "r2D2"]) expect(declare(`t.${name}`, fget)).toBeNull();
     for (const name of ["Read", "Xa", "a-b", "ab!", "a.b"])
-      expect(declare(`t.${name}`, get)).toBe(`E1513 t.${name}: an API id is t.<name>, name one lowerCamel segment`);
-    expect(declare("t.x", { ...get, search: Query })).toBe('E1510 t.x: a API entry takes no "search"');
-    expect(declare("t.x", { path: "/x", query: Query })).toBe('E1510 t.x: a page entry takes no "query"');
+      expect(declare(`t.${name}`, fget)).toBe(`E1513 t.${name}: an API id is t.<name>, name one lowerCamel segment`);
+    expect(declare("t.x", { ...fget, search: FQuery })).toBe('E1510 t.x: a API entry takes no "search"');
+    expect(declare("t.x", { path: "/x", query: FQuery })).toBe('E1510 t.x: a page entry takes no "query"');
   });
 });

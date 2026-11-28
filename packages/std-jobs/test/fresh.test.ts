@@ -66,10 +66,10 @@ test("The jobs.queue section counts pending and running jobs apart and lists fai
     return Reflect.get(Object(Reflect.get(Object(Reflect.get(Object(body), "sections")), "jobs.queue")), "value");
   };
   expect(await read()).toEqual({});
-  void (await jobs.enqueue(ctx, "orders.hang", { note: "x" }));
+  expect((await jobs.enqueue(ctx, "orders.hang", { note: "x" })).ok).toBe(true);
   await settle();
-  void (await jobs.enqueue(ctx, "orders.hang", { note: "y" }, { delayMs: 60_000 }));
-  void (await jobs.enqueue(ctx, "orders.hang", { note: "z" }, { delayMs: 60_000 }));
+  expect((await jobs.enqueue(ctx, "orders.hang", { note: "y" }, { delayMs: 60_000 })).ok).toBe(true);
+  expect((await jobs.enqueue(ctx, "orders.hang", { note: "z" }, { delayMs: 60_000 })).ok).toBe(true);
   await settle();
   expect(await read()).toEqual({ orders: { pending: 2, running: 1, failed: [] } });
   await app.close();
@@ -81,7 +81,7 @@ test("The jobs.queue section counts pending and running jobs apart and lists fai
     mode: "dev",
     runners: { orders: [solo] },
   });
-  void (await solo.enqueue(bare, "orders.bad", { note: "secret note" }));
+  expect((await solo.enqueue(bare, "orders.bad", { note: "secret note" })).ok).toBe(true);
   await settle();
   const res = await other.fetch(new Request("http://localhost/__keel/inspect"));
   const text = await res.text();

@@ -1,13 +1,14 @@
 import { stdConfig } from "@keel/compiler/std/stdConfig";
-import type { Ctx } from "@keel/ctx";
+import { type Ctx, supervise } from "@keel/ctx";
 import { action, loader } from "@keel/router";
 import type { Contract } from "@keel/router/contract";
-import { type KeelError, attempt, err, ok } from "@keel/schema";
-import { fault } from "../../unsafe/fault.ts";
+import { defect, err, keelError, ok } from "@keel/schema";
+import { holds } from "../../unsafe/holds.ts";
 import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
 import type { ChannelEvent } from "../ChannelEvent.ts";
 import type { PublishEntry } from "../internal/PublishEntry.ts";
+import { Rejected } from "../internal/Rejected.schema.ts";
 import type { StreamEntry } from "../internal/StreamEntry.ts";
 import type { ChannelRoute } from "./ChannelRoute.type.ts";
 import { ChannelsConfig } from "./ChannelsConfig.schema.ts";
@@ -25,7 +26,7 @@ import { reread } from "./internal/reread.ts";
 import { storesIn } from "./internal/storesIn.ts";
 import { watchStores } from "./internal/watchStores.ts";
 
-const denied: KeelError<"keel.denied", null> = { code: "keel.denied", message: "denied", data: null };
+const denied = keelError.denied.make({}, "denied");
 const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as const);
 /** How long an answer of `currentUser()` stands for a stream, on `ctx.clock` (std.channels Serve). */
 const STANDS_MS = 1_000;
@@ -58,16 +59,6 @@ function differing(c: Contract, id: string, want: Want, nothing: boolean): strin
   return nothing && !takesNothing(Reflect.get(entry, "output")) ? [...out, "output"] : out;
 }
 
-/** The serving module's contract when its entry at `id` holds the channel's own members (`differing`). */
-function holds<E extends object>(
-  c: Contract,
-  id: string,
-  want: Want,
-  nothing: boolean,
-): c is Contract<string, Readonly<Record<string, E>>> {
-  return differing(c, id, want, nothing).length === 0;
-}
-
 /** `c` read as holding the channel's entry at `id`; E1515 naming the members that differ when it does not. */
 function holding<E extends object>(
   c: Contract,
@@ -75,9 +66,12 @@ function holding<E extends object>(
   want: Want,
   nothing = false,
 ): Contract<string, Readonly<Record<string, E>>> {
-  if (holds<E>(c, id, want, nothing)) return c;
-  const members = differing(c, id, want, nothing).join(", ");
-  return fault("E1515", `E1515 channelRoute: ${c.module} entry ${id} is not its channel's, at ${members}`);
+  const members = differing(c, id, want, nothing);
+  if (members.length === 0) return holds<E>(c);
+  return defect("channelRoute: a contract entry is not its channel's", {
+    code: "E1515",
+    data: { module: c.module, entry: id, members },
+  });
 }
 
 /** A channel without `message`: the stream entry's loader only; `publish` does not compile. */
@@ -125,10 +119,10 @@ export function channelRoute<P, M, S>(
   const { module } = contract;
   const { path, params: query, events: output, body, message } = channel;
   if (publish !== undefined && (message === undefined || body === undefined)) {
-    return fault(
-      "E1510",
-      `E1510 channelRoute: channel ${channel.name} declares no message, so ${publish} has nothing to publish`,
-    );
+    return defect("channelRoute: the channel declares no message, so publish has nothing to publish", {
+      code: "E1510",
+      data: { channel: channel.name, publish },
+    });
   }
   const streams = holding<StreamEntry<P, M>>(contract, id, { method: "GET", path, query, events: true, output });
   const instance = (key: string): string => `${channel.name}\n${key}`;
@@ -136,7 +130,7 @@ export function channelRoute<P, M, S>(
   const live = loader(streams, id, decl, async function* ({ search, caller, user, stores, signal, currentUser }, ctx) {
     // `member` before the caps: a non-member learns nothing about them; it runs once per open as it does below them.
     const at = { caller, user, params: search, stores };
-    if (!allowed(member, at)) {
+    if (!allowed(ctx, member, at)) {
       yield closed("denied");
       return;
     }
@@ -175,27 +169,33 @@ export function channelRoute<P, M, S>(
       : (event, isMember) => {
           if (!isMember) return verdict(event, false);
           if (checked !== undefined && ctx.clock.now() - checked < STANDS_MS) return verdict(event, true);
-          return currentUser().then(
-            (now) => {
-              checked = ctx.clock.now();
-              verdict(event, now === user);
-            },
-            () => void verdict(event, false),
-          );
+          return (async (): Promise<void> => {
+            const now = await supervise(ctx, "channels.member", () => currentUser(), Rejected.make({}));
+            if (!now.ok) {
+              verdict(event, false);
+              return;
+            }
+            checked = ctx.clock.now();
+            verdict(event, now.value === user);
+          })();
         };
     /** `event` after `member` and, when there is one to judge, the user check; a member check that fails is a denial. */
     const deliver = (event: Event, member: () => Promise<boolean> | boolean): Step => {
       if (out) return;
-      // The wrapper object keeps a returned promise from being awaited by `attempt`: only a synchronous throw is caught.
-      const asked = attempt(() => ({ answer: member() }));
+      // The wrapper object keeps a returned promise from being awaited by `supervise`: only a synchronous throw is taken.
+      const asked = supervise(ctx, "channels.member", () => ({ answer: member() }), Rejected.make({}));
       if (!asked.ok) return verdict(event, false);
       const m = asked.value.answer;
       return typeof m === "boolean"
         ? judge(event, m)
-        : m.then(
-            (isMember) => judge(event, isMember),
-            () => void verdict(event, false),
-          );
+        : (async (): Promise<void> => {
+            const isMember = await supervise(ctx, "channels.member", () => m, Rejected.make({}));
+            if (!isMember.ok) {
+              verdict(event, false);
+              return;
+            }
+            await judge(event, isMember.value);
+          })();
     };
     const leave = join(ctx, hub, {
       key: instance(keyOf(search)),
@@ -214,18 +214,18 @@ export function channelRoute<P, M, S>(
         delivered.set(store, head);
         // A head below the last delivered: the store's count restarted (its storage was replaced), so the client re-reads.
         if (head < last) {
-          chain = chain.then(() => deliver({ kind: "reset" }, () => allowed(member, at)));
+          chain = chain.then(() => deliver({ kind: "reset" }, () => allowed(ctx, member, at)));
           return;
         }
         chain = chain.then(() =>
-          deliver({ kind: "saved", store, head }, async () => (await reread(list, read)) && allowed(member, at)),
+          deliver({ kind: "saved", store, head }, async () => (await reread(list, read)) && allowed(ctx, member, at)),
         );
       },
     });
     // A `lost` report or a follow not listening in time ends the stream as a drop: no `closed`, so the client reopens.
     const drop = new AbortController();
     const recheck = (): void => {
-      chain = chain.then(() => deliver({ kind: "changed" }, () => allowed(member, at)));
+      chain = chain.then(() => deliver({ kind: "changed" }, () => allowed(ctx, member, at)));
     };
     // Heads a stream delivered, per store: local and remote saves of one store reach it as one rising sequence.
     const delivered = new Map<string, number>();
@@ -261,7 +261,7 @@ export function channelRoute<P, M, S>(
     decl,
     (body, { url, caller, user, stores }, ctx) => {
       const p = paramsOf(channel.params, url);
-      if (!p.ok || !allowed(member, { caller, user, params: p.value.value, stores })) return err(denied);
+      if (!p.ok || !allowed(ctx, member, { caller, user, params: p.value.value, stores })) return err(denied);
       const key = instance(p.value.key);
       for (const sk of hubOf(ctx).sinks) if (sk.key === key) sk.post(body.message);
       return ok({});

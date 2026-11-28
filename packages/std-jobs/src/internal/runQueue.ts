@@ -46,13 +46,11 @@ export async function runQueue(ctx: Ctx, signal: AbortSignal, module: string, ta
       const a = live.get(x.id);
       const j = table[x.job];
       if (a === undefined || signal.aborted) break;
-      void attempt(() =>
-        runOnce(ctx, j, x.input, a).then((code) => {
-          if (signal.aborted) return;
-          live.delete(x.id);
-          return finish(ctx, module, x.id, code, j?.attempts ?? 1).then(() => wake(c));
-        }),
-      );
+      void runOnce(ctx, j, x.input, a).then((code) => {
+        if (signal.aborted) return;
+        live.delete(x.id);
+        return finish(ctx, module, x.id, code, j?.attempts ?? 1).then(() => wake(c));
+      });
     }
     await idle(ctx, c, v, live.size >= max ? Number.POSITIVE_INFINITY : next - now, signal);
   }

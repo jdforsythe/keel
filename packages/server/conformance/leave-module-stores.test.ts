@@ -3,12 +3,13 @@
 // Spec: k.leave, clause "In a loader, `restore`, `undo` and `undoWhere` on a module store each throw E1256 and leave its state and head as they were; a store an island creates from a waiting snapshot while resuming restores with no E1256."
 // Spec: k.leave, clause "An action that schedules `setTimeout(() => tx(t, p), 30)` and returns `ok(null)` answers before the write; the write throws E1256 and the module store is unchanged."
 // Spec: k.leave, clause "A promise made at module load whose `.then` writes a module store, resolved by a loader, commits the write with no E1256."
+// Spec: k.shared, clause "With `mode: 'dev'`, a GET of a page whose loader runs `tx` on a module store with id `shop.cart` answers 500 with a page that holds `E1256 write to module state during a request` and `shop.cart`; the thrown value is `isDefect(v, 'E1256')` with `data` deep-equal to `{ node: 'shop.cart', kind: 'store' }`; in production mode the body holds neither `E1256` nor `shop.cart`."
 // Seed: 1337 (the property below). Real createApp over the module store `rm.board` of resume-modstore.ts.
 // The timer in the action and the promise registered at module load are the fixtures the clauses name.
 import { fixedTime } from "@keel/tooling/test-time";
 import { action, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
-import { ok, s } from "@keel/schema";
+import { isDefect, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { resumeDocument } from "@keel/testing";
 import fc from "fast-check";
@@ -76,7 +77,7 @@ const releasing = loader(lm, "lm.release", { output: Data }, () => {
 });
 
 // The timer of the late-write clause: it is started by a request and fires after the response.
-let seen: string | undefined;
+let seen: unknown;
 let fired: () => void = () => undefined;
 const timerFired = new Promise<void>((resolve) => {
   fired = resolve;
@@ -86,7 +87,7 @@ const scheduling = action(lm, "lm.timer", { input: Note }, () => {
     try {
       void tx(setRows, { rows: "late" });
     } catch (e) {
-      seen = String(e);
+      seen = e;
     }
     fired();
   }, 30);
@@ -111,7 +112,7 @@ describe("k.leave Module stores: restore, undo and undoWhere on a module store t
       const log: Lines = { lines: [] };
       const doc = await serveRoutes(routes, MODULES, "/op", { mode: "dev", log });
       expect(doc.status).toBe(500);
-      expect(doc.text).toMatch(/Error: E1256/);
+      expect(log.lines.some((l) => /threw: Defect: E1256/.test(l))).toBe(true);
       expect(e1256(log)).not.toHaveLength(0);
       expect(board.get("rows")).toBe("two");
       expect(board.head()).toBe(head);
@@ -174,7 +175,7 @@ describe("k.leave Module stores: late work stays checked", () => {
     expect(res.status).toBe(200);
     expect(seen).toBeUndefined();
     await timerFired;
-    expect(seen?.startsWith("Error: E1256") || seen?.startsWith("E1256")).toBe(true);
+    expect(isDefect(seen, "E1256")).toBe(true);
     expect(board.get("rows")).toBe("");
     expect(board.log()).toHaveLength(0);
   });
@@ -189,5 +190,27 @@ describe("k.leave Module stores: the mark follows async context, not data", () =
     expect(gateError).toBeUndefined();
     expect(board.get("rows")).toBe("via-gate");
     expect(e1256(log)).toEqual([]);
+  });
+});
+
+describe("k.shared: the dev page names the module store a guarded operation touched", () => {
+  it.each(["restore", "undo", "undoWhere"] as const)(
+    "with `mode: 'dev'`, a loader calling `%s` on the module store `rm.board` answers 500 with a page that holds `E1256 write to module state during a request` and `rm.board`",
+    async (which) => {
+      void tx(setRows, { rows: "one" });
+      op = which;
+      const doc = await serveRoutes(routes, MODULES, "/op", { mode: "dev", log: { lines: [] } });
+      expect(doc.status).toBe(500);
+      expect(doc.text).toContain("E1256 write to module state during a request");
+      expect(doc.text).toContain("rm.board");
+    },
+  );
+
+  it("in production mode the body holds neither `E1256` nor `rm.board`", async () => {
+    op = "restore";
+    const doc = await serveRoutes(routes, MODULES, "/op", { mode: "production", log: { lines: [] } });
+    expect(doc.status).toBe(500);
+    expect(doc.text).not.toContain("E1256");
+    expect(doc.text).not.toContain("rm.board");
   });
 });

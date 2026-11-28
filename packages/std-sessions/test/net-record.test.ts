@@ -38,9 +38,12 @@ function build() {
   return { seen, routes };
 }
 const made: ReturnType<typeof build>[] = [];
-scope(() => {
-  made.push(build());
-});
+scope(
+  () => {
+    made.push(build());
+  },
+  { detached: true },
+);
 const [built] = made;
 if (built === undefined) throw new Error("build failed");
 const app = built;

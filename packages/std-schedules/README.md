@@ -25,5 +25,4 @@ Uses the **module manifest** (k.module: stdlib module `schedules`) and the **che
 
 ## Unsafe
 
-count: 1
-- `unsafe/refuse.ts`: the throws std.schedules specifies (E2551, E2554), a refused first fire and a stored value that holds no marks.
+count: 0

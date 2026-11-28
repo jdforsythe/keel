@@ -7,13 +7,16 @@ import { unpersisted } from "../src/internal/unpersisted.ts";
 
 const refused = (schema: Parameters<typeof store>[0], initial: object, id = "sg.c"): string => {
   let message = "";
-  scope(() => {
-    try {
-      store(schema, initial, { id });
-    } catch (e) {
-      message = e instanceof Error ? e.message : String(e);
-    }
-  }).dispose();
+  scope(
+    () => {
+      try {
+        store(schema, initial, { id });
+      } catch (e) {
+        message = e instanceof Error ? e.message : String(e);
+      }
+    },
+    { detached: true },
+  ).dispose();
   return message;
 };
 
@@ -35,9 +38,12 @@ test("the message names E1303, the store id and the first secret's path", () => 
 
 test("the guard runs before the id is registered and before the initial state is read", () => {
   expect(refused(s.object({ t: s.secret(s.string()) }), { not: "valid" }, "sg.dup")).toContain("E1303");
-  scope(() => {
-    expect(() => store(s.object({ t: s.string() }), { t: "" }, { id: "sg.dup" })).not.toThrow();
-  }).dispose();
+  scope(
+    () => {
+      expect(() => store(s.object({ t: s.string() }), { t: "" }, { id: "sg.dup" })).not.toThrow();
+    },
+    { detached: true },
+  ).dispose();
 });
 
 test("a secret-free schema constructs", () => {

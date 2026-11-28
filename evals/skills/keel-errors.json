@@ -1,0 +1,16 @@
+{
+  "skill": "keel-errors",
+  "maxTokens": 1100,
+  "prompt": "In a Keel app, fetch a feed with three retries on a network failure or a 5xx, roll back a database transaction when its work throws, and wrap a payment SDK that throws CardError so a decline is a typed failure that never logs the buyer's email.",
+  "expect": [
+    "attempt(",
+    "instanceof TypeError",
+    "s.error",
+    "err(",
+    "ctx.clock.after",
+    "finally",
+    "done = true",
+    "CardDeclined.make",
+    "reasonOf"
+  ]
+}

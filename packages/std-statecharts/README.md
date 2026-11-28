@@ -23,7 +23,6 @@ Uses the **check rule registry** (k.check: E2751 to E2755 from `./tools`).
 
 ## Unsafe
 
-count: 3
+count: 2
 - `unsafe/loosen.ts`: guards and actions are typed with every event's payload fields at once and called with one event's payload.
 - `unsafe/asEvents.ts`: the per-event transaction table is typed by each event's payload schema.
-- `unsafe/refuse.ts`: the throws std.statecharts specifies at declaration (a chart that fails its analysis, an instance key outside its form).

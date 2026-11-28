@@ -17,10 +17,6 @@ const FIX =
 const sandboxRefused = (): Diag =>
   makeDiag("E1734", "chromium cannot start its sandbox here", { fix: FIX, see: "k.e2e-run" });
 
-type Launcher = { launch(o: object): Promise<{ close(): Promise<void> }> };
-const isLauncher = (v: unknown): v is Launcher =>
-  typeof v === "object" && v !== null && typeof Reflect.get(v, "launch") === "function";
-
 /**
  * The sandbox check of `keel test --e2e` (k.e2e-run Browser), before any file runs: Chromium from the project's
  * `playwright-core` (at `at`) launched once, headless, with its sandbox on, then closed. A launch refused for want of
@@ -37,7 +33,8 @@ export async function sandboxCheck(at: string, run: string, seam: string | undef
   const chromium: unknown =
     Reflect.get(ns, "chromium") ??
     (typeof fallback === "object" && fallback !== null ? Reflect.get(fallback, "chromium") : undefined);
-  if (!isLauncher(chromium)) return undefined;
+  const launch = typeof chromium === "object" && chromium !== null ? Reflect.get(chromium, "launch") : undefined;
+  if (typeof launch !== "function") return undefined;
   const home = join(run, "sandbox-check");
   const tmp = join(home, "tmp");
   mkdirSync(tmp, { recursive: true });
@@ -50,8 +47,9 @@ export async function sandboxCheck(at: string, run: string, seam: string | undef
   const saved = (["TMPDIR", "TMP", "TEMP"] as const).map((k) => [k, process.env[k]] as const);
   Object.assign(process.env, { TMPDIR: tmp, TMP: tmp, TEMP: tmp });
   try {
-    const browser = await chromium.launch({ headless: true, chromiumSandbox: true, env });
-    await browser.close();
+    const browser: unknown = await Reflect.apply(launch, chromium, [{ headless: true, chromiumSandbox: true, env }]);
+    const close = typeof browser === "object" && browser !== null ? Reflect.get(browser, "close") : undefined;
+    if (typeof close === "function") await Reflect.apply(close, browser, []);
     return undefined;
   } catch (e) {
     return e instanceof Error && REFUSED.test(e.message) ? sandboxRefused() : undefined;

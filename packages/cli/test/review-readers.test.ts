@@ -10,6 +10,7 @@ import { fileEscapes } from "../src/review/fileEscapes.ts";
 import { kindOf } from "../src/review/kindOf.ts";
 import { lockEscapes } from "../src/review/lockEscapes.ts";
 import { manifestEscapes } from "../src/review/manifestEscapes.ts";
+import { supervisorsOf } from "../src/review/supervisorsOf.ts";
 import { workspaceEscapes } from "../src/review/workspaceEscapes.ts";
 
 const SEED = 1337;
@@ -243,5 +244,43 @@ describe("id", () => {
       ),
       { seed: SEED, numRuns: 50 },
     );
+  });
+});
+
+describe("one hop and listings (k.supervise Who writes it, k.realm)", () => {
+  const LIB: Record<string, string> = {
+    "libs/sup/package.json": JSON.stringify({
+      name: "@fx/sup",
+      keel: "library",
+      exports: { ".": { keel: "./src/index.ts" } },
+    }),
+    "libs/sup/src/index.ts": "export { swallow } from './swallow.ts';\nexport * from './plain.ts';\n",
+    "libs/sup/src/swallow.ts":
+      "import { supervise } from '@keel/ctx';\nexport function swallow(ctx: never, f: () => number) { return supervise(ctx, 'sup.run', f, T) }\n",
+    "libs/sup/src/plain.ts":
+      "export const plain = () => 1;\nconst inner = () => [1].map(() => supervise(c, 'sup.x', f, T));\nexport { inner as hidden };\n",
+  };
+  const snap = { paths: Object.keys(LIB), text: (p: string) => LIB[p], prefetch: () => undefined };
+  const sup = supervisorsOf(snap);
+
+  test("an app call of a library function that supervises is R1018 with the library file; a plain one is none", () => {
+    const src =
+      "import { swallow, plain, hidden } from '@fx/sup';\nimport * as s from '@fx/sup';\nswallow(c, f);\ns.swallow(c, f);\nplain();\nhidden();\n";
+    const found = codeEscapes("modules/m/a.ts", src, kindOf("modules/m/a.ts", ""), sup).filter(
+      (r) => r.code === "R1018",
+    );
+    expect(found.map((r) => [r.line, r.message])).toEqual([
+      [3, "swallow supervises its work (libs/sup/src/swallow.ts)"],
+      [4, "swallow supervises its work (libs/sup/src/swallow.ts)"],
+      [6, "hidden supervises its work (libs/sup/src/plain.ts)"],
+    ]);
+    expect(sup("@fx/other", "swallow")).toBeUndefined();
+    expect(sup("@fx/sup", "absent")).toBeUndefined();
+  });
+
+  test("a symbol listing of a value no literal is R1019; of a literal it is none", () => {
+    const src =
+      "export const a = (o: object) => [Reflect.ownKeys(o), Object.getOwnPropertySymbols(o), Object.getOwnPropertyDescriptors(o)];\nexport const b = [Reflect.ownKeys({ a: 1 }), Object.getOwnPropertySymbols([]), Object.keys(o)];\n";
+    expect(codes("modules/m/a.ts", src).filter((c) => c === "R1019")).toHaveLength(3);
   });
 });

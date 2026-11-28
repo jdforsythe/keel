@@ -2,6 +2,7 @@ import { action } from "@keel/router";
 import { err, ok, reveal } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { tokens } from "@keel/std-tokens/server";
+import { TokenExpiryRefused } from "./TokenExpiryRefused.schema.ts";
 import { dayOf } from "./dayOf.ts";
 import { denied } from "./denied.ts";
 import { members } from "./members.contract.ts";
@@ -21,7 +22,7 @@ export const postToken = action(members, "members.mint", {}, async (body, { user
   const { token, id, digest, expiresAt } = minted.value;
   const ends = expiresAt ?? ctx.clock.now() + body.days * DAY;
   const expiresOn = dayOf(ends);
-  if (expiresOn === null) return err({ code: "members.expiry", message: "the expiry is out of range", data: null });
+  if (expiresOn === null) return err(TokenExpiryRefused.make({}, "the expiry is out of range"));
   const added = await membersDb(ctx).run(
     sql(NoRows)`insert into api_tokens (id, digest, user_id, expires_at) values (${id}, ${digest}, ${user}, ${ends})`,
   );

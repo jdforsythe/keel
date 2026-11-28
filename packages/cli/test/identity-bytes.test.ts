@@ -27,8 +27,8 @@ function tree(identity: boolean): Tree {
     "modules/w/w.contract.ts":
       "import { contract } from '@keel/router/contract'\nexport const w = contract('w', { 'w.home': { path: '/' }, 'w.in': { path: '/in' } })\n",
     "modules/w/signedIn.guard.ts":
-      "import { guard } from '@keel/router'\nimport { err, ok } from '@keel/schema'\n" +
-      "export const signedIn = guard({ redirect: 'w.in' }, async ({ user }) => (user === '' ? err({ code: 'keel.denied', message: 'No', data: null }) : ok(null)))\n",
+      "import { guard } from '@keel/router'\nimport { err, keelError, ok } from '@keel/schema'\n" +
+      "export const signedIn = guard({ redirect: 'w.in' }, async ({ user }) => (user === '' ? err(keelError.denied.make({})) : ok(null)))\n",
     "modules/w/Page.tsx":
       "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n" +
       '    <Box id="w.page">\n      <Text id="w.page.text">Home</Text>\n    </Box>\n  )\n}\n',

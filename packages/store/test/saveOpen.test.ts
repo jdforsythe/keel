@@ -157,11 +157,14 @@ describe("storeShapes", () => {
       owner()?.onDispose(() => disposed++);
       return factory();
     };
-    scope(() => {
-      store(Count, { n: 0 }, { id: "so.count" });
-      expect(storeShapes(probe).map((x) => x.id)).toEqual(["so.count", "so.other"]);
-      expect([...stores().keys()]).toEqual(["so.count"]);
-    }).dispose();
+    scope(
+      () => {
+        store(Count, { n: 0 }, { id: "so.count" });
+        expect(storeShapes(probe).map((x) => x.id)).toEqual(["so.count", "so.other"]);
+        expect([...stores().keys()]).toEqual(["so.count"]);
+      },
+      { detached: true },
+    ).dispose();
     expect(above).toBeUndefined();
     expect(disposed).toBe(1);
   });

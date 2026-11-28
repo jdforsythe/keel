@@ -40,6 +40,57 @@ export const CASES: readonly Case[] = [
   },
   { code: "R1012", range: false, base: {}, head: { "modules/m/a.server.ts": "export const t = reveal(token);\n" } },
   {
+    code: "R1013",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/r.ts":
+        'import { defect } from "@keel/schema";\ndeclare const r: { ok: boolean; value: number };\nexport const v = r.ok ? r.value : defect("x");\n',
+    },
+  },
+  {
+    code: "R1015",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/p.ts":
+        "type T = number;\nexport function isT(x: unknown): x is T {\n  return typeof x === 'number';\n}\n",
+    },
+  },
+  {
+    code: "R1017",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/r.ts":
+        "import { attempt } from '@keel/schema';\ndeclare const f: () => number;\ndeclare const T: { code: 'm.t'; message: string; data: null };\nexport const r = attempt(f, (x) => (x instanceof Error ? T : undefined));\n",
+    },
+  },
+  {
+    code: "R1018",
+    range: false,
+    base: {},
+    head: {
+      "libs/jobs/package.json": `${JSON.stringify({ name: "@acme/jobs", version: "1.0.0", type: "module", keel: "library" })}\n`,
+      "libs/jobs/src/run.ts":
+        "import { supervise } from '@keel/ctx';\ndeclare const ctx: never;\ndeclare const f: () => number;\ndeclare const T: never;\nexport const r = supervise(ctx, 'jobs.run', f, T);\n",
+    },
+  },
+  {
+    code: "R1019",
+    range: false,
+    base: {},
+    head: { "modules/m/s.ts": "export const k = (name: string) => Symbol.for(name);\n" },
+  },
+  {
+    code: "R1020",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/l.ts": "declare const h: () => void;\nexport const f = (name: string) => process.on(name, h);\n",
+    },
+  },
+  {
     code: "R1014",
     range: false,
     base: {},

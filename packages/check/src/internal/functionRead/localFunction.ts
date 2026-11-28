@@ -8,8 +8,9 @@ import { READ_DEPTH } from "./READ_DEPTH.ts";
 import type { ReadFn } from "./ReadFn.ts";
 import { exportedFunction } from "./exportedFunction.ts";
 
-const isFn = (e: Expression | null | undefined): e is ReadFn =>
-  e !== null && e !== undefined && (e.type === "ArrowFunctionExpression" || e.type === "FunctionExpression");
+/** `e` when it is a function or arrow expression. */
+const asFn = (e: Expression | null | undefined): ReadFn | undefined =>
+  e?.type === "ArrowFunctionExpression" || e?.type === "FunctionExpression" ? e : undefined;
 
 /** `x as T`, `x satisfies T` and `(x)` read through. */
 function unwrap(e: Expression): Expression {
@@ -37,7 +38,7 @@ function functionsOf(program: Program): Map<string, ReadFn | null> {
       for (const v of d.declarations) {
         if (v.id.type !== "Identifier") continue;
         const init = v.init === null || v.init === undefined ? undefined : unwrap(v.init);
-        put(v.id.name, isFn(init) ? init : null);
+        put(v.id.name, asFn(init) ?? null);
       }
     },
     FunctionDeclaration: (f) => {

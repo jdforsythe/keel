@@ -21,9 +21,12 @@ function make() {
     }));
     return { c, spread, nested };
   };
-  const sc = scope(() => {
-    box.kit = build();
-  });
+  const sc = scope(
+    () => {
+      box.kit = build();
+    },
+    { detached: true },
+  );
   if (box.kit === undefined) throw new Error("scope body did not run");
   return { ...box.kit, dispose: sc.dispose };
 }

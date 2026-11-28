@@ -17,22 +17,25 @@ describe("a throwing dispose hook", () => {
     let runsB = 0;
     let setA: (v: number) => void = () => {};
     let setB: (v: number) => void = () => {};
-    const sc = scope(() => {
-      const a = signal(0);
-      const b = signal(0);
-      setA = (v) => a.set(v);
-      setB = (v) => b.set(v);
-      effect(() => {
-        a.get();
-        scope(() => {}).onDispose(() => {
-          throw new Error("hook");
-        });
+    const sc = scope(
+      () => {
+        const a = signal(0);
+        const b = signal(0);
+        setA = (v) => a.set(v);
+        setB = (v) => b.set(v);
         effect(() => {
-          b.get();
-          runsB++;
+          a.get();
+          scope(() => {}).onDispose(() => {
+            throw new Error("hook");
+          });
+          effect(() => {
+            b.get();
+            runsB++;
+          });
         });
-      });
-    });
+      },
+      { detached: true },
+    );
     expect(runsB).toBe(1);
     expect(messageOf(() => setA(1))).toBe("hook");
     // The rerun created B'; the first B is disposed.
@@ -46,7 +49,7 @@ describe("a throwing dispose hook", () => {
 
   it("runs every hook of a node and rethrows the first", () => {
     const ran: string[] = [];
-    const sc = scope(() => {});
+    const sc = scope(() => {}, { detached: true });
     sc.onDispose(() => {
       ran.push("a");
       throw new Error("a");
@@ -64,16 +67,19 @@ describe("a throwing dispose hook", () => {
 
   it("rethrows the hook's error when the rerun it belongs to then throws", () => {
     let set: (v: number) => void = () => {};
-    const sc = scope(() => {
-      const s = signal(0);
-      set = (v) => s.set(v);
-      effect(() => {
-        if (s.get() > 0) throw new Error("run");
-        scope(() => {}).onDispose(() => {
-          throw new Error("hook");
+    const sc = scope(
+      () => {
+        const s = signal(0);
+        set = (v) => s.set(v);
+        effect(() => {
+          if (s.get() > 0) throw new Error("run");
+          scope(() => {}).onDispose(() => {
+            throw new Error("hook");
+          });
         });
-      });
-    });
+      },
+      { detached: true },
+    );
     expect(messageOf(() => set(1))).toBe("hook");
     sc.dispose();
   });
@@ -81,12 +87,15 @@ describe("a throwing dispose hook", () => {
   it("rethrows the error of a scope's fn, not a hook's thrown while disposing it", () => {
     expect(
       messageOf(() =>
-        scope(() => {
-          scope(() => {}).onDispose(() => {
-            throw new Error("hook");
-          });
-          throw new Error("fn");
-        }),
+        scope(
+          () => {
+            scope(() => {}).onDispose(() => {
+              throw new Error("hook");
+            });
+            throw new Error("fn");
+          },
+          { detached: true },
+        ),
       ),
     ).toBe("fn");
   });
@@ -94,7 +103,7 @@ describe("a throwing dispose hook", () => {
 
 describe("scope.run", () => {
   it("rethrows the error of its fn, not a hook's thrown while freeing what the fn created after a dispose", () => {
-    const sc = scope(() => {});
+    const sc = scope(() => {}, { detached: true });
     expect(
       messageOf(() =>
         sc.run(() => {
@@ -109,7 +118,7 @@ describe("scope.run", () => {
   });
 
   it("rethrows a hook's error when its fn returns", () => {
-    const sc = scope(() => {});
+    const sc = scope(() => {}, { detached: true });
     expect(
       messageOf(() =>
         sc.run(() => {

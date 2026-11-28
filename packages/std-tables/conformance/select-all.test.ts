@@ -29,9 +29,12 @@ const ROWS = makeRows(8); // keys 1..8; page 1 holds 1..5, the rest are other pa
 // signal() must run inside a reactive scope (E1203).
 const selection = (() => {
   let out: Signal<readonly number[]> | undefined;
-  scope(() => {
-    out = signal<readonly number[]>([]);
-  });
+  scope(
+    () => {
+      out = signal<readonly number[]>([]);
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();

@@ -16,11 +16,11 @@
   },
   "size": {
     "@keel/check": {
-      "max": "104.5kb",
+      "max": "127kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "24.8kb",
+      "max": "27.2kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -36,17 +36,17 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "36kb",
+      "max": "36.3kb",
       "platform": "node"
     },
-    "@keel/ctx": "4.7kb",
+    "@keel/ctx": "4.9kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "14.7kb",
-    "@keel/router/contract": "3.25kb",
+    "@keel/router": "15.6kb",
+    "@keel/router/contract": "3.35kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "11kb",
+    "@keel/runtime-dom/ops": "11.1kb",
     "@keel/scaffold": {
       "max": "26.5kb",
       "platform": "node"
@@ -55,20 +55,20 @@
       "max": "2.35kb",
       "platform": "node"
     },
-    "@keel/schema": "6.5kb",
+    "@keel/schema": "8.1kb",
     "@keel/server": {
-      "max": "31kb",
+      "max": "32.9kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
     "@keel/server/internal/start": {
-      "max": "3.5kb",
+      "max": "4.4kb",
       "platform": "node"
     },
-    "@keel/services": "4.1kb",
+    "@keel/services": "4.65kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "3.25kb",
+      "max": "3.35kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {
@@ -164,13 +164,13 @@
       "max": "1.5kb",
       "platform": "node"
     },
-    "@keel/std-postgres": "1.05kb",
+    "@keel/std-postgres": "1.15kb",
     "@keel/std-postgres/server": {
-      "max": "8.4kb",
+      "max": "9.5kb",
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
-      "max": "1.65kb",
+      "max": "1.9kb",
       "platform": "node"
     },
     "@keel/std-postgres/tools": {
@@ -198,13 +198,13 @@
     },
     "@keel/std-temporal": "5kb",
     "@keel/std-text": "1.5kb",
-    "@keel/store": "4kb",
+    "@keel/store": "4.15kb",
     "@keel/store/internal": {
       "max": "2.25kb",
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "23.2kb",
+      "max": "23.55kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

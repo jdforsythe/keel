@@ -9,7 +9,7 @@ import OutboxPanel from "./OutboxPanel.tsx";
 import { boardOutbox } from "./boardOutbox.ts";
 import { hydrate } from "./hydrate.ts";
 import { pageOrigin } from "./pageOrigin.ts";
-import { refreshView } from "./refreshView.ts";
+import { reread } from "./reread.ts";
 import { todos } from "./todos.contract.ts";
 import { todosApi } from "./todosApi.ts";
 import { view } from "./view.ts";
@@ -40,9 +40,7 @@ export default function AppShell(props: Infer<typeof Props> & { readonly childre
       : live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
   if (origin !== undefined) void drain(ctx, boardOutbox, { owner: "" });
   const empty = computed(() => !view.get("canUndo"));
-  const undo = (): void => {
-    void todosApi.undo({}, ctx).then(() => refreshView(ctx));
-  };
+  const undo = (): Promise<void> => todosApi.undo({}, ctx).then(() => reread(ctx));
   return (
     <Box id="todos.shell" direction="column">
       <Box

@@ -8,6 +8,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, resolve, send } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
+import { root } from "./support.ts";
 
 const Api = contract("app", {
   "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
@@ -41,7 +42,7 @@ test("for any owners on two ctxs over one outbox, each ctx posts, fails and stor
       fc.constantFrom("a", "b"),
       async (writes, later) => {
         const id = `ctxs${++n}.outbox`;
-        const o = outbox(id, Api);
+        const o = root(() => outbox(id, Api));
         const posts: string[][] = [[], []];
         // Two seeds: a ctx draws its write keys from its own seed.
         const ctxs = [ctxWith(posts[0] ?? [], 1337), ctxWith(posts[1] ?? [], 7)];
@@ -65,7 +66,7 @@ test("for any owners on two ctxs over one outbox, each ctx posts, fails and stor
             .filter((e) => mine[0]?.includes(title(e)))
             .map((e) => [e.key, e.state]);
         const before = firsts();
-        const sc = scope(() => void drain(other, o, { owner: later }));
+        const sc = scope(() => void drain(other, o, { owner: later }), { detached: true });
         other.net.setOnline(true);
         await settle();
         expect(posts[0]).toEqual([]);
@@ -94,8 +95,8 @@ test("a drain whose scope ends drops the retry pending on its ctx; a later send 
     posts.push(String(field(await req.json(), "t")));
     return Response.json({ ok: true, value: {} });
   });
-  const o = outbox(`retry${++n}.outbox`, Api);
-  const sc = scope(() => void drain(ctx, o, { owner: "a" }));
+  const o = root(() => outbox(`retry${++n}.outbox`, Api));
+  const sc = scope(() => void drain(ctx, o, { owner: "a" }), { detached: true });
   await settle();
   expect(await send(ctx, o, "add", { body: { t: "x" } }, { base: 0, owner: "a" })).toEqual({ state: "queued" });
   sc.dispose();
@@ -115,5 +116,5 @@ test("an `events: true` entry is not an outbox endpoint: outbox declares over a 
   const Live = contract("live", {
     "live.feed": { method: "GET", path: "/feed", output: s.object({}), events: true },
   });
-  expect(() => outbox("live.outbox", Live)).not.toThrow();
+  expect(() => root(() => outbox("live.outbox", Live))).not.toThrow();
 });

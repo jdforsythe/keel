@@ -46,9 +46,12 @@ function build() {
 }
 
 const made: ReturnType<typeof build>[] = [];
-scope(() => {
-  made.push(build());
-});
+scope(
+  () => {
+    made.push(build());
+  },
+  { detached: true },
+);
 const fixture = (): ReturnType<typeof build> => {
   const f = made[0];
   if (f === undefined) throw new Error("fixture: build failed");

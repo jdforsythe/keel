@@ -148,6 +148,6 @@ describe("@keel/testing/e2e on a built app", () => {
     const line = lineOf("test/fail.e2e.ts", "a boom the test never reads");
     expect(states("test/fail.e2e.ts").get(line)).toBe("failed");
     const [head = ""] = block("test/fail.e2e.ts", line);
-    expect(head).toMatch(new RegExp(`^T0001 test/fail\\.e2e\\.ts:${line}:\\d+ E1738 pageerror Error: boom`));
+    expect(head).toMatch(new RegExp(`^T0001 test/fail\\.e2e\\.ts:${line}:\\d+ E1738 pageerror Defect: boom`));
   });
 });

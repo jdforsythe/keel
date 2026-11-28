@@ -280,7 +280,7 @@ test("an error or end is lost once to each listening follow, the connection ends
   }
 });
 
-test("a follow waiting for the connection gets no event, and fails once the connection closes or does not open", async () => {
+test("a follow waiting for the connection gets `lost` once and resolves a stop function when the connection closes or does not open", async () => {
   let open: () => void = () => undefined;
   fakes.state.connect = () =>
     new Promise<void>((resolve) => {
@@ -292,14 +292,15 @@ test("a follow waiting for the connection gets no event, and fails once the conn
   notify("keel_changes", "A");
   fakes.state.clients[0]?.emit("error", new Error("gone"));
   open();
-  await expect(p).rejects.toThrow(new Error("std.postgres: the listening connection closed"));
-  expect(waiting.events).toEqual([]);
+  await expect(p).resolves.toBeTypeOf("function");
+  expect(waiting.events).toEqual(["lost"]);
   fakes.state.connect = () => Promise.reject(Object.assign(new Error("refused"), { code: "ECONNREFUSED" }));
   const refused = listenChanges(url());
   for (let n = 1; n <= 2; n++) {
-    await expect(refused.follow("A", () => undefined)).rejects.toThrow(
-      new Error("std.postgres: the listening connection did not open"),
-    );
+    const events: string[] = [];
+    const stop = await refused.follow("A", (e) => events.push(e.kind));
+    expect(events).toEqual(["lost"]);
+    expect(() => stop()).not.toThrow();
     expect(fakes.state.clients.length).toBe(1 + n);
   }
 });

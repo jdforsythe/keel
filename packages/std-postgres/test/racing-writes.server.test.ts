@@ -11,10 +11,10 @@ import { rmSync } from "node:fs";
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
-import type { Result } from "@keel/schema";
+import type { KeelError, Result } from "@keel/schema";
 import { NoRows, fragment, sql } from "@keel/std-postgres";
 import type { TransactionOptions } from "@keel/std-postgres/server";
-import { database } from "@keel/std-postgres/server";
+import { constraintOf, database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import { fixedTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
@@ -128,7 +128,7 @@ const Counter = s.object({ n: s.int() });
 const Count = s.object({ c: s.int() });
 const Title = s.object({ id: s.int(), title: s.string() });
 
-function okOf<T, E>(r: Result<T, E>): T {
+function okOf<T, E extends KeelError<string, unknown>>(r: Result<T, E>): T {
   if (!r.ok) throw new Error(`expected ok, got err ${JSON.stringify(r.error)}`);
   return r.value;
 }
@@ -189,7 +189,7 @@ async function addRecipe(x: Tables, ctx: Ctx, id: number, title: string, wait: (
 const SKEW: TransactionOptions = { allow: "write skew", reason: "the race under test" };
 const LOST: TransactionOptions = { allow: "lost updates", reason: "the race under test" };
 
-const codeOf = <T, E extends { code: string }>(r: Result<T, E>): string => (r.ok ? "ok" : r.error.code);
+const codeOf = <T, E extends KeelError<string, unknown>>(r: Result<T, E>): string => (r.ok ? "ok" : r.error.code);
 
 const pglite = realMode("pglite", () => "pglite:<dir>", false);
 const pg17 = PG17 === "" ? null : realMode("postgres 17", () => PG17, true);
@@ -299,7 +299,9 @@ for (const m of MODES) {
       // runs once more and its insert is then the unique violation.
       for (const o of out) {
         expect(o.runs).toBeLessThanOrEqual(2);
-        if (!o.r.ok) expect(o.r.error.data).toEqual({ constraint: x.titleKey, kind: "unique" });
+        if (!o.r.ok) expect(o.r.error.data).toEqual({ kind: "unique" });
+        if (!o.r.ok && o.r.error.code === "postgres.constraint")
+          expect(constraintOf(o.r.error, [x.titleKey])).toBe(x.titleKey);
       }
       const [first] = ctxs;
       if (first === undefined) throw new Error("no caller");

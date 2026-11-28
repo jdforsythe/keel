@@ -25,7 +25,7 @@ async function until(pred: () => boolean): Promise<void> {
   for (let i = 0; i < 2000 && !pred(); i++) await turn();
   if (!pred()) throw new Error("condition not reached");
 }
-const copy = scope(() => undefined).run(() => store(Flag, { on: true }, { id: "t.copy" }));
+const copy = scope(() => undefined, { detached: true }).run(() => store(Flag, { on: true }, { id: "t.copy" }));
 const snap = (on: boolean): string => JSON.stringify({ ...copy.snapshot({ meta: true }), state: { on } });
 
 /** A served channel (room `x` is never a member) whose `ctx.storage.get` can be armed: its next read of `keel.store.t.flag` is `next()`. */
@@ -104,7 +104,7 @@ async function serve() {
         headers: { accept: "application/json", "content-type": "application/json", "x-keel": "1", origin: BASE },
       }),
     );
-  return { ctx, armed, open, post };
+  return { ctx, base, armed, open, post };
 }
 
 test("a re-check whose read of the saved stores rejects ends the stream closed denied, and later saves still reach new streams", async () => {
@@ -128,6 +128,29 @@ test("a re-check whose read of the saved stores rejects ends the stream closed d
   expect(later.lines[1]).toEqual({ ok: true, value: { kind: "saved", store: "t.flag", head: 2 } });
   process.off("unhandledRejection", onRejection);
   expect(rejections).toEqual([]);
+});
+
+test("a re-check whose read of the saved stores never settles is a denial at 5,000 ms on ctx.clock, and a later save reaches a new stream", async () => {
+  const h = await serve();
+  const st = await h.open("?room=a");
+  await until(() => st.lines.length === 1);
+  h.armed.next = () => new Promise<string | null>(() => undefined);
+  report(h.ctx, { kind: "save", store: "t.flag", head: 1, from: 0 });
+  await until(() => h.armed.called);
+  h.base.clock.advance(4_999);
+  for (let i = 0; i < 50; i++) await turn();
+  expect(st.ended()).toBe(false);
+  h.base.clock.advance(1);
+  await until(() => st.ended());
+  expect(st.lines).toEqual([
+    { ok: true, value: { kind: "reset" } },
+    { ok: true, value: { kind: "closed", reason: "denied" } },
+  ]);
+  const later = await h.open("?room=a");
+  await until(() => later.lines.length === 1);
+  report(h.ctx, { kind: "save", store: "t.flag", head: 2, from: 1 });
+  await until(() => later.lines.length === 2);
+  expect(later.lines[1]).toEqual({ ok: true, value: { kind: "saved", store: "t.flag", head: 2 } });
 });
 
 test("a message published while a stream's re-check is pending is not delivered to a stream that re-check revokes", async () => {

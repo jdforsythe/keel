@@ -3,6 +3,7 @@ import { err, ok } from "@keel/schema";
 import { commitStores } from "@keel/server";
 import { tx } from "@keel/store";
 import type { RemovalData } from "./RemovalData.schema.ts";
+import { RestoreFailed } from "./RestoreFailed.schema.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
@@ -16,7 +17,5 @@ export const restore = async (data: RemovalData, ctx: Ctx) => {
     const t = tx(S.showList, { id });
     return t.ok ? ok(null) : err(t.error);
   });
-  return r.ok
-    ? ok({})
-    : err({ code: "api.restoreFailed", message: "The list could not be shown again", data: { cause: r.error.code } });
+  return r.ok ? ok({}) : err(RestoreFailed.make({ cause: r.error.code }));
 };

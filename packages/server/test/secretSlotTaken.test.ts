@@ -11,6 +11,8 @@ import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { keepRunning } from "../src/internal/keepRunning.ts";
 import { redacted } from "../src/internal/redacted.ts";
+import { thrownText } from "../src/internal/thrownText.ts";
+import { textRecords } from "./textRecords.ts";
 
 const SEED = 1337;
 const field = (v: unknown, k: string): unknown => (typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined);
@@ -24,7 +26,7 @@ async function actionApp<I>(input: ObjectSchema<I>, run: (v: I) => Promise<never
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
-    mode: "production",
+    mode: "dev",
     artifacts: "/keel-slot-root/.keel",
     log: { format: "json", write: (l) => void lines.push(l) },
   });
@@ -36,7 +38,10 @@ async function actionApp<I>(input: ObjectSchema<I>, run: (v: I) => Promise<never
         headers: { "content-type": "application/json", accept: "application/json" },
       }),
     );
-  const diags = (): unknown[] => lines.map((l): unknown => JSON.parse(l)).filter((d) => field(d, "kind") === "diag");
+  const diags = (): unknown[] =>
+    textRecords(lines)
+      .map((l): unknown => JSON.parse(l))
+      .filter((d) => field(d, "kind") === "diag");
   return { post, lines, diags };
 }
 
@@ -129,8 +134,8 @@ describe("the onSecret slot taken while a runner's run runs", () => {
       },
       createCtx({ mode: "sim", seed: SEED }),
       again.signal,
-      (message, _frames, secrets) => {
-        seen.push(redacted(message, { secrets, pii: new Set() }));
+      (thrown, _frames, secrets) => {
+        seen.push(redacted(thrownText(thrown), { secrets, pii: new Set() }));
         again.abort();
       },
       () => [],

@@ -1,4 +1,5 @@
 import { s } from "@keel/schema";
+import { heldSet } from "@keel/schema/internal";
 import { type SecretListener, onSecret, secretWalk } from "@keel/schema/internal";
 import { holdSecrets } from "./holdSecrets.ts";
 import { notedSecrets } from "./notedSecrets.ts";
@@ -28,7 +29,7 @@ const note: SecretListener = (made) => {
   if (into === undefined) return;
   let noted = notedSecrets.get(into);
   if (noted === undefined) {
-    noted = new WeakSet();
+    noted = heldSet();
     notedSecrets.set(into, noted);
   } else if (noted.has(made)) return;
   noted.add(made);

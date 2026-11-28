@@ -3,10 +3,9 @@
 // Seed 1337
 // Assumption: with `logLimit` 2, the kept log's initial state is the state after the entry just before the kept log, so a
 // `base` equal to that entry's id is rebuildable and an older one is `folded`.
-import { races } from "@keel/std-conflicts";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { STORE_ID, boardStores, snapshotOf } from "./fixtures.ts";
+import { STORE_ID, boardStores, snapshotOf, racesInRoot } from "./fixtures.ts";
 
 const title = fc.stringMatching(/^[a-z]{1,6}$/);
 
@@ -22,7 +21,7 @@ describe("std.conflicts: unchecked entries", () => {
           { t: "edit", id: "x", title: t2, base: 2 },
           { t: "edit", id: "x", title: t3, base: 1 },
         ]);
-        const r = races(snap, boardStores({ logLimit: 2 }));
+        const r = racesInRoot(snap, boardStores({ logLimit: 2 }));
         expect(r.races).toEqual([]);
         expect(r.unchecked).toEqual([{ store: STORE_ID, id: 4, reason: "folded" }]);
       }),
@@ -41,7 +40,7 @@ describe("std.conflicts: unchecked entries", () => {
           { t: "edit", id: "x", title: t2, base: 2 },
           { t: "edit", id: "x", title: t3, base: 2 },
         ]);
-        const r = races(snap, boardStores({ logLimit: 2 }));
+        const r = racesInRoot(snap, boardStores({ logLimit: 2 }));
         expect(r.unchecked).toEqual([]);
         expect(r.races).toHaveLength(1);
         expect(r.races[0]).toMatchObject({ kind: "order", entry: { id: 4 }, against: [{ id: 3 }] });
@@ -61,7 +60,7 @@ describe("std.conflicts: unchecked entries", () => {
           { t: "undo" },
           { t: "edit", id: "x", title: t2, base: 1 },
         ]);
-        const r = races(snap, boardStores());
+        const r = racesInRoot(snap, boardStores());
         expect(r.races).toEqual([]);
         expect(r.unchecked).toEqual([{ store: STORE_ID, id: 4, reason: "undo" }]);
       }),
@@ -78,7 +77,7 @@ describe("std.conflicts: unchecked entries", () => {
       { t: "edit", id: "x", title: "c", base: 1 },
       { t: "edit", id: "x", title: "d", base: 1 },
     ]);
-    const r = races(snap, boardStores({ logLimit: 3 }));
+    const r = racesInRoot(snap, boardStores({ logLimit: 3 }));
     expect(r.unchecked).toEqual([
       { store: STORE_ID, id: 4, reason: "folded" },
       { store: STORE_ID, id: 5, reason: "folded" },

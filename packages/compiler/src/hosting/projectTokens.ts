@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { build } from "esbuild";
+import { censusPlugin } from "../internal/censusPlugin.ts";
 import type { TokensResult } from "./TokensResult.ts";
 import { shippedTokensPlugin } from "./shippedTokensPlugin.ts";
 
@@ -57,7 +58,7 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
       target: "node20",
       logLevel: "silent",
       loader: { ".css": "empty" },
-      plugins: [shippedTokensPlugin(root)],
+      plugins: [shippedTokensPlugin(root), censusPlugin()],
     });
     text = out.outputFiles[0]?.text ?? "";
   } catch (e) {

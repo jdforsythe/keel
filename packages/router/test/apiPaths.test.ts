@@ -162,6 +162,7 @@ describe("entryAt", () => {
 describe("a router loaded afresh", () => {
   it("binds every verb and method and lists them in order", async () => {
     vi.resetModules();
+    const { ok, s: fs } = await import("@keel/schema");
     const fresh = {
       ...(await import("../src/internal/index.ts")),
       ...(await import("../src/contract/contract.ts")),
@@ -169,12 +170,14 @@ describe("a router loaded afresh", () => {
       ...(await import("../src/action.ts")),
       ...(await import("../src/loader.ts")),
     };
+    const FOut = fs.object({});
+    const FIn = fs.object({});
     const c = fresh.contract("f", {
-      "f.get": { method: "GET", path: "/api/f", output: Out },
-      "f.post": { method: "POST", path: "/api/f", output: Out },
-      "f.put": { method: "PUT", path: "/api/f", output: Out },
-      "f.patch": { method: "PATCH", path: "/api/f", output: Out },
-      "f.del": { method: "DELETE", path: "/api/f", output: Out },
+      "f.get": { method: "GET", path: "/api/f", output: FOut },
+      "f.post": { method: "POST", path: "/api/f", output: FOut },
+      "f.put": { method: "PUT", path: "/api/f", output: FOut },
+      "f.patch": { method: "PATCH", path: "/api/f", output: FOut },
+      "f.del": { method: "DELETE", path: "/api/f", output: FOut },
       "f.frame": { layout: true },
       "f.page": { path: "/f" },
     });
@@ -190,11 +193,11 @@ describe("a router loaded afresh", () => {
       "f.page": {
         component: view,
         layout: "f.frame",
-        loader: fresh.loader(c, "f.page", { output: Out }, run),
-        POST: fresh.action(c, "f.page", { input: In }, page),
-        PUT: fresh.action(c, "f.page", { input: In }, page),
-        PATCH: fresh.action(c, "f.page", { input: In }, page),
-        DELETE: fresh.action(c, "f.page", { input: In }, page),
+        loader: fresh.loader(c, "f.page", { output: FOut }, run),
+        POST: fresh.action(c, "f.page", { input: FIn }, page),
+        PUT: fresh.action(c, "f.page", { input: FIn }, page),
+        PATCH: fresh.action(c, "f.page", { input: FIn }, page),
+        DELETE: fresh.action(c, "f.page", { input: FIn }, page),
       },
     });
     const table = fresh.compileRoutes(routes).located;

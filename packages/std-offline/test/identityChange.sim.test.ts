@@ -58,13 +58,16 @@ for (const path of paths) {
           // The same id on every run and replay of a path: the run disposes its outbox, and a replay's trace names the store.
           const id = `ident${path.length}.outbox`;
           const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-          const decl = scope(() => {
-            held.o = outbox(id, Api);
-          });
+          const decl = scope(
+            () => {
+              held.o = outbox(id, Api);
+            },
+            { detached: true },
+          );
           const o = held.o;
           if (o === undefined) throw new Error("no outbox");
           const tA = ["a1", "a2"];
-          let page = scope(() => void drain(ctx, o, { owner: "a" }));
+          let page = scope(() => void drain(ctx, o, { owner: "a" }), { detached: true });
           await run();
           const sends = tA.map((t) => send(ctx, o, "add", { body: { t } }, { base: 0, owner: "a" }).catch(() => null));
           // The user changes at times this run draws, while a's writes may still be queued or in flight; b then writes.
@@ -78,7 +81,7 @@ for (const path of paths) {
               .then(() => {
                 srv.who.user = user;
                 page.dispose();
-                page = scope(() => void drain(ctx, o, { owner: user }));
+                page = scope(() => void drain(ctx, o, { owner: user }), { detached: true });
               });
           }
           const mine = chain.then(() =>
@@ -153,25 +156,28 @@ test("in one page: a's queued writes wait through a sign-out, go as a's when a s
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     const srv = server(ctx);
     const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-    const decl = scope(() => {
-      held.o = outbox(`ident${++n}.outbox`, Api);
-    });
+    const decl = scope(
+      () => {
+        held.o = outbox(`ident${++n}.outbox`, Api);
+      },
+      { detached: true },
+    );
     const o = held.o;
     if (o === undefined) throw new Error("no outbox");
-    let page = scope(() => void drain(ctx, o, { owner: "a" }));
+    let page = scope(() => void drain(ctx, o, { owner: "a" }), { detached: true });
     ctx.net.setOnline(false);
     for (const t of ["a1", "a2"]) await send(ctx, o, "add", { body: { t } }, { base: 0, owner: "a" });
     // Signed out, back online: nothing goes, nothing fails.
     srv.who.user = "";
     page.dispose();
-    page = scope(() => void drain(ctx, o, { owner: "" }));
+    page = scope(() => void drain(ctx, o, { owner: "" }), { detached: true });
     ctx.net.setOnline(true);
     await settle();
     expect(srv.posts).toEqual([]);
     expect(o.get("entries").map((e) => e.state)).toEqual(["queued", "queued"]);
     srv.who.user = next;
     page.dispose();
-    page = scope(() => void drain(ctx, o, { owner: next }));
+    page = scope(() => void drain(ctx, o, { owner: next }), { detached: true });
     await settle();
     if (next === "a") {
       expect(srv.posts).toEqual([

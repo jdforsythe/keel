@@ -109,7 +109,7 @@ describe("todos.list", () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
     const r = await renderRoute("todos.list", { routes, params: { listId: "nope" }, ctx });
-    expect(r.find("todos.error.message").text).toBe("No list nope");
+    expect(r.find("todos.error.message").text).toBe("keel.notFound");
     r.dispose();
   });
   it("an api failure renders ListError with the api error", async () => {

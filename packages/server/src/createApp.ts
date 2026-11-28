@@ -3,9 +3,11 @@ import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
 import { STYLES_PATH } from "@keel/compiler/internal/entry/STYLES_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
+import { onSupervised } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import { routeTable } from "@keel/router";
 import { allowAt, compileRoutes, matchUrl } from "@keel/router/internal";
+import { heldMap } from "@keel/schema/internal";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { CSP_PATH } from "./internal/CSP_PATH.ts";
@@ -26,6 +28,8 @@ import { declaredTopology } from "./internal/declaredTopology.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { installServerDom } from "./internal/dom/installServerDom.ts";
+import { envValue } from "./internal/envValue.ts";
+import { fingerprintOf } from "./internal/fingerprintOf.ts";
 import { forward } from "./internal/forward.ts";
 import { handle } from "./internal/handle.ts";
 import { inspectAllowed } from "./internal/inspectAllowed.ts";
@@ -34,6 +38,7 @@ import { keepRunning } from "./internal/keepRunning.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { loadStd } from "./internal/loadStd.ts";
 import { localAllowed } from "./internal/localAllowed.ts";
+import { logThrownUntil } from "./internal/logThrownUntil.ts";
 import { logUnwritable } from "./internal/logUnwritable.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
@@ -56,6 +61,7 @@ import { serving } from "./internal/serving.ts";
 import { slotSince } from "./internal/slotSince.ts";
 import { tallyOf } from "./internal/tallyOf.ts";
 import { targetOf } from "./internal/targetOf.ts";
+import { thrownLog } from "./internal/thrownLog.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -90,6 +96,11 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * In production, `assets` (the deployable's `keel build` output) is read once here: documents load its built entry and
  * its files are served nosniff, immutable only when the manifest names them hashed, never through a symlink out of
  * `assets/`; a missing or entry-less manifest rejects with E1555 (k.server Build).
+ * `KEEL_LOG_THROWN` and `KEEL_SECRET` are read from the environment first, on the ctx clock's reading then: a thrown
+ * value's records (`thrownLog`, k.serverlog Thrown values) hold its class, code, fingerprint (under `KEEL_SECRET`,
+ * else a key drawn here), site and causes, and its text only in a second record, under `mode: 'dev'` or while the
+ * clock reads before the `KEEL_LOG_THROWN` instant; a value that is no ISO 8601 instant at most 24 hours ahead rejects
+ * with E1596, naming no part of it.
  * A production `createApp` without `assets` also rejects with E1555 unless `NODE_ENV` (trimmed, any case) is
  * `development` or `test`; unset counts as production. Without a build its island documents would load
  * `/@keel/entry.ts`, whose bare `@keel/*` imports only Vite resolves. Whether a page has islands is known only when it
@@ -140,6 +151,10 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   const modules = new Set([...routes.contracts.map((c) => c.module), ...Object.keys(runners)]);
   const origin = opts.origin === undefined ? undefined : new URL(opts.origin).origin;
   const mode = opts.mode ?? "production";
+  // The start of the text window and the fingerprint's key, read once (k.serverlog Thrown values); a malformed
+  // KEEL_LOG_THROWN is E1596 before anything is served.
+  const until = logThrownUntil(envValue("KEEL_LOG_THROWN"), opts.ctx.clock.now());
+  const fingerprint = await fingerprintOf(envValue("KEEL_SECRET"));
   const env = nodeEnv();
   const deployed = mode === "production" && env !== "development" && env !== "test";
   if (deployed && opts.assets === undefined)
@@ -236,6 +251,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     frames: appFrames(opts.artifacts, (message) =>
       log?.write(diagLine(log.format, { code: "keel.unexpected", message })),
     ),
+    thrown: thrownLog(fingerprint, () => mode === "dev" || (until !== undefined && opts.ctx.clock.now() < until)),
     ...(log === undefined ? {} : { log }),
     identity: opts.identity,
     days: top[name]?.caller?.days,
@@ -249,7 +265,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   const warned = new Set<string>();
   const hono = new Hono();
   // The route id each request matched, for the last resort's record.
-  const routeOf = new WeakMap<Request, string>();
+  const routeOf = heldMap<Request, string>();
   // The last resort: a throw past every guard of the handler (the app's `log.write`, say) is a bare 500 and one fixed
   // `diag` naming the matched route id when there is one; nothing of the thrown value is read, so none of it reaches a
   // response, the log or stderr. When that `diag` cannot be written either, `logUnwritable` writes its one fixed record
@@ -294,7 +310,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
         serving.run({ route: matched?.id ?? "-", pii, secrets }, async () => {
           // Only an API route reads `authorization` (k.api Bearer); the token is a `Secret` and the header is not kept.
           const rq = {
-            scope: scope(() => undefined),
+            scope: scope(() => undefined, { detached: true }),
             caller: callerOf(raw, sv),
             user: "",
             bearer: matched?.def.kind === "api" ? bearerOf(raw) : undefined,
@@ -362,12 +378,16 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     }
     return response;
   });
-  // A runner's record is scrubbed with the set of the `run` that rejected (`keepRunning`); a runner has no pii set.
-  const failed = (message: string, frames: readonly string[], secrets: Set<string>) => {
-    const lead = "runner rejected, rerun in 1000 ms: ";
-    const d = { code: "keel.unexpected", lead, message: lead + message, frames };
-    log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
+  // A runner's records are scrubbed with the set of the `run` that rejected (`keepRunning`); a runner has no pii set.
+  const failed = (thrown: unknown, frames: readonly string[], secrets: Set<string>) => {
+    const records = sv.thrown("keel.unexpected", "runner rejected, rerun in 1000 ms: ", thrown, frames);
+    for (const d of records) log?.write(diagLine(log.format, scrubbedDiag(d, { secrets, pii: new Set() })));
   };
+  // A throw `supervise` takes on the served ctx is one record by the same rules (k.supervise Report).
+  const unsupervise = onSupervised(sv.ctx, (id, thrown) => {
+    for (const d of sv.thrown("keel.unexpected", `supervised ${id} threw: `, thrown, sv.frames(thrown)))
+      log?.write(diagLine(log.format, scrubbedDiag(d, { secrets: new Set(), pii: new Set() })));
+  });
   const app: ServerApp = {
     fetch: async (req, connection) => {
       const r = await attempted(() => hono.fetch(req, connection));
@@ -376,6 +396,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     close: async () => {
       sv.lifecycle.abort();
       unbind();
+      unsupervise();
       await Promise.all(await running);
     },
   };

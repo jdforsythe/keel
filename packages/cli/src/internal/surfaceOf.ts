@@ -1,19 +1,17 @@
+import { isSchema } from "@keel/schema";
 import type { Evaluated } from "./Evaluated.ts";
 import type { JsonSchema } from "./JsonSchema.ts";
 import { isRecord } from "./isRecord.ts";
-import { isSchemaNode } from "./isSchemaNode.ts";
 import { toJsonSchema } from "./toJsonSchema.ts";
+
+/** The JSON Schema of a schema this process made, or `null` when `x` is none (k.identity). */
+const ownJson = (x: unknown): JsonSchema | null => (isSchema(x) ? toJsonSchema(x.node) : null);
 
 /** The binding members that hold a handler: a loader, an API action and each page action verb. */
 const HANDLERS = ["loader", "action", "DELETE", "PATCH", "POST", "PUT"] as const;
 
-/** The JSON Schema of a schema value (`{ node }`), or `null` when `x` is none. */
-function schemaOf(x: unknown): JsonSchema | null {
-  return isRecord(x) && isSchemaNode(x.node) ? toJsonSchema(x.node) : null;
-}
-
 /** One API entry as the surface records it, or `null` when `e` is a page or layout entry. */
-function apiEntry(e: unknown): JsonSchema | null {
+function apiEntry(e: unknown, schemaOf: (x: unknown) => JsonSchema | null): JsonSchema | null {
   if (!isRecord(e) || typeof e.method !== "string" || typeof e.path !== "string" || e.output === undefined) return null;
   const errors = Object.fromEntries(
     Object.entries(isRecord(e.errors) ? e.errors : {}).flatMap(([status, x]) => {
@@ -35,7 +33,7 @@ function contractsOf(e: Evaluated): Record<string, JsonSchema> {
     seen.add(c.module);
     const entries = Object.fromEntries(
       Object.entries(c.entries).flatMap(([id, entry]) => {
-        const api = apiEntry(entry);
+        const api = apiEntry(entry, e.schemaJson ?? ownJson);
         return api === null ? [] : [[id, api]];
       }),
     );
@@ -47,6 +45,7 @@ function contractsOf(e: Evaluated): Record<string, JsonSchema> {
 
 /** Each store the bound loaders' and actions' `stores` factories create: its state and payload schemas, by id. */
 function storesOf(e: Evaluated): Record<string, JsonSchema> {
+  const schemaOf = e.schemaJson ?? ownJson;
   const factories = new Set<unknown>();
   for (const b of e.bindings) {
     if (!isRecord(b)) continue;

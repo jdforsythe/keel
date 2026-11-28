@@ -40,6 +40,7 @@ const entry: TypeEntry = {
   schemeSelects: new Map([["a.tsx", new Set([5])]]),
   themeSelects: new Map(),
   boxes: new Map(),
+  keelThrows: new Map([["a.ts", new Set([11])]]),
 };
 
 it("an entry saved by one process is the entry the next one loads: probes, findings in order, dates", () => {

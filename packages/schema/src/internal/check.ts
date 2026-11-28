@@ -1,13 +1,14 @@
-import { Secret } from "../Secret.ts";
 import type { Above } from "./Above.ts";
 import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
+import { SECRET_MARKER } from "./SECRET_MARKER.ts";
 import { formats } from "./formats.ts";
 import { isJson } from "./isJson.ts";
 import { leafRule } from "./leafRule.ts";
 import { plainEntries } from "./plainEntries.ts";
 import { plainItems } from "./plainItems.ts";
 import { scanExtras } from "./scanExtras.ts";
+import { secretAccess } from "./secretAccess.ts";
 import { variantOf } from "./variantOf.ts";
 
 type Path = (string | number)[];
@@ -38,8 +39,8 @@ export function check(
       check(node.inner, x, path, issues, above, copies);
       break;
     case "secret":
-      if (Secret.is(x)) check(node.inner, Secret.open(x), path, issues, [], copies);
-      else if (x === Secret.marker) issues.push({ path, rule: "secret-missing" });
+      if (secretAccess.is(x)) check(node.inner, secretAccess.open(x), path, issues, [], copies);
+      else if (x === SECRET_MARKER) issues.push({ path, rule: "secret-missing" });
       else check(node.inner, x, path, issues, above, copies);
       break;
     case "format": {

@@ -3,7 +3,7 @@ status: conformance-covered
 
 The text `keel explain` prints (k.check **explain and docs**) lives in an entry of `@keel/check` of its own, apart from `check()`. What shows an explanation loads it: `keel explain`, the MCP `explain` tool and the LSP hover (k.cli). What checks code does not.
 
-**Entry.** `@keel/check/explain` exports `explain(code): string`, synchronous. A kernel code reads its row of the explanation table: the code and its Rules entry, the reason when the spec gives one, one fix example, and `see`. A code registered through `defineRule` gives the rule's message, `explain` and `see`. Any other code gets one line naming it as unknown. `@keel/check` does not export `explain`.
+**Entry.** `@keel/check/explain` exports `explain(code): string`, synchronous. A kernel code reads its row of the explanation table: the code and its Rules entry, the reason when the spec gives one, one fix example, and `see`. A code registered through `defineRule` gives the rule's message, `explain` and `see`. Any other code gets one line naming it as unknown. `see` is printed whole: a row that is over its budget loses reason or example text, never a part of `see`. A section's Rules, whatever its status, names only codes that have a row: a rule that waits on another RFC is described in that RFC and enters Rules when it is built. `@keel/check` does not export `explain`.
 - Rules registered through `defineRule` from `@keel/check` are explained by `@keel/check/explain` in the same process: the registrations live in one module both entries import. `explain` imports no kernel rule; every kernel code has a table row (k.check).
 
 **Diagnostics.** A diagnostic is complete without the explanation entry. `code`, `path`, `line`, `col`, `message`, `fix` and `see` come from the rule and the pipeline: `fix` is the rule's own edit as a unified diff, never the table's fix example. Compact, json and pretty output print no explanation text; `keel explain <code>` does.
@@ -19,6 +19,8 @@ The text `keel explain` prints (k.check **explain and docs**) lives in an entry 
 - A rule registered with `defineRule` imported from `@keel/check` is explained by `explain` from `@keel/check/explain`: its message, its `explain` text and its `see`.
 - The `@keel/check` entry bundled alone (esbuild, minified esm, dependencies external) contains no reason line and no fix example of any kernel code's explanation; the `@keel/check/explain` entry bundled alone contains every one.
 - `tooling/budgets.json` has a size line for `@keel/check` and one for `@keel/check/explain`.
+- `explain('E1762')` ends with the line `see: k.identity`, and no `explain(code)` of a kernel code holds `...` or `…` in its `see` line.
+- No `spec/kernel/*.md` section, `proposed` ones included, names in its Rules a code `explain` answers as unknown.
 - `keel scaffold library @acme/charts` writes in `charts/` `.gitignore`, `AGENTS.md`, `CLAUDE.md` holding `@AGENTS.md` and one `.claude/skills/<name>/SKILL.md` per skill `keel docs` lists, each equal to `keel docs <name>`.
 - In that library the block's first sentence holds `Keel library` and the first skill path it lists is `keel-library`'s; the block of `keel scaffold project` holds no `Keel library`; each block is at most 600 tokens.
 - In that library `keel check` reports no W1356; an edited skill copy or block is one W1356, `keel docs --sync` restores it and keeps the text outside the block, and a second `--sync` writes nothing.

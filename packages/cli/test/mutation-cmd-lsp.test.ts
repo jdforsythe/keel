@@ -15,6 +15,8 @@ const fresh = (): LspState => ({ root: undefined, exited: false, docs: new Map()
 const io: Io = { cwd: "/w", files: [] };
 const msg = (m: Record<string, unknown>): string => JSON.stringify({ jsonrpc: "2.0", ...m });
 const THROWING = "export function x(): number {\n  throw new Error('no')\n}\n";
+/** A non-null assertion: E1757 with a fix. */
+const FIXABLE = "export const f = (x: string | undefined): number => x!.length\n";
 const TWO = "export const a = 1\nexport const b = 2\n";
 const frame = (m: unknown): string => {
   const body = JSON.stringify(m);
@@ -305,7 +307,7 @@ describe("lspHandle", () => {
     const uri = "file:///w/src/x.ts";
     const ask = async (s: LspState, cwd: string): Promise<unknown> => {
       await lspHandle(
-        msg({ method: "textDocument/didOpen", params: { textDocument: { uri, text: THROWING } } }),
+        msg({ method: "textDocument/didOpen", params: { textDocument: { uri, text: FIXABLE } } }),
         s,
         () => ({ cwd, files: [] }),
       );

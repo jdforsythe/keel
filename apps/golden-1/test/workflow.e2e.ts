@@ -19,14 +19,14 @@ import { Board } from "../modules/api/Board.schema.ts";
 const here = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SKIP = new Set(["node_modules", "dist", ".keel", ".keel-dev", ".turbo", "reports", ".api.storage"]);
 
-// The api's stores, named for `state`: ids and schemas, made in a scope of the file's own.
+// The api's stores, named for `state`: ids and schemas, made in a detached root of the file's own.
 const Instance = s.object({
   state: s.string(),
   data: s.object({ list: s.string().optional() }),
   entered: s.int({ min: 0 }),
   attempt: s.int({ min: 0 }),
 });
-const [board, removal] = scope(() => undefined).run(() => [
+const [board, removal] = scope(() => undefined, { detached: true }).run(() => [
   store(Board, { lists: [], todos: [] }, { id: "api.board" }),
   store(s.object({ instances: s.record(Instance) }), { instances: {} }, { id: "api.removal" }),
 ]);

@@ -1601,10 +1601,17 @@ importers:
         version: 22.20.5
 
   packages/reactive:
+    dependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
 
   packages/router:
     dependencies:
@@ -1989,6 +1996,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
@@ -2173,6 +2183,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2375,6 +2388,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2449,6 +2465,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2817,6 +2836,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema

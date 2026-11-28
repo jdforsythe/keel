@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { type Infer, err } from "@keel/schema";
+import { type Infer, err, keelError } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { Item } from "./Item.schema.ts";
 import type { ItemRef } from "./ItemRef.schema.ts";
@@ -30,14 +30,9 @@ export const markBought = (
     const before = await list();
     if (!before.ok || seen.value.length > 0) return before;
     const item = before.value.find((i) => i.id === id);
-    if (item === undefined)
-      return err({ code: "keel.notFound", message: "That item is no longer on the list", data: {} });
+    if (item === undefined) return err(keelError.notFound.make({}, "That item is no longer on the list"));
     if (item.rev !== write.base)
-      return err({
-        code: "keel.conflict",
-        message: "The item changed first",
-        data: { transaction: "shopping.mark", head: item.rev },
-      });
+      return err(keelError.conflict.make({ transaction: "shopping.mark", head: item.rev }, "The item changed first"));
     const kept = await t.run(
       sql(NoRows)`insert into list_writes (owner, key, at) values (${write.owner}, ${write.key}, ${ctx.clock.now()})`,
     );

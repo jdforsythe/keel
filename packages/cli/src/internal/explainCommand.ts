@@ -12,7 +12,8 @@ const STD_CODE = /^[EWI]2\d{3}$/;
 /**
  * `keel explain <code>`: delegates to `@keel/check` explain. For a stdlib code it first runs `load` (the project's std
  * deps, so their registered rules explain their codes as `keel check` reports them; a project that cannot be read
- * explains kernel codes only). No code: an empty result. Unknown code: E1052.
+ * explains kernel codes only). No code: an empty result. Unknown code: E1052. A text over the budget is cut in its
+ * reason or example, never in its `see` line.
  */
 export async function explainCommand(input: Input, load?: () => Promise<unknown>): Promise<OutRecord[]> {
   const code = input.code;
@@ -29,6 +30,10 @@ export async function explainCommand(input: Input, load?: () => Promise<unknown>
   }
   const trailer = `ok explain ${code}\n`.length + 1;
   const room = BUDGET_CHARS - trailer;
-  const clipped = text.length > room ? `${text.slice(0, room - 3)}...` : text;
+  // Over the budget the reason and example lose text from their end; the `see` line is printed whole (k.explain).
+  const at = text.lastIndexOf("\nsee: ");
+  const see = at < 0 ? "" : text.slice(at);
+  const body = at < 0 ? text : text.slice(0, at);
+  const clipped = text.length > room ? `${body.slice(0, Math.max(0, room - see.length - 3))}...${see}` : text;
   return [{ kind: "explain.text", code, text: clipped }, summary(`explain ${code}`, [], {})];
 }

@@ -67,9 +67,7 @@ function baseShape(el: JSXElement, base: string): { tag: string; role: string | 
  * Then every `@keel/ui` base element with a literal `id` (they render it; no derived ids, no ordinals).
  */
 export function collectElements(a: Analysis): ElementInfo[] {
-  const els = a.jsx.filter(
-    (j): j is JSXElement => j.type === "JSXElement" && isHtmlTag(tagNameOf(j.openingElement.name)),
-  );
+  const els = a.jsx.flatMap((j) => (j.type === "JSXElement" && isHtmlTag(tagNameOf(j.openingElement.name)) ? [j] : []));
   const labels = els.filter((e) => tagNameOf(e.openingElement.name) === "label");
   const labelFor = new Set<string>();
   for (const l of labels) {

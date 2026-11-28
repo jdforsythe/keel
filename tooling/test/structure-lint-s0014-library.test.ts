@@ -17,7 +17,7 @@ afterAll(() => {
 
 const U = "unsafe";
 const REASON = "one two three four five six seven eight";
-const THROWS = `export const f = (): never => ${U}("${REASON}", () => {\n  throw new Error("x");\n});\n`;
+const READS = `export const f = (): number => ${U}("${REASON}", () => Date.now());\n`;
 const PLAIN = `export const f = (): number => ${U}("${REASON}", () => 1);\n`;
 const LIBRARY = JSON.stringify({ name: "@x/p", type: "module", keel: "library" });
 const KERNEL = JSON.stringify({ name: "@x/p", type: "module" });
@@ -43,9 +43,9 @@ function s0014(files: Readonly<Record<string, string>>): { code: string; path: s
 
 describe("k.unsafe S0014 in a library's package", () => {
   it(
-    "a lifted range holding a throw (E1451) is no S0014 in a library's package",
+    "a lifted range holding a clock read (E1601) is no S0014 in a library's package",
     () => {
-      expect(s0014({ "packages/p/package.json": LIBRARY, "packages/p/unsafe/a.ts": THROWS })).toEqual([]);
+      expect(s0014({ "packages/p/package.json": LIBRARY, "packages/p/unsafe/a.ts": READS })).toEqual([]);
     },
     fixedTime(90_000),
   );
@@ -53,7 +53,7 @@ describe("k.unsafe S0014 in a library's package", () => {
   it(
     "the same range is one S0014 in a kernel package",
     () => {
-      expect(s0014({ "packages/p/package.json": KERNEL, "packages/p/unsafe/a.ts": THROWS })).toHaveLength(1);
+      expect(s0014({ "packages/p/package.json": KERNEL, "packages/p/unsafe/a.ts": READS })).toHaveLength(1);
     },
     fixedTime(90_000),
   );
@@ -69,7 +69,7 @@ describe("k.unsafe S0014 in a library's package", () => {
   it(
     "a finding outside the call's range does not lift it: one S0014 in a library's package",
     () => {
-      const source = `${PLAIN}export const g = (): never => {\n  throw new Error("x");\n};\n`;
+      const source = `${PLAIN}export const g = (): number => Date.now();\n`;
       expect(s0014({ "packages/p/package.json": LIBRARY, "packages/p/unsafe/a.ts": source })).toHaveLength(1);
     },
     fixedTime(90_000),
@@ -78,9 +78,9 @@ describe("k.unsafe S0014 in a library's package", () => {
   it(
     "two calls, one lifting a finding and one lifting nothing: the second is the one S0014",
     () => {
-      const source = `export const f = (): never => ${U}("${REASON}", () => {\n  throw new Error("x");\n});\nexport const g = (): number => ${U}("${REASON}", () => 1);\n`;
+      const source = `export const f = (): number => ${U}("${REASON}", () => Date.now());\nexport const g = (): number => ${U}("${REASON}", () => 1);\n`;
       const found = s0014({ "packages/p/package.json": LIBRARY, "packages/p/unsafe/a.ts": source });
-      expect(found.map((d) => d.line)).toEqual([4]);
+      expect(found.map((d) => d.line)).toEqual([2]);
     },
     fixedTime(90_000),
   );

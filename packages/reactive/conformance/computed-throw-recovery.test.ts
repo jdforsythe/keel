@@ -15,9 +15,12 @@ const distinct = fc
 
 function mk(initial: number) {
   let s: ReturnType<typeof signal<number>> | undefined;
-  scope(() => {
-    s = signal(initial);
-  });
+  scope(
+    () => {
+      s = signal(initial);
+    },
+    { detached: true },
+  );
   if (!s) throw new Error("unreachable");
   return s;
 }
@@ -28,19 +31,22 @@ describe("k.reactive: a computed that threw and recovers", () => {
       fc.property(distinct, ([good, bad]) => {
         const s = mk(good);
         const seen: (number | string)[] = [];
-        scope(() => {
-          const c = computed(() => {
-            if (s.get() === bad) throw new Error("boom");
-            return s.get();
-          });
-          effect(() => {
-            try {
-              seen.push(c.get());
-            } catch {
-              seen.push("err");
-            }
-          });
-        });
+        scope(
+          () => {
+            const c = computed(() => {
+              if (s.get() === bad) throw new Error("boom");
+              return s.get();
+            });
+            effect(() => {
+              try {
+                seen.push(c.get());
+              } catch {
+                seen.push("err");
+              }
+            });
+          },
+          { detached: true },
+        );
         s.set(bad);
         s.set(good);
         expect(seen).toEqual([good, "err", good]);
@@ -54,22 +60,25 @@ describe("k.reactive: a computed that threw and recovers", () => {
       fc.property(distinct, ([good, bad]) => {
         const s = mk(good);
         const seen: (number | string)[] = [];
-        scope(() => {
-          const c = computed(
-            () => {
-              if (s.get() === bad) throw new Error("boom");
-              return s.get();
-            },
-            { equals: (a, b) => a === b },
-          );
-          effect(() => {
-            try {
-              seen.push(c.get());
-            } catch {
-              seen.push("err");
-            }
-          });
-        });
+        scope(
+          () => {
+            const c = computed(
+              () => {
+                if (s.get() === bad) throw new Error("boom");
+                return s.get();
+              },
+              { equals: (a, b) => a === b },
+            );
+            effect(() => {
+              try {
+                seen.push(c.get());
+              } catch {
+                seen.push("err");
+              }
+            });
+          },
+          { detached: true },
+        );
         s.set(bad);
         s.set(good);
         expect(seen).toEqual([good, "err", good]);
@@ -83,20 +92,23 @@ describe("k.reactive: a computed that threw and recovers", () => {
       fc.property(distinct, ([good, bad]) => {
         const s = mk(good);
         const seen: (number | string)[] = [];
-        scope(() => {
-          const c = computed(() => {
-            if (s.get() === bad) throw new Error("boom");
-            return s.get();
-          });
-          const c2 = computed(() => c.get() * 2);
-          effect(() => {
-            try {
-              seen.push(c2.get());
-            } catch {
-              seen.push("err");
-            }
-          });
-        });
+        scope(
+          () => {
+            const c = computed(() => {
+              if (s.get() === bad) throw new Error("boom");
+              return s.get();
+            });
+            const c2 = computed(() => c.get() * 2);
+            effect(() => {
+              try {
+                seen.push(c2.get());
+              } catch {
+                seen.push("err");
+              }
+            });
+          },
+          { detached: true },
+        );
         s.set(bad);
         s.set(good);
         expect(seen).toEqual([good * 2, "err", good * 2]);
@@ -108,14 +120,17 @@ describe("k.reactive: a computed that threw and recovers", () => {
   it("a resource whose fetcher reads the computed is ready again after recovery", async () => {
     const s = mk(1);
     let state: () => { state: string; value?: number; error?: unknown } = () => ({ state: "" });
-    scope(() => {
-      const c = computed(() => {
-        if (s.get() === 2) throw new Error("boom");
-        return s.get();
-      });
-      const r = resource(() => Promise.resolve(c.get()));
-      state = () => r.get();
-    });
+    scope(
+      () => {
+        const c = computed(() => {
+          if (s.get() === 2) throw new Error("boom");
+          return s.get();
+        });
+        const r = resource(() => Promise.resolve(c.get()));
+        state = () => r.get();
+      },
+      { detached: true },
+    );
     await flush();
     expect(state()).toEqual({ state: "ready", value: 1 });
     s.set(2);
@@ -135,25 +150,28 @@ describe("k.reactive: a throwing computed runs once per commit", () => {
         let runs = 0;
         const boom = new Error("boom");
         const caught: unknown[] = [];
-        scope(() => {
-          const c = computed(() => {
-            runs++;
-            if (s.get() === bad) throw boom;
-            return s.get();
-          });
-          const d = computed(() => c.get() + 1);
-          const read = (f: () => number) => () => {
-            try {
-              f();
-            } catch (e) {
-              caught.push(e);
-            }
-          };
-          effect(read(() => c.get()));
-          effect(read(() => c.get()));
-          effect(read(() => c.get()));
-          effect(read(() => d.get()));
-        });
+        scope(
+          () => {
+            const c = computed(() => {
+              runs++;
+              if (s.get() === bad) throw boom;
+              return s.get();
+            });
+            const d = computed(() => c.get() + 1);
+            const read = (f: () => number) => () => {
+              try {
+                f();
+              } catch (e) {
+                caught.push(e);
+              }
+            };
+            effect(read(() => c.get()));
+            effect(read(() => c.get()));
+            effect(read(() => c.get()));
+            effect(read(() => d.get()));
+          },
+          { detached: true },
+        );
         expect(runs).toBe(1);
         s.set(bad);
         expect(runs).toBe(2);
@@ -171,21 +189,24 @@ describe("k.reactive: a throwing computed runs once per commit", () => {
         let runs = 0;
         const boom = new Error("boom");
         let read: () => number = () => 0;
-        scope(() => {
-          const c = computed(() => {
-            runs++;
-            if (s.get() === bad) throw boom;
-            return s.get();
-          });
-          read = () => c.get();
-          effect(() => {
-            try {
-              c.get();
-            } catch {
-              // caught
-            }
-          });
-        });
+        scope(
+          () => {
+            const c = computed(() => {
+              runs++;
+              if (s.get() === bad) throw boom;
+              return s.get();
+            });
+            read = () => c.get();
+            effect(() => {
+              try {
+                c.get();
+              } catch {
+                // caught
+              }
+            });
+          },
+          { detached: true },
+        );
         s.set(bad);
         const before = runs;
         let first: unknown;

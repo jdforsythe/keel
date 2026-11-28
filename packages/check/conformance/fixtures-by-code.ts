@@ -512,6 +512,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1203: {
+    bad: [
+      f(
+        "src/x.ts",
+        "import { signal } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  await g()\n  return signal(0)\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/x.ts",
+        "import { signal } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  const v = signal(0)\n  await g()\n  return v\n}\n",
+      ),
+    ],
+  },
   E1204: {
     opts: NO_TYPES,
     bad: [
@@ -541,6 +555,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f(
         "modules/app/Work.ts",
         "import { scope } from '@keel/reactive'\nexport const Work = scope(() => {}, { onError: () => {} })\n",
+      ),
+    ],
+  },
+  E1208: {
+    bad: [
+      f(
+        "src/x.ts",
+        "import { scope } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  await g()\n  return scope(() => undefined)\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/x.ts",
+        "import { scope } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  const v = scope(() => undefined)\n  await g()\n  return v\n}\n",
       ),
     ],
   },
@@ -668,24 +696,46 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     ],
   },
   E1451: {
-    bad: [f("src/f.ts", "export function f(n: number) {\n  if (n < 0) throw new Error('neg')\n  return n\n}\n")],
-    clean: [f("src/f.ts", "export function f(n: number) {\n  return n\n}\n")],
-  },
-  E1452: {
-    bad: [f("src/f.ts", "export const f = (p: Promise<number>) => p.catch(() => 0)\n")],
-    clean: [f("src/f.ts", "export const f = (p: Promise<number>) => p\n")],
-  },
-  E1453: {
+    // a `throw` of a KeelError in a function whose return type takes the Result: the one E1451 that carries a fix (k.fixes)
     bad: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nsave()\n",
+        "import { ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) throw locked\n  return ok(1)\n}\n",
       ),
     ],
     clean: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nconst r = save()\nvoid r\n",
+        "import { err, ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) return err(locked)\n  return ok(1)\n}\n",
+      ),
+    ],
+  },
+  E1452: {
+    // cleanup and rethrow: the one E1452 that carries a fix (k.fixes)
+    bad: [
+      f(
+        "src/f.ts",
+        "declare function work(): Promise<void>\ndeclare function rollback(): Promise<void>\nexport async function f(): Promise<void> {\n  try { await work() } catch (e) { await rollback(); throw e }\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "declare function work(): Promise<void>\ndeclare function rollback(): Promise<void>\nexport async function f(): Promise<void> {\n  let done = false\n  try { await work(); done = true } finally { if (!done) { await rollback() } }\n}\n",
+      ),
+    ],
+  },
+  E1453: {
+    bad: [
+      f(
+        "src/f.ts",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.locked', null>> => ok(1)\nsave()\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.locked', null>> => ok(1)\nconst r = save()\nvoid r\n",
       ),
     ],
   },
@@ -697,6 +747,121 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [
       f("src/a.schema.ts", `${SCHEMA}export const a = s.error('orders.locked', s.object({}))\n`),
       f("src/b.schema.ts", `${SCHEMA}export const b = s.error('orders.closed', s.object({}))\n`),
+    ],
+  },
+  E1455: {
+    // a defect on a failed Result with no cause: the one E1455 that carries a fix (k.fixes)
+    bad: [
+      f(
+        "src/f.ts",
+        "import { defect } from '@keel/schema'\nimport type { Result } from '@keel/schema'\ndeclare const r: Result<number, { code: 'm.x'; message: string; data: null }>\nexport function f(): void {\n  if (!r.ok) defect('x')\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { defect } from '@keel/schema'\nimport type { Result } from '@keel/schema'\ndeclare const r: Result<number, { code: 'm.x'; message: string; data: null }>\nexport function f(): void {\n  if (!r.ok) defect('x', { cause: r.error })\n}\n",
+      ),
+    ],
+  },
+  E1457: {
+    bad: [f("src/f.ts", "export const f = (t: string): unknown => JSON.parse(t)\n")],
+    clean: [f("src/f.ts", "export const f = (): unknown => JSON.parse('{}')\n")],
+  },
+  E1458: {
+    bad: [f("src/f.ts", "import { err } from '@keel/schema'\nexport const f = () => err('x')\n")],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { err, keelError } from '@keel/schema'\nexport const f = () => err(keelError.denied.make({}))\n",
+      ),
+    ],
+  },
+  E1459: {
+    bad: [
+      f(
+        "src/f.ts",
+        "import { ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ndeclare const r: Result<number, KeelError<'m.e', null>>\nexport const f = () => ok(r)\n",
+      ),
+    ],
+    clean: [f("src/f.ts", "import { ok } from '@keel/schema'\nexport const f = () => ok(1)\n")],
+  },
+  E1460: {
+    bad: [
+      f(
+        "src/Msg.schema.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\ndeclare const text: string\nexport const Msg = E.make({}, text)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/Msg.schema.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\nexport const Msg = E.make({}, 'sign in')\n",
+      ),
+    ],
+  },
+  E1461: {
+    bad: [
+      mod("m", [], []),
+      f(
+        "modules/m/a.ts",
+        "import { supervise } from '@keel/ctx'\nimport type { Ctx } from '@keel/ctx'\nimport type { KeelError } from '@keel/schema'\ndeclare const ctx: Ctx\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const a = supervise(ctx, 'm.run', f, T)\n",
+      ),
+    ],
+    clean: [
+      mod("m", [], []),
+      f(
+        "modules/m/a.ts",
+        "import { attempt } from '@keel/schema'\nimport type { KeelError } from '@keel/schema'\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const a = attempt(f, (x) => (x instanceof RangeError ? T : undefined))\n",
+      ),
+    ],
+  },
+  E1765: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "package.json",
+        JSON.stringify({ name: "app", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0", dep: "1.0.0" } }),
+      ),
+      f("node_modules/@keel/schema/package.json", JSON.stringify({ name: "@keel/schema", version: "1.0.0" })),
+      f(
+        "node_modules/dep/package.json",
+        JSON.stringify({ name: "dep", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0" } }),
+      ),
+      f(
+        "node_modules/dep/node_modules/@keel/schema/package.json",
+        JSON.stringify({ name: "@keel/schema", version: "1.0.0" }),
+      ),
+    ],
+    clean: [
+      f(
+        "package.json",
+        JSON.stringify({ name: "app", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0", dep: "1.0.0" } }),
+      ),
+      f("node_modules/@keel/schema/package.json", JSON.stringify({ name: "@keel/schema", version: "1.0.0" })),
+      f(
+        "node_modules/dep/package.json",
+        JSON.stringify({ name: "dep", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0" } }),
+      ),
+    ],
+  },
+  E1766: {
+    bad: [mod("m", [], []), f("modules/m/a.ts", "export const a = Symbol.for('keel.kernel')\n")],
+    clean: [mod("m", [], []), f("modules/m/a.ts", "export const a = Symbol.for('app.key')\n")],
+  },
+  E1256: {
+    bad: [
+      mod("p", [], []),
+      f("modules/p/last.ts", "import { signal } from '@keel/reactive'\nexport const last = signal('')\n"),
+      f(
+        "modules/p/load.server.ts",
+        "import { last } from './last.ts'\nexport function load(x: string) { last.set(x) }\n",
+      ),
+    ],
+    clean: [
+      mod("p", [], []),
+      f("modules/p/last.ts", "import { signal } from '@keel/reactive'\nexport const last = signal('')\n"),
+      f("modules/p/load.server.ts", "import { last } from './last.ts'\nexport function load() { return last.get() }\n"),
     ],
   },
   E1501: {
@@ -1086,18 +1251,15 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("api.server.ts", "import { notes } from './lib/notes.server.ts'\nexport const api = notes\n"),
     ],
   },
-  // The bad page reaches `notes` through the symlink `node_modules/linked-notes` and `app` lists no dep, so only E1013 reports (`#notes/...` is also E1576).
+  // k.bundle Aliases: `modules/app/sub/Deep.tsx` reaches its own module's `Page.tsx` through the symlink `node_modules/linked-app`; the fix `'../Page.tsx'` stays inside `app`, so no E1152 follows it, and `app` lists no dep, so no E1165.
   E1013: {
     opts: { root: sharedRoot() },
     bad: [
       mod("app", [], []),
-      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx" && b.path !== "modules/app/module.ts"),
-      f("modules/app/Page.tsx", "import { lib } from 'linked-notes/lib.ts'\nexport const Page = lib\n"),
+      ...BASE.filter((b) => b.path !== "modules/app/module.ts"),
+      f("modules/app/sub/Deep.tsx", "import { Page } from 'linked-app/Page.tsx'\nexport const Deep = Page\n"),
     ],
-    clean: [
-      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx"),
-      f("modules/app/Page.tsx", "import { lib } from '../notes/lib.ts'\nexport const Page = lib\n"),
-    ],
+    clean: [...BASE, f("modules/app/sub/Deep.tsx", "import { Page } from '../Page.tsx'\nexport const Deep = Page\n")],
   },
   // E1015 (k.boundary Following): `../../../shared/x.ts` from `modules/a/Page.tsx` resolves outside the project root.
   E1015: {
@@ -1443,6 +1605,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     opts: NO_TYPES,
     bad: [f("modules/m/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
     clean: [f("modules/m/test/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
+  },
+  E1762: {
+    bad: [
+      f(
+        "src/isRunner.ts",
+        "export const isRunner = (x: unknown): x is { run(n: number): string } => typeof x === 'object' && x !== null\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/isRow.ts",
+        "export const isRow = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'\n",
+      ),
+    ],
   },
   E1755: {
     bad: [],

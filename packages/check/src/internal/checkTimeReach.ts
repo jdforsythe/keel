@@ -55,7 +55,7 @@ function readDir(dir: string, project: readonly SourceFile[]): Dir {
     const program = byPath.get(at);
     return (program === undefined ? [] : valueImportSites(program))
       .map((s) => resolve(at, s.spec))
-      .filter((p): p is string => p !== undefined && !serverOnly(p));
+      .flatMap((p) => (p !== undefined && !serverOnly(p) ? [p] : []));
   };
   const entries: ReadonlySet<string> =
     read === undefined

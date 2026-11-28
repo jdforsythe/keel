@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { s } from "@keel/schema";
 import { build } from "esbuild";
 import { compile } from "../compile.ts";
 import { shippedTokensPlugin } from "../hosting/shippedTokensPlugin.ts";
@@ -9,6 +10,7 @@ import { appLibraries } from "../std/appLibraries.ts";
 import { libraryRel } from "../std/libraryRel.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
+import { censusPlugin } from "./censusPlugin.ts";
 import { contractOf } from "./contractOf.ts";
 import { internalFailure } from "./internalFailure.ts";
 
@@ -29,6 +31,8 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 const isNullableString = (x: unknown): x is string | null => x === null || typeof x === "string";
 
+const Json = s.json();
+
 function isRouteEntry(x: unknown): x is RouteEntry {
   return (
     isRecord(x) &&
@@ -38,8 +42,10 @@ function isRouteEntry(x: unknown): x is RouteEntry {
     isNullableString(x.layout) &&
     typeof x.module === "string" &&
     isNullableString(x.path) &&
-    "params" in x &&
-    "search" in x
+    (x.api === undefined || x.api === true) &&
+    (x.method === undefined || typeof x.method === "string") &&
+    Json.parse(x.params).ok &&
+    Json.parse(x.search).ok
   );
 }
 
@@ -62,15 +68,17 @@ function entrySource(
     "let themes = [];",
     "const message = (e) => (e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e));",
     "const coded = (e) => e && typeof e === 'object' && 'code' in e && /^E[0-9]{4}$/.test(String(e.code));",
+    // A coded error is its code then its message, written once when the message already starts with it (a refusal's).
+    "const codedText = (e) => { const m = message(e); return m.startsWith(`${e.code} `) ? m : `${e.code} ${m}`; };",
     // A diagnostic-shaped error keeps its code; any other throw from the compiler call is an internal failure.
-    "const report = (e) => { if (coded(e)) problems.push(`${e.code} ${message(e)}`); else internal.push(message(e)); };",
+    "const report = (e) => { if (coded(e)) problems.push(codedText(e)); else internal.push(message(e)); };",
   );
   if (tokensFile !== undefined)
     lines.push(
       "let tokens;",
       // The tokens module throwing while it evaluates means tokens.ts is unusable: E1807 unless it carries its own code.
       `try { const m = await import(${q(`./${tokensFile}`)}); tokens = m.tokens ?? m.default; }`,
-      `catch (e) { problems.push(coded(e) ? \`\${e.code} \${message(e)}\` : \`E1807 ${tokensFile} failed to evaluate: \${message(e)}\`); }`,
+      `catch (e) { problems.push(coded(e) ? codedText(e) : \`E1807 ${tokensFile} failed to evaluate: \${message(e)}\`); }`,
       "const fits = (u) => { try { compileStyles({ tokens, usages: [u] }); return true; } catch (e) { report(e); return false; } };",
       `if (tokens === undefined && problems.length === 0) problems.push('E1807 ${tokensFile} exports no tokens');`,
       "else if (tokens !== undefined) {",
@@ -89,11 +97,11 @@ function entrySource(
       "const manifest = async (file, load, contract, loadContract) => {",
       "  if (contract !== undefined) {",
       "    try { await loadContract(); }",
-      "    catch (e) { problems.push(coded(e) ? `${e.code} ${message(e)}` : `E1006 ${contract} failed to evaluate: ${message(e)}`); return {}; }",
+      "    catch (e) { problems.push(coded(e) ? codedText(e) : `E1006 ${contract} failed to evaluate: ${message(e)}`); return {}; }",
       "  }",
       "  let m;",
       "  try { m = await load(); }",
-      "  catch (e) { problems.push(coded(e) ? `${e.code} ${message(e)}` : `E1006 ${file} failed to evaluate: ${message(e)}`); return {}; }",
+      "  catch (e) { problems.push(coded(e) ? codedText(e) : `E1006 ${file} failed to evaluate: ${message(e)}`); return {}; }",
       "  if (m.routes === undefined) { problems.push(`E1006 ${file} exports no routes`); return {}; }",
       "  try { if (m.routes === null || typeof m.routes !== 'object' || m.routes.kind !== 'keel.routeTable') { problems.push(`E1006 ${file} exports no route table`); return {}; } }",
       "  catch (e) { report(e); return {}; }",
@@ -168,6 +176,7 @@ export async function evaluateProject(input: {
     loader: { ".css": "empty" },
     plugins: [
       shippedTokensPlugin(root),
+      censusPlugin(),
       {
         name: "keel-jsx",
         setup(b) {

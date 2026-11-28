@@ -27,10 +27,10 @@ export const a = contract("a", {
 });
 `;
 const SERVER_FILE = `import { loader } from "@keel/router";
-import { s } from "@keel/schema";
+import { defect, s } from "@keel/schema";
 import { a as aContract } from "./a.contract.ts";
 
-export const a = loader(aContract, "a.show", { output: s.object({}) }, () => Promise.reject(new Error("boom")));
+export const a = loader(aContract, "a.show", { output: s.object({}) }, () => defect("boom"));
 `;
 const ROUTES = `import { manifest } from "@keel/router";
 import Counter from "./Counter.tsx";

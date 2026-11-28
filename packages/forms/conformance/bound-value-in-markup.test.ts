@@ -36,15 +36,18 @@ function setup() {
   const pw = make("input", HTMLInputElement);
   pw.type = "password";
   const handle: { f?: ReturnType<typeof form<typeof S>> } = {};
-  const root = scope(() => {
-    const f = form(S, { initial: { name: "Ada", notes: "notes", color: "green", done: true, secret: "hunter2" } });
-    handle.f = f;
-    f.field("name").bind(input);
-    f.field("notes").bind(area);
-    f.field("color").bind(select);
-    f.field("done").bind(box);
-    f.field("secret").bind(pw);
-  });
+  const root = scope(
+    () => {
+      const f = form(S, { initial: { name: "Ada", notes: "notes", color: "green", done: true, secret: "hunter2" } });
+      handle.f = f;
+      f.field("name").bind(input);
+      f.field("notes").bind(area);
+      f.field("color").bind(select);
+      f.field("done").bind(box);
+      f.field("secret").bind(pw);
+    },
+    { detached: true },
+  );
   if (handle.f === undefined) throw new Error("no form");
   return { f: handle.f, input, area, select, box, pw, root };
 }
@@ -106,17 +109,20 @@ const safe = fc.string().filter((v) => !v.includes("\r") && !v.includes("\0"));
 function roundTrip(tag: "input" | "textarea", value: string): string {
   const el = document.createElement(tag);
   const T = s.object({ v: s.string() });
-  const root = scope(() => {
-    form(T, { initial: { v: value } })
-      .field("v")
-      .bind(
-        el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
-          ? el
-          : (() => {
-              throw new Error("bad element");
-            })(),
-      );
-  });
+  const root = scope(
+    () => {
+      form(T, { initial: { v: value } })
+        .field("v")
+        .bind(
+          el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
+            ? el
+            : (() => {
+                throw new Error("bad element");
+              })(),
+        );
+    },
+    { detached: true },
+  );
   const host = document.createElement("div");
   host.innerHTML = el.outerHTML;
   root.dispose();

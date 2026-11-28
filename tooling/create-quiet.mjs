@@ -1,4 +1,4 @@
-// S0019 (k.create Conformance): `create-app` starts no process and reaches no network, by what its code can name. The
+// S0021 (k.create Conformance): `create-app` starts no process and reaches no network, by what its code can name. The
 // bin (`packages/create-app/src/bin.ts`) is bundled with esbuild, every `@keel/*` package it reaches followed into
 // its source and every other package left external; each source file of that reach is judged. A finding is an import,
 // static or dynamic, of a process or network module (`node:child_process`, `node:worker_threads`, `node:cluster`,
@@ -26,7 +26,7 @@ const MODULES = new Set([
 ]);
 const GLOBALS = /(?<![\w$.])(?:fetch\s*\(|new\s+(?:WebSocket|EventSource|XMLHttpRequest)\b)/;
 
-/** `{ diags, files }`: the S0019 findings over the bin's reach, and how many source files it judged. */
+/** `{ diags, files }`: the S0021 findings over the bin's reach, and how many source files it judged. */
 export async function createQuiet(root) {
   const entry = path.join(root, "packages", "create-app", "src", "bin.ts");
   const r = await build({
@@ -56,7 +56,7 @@ export async function createQuiet(root) {
       if (imp.external && MODULES.has(imp.path.replace(/^node:/, "").split("/")[0] ?? ""))
         diags.push({
           kind: "diag",
-          code: "S0019",
+          code: "S0021",
           path: file,
           line: 1,
           col: 1,
@@ -68,7 +68,7 @@ export async function createQuiet(root) {
       if (m !== null)
         diags.push({
           kind: "diag",
-          code: "S0019",
+          code: "S0021",
           path: file,
           line: i + 1,
           col: m.index + 1,

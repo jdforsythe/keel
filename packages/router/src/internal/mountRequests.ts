@@ -1,8 +1,9 @@
 import type { Ctx, FireEvent } from "@keel/ctx";
+import { heldMap, heldSet } from "@keel/schema/internal";
+import { isHref } from "../../unsafe/isHref.ts";
 import { absoluteUrl } from "./absoluteUrl.ts";
 import { findRouter } from "./findRouter.ts";
 import { formSeams } from "./formSeams.ts";
-import { isHref } from "./isHref.ts";
 import { personActs } from "./personActs.ts";
 import { returnOpenings } from "./returnOpenings.ts";
 import { shells } from "./shells.ts";
@@ -34,11 +35,11 @@ const MAX_REDIRECTS = 5;
 /** The start of a chain the page starts, and of one a return link starts. */
 const PAGE: Chain = { from: "page", redirects: 0 };
 const LINK: Chain = { from: "link", redirects: 0 };
-const agents = new WeakMap<Ctx, Shell>();
+const agents = heldMap<Ctx, Shell>();
 /** The ctxs whose shell has reported its launch (k.links Launch). */
-const reported = new WeakSet<Ctx>();
+const reported = heldSet<Ctx>();
 /** Per ctx, until its launch report: when the last held opening opened, on `ctx.clock`. */
-const held = new WeakMap<Ctx, number>();
+const held = heldMap<Ctx, number>();
 let listening = false;
 
 /** Whether `pathname` is a mount's path or under it. */

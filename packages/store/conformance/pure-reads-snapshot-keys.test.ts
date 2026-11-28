@@ -12,7 +12,7 @@ const Push = s.object({ v: s.int() });
 const opts = { seed: 1337, numRuns: 100 };
 
 function isolated<T>(fn: () => T): T {
-  const sc = scope(() => {});
+  const sc = scope(() => {}, { detached: true });
   isolate(sc);
   return sc.run(fn);
 }

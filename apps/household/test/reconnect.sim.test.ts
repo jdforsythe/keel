@@ -41,7 +41,7 @@ it(
         };
         ctx.net.route("http://localhost/*", toServer);
         ctx.net.route(`${location.origin}/*`, toServer);
-        const page = scope(() => undefined);
+        const page = scope(() => undefined, { detached: true });
         const status = page.run(() =>
           live(
             ctx,

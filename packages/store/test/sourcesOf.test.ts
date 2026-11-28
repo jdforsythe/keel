@@ -12,25 +12,31 @@ const kit = (id: string) => {
 
 describe("sourcesOf (@keel/store/internal)", () => {
   it("returns the declared function and the store's invariants in order, copied at call time", () => {
-    scope(() => {
-      const { st, fn, add } = kit("src.a");
-      const first = (x: { n: number }) => x.n >= 0;
-      invariant(st, first);
-      const got = sourcesOf(add);
-      expect(got?.fn).toBe(fn);
-      expect(got?.invariants).toEqual([first]);
-      const second = (x: { n: number }) => x.n < 10;
-      invariant(st, second);
-      expect(got?.invariants).toEqual([first]);
-      expect(sourcesOf(add)?.invariants).toEqual([first, second]);
-      expect(got?.fn({ n: 1 }, { by: 2 })).toEqual({ n: 3 });
-    });
+    scope(
+      () => {
+        const { st, fn, add } = kit("src.a");
+        const first = (x: { n: number }) => x.n >= 0;
+        invariant(st, first);
+        const got = sourcesOf(add);
+        expect(got?.fn).toBe(fn);
+        expect(got?.invariants).toEqual([first]);
+        const second = (x: { n: number }) => x.n < 10;
+        invariant(st, second);
+        expect(got?.invariants).toEqual([first]);
+        expect(sourcesOf(add)?.invariants).toEqual([first, second]);
+        expect(got?.fn({ n: 1 }, { by: 2 })).toEqual({ n: 3 });
+      },
+      { detached: true },
+    );
   });
 
   it("is undefined for an object that is not a declared transaction", () => {
-    scope(() => {
-      const { add } = kit("src.b");
-      expect(sourcesOf({ ...add })).toBeUndefined();
-    });
+    scope(
+      () => {
+        const { add } = kit("src.b");
+        expect(sourcesOf({ ...add })).toBeUndefined();
+      },
+      { detached: true },
+    );
   });
 });

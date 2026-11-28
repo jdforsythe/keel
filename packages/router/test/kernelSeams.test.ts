@@ -78,7 +78,11 @@ describe("carriedParams", () => {
 
   it("E1508 names the redirect and the first field the matched route lacks or holds as undefined", () => {
     const lacks = (name: string): unknown =>
-      err(`E1508 guard redirect to "cp.login" needs param "${name}", which the matched route lacks`);
+      err({
+        code: "keel.unexpected",
+        message: `E1508 guard redirect to "cp.login" needs param "${name}", which the matched route lacks`,
+        data: {},
+      });
     expect(carriedParams("cp.login", login, { team: "b" })).toEqual(lacks("org"));
     expect(carriedParams("cp.login", login, { org: "a" })).toEqual(lacks("team"));
     expect(carriedParams("cp.login", login, { org: "a", team: undefined })).toEqual(lacks("team"));
@@ -99,7 +103,7 @@ describe("bindingsOf", () => {
     expect(got.get("bo.page")?.binding).toEqual(binding);
   });
 
-  it("a TypeError for a value that is no route table", () => {
+  it("E1515 for a value that is no route table", () => {
     for (const v of [null, {}, { kind: "keel.routeTable", contracts: [] }]) {
       const thrown = (() => {
         try {
@@ -109,9 +113,9 @@ describe("bindingsOf", () => {
         }
         return null;
       })();
-      expect(thrown).toBeInstanceOf(TypeError);
+      expect(thrown).toBeInstanceOf(Error);
       expect(thrown instanceof Error ? thrown.message : "").toBe(
-        "not a route table: pass a manifest(...) or routeTable(...) value",
+        "E1515 routes: no route table manifest(...) or routeTable(...) returned; pass that value itself",
       );
     }
   });

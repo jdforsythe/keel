@@ -1,5 +1,5 @@
-// k.check App code, k.reactive E1207: a lifted range of a library's `unsafe/` file does not report E1207; an app
-// module's `unsafe/` range and a library's file outside a range still do.
+// k.check App code, k.reactive E1207: no lifted range lifts E1207, a library's `unsafe/` file's included; an app
+// module's `unsafe/` range and a library's file outside a range report it too.
 import { expect, it } from "vitest";
 import { check } from "../src/index.ts";
 
@@ -23,8 +23,8 @@ const e1207 = (path: string, source: string): number =>
     (d) => d.code === "E1207" && d.path === path,
   ).length;
 
-it("E1207 inside a library's lifted range is not reported", () => {
-  expect(e1207(`${LIB}/unsafe/detached.ts`, LIFTED)).toBe(0);
+it("E1207 inside a library's lifted range is reported", () => {
+  expect(e1207(`${LIB}/unsafe/detached.ts`, LIFTED)).toBe(1);
 });
 
 it("E1207 in an app module's lifted range, and in a library file outside one, is reported", () => {

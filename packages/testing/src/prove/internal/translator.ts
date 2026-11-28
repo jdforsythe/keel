@@ -23,8 +23,6 @@ const NIL: V = { v: "nil", nul: false };
 const BOOL: Ty = { k: "bool" };
 const INT: Ty = { k: "int" };
 const val = (t: Ty, e: string, n?: string): Val => (n === undefined ? { v: "val", t, e } : { v: "val", t, e, n });
-const privateIn = (n: BinaryExpression | PrivateInExpression): n is PrivateInExpression =>
-  n.left.type === "PrivateIdentifier";
 const sel = (s: string, a: string, i: string): string => `(select (${s}.a ${a}) ${i})`;
 const range = (i: string, n: string): string => `(<= 0 ${i}) (< ${i} ${n})`;
 const ARRAY_METHODS = ["map", "some", "every", "find"];
@@ -255,8 +253,8 @@ export function translator(
   };
 
   const binary = (node: BinaryExpression | PrivateInExpression, env: Env): V => {
-    if (privateIn(node)) return out(node);
     const { operator: op, left, right } = node;
+    if (left.type === "PrivateIdentifier") return out(node);
     if (op === "===" || op === "!==") {
       const pos = (e: string): V => val(BOOL, op === "===" ? e : `(not ${e})`);
       const size = (e: Expression): Expression | undefined =>

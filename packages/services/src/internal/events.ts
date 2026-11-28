@@ -51,7 +51,10 @@ export async function* events(
     },
     () => new Promise<never>(() => {}),
   );
-  const sent = attempt(() => target.send(req.value)).then((r) => (r.ok ? ok(r.value) : err(fail.network())));
+  const sent = attempt(
+    () => target.send(req.value),
+    (x) => (x instanceof Error ? fail.network() : undefined),
+  ).then((r) => (r.ok ? ok(r.value) : err(fail.network())));
   const started = await Promise.race([sent, timer]);
   cancel.abort();
   try {

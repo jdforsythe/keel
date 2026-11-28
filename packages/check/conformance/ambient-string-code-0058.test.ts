@@ -114,7 +114,13 @@ test("an `import()` of a data URL built from constant parts is E1603 exactly onc
   );
 });
 
-test("the no-date `format()` fix passes `ctx.clock.now()` as the date", () => {
-  const [d] = of("export const a = () => new Intl.DateTimeFormat('en').format()\n", "E1601");
-  expect(d?.fix).toContain("+export const a = () => new Intl.DateTimeFormat('en').format(ctx.clock.now())");
+// k.ctx, Rules "The fix is the exact `ctx` equivalent, offered only where a binding named `ctx` (a parameter, a destructured one too, or a declaration) is in scope at the use; elsewhere the message names it and there is no fix."
+test("with `ctx` in scope, the no-date `format()` fix passes `ctx.clock.now()` as the date; with none, there is no fix", () => {
+  const [d] = of(
+    "import type { Ctx } from '@keel/ctx'\nexport const a = (ctx: Ctx) => new Intl.DateTimeFormat('en').format()\n",
+    "E1601",
+  );
+  expect(d?.fix).toContain("+export const a = (ctx: Ctx) => new Intl.DateTimeFormat('en').format(ctx.clock.now())");
+  const [none] = of("export const a = () => new Intl.DateTimeFormat('en').format()\n", "E1601");
+  expect(none?.fix).toBeUndefined();
 });

@@ -23,17 +23,20 @@ const one = <T extends object, P>(
 ): Transaction<T, P> => {
   seq += 1;
   let out: { value: Transaction<T, P> } | undefined;
-  scope(() => {
-    const st = store(schema, initial, { id: `pt${seq}` });
-    for (const text of invariants) {
-      const check: unknown = new Function("state", text);
-      if (!isCheck<T>(check)) throw new Error("fixture: not a function");
-      invariant(st, check);
-    }
-    const step: unknown = new Function("state", "p", body);
-    if (!isStep<T, P>(step)) throw new Error("fixture: not a function");
-    out = { value: transaction(st, `pt${seq}.t`, pay, step) };
-  });
+  scope(
+    () => {
+      const st = store(schema, initial, { id: `pt${seq}` });
+      for (const text of invariants) {
+        const check: unknown = new Function("state", text);
+        if (!isCheck<T>(check)) throw new Error("fixture: not a function");
+        invariant(st, check);
+      }
+      const step: unknown = new Function("state", "p", body);
+      if (!isStep<T, P>(step)) throw new Error("fixture: not a function");
+      out = { value: transaction(st, `pt${seq}.t`, pay, step) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out.value;
 };

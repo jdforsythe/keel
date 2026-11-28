@@ -25,6 +25,8 @@ const MOVED: ReadonlyMap<string, string> = new Map([
   ["E1406", "k.place"],
   ["E1508", "k.guards"],
   ["E1558", "k.topology"],
+  ["E1596", "k.serverlog"],
+  ["E1765", "k.realm"],
 ]);
 
 /**

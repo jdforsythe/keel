@@ -175,7 +175,7 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         const fix = foreign
           ? ""
           : [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
-              .filter((x): x is string => x !== undefined)
+              .filter((x): x is string => typeof x === "string")
               .join("\n");
         diagnostics.push({
           kind: "diag",

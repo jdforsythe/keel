@@ -38,9 +38,12 @@ type Outcome = { readonly warnings: string[]; readonly known: number; readonly l
 /** Resumes an island that creates `late` with the given snapshots waiting; `known` is in `stores`. */
 function run(ids: { known: string; late: string }, knownSnap: unknown, lateSnap: unknown): Outcome {
   let known: ReturnType<typeof store<{ n: number }>> | undefined;
-  scope(() => {
-    known = store(Count, { n: 0 }, { id: ids.known });
-  });
+  scope(
+    () => {
+      known = store(Count, { n: 0 }, { id: ids.known });
+    },
+    { detached: true },
+  );
   if (known === undefined) throw new Error("fixture: no store");
   let late: ReturnType<typeof store<{ n: number }>> | undefined;
   const Late = (): Node => {

@@ -11,11 +11,11 @@ How a document `createApp` serves (k.server) meets `resume` (k.runtime).
 
 **Replay.** Events queued before resume replay once all islands resume, in fired order, each as a live one: from the target through each enclosing island, until `stopPropagation`; one in a re-rendered island's own nodes is dropped.
 
-**Stores.** During a request `createApp` serves (guards, loaders, action, renders, across `await`s), `tx` on a module store (k.store Registries) throws E1256, changing nothing: a level fails as a throw does; an action answers 500. A store an island level's render touches goes to `#k-state` (k.leave); at resume its snapshot restores the store of its id in `stores`, else one an island creates resuming; else E1253.
+**Stores.** During a request `createApp` serves (guards, loaders, action, renders, across `await`s), a write to reactive module state throws E1256, changing nothing: `tx` on a module store (k.store Registries), `set` on a module signal, and making a node in a module root (k.shared). A level fails as a throw does; an action answers 500. A write to plain module state (a top-level `let`, `Map` or array) is not refused (k.shared Not refused). A store an island level's render touches goes to `#k-state` (k.leave); at resume its snapshot restores the store of its id in `stores`, else one an island creates resuming; else E1253.
 
 **Limits.** A slot whose branch did not render on the server stays empty when shown on the client (a static level ships no JS); a request for the route renders it.
 
-**Rules.** E1255 a layout called `children` twice while it builds, or while its content is in the document · E1256 a write to a module store during a request (k.leave).
+**Rules.** E1255 a layout called `children` twice while it builds, or while its content is in the document · E1256 a write to reactive module state, a module store or signal, during a request (k.leave, k.shared).
 
 **Conformance.**
 - For every route of a test app, the body of the document `createApp` serves, resumed with the app's compiled components by route id and its stores, returns no warning, keeps every server node, and a handler fired on a server element runs and updates the bindings it writes.

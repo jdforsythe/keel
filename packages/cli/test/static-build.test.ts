@@ -17,11 +17,11 @@ type Failing = "none" | "notFound" | "denied" | "throws";
 const loaderSrc = (name: string, id: string, text: string, how: Failing): string => {
   const body =
     how === "notFound"
-      ? "err({ code: 'keel.notFound', message: 'No page', data: null })"
+      ? "err(keelError.notFound.make({}))"
       : how === "throws"
         ? "ok({ text: JSON.parse('{').text })"
         : `ok({ text: '${text}' })`;
-  return `import { loader } from '@keel/router'\nimport { ${how === "notFound" ? "err" : "ok"} } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\nimport { s } from './s.contract.ts'\n\nexport const ${name} = loader(s, '${id}', { output: Out }, async () => ${body})\n`;
+  return `import { loader } from '@keel/router'\nimport { ${how === "notFound" ? "err, keelError" : "ok"} } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\nimport { s } from './s.contract.ts'\n\nexport const ${name} = loader(s, '${id}', { output: Out }, async () => ${body})\n`;
 };
 
 /**
@@ -48,8 +48,8 @@ function staticTree(failing: Failing = "none"): Tree {
     "modules/s/home.server.ts": loaderSrc("home", "s.home", HOME_TEXT, "none"),
     "modules/s/about.server.ts": loaderSrc("about", "s.about", ABOUT_TEXT, about),
     "modules/s/deny.guard.ts":
-      "import { guard } from '@keel/router'\nimport { err, ok } from '@keel/schema'\n" +
-      "export const deny = guard({ redirect: 's.home' }, async ({ user }) => (user === '' ? err({ code: 'keel.denied', message: 'No', data: null }) : ok(null)))\n",
+      "import { guard } from '@keel/router'\nimport { err, keelError, ok } from '@keel/schema'\n" +
+      "export const deny = guard({ redirect: 's.home' }, async ({ user }) => (user === '' ? err(keelError.denied.make({})) : ok(null)))\n",
     "modules/s/Page.tsx":
       "import { Box, Button, Text } from '@keel/ui'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n" +
       '    <Box id="s.page">\n      <Text id="s.page.text">{props.data.text}</Text>\n      <Button id="s.page.more" onClick={() => undefined}>More</Button>\n    </Box>\n  )\n}\n',

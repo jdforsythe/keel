@@ -1,8 +1,10 @@
-import { s } from "@keel/schema";
-import { races } from "@keel/std-conflicts";
+import { isDefect, s } from "@keel/schema";
+import { races as racesOf } from "@keel/std-conflicts";
 import { store, transaction } from "@keel/store";
 import { describe, expect, test } from "vitest";
-import { boardStores, snapshotAfter, tallyStores } from "./helpers.ts";
+import { boardStores, root, snapshotAfter, tallyStores } from "./helpers.ts";
+
+const races: typeof racesOf = (...args) => root(() => racesOf(...args));
 
 const add = (id: string, title: string, base?: number) => ({
   name: "t.add",
@@ -52,7 +54,16 @@ describe("races", () => {
       const { board, add: a } = boardStores()();
       return { board, a };
     };
-    expect(() => races(snap, partial())).toThrow(/no transaction t.rename/);
+    const caught = (() => {
+      try {
+        races(snap, partial());
+      } catch (e) {
+        return e;
+      }
+      return undefined;
+    })();
+    expect(isDefect(caught)).toBe(true);
+    expect(Reflect.get(Object(caught), "data")).toEqual({ transaction: "t.rename", store: "t.board" });
   });
 
   test("an entry whose base state cannot be rebuilt because initial fails to restore is unchecked folded", () => {

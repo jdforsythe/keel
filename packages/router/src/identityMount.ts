@@ -1,11 +1,9 @@
+import { mountHrefOf } from "../unsafe/mountHrefOf.ts";
 import { codedError } from "./internal/codedError.ts";
 import { readUser } from "./internal/readUser.ts";
 import { userRead } from "./internal/userRead.ts";
 import type { IdentityMount } from "./types/IdentityMount.ts";
-import type { MountHref } from "./types/MountHref.ts";
 
-/** A root-relative path (`path` is validated, so never protocol-relative): what every accepted `href` result is. */
-const rooted = (s: string): s is MountHref => s.startsWith("/");
 /** `''` or `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`: a subpath `href` and `links` take. */
 const SUBPATH = /^(\/(?!\.\.?(\/|$))[\w.~-]+)*$/;
 
@@ -38,8 +36,8 @@ export function identityMount<P extends string>(
         .sort()
         .map((k) => `${e(k)}=${e(search[k] ?? "")}`)
         .join("&");
-      const out = `${path}${sub}${q && "?"}${q}`;
-      if (SUBPATH.test(sub) && rooted(out)) return out;
+      const out = SUBPATH.test(sub) ? mountHrefOf(`${path}${sub}${q && "?"}${q}`) : undefined;
+      if (out !== undefined) return out;
       throw codedError("E1582", `href subpath ${JSON.stringify(sub)}`);
     },
   };

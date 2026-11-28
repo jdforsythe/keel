@@ -89,7 +89,7 @@ type Layer = {
 };
 
 const at = (conds: readonly (string | undefined)[], body: string): string => {
-  const c = conds.filter((x): x is string => x !== undefined);
+  const c = conds.flatMap((x) => (x === undefined ? [] : [x]));
   return c.length === 0 ? body : `@media ${c.join(" and ")}{\n${body}\n}`;
 };
 
@@ -258,7 +258,8 @@ const selectorsOf = (sel: string, state: PartState | undefined): string =>
 
 const ruleText = (r: Rule): string => `${selectorsOf(`.${r.cls}`, r.state)}{${r.body}}`;
 
-const isStyleProp = (k: string): k is StyleProp => styleProps.some((p) => p === k);
+/** The style prop `k` names, or `undefined`. */
+const stylePropOf = (k: string): StyleProp | undefined => styleProps.find((p) => p === k);
 
 /** The `keel.base` layer (k.ui Base): fixed rules, each `base` set on its role, and the `base.focus` ring. */
 function baseLayer(tokens: Tokens, bps: readonly (readonly [string, string])[], media: boolean): string {
@@ -374,9 +375,10 @@ export function compileStyles(input: { readonly tokens: Tokens; readonly usages:
     const set = looks.get(u.look);
     if (set === undefined) throw fail("E1801", `look=${JSON.stringify(u.look).slice(0, 40)} is not a look token`);
     const own = new Set(
-      Object.keys(u.props)
-        .filter(isStyleProp)
-        .map((p) => `${u.state ?? ""}:${p}`),
+      Object.keys(u.props).flatMap((k) => {
+        const p = stylePropOf(k);
+        return p === undefined ? [] : [`${u.state ?? ""}:${p}`];
+      }),
     );
     const fromLook = set
       .filter((l) => !own.has(`${l.state ?? ""}:${l.prop}`))

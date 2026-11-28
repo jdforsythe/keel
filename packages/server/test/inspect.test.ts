@@ -46,11 +46,14 @@ describe("GET /__keel/inspect", () => {
   it("dev: every live store's state and log, the inspect() graph, artifacts from the directory", async () => {
     fs.writeFileSync(path.join(dir, "ids.json"), JSON.stringify({ data: { "orders.x": { tag: "p" } }, hash: "h" }));
     fs.writeFileSync(path.join(dir, "a11y.json"), "{");
-    const h = scope(() => {
-      const counter = store(Counter, { n: 0 }, { id: "orders.inspectCounter" });
-      const bump = transaction(counter, "orders.bump", s.object({ by: s.int() }), (st, p) => ({ n: st.n + p.by }));
-      tx(bump, { by: 2 });
-    });
+    const h = scope(
+      () => {
+        const counter = store(Counter, { n: 0 }, { id: "orders.inspectCounter" });
+        const bump = transaction(counter, "orders.bump", s.object({ by: s.int() }), (st, p) => ({ n: st.n + p.by }));
+        tx(bump, { by: 2 });
+      },
+      { detached: true },
+    );
     const lines: string[] = [];
     const app = await build("dev", lines, dir);
     const res = await app.fetch(new Request(`${BASE}/__keel/inspect`));

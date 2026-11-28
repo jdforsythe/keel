@@ -49,7 +49,7 @@ describe("s.result", () => {
         expect(Res.parse(ok(xs)).ok).toBe(true);
         expect(Res.parse(ok(null)).ok).toBe(true);
         expect(Res.parse(err(e)).ok).toBe(true);
-        expect(Res.parse(err(xs)).ok).toBe(false);
+        expect(Res.parse({ ok: false, error: xs }).ok).toBe(false);
         expect(Res.parse(ok(e)).ok).toBe(false);
       }),
     );
@@ -60,41 +60,42 @@ describe("s.result", () => {
 });
 
 describe("attempt", () => {
+  const Bad = { code: "t.bad", message: "t.bad", data: {} };
+  const claim = (x: unknown) => (x instanceof TypeError ? Bad : undefined);
   it("sync: returns ok(value) synchronously", () => {
     fc.assert(
       fc.property(fc.anything(), (v) => {
-        expect(attempt(() => v)).toEqual(ok(v));
+        expect(attempt(() => v, claim)).toEqual(ok(v));
       }),
     );
   });
-  it("sync: anything thrown becomes keel.unexpected; never throws", () => {
+  it("sync: a throw expect does not claim goes on as itself; one it claims is its err", () => {
     fc.assert(
       fc.property(fc.anything({ withNullPrototype: true }), (thrown) => {
-        const r = attempt((): number => {
-          throw thrown;
-        });
-        expect(r.ok).toBe(false);
-        if (!r.ok) {
-          expect(r.error.code).toBe("keel.unexpected");
-          expect(typeof r.error.data.cause).toBe("string");
-          expect(r.error.message.length).toBeLessThan(90);
+        let out: unknown;
+        try {
+          attempt((): number => {
+            throw thrown;
+          }, claim);
+        } catch (e) {
+          out = e;
         }
+        expect(out).toBe(thrown);
       }),
     );
+    expect(
+      attempt(() => {
+        throw new TypeError("bad thing");
+      }, claim),
+    ).toEqual(err(Bad));
   });
-  it("async: resolves to ok(value), rejection becomes keel.unexpected; never rejects", async () => {
+  it("async: resolves to ok(value); a rejection expect does not claim rejects with the very value", async () => {
     await fc.assert(
       fc.asyncProperty(fc.anything(), fc.boolean(), async (v, fail) => {
-        const r = await attempt(() => (fail ? Promise.reject(v) : Promise.resolve(v)));
-        if (fail) expect(!r.ok && r.error.code).toBe("keel.unexpected");
-        else expect(r).toEqual(ok(v));
+        const p = attempt(() => (fail ? Promise.reject(v) : Promise.resolve(v)), claim);
+        if (fail) await expect(p).rejects.toBe(v);
+        else expect(await p).toEqual(ok(v));
       }),
     );
-  });
-  it("Error causes keep name and message", () => {
-    const r = attempt(() => {
-      throw new TypeError("bad thing");
-    });
-    expect(!r.ok && r.error.data.cause).toBe("TypeError: bad thing");
   });
 });

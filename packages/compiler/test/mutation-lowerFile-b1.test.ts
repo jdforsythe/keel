@@ -221,35 +221,35 @@ const cases: Case[] = [
     path: "modules/inbox/s.ts",
     source:
       'import { store } from "@keel/store";\nimport { signal, computed, resource } from "@keel/reactive";\nimport { s } from "@keel/schema";\nexport const a = store(s.object({}), {});\nexport const b = store(s.object({}), {}, {});\nexport const c = store(s.object({}), {}, { id: "x" });\nexport const d = store(s.object({}), {}, { foo: 1 });\nexport const e = store(s.object({}), {}, { ...z });\nexport const f = store(s.object({}), {}, { [k]: 1 });\nexport const g = store(s.object({}), {}, { "id": 1 });\nconst h = store(s.object({}), {});\nexport const i = signal(1);\nexport const { j } = store(s.object({}), {});\nexport const k2 = foo(1);\nexport const k3 = a.b(1);\nconst l = computed(() => 1);\nexport const m = store(...args);\nexport const n = store(s.object({}), ...args);\nexport const o = store(s.object({}));\nexport function f2() {}\nexport const p = resource(() => 1), q2 = signal(2);',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { store } from "@keel/store";\nimport { signal, computed, resource } from "@keel/reactive";\nimport { s } from "@keel/schema";\nexport const a = __kscoped(() => store(s.object({}), {}, { id: "inbox.a" }));\nexport const b = __kscoped(() => store(s.object({}), {}, { id: "inbox.b",}));\nexport const c = __kscoped(() => store(s.object({}), {}, { id: "x" }));\nexport const d = __kscoped(() => store(s.object({}), {}, { id: "inbox.d", foo: 1 }));\nexport const e = __kscoped(() => store(s.object({}), {}, { ...z }));\nexport const f = __kscoped(() => store(s.object({}), {}, { [k]: 1 }));\nexport const g = __kscoped(() => store(s.object({}), {}, { "id": 1 }));\nconst h = __kscoped(() => store(s.object({}), {}));\nexport const i = __kscoped(() => signal(1));\nexport const { j } = __kscoped(() => store(s.object({}), {}));\nexport const k2 = foo(1);\nexport const k3 = a.b(1);\nconst l = __kscoped(() => computed(() => 1));\nexport const m = __kscoped(() => store(...args));\nexport const n = __kscoped(() => store(s.object({}), ...args));\nexport const o = __kscoped(() => store(s.object({})));\nexport function f2() {}\nexport const p = __kscoped(() => resource(() => 1)), q2 = __kscoped(() => signal(2));',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport { store } from "@keel/store";\nimport { signal, computed, resource } from "@keel/reactive";\nimport { s } from "@keel/schema";\nexport const a = __kmoduleRoot(() => (store(s.object({}), {}, { id: "inbox.a" })));\nexport const b = __kmoduleRoot(() => (store(s.object({}), {}, { id: "inbox.b",})));\nexport const c = __kmoduleRoot(() => (store(s.object({}), {}, { id: "x" })));\nexport const d = __kmoduleRoot(() => (store(s.object({}), {}, { id: "inbox.d", foo: 1 })));\nexport const e = __kmoduleRoot(() => (store(s.object({}), {}, { ...z })));\nexport const f = __kmoduleRoot(() => (store(s.object({}), {}, { [k]: 1 })));\nexport const g = __kmoduleRoot(() => (store(s.object({}), {}, { "id": 1 })));\nconst h = __kmoduleRoot(() => (store(s.object({}), {})));\nexport const i = __kmoduleRoot(() => (signal(1)));\nexport const { j } = __kmoduleRoot(() => (store(s.object({}), {})));\nexport const k2 = __kmoduleRoot(() => (foo(1)));\nexport const k3 = __kmoduleRoot(() => (a.b(1)));\nconst l = __kmoduleRoot(() => (computed(() => 1)));\nexport const m = __kmoduleRoot(() => (store(...args)));\nexport const n = __kmoduleRoot(() => (store(s.object({}), ...args)));\nexport const o = __kmoduleRoot(() => (store(s.object({}))));\nexport function f2() {}\nexport const p = __kmoduleRoot(() => (resource(() => 1))), q2 = __kmoduleRoot(() => (signal(2)));',
     edges: [],
   },
   {
     name: "mod2",
     path: "modules/s.ts",
     source: 'import { store } from "@keel/store";\nexport const a = store(1, 2);',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { store } from "@keel/store";\nexport const a = __kscoped(() => store(1, 2));',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport { store } from "@keel/store";\nexport const a = __kmoduleRoot(() => (store(1, 2)));',
     edges: [],
   },
   {
     name: "mod3",
     path: "modules/x/s.ts",
     source: 'import { store } from "@keel/store";\nexport const a = store(1, 2);',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { store } from "@keel/store";\nexport const a = __kscoped(() => store(1, 2, { id: "x.a" }));',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport { store } from "@keel/store";\nexport const a = __kmoduleRoot(() => (store(1, 2, { id: "x.a" })));',
     edges: [],
   },
   {
     name: "mod4",
     path: "modules\\inbox\\s.ts",
     source: 'import { store } from "@keel/store";\nexport const a = store(1, 2);',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { store } from "@keel/store";\nexport const a = __kscoped(() => store(1, 2, { id: "inbox.a" }));',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport { store } from "@keel/store";\nexport const a = __kmoduleRoot(() => (store(1, 2, { id: "inbox.a" })));',
     edges: [],
   },
   {
     name: "mod5",
     path: "src/s.ts",
     source: 'import { store } from "@keel/store";\nexport const a = store(1, 2);',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { store } from "@keel/store";\nexport const a = __kscoped(() => store(1, 2));',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport { store } from "@keel/store";\nexport const a = __kmoduleRoot(() => (store(1, 2)));',
     edges: [],
   },
   {
@@ -257,7 +257,7 @@ const cases: Case[] = [
     path: "src/s.ts",
     source:
       'import { signal as sg, computed } from "@keel/reactive";\nimport type { resource } from "@keel/reactive";\nimport { store as st } from "@keel/other";\nexport const a = sg(1);\nconst b = computed(2)',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { signal as sg, computed } from "@keel/reactive";\nimport type { resource } from "@keel/reactive";\nimport { store as st } from "@keel/other";\nexport const a = __kscoped(() => sg(1));\nconst b = __kscoped(() => computed(2))',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport { signal as sg, computed } from "@keel/reactive";\nimport type { resource } from "@keel/reactive";\nimport { store as st } from "@keel/other";\nexport const a = __kmoduleRoot(() => (sg(1)));\nconst b = __kmoduleRoot(() => (computed(2)))',
     edges: [],
   },
   {
@@ -265,14 +265,14 @@ const cases: Case[] = [
     path: "src/s.ts",
     source:
       'import type { signal } from "@keel/reactive";\nimport { type computed, resource as r } from "@keel/reactive";\nimport { store } from "@keel/store";\nconst a = signal(1); const b = computed(1); const c = other(1); const d = r(1); const e = store(1,2);',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport type { signal } from "@keel/reactive";\nimport { type computed, resource as r } from "@keel/reactive";\nimport { store } from "@keel/store";\nconst a = signal(1); const b = computed(1); const c = other(1); const d = __kscoped(() => r(1)); const e = __kscoped(() => store(1,2));',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport type { signal } from "@keel/reactive";\nimport { type computed, resource as r } from "@keel/reactive";\nimport { store } from "@keel/store";\nconst a = __kmoduleRoot(() => (signal(1))); const b = __kmoduleRoot(() => (computed(1))); const c = __kmoduleRoot(() => (other(1))); const d = __kmoduleRoot(() => (r(1))); const e = __kmoduleRoot(() => (store(1,2)));',
     edges: [],
   },
   {
     name: "mod8",
     path: "src/s.ts",
     source: 'import { "signal" as sg } from "@keel/reactive";\nconst a = sg(1);',
-    code: 'import { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { "signal" as sg } from "@keel/reactive";\nconst a = __kscoped(() => sg(1));',
+    code: 'import { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nimport { "signal" as sg } from "@keel/reactive";\nconst a = __kmoduleRoot(() => (sg(1)));',
     edges: [],
   },
   {
@@ -357,7 +357,7 @@ const cases: Case[] = [
     path: "D.tsx",
     source:
       'import { If, For, Match, Case, Boundary } from "@keel/runtime-dom";\nimport { signal } from "@keel/reactive";\nconst xs = signal([]); const on = signal(1); const st = signal(1); const fb = signal(1); const e = signal(1);\nexport default function D(props) { return <section><If when={on.get() && props.w}><b>{xs.get().length}</b></If><For each={xs.get()} key="id" empty={fb.get()}>{(x) => <i>{x.id}</i>}</For><Match on={st.get()}><Case tag="a">x</Case></Match><Boundary fallback={e.get()}>y</Boundary><p>{props.t}<span {...props.rest} onClick={props.h}>{xs.get()}</span></p></section>; }',
-    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<b id=\\"D.1\\" data-k=\\"D.1\\"> </b>");\nconst __kt1 = __k.template("<i id=\\"D.2\\"> </i>");\nconst __kt2 = __k.template("<section id=\\"D.0\\" data-k=\\"D.0\\"><!----><!----><!----><!----><p id=\\"D.3\\"> <span id=\\"D.4\\" data-k=\\"D.4\\"> </span></p></section>");\n\nimport { signal } from "@keel/reactive";\nconst xs = __kscoped(() => signal([])); const on = __kscoped(() => signal(1)); const st = __kscoped(() => signal(1)); const fb = __kscoped(() => signal(1)); const e = __kscoped(() => signal(1));\nexport default function D(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt2); const __kn1 = __kr0.childNodes[0]; const __kn4 = __kr0.childNodes[1]; const __kn8 = __kr0.childNodes[2]; const __kn10 = __kr0.childNodes[3]; const __ke12 = __kr0.querySelector("[id=\\"D.3\\"]"); const __kn13 = __ke12.childNodes[0]; const __ke16 = __kr0.querySelector("[id=\\"D.4\\"]"); const __kn17 = __ke16.childNodes[0]; __k.cond(__kn1, () => (on.get() && props.w), () => (() => { const __kr2 = __k.clone(__kt0); const __kn3 = __kr2.childNodes[0]; __k.text(__kn3, () => (xs.get().length)); return __kr2; })()); __k.list(__kn4, () => (xs.get()), (__kv5) => __kv5["id"], (x) => (() => { const __kr6 = __k.clone(__kt1); const __kn7 = __kr6.childNodes[0]; __k.text(__kn7, () => (x().id)); return __kr6; })(), fb.get()); __k.match(__kn8, () => (st.get()), "tag", { "a": () => __k.frag((__kf9) => { __kf9.append("x"); }) }); __k.boundary(__kn10, () => __k.frag((__kf11) => { __kf11.append("y"); }), e.get()); __k.text(__kn13, () => (props.t)); { const __ks14 = (props.rest); for (const __kk15 in __ks14) __k.attr(__ke16, __kk15, () => __ks14[__kk15]); } __k.on("D.4", "click", (props.h)); __k.text(__kn17, () => (xs.get())); return __kr0; })();  }); }',
+    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nimport { moduleRoot as __kmoduleRoot } from "@keel/reactive/internal";\nconst __kt0 = __k.template("<b id=\\"D.1\\" data-k=\\"D.1\\"> </b>");\nconst __kt1 = __k.template("<i id=\\"D.2\\"> </i>");\nconst __kt2 = __k.template("<section id=\\"D.0\\" data-k=\\"D.0\\"><!----><!----><!----><!----><p id=\\"D.3\\"> <span id=\\"D.4\\" data-k=\\"D.4\\"> </span></p></section>");\n\nimport { signal } from "@keel/reactive";\nconst xs = __kmoduleRoot(() => (signal([]))); const on = __kmoduleRoot(() => (signal(1))); const st = __kmoduleRoot(() => (signal(1))); const fb = __kmoduleRoot(() => (signal(1))); const e = __kmoduleRoot(() => (signal(1)));\nexport default function D(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt2); const __kn1 = __kr0.childNodes[0]; const __kn4 = __kr0.childNodes[1]; const __kn8 = __kr0.childNodes[2]; const __kn10 = __kr0.childNodes[3]; const __ke12 = __kr0.querySelector("[id=\\"D.3\\"]"); const __kn13 = __ke12.childNodes[0]; const __ke16 = __kr0.querySelector("[id=\\"D.4\\"]"); const __kn17 = __ke16.childNodes[0]; __k.cond(__kn1, () => (on.get() && props.w), () => (() => { const __kr2 = __k.clone(__kt0); const __kn3 = __kr2.childNodes[0]; __k.text(__kn3, () => (xs.get().length)); return __kr2; })()); __k.list(__kn4, () => (xs.get()), (__kv5) => __kv5["id"], (x) => (() => { const __kr6 = __k.clone(__kt1); const __kn7 = __kr6.childNodes[0]; __k.text(__kn7, () => (x().id)); return __kr6; })(), fb.get()); __k.match(__kn8, () => (st.get()), "tag", { "a": () => __k.frag((__kf9) => { __kf9.append("x"); }) }); __k.boundary(__kn10, () => __k.frag((__kf11) => { __kf11.append("y"); }), e.get()); __k.text(__kn13, () => (props.t)); { const __ks14 = (props.rest); for (const __kk15 in __ks14) __k.attr(__ke16, __kk15, () => __ks14[__kk15]); } __k.on("D.4", "click", (props.h)); __k.text(__kn17, () => (xs.get())); return __kr0; })();  }); }',
     edges: [
       { from: "D.tsx#on", to: "D.0:cond:when" },
       { from: "D.tsx#props.rest", to: "D.4:attr:..." },

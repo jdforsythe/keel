@@ -7,7 +7,7 @@ import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { EVENTS, STATES, editor, nextId } from "./fixtures.ts";
+import { EVENTS, STATES, editor, nextId, inRoot } from "./fixtures.ts";
 
 describe("std.statecharts: compiles to a store and one transaction per event", () => {
   test("The compiled store's schema parses `{ state: initial, data: start }`", () => {
@@ -45,13 +45,15 @@ describe("std.statecharts: compiles to a store and one transaction per event", (
   test("each event's transaction `schema` is that event's payload schema", () => {
     const Bump = s.object({ by: s.int({ min: 0, max: 3 }) });
     const Name = s.object({ label: s.string({ min: 1 }) });
-    const c = chart(nextId("schemas"), {
-      data: s.object({ n: s.int({ min: 0, max: 3 }) }),
-      start: { n: 0 },
-      events: { bump: Bump, rename: Name, stop: s.object({}) },
-      initial: "on",
-      states: { on: { on: { bump: "on", rename: "on", stop: "off" } }, off: { final: true } },
-    });
+    const c = inRoot(() =>
+      chart(nextId("schemas"), {
+        data: s.object({ n: s.int({ min: 0, max: 3 }) }),
+        start: { n: 0 },
+        events: { bump: Bump, rename: Name, stop: s.object({}) },
+        initial: "on",
+        states: { on: { on: { bump: "on", rename: "on", stop: "off" } }, off: { final: true } },
+      }),
+    );
     expect(Object.keys(c.events).sort()).toEqual(["bump", "rename", "stop"]);
     const values = fc.oneof(
       fc.record({ by: fc.integer({ min: -2, max: 6 }) }),

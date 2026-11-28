@@ -19,9 +19,12 @@ const build = <R>(mk: (id: string) => R): R => {
   seq += 1;
   const id = `pv${seq}`;
   let out: { value: R } | undefined;
-  scope(() => {
-    out = { value: mk(id) };
-  });
+  scope(
+    () => {
+      out = { value: mk(id) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out.value;
 };

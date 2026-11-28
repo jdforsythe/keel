@@ -16,4 +16,4 @@ None.
 
 ## Unsafe
 
-count: 1 (`unsafe/narrow.ts`: a `Case`'s value typed as the variant its tag selects, which `Match` renders it for)
+count: 2 (`unsafe/narrow.ts`: a `Case`'s value typed as the variant its tag selects, which `Match` renders it for; `unsafe/nodeOf.ts`: a content value with a `nodeType` typed as a DOM node of any realm)

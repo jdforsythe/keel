@@ -12,6 +12,7 @@ export type { Mode } from "./Mode.ts";
 export type { Net } from "./Net.ts";
 export type { Random } from "./Random.ts";
 export { observe } from "./observe.ts";
+export { supervise } from "./supervise.ts";
 export { register } from "./register.ts";
 export { replica } from "./replica.ts";
 export { seedOf } from "./seedOf.ts";

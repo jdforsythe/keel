@@ -5,7 +5,7 @@ import { serve } from "@keel/testing/e2e";
 import { expect, it } from "vitest";
 import { Board } from "../modules/a/Board.schema.ts";
 
-const board = scope(() => undefined).run(() => store(Board, { lists: [] }, { id: "a.board" }));
+const board = scope(() => undefined, { detached: true }).run(() => store(Board, { lists: [] }, { id: "a.board" }));
 const failure = async (p: Promise<unknown>): Promise<{ code: unknown; message: string }> => {
   const e: unknown = await p.then(
     () => undefined,

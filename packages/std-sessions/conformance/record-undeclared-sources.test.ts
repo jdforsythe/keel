@@ -83,31 +83,34 @@ async function drive(src: Source, channel: Channel, m: { key: string; str: strin
     routes: ReturnType<typeof manifest>;
     commit: (n: object) => void;
   }[] = [];
-  const owner = scope(() => {
-    const st = store(State, initial, { id: storeId });
-    let next: object = initial;
-    const t = transaction(st, `${storeId}.send`, Payload, (state) => state);
-    const mk = transaction(st, `${storeId}.make`, none, () => next);
-    const routes = manifest(c, {
-      "src.show": {
-        component(): Node {
-          return Box({
-            as: "main",
-            id: "src.page",
-            children: [Button({ id: "src.go", children: "Go", onClick: () => void tx(t, src.sent?.(m) ?? {}) })],
-          });
+  const owner = scope(
+    () => {
+      const st = store(State, initial, { id: storeId });
+      let next: object = initial;
+      const t = transaction(st, `${storeId}.send`, Payload, (state) => state);
+      const mk = transaction(st, `${storeId}.make`, none, () => next);
+      const routes = manifest(c, {
+        "src.show": {
+          component(): Node {
+            return Box({
+              as: "main",
+              id: "src.page",
+              children: [Button({ id: "src.go", children: "Go", onClick: () => void tx(t, src.sent?.(m) ?? {}) })],
+            });
+          },
         },
-      },
-    });
-    built.push({
-      st,
-      routes,
-      commit: (n) => {
-        next = n;
-        void tx(mk, {});
-      },
-    });
-  });
+      });
+      built.push({
+        st,
+        routes,
+        commit: (n) => {
+          next = n;
+          void tx(mk, {});
+        },
+      });
+    },
+    { detached: true },
+  );
   const [b] = built;
   if (b === undefined) throw new Error("drive: build failed");
   const h = await renderRoute("src.show", {

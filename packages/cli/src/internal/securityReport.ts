@@ -35,9 +35,9 @@ export async function securityReport(
     return { v: 1, deployables: [] };
   const sent: unknown = headersOf({ https: true });
   const headers = Object.fromEntries(
-    Object.entries(isRecord(sent) ? sent : {})
-      .filter((e): e is [string, string] => typeof e[1] === "string")
-      .map(([k, v]) => [titleHeader(k), v]),
+    Object.entries(isRecord(sent) ? sent : {}).flatMap(([k, v]) =>
+      typeof v === "string" ? [[titleHeader(k), v]] : [],
+    ),
   );
   const text = await cspText(cwd, topology, env);
   const deployables: Report["deployables"] = [];
