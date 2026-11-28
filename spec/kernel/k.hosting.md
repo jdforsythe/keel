@@ -1,5 +1,5 @@
 # k.hosting: Client hosting
-status: conformance-covered
+status: implemented
 **Purpose.** A `client` or `static` deployable builds to files any static host can serve; a `client` one finds its API by a tag and may be served by a `node` deployable instead.
 
 **Artifact.** `keel build` writes `dist/<name>/` per `client` deployable: `index.html`, `assets/` (content-hashed names) and `keel-mark.svg`. Every URL in it is root-absolute or absolute. A static host returns these files at the origin's root, returns `/index.html` with 200 for a path that is no file, and caches `assets/*` as immutable and the rest as `no-cache`.

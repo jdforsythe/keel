@@ -1,6 +1,6 @@
 # Freeze review (G3)
 
-Each section's clauses are the bullets under its **Conformance** paragraph. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Every clause but k.parity's 5 and 6 is cited in a conformance header; `conformance-covered` is the status a section's `status:` line states, and a section whose clauses all have a rung stays `implemented` until that line is raised. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`. Others skip by machine: six unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, five in `std-postgres/conformance`); four with no non-loopback IPv4 address (`cli/conformance/dev-bind.test.ts`, three in `server/conformance/local-routes-remote-address.test.ts`); one with no IPv6 loopback (`server/conformance/local-routes-answered.test.ts`); of the k.e2e-run sandbox cases (`cli/conformance/e2e-sandbox-*.test.ts`, `testing/conformance/e2e-run.test.ts`), thirteen skip as root and two run only as root on Linux.
+Each section's clauses are the bullets under its **Conformance** paragraph; k.create-manager has none and no row. Every section has at least one `packages/*/conformance` file whose `// Spec:` header quotes it; the rows of k.persist, k.prove, k.topology, k.hosting, k.shell, std.db, std.shells and std.workflows were audited clause by clause; the others were not. `conformance-covered` requires 0 partial, todo, none, and `keel ledger --diff` raises E1707 for a section at that status with a clause at `none`. Every clause but k.parity's 5 and 6, k.create's 18 and k.hosting's 10 is cited in a conformance header; `conformance-covered` is the status a section's `status:` line states, and a section whose clauses all have a rung stays `implemented` until that line is raised. Three conformance tests are skipped: `std-i18n/conformance/e2301.test.ts` and the two failing-case tests of `testing/conformance/a11y-e1826-status-inserted.test.ts`. Others skip by machine: six unless a Postgres 17 service is reachable (`skipIf(!hasPg17)`: one in `std-db/conformance/postgres-watch.test.ts`, five in `std-postgres/conformance`); seven with no non-loopback IPv4 address (`cli/conformance/dev-bind.test.ts`, three in `server/conformance/local-routes-remote-address.test.ts`, and through `ctx.skip` after their loopback half two in `cli/conformance/dev-listen-address.test.ts` and one in `cli/conformance/server-listen-address.test.ts`); one with no IPv6 loopback (`server/conformance/local-routes-answered.test.ts`); one under Node 24 or older (the connection half in `create-app/conformance/create-bin.test.ts`); of the k.e2e-run sandbox cases (`cli/conformance/e2e-sandbox-*.test.ts`, `testing/conformance/e2e-run.test.ts`), thirteen skip as root and two run only as root on Linux.
 
 ## 1. Per section
 
@@ -15,7 +15,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.compiler | 22 | **conformance-covered** | none |
 | k.component | 17 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
-| k.ui | 28 | **conformance-covered** | none |
+| k.ui | 29 | **conformance-covered** | none |
 | k.router | 20 | **conformance-covered** | none |
 | k.prefix | 8 | **conformance-covered** | none |
 | k.head | 11 | **conformance-covered** | none |
@@ -27,11 +27,16 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.services | 17 | **conformance-covered** | none |
 | k.check | 23 | **conformance-covered** | none |
 | k.check-cache | 13 | **conformance-covered** | none |
-| k.cli | 20 | **conformance-covered** | none |
+| k.check-time | 2 | proposed | none |
+| k.cli | 17 | **conformance-covered** | none |
+| k.inspect | 7 | **conformance-covered** | none |
 | k.module | 23 | implemented | none; status not raised |
-| k.scaffold | 20 | **conformance-covered** | none |
+| k.scaffold | 24 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
+| k.scaffold-needs | 7 | implemented | none; status not raised |
+| k.create | 22 | implemented | clause 18 (the packed `@keel/create-app` lists no dependency): no test |
+| k.create-folder | 7 | implemented | none; status not raised |
 | k.testing | 28 | **conformance-covered** | none |
 | k.test-run | 12 | implemented | none; status not raised |
 | k.requests | 4 | **conformance-covered** | none |
@@ -41,21 +46,21 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.drive-law | 11 | **conformance-covered** | none |
 | k.ledger | 19 | implemented | none; status not raised |
 | k.sync | 14 | **conformance-covered** | none |
-| k.deploy | 14 | **conformance-covered** | none |
+| k.deploy | 15 | **conformance-covered** | none |
 | k.review | 8 | **conformance-covered** | none |
 | k.escapes | 9 | **conformance-covered** | none |
 | k.bundle | 13 | **conformance-covered** | none |
-| k.explain | 4 | **conformance-covered** | none |
+| k.explain | 8 | **conformance-covered** | none |
 | k.return | 6 | **conformance-covered** | none |
 | k.opening | 16 | **conformance-covered** | none |
-| k.hosting | 9 | **conformance-covered** | none |
+| k.hosting | 10 | implemented | clause 10 (a static build with a `choice` theme and a `ThemeSelect`): no test |
 | k.openapi | 3 | **conformance-covered** | none |
 | k.a11y | 23 | **conformance-covered** | none |
 | k.security | 14 | **conformance-covered** | none |
 | k.privacy | 15 | **conformance-covered** | none |
 | k.privacy-reads | 6 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
-| k.aria | 13 | implemented | none; status not raised |
+| k.aria | 15 | implemented | none; status not raised |
 | k.guards | 11 | **conformance-covered** | none |
 | k.persist | 16 | **conformance-covered** | none |
 | k.data | 10 | **conformance-covered** | none |
@@ -116,15 +121,18 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.parity | 6 | proposed | clauses 5 and 6: no test; S0013, the kind gates, is not built |
 | k.roles | 15 | implemented | none; status not raised |
 | k.looks | 15 | proposed | none |
-| k.schemes | 13 | proposed | none; the first paint and the system preference have no end-to-end test |
-| k.values | 9 | proposed | none; the two Chromium clauses run in `tooling/smoke/values.mjs` |
+| k.schemes | 19 | proposed | none; the first paint and the system preference have no end-to-end test |
+| k.values | 12 | proposed | none; the two Chromium clauses run in `tooling/smoke/values.mjs` |
+| k.themes | 11 | proposed | none |
+| k.gamut | 11 | proposed | none |
+| k.design-tokens | 5 | implemented | none; status not raised |
 | k.routes | 10 | **conformance-covered** | none |
 | std.capacitor | 11 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | k.unsafe | 9 | **conformance-covered** | none |
-| k.a11y-static | 11 | implemented | none; status not raised |
+| k.a11y-static | 15 | implemented | none; status not raised |
 | std.channels-limits | 4 | **conformance-covered** | none |
 | std.sessions-redact | 1 | **conformance-covered** | none |
 | k.ledger-items | 15 | implemented | none; status not raised |
@@ -135,7 +143,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.e2e-page | 26 | implemented | none; status not raised |
 | k.e2e-run | 12 | implemented | none; status not raised |
 | k.entries | 4 | proposed | none |
-| **total** | **1629** | 107 of 129 covered | |
+| **total** | **1724** | 107 of 137 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -182,7 +190,7 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). 22 of 129 sections are not `conformance-covered`. `proposed`: k.parity (clauses 5 and 6 at `none`), k.library, k.looks, k.schemes, k.values and k.entries. `implemented`, every clause cited: k.reactive, k.module, k.test-run, k.ledger, k.aria, k.leave, k.roles, k.docs, k.a11y-static, k.ledger-items, k.library-pack, k.server-deps, k.e2e, k.e2e-page, k.e2e-run and std.workflows. Every commit to `spec/` and `packages/*/conformance/` after `e9fc92e26` up to the verified commit, 105 of them, carries an RFC (0218, 0241, 0243, 0244, 0246) but two, neither a rule change: the status lines of k.a11y-static, k.testing and k.ui, and a k.testing a11y sentence trimmed to its token budget.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). 30 of 137 sections are not `conformance-covered`. `proposed`: k.parity (clauses 5 and 6 at `none`), k.library, k.looks, k.schemes, k.values, k.themes, k.gamut, k.check-time and k.entries. `implemented`: k.create (clause 18 at `none`), k.hosting (clause 10 at `none`); every clause cited: k.reactive, k.module, k.test-run, k.ledger, k.aria, k.leave, k.roles, k.docs, k.a11y-static, k.ledger-items, k.library-pack, k.server-deps, k.e2e, k.e2e-page, k.e2e-run, k.scaffold-needs, k.create-folder, k.design-tokens and std.workflows. Every commit to `spec/` and `packages/*/conformance/` after `e9fc92e26` up to the verified commit, 195 of them (merges aside), carries an RFC (0218, 0241, 0243, 0244, 0246, 0247, 0249) but three: two not a rule change, the status lines of k.a11y-static, k.testing and k.ui, and a k.testing a11y sentence trimmed to its token budget; and one rule change, k.library-pack's library `.gitignore` ignoring `.keel/*.json` but `.keel/ledger.json` (`fbb335c3d`).
 
 subject: spec/ packages/*/conformance/
-verified: fd82246959b7aa19dc4c3ccfc3cf2529aef98b88
+verified: e63cb2ed415edb886c59a1117157baa003fda003
