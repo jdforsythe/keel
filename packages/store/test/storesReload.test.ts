@@ -246,7 +246,8 @@ describe("property: the registry laws of a dev load", () => {
             if (file === undefined) devLoad.file = undefined;
             else storesFile(file);
             const takes = next.has(id) && carried.has(id) && !took.has(id) && carried.get(id) === file;
-            if (next.has(id) && !takes) expect(() => make(id)).toThrow(`store ${id}: id already in use by a live store`);
+            if (next.has(id) && !takes)
+              expect(() => make(id)).toThrow(`store ${id}: id already in use by a live store`);
             else {
               make(id);
               next.set(id, file);

@@ -26,7 +26,7 @@ A module that serves routes has one client-safe file, `modules/<id>/<id>.contrac
 
 `local: true` on a page or API entry (a dev tool) answers this machine's loopback connections alone, no forwarded or `service` request (else 403 `keel.denied`), but your server code's own loopback `ctx.net.fetch` (in `unsafe`) reaches it; off a `node` deployable, E1511.
 
-**Static reading.** `keel check` reads the contract unrun: literal keys; each entry an object whose `method`, `path`, `layout` and `events` are literals and whose `params`, `search` and `query` are schemas reached through consts and imports. A spread or a call in place of the entries or an entry is W1005 and E1111. A channel's entries are written out the same way (keel-data).
+**Static reading.** `keel check` reads the contract unrun: literal keys; each entry an object whose `method`, `path`, `layout` and `events` are literals and whose `params`, `search` and `query` are schemas reached through consts and imports. A spread, call or name in place of the entries or an entry is E1111. A channel's entries are written out the same way (keel-data).
 
 ```ts
 // modules/api/api.contract.ts

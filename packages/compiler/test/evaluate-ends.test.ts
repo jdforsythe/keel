@@ -27,7 +27,7 @@ function entryOf(source: string): string {
 }
 
 /** The failure `evaluate` of `source` resolves to; throws when it resolves to a result. */
-async function failure(source: string, deadlineMs = 20_000): Promise<EvaluateFailure> {
+async function failure(source: string, deadlineMs = testTime(20_000)): Promise<EvaluateFailure> {
   const r = await evaluate({ kind: "data", entry: entryOf(source), deadlineMs });
   if (!(r instanceof EvaluateFailure)) throw new Error(`a result: ${JSON.stringify(r)}`);
   return r;

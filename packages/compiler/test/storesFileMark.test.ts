@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
-  if (before === undefined) delete process.env.KEEL_DEV_DIR;
+  if (before === undefined) Reflect.deleteProperty(process.env, "KEEL_DEV_DIR");
   else process.env.KEEL_DEV_DIR = before;
 });
 
@@ -66,7 +66,7 @@ describe("storesFileMark", () => {
     expect(dev?.split("\n").length).toBe("export const n = 1;\n".split("\n").length);
     expect(transformed("serve", false) ?? "").not.toContain(STORES_FILE_KEY);
     expect(transformed("build", true) ?? "").not.toContain(STORES_FILE_KEY);
-    delete process.env.KEEL_DEV_DIR;
+    Reflect.deleteProperty(process.env, "KEEL_DEV_DIR");
     expect(transformed("serve", true) ?? "").not.toContain(STORES_FILE_KEY);
   });
 });

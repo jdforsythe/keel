@@ -69,7 +69,10 @@ export function store<T extends object>(
   const holder = registry.get(id);
   // k.data Dev: a live id is taken over only from the store a dev load carried, by a store created at its file; the
   // carried store then no longer holds the id, so a second one throws. Only module-registry stores are carried.
-  if (holder !== undefined && (devLoad.carried.get(id) !== holder || devLoad.origins.get(holder)?.file !== devLoad.file))
+  if (
+    holder !== undefined &&
+    (devLoad.carried.get(id) !== holder || devLoad.origins.get(holder)?.file !== devLoad.file)
+  )
     throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
   const limit = options?.logLimit ?? LOG_LIMIT;
