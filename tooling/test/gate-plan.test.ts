@@ -197,6 +197,12 @@ describe("step outputs and conditions", () => {
     expect(probe?.run).toContain("ci-shards.mjs --browser 2");
     expect(steps.filter((s) => s.if === "steps.browser.outputs.browser == 'true'").length).toBeGreaterThan(0);
   });
+  it("runs no step with sudo in the slow container: a sysctl is not set from inside it", () => {
+    for (const shard of slowShards(realSource)) {
+      const { install, steps } = slowSteps(realSource, shard);
+      for (const step of [...install, ...steps]) expect(step.run).not.toMatch(/\bsudo\b/);
+    }
+  });
   it("gives every job's steps only expressions and conditions the gate answers", () => {
     const names = Object.keys(realSource.jobs).filter((n) => JOBS[n]?.run === true);
     const ctx = { matrix: { shard: 1 }, workspace: "/w", runnerOs: "macOS", runnerArch: "ARM64", needs: {}, steps: {} };

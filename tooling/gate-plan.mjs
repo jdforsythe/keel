@@ -258,7 +258,11 @@ export function bindMounts(args) {
  * The actions of the job (checkout, setup, cache, artifacts) are the container's own setup.
  */
 export function slowSteps(source, shard) {
-  const runs = expandSteps(source, "test-shard").filter((s) => typeof s === "object" && s.run !== undefined);
+  const job = source.jobs["test-shard"];
+  const own = expandSteps(source, "test-shard");
+  // The job's rewrites, the one rule of what does not apply off a runner (the sysctl no-op), as the fast jobs have it.
+  const rewritten = applyRewrites(job, own, JOBS["test-shard"].rewrites ?? [], {}).steps;
+  const runs = rewritten.filter((s) => typeof s === "object" && s.run !== undefined);
   const ctx = { matrix: { shard }, workspace: SLOW.workdir, runnerOs: "Linux", runnerArch: "X64" };
   const answer = (s) => ({
     name: stepName({ ...s, run: expr(s.run, ctx) }),
