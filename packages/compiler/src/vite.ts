@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
@@ -262,6 +263,15 @@ type Config = {
 /** What the plugin reads of the project's config before Vite resolves it. */
 type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
 
+/** The sha-256 digest of `file`'s bytes, or `""` when it cannot be read. */
+function bytesDigest(file: string): string {
+  try {
+    return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  } catch {
+    return "";
+  }
+}
+
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
  * (cached by source text), fails the module on diagnostics, and merges its artifacts with those of the
@@ -414,6 +424,8 @@ export default function (): {
   let loading: Promise<DevApp[]> | undefined;
   /** Whether a load has evaluated the server graph since it was last invalidated whole: an edit then has one to reload. */
   let evaluated = false;
+  /** Each watched file's bytes at its last `watchChange`, as a digest (`""`: unreadable or gone), by id. */
+  const seenBytes = new Map<string, string>();
   /** Under `keel dev`: the stack each capability was registered on, by name, as `register` records it (k.data Dev). */
   const registrations = new Map<string, string>();
   /** Invalidate the server graph whole, so the next load starts with an empty registry (k.data Dev). */
@@ -1340,6 +1352,12 @@ export default function (): {
       const read = evaluatedFiles.has(onDisk(id)) || evaluatedFiles.has(id);
       const paths = change.event !== "update" && rel !== null;
       if (!read && !paths && (rel === null || !PROJECT_FILE.test(rel))) return;
+      // The watcher reports one write more than once (an event per environment, a second one for the same bytes): an
+      // update whose bytes are those the file had at its last event starts no evaluation.
+      const digest = bytesDigest(id);
+      const unchanged = change.event === "update" && seenBytes.get(id) === digest;
+      seenBytes.set(id, digest);
+      if (unchanged) return;
       if (rel === "topology.ts") {
         readTopology();
         for (const [k, e] of [...modules]) {

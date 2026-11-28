@@ -8,6 +8,7 @@ import { evaluate } from "../evaluate.ts";
 import { shippedTokensPlugin } from "../hosting/shippedTokensPlugin.ts";
 import { appLibraries } from "../std/appLibraries.ts";
 import { libraryRel } from "../std/libraryRel.ts";
+import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
 import { OBSERVE_BANNER } from "./OBSERVE_BANNER.ts";
@@ -31,6 +32,16 @@ const UI_CSS = "@keel/ui/css";
 const ROUTER = "@keel/router";
 
 const q = (s: string): string => JSON.stringify(s);
+
+/**
+ * The last compile of each app file a bundle loaded, by its absolute path: its project path, source, syntax errors and
+ * output. `compile` of one file is a function of its path and source, so a later evaluation in the process (`keel
+ * dev`'s refreshes) takes an entry whose path and source are unchanged instead of compiling again.
+ */
+const compiled = new Map<
+  string,
+  { readonly rel: string; readonly source: string; readonly broken: readonly Diagnostic[]; readonly code: string }
+>();
 /** An import specifier for a root-relative or absolute file. */
 const spec = (f: string): string => q(path.isAbsolute(f) ? f : `./${f}`);
 
@@ -311,15 +322,20 @@ export async function evaluateProject(input: {
             const rel = libraryRel(libraries, args.path) ?? own;
             if (rel.startsWith("../") || path.isAbsolute(rel) || rel.split("/").includes("node_modules"))
               return undefined;
-            const r = compile([{ path: rel, source: fs.readFileSync(args.path, "utf8") }]);
-            const broken = r.diagnostics.filter((d) => d.code === "E1000");
+            const source = fs.readFileSync(args.path, "utf8");
+            let c = compiled.get(args.path);
+            if (c === undefined || c.rel !== rel || c.source !== source) {
+              const r = compile([{ path: rel, source }]);
+              c = { rel, source, broken: r.diagnostics.filter((d) => d.code === "E1000"), code: r.outputs[0]?.code ?? "" };
+              compiled.set(args.path, c);
+            }
+            const broken = c.broken;
             if (broken.length > 0) {
               for (const d of broken) syntax.push(`E1000 ${d.path}:${d.line}:${d.col} ${d.message}`);
               return { errors: broken.map((d) => ({ text: d.message })) };
             }
-            const out = r.outputs[0];
             return {
-              contents: withImportMeta(out?.code ?? "", args.path),
+              contents: withImportMeta(c.code, args.path),
               loader: "ts",
               resolveDir: path.dirname(args.path),
             };

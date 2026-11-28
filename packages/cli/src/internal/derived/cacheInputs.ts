@@ -4,20 +4,36 @@ import { isRecord } from "../isRecord.ts";
 import type { CacheInput } from "./CacheInput.ts";
 import { hashFile } from "./hashFile.ts";
 
-/** The nearest folder above `file` holding a `package.json` with a `name`, and that name. */
-function packageOf(file: string): { dir: string; name: string } | undefined {
+type Pkg = { dir: string; name: string } | undefined;
+
+/**
+ * The nearest folder above `file` holding a `package.json` with a `name`, and that name. `seen` holds the answer for
+ * each folder already asked in this call, so the files of one package read its `package.json` once.
+ */
+function packageOf(file: string, seen: Map<string, Pkg>): Pkg {
+  const asked: string[] = [];
+  let found: Pkg;
   for (let d = dirname(file); dirname(d) !== d; d = dirname(d)) {
+    if (seen.has(d)) {
+      found = seen.get(d);
+      break;
+    }
+    asked.push(d);
     const pkg = join(d, "package.json");
     if (!existsSync(pkg)) continue;
     let v: unknown;
     try {
       v = JSON.parse(readFileSync(pkg, "utf8"));
     } catch {
-      return undefined;
+      break;
     }
-    if (isRecord(v) && typeof v.name === "string") return { dir: d, name: v.name };
+    if (isRecord(v) && typeof v.name === "string") {
+      found = { dir: d, name: v.name };
+      break;
+    }
   }
-  return undefined;
+  for (const d of asked) seen.set(d, found);
+  return found;
 }
 
 /**
@@ -30,9 +46,11 @@ function packageOf(file: string): { dir: string; name: string } | undefined {
  */
 export function cacheInputs(root: string, loaded: readonly string[], reads: readonly string[] = []): CacheInput[] {
   const out = new Map<string, CacheInput>();
+  const packages = new Map<string, Pkg>();
   const add = (path: string, file: string): void => {
+    if (out.has(path)) return;
     const sha256 = hashFile(file);
-    if (sha256 !== undefined && !out.has(path)) out.set(path, { path, file, sha256 });
+    if (sha256 !== undefined) out.set(path, { path, file, sha256 });
   };
   const named = (real: string, file: string, outside: boolean): void => {
     const rel = relative(root, real).split(sep).join("/");
@@ -40,7 +58,7 @@ export function cacheInputs(root: string, loaded: readonly string[], reads: read
       add(rel, file);
       return;
     }
-    const pkg = packageOf(real);
+    const pkg = packageOf(real, packages);
     // A package folder holding the project (a workspace root) is no dependency: its files are named absolute.
     const holds = pkg !== undefined && !relative(pkg.dir, root).startsWith("..");
     if (pkg === undefined || holds) {
