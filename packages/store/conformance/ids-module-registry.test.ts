@@ -25,7 +25,7 @@ describe("k.store Ids: the module registry outside Dev", () => {
           const id = `${prefix}.s${String(op.id)}`;
           const holder = live.get(id);
           if (op.kind === "create") {
-            const sc = scope(() => {});
+            const sc = scope(() => {}, { detached: true });
             if (holder === undefined) {
               live.set(id, { sc, held: sc.run(() => store(Cart, { items: [] }, { id })) });
             } else {

@@ -161,13 +161,13 @@ describe("k.evaluator: state does not cross evaluations", () => {
         `import v from "p";
 import { execSync } from "node:child_process";
 import { guard } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 
 void v;
 execSync("true");
 
 export const gate = guard({ redirect: "app.start" }, async ({ user }) =>
-  user === "" ? err({ code: "keel.denied", message: "sign in first", data: null }) : ok(null),
+  user === "" ? err(keelError.denied.make({}, "sign in first")) : ok(null),
 );
 `,
       );

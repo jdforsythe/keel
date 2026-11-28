@@ -14,7 +14,7 @@ let n = 0;
 function firstLoad(file: string, id: string) {
   storesReload();
   storesFile(file);
-  const sc = scope(() => {});
+  const sc = scope(() => {}, { detached: true });
   const held = sc.run(() => store(Cart, { items: [] }, { id }));
   storesLoaded();
   return { sc, held };
@@ -25,11 +25,11 @@ function sameFile(file: string, id: string): void {
   const first = firstLoad(file, id);
   storesReload();
   storesFile(file);
-  const sc2 = scope(() => {});
+  const sc2 = scope(() => {}, { detached: true });
   const taker = sc2.run(() => store(Cart, { items: [] }, { id }));
   expect(taker).not.toBe(first.held);
   expect(stores().get(id)).toBe(taker);
-  const sc3 = scope(() => {});
+  const sc3 = scope(() => {}, { detached: true });
   expect(() => sc3.run(() => void store(Cart, { items: [] }, { id }))).toThrow("id already in use");
   expect(stores().get(id)).toBe(taker);
   storesLoaded();
@@ -43,7 +43,7 @@ function otherFile(file: string, other: string, id: string): void {
   const first = firstLoad(file, id);
   storesReload();
   storesFile(other);
-  const sc2 = scope(() => {});
+  const sc2 = scope(() => {}, { detached: true });
   expect(() => sc2.run(() => void store(Cart, { items: [] }, { id }))).toThrow();
   storesLoaded();
   sc2.dispose();

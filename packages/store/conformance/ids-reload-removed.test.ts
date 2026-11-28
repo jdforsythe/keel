@@ -12,7 +12,7 @@ const fileArb = fc.stringMatching(/^[a-z]{1,8}\.ts$/);
 let n = 0;
 
 function removed(file: string, id: string): void {
-  const holder = scope(() => {});
+  const holder = scope(() => {}, { detached: true });
   const sig = holder.run(() => signal(0));
   let runs = 0;
   storesReload();
@@ -22,7 +22,7 @@ function removed(file: string, id: string): void {
       sig.get();
       runs += 1;
     });
-  });
+  }, { detached: true });
   owner.run(() => void store(Cart, { items: [] }, { id }));
   storesLoaded();
   // the effect is live before the second load

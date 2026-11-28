@@ -12,17 +12,17 @@ const fileArb = fc.stringMatching(/^[a-z]{1,8}\.ts$/);
 let n = 0;
 
 function isolated(file: string, x: string, y: string): void {
-  const iso = scope(() => {});
+  const iso = scope(() => {}, { detached: true });
   isolate(iso);
   storesReload();
   storesFile(file);
-  const sx = scope(() => {});
+  const sx = scope(() => {}, { detached: true });
   sx.run(() => void store(Cart, { items: [] }, { id: x }));
   const held = iso.run(() => store(Cart, { items: [] }, { id: y }));
   storesLoaded();
   storesReload();
   storesFile(file);
-  const sx2 = scope(() => {});
+  const sx2 = scope(() => {}, { detached: true });
   sx2.run(() => void store(Cart, { items: [] }, { id: x }));
   storesLoaded();
   expect(iso.run(() => stores().get(y))).toBe(held);

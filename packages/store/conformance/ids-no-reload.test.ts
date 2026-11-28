@@ -16,9 +16,9 @@ describe("k.store Ids: no storesReload, no takeover", () => {
       fc.property(fileArb, fc.array(fileArb, { minLength: 1, maxLength: 6 }), (first, later) => {
         const id = `nr${String(n++)}.x`;
         storesFile(first);
-        const owner = scope(() => {});
+        const owner = scope(() => {}, { detached: true });
         const held = owner.run(() => store(Cart, { items: [] }, { id }));
-        const tries = later.map(() => scope(() => {}));
+        const tries = later.map(() => scope(() => {}, { detached: true }));
         later.forEach((file, i) => {
           storesFile(file);
           expect(() => tries[i]?.run(() => store(Cart, { items: [] }, { id }))).toThrow();
@@ -34,10 +34,10 @@ describe("k.store Ids: no storesReload, no takeover", () => {
 
   it("the same file twice, as a file evaluated again would mark it, still throws on the duplicate", () => {
     storesFile("a.ts");
-    const owner = scope(() => {});
+    const owner = scope(() => {}, { detached: true });
     owner.run(() => void store(Cart, { items: [] }, { id: "nr.same" }));
     storesFile("a.ts");
-    const again = scope(() => {});
+    const again = scope(() => {}, { detached: true });
     expect(() => again.run(() => void store(Cart, { items: [] }, { id: "nr.same" }))).toThrow();
     again.dispose();
     owner.dispose();

@@ -45,10 +45,10 @@ export function readsMinFile(t: Tree, reader: "readFileSync" | "readFile", value
     t.dir,
     "modules/setup/gate.guard.ts",
     `${read}import { guard } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 
 export const gate = guard({ redirect: MIN_TEXT.trim() === "1" ? "members.signin" : "app.start" }, async ({ user }) =>
-  user === "" ? err({ code: "keel.denied", message: "sign in first", data: null }) : ok(null),
+  user === "" ? err(keelError.denied.make({}, "sign in first")) : ok(null),
 );
 `,
   );

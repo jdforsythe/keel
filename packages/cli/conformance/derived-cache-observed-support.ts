@@ -15,10 +15,10 @@ export function guardFile(t: Tree, source: string, redirect = '"app.start"'): vo
     "modules/setup/gate.guard.ts",
     `${source}
 import { guard } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 
 export const gate = guard({ redirect: ${redirect} }, async ({ user }) =>
-  user === "" ? err({ code: "keel.denied", message: "sign in first", data: null }) : ok(null),
+  user === "" ? err(keelError.denied.make({}, "sign in first")) : ok(null),
 );
 `,
   );
