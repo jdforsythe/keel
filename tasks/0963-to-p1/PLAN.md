@@ -1012,6 +1012,8 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 
 - Checkpoint 309 of 2026-11-27: the operator approved mending the local gate's tooling (`tooling/gate.mjs`: `GITHUB_OUTPUT` for the shard step; `tooling/gate-plan.mjs`: a container for `built-smokes`' `postgres` service). Not done yet; it is step 2 of the next action.
 
+- Checkpoint 310 of 2026-11-27: resumed. Subagents run again (a probe answered). `pnpm check` green on 7b4469956; CI run 46104123863 in progress on it; `pnpm test` running in the main checkout. Four lanes started: `lane-gate-tooling` (new, `.worktrees/gate-tooling`, sonnet: `GITHUB_OUTPUT` per job and the `built-smokes` postgres container; no whole gate run until the machine is quiet), `lane-gate9` (verify f56c4e938, suites, e2e everywhere, ledger by the strict rule; budgets reported, re-based by the orchestrator), `lane-r-defect` (review and merge `-a`, `-b`, `-c`; the RFC section; a conformance to-do list), `lane-r-fresh` (the evaluator from step 3 to step 10). Each commits in its own worktree and neither merges nor pushes.
+
 ## Next action
 1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2`, `git log --oneline origin/jdforsythe/test-impl -1`. Read `docs/HANDOFF.md` whole and checkpoint 308. Check that subagents can run (the usage limit).
 2. Mend the local gate's tooling (approved, checkpoint 309): a small lane off the main line, one whole `pnpm gate` to prove it, merge, push.
