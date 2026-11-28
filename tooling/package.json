@@ -5,6 +5,7 @@
   "type": "module",
   "main": "output.ts",
   "exports": {
+    "./ci-sequencer": "./ci-sequencer.ts",
     "./output": "./output.ts",
     "./quick-first": "./quick-first.ts",
     "./repo-root": "./repo-root.ts",
