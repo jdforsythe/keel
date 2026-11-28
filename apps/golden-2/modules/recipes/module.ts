@@ -12,9 +12,10 @@ export default module({
     "@keel/std-temporal",
     "@keel/std-text",
     "@keel/std-messages",
+    "@keel/std-tables",
     "@keel/std-timings",
   ],
-  capabilities: ["geo", "net", "storage"],
+  capabilities: ["geo.position", "net", "storage"],
   public: {
     exports: ["RecipeParams", "RecipeSearch"],
   },

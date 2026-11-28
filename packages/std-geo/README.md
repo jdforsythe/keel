@@ -11,7 +11,7 @@
 
 ## Extension points
 
-Uses the **capability registry** (k.ctx `register('geo', { real, shell, sim })`).
+Uses the **capability registry** (k.ctx `register('geo.position', { real, shell, sim })`).
 
 ## Unsafe
 

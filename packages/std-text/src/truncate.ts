@@ -1,12 +1,13 @@
+import { defect } from "@keel/schema";
 import { segmenter } from "./segmenter.ts";
 
 /**
  * `s` when it has at most `max` graphemes; otherwise its first `max - 1` graphemes with trailing white space removed,
- * then `…` (std.text). Throws unless `max` is an integer of at least 1.
+ * then `…` (std.text). Raises a defect unless `max` is an integer of at least 1.
  */
 export function truncate(s: string, max: number): string {
   if (!Number.isInteger(max) || max < 1)
-    throw new RangeError(`truncate: max must be an integer of at least 1, got ${max}`);
+    return defect("truncate: max must be an integer of at least 1", { data: { max: String(max) } });
   // Segmenting stops at max + 1 graphemes: the rest of a longer string is never read.
   const parts: string[] = [];
   for (const x of segmenter.segment(s)) {

@@ -382,13 +382,14 @@ const NO_FIX = [
   "E1163", // k.library Rules: no fix; a diagnostic in a library file carries none (k.library In an app)
   "E1166", // k.library Rules: no fix stated; which of the two ids to rename is the author's choice
   "E1167", // k.server-deps Rules: no fix stated; the name an `env` entry should hold is the author's
-  "E1256", // k.shared Rules: no fix; where the per-request state lives is the author's choice
+  "E1171", // k.module Rules: fix none; whether the file is a stray or a module of its own is the author's
   "E1203", // k.reactive Static: no fix; the scope to run in is the author's to capture
   "E1204", // the Case per resource state is the author's
   "E1207", // whether to drop the detached scope or own it differently is a design change
   "E1208", // k.reactive Static: no fix; the scope to nest in or run in is the author's to capture
   "E1251", // the JSX that replaces an op is the author's
   "E1252", // the JSX or ctx replacement is the author's
+  "E1256", // k.shared Rules: no fix; where the per-request state lives is the author's choice
   "E1302", // moving the effect out of the transaction is a design change
   "E1303", // removing the field or the reveal call is a design change
   "E1304", // k.store Rules: the fix is a hint (create the store with the data as `initial`, or move the call to a handler), a design change

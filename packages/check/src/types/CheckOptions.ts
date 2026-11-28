@@ -16,7 +16,9 @@ import type { SourceFile } from "./SourceFile.ts";
  * results are the same with or without it. `derived`: the evaluated views of each project (k.derived Derivations), by
  * project directory and name (`routes.json`, `surface.json`), as their bytes: the current surface of the k.compat
  * pass, E1511's API entries, and what an evaluated view among `files` is compared with (E1005); without it an evaluated
- * view is not compared. `check()` writes nothing (k.derived In process).
+ * view is not compared. `check()` writes nothing (k.derived In process). `own`: the library whose own folder `root`
+ * is (k.library-pack Own folder); its formats and the rules of the packages its `package.json` names apply as in an app
+ * whose manifest lists it; the rules it registers itself do not.
  */
 export type CheckOptions = {
   readonly root?: string;
@@ -29,4 +31,5 @@ export type CheckOptions = {
   readonly base?: unknown;
   readonly typeCache?: string;
   readonly derived?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  readonly own?: string;
 };

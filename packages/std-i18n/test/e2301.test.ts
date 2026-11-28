@@ -172,7 +172,7 @@ test("every finding of generated calls is reported once at its own line, with no
   );
 });
 
-test("a module is the module.ts with the longest directory prefix of the file", () => {
+test("a module.ts deeper in a module is no manifest (E1171): the module's own manifest holds for every file of it", () => {
   const fs: Files = [
     { path: "modules/a/module.ts", source: `export default { id: 'a', deps: [${DEP}] }\n` },
     { path: "modules/a/deep/module.ts", source: "export default { id: 'deep', deps: [] }\n" },
@@ -185,7 +185,13 @@ test("a module is the module.ts with the longest directory prefix of the file", 
     { path: "modules/ab/x.ts", source: BAD },
     { path: "other/x.ts", source: BAD },
   ];
-  expect(run(fs).map((d) => d.path)).toEqual(["modules/a/deep/er/x.ts", "modules/a/sub/x.ts", "modules/a/x.ts"]);
+  expect(run(fs).map((d) => d.path)).toEqual([
+    "modules/a/deep/er/x.ts",
+    "modules/a/deep/more/x.ts",
+    "modules/a/deep/x.ts",
+    "modules/a/sub/x.ts",
+    "modules/a/x.ts",
+  ]);
 });
 
 test("a manifest at the project root is the module of every file without a nearer one", () => {
@@ -282,14 +288,14 @@ test("the first default export is the manifest", () => {
   expect(under(`export const x = 1\nexport default { deps: [${DEP}] }\n`).length).toBe(1);
 });
 
-test("a manifest listed after the module it nests in still wins for its own files", () => {
+test("a module.ts nested in a module, listed first, is no manifest for the files beside it", () => {
   const fs: Files = [
     { path: "modules/a/deep/module.ts", source: "export default { id: 'deep', deps: [] }\n" },
     { path: "modules/a/module.ts", source: `export default { id: 'a', deps: [${DEP}] }\n` },
     { path: "modules/a/deep/x.ts", source: BAD },
     { path: "modules/a/y.ts", source: BAD },
   ];
-  expect(run(fs).map((d) => d.path)).toEqual(["modules/a/y.ts"]);
+  expect(run(fs).map((d) => d.path)).toEqual(["modules/a/deep/x.ts", "modules/a/y.ts"]);
 });
 
 test("a file whose name merely ends in module.ts is not a manifest", () => {
@@ -310,4 +316,37 @@ test("a call without arguments or with a spread argument as the manifest lists n
 
 test("new expressions that are not Intl formatters are skipped without error", () => {
   expect(withDeps("export const a = new Thing('de-DE')\nexport const b = new Intl.Segmenter('de-DE')\n")).toEqual([]);
+});
+
+test("a decoy module.ts deeper in a library or an app module is E1171 and turns E2301 off for no file", () => {
+  const LIB = "node_modules/@acme/charts";
+  const lib = (deps: string) =>
+    `import { module } from '@keel/compiler'\nexport default module({ id: 'charts', deps: [${deps}], capabilities: [], public: { exports: [] } })\n`;
+  const found = check(
+    [
+      { path: "modules/shop/module.ts", source: `export default { id: 'shop', deps: ['@acme/charts', ${DEP}] }\n` },
+      { path: "modules/shop/fmt/module.ts", source: "export default { id: 'shop', deps: [] }\n" },
+      { path: "modules/shop/fmt/x.ts", source: BAD },
+      {
+        path: `${LIB}/package.json`,
+        source: JSON.stringify({
+          name: "@acme/charts",
+          version: "1.0.0",
+          type: "module",
+          keel: "library",
+          exports: {},
+        }),
+      },
+      { path: `${LIB}/module.ts`, source: lib(DEP) },
+      { path: `${LIB}/src/fmt/module.ts`, source: lib("") },
+      { path: `${LIB}/src/fmt/fmt.ts`, source: BAD },
+    ],
+    { types: false },
+  ).diagnostics;
+  expect(found.filter((d) => d.code === "E2301" || d.code === "E1171").map((d) => `${d.code} ${d.path}`)).toEqual([
+    "E1171 modules/shop/fmt/module.ts",
+    "E2301 modules/shop/fmt/x.ts",
+    `E2301 ${LIB}/src/fmt/fmt.ts`,
+    `E1171 ${LIB}/src/fmt/module.ts`,
+  ]);
 });

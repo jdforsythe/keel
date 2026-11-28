@@ -3,7 +3,7 @@
 // that left the link first, pulls nothing.
 import { renderRoute } from "@keel/testing";
 import { describe, expect, test } from "vitest";
-import { focusedId, routes, serverHref, simCtx, useRows } from "../conformance/fixtures.ts";
+import { focusedId, routes, serverHref, simCtx, useRows } from "./support.ts";
 
 describe("pager focus handoff", () => {
   test("after Next onto the last page and focus leaving status, another navigation on that page moves nothing", async () => {
@@ -26,7 +26,7 @@ describe("pager focus handoff", () => {
     await h.fire("cat.next", { type: "focus" });
     await h.fire("cat.next", { type: "blur" });
     await h.navigate(serverHref({ page: 3 }));
-    expect(document.getElementById("cat.next")).toBeNull();
+    expect(() => h.find("cat.next")).toThrow(/E1705/);
     expect(focusedId()).not.toBe("cat.status");
     h.dispose();
   });

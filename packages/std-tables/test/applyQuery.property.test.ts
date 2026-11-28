@@ -1,7 +1,7 @@
 // `applyQuery` over rows and searches generated from the row schema and its `tableSearch` (`gen`). Seed 1337.
 import { type Infer, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
-import type { Locale } from "@keel/std-i18n";
+import { type Locale, collate } from "@keel/std-i18n";
 import { applyQuery, columns, tableSearch } from "@keel/std-tables";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -32,9 +32,8 @@ const TAGS: readonly string[] = ["low", "mid", "high"];
 const rowsArb = fc.array(gen(Row), { maxLength: 40 }).map((rows) => rows.map((r, i): R => ({ ...r, id: 900 - 7 * i })));
 const searchArb = gen(Search);
 const sizeArb = fc.integer({ min: 1, max: 9 });
-const collator = new Intl.Collator(LOCALE);
 const order = (sort: string, a: R, b: R): number => {
-  if (sort === "name") return Math.sign(collator.compare(a.name, b.name));
+  if (sort === "name") return Math.sign(collate(a.name, b.name, LOCALE));
   if (sort === "n") return Math.sign(a.n - b.n);
   if (sort === "tag") return Math.sign(TAGS.indexOf(a.tag) - TAGS.indexOf(b.tag));
   if (sort === "on") return Number(a.on) - Number(b.on);

@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { TimingsRecent } from "../TimingsRecent.ts";
+import type { TimingsRecent } from "../TimingsRecent.schema.ts";
 import { snapshot } from "./snapshot.ts";
 import { stats } from "./stats.ts";
 

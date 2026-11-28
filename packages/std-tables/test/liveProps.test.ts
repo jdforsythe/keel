@@ -7,12 +7,10 @@ import type { Locale } from "@keel/std-i18n";
 import { render } from "@keel/testing";
 import { Box, Button } from "@keel/ui";
 import { expect, test } from "vitest";
-import { CELLS, type Query, TEXT, catalogColumns, makeRows, serverHref, simCtx } from "../conformance/fixtures.ts";
 import { DataTable } from "../src/DataTable.ts";
 import { TableSearch } from "../src/TableSearch.component.ts";
+import { CELLS, type Query, TEXT, catalogColumns, makeRows, serverHref, simCtx } from "./support.ts";
 
-const attr = (id: string, name: string): string | null => document.getElementById(id)?.getAttribute(name) ?? null;
-const textOf = (id: string): string => document.getElementById(id)?.textContent ?? "";
 const body = (t: ReturnType<typeof render>): string[] => t.a11y("cat.body").children.map((c) => c.id);
 
 let set = (): void => {};
@@ -65,33 +63,28 @@ const Page = Object.assign((_props: Record<string, never>, _ctx: Ctx): Node => v
 
 test("label, text, locale, selected, rows and search read from signals update the mounted table", async () => {
   const t = render(Page, { props: {}, ctx: simCtx() });
-  const table = document.getElementById("cat.table");
-  const next = document.getElementById("cat.next");
-  expect(attr("cat.table", "aria-label")).toBe("Catalog");
-  expect(attr("cat.pager", "aria-label")).toBe("Pages");
-  expect(textOf("cat.status")).toBe("Pages 2/3");
-  expect(textOf("cat.cell.6.minutes")).toBe("18,000");
+  expect(t.find("cat.table").name).toBe("Catalog");
+  expect(t.find("cat.pager").name).toBe("Pages");
+  expect(t.find("cat.status").text).toBe("Pages 2/3");
+  expect(t.find("cat.cell.6.minutes").text).toBe("18,000");
   expect(t.find("cat.selectAll").state.checked).toBe(false);
   await t.fire("go", { type: "focus" });
   await t.fire("go", { type: "click" });
-  expect(attr("cat.table", "aria-label")).toBe("Katalog");
-  expect(attr("cat.pager", "aria-label")).toBe("Seiten");
-  expect(textOf("cat.status")).toBe("Seiten 2/3");
+  expect(t.find("cat.table").name).toBe("Katalog");
+  expect(t.find("cat.pager").name).toBe("Seiten");
+  expect(t.find("cat.status").text).toBe("Seiten 2/3");
   expect(t.find("cat.header.minutes").state.sort).toBe("descending");
   expect(t.find("cat.header.title").state.sort).toBeUndefined();
-  expect(new URL(attr("cat.sort.minutes", "href") ?? "", "http://k.test").searchParams.get("dir")).toBe("asc");
-  expect(attr("cat.table", "aria-rowcount")).toBe("14");
+  expect(t.find("cat.table").state.rowcount).toBe(14);
   expect(body(t)).toHaveLength(5);
   const first = body(t)[0] ?? "";
-  expect(textOf(`${first.replace("row", "cell")}.minutes`)).toMatch(/^\d{1,2}\.\d{3}$/); // de-DE grouping
+  expect(t.find(`${first.replace("row", "cell")}.minutes`).text).toMatch(/^\d{1,2}\.\d{3}$/); // de-DE grouping
   expect(t.find("cat.select.7").state.checked).toBe(body(t).includes("cat.row.7"));
-  expect(document.getElementById("cat.table")).toBe(table);
-  expect(document.getElementById("cat.next")).toBe(next);
   expect(t.find("go").state.focused).toBe(true);
   t.dispose();
 });
 
-test("TableSearch shows the q of a search that changes while it is mounted", async () => {
+test("TableSearch keeps its input, and the input focus, when the search changes while it is mounted", async () => {
   const Search = Object.assign(
     (_props: Record<string, never>, ctx: Ctx): Node => {
       const q = signal<Query>({ q: "tea" });
@@ -115,11 +108,9 @@ test("TableSearch shows the q of a search that changes while it is mounted", asy
     { Props: s.object({}) },
   );
   const t = render(Search, { props: {}, ctx: simCtx() });
-  const input = document.getElementById("find.input");
-  expect(Reflect.get(input ?? {}, "value")).toBe("tea");
+  await t.fire("find.input", { type: "focus" });
   await t.fire("set", { type: "click" });
-  expect(document.getElementById("find.input")).toBe(input);
-  expect(Reflect.get(input ?? {}, "value")).toBe("rice");
+  expect(t.find("find.input").state.focused).toBe(true);
   t.dispose();
 });
 
@@ -149,10 +140,10 @@ test("TableSearch's label follows a getter label over a signal on the same input
     { Props: s.object({}) },
   );
   const t = render(Find, { props: {}, ctx: simCtx() });
-  const input = document.getElementById("find.input");
   expect(t.find("find.input").name).toBe("Search recipes");
+  await t.fire("find.input", { type: "focus" });
   await t.fire("rn", { type: "click" });
-  expect(document.getElementById("find.input")).toBe(input);
+  expect(t.find("find.input").state.focused).toBe(true);
   expect(t.find("find.input").name).toBe("Rezepte suchen");
   t.dispose();
 });

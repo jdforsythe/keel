@@ -49,7 +49,7 @@ if (!found.ok) return err({ code: 'keel.denied', message: 'Unknown token', data:
 
 ## Extension points
 
-Uses the **capability registry** (k.ctx `register('tokens', { real, shell, sim })`), the **schema type registry** (`tokens.Digested`) and the **check rule registry** (k.check: E2201 to E2203 from `./tools`).
+Uses the **capability registry** (k.ctx `register('tokens.opaque', { real, shell, sim })`), the **schema type registry** (`tokens.Digested`) and the **check rule registry** (k.check: E2201 to E2203 from `./tools`).
 
 ## Migration from `@keel/std-credentials`
 

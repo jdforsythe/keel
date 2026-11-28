@@ -1,28 +1,15 @@
 import type { OutRecord, Outcome, StdOperation } from "@keel/cli";
-import { s } from "@keel/schema";
-import { Tally } from "./Tally.ts";
+import { attempt, s } from "@keel/schema";
+import { Tally } from "./Tally.schema.ts";
 import { callerCookie } from "./callerCookie.ts";
+import { Failed } from "./internal/Failed.schema.ts";
+import { InspectDoc } from "./internal/InspectDoc.schema.ts";
+import { LoaderAnswer } from "./internal/LoaderAnswer.schema.ts";
+import { OkResult } from "./internal/OkResult.schema.ts";
 
 const DEFAULT_URL = "http://localhost:5173";
 const URL_MAX = 48;
 const JSON_ONLY = { accept: "application/json" };
-
-/** The parts of `GET /__keel/inspect` (k.inspect) that mark an inspect document; `sections` is absent without inspector hooks. */
-const InspectDoc = s.object({
-  live: s.boolean(),
-  graph: s.object({}),
-  stores: s.record(s.json()),
-  ids: s.record(s.json()),
-  a11y: s.record(s.json()),
-  routes: s.record(s.json()),
-  sections: s.record(s.json()).optional(),
-});
-
-/** A loader's answer (k.api): the route's `id` and the `Result` of each loader that ran, by route id. */
-const LoaderAnswer = s.object({ id: s.string(), results: s.record(s.json()) });
-
-/** A loader's `Result` that is ok. */
-const OkResult = s.object({ ok: s.literal(true), value: s.json() });
 
 /** The tallies a route-form body holds, a lone `Tally` as an array of one; `undefined` for a body of another shape. */
 const talliesOf = (body: unknown): OutRecord[] | undefined => {
@@ -60,7 +47,7 @@ const shown = (url: string): string => {
 
 /** The parsed `url` when it names a route of the app: a path beyond `/` or a query. */
 const routeOf = (url: string): URL | undefined => {
-  const parsed = URL.canParse(url) ? new URL(url) : undefined;
+  const parsed = URL.parse(url) ?? undefined;
   return parsed === undefined || (/^\/*$/.test(parsed.pathname) && parsed.search === "") ? undefined : parsed;
 };
 
@@ -102,22 +89,21 @@ export const command: StdOperation = {
     const url = route === undefined ? given.replace(/[?#].*$/s, "").replace(/\/+$/, "") : given;
     const fail = (why: string): Outcome => done([diag("E1056", `${why}: ${shown(url)}`)], {}, false);
     const cookie = route === undefined ? undefined : callerCookie(route.href, io.env?.KEEL_REPORT_TOKEN);
-    let res: Response;
-    try {
-      res =
+    const sent = await attempt(
+      (): Promise<Response> =>
         route === undefined
-          ? await get(`${url}/__keel/inspect`)
-          : await get(url, { headers: cookie === undefined ? JSON_ONLY : { ...JSON_ONLY, cookie } });
-    } catch {
-      return fail("report target unreachable");
-    }
+          ? get(`${url}/__keel/inspect`)
+          : get(url, { headers: cookie === undefined ? JSON_ONLY : { ...JSON_ONLY, cookie } }),
+      (x) => (x instanceof Error ? Failed.make({ step: "fetch" }) : undefined),
+    );
+    if (!sent.ok) return fail("report target unreachable");
+    const res = sent.value;
     if (!res.ok) return fail(`report target answered ${res.status}`);
-    let body: unknown;
-    try {
-      body = await res.json();
-    } catch {
-      body = undefined;
-    }
+    const read = await attempt(
+      (): Promise<unknown> => res.json(),
+      (x) => (x instanceof Error ? Failed.make({ step: "json" }) : undefined),
+    );
+    const body: unknown = read.ok ? read.value : undefined;
     if (route !== undefined) {
       const tallies = talliesOf(body) ?? talliesOf(loaded(body));
       return tallies === undefined

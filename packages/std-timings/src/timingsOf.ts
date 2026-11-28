@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { Timings } from "./Timings.ts";
+import type { Timings } from "./Timings.schema.ts";
 import { readRecent } from "./internal/readRecent.ts";
 import { registerSection } from "./internal/registerSection.ts";
 import { snapshot } from "./internal/snapshot.ts";

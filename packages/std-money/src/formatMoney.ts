@@ -1,8 +1,7 @@
-/// <reference lib="es2023.intl" />
-// es2023.intl types `Intl.NumberFormat#format` over a decimal string (`StringNumericLiteral`), which every runtime runs.
-import type { Locale } from "@keel/std-i18n";
+import { defect } from "@keel/schema";
+import { type Locale, numberParts } from "@keel/std-i18n";
 import { asDecimal } from "../unsafe/asDecimal.ts";
-import type { Money } from "./Money.ts";
+import type { Money } from "./Money.schema.ts";
 import { EXPONENT } from "./internal/EXPONENT.ts";
 
 /** The exact decimal string of `amount` at exponent `e` (`-5`, 2 gives `-0.05`): string arithmetic, no float. */
@@ -16,14 +15,17 @@ function decimal(amount: number, e: number): string {
 }
 
 /**
- * `m` written for `locale` (std.money): `Intl.NumberFormat` in currency style over the exact decimal of `amount` at
- * the currency's exponent, so no amount passes through a float. `{ amount: 1250, currency: 'EUR' }` is `€12.50` in
+ * `m` written for `locale` (std.money): `numberParts` of `@keel/std-i18n` in currency style over the exact decimal of
+ * `amount` at the currency's exponent, joined, so no amount passes through a float. `{ amount: 1250, currency: 'EUR' }` is `€12.50` in
  * `en-US` and `12,50 €` in `de-DE`. Reads no host locale.
  */
 export function formatMoney(m: Money, locale: Locale): string {
-  if (!Number.isSafeInteger(m.amount) || Math.abs(m.amount) > 1e15)
-    throw new Error(`money amount ${m.amount} has no decimal form`);
-  const d = asDecimal(decimal(m.amount, EXPONENT[m.currency]));
-  if (d === undefined) throw new Error(`money amount ${m.amount} has no decimal form`);
-  return new Intl.NumberFormat(locale, { style: "currency", currency: m.currency }).format(d);
+  const d =
+    Number.isSafeInteger(m.amount) && Math.abs(m.amount) <= 1e15
+      ? asDecimal(decimal(m.amount, EXPONENT[m.currency]))
+      : undefined;
+  if (d === undefined) return defect("money amount has no decimal form", { data: { amount: String(m.amount) } });
+  return numberParts(d, locale, m.currency)
+    .map((p) => p.value)
+    .join("");
 }

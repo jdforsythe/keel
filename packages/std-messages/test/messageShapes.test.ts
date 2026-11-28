@@ -10,6 +10,20 @@ import { kindOf } from "../src/internal/kindOf.ts";
 import { messageOk } from "../src/internal/messageOk.ts";
 import { templateOk } from "../src/internal/templateOk.ts";
 
+/** The JSON of the `cause` of what `p` rejects with: the schema issues of a refused entry. */
+const causeOf = async (p: Promise<unknown>): Promise<string> =>
+  JSON.stringify(
+    Reflect.get(
+      Object(
+        await p.then(
+          () => undefined,
+          (x: unknown) => x,
+        ),
+      ),
+      "cause",
+    ),
+  );
+
 const AppLocale = s.enum(["en-US", "de-DE"]);
 const kinds = (params: Record<string, ParamKind>): Map<string, ParamKind> => new Map(Object.entries(params));
 const text = (name: string, base: Parameters<typeof s.format>[1] = s.string()) =>
@@ -138,13 +152,13 @@ describe("messages", () => {
   const load = async (): Promise<unknown> => ({ default: { a: "A" } });
 
   it("names what it refuses", () => {
-    expect(() => messages(s.literal("en-US"), { a: {} }, load)).toThrow(new Error("messages: locales not an s.enum"));
-    expect(() => messages(AppLocale, { "a-b": {} }, load)).toThrow(new Error("messages: bad key 'a-b'"));
+    expect(() => messages(s.literal("en-US"), { a: {} }, load)).toThrow("messages: locales not an s.enum");
+    expect(() => messages(AppLocale, { "a-b": {} }, load)).toThrow("messages: a key is no identifier");
     expect(() => messages(AppLocale, { a: { "x-y": s.int() } }, load)).toThrow(
-      new Error("messages: bad param 'x-y' of 'a'"),
+      "messages: a param is no identifier or of no kind",
     );
     expect(() => messages(AppLocale, { a: { j: s.json() } }, load)).toThrow(
-      new Error("messages: bad param 'j' of 'a'"),
+      "messages: a param is no identifier or of no kind",
     );
   });
 
@@ -156,7 +170,7 @@ describe("messages", () => {
     ["a module without a default export", { entry: { a: "A" } }],
   ])("load rejects with the schema's type issue when the file is %s", async (_, file) => {
     const Demo = messages(AppLocale, { a: {} }, async () => file);
-    await expect(Demo.load("en-US")).rejects.toThrow(/^messages: \[.*"rule":"type"/);
+    expect(await causeOf(Demo.load("en-US"))).toMatch(/"rule":"type"/);
   });
 
   it("load resolves to the default export the set accepts", async () => {
@@ -183,13 +197,15 @@ test("module constants: identifier keys, the text formats, every plural form, th
   const load = async (): Promise<unknown> => ({ default: {} });
 
   for (const key of ["-a", "a-", "1a", "a b", ""]) {
-    expect(() => fresh.messages(locales, { [key]: {} }, load)).toThrow(`messages: bad key '${key}'`);
-    expect(() => fresh.messages(locales, { a: { [key]: schema.s.int() } }, load)).toThrow(`bad param '${key}' of 'a'`);
+    expect(() => fresh.messages(locales, { [key]: {} }, load)).toThrow("messages: a key is no identifier");
+    expect(() => fresh.messages(locales, { a: { [key]: schema.s.int() } }, load)).toThrow(
+      "messages: a param is no identifier or of no kind",
+    );
   }
   expect(() => fresh.messages(locales, { $a_1: { _n$2: schema.s.int() } }, load)).not.toThrow();
 
   const Demo = fresh.messages(locales, { a: {}, b: { n: schema.s.int(), who: schema.s.string() } }, load);
-  await expect(Demo.load("en-US")).rejects.toThrow(/^messages: \[.*"rule"/);
+  expect(await causeOf(Demo.load("en-US"))).toMatch(/"rule"/);
   expect(JSON.stringify(Demo.node)).toContain('"name":"message"');
   expect(JSON.stringify(Demo.node)).toContain('"name":"message(n,who)"');
 

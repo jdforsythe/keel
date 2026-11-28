@@ -2,7 +2,7 @@
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { TimeZone } from "../src/TimeZone.ts";
+import { TimeZone } from "../src/TimeZone.schema.ts";
 import { pinnedZones } from "../src/internal/pinnedZones.ts";
 
 const SEED = 1337;
@@ -25,7 +25,7 @@ test("the pinned list holds 597 names, 344 Zone names plus UTC for gen, without 
 test("every pinned name is accepted by Intl.DateTimeFormat on this host", () => {
   const refused = pinned.filter((n) => {
     try {
-      new Intl.DateTimeFormat("en-US", { timeZone: n });
+      new Intl.DateTimeFormat(undefined, { timeZone: n });
       return false;
     } catch {
       return true;

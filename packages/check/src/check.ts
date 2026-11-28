@@ -25,6 +25,7 @@ import { isSqlPath } from "./internal/isSqlPath.ts";
 import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
+import { libraryPages } from "./internal/libraryPages.ts";
 import { localNotLiteral } from "./internal/localNotLiteral.ts";
 import { looksDiags } from "./internal/looks/looksDiags.ts";
 import { looksOf } from "./internal/looks/looksOf.ts";
@@ -46,6 +47,7 @@ import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
 import { stdInScope } from "./internal/stdInScope.ts";
+import { strayManifest } from "./internal/strayManifest.ts";
 import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
@@ -99,14 +101,18 @@ export function check(input: readonly SourceFile[], inputOptions: CheckOptions =
     inputOptions.project === undefined ? input : [...input, ...inputOptions.project],
     path.resolve(inputOptions.root ?? process.cwd()),
   );
-  const given = input.filter((f) => !ws.twin(f.path));
+  const once = input.filter((f) => !ws.twin(f.path));
   const options: CheckOptions =
     inputOptions.project === undefined
       ? inputOptions
       : { ...inputOptions, project: inputOptions.project.filter((f) => !ws.twin(f.path)) };
-  const realAll = options.project === undefined ? given : [...given, ...options.project];
-  const libs = libraryFolders(realAll);
+  const raw = options.project === undefined ? once : [...once, ...options.project];
+  const libs = libraryFolders(raw);
   const isLibrary = (p: string): boolean => libs.folder(p) !== undefined || ws.inPlace(p);
+  // E1171: a `module.ts` that is no manifest is reported and leaves every later step, so no rule's project holds it.
+  const stray = (f: SourceFile): boolean => strayManifest(f.path, isLibrary(f.path));
+  const given = once.filter((f) => !stray(f));
+  const realAll = raw.filter((f) => !stray(f));
   // Each library's folder (`<p>node_modules/<name>/`): where the k.module pass finds it, and its files' view.
   const libraryRoots = new Set(libs.packages.map((f) => f.path.slice(0, -"package.json".length)));
   const viewed = (f: SourceFile): SourceFile => {
@@ -115,13 +121,23 @@ export function check(input: readonly SourceFile[], inputOptions: CheckOptions =
   };
   const files = given.map(viewed);
   const opts: CheckOptions =
-    options.project === undefined ? options : { ...options, project: options.project.map(viewed) };
+    options.project === undefined
+      ? options
+      : { ...options, project: options.project.filter((f) => !stray(f)).map(viewed) };
   const realCode = given.filter((f) => isCodePath(f.path));
   const code = files.filter((f) => isCodePath(f.path));
   // One compile per project, with its paths and topology, so a workspace root sees what the app sees (rfc:0059).
   const all = opts.project === undefined ? files : [...files, ...opts.project];
   const dirs = projectDirs(all);
-  const out: Diagnostic[] = [];
+  const out: Diagnostic[] = once.filter(stray).map((f) => ({
+    kind: "diag",
+    code: "E1171",
+    path: f.path,
+    line: 1,
+    col: 1,
+    message: "this module.ts is no manifest; modules/<id>/ or a library's root holds the manifest",
+    see: "k.module",
+  }));
   const reported = new Map<string, Set<string>>();
   const artifactsOf = new Map<string, Readonly<Record<string, unknown>>>();
   // The project a rule sees beside its own file (rfc:0070): one array per project, shared by reference.
@@ -134,6 +150,9 @@ export function check(input: readonly SourceFile[], inputOptions: CheckOptions =
     for (const f of all)
       if (isCodePath(f.path) && !members.has(f.path) && dirs.find((d) => f.path.startsWith(d)) === dir)
         members.set(f.path, f);
+    // A library's root `module.ts` at its view path, so a rule finding a file's module by path prefix finds its manifest.
+    for (const m of libs.manifests)
+      if (!members.has(m.path) && dirs.find((d) => m.path.startsWith(d)) === dir) members.set(m.path, m);
     const project = Object.freeze([...members.values()]);
     projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
@@ -230,7 +249,7 @@ export function check(input: readonly SourceFile[], inputOptions: CheckOptions =
 
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
   // the rules of one `importDeps` imported first, whatever an earlier call in this process loaded (k.check-cache).
-  const scope = stdInScope(all, opts.root ?? process.cwd());
+  const scope = stdInScope(all, opts.root ?? process.cwd(), opts.own);
   const skip = new Map([...reported].map(([p, codes]) => [libs.real(p), codes]));
   const typed =
     opts.types === false
@@ -243,7 +262,12 @@ export function check(input: readonly SourceFile[], inputOptions: CheckOptions =
   if (typed !== undefined)
     out.push(...typed.diagnostics.filter((d) => d.code !== "E1406" || !e1403.has(`${d.path}:${d.line}:${d.col}`)));
 
-  const registered = rules().filter((r) => ruleInScope(ruleOwners.get(r.code), scope, depsRuleOwners));
+  // A rule a package registers judges the projects that list it, not the package's own folder (k.library-pack Own folder).
+  const registered = rules().filter(
+    (r) =>
+      ruleInScope(ruleOwners.get(r.code), scope, depsRuleOwners) &&
+      (opts.own === undefined || ruleOwners.get(r.code) !== opts.own),
+  );
   const checked: Checked[] = [];
   for (const file of code) {
     const parsed = parseFile(file);
@@ -289,11 +313,16 @@ export function check(input: readonly SourceFile[], inputOptions: CheckOptions =
     ...libraryLedgers(realChecked, realAll, opts.root ?? process.cwd()),
     ...aliasedImports(realChecked, path.resolve(opts.root ?? process.cwd()), dirs, isLibrary),
     ...outsideImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
-    ...libraryIds(realChecked, isLibrary, new Map([...libs.entries].map(([spec, at]) => [spec, libs.real(at)]))),
+    ...libraryIds(
+      realChecked,
+      isLibrary,
+      new Map([...libs.entries].map(([spec, at]) => [spec, libs.real(at)])),
+      libraryPages(realChecked, realAll, libs),
+    ),
     ...libraryImports(realChecked, libs.folder),
     ...guardRedirectLoops(checked),
-    ...contractChecks(checked, all, opts.topology),
-    ...ruleCodeDeclarations(checked),
+    ...contractChecks(checked, all, opts.topology, libs.contracts),
+    ...ruleCodeDeclarations(checked, (p) => libs.folder(libs.real(p))),
     ...budgetBreaches(opts.budgets ?? []),
     // E1005 derives each view from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
     ...generatedEdits(files, (dir) => compiledViews(dir, opts.project ?? files, opts), opts.derived),

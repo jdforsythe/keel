@@ -1,5 +1,5 @@
 import type { KeelError } from "@keel/schema";
-import type { Currency } from "./Currency.ts";
+import type { Currency } from "./Currency.schema.ts";
 import type { MoneyError } from "./MoneyError.ts";
 
 /**

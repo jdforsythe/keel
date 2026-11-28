@@ -27,6 +27,7 @@
     "@keel/std-capacitor": "workspace:*",
     "@keel/std-channels": "workspace:*",
     "@keel/std-db": "workspace:*",
+    "@keel/std-i18n": "workspace:*",
     "@keel/std-jobs": "workspace:*",
     "@keel/std-live": "workspace:*",
     "@keel/std-offline": "workspace:*",
@@ -34,6 +35,7 @@
     "@keel/std-sessions": "workspace:*",
     "@keel/std-statecharts": "workspace:*",
     "@keel/std-tauri": "workspace:*",
+    "@keel/std-temporal": "workspace:*",
     "@keel/std-workflows": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*"

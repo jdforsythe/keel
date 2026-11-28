@@ -459,6 +459,12 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [mod("shop", ["@acme/charts"], []), mod("charts", [], []), ...library("charts", [])],
     clean: [mod("shop", ["@acme/charts"], []), mod("charts", [], []), ...library("graphs", [])],
   },
+  // E1171 (rfc:0239): a `module.ts` that is no manifest (an app's one deeper than `modules/<id>/module.ts`), at the file; the clean counterpart holds only the manifest.
+  E1171: {
+    opts: NO_TYPES,
+    bad: [mod("a", [], []), f("modules/a/sub/module.ts", mod("a", [], []).source)],
+    clean: [mod("a", [], [])],
+  },
   // E1167 (rfc:0163): a manifest `env` entry outside `[A-Z][A-Z0-9_]*`, at the entry; the clean counterpart holds a name in the pattern.
   E1167: {
     opts: NO_TYPES,

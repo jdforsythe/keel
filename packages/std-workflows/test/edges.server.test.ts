@@ -16,17 +16,49 @@ import { inRoot, nextId, sim } from "./support.server.ts";
 
 const empty = s.object({});
 
-/** A chart whose event `name` sits beside `go`; `idle` moves to `done` on either. */
-const named = (name: string) =>
-  inRoot(() =>
-    chart(nextId("named"), {
-      data: s.object({}),
-      start: {},
-      events: { go: empty, [name]: empty },
-      initial: "idle",
-      states: { idle: { on: { go: "done", [name]: "done" } }, done: { final: true } },
-    }),
-  );
+/** Charts whose event `name` sits beside `go`; `idle` moves to `done` on either. Each is literal, so keel check proves it. */
+const named = {
+  start: () =>
+    inRoot(() =>
+      chart(nextId("named"), {
+        data: s.object({}),
+        start: {},
+        events: { go: empty, start: empty },
+        initial: "idle",
+        states: { idle: { on: { go: "done", start: "done" } }, done: { final: true } },
+      }),
+    ),
+  attempt: () =>
+    inRoot(() =>
+      chart(nextId("named"), {
+        data: s.object({}),
+        start: {},
+        events: { go: empty, attempt: empty },
+        initial: "idle",
+        states: { idle: { on: { go: "done", attempt: "done" } }, done: { final: true } },
+      }),
+    ),
+  forget: () =>
+    inRoot(() =>
+      chart(nextId("named"), {
+        data: s.object({}),
+        start: {},
+        events: { go: empty, forget: empty },
+        initial: "idle",
+        states: { idle: { on: { go: "done", forget: "done" } }, done: { final: true } },
+      }),
+    ),
+  begin: () =>
+    inRoot(() =>
+      chart(nextId("named"), {
+        data: s.object({}),
+        start: {},
+        events: { go: empty, begin: empty },
+        initial: "idle",
+        states: { idle: { on: { go: "done", begin: "done" } }, done: { final: true } },
+      }),
+    ),
+};
 
 const RESERVED = ["start", "attempt", "forget"] as const;
 
@@ -36,7 +68,12 @@ test("A chart event named start, attempt or forget is refused with a diagnostic 
       const id = nextId("reserved");
       const caught = (() => {
         try {
-          inRoot(() => workflow(id, { chart: named(name) }));
+          const declare = {
+            start: (): unknown => workflow(id, { chart: named.start() }),
+            attempt: (): unknown => workflow(id, { chart: named.attempt() }),
+            forget: (): unknown => workflow(id, { chart: named.forget() }),
+          }[name];
+          inRoot(declare);
         } catch (e) {
           return e;
         }
@@ -50,7 +87,7 @@ test("A chart event named start, attempt or forget is refused with a diagnostic 
 });
 
 test("A chart whose events take no transaction name opens its stores", async () => {
-  const wf = inRoot(() => workflow(nextId("renamed"), { chart: named("begin") }));
+  const wf = inRoot(() => workflow(nextId("renamed"), { chart: named.begin() }));
   const r = await commitStores(sim(), wf.stores, (S) => ok(Object.keys(S.events).sort()));
   expect(r).toEqual({ ok: true, value: ["begin", "go"] });
 });

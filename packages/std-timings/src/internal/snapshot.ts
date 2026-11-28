@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { Timings } from "../Timings.ts";
+import type { Timings } from "../Timings.schema.ts";
 import { stats } from "./stats.ts";
 
 /** A copy of the `Timings` of `ctx`, sorted by name; `{}` for a ctx with no `time` calls. */

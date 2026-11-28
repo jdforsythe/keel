@@ -1,6 +1,6 @@
 // The lists and patterns the rule modules hold: each test loads its module afresh, then reads through the constant.
 import { expect, test, vi } from "vitest";
-import { CLEAN, MODULE } from "../conformance/fixtures/support.ts";
+import { CLEAN, MODULE } from "./support.ts";
 import { expr, program, run } from "./tooling.ts";
 
 const IMPORT = "import { messages } from '@keel/std-messages'\n";

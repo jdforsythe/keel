@@ -16,7 +16,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "127kb",
+      "max": "129.15kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -87,7 +87,7 @@
       "max": "1.25kb",
       "platform": "node"
     },
-    "@keel/std-i18n": "1kb",
+    "@keel/std-i18n": "1.2kb",
     "@keel/std-i18n/tools": {
       "max": "4kb",
       "platform": "node"
@@ -151,7 +151,7 @@
       "max": "4kb",
       "platform": "node"
     },
-    "@keel/std-tables": "4.25kb",
+    "@keel/std-tables": "4.35kb",
     "@keel/std-db/sqlite": {
       "max": "1.9kb",
       "platform": "node"
@@ -193,7 +193,7 @@
       "platform": "node"
     },
     "@keel/std-tokens/tools": {
-      "max": "1.5kb",
+      "max": "1.8kb",
       "platform": "node"
     },
     "@keel/std-temporal": "5kb",

@@ -4,10 +4,10 @@ import { realGeo } from "./internal/realGeo.ts";
 import { simGeo } from "./internal/simGeo.ts";
 
 /**
- * The `geo` capability accessor (std.geo, k.ctx registry): `geo(ctx).position()`. Real reads the browser's
+ * The `geo.position` capability's accessor (std.geo, k.ctx registry): `geo(ctx).position()`. Real reads the browser's
  * geolocation; shell delegates to real until native adapters exist; sim is one seeded position per ctx.
  */
-export const geo: (ctx: Ctx) => Geolocator = register<Geolocator>("geo", {
+export const geo: (ctx: Ctx) => Geolocator = register<Geolocator>("geo.position", {
   real: () => realGeo(),
   shell: () => realGeo(),
   sim: ({ seed }) => simGeo(seed),

@@ -41,7 +41,7 @@ test("text bounds outside 0 <= min <= max, 1 <= max <= 10000 or not integers thr
     [1, 10001],
     [1, Number.NaN],
   ] as const) {
-    expect(() => textCheck(min, max, false)).toThrow(RangeError);
+    expect(() => textCheck(min, max, false)).toThrow("text bounds must be integers");
   }
   expect(() => textCheck(0, 1, false)).not.toThrow();
   expect(() => textCheck(1, 10000, true)).not.toThrow();

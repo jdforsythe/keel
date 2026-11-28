@@ -43,7 +43,7 @@ describe("tableSearch", () => {
         };
         // A mark on the whole row marks the key too, which `columns` refuses first.
         if (whole) {
-          expect(() => Reflect.apply(columns, undefined, [Row, spec])).toThrow(/^E2851 key id is personal/);
+          expect(() => Reflect.apply(columns, undefined, [Row, spec])).toThrow(/^E2851 the key is personal/);
           return;
         }
         const cols = Reflect.apply(columns, undefined, [Row, spec]);

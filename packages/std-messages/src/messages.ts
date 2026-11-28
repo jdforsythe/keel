@@ -1,20 +1,18 @@
-import { type Schema, type SchemaError, s } from "@keel/schema";
+import { type Schema, defect, s } from "@keel/schema";
 import type { Locale } from "@keel/std-i18n";
 import { asEntry } from "../unsafe/asEntry.ts";
 import type { MessageSet } from "./MessageSet.ts";
 import type { Keys } from "./internal/Keys.ts";
+import { PARTS } from "./internal/PARTS.schema.ts";
 import type { ParamKind } from "./internal/ParamKind.ts";
 import { genMessage } from "./internal/genMessage.ts";
 import { kindOf } from "./internal/kindOf.ts";
 import { messageOk } from "./internal/messageOk.ts";
+import { refused } from "./internal/refused.ts";
 import { templateOk } from "./internal/templateOk.ts";
 
 const IDENT = /^[A-Za-z_$][\w$]*$/;
 const BLANK = /^\p{White_Space}*$/u;
-const PARTS = s.array(s.string());
-
-/** The rejection of `load`: the schema issues as JSON, with no locale text and no file path. */
-const fails = (e: SchemaError): Error => new Error(`messages: ${JSON.stringify(e.data.issues)}`);
 
 function messageType(params: ReadonlyMap<string, ParamKind>): Schema<unknown> {
   if (params.size === 0)
@@ -45,14 +43,15 @@ export function messages<L extends Locale, const K extends Keys>(
   keys: K,
   load: (locale: L) => Promise<unknown>,
 ): MessageSet<L, K> {
-  if (locales.node.kind !== "enum") throw new Error("messages: locales not an s.enum");
+  if (locales.node.kind !== "enum") return defect("messages: locales not an s.enum");
   const shape: Record<string, Schema<unknown>> = {};
   for (const [key, params] of Object.entries(keys)) {
-    if (!IDENT.test(key)) throw new Error(`messages: bad key '${key}'`);
+    if (!IDENT.test(key)) return defect("messages: a key is no identifier", { data: { key } });
     const kinds = new Map<string, ParamKind>();
     for (const [name, schema] of Object.entries(params)) {
       const kind = IDENT.test(name) ? kindOf(schema) : undefined;
-      if (kind === undefined) throw new Error(`messages: bad param '${name}' of '${key}'`);
+      if (kind === undefined)
+        return defect("messages: a param is no identifier or of no kind", { data: { key, param: name } });
       kinds.set(name, kind);
     }
     shape[key] = messageType(kinds);
@@ -63,18 +62,16 @@ export function messages<L extends Locale, const K extends Keys>(
     // A locale file's default export: parsed here, so a file failing the set throws however it is imported.
     text: (entry) => {
       const r = set.parse(entry);
-      if (r.ok) return r.value;
-      throw fails(r.error);
+      return r.ok ? r.value : refused(r.error);
     },
     load: async (locale) => {
       // The locale is parsed before `load` runs, so no value outside the set's enum reaches the dynamic import.
       const tag = locales.parse(locale);
-      if (!tag.ok) throw fails(tag.error);
+      if (!tag.ok) return refused(tag.error);
       const file: unknown = await load(tag.value);
       const entry = typeof file === "object" && file !== null && "default" in file ? file.default : undefined;
       const r = set.parse(entry);
-      if (r.ok) return r.value;
-      throw fails(r.error);
+      return r.ok ? r.value : refused(r.error);
     },
   };
 }

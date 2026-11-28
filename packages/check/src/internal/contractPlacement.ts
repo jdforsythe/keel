@@ -1,5 +1,6 @@
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
+import type { LibraryContract } from "./LibraryContract.ts";
 import { bindingCalls } from "./bindingCalls.ts";
 import { contractCalls } from "./contractCalls.ts";
 import { contractEscapes } from "./contractEscapes.ts";
@@ -11,6 +12,14 @@ const IN_MODULE = /^((?:.*\/)?)modules\/([^/]+)\//;
 const CONTRACT = /^(?:.*\/)?modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const NAME = /^[a-z][A-Za-z0-9]*$/;
 const SEE = "k.contract";
+const clip = (x: string): string => (x.length > 28 ? `${x.slice(0, 25)}...` : x);
+
+/** Where a library's contract belongs, for E1513's messages: its `./contract` file package-relative, else why none. */
+function libraryHome(lib: LibraryContract, folder: string): string {
+  if (lib.file !== undefined) return lib.file.slice(folder.length);
+  if (lib.target === undefined) return "the file a ./contract export names";
+  return `a src/*.contract.ts file, not ${clip(lib.target)}`;
+}
 
 /** The module folder `path` lies in (`dir` the project directory above `modules/`), or `null`. */
 function moduleOf(path: string): { readonly dir: string; readonly id: string } | null {
@@ -24,21 +33,29 @@ function moduleOf(path: string): { readonly dir: string; readonly id: string } |
  * export not named `<id>`, an API id whose name after the module is not one lowerCamel segment, and a module's
  * `routes.ts` binding a contract imported from another module's contract file, and `contract` reached other than by a
  * direct call of its import (`contractEscapes`: an alias, a value use, a re-export, a dynamic import), which no
- * contract reader follows. A package's `./contract` lies under `node_modules/`, outside app code.
+ * contract reader follows. A library's file (`libraries`: its view folder to its `./contract` entry) holds its
+ * module's contract in the file its `./contract` export names alone, when that is a `src/` `*.contract.ts` file, the
+ * expected path written package-relative (`src/health.contract.ts`); with no such entry, or one naming any other file
+ * (`dist/health.contract.js`, `src/index.ts`, an `unsafe/` file), every call there is out of place.
  */
-export function contractPlacement(files: readonly Checked[]): Diagnostic[] {
+export function contractPlacement(
+  files: readonly Checked[],
+  libraries: ReadonlyMap<string, LibraryContract> = new Map(),
+): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const { file, parsed } of files) {
     if (!isAppPath(file.path)) continue;
     const mod = moduleOf(file.path);
+    const lib = mod === null ? undefined : libraries.get(`${mod.dir}modules/${mod.id}/`);
     const own = CONTRACT.exec(file.path);
-    const home = own !== null && own[1] === own[2];
-    const where = `${mod?.dir ?? ""}modules/${mod?.id ?? "<id>"}/${mod?.id ?? "<id>"}.contract.ts`;
+    const home = lib === undefined ? own !== null && own[1] === own[2] : file.path === lib.file;
+    const libHome = lib === undefined || mod === null ? undefined : libraryHome(lib, `${mod.dir}modules/${mod.id}/`);
+    const where = libHome ?? `${mod?.dir ?? ""}modules/${mod?.id ?? "<id>"}/${mod?.id ?? "<id>"}.contract.ts`;
     for (const n of contractEscapes(parsed.program))
       out.push(diagAt(file, n, "E1513", `call contract() directly by its import, in ${where}`, SEE));
     contractCalls(file, parsed.program).forEach((c, i) => {
       const id = mod?.id ?? c.id ?? "<id>";
-      const expected = `${mod?.dir ?? ""}modules/${id}/${id}.contract.ts`;
+      const expected = libHome ?? `${mod?.dir ?? ""}modules/${id}/${id}.contract.ts`;
       const at = (n: number, message: string): void => {
         out.push(diagAt(file, n, "E1513", message, SEE));
       };

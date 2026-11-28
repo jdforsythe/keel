@@ -2,6 +2,20 @@ import { s } from "@keel/schema";
 import { messages } from "@keel/std-messages";
 import { expect, test } from "vitest";
 
+/** The JSON of the `cause` of what `p` rejects with: the schema issues of a refused entry. */
+const causeOf = async (p: Promise<unknown>): Promise<string> =>
+  JSON.stringify(
+    Reflect.get(
+      Object(
+        await p.then(
+          () => undefined,
+          (x: unknown) => x,
+        ),
+      ),
+      "cause",
+    ),
+  );
+
 const AppLocale = s.enum(["en-US", "de-DE"]);
 const load = (locale: string) => import(`./fixtures/${locale}.ts`);
 const issues = (set: { parse(x: unknown): { ok: boolean } }, x: unknown) => set.parse(x).ok;
@@ -34,7 +48,7 @@ test("templates: 1 to 2,000 characters, no literal braces, placeholders name dec
 
 test("load rejects a locale file without a default export", async () => {
   const Demo = messages(AppLocale, { title: {} }, async () => ({}));
-  await expect(Demo.load("en-US")).rejects.toThrow(/"rule":"type"/);
+  expect(await causeOf(Demo.load("en-US"))).toMatch(/"rule":"type"/);
 });
 
 test("load parses the locale first: a tag outside the enum rejects with rule enum, imports nothing and shows no path", async () => {
@@ -53,7 +67,7 @@ test("load parses the locale first: a tag outside the enum rejects with rule enu
       (x: unknown) => x,
     );
     expect(e).toBeInstanceOf(Error);
-    const message = e instanceof Error ? e.message : "";
+    const message = e instanceof Error ? JSON.stringify({ message: e.message, cause: e.cause }) : "";
     expect(message).toContain('"rule":"enum"');
     expect(message).not.toMatch(/[\\/]|fixtures|\.ts/);
     if (bad !== "") expect(message).not.toContain(bad);

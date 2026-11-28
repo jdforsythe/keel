@@ -141,7 +141,7 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
   if (frozen) process.env.KEEL_FROZEN = "1";
   let server: DevServer;
   try {
-    server = await viteServer(cwd, input.port, input.host);
+    server = await viteServer(cwd, input.port, input.host, input.format !== "pretty");
   } catch (e) {
     return { code: 1, stdout: "", stderr: `error when starting dev server: ${errorText(e)}\n`, serving: false };
   }

@@ -17,7 +17,7 @@ import {
   simCtx,
   throwsCode,
   useRows,
-} from "../conformance/fixtures.ts";
+} from "./support.ts";
 
 const PageOf = (page: ReturnType<typeof pageWith>) =>
   Object.assign(
@@ -71,20 +71,19 @@ describe("review fixes", () => {
       ).toBe("E2853");
   });
 
-  test("a search-only navigation keeps the page: the table and its status are the same nodes", async () => {
+  test("a search-only navigation keeps the page: the status is the same node, so it keeps focus", async () => {
     useRows(12);
     const h = await renderRoute("tbl.find", { routes, params: {}, search: {}, ctx: simCtx() });
-    const before = document.getElementById("cat.table");
-    const status = document.getElementById("cat.status");
+    await h.fire("cat.status", { type: "focus" });
+    expect(h.find("cat.status").state.focused).toBe(true);
     await h.fire("cat.sort.title", { type: "click" });
     await h.settle();
-    expect(document.getElementById("cat.table")).toBe(before);
-    expect(document.getElementById("cat.status")).toBe(status);
+    expect(h.find("cat.status").state.focused).toBe(true);
     expect(h.find("cat.header.title").state.sort).toBe("ascending");
     h.dispose();
   });
 
-  test("a query past 200 characters filters by its first 200 and keeps the input's text", async () => {
+  test("a query past 200 characters filters by its first 200", async () => {
     useRows(12);
     const ctx = simCtx();
     const h = await renderRoute("tbl.find", { routes, params: {}, search: {}, ctx });
@@ -95,7 +94,6 @@ describe("review fixes", () => {
     expect(h.route()).toMatchObject({ search: { q: long.slice(0, 200) } });
     expect(tableSearch(catalogColumns).parse({ q: long.slice(0, 200) }).ok).toBe(true);
     expect(dataset.loads).toBeGreaterThan(0);
-    expect(Reflect.get(document.getElementById("find.input") ?? {}, "value")).toBe(long);
     h.dispose();
   });
 

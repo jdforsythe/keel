@@ -1,10 +1,16 @@
 import { libraryKind } from "@keel/compiler/std/libraryKind";
 import type { SourceFile } from "../types/SourceFile.ts";
+import type { LibraryContract } from "./LibraryContract.ts";
 import type { LibraryView } from "./LibraryView.ts";
+import { entryTarget } from "./entryTarget.ts";
 import { readManifest } from "./modules/readManifest.ts";
 import { parseFile } from "./parseFile.ts";
 
 const PACKAGE = /^((?:(?!node_modules\/).)*?)node_modules\/(@[^/]+\/[^/]+)\/package\.json$/;
+/** A library's contract file: a `*.contract.ts` source under `src/` (k.contract). */
+const CONTRACT_FILE = /^src\/(?:[^/]+\/)*[^/]+\.contract\.ts$/;
+/** The app module folder a path lies in, `<p>modules/<id>/`. */
+const APP_FOLDER = /^(?:(?!node_modules\/).)*?modules\/[^/]+\//;
 const FILE = /^((?:(?!node_modules\/).)*?)node_modules\/(@[^/]+\/[^/]+)\/((?:src|unsafe)\/.+)$/;
 
 /** The parsed JSON of `source`; undefined when it does not parse. */
@@ -17,36 +23,34 @@ function parse(source: string): unknown {
   }
 }
 
-/** The conditions Node matches for an `import` (k.library: an entry with no `keel` is read at its other target). */
-const NODE = new Set(["node", "import", "default"]);
-
-/**
- * The file an `exports` entry's `target` names: the target itself when a string, else its `keel` condition, else the
- * first condition Node matches for an import, in the order written, read the same way.
- */
-function entryTarget(target: unknown): string | undefined {
-  if (typeof target === "string") return target;
-  if (typeof target !== "object" || target === null || Array.isArray(target)) return undefined;
-  const keel: unknown = Reflect.get(target, "keel");
-  if (typeof keel === "string") return keel;
-  for (const [cond, next] of Object.entries(target)) if (NODE.has(cond)) return entryTarget(next);
-  return undefined;
-}
-
 /**
  * The library files among `files` and the paths rules read them at (`LibraryView`). A library is a
  * `<p>node_modules/<name>/package.json` that `libraryKind` reads as `library`, `<p>` holding no `node_modules/`, beside a
  * `module.ts` whose literal `id` names the folder its files read under (the package name without one). A library file
- * whose view is the path of a file of `files` keeps its own path.
+ * whose view is the path of a file of `files` keeps its own path, and so does every file of a library whose `id` an app
+ * module of `files` holds, or a library before it by package name (E1166): no file of it is read as the holder's.
  */
 export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   const ids = new Map<string, string>();
   const packages: SourceFile[] = [];
   const entries = new Map<string, string>();
+  const contracts = new Map<string, LibraryContract>();
+  const manifests: SourceFile[] = [];
   const byPath = new Map(files.map((f) => [f.path, f]));
+  // Each app module folder (`<p>modules/<id>/`) a file lies in: a library holding that id is not read under it.
+  const held = new Set<string>();
   for (const f of files) {
-    const m = PACKAGE.exec(f.path);
-    if (m === null) continue;
+    const at = APP_FOLDER.exec(f.path)?.[0];
+    if (at !== undefined && !f.path.includes("node_modules/")) held.add(at);
+  }
+  // By package name, so of two libraries holding one id the first by name is read under it (E1166's order).
+  const found = files
+    .flatMap((f) => {
+      const m = PACKAGE.exec(f.path);
+      return m === null ? [] : [{ f, m }];
+    })
+    .sort((a, b) => (a.f.path < b.f.path ? -1 : a.f.path > b.f.path ? 1 : 0));
+  for (const { f, m } of found) {
     const [, prefix = "", name = ""] = m;
     if (libraryKind(parse(f.source), name) !== "library") continue;
     const manifest = byPath.get(`${prefix}node_modules/${name}/module.ts`);
@@ -54,8 +58,11 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     const parsed = parseFile(manifest);
     const id = parsed.ok ? readManifest(parsed.program)?.id : undefined;
     const under = `${prefix}modules/${id ?? name}/`;
-    ids.set(`${prefix}node_modules/${name}/`, under);
     packages.push(f);
+    // E1166 (k.library): a library whose id an app module or a library read before it holds keeps its files where they lie.
+    if (held.has(under)) continue;
+    held.add(under);
+    ids.set(`${prefix}node_modules/${name}/`, under);
     const exports = Reflect.get(Object(parse(f.source)), "exports");
     const sugar =
       typeof exports === "string" ||
@@ -66,6 +73,11 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
       if (key.startsWith(".") && !key.includes("*") && /^(?:src|unsafe)\//.test(rel))
         entries.set(`${name}${key.slice(1)}`, `${under}${rel}`);
     }
+    const declared = typeof map === "object" && map !== null ? Reflect.get(map, "./contract") : undefined;
+    const target = declared === undefined ? undefined : (entryTarget(declared) ?? "").replace(/^\.\//, "");
+    const file = target !== undefined && CONTRACT_FILE.test(target) ? `${under}${target}` : undefined;
+    contracts.set(under, { target, file });
+    if (!byPath.has(`${under}module.ts`)) manifests.push({ path: `${under}module.ts`, source: manifest.source });
   }
   const toView = new Map<string, string>();
   const toReal = new Map<string, string>();
@@ -88,5 +100,7 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     folder: (p) => folders.get(p),
     packages,
     entries,
+    contracts,
+    manifests,
   };
 }

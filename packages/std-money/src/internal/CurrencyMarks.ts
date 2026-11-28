@@ -1,4 +1,4 @@
-import type { Currency } from "../Currency.ts";
+import type { Currency } from "../Currency.schema.ts";
 
 /** What `parseMoney` reads of one locale: its separators and the marks (code and symbols) of each currency. */
 export type CurrencyMarks = {

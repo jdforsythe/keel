@@ -96,7 +96,7 @@ describe("columns", () => {
   test("a value column sorts only with compare, and compare naming no field is E2851", () => {
     const Row = s.object({ id: s.int(), price: s.object({ minor: s.int() }) });
     expect(() => columns(Row, { key: "id", show: ["price"], sort: ["price"] })).toThrow(
-      /^E2851 price is a value column/,
+      /^E2851 a value column in sort needs compare/,
     );
     const ok = columns(Row, {
       key: "id",
@@ -109,7 +109,7 @@ describe("columns", () => {
       Reflect.apply(columns, undefined, [Row, { key: "id", show: ["id"], compare: { nope: () => 0 } }]),
     ).toThrow(/^E2851/);
     expect(() => Reflect.apply(columns, undefined, [Row, { key: "id", show: ["id"], rowHeader: "price" }])).toThrow(
-      /^E2851 rowHeader price is not in show/,
+      /^E2851 rowHeader is not in show/,
     );
   });
 });

@@ -1,7 +1,7 @@
 // `@keel/std-report/tools`: the CLI-time half that `importDeps` loads for `keel check`, `keel build` and
 // `keel report`: the `report.tally` record formatter and the `report` command (`stdCommand`). No exports.
 import { formatter, stdCommand } from "@keel/cli";
-import { Tally } from "./Tally.ts";
+import { Tally } from "./Tally.schema.ts";
 import { command } from "./command.ts";
 
 /** `orders.status paid=3 open=1`; `id 0` without rows. */

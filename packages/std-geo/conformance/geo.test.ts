@@ -1,4 +1,4 @@
-// Spec: std.geo, clause "`capabilities()` lists `geo`, and `geo(ctx)` returns an object with a `position` function under real, shell and sim; the three are distinct objects."
+// Spec: std.geo, clause "`capabilities()` lists `geo.position`, and `geo(ctx)` returns an object with a `position` function under real, shell and sim; the three are distinct objects."
 // Spec: std.geo, clause "Under sim, for generated seeds, two ctxs with the same seed give equal positions, and the position parses with `Position`."
 // Spec: std.geo, clause "Under sim, repeated calls on one ctx give equal positions; across generated distinct seeds, the positions are not all equal."
 // Spec: std.geo, clause "Under real where `navigator.geolocation` is absent, `position()` resolves `err` with code `geo.unavailable` and does not throw; shell does the same."
@@ -23,8 +23,8 @@ async function pos(mode: (typeof MODES)[number], seed: number): Promise<unknown>
   return r.ok ? r.value : undefined;
 }
 
-test("`capabilities()` lists `geo`, and `geo(ctx)` returns an object with a `position` function under real, shell and sim; the three are distinct objects.", () => {
-  expect(capabilities()).toContain("geo");
+test("`capabilities()` lists `geo.position`, and `geo(ctx)` returns an object with a `position` function under real, shell and sim; the three are distinct objects.", () => {
+  expect(capabilities()).toContain("geo.position");
   const impls = MODES.map((mode) => geo(createCtx({ mode, seed: 1337 })));
   for (const impl of impls) {
     expect(impl).not.toBeNull();

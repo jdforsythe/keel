@@ -1,6 +1,6 @@
 import "@keel/std-messages/tools";
 import { expect, test } from "vitest";
-import { CLEAN, MODULE, applyFix, codesOf, tree } from "../conformance/fixtures/support.ts";
+import { CLEAN, MODULE, applyFix, codesOf, tree } from "./support.ts";
 
 const SET = "modules/recipes/RecipesText.schema.ts";
 const DE = "modules/recipes/RecipesText/de-DE.ts";
