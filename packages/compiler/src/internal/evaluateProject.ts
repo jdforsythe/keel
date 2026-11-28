@@ -42,8 +42,31 @@ const q = (s: string): string => JSON.stringify(s);
  */
 const compiled = new Map<
   string,
-  { readonly rel: string; readonly source: string; readonly broken: readonly Diagnostic[]; readonly code: string }
+  {
+    readonly rel: string;
+    readonly source: string;
+    readonly broken: readonly Diagnostic[];
+    readonly code: string;
+    readonly map: string | undefined;
+  }
 >();
+/**
+ * The compile's source map of `file` as an inline comment, its one source named by the file's own name (esbuild reads
+ * it beside the file), so a position in the bundle maps to the line of the source as written; none without a map.
+ */
+function inlineMap(map: string | undefined, file: string): string {
+  if (map === undefined) return "";
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(map);
+  } catch {
+    return "";
+  }
+  if (typeof parsed !== "object" || parsed === null) return "";
+  const named = { ...parsed, sources: [path.basename(file)], sourcesContent: undefined };
+  return `\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(named)).toString("base64")}`;
+}
+
 /** An import specifier for a root-relative or absolute file. */
 const spec = (f: string): string => q(path.isAbsolute(f) ? f : `./${f}`);
 
@@ -342,6 +365,7 @@ export async function evaluateProject(input: {
                 source,
                 broken: r.diagnostics.filter((d) => d.code === "E1000"),
                 code: r.outputs[0]?.code ?? "",
+                map: r.outputs[0]?.map,
               };
               compiled.set(args.path, c);
             }
@@ -351,7 +375,7 @@ export async function evaluateProject(input: {
               return { errors: broken.map((d) => ({ text: d.message })) };
             }
             return {
-              contents: withImportMeta(c.code, args.path),
+              contents: `${withImportMeta(c.code, args.path)}${inlineMap(c.map, args.path)}`,
               loader: "ts",
               resolveDir: path.dirname(args.path),
             };

@@ -11,12 +11,14 @@ import { storesFile, storesLoaded, storesReload } from "../src/internal/index.ts
 import type { Store } from "../src/types/Store.ts";
 
 const S = s.object({ n: s.int() });
+/** A root scope, as a test makes one: `scope` with no owner and no `detached` is E1208. */
+const detachedScope = (fn: () => void): Scope => scope(fn, { detached: true });
 const made: Scope[] = [];
 /** A store of `id` in a scope of its own, as the compiler gives a module-level store. */
 const make = (id: string): Store<{ n: number }> => {
   let st: Store<{ n: number }> | undefined;
   made.push(
-    scope(() => {
+    detachedScope(() => {
       st = store(S, { n: 0 }, { id });
     }),
   );
@@ -126,7 +128,7 @@ describe("a dev load of the module registry", () => {
     storesFile("a.ts");
     make("gone.kept");
     let runs = 0;
-    const watch = scope(() => {
+    const watch = detachedScope(() => {
       effect(() => {
         stores();
         runs++;
@@ -155,7 +157,7 @@ describe("a dev load of the module registry", () => {
     make("still.x");
     let runs = 0;
     made.push(
-      scope(() => {
+      detachedScope(() => {
         effect(() => {
           stores();
           runs++;
@@ -168,12 +170,12 @@ describe("a dev load of the module registry", () => {
   });
 
   it("disposes the owning scope of a store that left and of one taken over, not of one still live", () => {
-    const root = scope(() => undefined);
+    const root = detachedScope(() => undefined);
     made.push(root);
     const tick = root.run(() => signal(0));
     const seen: string[] = [];
     const at = (id: string, label: string): Scope => {
-      const sc = scope(() => {
+      const sc = detachedScope(() => {
         store(S, { n: 0 }, { id });
         effect(() => {
           tick.get();
@@ -202,7 +204,7 @@ describe("a dev load of the module registry", () => {
   });
 
   it("keeps a scope that a store still in the registry owns", () => {
-    const shared = scope(() => undefined);
+    const shared = detachedScope(() => undefined);
     made.push(shared);
     storesReload();
     storesFile("a.ts");
@@ -219,7 +221,7 @@ describe("a dev load of the module registry", () => {
   });
 
   it("leaves an isolated scope's registry alone", () => {
-    const own = scope(() => undefined);
+    const own = detachedScope(() => undefined);
     isolate(own);
     made.push(own);
     storesReload();
