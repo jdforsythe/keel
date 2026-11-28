@@ -1059,9 +1059,16 @@ export default function (): {
             // every module, not the project build's (forwarding needs each peer deployable's paths), `std.json`, and the
             // tokens' schemes and `choice` themes (k.schemes First paint), so a served or prerendered document lists the
             // themes the client's resume knows. Each deployable is read as `node`, so the client's modules and every
-            // placed stdlib module are listed. `std.json` is the derivation of the manifests this build compiled, never
-            // the file in `.keel/` (k.derived Readers): a frozen build writes no view, and the bundle is the same.
-            const stdText = artifactText(stdArtifact(manifests()).data);
+            // placed stdlib module are listed. `std.json` is the derivation of the project's module manifests (its own
+            // and its libraries'), never the file in `.keel/` (k.derived Readers): a frozen build writes no view, and the
+            // bundle is the same.
+            const onDisk = [
+              ...listSources(at)
+                .filter((f) => MANIFEST.test(f))
+                .map((f) => ({ path: f, source: fs.readFileSync(path.join(at, f), "utf8") })),
+              ...librarySources(at).filter((f) => MANIFEST.test(f.path)),
+            ];
+            const stdText = artifactText(stdArtifact(onDisk).data);
             const serverArtifacts = async (dir: string): Promise<void> => {
               const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
                 modules: d.modules,
