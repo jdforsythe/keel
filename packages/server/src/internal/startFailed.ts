@@ -1,7 +1,4 @@
-import { createCtx } from "@keel/ctx";
 import { isRefusal } from "@keel/schema/internal/refusal";
-import { envValue } from "./envValue.ts";
-import { logThrownOpen } from "./logThrownOpen.ts";
 import { refusedLine } from "./refusedLine.ts";
 
 /**
@@ -17,7 +14,13 @@ export async function startFailed(thrown: unknown, dir: string): Promise<void> {
     process.stdout.write(`${refusedLine(format, thrown)}\n`);
     process.exit(1);
   }
-  const { onUncaught } = await import("./onUncaught.ts");
+  // Loaded only now: the entry imports this module before any kernel package, so its own imports stay the guard's.
+  const [{ onUncaught }, { createCtx }, { envValue }, { logThrownOpen }] = await Promise.all([
+    import("./onUncaught.ts"),
+    import("@keel/ctx"),
+    import("./envValue.ts"),
+    import("./logThrownOpen.ts"),
+  ]);
   const clock = createCtx({ mode: "real" }).clock;
   onUncaught(
     { format, write: (text) => void process.stdout.write(`${text}\n`) },

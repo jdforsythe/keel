@@ -31,6 +31,12 @@ async function recordOf(thrown: unknown, window: string | undefined): Promise<st
   vi.stubEnv("KEEL_FORMAT", "compact");
   vi.resetModules();
   const { startFailed } = await import("../src/internal/startFailed.ts");
+  // The modules it loads when it fails, loaded first so its own loading queues no tick of theirs.
+  await Promise.all([
+    import("../src/internal/onUncaught.ts"),
+    import("@keel/ctx"),
+    import("../src/internal/logThrownOpen.ts"),
+  ]);
   const before = new Map(EVENTS.map((e) => [e, listenersOf(e)]));
   const out: string[] = [];
   const exits: unknown[] = [];
@@ -43,6 +49,7 @@ async function recordOf(thrown: unknown, window: string | undefined): Promise<st
   });
   const tick = process.nextTick;
   let rethrown = 0;
+  // Every tick runs as it would; its rethrow among them is caught here.
   Reflect.set(process, "nextTick", (fn: (...a: unknown[]) => void, ...args: unknown[]) =>
     tick(() => {
       try {
@@ -55,14 +62,15 @@ async function recordOf(thrown: unknown, window: string | undefined): Promise<st
   );
   try {
     await startFailed(thrown, "/srv/app/artifacts");
-    await new Promise<void>((done) => tick(done));
+    for (let i = 0; i < 100 && rethrown === 0; i++) await new Promise<void>((done) => setImmediate(done));
   } finally {
     Reflect.set(process, "nextTick", tick);
   }
   expect(rethrown).toBe(1);
   const added = listenersOf("uncaughtException").filter((fn) => !before.get("uncaughtException")?.includes(fn));
   for (const event of EVENTS)
-    for (const fn of listenersOf(event)) if (!before.get(event)?.includes(fn)) Reflect.apply(process.off, process, [event, fn]);
+    for (const fn of listenersOf(event))
+      if (!before.get(event)?.includes(fn)) Reflect.apply(process.off, process, [event, fn]);
   for (const fn of added) Reflect.apply(fn, process, [thrown]);
   expect(exits).toEqual([1]);
   return out;
@@ -81,7 +89,9 @@ describe("startFailed", () => {
     for (const window of ["2026-11-27T11:00:00Z", undefined, "", "yes", "2026-11-28T13:00:00Z"]) {
       const out = await recordOf(new Error("user jane@x.com failed"), window);
       expect(out).toHaveLength(1);
-      expect(out[0], String(window)).toMatch(/^E1577 uncaught exception in work of route -: Error #[0-9a-f]{8}( at \S+:\d+)?\n$/);
+      expect(out[0], String(window)).toMatch(
+        /^E1577 uncaught exception in work of route -: Error #[0-9a-f]{8}( at \S+:\d+)?\n$/,
+      );
     }
   });
 });
