@@ -1,5 +1,5 @@
-// Spec: k.unsafe, clause "In `modules/m/a.ts`, each of `Promise.reject(e)`, `p.then(f, g)`, `p['catch'](g)`, `Promise.prototype.catch.call(p, g)`, `Promise.allSettled(ps)` and `Promise.any(ps)` is one diagnostic, E1451 for the first and E1452 for the rest; `const d2 = defect; d2('x', 'E12')` is one E1455 at `'E12'`; `const c = p.catch; c(g)` is one E1452 at `p.catch`, message `catch used other than as a call; check cannot follow it`; `p.then(f)` is none."
-// k.unsafe, One path "`unsafe` is the one path around a check, so no spelling is another: E1451, E1452, E1455 (k.errors) and E1207 (k.reactive) find their callee by its symbol in the type pass, not its spelling: an alias, a namespace member, a computed member with a literal key (`p['catch']`), `.call`, `.apply` or `.bind` of it (`Promise.prototype.catch.call(p, g)`), and `Reflect.apply` of it are each that call. The function used as a value any other way (stored, passed, returned, under a non-literal computed key) is that code at the use, message `<name> used other than as a call; check cannot follow it`, no fix. Under `check(files, { types: false })` they read spellings only. For E1455 the code argument is, by form: the second argument of a call of `defect` or an alias; the third of `defect.call(t, m, c)`; the second element of the array literal of `defect.apply(t, [m, c])` and of `Reflect.apply(defect, t, [m, c])`. E1455 is reported at that argument or element; an arguments value that is no array literal or holds a spread before the code, and a `defect.bind(...)`, is one E1455 at that value or at `bind`, message `defect code check cannot read`."
+// Spec: k.unsafe, clause "In `modules/m/a.ts`, each of `Promise.reject(e)`, `p.then(f, g)`, `p['catch'](g)`, `Promise.prototype.catch.call(p, g)`, `Promise.allSettled(ps)` and `Promise.any(ps)` is one diagnostic, E1451 for the first and E1452 for the rest; `const d2 = defect; d2('x', { code: 'E12' })` is one E1455 at `'E12'`; `const c = p.catch; c(g)` is one E1452 at `p.catch`, message `catch used other than as a call; check cannot follow it`; `p.then(f)` is none."
+// k.unsafe, One path "`unsafe` is the one path around a check, so no spelling is another: E1451, E1452, E1455, E1457 to E1461 (k.errors, k.attempt, k.defects, k.expect, k.supervise) and E1207 (k.reactive) find their callee by its symbol in the type pass, not its spelling: an alias, a namespace member, a computed member with a literal key (`p['catch']`), `.call`, `.apply` or `.bind` of it (`Promise.prototype.catch.call(p, g)`), and `Reflect.apply` of it are each that call. The function used as a value any other way (stored, passed, returned, under a non-literal computed key) is that code at the use, message `<name> used other than as a call; check cannot follow it`, no fix. Under `check(files, { types: false })` they read spellings only. For E1455 the detail (k.defects) is the second argument of a call of `defect` or an alias; the third of `defect.call(t, m, d)`; the second element of the array literal of `defect.apply(t, [m, d])` and of `Reflect.apply(defect, t, [m, d])`. E1455 is reported at that argument or element, or at its `code` value; an arguments value that is no array literal or holds a spread before the detail, and a `defect.bind(...)`, is one E1455 at that value or at `bind`, message `defect code check cannot read`."
 // Seed 1337. Fixtures are source text over in-memory file maps with the type pass on (the default), so each import resolves; a code other than the four is not counted.
 // Assumption: the `<name>` of a value use is the last member name (`reject`, `allSettled`, `any`, `catch`, `defect`, `scope`); only `catch`'s message is quoted whole, the others are read by their ending and name.
 // Assumption: a `.then(f)` held as a value is not asserted: whether it is a catch depends on the arguments it is later given.
@@ -48,8 +48,8 @@ test("`p.then(f, g)`, `p['catch'](g)`, `Promise.prototype.catch.call(p, g)`, `Pr
   }
 });
 
-test("`const d2 = defect; d2('x', 'E12')` is one E1455 at `'E12'`", () => {
-  const body = "const d2 = defect\nexport const a = (): never => d2('x', 'E12')";
+test("`const d2 = defect; d2('x', { code: 'E12' })` is one E1455 at `'E12'`", () => {
+  const body = "const d2 = defect\nexport const a = (): never => d2('x', { code: 'E12' })";
   const ds = run(body);
   expect(ds.map((d) => d.code)).toEqual(["E1455"]);
   expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(body, "'E12'"));
@@ -134,10 +134,10 @@ const CALLEES: readonly Callee[] = [
     name: "defect",
     code: "E1455",
     forms: [
-      "defect('x', 'E12')",
-      "(() => { const d = defect; return d('x', 'E12') })()",
-      "Reflect.apply(defect, undefined, ['x', 'E12'])",
-      "defect.call(undefined, 'x', 'E12')",
+      "defect('x', { code: 'E12' })",
+      "(() => { const d = defect; return d('x', { code: 'E12' }) })()",
+      "Reflect.apply(defect, undefined, ['x', { code: 'E12' }])",
+      "defect.call(undefined, 'x', { code: 'E12' })",
     ],
   },
   {
@@ -203,7 +203,7 @@ test("a callee that is none of the four, however it is named, is no diagnostic (
     "export const a = Promise['resolve'](1)",
     "const reject = (x: unknown) => x\nexport const a = reject(e)",
     "const o = { catch: (x: unknown) => x }\nexport const a = o.catch(g)",
-    "const o = { defect: (x: string, c: string) => c }\nexport const a = o.defect('x', 'E12')",
+    "const o = { defect: (x: string, d: { code: string }) => d.code }\nexport const a = o.defect('x', { code: 'E12' })",
   ]) {
     expect(codes(body), body).toEqual([]);
   }
@@ -214,6 +214,6 @@ test("under `check(files, { types: false })` they read spellings only: a direct 
   expect(codes("export const a = Promise.reject(e)", off)).toEqual(["E1451"]);
   expect(codes("export const a = p.then(f, g)", off)).toEqual(["E1452"]);
   expect(codes("export const a = Promise.allSettled(ps)", off)).toEqual(["E1452"]);
-  expect(codes("const d2 = defect\nexport const a = (): never => d2('x', 'E12')", off)).toEqual([]);
+  expect(codes("const d2 = defect\nexport const a = (): never => d2('x', { code: 'E12' })", off)).toEqual([]);
   expect(codes("const c = p.catch\nexport const a = c(g)", off)).toEqual([]);
 });

@@ -1,4 +1,4 @@
-// Spec: k.defects, clause "`defect('no row')` throws a value `v` with `v instanceof Error`, `v.name` `Defect`, `v.message` `no row`, no own `code` or `data` property, and `isDefect(v)` true; `defect('bad key', 'E2801', { data: { key: 'a b' } })` throws one with `message` `E2801 bad key`, own `code` `E2801`, own `data` deep-equal to `{ key: 'a b' }`, `Object.keys(v)` empty, `isDefect(v, 'E2801')` true and `isDefect(v, 'E2802')` false."
+// Spec: k.defects, clause "`defect('no row')` throws a value `v` with `v instanceof Error`, `v.name` `Defect`, `v.message` `no row`, no own `code` or `data` property, and `isDefect(v)` true; `defect('bad key', { code: 'E2801', data: { key: 'a b' } })` throws one with `message` `E2801 bad key`, own `code` `E2801`, own `data` deep-equal to `{ key: 'a b' }`, `Object.keys(v)` empty, `isDefect(v, 'E2801')` true and `isDefect(v, 'E2802')` false."
 // Spec: k.defects, clause "`isDefect(new Error('x'))`, `isDefect(Object.assign(new Error('x'), { name: 'Defect', code: 'E2801' }))`, `isDefect('x')` and `isDefect` of an object given every own key of a defect, symbol keys among them, by `Reflect.ownKeys` and `Object.defineProperty`, are false."
 // Spec: k.defects, clause "`defect('x', { cause: c })` throws a value whose `cause` is `c` itself, for `c` a `KeelError` and for `c` an `Error`; an `async` function that calls `defect('x')` returns a promise that rejects with a value `isDefect` accepts."
 // Seed 1337.
@@ -56,8 +56,8 @@ describe("k.defects: what defect throws", () => {
     );
   });
 
-  it("defect('bad key', 'E2801', { data: { key: 'a b' } }) throws `E2801 bad key` with own non-enumerable code and data, no enumerable keys, isDefect true for E2801 and false for E2802", () => {
-    const v = thrown(() => defect("bad key", "E2801", { data: { key: "a b" } }));
+  it("defect('bad key', { code: 'E2801', data: { key: 'a b' } }) throws `E2801 bad key` with own non-enumerable code and data, no enumerable keys, isDefect true for E2801 and false for E2802", () => {
+    const v = thrown(() => defect("bad key", { code: "E2801", data: { key: "a b" } }));
     expect(v instanceof Error).toBe(true);
     if (!(v instanceof Error)) return;
     expect(v.message).toBe("E2801 bad key");
@@ -70,10 +70,10 @@ describe("k.defects: what defect throws", () => {
     expect(isDefect(v, "E2802")).toBe(false);
   });
 
-  it("property: defect(message, code, { data }) is `<code> <message>`, its code and data own, isDefect true only for its code", () => {
+  it("property: defect(message, { code, data }) is `<code> <message>`, its code and data own, isDefect true only for its code", () => {
     fc.assert(
       fc.property(fc.string(), code, code, fc.dictionary(fc.string(), fc.jsonValue()), (m, c, other, data) => {
-        const v = thrown(() => defect(m, c, { data }));
+        const v = thrown(() => defect(m, { code: c, data }));
         expect(v instanceof Error && v.message).toBe(`${c} ${m}`);
         expect(own(v, "data")?.value).toEqual(data);
         expect(isDefect(v, c)).toBe(true);
@@ -95,7 +95,7 @@ describe("k.defects: isDefect is the kernel's record, not a shape", () => {
   it("isDefect of an object given every own key of a defect, symbol keys among them, is false", () => {
     fc.assert(
       fc.property(fc.string(), code, (m, c) => {
-        const d = thrown(() => defect(m, c, { data: { a: 1 } }));
+        const d = thrown(() => defect(m, { code: c, data: { a: 1 } }));
         if (!(d instanceof Error)) throw new Error("not a defect");
         const copy = new Error(m);
         copyOwn(d, copy);
@@ -132,9 +132,9 @@ describe("k.defects: cause and async", () => {
     expect(v instanceof Error && v.cause).toBe(c);
   });
 
-  it("defect('x', 'E2801', { data, cause }) carries both", () => {
+  it("defect('x', { code: 'E2801', data, cause }) carries both", () => {
     const c = new RangeError("r");
-    const v = thrown(() => defect("x", "E2801", { data: { id: 1 }, cause: c }));
+    const v = thrown(() => defect("x", { code: "E2801", data: { id: 1 }, cause: c }));
     expect(v instanceof Error && v.cause).toBe(c);
     expect(own(v, "data")?.value).toEqual({ id: 1 });
   });

@@ -1,5 +1,5 @@
 // Spec: k.attempt, clause "With `d` a defect, `attempt(() => { throw new Error('w', { cause: d }) }, spy)` and `attempt(() => Promise.any([Promise.reject(d)]), spy)` throw or reject with the wrapping value itself and never call `spy`."
-// Spec: k.defects, clause "For `v` a value made by `defect('x', 'E2801')`, `structuredClone(v)` and the value a worker receives by `postMessage(v)` are not `isDefect`; a second copy of `@keel/schema` does not load beside the first (k.realm)."
+// Spec: k.defects, clause "For `v` a value made by `defect('x', { code: 'E2801' })`, `structuredClone(v)` and the value a worker receives by `postMessage(v)` are not `isDefect`; a second copy of `@keel/schema` does not load beside the first (k.realm)."
 // Seed 1337. The clause's last half (a second copy of `@keel/schema` does not load beside the first) is asserted in second-copy.test.ts (k.realm).
 // Assumption: "at most 8 steps" counts each `cause` or `errors` member followed as one step: a wrapper holding the defect is 1 step, so 8 wrappers skip `expect` and 9 do not.
 import { Worker } from "node:worker_threads";
@@ -38,9 +38,9 @@ const spy = (): { expect: Expect; seen: unknown[] } => {
   };
 };
 
-/** The defect `defect(message, code)` throws. */
+/** The defect `defect(message, { code })` throws. */
 const made = (message: string, c?: `E${number}`): unknown =>
-  thrown(() => (c === undefined ? defect(message) : defect(message, c)));
+  thrown(() => (c === undefined ? defect(message) : defect(message, { code: c })));
 
 /** `d` wrapped `path.length` times, each step through `cause` or through `errors` (an `AggregateError`'s). */
 const wrap = (d: unknown, path: readonly ("cause" | "errors")[]): unknown =>
@@ -195,10 +195,10 @@ describe("k.defects: the defect mark is lost by every copy of the value", () => 
     expect(isDefect(JSON.parse(JSON.stringify(v)))).toBe(false);
   });
 
-  it("the receiver raises its own: `defect(message, code)` again is `isDefect(v, code)`", () => {
+  it("the receiver raises its own: `defect(message, { code })` again is `isDefect(v, code)`", () => {
     const cloned = structuredClone(made("x", "E2801"));
     const message = cloned instanceof Error ? cloned.message : "";
-    const again = thrown(() => defect("x", "E2801"));
+    const again = thrown(() => defect("x", { code: "E2801" }));
     expect(message).toBe("E2801 x");
     expect(isDefect(again, "E2801")).toBe(true);
   });

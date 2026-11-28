@@ -1,7 +1,8 @@
-// Spec: k.defects, clause "In `modules/m/a.ts`, `` defect(`no row ${n}`) ``, `defect(text)` with `const text = 'x'` above it and `defect('a' + b)` are one E1455 each at the first argument, message `defect message is not a literal: pass values as data, defect('text', { data })`, with no fix; `defect('x')`, `` defect(`x`) ``, `defect('x', { data: { n } })` and `defect('x', 'E2801', { cause: e })` are none."
-// Spec: k.defects, clause "In `modules/m/a.ts`, `defect('x', 'E28')`, `defect('x', code)` with `const code = 'E2801'` above it, and `k.defect('x', 'e2801')` under `import * as k from '@keel/schema'` are one E1455 each at the second argument, message `defect code is not a literal E and four digits`; `defect('x', 'E2801', detail)` with `detail` a name is one at `detail`, message `defect detail is not an object literal`."
+// Spec: k.defects, clause "In `modules/m/a.ts`, `` defect(`no row ${n}`) ``, `defect(text)` with `const text = 'x'` above it and `defect('a' + b)` are one E1455 each at the first argument, message `defect message is not a literal: pass values as data, defect('text', { data })`, with no fix; `defect('x')`, `` defect(`x`) ``, `defect('x', { data: { n } })` and `defect('x', { code: 'E2801', cause: e })` are none."
+// Spec: k.defects, clause "In `modules/m/a.ts`, `defect('x', { code: 'E28' })`, `defect('x', { code })` with `const code = 'E2801'` above it, and `k.defect('x', { code: 'e2801' })` under `import * as k from '@keel/schema'` are one E1455 each at the `code` value, message `defect code is not a literal E and four digits`; `defect('x', detail)` with `detail` a name, `defect('x', { ...detail })`, `defect('x', 'E2801')` and the third argument of `defect('x', {}, {})` are one each at that argument, message `defect detail is not an object literal`."
 // Spec: k.defects, clause "In `modules/m/a.ts`, `try { f() } finally { defect('x') }` is one E1452 at the call, message `defect in finally drops the throw in flight`; `try { f() } finally { g(() => defect('x')) }` is none."
 // Spec: k.defects, clause "In `modules/m/a.ts`, `if (!r.ok) defect('x')` with `r` a `Result` is one E1455 at the call, message `defect on a failed Result: pass { cause: r.error }`, with a fix that adds `{ cause: r.error }` as the detail; `if (!r.ok) defect('x', { cause: r.error })` is none."
+// Spec: k.defects, clause "In `modules/m/a.ts`, `if (!r.ok) defect('x', { code: 'E2801' })` with `r` a `Result` is one E1455 at the call, message `defect on a failed Result: pass { cause: r.error }`, with a fix that gives `defect('x', { code: 'E2801', cause: r.error })`."
 // Spec: k.errors, clause "In `modules/m/a.ts`, `try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } finally { h() }` is one, message `catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)`."
 // Seed 1337. Fixtures are source text over in-memory file maps; the type pass is off except where a fix is applied.
 import fc from "fast-check";
@@ -41,12 +42,12 @@ test("`defect('a' + b)` is one E1455 at the first argument, with no fix", () => 
   expect(ds[0]?.fix).toBeUndefined();
 });
 
-test("`defect('x')`, `defect(`x`)`, `defect('x', { data: { n } })` and `defect('x', 'E2801', { cause: e })` are no E1455", () => {
+test("`defect('x')`, `defect(`x`)`, `defect('x', { data: { n } })` and `defect('x', { code: 'E2801', cause: e })` are no E1455", () => {
   for (const call of [
     "defect('x')",
     "defect(`x`)",
     "defect('x', { data: { n } })",
-    "defect('x', 'E2801', { cause: e })",
+    "defect('x', { code: 'E2801', cause: e })",
   ]) {
     expect(E1455(call), call).toEqual([]);
   }
@@ -65,32 +66,80 @@ test("property: a message with any interpolation or concatenation is one E1455; 
   );
 });
 
-test("`defect('x', 'E28')` is one E1455 at the second argument, message `defect code is not a literal E and four digits`", () => {
-  const ds = E1455("defect('x', 'E28')");
+test("`defect('x', { code: 'E28' })` is one E1455 at the `code` value, message `defect code is not a literal E and four digits`", () => {
+  const src = body("defect('x', { code: 'E28' })");
+  const ds = of(run(src), "E1455");
   expect(ds).toHaveLength(1);
   expect(ds[0]?.message).toBe(CODE_MSG);
+  expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "'E28'"));
 });
 
-test("`defect('x', code)` with `const code = 'E2801'` above it is one E1455 at the second argument", () => {
-  const ds = E1455("defect('x', code)", "const code = 'E2801'\n");
+test("`defect('x', { code })` with `const code = 'E2801'` above it is one E1455 at the `code` value", () => {
+  const src = body("defect('x', { code })", "const code = 'E2801'\n");
+  const ds = of(run(src), "E1455");
   expect(ds).toHaveLength(1);
   expect(ds[0]?.message).toBe(CODE_MSG);
+  expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "code })", "defect('x'"));
 });
 
-test("`k.defect('x', 'e2801')` under `import * as k from '@keel/schema'` is one E1455 at the second argument", () => {
-  const src = "import * as k from '@keel/schema'\nexport function a(): void { k.defect('x', 'e2801') }\n";
+test("`k.defect('x', { code: 'e2801' })` under `import * as k from '@keel/schema'` is one E1455 at the `code` value", () => {
+  const src = "import * as k from '@keel/schema'\nexport function a(): void { k.defect('x', { code: 'e2801' }) }\n";
   const ds = of(run(src), "E1455");
   expect(ds).toHaveLength(1);
   expect(ds[0]?.message).toBe(CODE_MSG);
   expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "'e2801'"));
 });
 
-test("`defect('x', 'E2801', detail)` with `detail` a name is one E1455 at `detail`, message `defect detail is not an object literal`", () => {
-  const src = body("defect('x', 'E2801', detail)", "const detail = { data: {} }\n");
+test("property: a `code` value that is not `E` and four digits is one E1455 at it; one that is, is none", () => {
+  const bad = fc.oneof(
+    fc.stringMatching(/^E[0-9]{1,3}$/),
+    fc.stringMatching(/^E[0-9]{5,6}$/),
+    fc.stringMatching(/^[a-df-z][0-9]{4}$/),
+  );
+  fc.assert(
+    fc.property(bad, fc.integer({ min: 0, max: 9999 }), (c, n) => {
+      const src = body(`defect('x', { code: '${c}' })`);
+      const ds = of(run(src), "E1455");
+      expect(ds).toHaveLength(1);
+      expect(ds[0]?.message).toBe(CODE_MSG);
+      expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, `'${c}'`));
+      const good = `E${String(n).padStart(4, "0")}`;
+      expect(E1455(`defect('x', { code: '${good}' })`)).toEqual([]);
+    }),
+    { seed: SEED, numRuns: 30 },
+  );
+});
+
+test("`defect('x', detail)` with `detail` a name is one E1455 at `detail`, message `defect detail is not an object literal`", () => {
+  const src = body("defect('x', detail)", "const detail = { data: {} }\n");
   const ds = of(run(src), "E1455");
   expect(ds).toHaveLength(1);
   expect(ds[0]?.message).toBe(DETAIL_MSG);
   expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "detail)", "defect('x'"));
+});
+
+test("`defect('x', { ...detail })` is one E1455 at the detail, message `defect detail is not an object literal`", () => {
+  const src = body("defect('x', { ...detail })", "const detail = { data: {} }\n");
+  const ds = of(run(src), "E1455");
+  expect(ds).toHaveLength(1);
+  expect(ds[0]?.message).toBe(DETAIL_MSG);
+  expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "{ ...detail }"));
+});
+
+test("`defect('x', 'E2801')` is one E1455 at the second argument, message `defect detail is not an object literal`", () => {
+  const src = body("defect('x', 'E2801')");
+  const ds = of(run(src), "E1455");
+  expect(ds).toHaveLength(1);
+  expect(ds[0]?.message).toBe(DETAIL_MSG);
+  expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "'E2801'"));
+});
+
+test("the third argument of `defect('x', {}, {})` is one E1455 at it, message `defect detail is not an object literal`", () => {
+  const src = body("defect('x', {}, {})");
+  const ds = of(run(src), "E1455");
+  expect(ds).toHaveLength(1);
+  expect(ds[0]?.message).toBe(DETAIL_MSG);
+  expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "{})", "{}, "));
 });
 
 test("`try { f() } finally { defect('x') }` is one E1452 at the call, message `defect in finally drops the throw in flight`", () => {
@@ -133,4 +182,23 @@ test("`try { f() } finally { g() }` is no E1452 and `try { f() } catch { g() } f
   const ds = of(run(body("try { f() } catch { g() } finally { h() }")), "E1452");
   expect(ds).toHaveLength(1);
   expect(ds[0]?.message).toBe("catch in app code: cleanup is try/finally, an expected failure is attempt(fn, expect)");
+});
+
+test("`if (!r.ok) defect('x', { code: 'E2801' })` with `r` a Result is one E1455 at the call, message `defect on a failed Result: pass { cause: r.error }`", () => {
+  const src = body("if (!r.ok) defect('x', { code: 'E2801' })", RES);
+  const ds = of(run(src), "E1455");
+  expect(ds).toHaveLength(1);
+  expect(ds[0]?.message).toBe(FAILED);
+  expect({ line: ds[0]?.line, col: ds[0]?.col }).toEqual(at(src, "defect('x', { code"));
+  expect(typeof ds[0]?.fix).toBe("string");
+});
+
+test("the fix for `if (!r.ok) defect('x', { code: 'E2801' })` gives `defect('x', { code: 'E2801', cause: r.error })`, and the fixed project passes check", () => {
+  const files = [MANIFEST, { path: PATH, source: body("if (!r.ok) defect('x', { code: 'E2801' })", RES) }];
+  const fix = of(checked(files), "E1455")[0]?.fix;
+  expect(typeof fix).toBe("string");
+  if (fix === undefined) return;
+  const patched = applyFix(files, fix);
+  expect(patched.find((f) => f.path === PATH)?.source).toContain("defect('x', { code: 'E2801', cause: r.error })");
+  expect(codesOf(checked(patched))).toEqual([]);
 });

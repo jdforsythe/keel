@@ -1,7 +1,7 @@
-// Spec: k.unsafe, clause "In `modules/m/a.ts` importing `defect` from `@keel/schema`, `defect.call(null, 'x', 'E12')` is one E1455 at `'E12'`, `defect.apply(null, ['x', 'E12'])` and `Reflect.apply(defect, null, ['x', 'E12'])` one each at `'E12'`, `defect.apply(null, args)` one at `args` and `defect.bind(null)` one at `bind`, each message `defect code check cannot read` for the last two; `defect.call(null, 'x', 'E2801')` and `Reflect.apply(defect, null, ['x', 'E2801'])` are none."
+// Spec: k.unsafe, clause "In `modules/m/a.ts` importing `defect` from `@keel/schema`, `defect.call(null, 'x', { code: 'E12' })` is one E1455 at `'E12'`, `defect.apply(null, ['x', { code: 'E12' }])` and `Reflect.apply(defect, null, ['x', { code: 'E12' }])` one each at `'E12'`, `defect.apply(null, args)` one at `args` and `defect.bind(null)` one at `bind`, each message `defect code check cannot read` for the last two; `defect.call(null, 'x', { code: 'E2801' })` and `Reflect.apply(defect, null, ['x', { code: 'E2801' }])` are none."
 // Seed 1337. Fixtures are source text over in-memory file maps with the type pass on (the default); only E1455 is read.
 // Assumption: "at `bind`" is the first character of the member name `bind`, as E1455 is at a call's argument elsewhere (k.errors Rules).
-// Assumption: a spread after the code (`['x', 'E2801', ...rest]`) is no E1455: the spec names a spread "before the code" only.
+// A spread after the detail (`['x', { code: 'E2801' }, ...rest]`) has no case: k.unsafe names a spread before the detail only, and k.defects makes a third argument E1455, so the text does not say which holds.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -26,8 +26,8 @@ const at = (body: string, needle: string): { line: number; col: number } => {
 };
 const pos = (d: { line: number; col: number } | undefined) => ({ line: d?.line, col: d?.col });
 
-test("`defect.call(null, 'x', 'E12')` is one E1455 at `'E12'`", () => {
-  const body = "export const a = defect.call(null, 'x', 'E12')";
+test("`defect.call(null, 'x', { code: 'E12' })` is one E1455 at `'E12'`", () => {
+  const body = "export const a = defect.call(null, 'x', { code: 'E12' })";
   const ds = run(body);
   expect(ds).toHaveLength(1);
   expect(pos(ds[0])).toEqual(at(body, "'E12'"));
@@ -35,15 +35,15 @@ test("`defect.call(null, 'x', 'E12')` is one E1455 at `'E12'`", () => {
   expect(ds[0]?.fix).toBeUndefined();
 });
 
-test("`defect.apply(null, ['x', 'E12'])` is one E1455 at `'E12'`", () => {
-  const body = "export const a = defect.apply(null, ['x', 'E12'])";
+test("`defect.apply(null, ['x', { code: 'E12' }])` is one E1455 at `'E12'`", () => {
+  const body = "export const a = defect.apply(null, ['x', { code: 'E12' }])";
   const ds = run(body);
   expect(ds).toHaveLength(1);
   expect(pos(ds[0])).toEqual(at(body, "'E12'"));
 });
 
-test("`Reflect.apply(defect, null, ['x', 'E12'])` is one E1455 at `'E12'`", () => {
-  const body = "export const a = Reflect.apply(defect, null, ['x', 'E12'])";
+test("`Reflect.apply(defect, null, ['x', { code: 'E12' }])` is one E1455 at `'E12'`", () => {
+  const body = "export const a = Reflect.apply(defect, null, ['x', { code: 'E12' }])";
   const ds = run(body);
   expect(ds).toHaveLength(1);
   expect(pos(ds[0])).toEqual(at(body, "'E12'"));
@@ -65,10 +65,10 @@ test("`defect.bind(null)` is one E1455 at `bind`, message `defect code check can
   expect(ds[0]?.message).toBe(UNREADABLE);
 });
 
-test("`defect.call(null, 'x', 'E2801')` and `Reflect.apply(defect, null, ['x', 'E2801'])` are none", () => {
-  expect(run("export const a = defect.call(null, 'x', 'E2801')")).toEqual([]);
-  expect(run("export const a = Reflect.apply(defect, null, ['x', 'E2801'])")).toEqual([]);
-  expect(run("export const a = defect.apply(null, ['x', 'E2801'])")).toEqual([]);
+test("`defect.call(null, 'x', { code: 'E2801' })` and `Reflect.apply(defect, null, ['x', { code: 'E2801' }])` are none", () => {
+  expect(run("export const a = defect.call(null, 'x', { code: 'E2801' })")).toEqual([]);
+  expect(run("export const a = Reflect.apply(defect, null, ['x', { code: 'E2801' }])")).toEqual([]);
+  expect(run("export const a = defect.apply(null, ['x', { code: 'E2801' }])")).toEqual([]);
 });
 
 const bad = fc.oneof(
@@ -78,12 +78,12 @@ const bad = fc.oneof(
 );
 const good = fc.stringMatching(/^E[0-9]{4}$/);
 
-test("property: the code is the second argument of a direct call, the third of `defect.call`, the second array element of `.apply` and `Reflect.apply`: a bad one is one E1455 at exactly that position, a good one is none", () => {
+test("property: the detail is the second argument of a direct call, the third of `defect.call`, the second array element of `.apply` and `Reflect.apply`: a bad `code` in it is one E1455 at exactly that value, a good one is none", () => {
   const forms: readonly ((c: string) => string)[] = [
-    (c) => `defect('x', '${c}')`,
-    (c) => `defect.call(null, 'x', '${c}')`,
-    (c) => `defect.apply(null, ['x', '${c}'])`,
-    (c) => `Reflect.apply(defect, null, ['x', '${c}'])`,
+    (c) => `defect('x', { code: '${c}' })`,
+    (c) => `defect.call(null, 'x', { code: '${c}' })`,
+    (c) => `defect.apply(null, ['x', { code: '${c}' }])`,
+    (c) => `Reflect.apply(defect, null, ['x', { code: '${c}' }])`,
   ];
   fc.assert(
     fc.property(fc.constantFrom(...forms), bad, good, (form, b, g) => {
@@ -98,14 +98,14 @@ test("property: the code is the second argument of a direct call, the third of `
   );
 });
 
-test("property: an arguments value that is no array literal, or an array holding a spread before the code, and a `defect.bind(...)`, is one E1455 at that value or at `bind`, message `defect code check cannot read`", () => {
+test("property: an arguments value that is no array literal, or an array holding a spread before the detail, and a `defect.bind(...)`, is one E1455 at that value or at `bind`, message `defect code check cannot read`", () => {
   const cases: readonly { body: string; needle: string }[] = [
     { body: "export const a = defect.apply(null, args)", needle: "args" },
     { body: "export const a = Reflect.apply(defect, null, args)", needle: "args" },
-    { body: "export const a = defect.apply(null, [...rest, 'E2801'])", needle: "[...rest" },
-    { body: "export const a = Reflect.apply(defect, null, [...rest, 'E2801'])", needle: "[...rest" },
+    { body: "export const a = defect.apply(null, [...rest, { code: 'E2801' }])", needle: "[...rest" },
+    { body: "export const a = Reflect.apply(defect, null, [...rest, { code: 'E2801' }])", needle: "[...rest" },
     { body: "export const a = defect.bind(null)", needle: "bind" },
-    { body: "export const a = defect.bind(null, 'x', 'E2801')", needle: "bind" },
+    { body: "export const a = defect.bind(null, 'x', { code: 'E2801' })", needle: "bind" },
     { body: "export const a = defect.bind(null, 'x')", needle: "bind" },
   ];
   fc.assert(
@@ -117,8 +117,4 @@ test("property: an arguments value that is no array literal, or an array holding
     }),
     { seed: SEED, numRuns: cases.length * 2 },
   );
-});
-
-test("a spread after the code (`defect.apply(null, ['x', 'E2801', ...rest])`) is no E1455", () => {
-  expect(run("export const a = defect.apply(null, ['x', 'E2801', ...rest])")).toEqual([]);
 });

@@ -1,4 +1,4 @@
-// Spec: k.supervise, clause "In production mode on a node server, a runner calling `supervise(ctx, 'm.run', () => defect('user failed', 'E2801', { data: { email: 'jane@x.com' } }), T)` logs one `diag` whose code is `keel.unexpected` and whose message matches `^supervised m\.run threw: Defect E2801 #[0-9a-f]{8}( at \S+:\d+)?$`; no logged line holds `jane`; the process writes no E1577 and keeps serving; with `mode: 'dev'` a second `diag` follows whose message starts `supervised m.run threw: Defect: E2801 user failed`."
+// Spec: k.supervise, clause "In production mode on a node server, a runner calling `supervise(ctx, 'm.run', () => defect('user failed', { code: 'E2801', data: { email: 'jane@x.com' } }), T)` logs one `diag` whose code is `keel.unexpected` and whose message matches `^supervised m\.run threw: Defect E2801 #[0-9a-f]{8}( at \S+:\d+)?$`; no logged line holds `jane`; the process writes no E1577 and keeps serving; with `mode: 'dev'` a second `diag` follows whose message starts `supervised m.run threw: Defect: E2801 user failed`."
 // @vitest-environment happy-dom
 // Seed 1337 (fixed throw; no random input). The runner receives the app's ctx; `supervise` is the library call, made here from a test file standing in for a library's runner.
 import { createCtx, supervise } from "@keel/ctx";
@@ -24,7 +24,12 @@ async function boot(mode: "dev" | "production") {
   const lines: string[] = [];
   const outcome: { failed: boolean | undefined } = { failed: undefined };
   const run = async (ctx: ReturnType<typeof createCtx>, signal: AbortSignal): Promise<void> => {
-    const r = await supervise(ctx, "m.run", () => defect("user failed", "E2801", { data: { email: "jane@x.com" } }), T);
+    const r = await supervise(
+      ctx,
+      "m.run",
+      () => defect("user failed", { code: "E2801", data: { email: "jane@x.com" } }),
+      T,
+    );
     outcome.failed = !r.ok;
     await new Promise<void>((resolve) => signal.addEventListener("abort", () => resolve()));
   };
@@ -42,7 +47,7 @@ async function boot(mode: "dev" | "production") {
 const SUPERVISED = /^supervised m\.run threw: Defect E2801 #[0-9a-f]{8}( at \S+:\d+)?$/;
 
 describe("k.supervise Report: a supervised throw on a server", () => {
-  it("in production mode, `supervise(ctx, 'm.run', () => defect('user failed', 'E2801', { data: { email: 'jane@x.com' } }), T)` logs one `diag` with code `keel.unexpected` whose message matches the stated form", async () => {
+  it("in production mode, `supervise(ctx, 'm.run', () => defect('user failed', { code: 'E2801', data: { email: 'jane@x.com' } }), T)` logs one `diag` with code `keel.unexpected` whose message matches the stated form", async () => {
     const { app, lines, outcome } = await boot("production");
     const diags = records(lines).filter((r) => r.kind === "diag" && r.message.startsWith("supervised m.run threw"));
     expect(diags).toHaveLength(1);

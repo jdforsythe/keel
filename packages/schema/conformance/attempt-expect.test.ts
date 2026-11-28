@@ -204,7 +204,7 @@ describe("k.attempt: what expect does not claim goes on as itself", () => {
           calls++;
           return undefined;
         };
-        const mk = () => (coded ? defect(m, "E2801") : defect(m));
+        const mk = () => (coded ? defect(m, { code: "E2801" }) : defect(m));
         const s = thrown(() => attempt(mk, spy));
         expect(isDefect(s)).toBe(true);
         const a = await rejected(attempt(async () => mk(), spy));
