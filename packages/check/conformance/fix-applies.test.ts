@@ -42,7 +42,7 @@ const CASES: { code: string; source: string; path?: string; more?: { path: strin
       },
     ],
   },
-  { code: "E1601", source: "export const stamp = () => Date.now()\n" },
+  { code: "E1601", source: "import type { Ctx } from '@keel/ctx'\nexport const stamp = (ctx: Ctx) => Date.now()\n" },
 ];
 
 for (const c of CASES) {

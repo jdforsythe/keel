@@ -183,7 +183,7 @@ const FIXED: FixedCase[] = [
   {
     name: "E1601",
     code: "E1601",
-    files: [f("C.tsx", "export const stamp = () => Date.now()\n")],
+    files: [f("C.tsx", "import type { Ctx } from '@keel/ctx'\nexport const stamp = (ctx: Ctx) => Date.now()\n")],
     opts: {},
   },
   {
