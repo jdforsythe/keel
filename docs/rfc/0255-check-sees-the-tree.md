@@ -17,6 +17,7 @@ Personas: A2 and its agent form (edit, check, done), A7 (`keel test` after an ed
 
 - D10: a build-time evaluation never runs in a command's process. It runs in the evaluator: one Node child per bundle, under Node's permission model with no file right but its own bundle, code from strings off, an environment built from nothing. Its realm, timers and module instances end with it. Every fact of the machine it learns is an answer the command gave and recorded, so what can change the result and what is keyed are one set by construction, not by a list of members. It is the evaluator RFC 0251 specifies, built here once; RFC 0251 adds its `prerender` kind and its grants to it. An evaluation that gives no result is E1048.
 - D252: carried store ids in dev are narrowed to the file that held them. A store takes over a carried id only when it is created at the file whose store held it in the last load; at the load's end every carried id no store took leaves the module registry, and the stores that left or were taken over have their owning scopes disposed. So an edit that gives file B unedited file A's id throws `id already in use`, as production does, and a renamed id is gone after the reload.
+- D254: a file's digest may be kept within one process, keyed by its device, inode, size and modification and status change times, when the status change time was at least two seconds old at the read. Every write, rename over the path or time set back moves the status change time, which no process can set, so a kept digest is the bytes' digest as a read would give it; a file changed during a run is read again by `cacheHeld`, and a separate process (every `keel check`) starts with none kept.
 
 ## Problem
 `keel check` compares each `.keel/` file with what the compiler derives and reports E1005 when they differ; it reads `surface.json` from disk for `--base`; `keel test` reads `.keel/a11y.json` from disk; `keel ledger` finds projects by `.keel/routes.json`; `keel dev`'s inspect document reads the files from disk. Only `keel build` and the Vite plugin write them. So after an edit an author, or an agent, either runs `keel build` before `keel check` or reads an error about a file they never touched. The guide says it outright (`docs/guide/build-golden-1.md`): "Run `keel build` before `keel check` after edits." The `keel` skill carries it as a rule an agent must remember: "`keel check` (E1005 on `.keel/` files after an edit until `keel build` runs)".
@@ -131,6 +132,24 @@ What the counts cost, measured as documentation and not as a clause: on `apps/ho
 ### 8. keel test, keel dev, keel ledger, scaffold
 - `keel test` derives the compiled views in its own process before vitest starts, hands `a11y.json` to each test process (vitest's `provide` and `inject`), and refreshes the views unless frozen. A render with no `artifacts` then always runs E1702 against the tree under test, in a project never built too (clause 12), which today runs no E1702 when `.keel/a11y.json` is absent.
 - `keel dev` refreshes after each change to any file a derivation read, or to the project's code file paths, whatever the file's name: a `*.contract.ts` edit alone refreshes `routes.json` and the inspect document as a `routes.ts` edit does (case 12). Each refresh writes every view that differs, `surface.json` and the deploy files included, so an author who runs only dev never commits a stale surface, and `keel check` beside a running dev server agrees with it by construction.
+- A `keel dev` refresh is one bundle and one evaluator per change. `devRefresh` derives the root project's `routes.json` and hands its entries to the Vite plugin (`api.derivedRoutes`), which then evaluates the tokens alone, writes no `routes.json` and holds the handed entries in the inspect document; a refresh that derives no root project gives both back. In one pass, `realPaths` resolves each folder once (a path that is no link is its folder's real path and its name, `fs.realpathSync`'s answer) and a stat of an absent path asks without a throw. `hashFile` keeps a regular file's digest with its device, inode, size and both times when its status change time was two seconds old at the read, and gives it again while all five are unchanged (D254). The watcher is given each input outside the root once. The bundle's callbacks keep, per file, the compile's loaded contents and the `import.meta` rewrite. Measured on this machine (Node 24.22, macOS, load 3 to 12), household copy, an API path edit in `setup.contract.ts` to `.keel/surface.json` holding it, edits 1 to 12 of one `keel dev`; the watcher's own delay for a replaced file (about 115 ms, chokidar's `atomic`) is in the total:
+
+| phase (ms, one refresh) | before | after |
+|-|-|-|
+| bundles, evaluators per edit | 2, 2 | 1, 1 |
+| project read and cache lookup | 25 | 17 |
+| bundling | 268 (two at once) | 151 |
+| evaluator start to first question | 85 | 90 |
+| evaluation to result | 25 | 26 |
+| resolver probes (`pathLinks`) | 85 | 53 |
+| inputs hashed (`cacheInputs`) | 62 | 19 |
+| cache write, deploy files | 37 | 28 |
+| inputs checked again (`cacheHeld`) | 38 | 11 |
+| watcher adds | 27 + 27 | 0 |
+| edit to view, household | 0.71 to 0.94 s | 0.47 to 0.61 s |
+| edit to view, `client-only-api` | 0.34 to 0.36 s | 0.18 to 0.30 s |
+
+No refresh grows with the edits before it: twelve in a row hold the same range. The evaluator is still started per bundle; a child started before its bundle exists is not one "started on `entry`" (k.evaluator Start).
 - No run rewrites the file its `--base` names, `.keel/surface.json` included: a base that a run refreshed would compare the tree with itself on the next run and hide the E1563 it reported. The `--base` text and the `keel-data` skill say what to pass: the base branch's file, `git show origin/main:.keel/surface.json > /tmp/base.json` then `keel check --base /tmp/base.json`. Every other view is still refreshed beside an error.
 - `keel ledger` derives each project's `routes.json` (the cache makes a ledger after a check cost no evaluation) and finds projects as `keel check` does.
 - A scaffold operation's refresh (k.scaffold Refresh) is this refresh; nothing changes in k.scaffold.
