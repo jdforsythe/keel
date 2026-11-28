@@ -85,6 +85,7 @@ export function childEnv(extra: Readonly<Record<string, string>>): Record<string
   for (const [k, v] of Object.entries(process.env)) {
     if (v === undefined || k.startsWith("VITEST") || k.startsWith("KEEL_") || k === "CI") continue;
     if (k === "NODE_OPTIONS" || k === "TEST" || k === "NODE_ENV") continue;
+    if (k === "npm_config_user_agent") continue; // the printed command form follows it (k.cli Command form); a case that wants one passes it in `extra`
     env[k] = v;
   }
   return { ...env, ...extra };
