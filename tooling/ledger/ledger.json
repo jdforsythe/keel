@@ -4,8 +4,8 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2859,
-    "probabilistic": 468,
+    "example": 2814,
+    "probabilistic": 467,
     "exhaustive": 21,
     "proven": 92,
     "monitored": 8
@@ -3871,15 +3871,27 @@
     },
     {
       "pkg": "ui",
-      "name": "appearance",
-      "file": "packages/ui/src/appearance.ts",
-      "rung": "example"
+      "name": "TokenSchema",
+      "file": "packages/ui/src/TokenSchema.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ui",
+      "name": "contrastTable",
+      "file": "packages/ui/src/contrastTable.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "ui",
       "name": "customElement",
       "file": "packages/ui/src/customElement.ts",
       "rung": "proven"
+    },
+    {
+      "pkg": "ui",
+      "name": "defineTokens",
+      "file": "packages/ui/src/defineTokens.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "ui",
@@ -3918,7 +3930,7 @@
       "rung": "example"
     },
     {
-      "item": "k.a11y-static#20187a26",
+      "item": "k.a11y-static#d1e18007",
       "rung": "example"
     },
     {
@@ -3943,22 +3955,6 @@
     },
     {
       "item": "k.a11y-static#8d857f72",
-      "rung": "example"
-    },
-    {
-      "item": "k.a11y-static#80ea9ae5",
-      "rung": "example"
-    },
-    {
-      "item": "k.a11y-static#3714c048",
-      "rung": "example"
-    },
-    {
-      "item": "k.a11y-static#0626106a",
-      "rung": "example"
-    },
-    {
-      "item": "k.a11y-static#87a73099",
       "rung": "example"
     },
     {
@@ -4166,14 +4162,6 @@
       "rung": "proven"
     },
     {
-      "item": "k.aria#d8aa36ac",
-      "rung": "example"
-    },
-    {
-      "item": "k.aria#5048e710",
-      "rung": "example"
-    },
-    {
       "item": "k.boundary#224ae0db",
       "rung": "example"
     },
@@ -4326,14 +4314,6 @@
       "rung": "example"
     },
     {
-      "item": "k.check-time#7c2619fd",
-      "rung": "example"
-    },
-    {
-      "item": "k.check-time#3584c9f4",
-      "rung": "example"
-    },
-    {
       "item": "k.check#4f39c912",
       "rung": "example"
     },
@@ -4474,7 +4454,7 @@
       "rung": "example"
     },
     {
-      "item": "k.cli#9374a0ad",
+      "item": "k.cli#fcbada40",
       "rung": "example"
     },
     {
@@ -4523,10 +4503,6 @@
     },
     {
       "item": "k.cli#15fcca56",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#c381e8ab",
       "rung": "example"
     },
     {
@@ -5175,30 +5151,6 @@
     },
     {
       "item": "k.deploy#2723ae2a",
-      "rung": "example"
-    },
-    {
-      "item": "k.deploy#055069f3",
-      "rung": "example"
-    },
-    {
-      "item": "k.design-tokens#7c8e0445",
-      "rung": "example"
-    },
-    {
-      "item": "k.design-tokens#3d5775bb",
-      "rung": "example"
-    },
-    {
-      "item": "k.design-tokens#189f5676",
-      "rung": "example"
-    },
-    {
-      "item": "k.design-tokens#1514e35c",
-      "rung": "example"
-    },
-    {
-      "item": "k.design-tokens#a1a47789",
       "rung": "example"
     },
     {
@@ -5954,50 +5906,6 @@
       "rung": "example"
     },
     {
-      "item": "k.gamut#4299cc56",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#cea5d136",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#db84d93c",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#7c5c8723",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#53a743e3",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#96aed0ce",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#221b089a",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#d94dee76",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#dadbff15",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#990cdbba",
-      "rung": "example"
-    },
-    {
-      "item": "k.gamut#c77cfd9c",
-      "rung": "example"
-    },
-    {
       "item": "k.guards#50c528bd",
       "rung": "example"
     },
@@ -6208,10 +6116,6 @@
     {
       "item": "k.hosting#9ed4ddac",
       "rung": "example"
-    },
-    {
-      "item": "k.hosting#ff9436ad",
-      "rung": "none"
     },
     {
       "item": "k.inspect#0350f362",
@@ -7990,7 +7894,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.schemes#62a32a22",
+      "item": "k.schemes#55b54379",
       "rung": "example"
     },
     {
@@ -8022,7 +7926,7 @@
       "rung": "example"
     },
     {
-      "item": "k.schemes#612fe775",
+      "item": "k.schemes#78586903",
       "rung": "example"
     },
     {
@@ -8039,30 +7943,6 @@
     },
     {
       "item": "k.schemes#56b3430f",
-      "rung": "example"
-    },
-    {
-      "item": "k.schemes#5c121336",
-      "rung": "example"
-    },
-    {
-      "item": "k.schemes#a85f2ffa",
-      "rung": "example"
-    },
-    {
-      "item": "k.schemes#e00c91e3",
-      "rung": "example"
-    },
-    {
-      "item": "k.schemes#6583a7c5",
-      "rung": "example"
-    },
-    {
-      "item": "k.schemes#cd80d75c",
-      "rung": "example"
-    },
-    {
-      "item": "k.schemes#ea5ad213",
       "rung": "example"
     },
     {
@@ -8786,50 +8666,6 @@
       "rung": "example"
     },
     {
-      "item": "k.themes#9daccf53",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "k.themes#fb1737ae",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#024cf1d4",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#14de2622",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#55121ac7",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#2ded09c9",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#3e9ea50d",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#5e99f596",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#a1b3d145",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#65b94cc1",
-      "rung": "example"
-    },
-    {
-      "item": "k.themes#2bc31ee7",
-      "rung": "example"
-    },
-    {
       "item": "k.topology#41a5d6a2",
       "rung": "example"
     },
@@ -9038,10 +8874,6 @@
       "rung": "example"
     },
     {
-      "item": "k.ui#61026efb",
-      "rung": "example"
-    },
-    {
       "item": "k.unsafe#69ddc28e",
       "rung": "example"
     },
@@ -9176,18 +9008,6 @@
     {
       "item": "k.values#893a9074",
       "rung": "example"
-    },
-    {
-      "item": "k.values#8bc1acb8",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "k.values#0652c486",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "k.values#2ebac48c",
-      "rung": "probabilistic"
     },
     {
       "item": "std.brands#d54b9d13",
