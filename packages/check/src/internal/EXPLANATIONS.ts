@@ -133,7 +133,7 @@ const ROWS: readonly Row[] = [
     "E1048",
     "a build-time evaluation that gave no result",
     "The evaluator ended it: a top-level await that never settles, or no result by the deadline.",
-    "settle the top-level await, or move the waiting into a handler",
+    "settle or remove the top-level await; move slow work into a handler",
     "k.evaluator",
   ],
   [
