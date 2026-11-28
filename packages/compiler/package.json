@@ -95,6 +95,9 @@
     }
   },
   "files": ["dist", "src/client.d.ts", "tsconfig.strict.json", "docs"],
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",

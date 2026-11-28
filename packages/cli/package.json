@@ -72,6 +72,9 @@
     }
   },
   "files": ["dist", "docs", "skills"],
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",

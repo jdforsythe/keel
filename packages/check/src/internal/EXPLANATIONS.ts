@@ -130,6 +130,13 @@ const ROWS: readonly Row[] = [
     "k.head",
   ],
   [
+    "E1048",
+    "a build-time evaluation that gave no result",
+    "The evaluator ended it: a top-level await that never settles, or no result by the deadline.",
+    "settle the top-level await, or move the waiting into a handler",
+    "k.evaluator",
+  ],
+  [
     "E1049",
     "internal compiler failure",
     "A Keel bug, not app code; the message is verbatim.",
