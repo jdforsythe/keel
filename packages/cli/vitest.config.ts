@@ -1,3 +1,4 @@
+import { TimedSequencer } from "@keel/tooling/ci-sequencer";
 import { keelConfig } from "@keel/tooling/vitest-config";
 
 export default keelConfig({
@@ -13,5 +14,7 @@ export default keelConfig({
     // taking macOS file events: a busy machine delivers those seconds late or drops them, and reports the writes of the
     // project's own setup as later changes (one to `vite.config.ts` restarts the dev server under the case).
     env: { KEEL_DEV_POLL: "1" },
+    // CI runs this package in parts (`--shard=i/k`): each part's files by their recorded seconds, slowest first.
+    sequence: { sequencer: TimedSequencer },
   },
 });

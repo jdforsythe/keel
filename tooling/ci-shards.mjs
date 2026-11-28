@@ -1,11 +1,13 @@
 // CI's test split (the `test-shard` job of tooling/ci.source.json). Every workspace package with a test task lands in
-// exactly one shard; a package listed in SPLIT runs as that many parts (vitest's `--shard=i/k`), each part in its own
-// shard. The shard count is the length of that job's matrix. Packages and parts are dealt heaviest first, each to the
-// shard with the least weight so far. A package's weight is its test task's seconds on the 2-core hosted runner, from
-// SECONDS below (a part weighs its share); a package not listed there weighs SECONDS_PER_FILE per test file, so a new
-// package joins a shard without an edit here. Each test file prints a `file <path> <s>s` line as it ends; the shard
-// run ends with one line per task (result, seconds, memory) and its slowest files, so the next times to record are in
-// every log, and a task that runs past five minutes says so every five minutes with its memory.
+// exactly one shard; a package listed in SPLIT (ci-plan.ts) runs as that many parts (vitest's `--shard=i/k`, its files
+// dealt by their recorded seconds through ci-sequencer.ts), each part in its own shard. The shard count is the length
+// of that job's matrix. Packages and parts are dealt heaviest first, each to the shard with the least seconds so far.
+// The seconds are tooling/ci-shards.json's, read from the shard logs of CI runs on the 4-core hosted runner: a
+// package's test task as a whole, and each file of a split package with the package's parallel factor; a package not
+// listed there weighs SECONDS_PER_FILE per test file, so a new package joins a shard without an edit here. Each test
+// file prints a `file <path> <s>s` line as it ends; the shard run ends with one line per task (result, seconds,
+// memory) and its slowest files, so the next times to record are in every log, and a task that runs past five minutes
+// says so every five minutes with its memory.
 // Usage: node tooling/ci-shards.mjs <shard>   runs that shard's test tasks through turbo, one task at a time, every
 //                                            task even after one fails, streaming turbo's output; then a line per
 //                                            task and, for each failed task, its name and its whole log
@@ -15,14 +17,28 @@
 //        node tooling/ci-shards.mjs --plan    prints each shard's packages and parts and expected seconds
 //        node tooling/ci-shards.mjs --verify  fails E0013 when a test task or a part of a split one falls in no
 //                                            shard or in two, two parts of one package share a shard, the matrix
-//                                            does not count 1 to n, or SECONDS or SPLIT names a package with no
+//                                            does not count 1 to n or test-macos.source.json's differs, a shard's expected seconds pass BUDGET of the
+//                                            job's `timeout-minutes`, or the times or SPLIT name a package with no
 //                                            test task
+//        node tooling/ci-shards.mjs --refresh <run-id>...  rewrites tooling/ci-shards.json from those CI runs'
+//                                            test-shard logs (`gh run view`): per task and file the most any run
+//                                            took; the test tasks no run timed are listed
 import { spawn, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { run } from "./output.ts";
+import {
+  deal as dealUnits,
+  label,
+  mergeTimes,
+  parseShardLog,
+  readTimes,
+  SECONDS_PER_FILE,
+  SPLIT,
+  units,
+  WORKERS,
+} from "./ci-plan.ts";
 import { dryRunJson } from "./turbo-dry.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -45,23 +61,9 @@ function testFiles(dir) {
     .map((l) => l.trim());
 }
 
-/**
- * The files part `part` of `parts` runs, as vitest's `--shard=part/parts` picks them: sorted by the SHA-1 hex of each
- * path from the package root (with its leading `/`), then sliced into equal parts of `ceil(files / parts)`.
- */
-function partFiles(files, part, parts) {
-  const size = Math.ceil(files.length / parts);
-  return files
-    .map((f) => ({ f, hash: createHash("sha1").update(`/${f}`).digest("hex") }))
-    .sort((a, b) => (a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0))
-    .slice(size * (part - 1), size * part)
-    .map((x) => x.f);
-}
-
 /** Whether a unit (a package, or one part of a split one) runs a test file that drives a browser. */
 function drivesBrowser(dir, unit) {
-  const files = testFiles(dir);
-  const mine = unit.parts > 1 ? partFiles(files, unit.part, unit.parts) : files;
+  const mine = unit.files ?? testFiles(dir);
   return mine.some((f) => BROWSER.test(fs.readFileSync(path.join(root, dir, f), "utf8")));
 }
 const env = { ...process.env, TURBO_NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1" };
@@ -71,66 +73,11 @@ const SAMPLE_MS = 5000;
 /** How often a running task reports that it still runs, with its memory, so a runner lost mid-task shows both. */
 const STILL_MS = 300_000;
 
-/**
- * Seconds each test task takes on the 2-core, 7.7 GB hosted runner (vitest's own trailer in the shard logs, rounded
- * up). Packages under 10 s are left to the per-file weight. Update an entry from a shard's closing lines when its
- * task moves by more than a minute. `@keel/cli` holds the least it is known to take: whole, it was cut unfinished
- * after 2,080 s (358 s on one worker of a 16-core laptop); its parts' closing lines give the real figure.
- */
-const SECONDS = {
-  "@keel/cli": 2100,
-  "@keel/std-sessions": 680,
-  "@keel/check": 450,
-  "@keel/scaffold": 270,
-  "@keel/server": 210,
-  "@keel/testing": 140,
-  "@keel/std-conflicts": 120,
-  "@keel/std-db": 90,
-  "@keel/compiler": 70,
-  "@keel/router": 65,
-  "golden-1": 60,
-  "@keel/std-tokens": 55,
-  "golden-2": 35,
-  "@keel/runtime-dom": 35,
-  "@keel/ui": 35,
-  "@keel/store": 30,
-  "@keel/std-tables": 30,
-  "@keel/forms": 25,
-  "@keel/schema": 25,
-  "@keel/std-workflows": 20,
-  "@keel/std-jobs": 20,
-  "@keel/services": 20,
-  "@keel/tooling": 20,
-  "@keel/std-channels": 15,
-  "@keel/std-offline": 15,
-  inspector: 15,
-  "@keel/ctx": 15,
-  "@keel/std-messages": 15,
-  "@keel/std-statecharts": 15,
-  "@keel/reactive": 10,
-  "@keel/std-capacitor": 10,
-  "@keel/std-tauri": 10,
-  sessions: 10,
-};
-/** Weight per test file of a package SECONDS does not list. */
-const SECONDS_PER_FILE = 1;
-
-/**
- * Packages whose test task runs as several parts, each in its own shard, with the part count. vitest's `--shard=i/k`
- * deals the package's test files to the parts, so every file runs in exactly one part. `@keel/cli` runs builds and
- * TypeScript programs in most files; whole, it outlasts a 35-minute job on the 2-core runner.
- */
-const SPLIT = { "@keel/cli": 4 };
-
-/**
- * Packages whose test files run on at most this many vitest workers here. `@keel/cli`'s property tests spawn several
- * builds per run under a per-test time limit; with a worker per core the builds wait on each other and a test ends at
- * its limit on a slow runner.
- */
-const WORKERS = { "@keel/cli": 2 };
-
-const matrix = JSON.parse(fs.readFileSync(path.join(root, "tooling/ci.source.json"), "utf8")).jobs["test-shard"]
-  .strategy.matrix.shard;
+const shardJob = JSON.parse(fs.readFileSync(path.join(root, "tooling/ci.source.json"), "utf8")).jobs["test-shard"];
+const matrix = shardJob.strategy.matrix.shard;
+/** The share of the job's time limit a shard's expected seconds may take: runs vary, and setup comes first. */
+const BUDGET = 0.6;
+const limit = shardJob["timeout-minutes"] * 60;
 const n = matrix.length;
 
 /** Test tasks turbo plans for these filters (all packages when none). */
@@ -157,35 +104,16 @@ function countTests(dir) {
   return k;
 }
 
-const weight = (t) => SECONDS[t.name] ?? SECONDS_PER_FILE * countTests(path.join(root, t.dir));
+/** Every package's test task with its test-file count, a split package's with its test files. */
+const planned = (tasks) =>
+  tasks.map((t) => ({
+    ...t,
+    testFiles: countTests(path.join(root, t.dir)),
+    ...(SPLIT[t.name] === undefined ? {} : { files: testFiles(t.dir) }),
+  }));
 
-/** A unit of the deal: a package's whole test task, or part `part` of `parts` of a split one. */
-const label = (u) => (u.parts === 1 ? u.name : `${u.name} ${u.part}/${u.parts}`);
-
-/** Every package's test task, a split package's as its parts, each with its expected seconds. */
-function units(tasks) {
-  return tasks.flatMap((t) => {
-    const parts = SPLIT[t.name] ?? 1;
-    const w = weight(t);
-    return Array.from({ length: parts }, (_, i) => ({ name: t.name, part: i + 1, parts, w: Math.ceil(w / parts) }));
-  });
-}
-
-/**
- * The shards, each its units and expected seconds, dealt heaviest first to the lightest shard that holds no other
- * part of the same package.
- */
-function deal(tasks) {
-  const weighed = units(tasks).sort((a, b) => b.w - a.w || label(a).localeCompare(label(b)));
-  const shards = Array.from({ length: n }, () => ({ w: 0, units: [] }));
-  for (const u of weighed) {
-    const open = shards.filter((s) => u.parts === 1 || !s.units.some((v) => v.name === u.name));
-    const lightest = (open.length > 0 ? open : shards).reduce((a, b) => (b.w < a.w ? b : a));
-    lightest.w += u.w;
-    lightest.units.push(u);
-  }
-  return shards.map((s) => ({ seconds: s.w, units: s.units.sort((a, b) => label(a).localeCompare(label(b))) }));
-}
+/** The shards of these test tasks, by the recorded times. */
+const deal = (tasks) => dealUnits(units(planned(tasks), readTimes()), n);
 
 const filters = (names) => [...new Set(names)].map((p) => `--filter=${p}`);
 /** One line on stdout, written synchronously so it lands before an exit from a signal handler. */
@@ -307,6 +235,16 @@ if (arg === "--verify") {
     const diags = [];
     const fail = (message) => diags.push({ kind: "diag", code: "E0013", path: "tooling/ci.source.json", message });
     if (matrix.some((s, i) => s !== i + 1)) fail(`test-shard matrix is ${JSON.stringify(matrix)}, not 1 to ${n}`);
+    const macos = JSON.parse(fs.readFileSync(path.join(root, "tooling/test-macos.source.json"), "utf8")).jobs[
+      "test-macos"
+    ].strategy.matrix.shard;
+    if (JSON.stringify(macos) !== JSON.stringify(matrix))
+      diags.push({
+        kind: "diag",
+        code: "E0013",
+        path: "tooling/test-macos.source.json",
+        message: `test-macos matrix is ${JSON.stringify(macos)}, not the test-shard matrix ${JSON.stringify(matrix)}`,
+      });
     const tasks = testTasks();
     const all = tasks.map((t) => t.name);
     // Each shard's filters go through turbo, so a package counts where turbo would run it; a split package's parts
@@ -320,7 +258,11 @@ if (arg === "--verify") {
           seen.set(label(u), [...(seen.get(label(u)) ?? []), i + 1]);
       }
     }
-    const expected = units(tasks).map(label);
+    const shards = deal(tasks);
+    for (const [i, s] of shards.entries())
+      if (s.seconds > BUDGET * limit)
+        fail(`shard ${i + 1}/${n} expects ${s.seconds}s, over ${BUDGET * 100}% of the job's ${limit}s limit`);
+    const expected = units(planned(tasks), readTimes()).map(label);
     for (const unit of expected) {
       const at = seen.get(unit) ?? [];
       if (at.length !== 1)
@@ -332,19 +274,59 @@ if (arg === "--verify") {
       if (new Set(shards).size !== shards.length) fail(`two parts of ${name} share a shard: ${shards.join(", ")}`);
       if (!Number.isInteger(parts) || parts < 2 || parts > n) fail(`SPLIT gives ${name} ${parts} parts, not 2 to ${n}`);
     }
-    for (const [table, names] of [
-      ["SECONDS", Object.keys(SECONDS)],
-      ["SPLIT", Object.keys(SPLIT)],
+    const times = readTimes();
+    for (const [table, file, names] of [
+      ["the times", "tooling/ci-shards.json", [...Object.keys(times.packages), ...Object.keys(times.files)]],
+      ["SPLIT", "tooling/ci-plan.ts", Object.keys(SPLIT)],
     ])
       for (const name of names)
         if (!all.includes(name))
           diags.push({
             kind: "diag",
             code: "E0013",
-            path: "tooling/ci-shards.mjs",
-            message: `${table} lists ${name}, which has no test task`,
+            path: file,
+            message: `${table} list ${name}, which has no test task`,
           });
     return { diags, counts: { packages: all.length, parts: expected.length, shards: n } };
+  });
+} else if (arg === "--refresh") {
+  await run("ci-shards refresh", () => {
+    const ids = process.argv.slice(3);
+    if (ids.length === 0)
+      return { diags: [{ kind: "diag", code: "E0013", message: "--refresh takes one or more run ids" }], counts: {} };
+    const gh = (args) => {
+      const r = spawnSync("gh", args, { cwd: root, encoding: "utf8", maxBuffer: 1024 * 1024 * 1024 });
+      if (r.status !== 0) throw new Error(`gh ${args.join(" ")} failed: ${r.stderr.trim().split("\n").at(-1)}`);
+      return r.stdout;
+    };
+    const logs = [];
+    for (const id of ids) {
+      const { jobs } = JSON.parse(gh(["run", "view", id, "--json", "jobs"]));
+      for (const job of jobs.filter((j) => j.name.startsWith("test-shard")))
+        logs.push(parseShardLog(gh(["run", "view", "--job", String(job.databaseId), "--log"])));
+    }
+    const times = mergeTimes(ids, logs);
+    const out = path.join(root, "tooling/ci-shards.json");
+    fs.writeFileSync(out, `${JSON.stringify(times, null, 2)}\n`);
+    // The repository's formatter (tooling/format-check.mjs) has the last word on the file's layout.
+    spawnSync("pnpm", ["exec", "biome", "format", "--write", "tooling/ci-shards.json"], {
+      cwd: root,
+      env,
+      stdio: "ignore",
+    });
+    const untimed = testTasks()
+      .map((t) => t.name)
+      .filter((name) => times.packages[name] === undefined && times.files[name] === undefined);
+    for (const name of untimed) say(`untimed ${name}: weighs ${SECONDS_PER_FILE}s per test file`);
+    return {
+      diags: [],
+      counts: {
+        runs: ids.length,
+        logs: logs.length,
+        packages: Object.keys(times.packages).length,
+        untimed: untimed.length,
+      },
+    };
   });
 } else if (arg === "--browser") {
   const shard = Number(process.argv[3]);

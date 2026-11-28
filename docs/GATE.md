@@ -15,13 +15,13 @@ Actions are not run. Checkout, pnpm, node and `actions/cache` are the steps abov
 | Job | On this machine |
 | --- | --- |
 | `check` | runs |
-| `test-shard` 1 to 6 | runs, one instance per shard |
+| `test-shard` 1 to 8 | runs, one instance per shard |
 | `test` | runs |
 | `postgres` | runs with docker: the `postgres:17` service as `keel-gate-pg` and the ssl container as `keel-gate-pg-ssl`, each on a free port |
 | `built-smokes` | runs with docker: the `postgres:17` service as `keel-gate-pg-smokes` on a free port |
 | `create-kit`, `build`, `budgets` | runs |
 | `golden-1-images` | runs with docker, when its credential helper answers within 10 seconds (a locked one hangs every pull) |
-| `slow-shards` | runs with docker, after every other job: the six test shards in a Linux `node:22` container limited to 2 CPUs and 7,700 MB, at time scale 1 (see Slow machine) |
+| `slow-shards` | runs with docker, after every other job: the eight test shards in a Linux `node:22` container limited to 2 CPUs and 7,700 MB, at time scale 1 (see Slow machine) |
 | `changes` | skipped: it only decides whether the shell jobs run on a pull request |
 | `shell-tauri` | skipped: Ubuntu only (WebKitGTK, WebKitWebDriver, Xvfb) |
 | `shell-android` | `--with shell-android`: a Gradle build of the APK |
