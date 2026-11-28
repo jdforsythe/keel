@@ -3,7 +3,7 @@
 // The real diagnostic through `check()` on a fixture of `<Box fg bg>` and the spec tokens (the `tokens` project artifact).
 import { fixedTime } from "@keel/tooling/test-time";
 import { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED } from "./fixtures.ts";

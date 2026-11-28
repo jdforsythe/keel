@@ -15,7 +15,8 @@ const MANIFEST_DIR = ".vite";
 
 /**
  * The last step of a `static` deployable's build (k.hosting Static): writes `keel-mark.svg` into its client build
- * `out` (`dist/<name>/`), imports the build entry `entry` (never shipped) and calls its `render(out, std)`, then writes
+ * `out` (`dist/<name>/`), imports the build entry `entry` (never shipped) and calls its `render(out, std, artifacts)`,
+ * `artifacts` being `entry`'s folder, where the build wrote the artifacts every server render reads, then writes
  * each route's document at `index.html` for `/` and `<path>/index.html` otherwise, and the not-found document at
  * `404.html`, each with a `keel-peer` tag per `KEEL_PEER_<NAME>` of `env` and no nonce (a file host serves no policy
  * header; `csp.txt` is the policy). A route answering other than 200 writes no document and is one `E1588` line, naming
@@ -37,7 +38,7 @@ export async function writeStatic(
     const render: unknown = typeof mod === "object" && mod !== null ? Reflect.get(mod, "render") : undefined;
     if (typeof render !== "function") throw new Error(`keel: build entry ${entry} exports no render`);
     // A Keel-coded throw of `createApp` (E1553, E1558) is a diagnostic line of the build.
-    const docs: unknown = await Promise.resolve(render(out, std)).catch((e: unknown) => {
+    const docs: unknown = await Promise.resolve(render(out, std, path.dirname(entry))).catch((e: unknown) => {
       const message = e instanceof Error ? e.message : String(e);
       throw /^[EW]\d{4} /.test(message) ? new Error(`keel: ${message}`) : e;
     });

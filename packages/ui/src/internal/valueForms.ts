@@ -1,10 +1,11 @@
+import type { TokenRefusal } from "../types/TokenRefusal.ts";
 import type { Tokens } from "../types/Tokens.ts";
+import { colorSyntax } from "./colorSyntax.ts";
 import { varName } from "./varName.ts";
 
 /** The matchers the grammar reads with, built on first use so that importing this file runs no code (k.values). */
 type Matchers = {
   readonly number: RegExp;
-  readonly color: RegExp;
   readonly word: RegExp;
   readonly units: ReadonlySet<string>;
 };
@@ -14,7 +15,6 @@ const matchers = (): Matchers => {
   const viewport = ["vw", "vh", "vi", "vb", "vmin", "vmax"].flatMap((u) => [u, `s${u}`, `l${u}`, `d${u}`]);
   built = {
     number: /^\d+(?:\.\d+)?/,
-    color: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
     word: /^[A-Za-z_][A-Za-z0-9_-]*$/,
     units: new Set([
       ...["px", "cm", "mm", "q", "in", "pt", "pc"],
@@ -179,18 +179,33 @@ const whole = (s: string, read: (r: Reader) => void): boolean => {
 const isMath = (s: string): boolean => whole(s, (r) => r.math(1));
 const isEnv = (s: string): boolean => whole(s, (r) => r.env(1));
 
+/** An opaque `<color>` in one of k.values' six forms, and an `<alpha>`: one with alpha. */
+const isColor = (s: string): boolean => colorSyntax(s)?.alpha === null;
+const isAlpha = (s: string): boolean => {
+  const c = colorSyntax(s);
+  return c !== null && c.alpha !== null;
+};
+
 /** A `<paint>`: a `<color>`, a `<ref>` to a color token the tokens hold, or `currentColor`. */
 const isPaint = (s: string, refs: ReadonlySet<string>): boolean => {
-  if (s === "currentColor" || matchers().color.test(s)) return true;
+  if (s === "currentColor" || isColor(s)) return true;
   return s.startsWith("var(") && s.endsWith(")") && refs.has(s.slice(4, -1));
 };
 
-/** One shadow: `inset`, two to four lengths (the first two and the fourth may carry `-`), an optional paint. */
+/** The words of a value whose last part may be a function form holding spaces (`rgb(0 0 0 / 0.2)`), that part whole. */
+function wordsWithPaint(s: string): string[] {
+  if (!s.endsWith(")")) return s.split(" ");
+  const open = s.lastIndexOf(" ", s.indexOf("(")) + 1;
+  const head = s.slice(0, open).trimEnd();
+  return [...(head === "" ? [] : head.split(" ")), s.slice(open)];
+}
+
+/** One shadow: `inset`, two to four lengths (the first two and the fourth may carry `-`), an optional paint or alpha. */
 function isShadow(s: string, refs: ReadonlySet<string>): boolean {
-  const words = s.split(" ");
+  const words = wordsWithPaint(s);
   if (words[0] === "inset") words.shift();
   const last = words.at(-1);
-  if (last !== undefined && isPaint(last, refs)) words.pop();
+  if (last !== undefined && (isPaint(last, refs) || isAlpha(last))) words.pop();
   if (words.length < 2 || words.length > 4) return false;
   return words.every((w, i) => (i === 2 ? isLength(w) : isLength(w.startsWith("-") ? w.slice(1) : w)));
 }
@@ -248,7 +263,7 @@ function holds(group: string, v: string, refs: ReadonlySet<string>): boolean {
   const n = numberAt(v);
   switch (group) {
     case "color":
-      return matchers().color.test(v);
+      return isColor(v);
     case "space":
       return v === "auto" || isLp(v) || isEnv(v) || isMath(v);
     case "size":
@@ -268,7 +283,7 @@ function holds(group: string, v: string, refs: ReadonlySet<string>): boolean {
     }
     case "border": {
       if (v === "0" || v === "none") return true;
-      const [width = "", style = "", paint = "", ...rest] = v.split(" ");
+      const [width = "", style = "", paint = "", ...rest] = wordsWithPaint(v);
       return (
         rest.length === 0 &&
         (["thin", "medium", "thick"].includes(width) || isLength(width)) &&
@@ -285,23 +300,120 @@ function holds(group: string, v: string, refs: ReadonlySet<string>): boolean {
   }
 }
 
+/** The groups a theme may hold (k.themes Themes), and the conditions that turn one on. */
+const THEME_GROUPS = ["color", "overlay", "space", "size", "radius", "font", "fontSize", "weight", "shadow", "border"];
+const WHEN = ["choice", "contrast", "print"];
+const THEME_NAME = /^[a-z][A-Za-z0-9]{0,23}$/;
+const RESERVED = ["default", "system", "light", "dark"];
+
+const entries = (v: unknown): [string, unknown][] =>
+  typeof v === "object" && v !== null && !Array.isArray(v) ? Object.entries(v) : [];
+
+/** Why a color or overlay value `ok` refuses is refused (k.themes Token errors). */
+function colorWhat(group: string, v: string): string {
+  if (v.includes("(") && v.includes(",")) return "channels are separated by spaces, not commas";
+  if (/^[A-Za-z]+$/.test(v)) return "a named color; write hex or a function form";
+  if (group === "color" && isAlpha(v)) return "alpha is for an overlay or a shadow";
+  return group === "overlay" ? "not an overlay value" : `not a ${group} value`;
+}
+
 /**
- * The paths of every token value not in its group's form (k.values): `[group, name]`, or `[group, name, scheme]` for
- * one value of a color pair. A `<ref>` names the custom property of a color token these tokens hold.
+ * A color or overlay value, or a `{ light, dark }` pair of them: the refusals of the values `ok` refuses, at `[...at]`
+ * for a string and `[...at, scheme]` for one value of a pair. A pair where `pairs` is false is refused at `at`.
  */
-export function valueForms(tokens: Tokens): string[][] {
-  const refs = new Set(Object.keys(tokens.color ?? {}).map((n) => varName("color", n)));
-  const out: string[][] = [];
-  for (const [group, values] of Object.entries(tokens)) {
-    if (group === "base" || group === "look" || group === "schemes") continue;
-    if (typeof values !== "object" || values === null) continue;
-    for (const [name, v] of Object.entries(values)) {
-      if (typeof v === "string") {
-        if (!holds(group, v, refs)) out.push([group, name]);
-      } else if (group === "color" && typeof v === "object" && v !== null)
-        for (const scheme of ["light", "dark"])
-          if (!holds("color", String(Reflect.get(v, scheme)), refs)) out.push([group, name, scheme]);
+function valueRefusals(
+  group: string,
+  at: string[],
+  v: unknown,
+  ok: (s: string) => boolean,
+  pairs: boolean,
+): TokenRefusal[] {
+  if (typeof v === "string") return ok(v) ? [] : [{ path: at, what: colorWhat(group, v) }];
+  if (!pairs) return [{ path: at, what: "a print theme takes one value, not a pair" }];
+  return ["light", "dark"].flatMap((scheme) => {
+    const one = String(Reflect.get(Object(v), scheme));
+    return ok(one) ? [] : [{ path: [...at, scheme], what: colorWhat(group, one) }];
+  });
+}
+
+/** The refusals of one theme (k.themes Themes): its name, `when`, held names and each value's form. */
+function themeRefusals(tokens: Tokens, name: string, theme: unknown, refs: ReadonlySet<string>): TokenRefusal[] {
+  const at = ["themes", name];
+  const out: TokenRefusal[] = [];
+  if (RESERVED.includes(name)) out.push({ path: at, what: "default, system, light and dark are reserved" });
+  else if (!THEME_NAME.test(name))
+    out.push({ path: at, what: "a theme name is a letter then up to 23 letters and digits" });
+  const when = Reflect.get(Object(theme), "when");
+  if (when !== undefined && !WHEN.includes(String(when)))
+    out.push({ path: [...at, "when"], what: "when is choice, contrast or print" });
+  const print = when === "print";
+  for (const [group, values] of entries(theme)) {
+    if (group === "when" || !THEME_GROUPS.includes(group)) continue;
+    const held = new Set(entries(Reflect.get(tokens, group)).map(([n]) => n));
+    for (const [token, v] of entries(values)) {
+      const path = [...at, group, token];
+      if (!held.has(token)) out.push({ path, what: `not a top-level ${group} token` });
+      else if (group === "color") out.push(...valueRefusals(group, path, v, isColor, !print));
+      else if (group === "overlay") out.push(...valueRefusals(group, path, v, isAlpha, !print));
+      else if (typeof v !== "string" || !holds(group, v, refs)) out.push({ path, what: `not a ${group} value` });
     }
   }
+  return out;
+}
+
+/** The refusals of the overlays (k.values Overlays): an `<alpha>` value or pair, and an `over` of held colors. */
+function overlayRefusals(tokens: Tokens): TokenRefusal[] {
+  const colors = new Set(Object.keys(tokens.color ?? {}));
+  const out: TokenRefusal[] = [];
+  for (const [name, o] of Object.entries(tokens.overlay ?? {})) {
+    out.push(...valueRefusals("overlay", ["overlay", name, "value"], o.value, isAlpha, true));
+    const over = o.over;
+    const path = ["overlay", name, "over"];
+    const missing = over.find((c) => !colors.has(c));
+    if (over.length < 1 || over.length > 8 || new Set(over).size !== over.length)
+      out.push({ path, what: "holds 1 to 8 distinct names" });
+    else if (missing !== undefined) out.push({ path, what: `names no color token "${missing}"` });
+  }
+  return out;
+}
+
+/** The theme past its bound (k.themes Themes): a second `contrast` or `print`, a ninth `choice`, the later in order. */
+function countRefusals(tokens: Tokens): TokenRefusal[] {
+  const seen = new Map<string, number>();
+  for (const [name, t] of Object.entries(tokens.themes ?? {})) {
+    const when = t.when ?? "choice";
+    const n = (seen.get(when) ?? 0) + 1;
+    seen.set(when, n);
+    const path = ["themes", name];
+    if (when === "choice" && n === 9) return [{ path, what: "a ninth choice theme; at most 8" }];
+    if (when !== "choice" && n === 2) return [{ path, what: `a second ${when} theme` }];
+  }
+  return [];
+}
+
+/**
+ * Every token value not in its group's form (k.values), in order, each with its path and why: `[group, name]`, or
+ * `[group, name, scheme]` for one value of a color pair; an overlay's `[overlay, name, value]` (then the scheme) or
+ * `[overlay, name, over]`; a theme's under `[themes, theme]`, which is itself refused for a bad name and for a
+ * second `contrast` or `print` or a ninth `choice` theme (k.themes Themes). A `<ref>` names the custom property of a
+ * color token these tokens hold.
+ */
+export function valueForms(tokens: Tokens): TokenRefusal[] {
+  const refs = new Set(Object.keys(tokens.color ?? {}).map((n) => varName("color", n)));
+  const out: TokenRefusal[] = [];
+  for (const [group, values] of Object.entries(tokens)) {
+    if (["base", "look", "schemes", "overlay", "themes"].includes(group)) continue;
+    if (typeof values !== "object" || values === null) continue;
+    for (const [name, v] of Object.entries(values)) {
+      if (group === "color") out.push(...valueRefusals(group, [group, name], v, isColor, true));
+      // `print` is the responsive key for the printed page (k.aria Print), so no breakpoint takes the name.
+      else if (typeof v === "string" && (!holds(group, v, refs) || (group === "breakpoint" && name === "print")))
+        out.push({ path: [group, name], what: `not a ${group} value` });
+    }
+  }
+  out.push(...overlayRefusals(tokens));
+  const themes = Object.entries(tokens.themes ?? {});
+  for (const [name, theme] of themes) out.push(...themeRefusals(tokens, name, theme, refs));
+  out.push(...countRefusals(tokens));
   return out;
 }

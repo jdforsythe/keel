@@ -34,9 +34,9 @@ const fresh = (): string => {
 };
 
 const TOKENS_FILE = `${LIB_ID}Tokens`;
-const SHIPPED = `import { defineTokens } from '@keel/ui'\nexport const ${TOKENS_FILE} = defineTokens({ color: { '${LIB_ID}.accent': '#0B5CAD', '${LIB_ID}.ink': '#FFFFFF' }, look: { '${LIB_ID}.badge': { bg: '${LIB_ID}.accent', fg: '${LIB_ID}.ink' } } })\n`;
+const SHIPPED = `import { defineTokens } from '@keel/ui/tokens'\nexport const ${TOKENS_FILE} = defineTokens({ color: { '${LIB_ID}.accent': '#0B5CAD', '${LIB_ID}.ink': '#FFFFFF' }, look: { '${LIB_ID}.badge': { bg: '${LIB_ID}.accent', fg: '${LIB_ID}.ink' } } })\n`;
 const root = (extra: string): string =>
-  `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { ${TOKENS_FILE} } from "./src/${TOKENS_FILE}.ts";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...${TOKENS_FILE}.color${extra} },\n  look: { ...brandTokens.look, ...${TOKENS_FILE}.look },\n});\n`;
+  `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { ${TOKENS_FILE} } from "./src/${TOKENS_FILE}.ts";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...${TOKENS_FILE}.color${extra} },\n  look: { ...brandTokens.look, ...${TOKENS_FILE}.look },\n});\n`;
 
 /** A copy of the scaffolded library that ships `<id>Tokens`, its root `tokens.ts` holding `extra` after the shipped color spread. */
 function shipping(extra: string): string {

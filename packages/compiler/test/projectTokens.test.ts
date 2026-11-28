@@ -49,7 +49,7 @@ describe("projectTokens", () => {
     expect(await projectTokens(project({}))).toBeUndefined();
     expect(await projectTokens(project({ "tokens.ts": 'throw new Error("broken");\n' }))).toEqual({
       ok: false,
-      reason: "tokens.ts failed to evaluate: broken",
+      reason: "tokens.ts throws: broken",
     });
   });
 
@@ -57,7 +57,7 @@ describe("projectTokens", () => {
     "composes an installed library's shipped tokens from the literal; the library's file never runs",
     async () => {
       const kit = [
-        'import { defineTokens } from "@keel/ui";',
+        'import { defineTokens } from "@keel/ui/tokens";',
         'export const kitTokens = defineTokens({ color: { "kit.accent": { light: "#0b5cad", dark: "#8ab8f0" } } });',
         'throw new Error("the shipped tokens file ran");',
         "",

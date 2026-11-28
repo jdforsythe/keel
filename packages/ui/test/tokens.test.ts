@@ -1,5 +1,5 @@
 // TokenSchema and defineTokens beyond conformance. Seed 1337.
-import { TokenSchema, defineTokens } from "@keel/ui";
+import { TokenSchema, defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -29,7 +29,7 @@ describe("TokenSchema", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error.data.issues).toEqual([{ path: ["color", "fg", "dark"], rule: "type" }]);
-      expect(r.error.message).toBe("type at color.fg.dark");
+      expect(r.error.message).toBe("color.fg.dark: not a color value");
     }
   });
 

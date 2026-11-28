@@ -6,7 +6,8 @@ import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { testTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
-import { Text, defineTokens } from "@keel/ui";
+import { Text } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { afterEach, describe, expect, it } from "vitest";
 import { harnessArtifacts } from "../src/internal/harnessArtifacts.ts";
 import { loadProjectArtifacts } from "../src/internal/loadProjectArtifacts.ts";
@@ -57,7 +58,7 @@ describe("loadProjectArtifacts", () => {
       const r = await loadProjectArtifacts(project({ "tokens.ts": source }));
       return r.ok ? undefined : r.reason;
     };
-    expect(await reason('throw new Error("broken");\n')).toMatch(/^tokens\.ts failed to evaluate: broken/);
+    expect(await reason('throw new Error("broken");\n')).toMatch(/^tokens\.ts throws: broken/);
     expect(await reason("export const other = 1;\nexport default { color: {} };\n")).toBe(
       "tokens.ts exports no tokens",
     );
@@ -81,7 +82,7 @@ describe("loadProjectArtifacts", () => {
         }),
         "node_modules/@acme/kit/module.ts": "export default { id: 'kit', deps: [], capabilities: [] };\n",
         "node_modules/@acme/kit/src/kitTokens.ts": [
-          'import { defineTokens } from "@keel/ui";',
+          'import { defineTokens } from "@keel/ui/tokens";',
           'export const kitTokens = defineTokens({ color: { "kit.accent": "#0b5cad" } });',
           'throw new Error("the shipped tokens file ran");',
           "",

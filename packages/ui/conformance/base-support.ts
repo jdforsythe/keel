@@ -1,7 +1,7 @@
 // Helpers for the base and look conformance (not a test file). Public API only. Property seed: 1337.
 // The `base` and `look` token groups are written through JSON so a fixture the author could write in `tokens.ts` type-checks
 // before `Tokens` names the groups; when it does, a builder may pass the literals to `defineTokens` directly.
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { compileStyles } from "@keel/ui/css";
 import { norm, tokens } from "./fixtures.ts";
 
@@ -94,4 +94,40 @@ export const ROLE_CLASS: Readonly<Record<string, string>> = {
   label: ".k-label",
   fieldError: ".k-error",
   summary: ".k-summary",
+};
+
+/** The body of the first `@layer <name>{...}` block of normalized css (`name` as written, `keel.theme`), or null. */
+export const layerBody = (css: string, name: string): string | null => {
+  const n = norm(css);
+  const at = n.indexOf(`@layer ${name}{`);
+  if (at < 0) return null;
+  const open = n.indexOf("{", at);
+  let depth = 1;
+  let i = open + 1;
+  while (i < n.length && depth > 0) {
+    if (n[i] === "{") depth++;
+    else if (n[i] === "}") depth--;
+    i++;
+  }
+  return n.slice(open + 1, i - 1);
+};
+
+/** For each occurrence of `needle` in normalized css, the preludes of the blocks around it, outermost first (`@layer keel.theme`, `@media screen and(...)`, a selector). */
+export const enclosing = (css: string, needle: string): string[][] => {
+  const n = norm(css);
+  const out: string[][] = [];
+  const stack: string[] = [];
+  let start = 0;
+  for (let i = 0; i < n.length; i++) {
+    if (n.startsWith(needle, i)) out.push([...stack]);
+    const c = n[i];
+    if (c === "{") {
+      stack.push(n.slice(start, i));
+      start = i + 1;
+    } else if (c === "}" || c === ";") {
+      if (c === "}") stack.pop();
+      start = i + 1;
+    }
+  }
+  return out;
 };

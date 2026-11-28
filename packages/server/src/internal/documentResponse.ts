@@ -14,6 +14,7 @@ import { nonceOf } from "./nonceOf.ts";
 import { policyHeader } from "./policyHeader.ts";
 import { schemeOf } from "./schemeOf.ts";
 import { snapshotStores } from "./snapshotStores.ts";
+import { themeOf } from "./themeOf.ts";
 
 /**
  * An HTML document response: the head and `<html lang>` of `head` (k.head: the route's title, else the deployable's
@@ -68,6 +69,7 @@ export function documentResponse(
     head.lang,
     nonce,
     r.sv.schemes === true ? schemeOf(r.raw) : undefined,
+    themeOf(r.raw, r.sv.themes),
   );
   return new Response(r.method === "HEAD" ? null : html, {
     status,

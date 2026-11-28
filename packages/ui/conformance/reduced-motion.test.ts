@@ -1,4 +1,4 @@
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 // Spec: k.ui, clause "Under `prefers-reduced-motion: reduce` every motion token resolves to `0ms`."
 // Assumed: motion tokens are emitted as CSS custom properties whose names contain the token name.
 import { compileStyles } from "@keel/ui/css";

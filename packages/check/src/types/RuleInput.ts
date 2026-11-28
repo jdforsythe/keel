@@ -15,4 +15,8 @@ export type RuleInput = {
   readonly dates?: ReadonlySet<number>;
   /** With the type pass on, the offsets in `file` of what the checker resolves to `@keel/ui`'s `SchemeSelect`. */
   readonly schemeSelects?: ReadonlySet<number>;
+  /** With the type pass on, the offsets in `file` of what the checker resolves to `@keel/ui`'s `ThemeSelect`. */
+  readonly themeSelects?: ReadonlySet<number>;
+  /** With the type pass on, the offsets in `file` of what the checker resolves to `@keel/ui`'s `Box`. */
+  readonly boxes?: ReadonlySet<number>;
 };

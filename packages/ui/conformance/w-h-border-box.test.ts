@@ -2,7 +2,7 @@
 // k.ui, Conformance "`w` and `h` size the border box." (Style props paragraph)
 // Seed: 1337 (property over size and space tokens).
 // Live on the main line. The 320px width in Chromium is not testable here (no browser in this suite); the `box-sizing:border-box` declaration is what it follows from.
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { compileStyles } from "@keel/ui/css";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

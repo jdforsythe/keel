@@ -5,7 +5,7 @@
 // ASSUMPTIONS: see library-looks-support.ts. The own folder is the library's files at the root of the files `check()` is given, its root `tokens.ts` composing the shipped object; the artifact is what that file evaluates to, whose own schemes are `['light']`
 // (a library's pair never turns an app dark, k.schemes Schemes), so a dark judgement comes from the shipped pair alone. E1814 is judged through the type pass, so the E1814 cases leave `types` on.
 import { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -14,9 +14,9 @@ import { type Files, PACKAGE_JSON, ROOT, SEED, app, atText, packageJson, sourceO
 import { manifestFile } from "./module-support.ts";
 
 // ---- #11
-const OWN_ROOT = `import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "./src/acmeTokens.ts";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color },\n});\n`;
+const OWN_ROOT = `import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { acmeTokens } from "./src/acmeTokens.ts";\n\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color },\n});\n`;
 const shipped = (x: string): string =>
-  `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ color: { 'acme.x': ${x}, 'acme.bg': '#ffffff' } })\n`;
+  `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ color: { 'acme.x': ${x}, 'acme.bg': '#ffffff' } })\n`;
 const textBadge = `import { Text } from '@keel/ui'\nexport default function Badge(props: { id: string }) { return <Text id={\`\${props.id}.text\`} fg="acme.x" bg="acme.bg">x</Text> }\n`;
 function own(x: string): Files {
   return [

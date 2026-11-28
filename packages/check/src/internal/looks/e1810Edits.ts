@@ -3,21 +3,9 @@ import type { ObjectExpression, Program } from "oxc-parser";
 import type { Edit } from "../../types/Edit.ts";
 import { keyName } from "../keyName.ts";
 import type { LookLibrary } from "./LookLibrary.ts";
+import { importEdits } from "./importEdits.ts";
+import { importsOf } from "./importsOf.ts";
 import { tokensInit } from "./tokensInit.ts";
-
-/** Each imported local name and the specifier it comes from, with whether `defineTokens` from `@keel/ui` is one. */
-function importsOf(program: Program): { readonly from: ReadonlyMap<string, string>; readonly lastEnd: number } {
-  const from = new Map<string, string>();
-  let lastEnd = 0;
-  for (const st of program.body) {
-    if (st.type !== "ImportDeclaration") continue;
-    lastEnd = st.end;
-    for (const sp of st.specifiers)
-      if (sp.type === "ImportSpecifier")
-        from.set(sp.local.name, `${st.source.value}#${sp.imported.type === "Identifier" ? sp.imported.name : ""}`);
-  }
-  return { from, lastEnd };
-}
 
 /**
  * E1810's fix (k.looks Fix) as edits of `tokens.ts`: the import of `<id>Tokens` on a new line after the last import's line, and for each
@@ -35,21 +23,7 @@ export function e1810Edits(
 ): Edit[] | null {
   const found = tokensInit(program);
   if (found === undefined || lib.shipped === null) return null;
-  const imports = importsOf(program);
-  const { from } = imports;
-  // After the line the last import statement ends on, or, when a block comment begins on that line and ends on a
-  // later one, after the line that comment ends on: no comment moves.
-  const lineEndAt = (at: number): number => {
-    const i = source.indexOf("\n", at);
-    return i < 0 ? source.length : i;
-  };
-  let lineEnd = lineEndAt(imports.lastEnd);
-  const opener = source.slice(imports.lastEnd, lineEnd).indexOf("/*");
-  if (opener >= 0) {
-    const close = source.indexOf("*/", imports.lastEnd + opener + 2);
-    if (close > lineEnd) lineEnd = lineEndAt(close);
-  }
-  const lastEnd = imports.lastEnd === 0 ? 0 : lineEnd;
+  const { from } = importsOf(program);
   const local = `${lib.id}Tokens`;
   const groups = [...lib.shipped.names.keys()];
   /** The groups the tokens a spread `...S` names hold: `brandTokens`'s, a library's shipped ones, else every group. */
@@ -60,8 +34,6 @@ export function e1810Edits(
     return shipped === undefined || shipped.has(group);
   };
   const edits: Edit[] = [];
-  const hasLocal = from.has(local);
-  const importLine = `import { ${local} } from "${lib.name}/tokens";`;
   const { init } = found;
   let literal: ObjectExpression | undefined;
   if (init.type === "CallExpression" && init.callee.type === "Identifier" && init.callee.name === "defineTokens") {
@@ -104,13 +76,6 @@ export function e1810Edits(
     const lead = tail === undefined ? " " : ", ";
     edits.push({ start: at, end: at, text: `${lead}${added.join(", ")}` });
   }
-  const define = from.get("defineTokens") === "@keel/ui#defineTokens";
-  const head = [define ? "" : 'import { defineTokens } from "@keel/ui";\n'].join("");
-  if (head !== "") {
-    const first = program.body.find((s) => s.type === "ImportDeclaration");
-    const at = first?.start ?? 0;
-    edits.push({ start: at, end: at, text: head });
-  }
-  if (!hasLocal) edits.push({ start: lastEnd, end: lastEnd, text: `${lastEnd === 0 ? "" : "\n"}${importLine}\n` });
+  edits.push(...importEdits(source, program, local, lib.name));
   return edits;
 }

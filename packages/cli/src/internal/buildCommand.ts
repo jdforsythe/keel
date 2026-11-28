@@ -11,6 +11,7 @@ import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { checkCommand } from "./checkCommand.ts";
+import { choiceThemes } from "./choiceThemes.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployArtifactCount } from "./deployArtifactCount.ts";
 import { deployBuildWrites } from "./deployBuildWrites.ts";
@@ -84,9 +85,13 @@ async function steps(
   // The artifacts derive from the app's sources and its libraries' files (k.library In an app), as the plugin's do.
   const r = compile([...files, ...librarySources(io.cwd)], topology === undefined ? {} : { topology });
   const std = stdArtifact(files);
-  // The tokens' color schemes, for a node deployable's first paint (k.schemes); no `tokens.ts`, one scheme.
+  // The tokens' color schemes and `choice` themes, for a node deployable's first paint (k.schemes); no `tokens.ts`,
+  // one scheme and no themes.
   const evaluated = await projectTokens(io.cwd);
-  const schemes = { schemes: evaluated?.ok === true ? [...evaluated.schemes] : ["light"] };
+  const schemes = {
+    schemes: evaluated?.ok === true ? [...evaluated.schemes] : ["light"],
+    themes: evaluated?.ok === true ? choiceThemes(evaluated.tokens) : [],
+  };
   const paths = [
     ...identityDiags(project, io.cwd, true),
     ...(topology === undefined

@@ -198,7 +198,7 @@ it("refuses text below 4.5:1", async () => {
       keelProject("a11y-default-runs", {
         ...moduleFiles(["o", "d", "u", "uf", "vc", "vm", ...mixIds], true),
         "tokens.ts": tokensSource("#111111"),
-        "modules/m/test/r.test.ts": `${testHead(true)}import { defineTokens } from "@keel/ui";\n${tests}`,
+        "modules/m/test/r.test.ts": `${testHead(true)}import { defineTokens } from "@keel/ui/tokens";\n${tests}`,
       }),
     );
     expect(buildAndTest(dir).status).toBe(0);

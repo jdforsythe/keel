@@ -78,7 +78,7 @@ const entry = (file) => ({
 });
 
 const LIBRARY = {
-  "src/kitTokens.ts": `import { defineTokens } from "@keel/ui";
+  "src/kitTokens.ts": `import { defineTokens } from "@keel/ui/tokens";
 
 export const kitTokens = defineTokens({
   color: {
@@ -112,7 +112,7 @@ defineRule({
   check: ({ file }) => (file.source.includes(["kitMarker", "("].join("")) ? [{ path: file.path, line: 1, col: 1 }] : []),
 });
 `,
-  "tokens.ts": `import { defineTokens } from "@keel/ui";
+  "tokens.ts": `import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { kitTokens } from "./src/kitTokens.ts";
 
@@ -158,7 +158,7 @@ import { app } from "./app.contract.ts";
 export const routes = manifest(app, { "app.home": { component: HomePage } });
 `,
   "tokens.ts": `import { kitTokens } from "@acme/kit/tokens";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 
 export const tokens = defineTokens({

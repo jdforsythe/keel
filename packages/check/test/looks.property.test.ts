@@ -10,7 +10,7 @@ const part = fc.stringMatching(/^[a-z][a-z0-9]{0,6}$/);
 const hex = fc.integer({ min: 0, max: 0xffffff }).map((n) => `#${n.toString(16).padStart(6, "0")}`);
 const program = (source: string) => parseSync("acmeTokens.ts", source, { sourceType: "module", lang: "ts" }).program;
 const shipped = (color: readonly (readonly [string, string])[]): string =>
-  `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ color: { ${color.map(([n, v]) => `'${n}': '${v}'`).join(", ")} } })\n`;
+  `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ color: { ${color.map(([n, v]) => `'${n}': '${v}'`).join(", ")} } })\n`;
 
 describe("readShipped", () => {
   it("collects every color name in order, and is in form exactly when each begins `acme.`", () => {
@@ -37,7 +37,7 @@ describe("readShipped", () => {
       fc.property(fc.uniqueArray(part, { minLength: 1, maxLength: 5 }), fc.nat(), (parts, at) => {
         const entries = parts.map((p) => `'acme.${p}': '#000000'`);
         entries.splice(at % (entries.length + 1), 0, "...other");
-        const source = `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ color: { ${entries.join(", ")} } })\n`;
+        const source = `import { defineTokens } from '@keel/ui/tokens'\nexport const acmeTokens = defineTokens({ color: { ${entries.join(", ")} } })\n`;
         const r = readShipped(program(source), "acme");
         expect(r.problem?.message).toBe("acmeTokens.ts holds a spread; it is one defineTokens literal");
         expect(r.names.get("color")).toEqual(parts.map((p) => `acme.${p}`));

@@ -6,7 +6,7 @@
 // The library `check()` over source text with `artifacts: { tokens }`, as token-names-e1801.test.ts does. A diagnostic's `line` and `col` are 1-based and the E1801 for a literal is at its opening quote (k.a11y-static Token names).
 // Not asserted: the E1801 message for an `auto` space token (the spec gives none beyond "E1801 at the use").
 import { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { CHECK_CASE_BOUND } from "./check-time.ts";

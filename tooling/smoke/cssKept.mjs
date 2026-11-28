@@ -4,7 +4,7 @@
 // found is refused (E1807) before any CSS is emitted; and the grammar's edge cases (`valueEdges`): each refused one is
 // refused, each accepted one takes effect by its computed value. Called by values.mjs with its page.
 import { brandTokens } from "../../packages/ui/src/brand/brandTokens.ts";
-import { TokenSchema } from "../../packages/ui/src/TokenSchema.ts";
+import { TokenSchema } from "../../packages/ui/src/tokens/TokenSchema.ts";
 import { compileStyles } from "../../packages/ui/src/css/compileStyles.ts";
 import { valueEdges } from "../../packages/ui/src/internal/valueEdges.ts";
 

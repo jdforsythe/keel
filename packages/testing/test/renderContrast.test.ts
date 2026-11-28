@@ -3,7 +3,8 @@
 import { element } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
-import { Box, Button, Text, defineTokens } from "@keel/ui";
+import { Box, Button, Text } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 

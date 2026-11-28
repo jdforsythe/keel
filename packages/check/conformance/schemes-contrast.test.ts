@@ -4,7 +4,7 @@
 // Seed: 1337 (fc.assert below).
 // ASSUMPTIONS (k.looks In an app: E1814 judges the evaluated tokens, `tokens.ts` text only for positions): tokens reach `check()` as `artifacts: { tokens }` (as a11y-contrast-inherited.test.ts passes them); for E1814 the project also holds `tokens.ts` as source text, the file the clause names, and the artifact is what that file evaluates to. "At the element" is a position on the `<SchemeSelect` line from its `<` to the end of its name.
 import { check } from "@keel/check";
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

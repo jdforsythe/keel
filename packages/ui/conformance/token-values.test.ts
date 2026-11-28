@@ -10,7 +10,7 @@
 // Owed to RFC 0244's runner: the in-browser assertions (a value set on an element reads back from `style` non-empty and computes to other than the initial value; `CSSStyleSheet.replaceSync` keeps `cssRules.length` rules each holding every declaration).
 // ASSUMPTIONS: a name counts words, not function names (k.values Numbers and lengths: a function name is not one of them, the names inside it are); the 32/33 boundary is asserted on a font list of words, on lengths at 31 and 33, and on lengths at 32 and 33 with a function name present. A brackets-nested value counts `calc(`, `min(`, `max(`, `clamp(`, `env(` and a bare `(` each as one bracket.
 // The "rule" a refusal reports is `format` at the path `[group, name]` (`[group, name, "light" | "dark"]` for a pair), read from `error.data.issues` as k.schema gives it.
-import { TokenSchema, defineTokens } from "@keel/ui";
+import { TokenSchema, defineTokens } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import { compileStyles } from "@keel/ui/css";
 import fc from "fast-check";

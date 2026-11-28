@@ -1,6 +1,7 @@
-// Mutation-killing tests for the small pure helpers behind the binary and the stdio servers.
 import { describe, expect, it } from "vitest";
 import { mcp } from "../src/index.ts";
+// Mutation-killing tests for the small pure helpers behind the binary and the stdio servers.
+import { SHARED_FLAGS } from "../src/internal/SHARED_FLAGS.ts";
 import { codeFiles } from "../src/internal/codeFiles.ts";
 import { createFramer } from "../src/internal/createFramer.ts";
 import { frameLsp } from "../src/internal/frameLsp.ts";
@@ -375,7 +376,7 @@ describe("mcpHandle", () => {
     const want = (v: string) => ({
       jsonrpc: "2.0",
       id: 1,
-      result: { protocolVersion: v, capabilities: caps, serverInfo: info },
+      result: { protocolVersion: v, capabilities: caps, serverInfo: info, instructions: SHARED_FLAGS.text },
     });
     expect(await h('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"1999-01-01"}}')).toEqual(
       want("1999-01-01"),
@@ -473,6 +474,17 @@ describe("mcpCall", () => {
     expect(bad.content[0]?.text).toBe('E1052 unknown argument "bogus"\n  see: keel docs k.cli\nfail check 1 errors\n');
     const missingArgs = await mcpCall({ name: "check" }, io);
     expect(missingArgs.isError).toBe(false);
+  });
+
+  it("every tool takes the shared flags its inputSchema leaves out, and refuses a value their schemas refuse with E1052", async () => {
+    for (const args of [{ format: "json" }, { quiet: true }, { limit: 3 }, { verbose: true }]) {
+      expect((await mcpCall({ name: "check", arguments: args }, io)).isError, JSON.stringify(args)).toBe(false);
+    }
+    for (const args of [{ format: "xml" }, { quiet: "yes" }, { limit: 0 }, { limit: 1.5 }, { verbose: 1 }]) {
+      const r = await mcpCall({ name: "check", arguments: args }, io);
+      expect(r.isError, JSON.stringify(args)).toBe(true);
+      expect(r.content[0]?.text, JSON.stringify(args)).toMatch(/^E1052 /);
+    }
   });
 });
 

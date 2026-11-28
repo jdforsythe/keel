@@ -6,8 +6,11 @@ import { GITIGNORE } from "./GITIGNORE.ts";
  */
 const YARN = ".pnp.*\n.yarn/*\n!.yarn/patches\n!.yarn/plugins\n!.yarn/releases\n!.yarn/sdks\n!.yarn/versions\n";
 
-/** The host projects a library's `keel test --e2e` writes (k.e2e Libraries). */
-const E2E_HOSTS = ".keel/e2e-host-*/\n";
+/**
+ * The host projects a library's `keel test --e2e` writes (k.e2e Libraries), and the `.keel/*.json` artifacts of the
+ * `keel build` it runs first, which a library does not commit: it ships `.keel/ledger.json` alone (k.library-pack).
+ */
+const E2E_HOSTS = ".keel/e2e-host-*/\n.keel/*.json\n!.keel/ledger.json\n";
 
 /**
  * `.gitignore` of a project or, with `library`, a library (which adds `E2E_HOSTS`), whose `packageManager` is

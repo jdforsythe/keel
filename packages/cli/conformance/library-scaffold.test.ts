@@ -2,8 +2,8 @@
 // k.library-pack, Scaffold: "- `package.json`: `name`, `version` `0.1.0`, `"type": "module"`, `"keel": "library"`, `exports` `{ ".": { "keel": "./src/index.ts", "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" } }`, the `files` of Package, `scripts` `{ "build": "tsc -p tsconfig.build.json", "check": "keel check", "test": "keel test", "prepack": "tsc -p tsconfig.build.json && keel pack --check" }`, `peerDependencies` `@keel/compiler`, `@keel/reactive`, `@keel/runtime-dom`, `@keel/schema` and `@keel/ui`, each `^<version>`, `<version>` the running `@keel/cli`'s, and in `devDependencies` the same five, `@keel/cli`, `@keel/testing`, `@keel/router` and `@keel/server` at that range, with `@types/node`, `happy-dom`, `playwright-core`, `typescript`, `vite` and `vitest`, so its own folder resolves what its check, tests, build and host page import;"
 // k.library-pack, Scaffold: "- `module.ts`: `id` the base in lowerCamel (`keel-charts` gives `keelCharts`), `deps: []`, `capabilities: []`, `public: { exports: ['Example'] }`;"
 // k.library-pack, Scaffold: "- `src/index.ts` re-exporting `Example`; `src/Example.tsx`, a component whose props are `{ id: string }`, with its `Props` schema (k.testing renders by it), and which renders one `Text` with id `` `${props.id}.text` ``; `test/Example.test.ts`, rendering it and finding `<id>.text`; `test/Example.e2e.ts` (k.e2e Libraries);"
-// k.library-pack, Scaffold: "- `tokens.ts` as `keel scaffold project` writes it, `tsconfig.json`, `tsconfig.build.json` (`src/` built to `dist/`), `vitest.config.ts` (tests under `test/` and `src/`) and `README.md`, whose presence alone is fixed; then `.gitignore`, holding `.keel/e2e-host-*/`, and the agent files (k.explain Agent files)."
-// k.library-pack, Scaffold: "It writes source alone: as written the library passes `keel check` and `keel test` and holds no `.keel/ledger.json` (a committed generated file is stale at the first edit), so `keel pack --check` is E1164 naming `ledger` until `keel pack` writes it, and passes after. No `<name>` is k.cli E1052 `library needs <name>, as in keel scaffold library @acme/charts`. An existing `<base>/` is E1351 and a `<name>` of another form E1352 (k.scaffold); either writes nothing."
+// k.library-pack, Scaffold: "- `tokens.ts` as `keel scaffold project` writes it, `tsconfig.json`, `tsconfig.build.json` (`src/` built to `dist/`), `vitest.config.ts` (tests under `test/` and `src/`) and `README.md`, whose presence alone is fixed; then `.gitignore`, holding `.keel/e2e-host-*/`, `.keel/*.json` and `!.keel/ledger.json`, and the agent files (k.explain Agent files)."
+// k.library-pack, Scaffold: "It writes source alone: as written the library passes `keel check` and `keel test` and holds no `.keel/ledger.json`, so `keel pack --check` is E1164 naming `ledger` until `keel pack` writes it, and passes after. No `<name>` is k.cli E1052 `library needs <name>, as in keel scaffold library @acme/charts`. An existing `<base>/` is E1351 and a `<name>` of another form E1352 (k.scaffold); either writes nothing."
 // k.library-pack, Package: "A library (k.library) publishes, as its `package.json` `files`: `module.ts`, `src/`, `unsafe/` when it has one, `dist/` (its `tsc` build: declarations, and the `./tools` file Node imports), `.keel/ledger.json` and its `README.md`. Each `exports` key maps `keel` to the source file, then `types` and `default` to the built files; `publishConfig.exports`, where a package has one, keeps `keel` at the source path. The `@keel/*` packages its files import, and `@keel/reactive` and `@keel/runtime-dom`, which the compiler's output of its JSX imports, are `peerDependencies` and never `dependencies`, so each resolves to the app's copy. Its root `tokens.ts` is not published: an app checks the library against its own."
 // k.library-pack, Package: "No check imports a library's entry: `keel check`, `keel build` and every path that registers a package's rules, formats and config (E1159, k.module) import a library only through its `./tools` export, when it declares one, and read its components from source. So a library with no `./tools` needs no build for any app command; one with `./tools` ships that file as Node imports it, and a declared `./tools` that does not import is E1159 `<name> ./tools <target> does not import; build it`, `<target>` as `exports` writes it."
 // Spec: k.library-pack, clause "`keel scaffold library charts` and `keel scaffold library @acme/Charts` are each one E1352 and write nothing; run twice with `@acme/charts`, the second run is one E1351 and writes nothing."
@@ -108,7 +108,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
   );
 
   test(
-    "Scaffold: it writes folder `<base>/` in the working directory, holding `package.json`, `module.ts`, `src/index.ts`, `src/Example.tsx`, `test/Example.test.ts`, `test/Example.e2e.ts`, `tokens.ts`, `tsconfig.json`, `tsconfig.build.json` and `vitest.config.ts`, then `README.md`, `.gitignore` holding `.keel/e2e-host-*/` and the agent files, and nothing outside it",
+    "Scaffold: it writes folder `<base>/` in the working directory, holding `package.json`, `module.ts`, `src/index.ts`, `src/Example.tsx`, `test/Example.test.ts`, `test/Example.e2e.ts`, `tokens.ts`, `tsconfig.json`, `tsconfig.build.json` and `vitest.config.ts`, then `README.md`, `.gitignore` holding `.keel/e2e-host-*/`, `.keel/*.json` and `!.keel/ledger.json`, and the agent files, and nothing outside it",
     () => {
       const { scratchDir, lib: dir } = lib();
       expect(Object.keys(snapshot(scratchDir))).toEqual(expect.arrayContaining([LIB_BASE]));
@@ -117,7 +117,13 @@ describe("Scaffold: keel scaffold library <name>", () => {
         .filter(([, v]) => v !== "dir")
         .map(([p]) => p);
       for (const f of FILES) expect(written, f).toContain(f);
-      expect(readText(dir, ".gitignore")).toContain(".keel/e2e-host-*/");
+      const ignored = readText(dir, ".gitignore")
+        .split("\n")
+        .map((l) => l.trim());
+      for (const line of [".keel/e2e-host-*/", ".keel/*.json", "!.keel/ledger.json"])
+        expect(ignored, line).toContain(line);
+      // A negation after the pattern it carves out of: `.keel/ledger.json` is kept.
+      expect(ignored.indexOf("!.keel/ledger.json")).toBeGreaterThan(ignored.indexOf(".keel/*.json"));
       // Beyond the list: `README.md`, `.gitignore` and the agent files (k.library-pack Scaffold, k.explain Agent files).
       const beyond = (p: string): boolean =>
         [".gitignore", "README.md", "AGENTS.md", "CLAUDE.md"].includes(p) ||

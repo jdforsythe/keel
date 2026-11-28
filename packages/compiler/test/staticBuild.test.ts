@@ -53,7 +53,7 @@ describe("a static deployable's build", () => {
     expect(c).toContain('"outDir":"node_modules/.keel/prerender/web"');
     p.configResolved({ root, command: "build" });
     const code = String(await p.load("\0virtual:keel/server"));
-    expect(code).toContain("export const render = (dir, std) => prerender(");
+    expect(code).toContain("export const render = (dir, std, artifacts) => prerender(");
     expect(code).toContain('deployable: "web"');
     expect(code).not.toContain("start(");
     expect(code).not.toContain("KEEL_APP_DIR");

@@ -2,7 +2,7 @@
 // Spec: k.a11y-static, clause "With `brandTokens`, `keel check` reports no E1804 for `<Box bg=\"card\"><Text fg={tone}>x</Text></Box>`, `<Box bg={tone}><Text fg=\"divider\">x</Text></Box>`, `<Box bg=\"card\"><Text {...rest}>x</Text></Box>`, `<Box bg=\"card\"><Panel><Text fg=\"divider\">x</Text></Panel></Box>` with `Panel` an app component, or `<Box bg=\"card\"><Text fg=\"divider\" hidden>x</Text></Box>`, and one for `<Box bg=\"card\"><If when={on}><Text fg=\"divider\">x</Text></If></Box>` and for `<Box bg=\"card\"><Text {...rest} fg=\"divider\" bg=\"card\">x</Text></Box>`."
 // Spec: k.a11y-static, clause "With color tokens `low` `#787878` and `bg` `#ffffff` and `fontSize` `big` `24px`, `<Box bg=\"bg\" fontSize=\"big\"><Text fg=\"low\">x</Text></Box>` reports no E1804 and `<Box bg=\"bg\"><Text fg=\"low\" fontSize={size}>x</Text></Box>` reports none, while `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>` reports one."
 // Spec: k.a11y-static, clause "With color tokens named by 20 `a`s (`#ffffff`) and 20 `b`s (`#ffffff`), `<Text fg=\"<a>\" bg=\"<b>\">x</Text>` reports E1804 with the message `fg \"<a>\" on bg \"<b>\" is 1.00:1 in light, needs 4.5:1` (86 units); with names of 30 characters each the message is 89 units, the first 86 of the whole message and `...`."
-// Spec: k.a11y-static, clause "`keel check` in a project whose `tokens.ts` exports no `tokens`, throws, or exports `tokens` with `color: { fg: 5 }`, reports one E1807 at `tokens.ts` line 1, column 1, no E1804, and exits 1; in a project with no `tokens.ts` it reports neither for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>`, and two E1801, at `\"bg\"` and at `\"low\"`, and exits 1."
+// Spec: k.a11y-static, clause "`keel check` in a project whose `tokens.ts` exports no `tokens`, throws, reports one E1807 at `tokens.ts` line 1, column 1, and with `color: { fg: 5 }` one at the `fg` key, each with no E1804, and exits 1; in a project with no `tokens.ts` it reports neither for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>`, and two E1801, at `\"bg\"` and at `\"low\"`, and exits 1."
 // Spec: k.a11y-static, clause "In a project with `node_modules`, after a `keel check` that reports no E1804 for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>` with `low` `#111111`, changing `low` in `tokens.ts` to `#787878` makes the next `keel check` report one E1804, the same stdout as a run with `node_modules/.cache/keel` deleted."
 // Spec: k.a11y-static, clause "`keel build` in a project where `keel check` reports only one E1802, only one E1804, or only one E1820 exits 1, prints that diagnostic and writes no `.keel/` folder and no `dist/` folder."
 // Spec: k.a11y-static, clause "`keel check`, `keel build`, MCP `check` and `keel lsp`'s published diagnostics report the same static E1804 for one project; after a passing `renderRoute` test of page `m.r` given `artifacts: {}` whose module holds that E1804, `keel ledger` gives `a11y:.:m.r#1.4.3` rung `none`."
@@ -44,7 +44,7 @@ afterAll(() => {
   for (const d of created) removeProject(d);
 });
 const MODULE = `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`;
-const TOKENS = `import { defineTokens } from "@keel/ui";
+const TOKENS = `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: { low: "#787878", ok: "#111111", bg: "#ffffff", dark: "#000000" },
   fontSize: { big: "18.66px", sm: "14px" },
@@ -303,7 +303,7 @@ describe("k.a11y-static: brandTokens", () => {
 });
 
 describe("k.a11y-static: values, thresholds and schemes from the project's tokens", () => {
-  const TOK = `import { defineTokens } from "@keel/ui";
+  const TOK = `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: {
     low: "#777777", ok: "#767676", bg: "#ffffff", dark: "#000000", pale: "#bbbbbb",
@@ -385,7 +385,7 @@ export const tokens = defineTokens({
 });
 
 describe("k.a11y-static: a `fg` set by a look and overridden by a prop", () => {
-  const TOK = `import { defineTokens } from "@keel/ui";
+  const TOK = `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: { low: "#777777", ok: "#767676", bg: "#ffffff" },
   look: { weak: { fg: "low" }, firm: { fg: "ok" } },
@@ -436,7 +436,7 @@ describe("k.a11y-static: the message and its 89-unit limit", () => {
   beforeAll(() => {
     const colors = PAIRS.flatMap(({ a, b }) => [`${a}: "#ffffff"`, `${b}: "#ffffff"`]).join(", ");
     const dir = project("a11y-static-msg", {
-      "tokens.ts": `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { ${colors} } });\n`,
+      "tokens.ts": `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { ${colors} } });\n`,
       ...Object.fromEntries(PAIRS.map(({ a, b }, i) => unit(`P${i}`, `    <Text fg="${a}" bg="${b}">x</Text>`))),
     });
     run = keel(dir, ["check"]);
@@ -469,12 +469,12 @@ describe("k.a11y-static: the message and its 89-unit limit", () => {
   });
 });
 
-describe("k.a11y-static: a broken `tokens.ts` is E1807 at 1:1 and nothing is judged", () => {
+describe("k.a11y-static: a broken `tokens.ts` is E1807 (at 1:1 unless it fails `TokenSchema`) and nothing is judged", () => {
   const COMP = unit("Fails", `    <Box bg="bg">\n      <Text fg="low">x</Text>\n    </Box>`);
   const BROKEN: Record<string, string> = {
     throws: `export const tokens = JSON.parse("{");\n`,
     "no tokens export": "export {};\n",
-    "fails TokenSchema": "export const tokens = { color: { fg: 5 } };\n",
+    "fails TokenSchema": "export const tokens = {\n  color: {\n    fg: 5,\n  },\n};\n",
   };
   const runs = new Map<string, Run>();
   beforeAll(() => {
@@ -484,15 +484,25 @@ describe("k.a11y-static: a broken `tokens.ts` is E1807 at 1:1 and nothing is jud
     }
   }, fixedTime(360_000));
 
-  it("`keel check` in a project whose `tokens.ts` throws, exports no `tokens`, or exports `tokens` with `color: { fg: 5 }`, reports one E1807 at `tokens.ts` line 1, column 1, no E1804, and exits 1", () => {
+  it("`keel check` in a project whose `tokens.ts` exports no `tokens`, throws, reports one E1807 at `tokens.ts` line 1, column 1, with no E1804, and exits 1", () => {
     expect(runs.size).toBe(3);
-    for (const [label, r] of runs) {
-      const d = r.records.filter((x) => x.kind === "diag" && x.code === "E1807");
+    for (const label of ["throws", "no tokens export"]) {
+      const r = runs.get(label);
+      const d = (r?.records ?? []).filter((x) => x.kind === "diag" && x.code === "E1807");
       expect(d, label).toHaveLength(1);
       expect(d[0], label).toMatchObject({ path: "tokens.ts", line: 1, col: 1 });
-      expect(e1804(r), label).toEqual([]);
-      expect(r.status, label).toBe(1);
+      expect(r === undefined ? ["missing"] : e1804(r), label).toEqual([]);
+      expect(r?.status, label).toBe(1);
     }
+  });
+
+  it("and with `color: { fg: 5 }` one at the `fg` key (line 3, column 5 of the fixture), with no E1804, and exits 1", () => {
+    const r = runs.get("fails TokenSchema");
+    const d = (r?.records ?? []).filter((x) => x.kind === "diag" && x.code === "E1807");
+    expect(d).toHaveLength(1);
+    expect(d[0]).toMatchObject({ path: "tokens.ts", line: 3, col: 5 });
+    expect(r === undefined ? ["missing"] : e1804(r)).toEqual([]);
+    expect(r?.status).toBe(1);
   });
 
   it('in a project with no `tokens.ts` it reports neither E1807 nor E1804 for `<Box bg="bg"><Text fg="low">x</Text></Box>`, and two E1801, at `"bg"` and at `"low"`, and exits 1', () => {
@@ -514,7 +524,7 @@ describe("k.a11y-static: the tokens are read on every run, never from a cache", 
     () => {
       const comp = unit("Fails", `    <Box bg="bg">\n      <Text fg="low">x</Text>\n    </Box>`);
       const tok = (low: string): string =>
-        `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
+        `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
       const dir = project("a11y-static-cache", { "tokens.ts": tok("#111111"), [comp[0]]: comp[1] });
       expect(e1804(keel(dir, ["check"]))).toEqual([]);
       writeFiles(dir, { "tokens.ts": tok("#787878") });
