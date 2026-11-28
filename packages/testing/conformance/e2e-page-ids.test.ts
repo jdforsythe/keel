@@ -7,7 +7,7 @@
 // Time: "within 100 ms" and "at once" are measured as the elapsed time of the rejection against `testTime(2000)`, a bound well inside the 10 s wait (k.e2e-run Time), read with `process.hrtime` in the fixture file, not by a race
 // against a timer; the bound travels to the child run as `KEEL_NEAR_MS`. The clause's own 100 ms is tighter than a loaded machine keeps, so the case asserts the cut between "at once" and "waited the bound" and not the 100.
 // ASSUMED: (1) "nearest" is read from the message text `nearest <id>`, the form k.e2e-page Verbs prints; (2) the template id of `tmpl` is written in its source as `` `shop.row.${row}` `` (the Verbs paragraph's own example), so `shop.row.p9` fits its head and tail; (3) the page `mixed` logs a console error
-// `net::ERR_INTERNET_DISCONNECTED` and rejects `new Error('late')` in one click; (4) AMBIGUOUS: "`findAll`'s `prefix` is judged the same way" says no outcome for an unknown prefix (E1705 or an empty list): not asserted.
+// `net::ERR_INTERNET_DISCONNECTED` and rejects with an `Error` `late` (an `async` function's `defect('late')`, k.defects) in one click; (4) AMBIGUOUS: "`findAll`'s `prefix` is judged the same way" says no outcome for an unknown prefix (E1705 or an empty list): not asserted.
 import { fixedTime, testTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FAILURE, type Ran, cleanup, failureOf, outcome, passedJob, runJobs, suite } from "./e2e-support.ts";

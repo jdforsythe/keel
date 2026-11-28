@@ -7,6 +7,7 @@ import type { Page, Tree } from "./node-app.ts";
 
 const SCHEMA = "import { type Infer, s } from '@keel/schema'\n";
 const UI = "import { Box, Button, Text } from '@keel/ui'\n";
+const DEFECT = "import { defect } from '@keel/schema'\n";
 const HOST = "import { Host } from '@keel/ui'\nimport { HostIn } from './HostIn.schema.ts'\n";
 const EMPTY = "export const Props = s.object({})\n";
 const comp = (imports: string, name: string, body: string): string =>
@@ -33,14 +34,14 @@ const tmpl = page(
     "  const row = 'p1'\n  return (\n    <Box as=\"main\">\n      <Text id={`shop.row.${row}`}>Row</Text>\n    </Box>\n  )\n",
   ),
 );
-/** A click that logs a console error (`ERR_INTERNET_DISCONNECTED`) and rejects with `new Error('late')`. */
+/** A click that logs a console error (`ERR_INTERNET_DISCONNECTED`) and rejects with an `Error` `late` (an `async` function's defect, k.defects). */
 const mixed = page(
   "mixed",
   "/mixed",
   comp(
-    UI,
+    `${UI}${DEFECT}`,
     "Mixed",
-    "  const go = () => {\n    console.error('net::ERR_INTERNET_DISCONNECTED')\n    void Promise.reject(new Error('late'))\n  }\n  return (\n    <Box as=\"main\">\n      <Button id=\"a.mixed.go\" onClick={go}>Go</Button>\n    </Box>\n  )\n",
+    "  const go = () => {\n    console.error('net::ERR_INTERNET_DISCONNECTED')\n    void (async () => defect('late'))()\n  }\n  return (\n    <Box as=\"main\">\n      <Button id=\"a.mixed.go\" onClick={go}>Go</Button>\n    </Box>\n  )\n",
   ),
 );
 const islandPage = (name: string, path: string, listId: string, count: number, code: string): Page =>
@@ -90,8 +91,8 @@ export const EXTRA = { cart, tmpl, mixed, offsite, lremove, ladd, upload, downlo
 /** Pages that share the id `app.events` by design (E1404 otherwise): one project each. */
 export const GROW = { grow, growcut, growout } as const;
 
-const mark = (name: string, body: string): string =>
-  `import type { Infer } from '@keel/schema'\nimport { hostCode } from '@keel/ui'\nimport type { HostIn } from './HostIn.schema.ts'\nexport const ${name} = hostCode<Infer<typeof HostIn>, never, undefined>({\n  mount(node) {\n    const doc = node.ownerDocument\n${body
+const mark = (name: string, body: string, schema = "import type { Infer } from '@keel/schema'"): string =>
+  `${schema}\nimport { hostCode } from '@keel/ui'\nimport type { HostIn } from './HostIn.schema.ts'\nexport const ${name} = hostCode<Infer<typeof HostIn>, never, undefined>({\n  mount(node) {\n    const doc = node.ownerDocument\n${body
     .split("\n")
     .map((l) => `    ${l}`)
     .join("\n")}\n    return undefined\n  },\n})\n`;
@@ -163,17 +164,17 @@ go.textContent = 'Go'
 const out = doc.createElement('p')
 out.id = 'a.offsite.out'
 out.textContent = 'idle'
-go.addEventListener('click', () => {
-  void doc.defaultView?.fetch(['https:/', 'example.org', 'x'].join('/')).then(
-    () => {
-      out.textContent = 'reached'
-    },
-    () => {
-      out.textContent = 'failed'
-    },
+go.addEventListener('click', async () => {
+  const win = doc.defaultView
+  if (win === null) return
+  const r = await attempt(
+    () => win.fetch(['https:/', 'example.org', 'x'].join('/')),
+    (x) => (x instanceof TypeError ? keelError.unreachable.make({}) : undefined),
   )
+  out.textContent = r.ok ? 'reached' : 'failed'
 })
 node.parentElement?.append(go, out)`,
+    "import { type Infer, attempt, keelError } from '@keel/schema'",
   ),
   "modules/a/frameMark.ts": mark(
     "frameMark",

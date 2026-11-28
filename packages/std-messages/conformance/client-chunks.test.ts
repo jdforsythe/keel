@@ -3,6 +3,8 @@
 // Observed from the public API through `keel build` output: the JS files under dist/. A locale's entry text is a marker string unique
 // to that locale file, so "holds the entry" is "contains the marker". `keel build` builds a client-only topology with the project's
 // own Vite build (k.server Build), so the fixture carries an index.html whose entry script imports the routes, and the output is dist/.
+// The module `app` has its `modules/app/module.ts` (k.module Manifest; k.topology: a module with none is unknown), its `deps` listing
+// `@keel/std-messages`, the package it imports from.
 import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -79,6 +81,11 @@ beforeAll(() => {
         moduleResolution: "bundler",
       },
     }),
+  );
+  write(
+    fx,
+    "modules/app/module.ts",
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: ["@keel/std-messages"], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     fx,

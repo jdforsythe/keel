@@ -1,7 +1,7 @@
 // Spec: k.supervise, clause "With `T` a `KeelError` and a sim ctx: `supervise(ctx, 'm.run', () => 1, T)` is `ok(1)`; `supervise(ctx, 'm.run', () => err(U), T)` deep-equals `err(U)` for a second `KeelError` `U`; each `async` form resolves to the same; and none of them reports an `error` event."
 // Spec: k.supervise, clause "With `t` each of `new Error('a')`, the string `'s'`, `undefined`, the object `{ code: 'x' }`, a value `defect('bug', { code: 'E2801' })` throws and `new Error('w', { cause: d })` for `d` a defect: `supervise(ctx, 'm.run', () => { throw t }, T)` returns a value deep-equal to `err(T)` and does not throw, and `supervise(ctx, 'm.run', async () => { throw t }, T)` resolves to the same and does not reject."
 // Spec: k.supervise, clause "For each of those throws an observer of `ctx` gets exactly one `error` event, its `error` deep-equal to `{ code: 'keel.unexpected', message: 'keel.unexpected', data: { at: 'm.run' } }`; with an observer that throws, `supervise` still returns `err(T)`."
-// Spec: k.supervise, Rules "At run time, the defect E1458 `supervise takes a KeelError as failed` (API)." with API "A `failed` that is no `KeelError` (k.attempt `err`) is the defect E1458, thrown by the call before `fn` runs."
+// k.supervise, Rules "At run time, the defect E1458 `supervise takes a KeelError as failed` (API)." with API "A `failed` that is no `KeelError` (k.attempt `err`) is the defect E1458, thrown by the call before `fn` runs."
 // Seed 1337. `supervise` is exported by `@keel/ctx` once built: until then this file does not typecheck and every case fails for want of it.
 import { type CtxEvent, createCtx, observe, supervise } from "@keel/ctx";
 import { type KeelError, defect, err, isDefect, ok, s } from "@keel/schema";

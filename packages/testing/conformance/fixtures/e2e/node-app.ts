@@ -17,6 +17,7 @@ const SCHEMA = "import { type Infer, s } from '@keel/schema'\n";
 const UI = "import { Box, Button, Input, Link, Text } from '@keel/ui'\n";
 const STORE = "import { store, transaction, tx } from '@keel/store'\n";
 const CTX = "import type { Ctx } from '@keel/ctx'\n";
+const DEFECT = "import { defect } from '@keel/schema'\n";
 const HOST = "import { Host } from '@keel/ui'\nimport { HostIn } from './HostIn.schema.ts'\n";
 const hostTag = (id: string, code: string): string =>
   `<Host id="${id}" role="img" label="mark" input={HostIn} value={{}} code={() => import('./${code}.ts').then((m) => m.${code})} />`;
@@ -60,14 +61,14 @@ export const PAGES = {
       "_props: Infer<typeof Props>, ctx: Ctx",
     ),
   },
-  /** A button whose handler calls the page's own API through a service (app code may not `fetch`); a network failure it gets back is rejected as a `TypeError`, the page's. */
+  /** A button whose handler calls the page's own API through a service (app code may not `fetch`); a network failure it gets back is an `async` function's defect (k.defects), its message naming the `TypeError`, unhandled in the page. */
   offline: {
     name: "offline",
     path: "/offline",
     source: comp(
-      `${UI}${CTX}import { client } from './client.ts'\n`,
+      `${UI}${CTX}${DEFECT}import { client } from './client.ts'\n`,
       "Offline",
-      '  const go = async () => {\n    const got = await client.env({}, ctx)\n    if (!got.ok) void Promise.reject(new TypeError(got.error.message))\n  }\n  return (\n    <Box as="main">\n      <Button id="a.offline.go" onClick={go}>Go</Button>\n    </Box>\n  )\n',
+      '  const go = async () => {\n    const got = await client.env({}, ctx)\n    if (!got.ok) defect(\'TypeError: the request failed\', { cause: got.error })\n  }\n  return (\n    <Box as="main">\n      <Button id="a.offline.go" onClick={() => { void go() }}>Go</Button>\n    </Box>\n  )\n',
       EMPTY,
       "_props: Infer<typeof Props>, ctx: Ctx",
     ),
@@ -82,14 +83,14 @@ export const PAGES = {
       "  const t = store(LiveText, { text: 'before' }, { id: 'a.liveText' })\n  const set = transaction(t, 'a.liveSet', LiveSet, (_st, p) => ({ text: p.text }))\n  const go = () => {\n    const r = tx(set, { text: 'after' })\n    if (!r.ok) return\n  }\n  return (\n    <Box as=\"main\">\n      <Text id=\"a.live.text\">{t.get('text')}</Text>\n      <Button id=\"a.live.go\" onClick={go}>Go</Button>\n    </Box>\n  )\n",
     ),
   },
-  /** A click handler that rejects with `new Error('boom')` and a page that never reads it. */
+  /** A click handler that rejects with an `Error` `boom` (an `async` function's defect, k.defects) and a page that never reads it. */
   boom: {
     name: "boom",
     path: "/boom",
     source: comp(
-      UI,
+      `${UI}${DEFECT}`,
       "Boom",
-      '  return (\n    <Box as="main">\n      <Button id="a.boom.go" onClick={() => { void Promise.reject(new Error(\'boom\')) }}>Go</Button>\n    </Box>\n  )\n',
+      '  return (\n    <Box as="main">\n      <Button id="a.boom.go" onClick={() => { void (async () => defect(\'boom\'))() }}>Go</Button>\n    </Box>\n  )\n',
     ),
   },
   /** A click handler that calls `console.warn('late')`. */

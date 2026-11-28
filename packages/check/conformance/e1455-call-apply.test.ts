@@ -1,8 +1,8 @@
 // Spec: k.unsafe, clause "In `modules/m/a.ts` importing `defect` from `@keel/schema`, `defect.call(null, 'x', { code: 'E12' })` is one E1455 at `'E12'`, `defect.apply(null, ['x', { code: 'E12' }])` and `Reflect.apply(defect, null, ['x', { code: 'E12' }])` one each at `'E12'`, `defect.apply(null, args)` one at `args` and `defect.bind(null)` one at `bind`, each message `defect code check cannot read` for the last two; `defect.call(null, 'x', { code: 'E2801' })` and `Reflect.apply(defect, null, ['x', { code: 'E2801' }])` are none."
 // Seed 1337. Fixtures are source text over in-memory file maps with the type pass on (the default); only E1455 is read.
 // Assumption: "at `bind`" is the first character of the member name `bind`, as E1455 is at a call's argument elsewhere (k.errors Rules).
-// Spec: k.unsafe, One path: "an arguments value that is no array literal or holds a spread at or before the detail, a spread argument there in a call, and a `defect.bind(...)`, is one E1455 at that value or at `bind`, message `defect code check cannot read`."
-// Spec: k.defects, Rules: "or whose second argument is not an object literal without a spread, or that has a third, a spread among them, at it (a spread in the second's place is unread, k.unsafe One path), message `defect detail is not an object literal`."
+// k.unsafe, One path "an arguments value that is no array literal or holds a spread at or before the detail, a spread argument there in a call, and a `defect.bind(...)`, is one E1455 at that value or at `bind`, message `defect code check cannot read`."
+// k.defects, Rules "or whose second argument is not an object literal without a spread, or that has a third, a spread among them, at it (a spread in the second's place is unread, k.unsafe One path), message `defect detail is not an object literal`."
 // A spread after the detail in an array (`['x', { code: 'E2801' }, ...rest]`) has no case: k.unsafe names a spread at or before the detail only.
 import { check } from "@keel/check";
 import fc from "fast-check";
