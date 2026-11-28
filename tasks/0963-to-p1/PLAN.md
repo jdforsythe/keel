@@ -1010,9 +1010,12 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 
 - Checkpoint 308 of 2026-11-27: handoff. CI is green on 2e7b59f3e (run 46089838315): the main line holds RFC 0244 and RFC 0247. The account's weekly usage limit ended every subagent mid-step (it resets 2026-12-02 23:00 America/New_York). State saved: `lane-gate9` f56c4e938 (clean; the main line merged in; a fix for a held page's scripts committed and not yet verified); `lane-r-fresh` c93aa1972 (a `wip` commit over the evaluator's steps 2 and 3); `lane-r-defect` 6835a1bc7 with sub-branches `-a` ac283099f, `-b` f7f82b34a (a `wip` commit), `-c` f68403761, unreviewed and unmerged. No agent, process or container is running. `docs/HANDOFF.md` holds each lane's next move. Safe to clear.
 
+- Checkpoint 309 of 2026-11-27: the operator approved mending the local gate's tooling (`tooling/gate.mjs`: `GITHUB_OUTPUT` for the shard step; `tooling/gate-plan.mjs`: a container for `built-smokes`' `postgres` service). Not done yet; it is step 2 of the next action.
+
 ## Next action
 1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2`, `git log --oneline origin/jdforsythe/test-impl -1`. Read `docs/HANDOFF.md` whole and checkpoint 308. Check that subagents can run (the usage limit).
-2. Land RFC 0249 from `.worktrees/gate9`: verify f56c4e938 (`static-prerender-themes.test.ts`, the cli and testing suites whole, `keel test --e2e` in every app and example); regenerate the ledger by checkpoint 307's rule; re-base five byte budgets; merge into the main line; `pnpm check`; push; read CI.
+2. Mend the local gate's tooling (approved, checkpoint 309): a small lane off the main line, one whole `pnpm gate` to prove it, merge, push.
+2a. Land RFC 0249 from `.worktrees/gate9`: verify f56c4e938 (`static-prerender-themes.test.ts`, the cli and testing suites whole, `keel test --e2e` in every app and example); regenerate the ledger by checkpoint 307's rule; re-base five byte budgets; merge into the main line; `pnpm check`; push; read CI.
 3. `lane-r-defect`: review and merge the three sub-branches, the RFC section from the untracked draft, the whole verification, a conformance pass, then the merge through a gate worktree. It opens the chain: RFC 0245, RFC 0251, RFC 0248, and `lane-std-formats`.
 4. `lane-r-fresh`: resume the evaluator build at the RFC's step 3 (read the `wip` diff first), then a narrow review, merge the main line, land.
 5. After those: the owed list in `docs/HANDOFF.md`; then the product track and the rest of `tasks/p1/TODO.md` (the golden-3 trial, W6 human docs, W8 the site, W9 comparisons, W12's sweep and publish dry run); mutation when the machine is quiet; the A1 fix lanes in `tasks/p1/weaknesses.md`.
