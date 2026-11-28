@@ -79,7 +79,7 @@ test(
 );
 
 test(
-  "`keel pack --check` reports the same E1813 and the same E1164 naming `check`",
+  "`keel pack --frozen` reports the same E1813 and the same E1164 naming `check`",
   () => {
     const lib = shipping(`, '${LIB_ID}.accent': '#000000'`);
     const run = pack(lib, true);

@@ -18,7 +18,7 @@
 // Spec: k.create-folder, clause "Run as `node --permission` with reads granted to its own package, the folder and its contents, and in each folder above the folder `package.json`, `pnpm-workspace.yaml`, `node_modules/@keel/cli/package.json` and `.git`; writes to the folder and its contents; no addon, child process or worker: `create-app shop` exits 0 and writes the project, for each kind and inside a workspace, and those flags refuse a write beside the folder and a child process; from Node 25 a connection too, and on every Node the bin's `@keel/*` reach names no process or network API (structure-lint S0019)."
 // Spec: k.create, clause "In compact a run prints one `create <path>` line per file, then the `next` lines, then `ok create shop client <n> created`, with no ANSI escape; `--format=json` prints one record per line ending in `summary`; `--dry-run` prints `would create <path>` per file and `ok create --dry-run shop client <n> planned`, json records carry `\"dry-run\": true`, and nothing is written."
 // Spec: k.create, clause "`@keel/create-app`'s `skills/<name>/SKILL.md` equal `keel docs <name>` of `@keel/cli` at the same version, byte for byte."
-// Spec: k.create, clause "From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --check`, and in each `keel docs --sync` writes nothing."
+// Spec: k.create, clause "From the packed tarballs, in an empty folder, `client`, `static` and `node` each after its install pass `keel check`, `keel test` and `keel build`, `--library` passes `keel check`, `keel test`, `keel pack` and then `keel pack --frozen`, and in each `keel docs --sync` writes nothing."
 // k.create-folder, Not done "It starts no process (no install, no `git init`), opens no connection, reads no environment value but `npm_config_user_agent`, `KEEL_AGENT` and `CI`, writes only inside the folder (and the folders above it that it makes), and reads outside it only its own package and, in each folder above it, `package.json`, `pnpm-workspace.yaml`, `node_modules/@keel/cli/package.json` (Workspace) and whether `.git` exists (for `git init -b main`)."
 // Spec: k.create-folder, clause "A folder holding `.keel-create` is E1366 naming it, with or without `--existing`; a SIGTERM delivered after the first file is written leaves the folder as it was, exit 143."
 // k.create-folder, Rules "E1360 the folder holds files (fix: name a new folder, or add `--existing`)"
@@ -33,8 +33,8 @@
 //   Node 25 network grant is not named in the spec, so no case withholds it separately; the same run is what a Node 25 permission run without `--allow-net` is. What else can be asserted is
 //   asserted: no `node_modules`, no `.git`, no lockfile after a run, and nothing written beside the folder. "reads no environment value but ..." and "reads outside it only the files Workspace names" are untestable from outside (no seam names them).
 // - The clause 22 text is cut across two files: the packed-tarball half is tooling/smoke/create.mjs (a smoke, it needs the packed kit). Here each kind is created beside a `node_modules` linked to the repo
-//   (create's version and the cli's are both the repo's), then `keel check`, `keel test`, `keel build` (apps) and `keel docs --sync` run over it. For the library the clause runs `keel pack` and then `keel pack --check`, both exit 0 (k.library-pack:
-//   `keel pack --check` is E1164 until `keel pack` writes the ledger).
+//   (create's version and the cli's are both the repo's), then `keel check`, `keel test`, `keel build` (apps) and `keel docs --sync` run over it. For the library the clause runs `keel pack` and then `keel pack --frozen`, both exit 0 (k.library-pack:
+//   `keel pack --frozen` is E1164 until `keel pack` writes the ledger).
 // - E1365 needs a write that fails: the folder holds an empty `public/` with mode 0555 (a user that bypasses file modes, such as root, cannot fail it).
 // - compact has no ANSI escape: the output holds no ESC (U+001B) character.
 // - `create <path>` lines are sorted by plain string order of the path.
@@ -830,7 +830,7 @@ describe("create-app: a fresh project", () => {
     } else {
       const pack = keel(proj, ["pack"]);
       expect(pack.status, pack.out.slice(-600)).toBe(0);
-      const verify = keel(proj, ["pack", "--check"]);
+      const verify = keel(proj, ["pack", "--frozen"]);
       expect(verify.status, verify.out.slice(-600)).toBe(0);
     }
     const before = tree(proj);
@@ -847,7 +847,7 @@ describe("create-app: a fresh project", () => {
   ];
   for (const [kind, flags] of kinds) {
     it(
-      `From the packed tarballs, in an empty folder, \`client\`, \`static\` and \`node\` each after its install pass \`keel check\`, \`keel test\` and \`keel build\`, \`--library\` passes \`keel check\`, \`keel test\`, \`keel pack\` and then \`keel pack --check\`, and in each \`keel docs --sync\` writes nothing: the ${kind} project`,
+      `From the packed tarballs, in an empty folder, \`client\`, \`static\` and \`node\` each after its install pass \`keel check\`, \`keel test\` and \`keel build\`, \`--library\` passes \`keel check\`, \`keel test\`, \`keel pack\` and then \`keel pack --frozen\`, and in each \`keel docs --sync\` writes nothing: the ${kind} project`,
       async () => {
         const cwd = sandbox();
         link(cwd);
