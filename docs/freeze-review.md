@@ -152,7 +152,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph; k.cr
 | k.shared | 9 | implemented | not yet covered by conformance |
 | k.supervise | 12 | **conformance-covered** | none |
 | std.postgres-errors | 7 | implemented | not yet covered by conformance |
-| **total** | **1724** | 107 of 137 covered | |
+| **total** | **1865** | 100 of 146 covered | |
 
 ## 2. One-way audit (principle 1)
 
