@@ -1,5 +1,5 @@
 {
-  "commit": "d823b53be57c4ddc0983df9ba9be0270ebfd22fb",
+  "commit": "aa5ff88d6ab8757e180c582e93a140603f0f05ff",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1188,7 +1188,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-28T04:39:42.290Z",
+  "generatedAt": "2026-11-28T07:15:29.270Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -4419,7 +4419,7 @@
       },
       "packages/cli": {
         "conformanceCases": 1255,
-        "conformanceFiles": 272,
+        "conformanceFiles": 275,
         "exploreFiles": 1,
         "fails": 0,
         "otherCases": 0,
@@ -4994,7 +4994,7 @@
     },
     "totals": {
       "conformanceCases": 7799,
-      "conformanceFiles": 1640,
+      "conformanceFiles": 1643,
       "exploreFiles": 21,
       "fails": 3,
       "otherCases": 0,
