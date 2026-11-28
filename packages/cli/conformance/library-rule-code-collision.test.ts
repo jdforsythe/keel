@@ -2,7 +2,7 @@
 // Spec: k.library, clause "`@acme/evil` and `@acme/charts`, each `./tools` registering `E2991`, in `deps` in either order: one E1753 naming both, no E1159."
 // Also the "In an app" paragraph of k.library (not a Conformance bullet, so no clause): "k.module (Std config), k.topology and k.contract read a library's entry, `./tools`, `./module`, `./routes`, `./contract` and `std` config as a stdlib package's (k.parity By kind). `keel check` and `keel build` import only its `./tools`; its rule codes are held to E1753: a code two packages register is E1753 `rule code <code> is registered by <a> and <b>`, `<b>` the later, at its `deps` entry, not E1159."
 // Seed: 1337 (no generated input). Binary runs: `keel check` on two projects (`deps` `['@acme/evil', '@acme/charts']` and its reverse), each shared by its cases.
-// ASSUMPTIONS (spec silent): `@acme/evil` is a library of id `evil` holding the same files as `@acme/charts` (library-support.ts `library`), its `exports` gaining `"./tools": "./tools.js"` as `@acme/charts`'s does, each `tools.js` registering `E2991`;
+// ASSUMPTIONS (spec silent): `@acme/evil` is a library of id `evil` holding the same files as `@acme/charts` (library-support.ts `library`), its `exports` gaining `"./tools": { "keel": "./src/tools.ts", "default": "./tools.js" }` as `@acme/charts`'s does (k.entries Shape: a listed library's entry is an object whose first key is `keel`, naming a file under `src/`; k.library-pack Package: `keel` the source file, then `default` the built one), each `src/tools.ts` and `tools.js` registering `E2991`;
 // "the later" is the later in the app's `deps` list; "names both" is a message `rule code E2991 is registered by <a> and <b>`, `<a>` the earlier entry, `<b>` the later; "at its `deps` entry" is a position on the later entry's line from its opening quote to its closing one.
 import { afterAll, describe, expect, test } from "vitest";
 import type { Rec } from "./compat-support.ts";
@@ -20,13 +20,13 @@ import {
 } from "./library-support.ts";
 
 const EVIL = "@acme/evil";
-const tools = { "./tools": "./tools.js" };
+const tools = { "./tools": { keel: "./src/tools.ts", default: "./tools.js" } };
 const tree = (deps: string[]): Tree =>
   project({
     deps,
     libraries: [
-      library({ exports: tools, files: { "tools.js": toolsRule("E2991") } }),
-      library({ name: EVIL, id: "evil", exports: tools, files: { "tools.js": toolsRule("E2991") } }),
+      library({ exports: tools, files: { "tools.js": toolsRule("E2991"), "src/tools.ts": toolsRule("E2991") } }),
+      library({ name: EVIL, id: "evil", exports: tools, files: { "tools.js": toolsRule("E2991"), "src/tools.ts": toolsRule("E2991") } }),
     ],
   });
 

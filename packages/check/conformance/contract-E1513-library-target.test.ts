@@ -1,4 +1,4 @@
-// Spec: k.contract, clause "In that project, with `\"./contract\": \"./dist/status.contract.js\"`, or `\"./src/index.ts\"`, the call in `src/status.contract.ts` is one E1513, message `contract() belongs in a src/*.contract.ts file, not dist/status.contract.js`, or `not src/index.ts`."
+// Spec: k.library-pages, clause "In that project, with `\"./contract\": \"./dist/status.contract.js\"`, or `\"./src/index.ts\"`, the call in `src/status.contract.ts` is one E1513, message `contract() belongs in a src/*.contract.ts file, not dist/status.contract.js`, or `not src/index.ts`."
 // Seed 1337 (no generated input: the two targets are the clause's).
 // ASSUMPTIONS (spec silent): "that project" is the project of the preceding bullet (contract-E1513-library.test.ts), its `./contract` export written as the plain string the clause gives; the call is the one `src/status.contract.ts` holds there, exported as `status`;
 // the diagnostic is at `node_modules/@acme/status/src/status.contract.ts`; each case asserts the E1513 diagnostics alone.

@@ -3,6 +3,7 @@
 // ASSUMPTIONS (spec silent): `./tools` is `"./tools": "./tools.ts"`, a root file that imports `./src/Code.schema.ts` (Node strips the types); `gen` is `{ from: s.string(), map: (v) => `c${v}` }`;
 // a diagnostic's `path` is package-relative in an own folder ("each diagnostic at the folder's own path"); E1159 is judged by its code, path `package.json` and the message naming `./tools` and its target
 // (`<name> ./tools <target> does not import; build it`, k.library-pack Package), and its line is the line of the `"./tools"` key when `package.json` is written with `JSON.stringify(value, null, 2)`.
+// The app listing it gives the library the entry k.entries Shape requires of a listed library, `"./tools": { "keel": "./src/tools.ts", "default": "./tools.js" }` (keel first, a file under `src/`; k.library-pack Package), both files registering `E2999`; the own folder's runs keep the clause's plain-string entries.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   SLOW,
@@ -72,8 +73,8 @@ const runApp = (): ReturnType<typeof run> => {
         library({
           name: NAME,
           id: "ownfix",
-          exports: { "./tools": "./tools.js" },
-          files: { "tools.js": toolsRule("E2999") },
+          exports: { "./tools": { keel: "./src/tools.ts", default: "./tools.js" } },
+          files: { "tools.js": toolsRule("E2999"), "src/tools.ts": toolsRule("E2999") },
         }),
       ],
     }),
