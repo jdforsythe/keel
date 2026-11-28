@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "unsafe": 33,
+  "unsafe": 34,
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 3009,
-    "probabilistic": 501,
+    "example": 3027,
+    "probabilistic": 509,
     "exhaustive": 21,
     "proven": 92,
     "monitored": 8
@@ -3170,7 +3170,7 @@
     {
       "pkg": "std-geo",
       "name": "Position",
-      "file": "packages/std-geo/src/Position.ts",
+      "file": "packages/std-geo/src/Position.schema.ts",
       "rung": "example"
     },
     {
@@ -3254,7 +3254,7 @@
     {
       "pkg": "std-health",
       "name": "Health",
-      "file": "packages/std-health/src/Health.ts",
+      "file": "packages/std-health/src/Health.schema.ts",
       "rung": "example"
     },
     {
@@ -3278,13 +3278,37 @@
     {
       "pkg": "std-i18n",
       "name": "Locale",
-      "file": "packages/std-i18n/src/Locale.ts",
+      "file": "packages/std-i18n/src/Locale.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "std-i18n",
+      "name": "collate",
+      "file": "packages/std-i18n/src/collate.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-i18n",
+      "name": "formatDateTime",
+      "file": "packages/std-i18n/src/formatDateTime.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-i18n",
+      "name": "formatList",
+      "file": "packages/std-i18n/src/formatList.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-i18n",
       "name": "formatNumber",
       "file": "packages/std-i18n/src/formatNumber.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-i18n",
+      "name": "formatUnit",
+      "file": "packages/std-i18n/src/formatUnit.ts",
       "rung": "probabilistic"
     },
     {
@@ -3295,8 +3319,20 @@
     },
     {
       "pkg": "std-i18n",
+      "name": "numberParts",
+      "file": "packages/std-i18n/src/numberParts.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-i18n",
       "name": "plural",
       "file": "packages/std-i18n/src/plural.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-i18n",
+      "name": "pluralCategories",
+      "file": "packages/std-i18n/src/pluralCategories.ts",
       "rung": "probabilistic"
     },
     {
@@ -3356,13 +3392,13 @@
     {
       "pkg": "std-money",
       "name": "Currency",
-      "file": "packages/std-money/src/Currency.ts",
+      "file": "packages/std-money/src/Currency.schema.ts",
       "rung": "example"
     },
     {
       "pkg": "std-money",
       "name": "Money",
-      "file": "packages/std-money/src/Money.ts",
+      "file": "packages/std-money/src/Money.schema.ts",
       "rung": "probabilistic"
     },
     {
@@ -3470,7 +3506,7 @@
     {
       "pkg": "std-report",
       "name": "Tally",
-      "file": "packages/std-report/src/Tally.ts",
+      "file": "packages/std-report/src/Tally.schema.ts",
       "rung": "probabilistic"
     },
     {
@@ -3704,31 +3740,31 @@
     {
       "pkg": "std-temporal",
       "name": "DateStyle",
-      "file": "packages/std-temporal/src/DateStyle.ts",
+      "file": "packages/std-temporal/src/DateStyle.schema.ts",
       "rung": "none"
     },
     {
       "pkg": "std-temporal",
       "name": "Duration",
-      "file": "packages/std-temporal/src/Duration.ts",
+      "file": "packages/std-temporal/src/Duration.schema.ts",
       "rung": "probabilistic"
     },
     {
       "pkg": "std-temporal",
       "name": "Instant",
-      "file": "packages/std-temporal/src/Instant.ts",
+      "file": "packages/std-temporal/src/Instant.schema.ts",
       "rung": "probabilistic"
     },
     {
       "pkg": "std-temporal",
       "name": "PlainDate",
-      "file": "packages/std-temporal/src/PlainDate.ts",
+      "file": "packages/std-temporal/src/PlainDate.schema.ts",
       "rung": "probabilistic"
     },
     {
       "pkg": "std-temporal",
       "name": "TimeZone",
-      "file": "packages/std-temporal/src/TimeZone.ts",
+      "file": "packages/std-temporal/src/TimeZone.schema.ts",
       "rung": "probabilistic"
     },
     {
@@ -3740,7 +3776,7 @@
     {
       "pkg": "std-temporal",
       "name": "UnitStyle",
-      "file": "packages/std-temporal/src/UnitStyle.ts",
+      "file": "packages/std-temporal/src/UnitStyle.schema.ts",
       "rung": "probabilistic"
     },
     {
@@ -3800,13 +3836,13 @@
     {
       "pkg": "std-text",
       "name": "Email",
-      "file": "packages/std-text/src/Email.ts",
+      "file": "packages/std-text/src/Email.schema.ts",
       "rung": "probabilistic"
     },
     {
       "pkg": "std-text",
       "name": "Slug",
-      "file": "packages/std-text/src/Slug.ts",
+      "file": "packages/std-text/src/Slug.schema.ts",
       "rung": "probabilistic"
     },
     {
@@ -3872,13 +3908,13 @@
     {
       "pkg": "std-timings",
       "name": "Timings",
-      "file": "packages/std-timings/src/Timings.ts",
+      "file": "packages/std-timings/src/Timings.schema.ts",
       "rung": "none"
     },
     {
       "pkg": "std-timings",
       "name": "TimingsRecent",
-      "file": "packages/std-timings/src/TimingsRecent.ts",
+      "file": "packages/std-timings/src/TimingsRecent.schema.ts",
       "rung": "example"
     },
     {
@@ -3896,7 +3932,7 @@
     {
       "pkg": "std-tokens",
       "name": "Digested",
-      "file": "packages/std-tokens/src/Digested.ts",
+      "file": "packages/std-tokens/src/Digested.schema.ts",
       "rung": "probabilistic"
     },
     {
@@ -6942,6 +6978,30 @@
       "rung": "example"
     },
     {
+      "item": "k.library-pack#91cb6cea",
+      "rung": "example"
+    },
+    {
+      "item": "k.library-pages#927812b3",
+      "rung": "example"
+    },
+    {
+      "item": "k.library-pages#1cc183e1",
+      "rung": "example"
+    },
+    {
+      "item": "k.library-pages#08136d2e",
+      "rung": "example"
+    },
+    {
+      "item": "k.library-pages#941ea232",
+      "rung": "example"
+    },
+    {
+      "item": "k.library-pages#aa47f5c4",
+      "rung": "example"
+    },
+    {
       "item": "k.library#e9951397",
       "rung": "example"
     },
@@ -6974,7 +7034,7 @@
       "rung": "example"
     },
     {
-      "item": "k.library#cb0cd003",
+      "item": "k.library#5137af34",
       "rung": "example"
     },
     {
@@ -7011,6 +7071,14 @@
     },
     {
       "item": "k.library#6cc68f24",
+      "rung": "example"
+    },
+    {
+      "item": "k.library#5c2d0d8a",
+      "rung": "example"
+    },
+    {
+      "item": "k.library#f0c6b7a7",
       "rung": "example"
     },
     {
@@ -7239,6 +7307,14 @@
     },
     {
       "item": "k.module#fc113b70",
+      "rung": "example"
+    },
+    {
+      "item": "k.module#731bd4b8",
+      "rung": "example"
+    },
+    {
+      "item": "k.module#d190757c",
       "rung": "example"
     },
     {
@@ -10218,7 +10294,7 @@
       "rung": "example"
     },
     {
-      "item": "std.geo#01d676b4",
+      "item": "std.geo#4eec2114",
       "rung": "example"
     },
     {
@@ -10328,6 +10404,22 @@
     {
       "item": "std.i18n#e62fb921",
       "rung": "example"
+    },
+    {
+      "item": "std.i18n#7eca4381",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.i18n#fd8ab836",
+      "rung": "example"
+    },
+    {
+      "item": "std.i18n#96ad25c2",
+      "rung": "example"
+    },
+    {
+      "item": "std.i18n#45140c22",
+      "rung": "probabilistic"
     },
     {
       "item": "std.jobs#204b75b2",
@@ -11366,7 +11458,7 @@
       "rung": "example"
     },
     {
-      "item": "std.temporal#b3c069a2",
+      "item": "std.temporal#52ccaab8",
       "rung": "example"
     },
     {
@@ -11482,7 +11574,7 @@
       "rung": "example"
     },
     {
-      "item": "std.tokens#d5de9c63",
+      "item": "std.tokens#23c509db",
       "rung": "example"
     },
     {
@@ -14280,14 +14372,34 @@
       "unsafe": 0,
       "hostElements": 3
     },
+    "@keel/std-brands": {
+      "version": "0.0.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
     "@keel/std-channels": {
       "version": "0.0.0",
       "unsafe": 1,
       "hostElements": 0
     },
+    "@keel/std-geo": {
+      "version": "0.0.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
     "@keel/std-headless": {
       "version": "0.0.0",
       "unsafe": 0,
+      "hostElements": 0
+    },
+    "@keel/std-health": {
+      "version": "0.0.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
+    "@keel/std-i18n": {
+      "version": "0.0.0",
+      "unsafe": 1,
       "hostElements": 0
     },
     "@keel/std-jobs": {
@@ -14300,12 +14412,27 @@
       "unsafe": 0,
       "hostElements": 0
     },
+    "@keel/std-messages": {
+      "version": "0.0.0",
+      "unsafe": 1,
+      "hostElements": 0
+    },
+    "@keel/std-money": {
+      "version": "0.0.0",
+      "unsafe": 1,
+      "hostElements": 0
+    },
     "@keel/std-offline": {
       "version": "0.0.0",
       "unsafe": 1,
       "hostElements": 0
     },
     "@keel/std-postgres": {
+      "version": "0.0.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
+    "@keel/std-report": {
       "version": "0.0.0",
       "unsafe": 0,
       "hostElements": 0
@@ -14318,6 +14445,31 @@
     "@keel/std-statecharts": {
       "version": "0.0.0",
       "unsafe": 2,
+      "hostElements": 0
+    },
+    "@keel/std-tables": {
+      "version": "0.0.0",
+      "unsafe": 1,
+      "hostElements": 0
+    },
+    "@keel/std-temporal": {
+      "version": "0.0.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
+    "@keel/std-text": {
+      "version": "0.0.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
+    "@keel/std-timings": {
+      "version": "0.0.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
+    "@keel/std-tokens": {
+      "version": "0.0.0",
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-workflows": {
