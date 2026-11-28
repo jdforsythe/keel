@@ -1,5 +1,5 @@
 {
-  "commit": "edc926c79d8a0a76c714d8e5abb8c08ac35bd2e2",
+  "commit": "6668de764dcb4442c00947cd0ac7c3b0648d9655",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1188,7 +1188,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-27T22:17:47.509Z",
+  "generatedAt": "2026-11-28T00:42:25.562Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1422,10 +1422,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 1354,
+        "example": 1355,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 4,
+        "none": 3,
         "probabilistic": 259,
         "proven": 53
       },
@@ -1640,16 +1640,16 @@
         },
         "k.create-folder": {
           "byRung": {
-            "example": 6,
+            "example": 7,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 1,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "implemented",
           "total": 7,
-          "verified": 6
+          "verified": 7
         },
         "k.create-manager": {
           "byRung": {
@@ -3187,10 +3187,10 @@
         }
       },
       "total": 1676,
-      "verified": 1672
+      "verified": 1673
     },
     "evidenceByRung": {
-      "example": 2813,
+      "example": 2814,
       "exhaustive": 21,
       "monitored": 8,
       "probabilistic": 467,
@@ -3777,7 +3777,7 @@
     "items": 3006,
     "negativeTypes": 90,
     "unsafe": 33,
-    "verified": 2942
+    "verified": 2943
   },
   "mutation": {
     "packages": {
@@ -4922,8 +4922,8 @@
         "proveFiles": 22,
         "simulateFiles": 20,
         "skipTodo": 4,
-        "unitCases": 343,
-        "unitFiles": 64
+        "unitCases": 346,
+        "unitFiles": 65
       },
       "packages/ui": {
         "conformanceCases": 327,
@@ -4951,8 +4951,8 @@
       "proveFiles": 24,
       "simulateFiles": 32,
       "skipTodo": 26,
-      "unitCases": 7211,
-      "unitFiles": 1188
+      "unitCases": 7214,
+      "unitFiles": 1189
     }
   },
   "tool": {
