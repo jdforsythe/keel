@@ -97,8 +97,7 @@ export const defectCode: RuleDef = {
       if (n.type !== "CallExpression") continue;
       const [message, detail, extra] = n.arguments;
       const object = detail?.type === "ObjectExpression" ? detail : undefined;
-      const readable =
-        object !== undefined && object.properties.every((p) => p.type !== "SpreadElement" && !p.computed);
+      const readable = object?.properties.every((p) => p.type !== "SpreadElement" && !p.computed) === true;
       if (types !== true) {
         const spread = n.arguments.find((a) => a.type === "SpreadElement");
         if (spread !== undefined) {

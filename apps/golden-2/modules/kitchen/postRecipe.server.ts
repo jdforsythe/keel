@@ -20,6 +20,7 @@ export const postRecipe = action(kitchen, "kitchen.add", {}, async (body, _args,
     values (${ctx.random.id("Recipe")}, ${body.title}, ${body.minutes}, ${body.price.amount},
             ${body.price.currency}, ${plainDateOf(now.value, UTC)})`);
   if (added.ok) return ok({});
-  const dup = added.error.code === "postgres.constraint" && constraintOf(added.error, ["recipes_title_key"]) !== undefined;
+  const dup =
+    added.error.code === "postgres.constraint" && constraintOf(added.error, ["recipes_title_key"]) !== undefined;
   return err(dup ? taken : added.error);
 });
