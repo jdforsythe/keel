@@ -33,6 +33,7 @@ const OLD = "a11y:m.r#1.4.3";
 /** The route tables of a project whose one module `m` has the page route `r` (`path: '/r'`). */
 const TABLES: Readonly<Record<string, string>> = {
   "topology.ts": `export default { api: { modules: ["m"], adapter: "node" } };\n`,
+  "modules/m/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`,
   "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n  "m.r": { path: "/r" },\n});\n`,
   "modules/m/routes.ts": `import { manifest } from "@keel/router";\nimport { Text } from "@keel/ui";\nimport { m } from "./m.contract.ts";\n\nexport const routes = manifest(m, {\n  "m.r": { component: () => Text({ id: "m.r.msg", children: "r" }), title: () => "r" },\n});\n`,
 };

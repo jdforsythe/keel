@@ -491,6 +491,7 @@ describe("k.derived: keel test and the a11y artifacts", () => {
   function a11yProject(): string {
     const dir = keelProject("derived-a11y", {
       "topology.ts": TOPOLOGY,
+      "modules/m/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`,
       "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n  "m.r": { path: "/r" },\n});\n`,
       "tsconfig.json": `${JSON.stringify({ extends: "@keel/compiler/tsconfig.strict.json", compilerOptions: { jsxImportSource: "@keel/runtime-dom" }, include: ["modules"] }, null, 2)}\n`,
       "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module" })}\n`,
