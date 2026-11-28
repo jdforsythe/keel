@@ -362,7 +362,7 @@ export function check(input: readonly SourceFile[], inputOptions: CheckOptions =
     ...libraryImports(realChecked, libs.folder),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology, libs.contracts),
-    ...ruleCodeDeclarations(checked),
+    ...ruleCodeDeclarations(checked, (p) => libs.folder(libs.real(p))),
     ...budgetBreaches(opts.budgets ?? []),
     // E1005 derives each artifact from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
     ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
