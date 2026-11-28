@@ -10,6 +10,7 @@ import { engineOf } from "./engineOf.ts";
 import { fileBrowser } from "./fileBrowser.ts";
 import { makePage } from "./makePage.ts";
 import { pageScript } from "./pageScript.ts";
+import { parserScripts } from "./parserScripts.ts";
 import { quiet } from "./quiet.ts";
 import { seconds } from "./seconds.ts";
 import { trackTab } from "./trackTab.ts";
@@ -108,15 +109,34 @@ export async function openContext(o: {
         if (!type.includes("text/html")) return route.fulfill({ response: answer });
         await route.fulfill({ response: answer, body: withoutScripts(await answer.text()) });
       });
-    if (hold)
+    if (hold) {
+      // The scripts the held document's parser waits for run as it reaches them (parserScripts.ts): parked, the
+      // document would never be parsed. Every other script is parked until `resume()`.
+      let seen: (html: string) => void = () => undefined;
+      const held = new Promise<string>((done) => {
+        seen = done;
+      });
+      let base = "";
+      tab.on("response", (res) => {
+        const r = res.request();
+        const moved = res.status() >= 300 && res.status() < 400;
+        if (base !== "" || moved || !r.isNavigationRequest() || r.frame() !== tab.mainFrame()) return;
+        base = res.url();
+        void res.text().then(seen, () => seen(""));
+      });
       await tab.route("**/*", async (route) => {
-        if (state.holding && route.request().resourceType() === "script") {
+        const r = route.request();
+        const script = state.holding && r.resourceType() === "script";
+        const blocking =
+          script && base !== "" && r.frame() === tab.mainFrame() && parserScripts(await held, base).has(r.url());
+        if (script && !blocking) {
           state.parked.push(route);
           for (const w of [...state.waiters]) w();
           return;
         }
         await route.fallback().catch(() => undefined);
       });
+    }
     const page = makePage(
       state,
       { project: o.project, origin: o.origin, run, verb: o.verb, failed: o.failed, adopt },
