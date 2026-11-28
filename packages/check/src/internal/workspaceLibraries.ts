@@ -36,8 +36,7 @@ export function workspaceLibraries(files: readonly SourceFile[]): {
     const project = dirs.find((d) => dir.startsWith(d)) ?? "";
     found.push({ dir, viewed: paths.has(`${project}node_modules/${name}/package.json`) });
   }
-  const of = (p: string) =>
-    found.find((l) => p.startsWith(l.dir) && /^(?:src|unsafe)\//.test(p.slice(l.dir.length)));
+  const of = (p: string) => found.find((l) => p.startsWith(l.dir) && /^(?:src|unsafe)\//.test(p.slice(l.dir.length)));
   return {
     twin: (p) => of(p)?.viewed === true,
     inPlace: (p) => of(p)?.viewed === false,
