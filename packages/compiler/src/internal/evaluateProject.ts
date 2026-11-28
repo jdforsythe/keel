@@ -67,15 +67,17 @@ function entrySource(
     "let schemes = ['light'];",
     "const message = (e) => (e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e));",
     "const coded = (e) => e && typeof e === 'object' && 'code' in e && /^E[0-9]{4}$/.test(String(e.code));",
+    // A coded error is its code then its message, written once when the message already starts with it (a refusal's).
+    "const codedText = (e) => { const m = message(e); return m.startsWith(`${e.code} `) ? m : `${e.code} ${m}`; };",
     // A diagnostic-shaped error keeps its code; any other throw from the compiler call is an internal failure.
-    "const report = (e) => { if (coded(e)) problems.push(`${e.code} ${message(e)}`); else internal.push(message(e)); };",
+    "const report = (e) => { if (coded(e)) problems.push(codedText(e)); else internal.push(message(e)); };",
   );
   if (tokensFile !== undefined)
     lines.push(
       "let tokens;",
       // The tokens module throwing while it evaluates means tokens.ts is unusable: E1807 unless it carries its own code.
       `try { const m = await import(${q(`./${tokensFile}`)}); tokens = m.tokens ?? m.default; }`,
-      `catch (e) { problems.push(coded(e) ? \`\${e.code} \${message(e)}\` : \`E1807 ${tokensFile} failed to evaluate: \${message(e)}\`); }`,
+      `catch (e) { problems.push(coded(e) ? codedText(e) : \`E1807 ${tokensFile} failed to evaluate: \${message(e)}\`); }`,
       "const fits = (u) => { try { compileStyles({ tokens, usages: [u] }); return true; } catch (e) { report(e); return false; } };",
       `if (tokens === undefined && problems.length === 0) problems.push('E1807 ${tokensFile} exports no tokens');`,
       "else if (tokens !== undefined) {",
@@ -92,11 +94,11 @@ function entrySource(
       "const manifest = async (file, load, contract, loadContract) => {",
       "  if (contract !== undefined) {",
       "    try { await loadContract(); }",
-      "    catch (e) { problems.push(coded(e) ? `${e.code} ${message(e)}` : `E1006 ${contract} failed to evaluate: ${message(e)}`); return {}; }",
+      "    catch (e) { problems.push(coded(e) ? codedText(e) : `E1006 ${contract} failed to evaluate: ${message(e)}`); return {}; }",
       "  }",
       "  let m;",
       "  try { m = await load(); }",
-      "  catch (e) { problems.push(coded(e) ? `${e.code} ${message(e)}` : `E1006 ${file} failed to evaluate: ${message(e)}`); return {}; }",
+      "  catch (e) { problems.push(coded(e) ? codedText(e) : `E1006 ${file} failed to evaluate: ${message(e)}`); return {}; }",
       "  if (m.routes === undefined) { problems.push(`E1006 ${file} exports no routes`); return {}; }",
       "  try { if (m.routes === null || typeof m.routes !== 'object' || m.routes.kind !== 'keel.routeTable') { problems.push(`E1006 ${file} exports no route table`); return {}; } }",
       "  catch (e) { report(e); return {}; }",

@@ -40,7 +40,10 @@ const failed = (file: string, e: unknown): string => `E1006 ${file} failed to ev
 const routeFailed = (file: string, e: unknown): string => {
   const code = codeOf(e);
   const message: unknown = Reflect.get(Object(e), "message");
-  if (code !== undefined) return `${code} ${typeof message === "string" ? message : ""}\n`;
+  if (code !== undefined) {
+    const text = typeof message === "string" ? message : "";
+    return text.startsWith(`${code} `) ? `${text}\n` : `${code} ${text}\n`;
+  }
   const line = firstLine(e);
   return line.startsWith("E1000 ") ? `${line}\n` : failed(file, e);
 };
