@@ -3,7 +3,6 @@
 |-|-|
 | k.component | component shape, slot props, control flow, build and ids |
 | k.compiler | Vite plugin, JSX output as DOM operations, escaping by context, artifacts |
-| k.evaluator | the process a build-time evaluation runs in: start, realm, questions, end, E1048 |
 | k.boundary | server-only files, browser builds, stubs, assertion and reach, E1004 |
 | k.check-time | where `@keel/ui/tokens` and `@keel/ui/css` may be imported, E1818 |
 | k.bundle | browser bundles, file names, handlers, environment values kept out of assets |

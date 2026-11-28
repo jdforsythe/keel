@@ -9,4 +9,4 @@ Commitments made without evidence. Never cite as findings.
 5. Session-to-test closes the maintenance loop well enough to be a wedge against incumbents.
 
 subject: docs/adr/
-verified: 273e6b7c8baa73186e8f758b49f74edbb1b23c83
+verified: e02ce2255715c0513fb616bb38288edf8a07288d
