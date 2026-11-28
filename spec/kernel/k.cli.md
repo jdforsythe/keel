@@ -51,6 +51,6 @@ Every output record has a `kind`, each kind one formatter. `json` is the record 
 - An MCP `build` writes the `.keel/` files `keel build` writes.
 - `respond` of a record of a kind with no formatter yields E1054.
 - After `stdCommand('session', op)`, `keel session` parses argv with `op.input`, runs `op` and emits its records, and the MCP tools include `session`; unfilled, I1055, exit 0; filling it with another `op` throws E1053.
-- Run with `npm_config_user_agent` `pnpm/10.0.0`, `keel check` in a project with a stale generated deploy file prints its E1005 line naming `pnpm keel build`; with `npm/10.0.0`, `npx --no keel build`; with none, `keel build`; with `--format=json` the record text is the same in each.
+- Run with `npm_config_user_agent` `pnpm/10.0.0`, `keel check --frozen` in a project with a stale generated deploy file prints its E1005 line naming `pnpm keel check`; with `npm/10.0.0`, `npx --no keel check`; with none, `keel check`; with `--format=json` the record text is the same in each.
 - `keel dev` with no `server.host` in the Vite config, or with `server.host` `127.0.0.1`, listens on 127.0.0.1 only.
 - While `keel dev` serves the copy of k.derived clause 1 after its edit, changing `app.about`'s path to `/info` in the contract file alone makes, within 2 s, `.keel/routes.json` and `.keel/surface.json` byte-identical to what `keel build` writes, and `GET /__keel/inspect` answer `routes` whose `app.about` has `path` `/info`.
