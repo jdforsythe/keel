@@ -1,4 +1,5 @@
-import { realpathSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readFileSync, realpathSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { CODE_FILE } from "./CODE_FILE.ts";
 import type { DevServer } from "./DevServer.ts";
@@ -11,7 +12,8 @@ import { makeDiag } from "./makeDiag.ts";
  * each change the dev server's watcher sees to a file the last derivation read (`devViews`' `files`, compared by real
  * path, a lone contract file among them) or to the code file paths (a code file of the project added or removed; any
  * code file change while the last derivation failed and read none). Runs never overlap: a change during one ends its
- * evaluation (an abort signal) and runs one more after it. Each new input outside the root is watched. `print` gets its W1018 records, and an E1049 when a
+ * evaluation (an abort signal) and runs one more after it. An event for a file whose bytes are those of its last event
+ * (the watcher reports one write more than once) is no change. Each new input outside the root is watched. `print` gets its W1018 records, and an E1049 when a
  * refresh itself fails.
  */
 export function devRefresh(cwd: string, server: DevServer, print: (diags: readonly Diag[]) => void): void {
@@ -27,6 +29,15 @@ export function devRefresh(cwd: string, server: DevServer, print: (diags: readon
   let running = false;
   let again = false;
   let current: AbortController | undefined;
+  /** Each changed file's bytes at its last event, by real path, as a digest (absent: the file is gone). */
+  const seen = new Map<string, string>();
+  const bytesOf = (file: string): string => {
+    try {
+      return createHash("sha256").update(readFileSync(file)).digest("hex");
+    } catch {
+      return "";
+    }
+  };
   const run = async (): Promise<void> => {
     if (running) {
       // The running evaluation read the tree before this change: it is ended, and the next starts.
@@ -62,7 +73,11 @@ export function devRefresh(cwd: string, server: DevServer, print: (diags: readon
     const rel = relative(cwd, file).split(sep).join("/");
     const own = !rel.startsWith("..") && !rel.split("/").some((s) => s === "node_modules" || s === ".keel");
     const code = own && CODE_FILE.test(rel);
-    if ((code && (event !== "change" || files.size === 0)) || files.has(real(file))) void run();
+    if (!(code && (event !== "change" || files.size === 0)) && !files.has(real(file))) return;
+    const digest = bytesOf(file);
+    if (event === "change" && seen.get(real(file)) === digest) return;
+    seen.set(real(file), digest);
+    void run();
   });
   void run();
 }

@@ -883,6 +883,8 @@ export default function (): {
     return parts.join("\n");
   };
 
+  /** The refresh a file change queued and that has not started yet, if any. */
+  let queued: Promise<void> | undefined;
   /** Re-evaluate tokens and route manifests: `keel.css` and `routes.json`. */
   const refresh = async (): Promise<void> => {
     stale = false;
@@ -1348,10 +1350,14 @@ export default function (): {
         }
       }
       stale = true;
-      if (server !== undefined)
-        void refresh()
-          .then(reloadCss)
-          .catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
+      // One watcher event reaches `watchChange` once per environment: an event before the queued refresh starts joins it.
+      if (server !== undefined && queued === undefined) {
+        queued = new Promise<void>((started) => setImmediate(started)).then(() => {
+          queued = undefined;
+          return refresh();
+        });
+        void queued.then(reloadCss).catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
+      }
     },
   };
 }
