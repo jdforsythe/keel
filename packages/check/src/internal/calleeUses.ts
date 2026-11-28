@@ -444,11 +444,11 @@ export function calleeUses(
     const s = t.getSymbol();
     return s !== undefined && s.getName() === "globalThis" && (s.flags & ts.SymbolFlags.ValueModule) !== 0;
   };
-  /** Whether `e` is a call or `new` of the global `Object`. */
-  const ofObject = (e: ts.Expression): e is ts.CallExpression | ts.NewExpression => {
-    if (!ts.isCallExpression(e) && !ts.isNewExpression(e)) return false;
+  /** `e` when it is a call or `new` of the global `Object`, else `undefined`. */
+  const ofObject = (e: ts.Expression): ts.CallExpression | ts.NewExpression | undefined => {
+    if (!ts.isCallExpression(e) && !ts.isNewExpression(e)) return undefined;
     const c = bareExpression(e.expression);
-    return ts.isIdentifier(c) && c.text === "Object" && fromLib(checker.getSymbolAtLocation(c));
+    return ts.isIdentifier(c) && c.text === "Object" && fromLib(checker.getSymbolAtLocation(c)) ? e : undefined;
   };
   /**
    * Whether `e` is the global object (k.realm The keel. names): one of its names, an expression the type pass types as
@@ -457,8 +457,9 @@ export function calleeUses(
   const isGlobal = (e: ts.Expression, depth: number): boolean => {
     const b = bareExpression(e);
     if (ts.isIdentifier(b) && GLOBAL_OBJECT.has(b.text)) return true;
-    if (ofObject(b)) {
-      const inner = b.arguments?.[0];
+    const made = ofObject(b);
+    if (made !== undefined) {
+      const inner = made.arguments?.[0];
       return depth < 8 && inner !== undefined && !ts.isSpreadElement(inner) && isGlobal(inner, depth + 1);
     }
     return isGlobalType(checker.getTypeAtLocation(b));
