@@ -1,5 +1,5 @@
 {
-  "commit": "7b05180b52389eb14c78edafe5fded662e6cf97f",
+  "commit": "85e869f3761b2782aa5db7134b6b3d82ffdd2b6f",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1188,7 +1188,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-28T08:25:56.507Z",
+  "generatedAt": "2026-11-28T09:49:18.483Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -4951,8 +4951,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 778,
-        "unitFiles": 91
+        "unitCases": 779,
+        "unitFiles": 92
       },
       "packages/std-statecharts": {
         "conformanceCases": 30,
@@ -5120,8 +5120,8 @@
       "proveFiles": 24,
       "simulateFiles": 32,
       "skipTodo": 26,
-      "unitCases": 7355,
-      "unitFiles": 1222
+      "unitCases": 7356,
+      "unitFiles": 1223
     }
   },
   "tool": {

@@ -242,7 +242,8 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
     expect(Reflect.get(Object(Reflect.get(Object(failure), "cause")), "data")).toEqual({
       driver: "postgres",
       op: "commit",
-      code: "57P01",
+      class: "57",
+      errcode: 0,
     });
     await holder.query("rollback");
     expect(await s.get("lost")).toBeNull();
