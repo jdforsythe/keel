@@ -1,4 +1,4 @@
-// Spec: k.attempt, clause "In `modules/m/a.ts`, `attempt(f)` is one E1452, message `attempt needs expect: (x) => x instanceof T ? E.make(data) : undefined`; `attempt(f, () => T)`, `attempt(f, (_x) => T)` and `attempt(f, (x) => T)` are one E1452 each at the function, message `expect claims every throw: test the thrown value`; `attempt(f, (x) => (x instanceof RangeError ? T : undefined))` is none; no E1452 here carries a fix."
+// Spec: k.attempt, clause "In `modules/m/a.ts`, `attempt(f)` is one E1452, message `attempt needs expect: (x) => x instanceof T ? E.make(data) : undefined`; `attempt(f, () => T)`, `attempt(f, (_x) => T)` and `attempt(f, (x) => T)` are one E1452 each at the function, message `expect claims every throw: it never returns undefined`; `attempt(f, (x) => (x instanceof RangeError ? T : undefined))` is none; no E1452 here carries a fix."
 // Spec: k.attempt, clause "In `modules/m/a.ts`, `err(new Error('x'))`, `err('x')` and `err({ code: 'a.b' })` are one E1458 each at the argument; `err(T)` is none; called untyped, `err('x')` throws a value `isDefect(v, 'E1458')` accepts."
 // Spec: k.attempt, clause "In `modules/m/a.ts`, `JSON.parse(t)`, `new URL(t)`, `decodeURIComponent(t)`, `decodeURI(t)`, `atob(t)` and `BigInt(t)` with `t` a `string` are one E1457 each at the callee with the message its row names; `JSON.parse('{}')`, `BigInt(n)` with `n` a `number`, `URL.parse(t)` and `attempt(() => JSON.parse(t), (x) => (x instanceof SyntaxError ? T : undefined))` are none."
 // Seed 1337. The run-time half of E1458 is packages/schema/conformance/err-keel-error.test.ts.
@@ -9,7 +9,7 @@ const HEAD =
   "import { attempt, err } from '@keel/schema'\nimport type { KeelError } from '@keel/schema'\ntype E = KeelError<'m.e', null>\ndeclare const T: E\ndeclare const f: () => number\ndeclare const t: string\ndeclare const n: number\n";
 const src = (stmt: string) => `${HEAD}export function a() { return ${stmt} }\n`;
 const NEEDS = "attempt needs expect: (x) => x instanceof T ? E.make(data) : undefined";
-const CLAIMS = "expect claims every throw: test the thrown value";
+const CLAIMS = "expect claims every throw: it never returns undefined";
 
 test("`attempt(f)` is one E1452, message `attempt needs expect: (x) => x instanceof T ? E.make(data) : undefined`, with no fix", () => {
   const ds = of(run(src("attempt(f)")), "E1452");
@@ -19,9 +19,10 @@ test("`attempt(f)` is one E1452, message `attempt needs expect: (x) => x instanc
 });
 
 for (const fn of ["() => T", "(_x) => T", "(x) => T"]) {
-  test(`\`attempt(f, ${fn})\` is one E1452 at the function, message \`expect claims every throw: test the thrown value\`, with no fix`, () => {
+  test(`\`attempt(f, ${fn})\` is one E1452 at the function, message \`expect claims every throw: it never returns undefined\`, with no fix`, () => {
     const s = src(`attempt(f, ${fn})`);
-    const ds = of(run(s), "E1452");
+    // k.expect Decides is read with the type pass on, as `keel check` runs it.
+    const ds = of(run(s, { types: true }), "E1452");
     expect(ds).toHaveLength(1);
     expect(ds[0]?.message).toBe(CLAIMS);
     expect(ds[0]?.fix).toBeUndefined();
