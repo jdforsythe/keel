@@ -1,7 +1,9 @@
 // Spec: k.unsafe, clause "In `modules/m/a.ts` importing `defect` from `@keel/schema`, `defect.call(null, 'x', { code: 'E12' })` is one E1455 at `'E12'`, `defect.apply(null, ['x', { code: 'E12' }])` and `Reflect.apply(defect, null, ['x', { code: 'E12' }])` one each at `'E12'`, `defect.apply(null, args)` one at `args` and `defect.bind(null)` one at `bind`, each message `defect code check cannot read` for the last two; `defect.call(null, 'x', { code: 'E2801' })` and `Reflect.apply(defect, null, ['x', { code: 'E2801' }])` are none."
 // Seed 1337. Fixtures are source text over in-memory file maps with the type pass on (the default); only E1455 is read.
 // Assumption: "at `bind`" is the first character of the member name `bind`, as E1455 is at a call's argument elsewhere (k.errors Rules).
-// A spread after the detail (`['x', { code: 'E2801' }, ...rest]`) has no case: k.unsafe names a spread before the detail only, and k.defects makes a third argument E1455, so the text does not say which holds.
+// Spec: k.unsafe, One path: "an arguments value that is no array literal or holds a spread at or before the detail, a spread argument there in a call, and a `defect.bind(...)`, is one E1455 at that value or at `bind`, message `defect code check cannot read`."
+// Spec: k.defects, Rules: "or whose second argument is not an object literal without a spread, or that has a third, a spread among them, at it (a spread in the second's place is unread, k.unsafe One path), message `defect detail is not an object literal`."
+// A spread after the detail in an array (`['x', { code: 'E2801' }, ...rest]`) has no case: k.unsafe names a spread at or before the detail only.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -13,6 +15,7 @@ const MANIFEST = manifestFile({ id: "m", deps: [], capabilities: [], exports: []
 const HEAD = `import { defect } from '@keel/schema'
 declare const args: unknown[]
 declare const rest: string[]
+declare const ds: object[]
 `;
 const UNREADABLE = "defect code check cannot read";
 const NOT_LITERAL = "defect code is not a literal E and four digits";
@@ -117,4 +120,34 @@ test("property: an arguments value that is no array literal, or an array holding
     }),
     { seed: SEED, numRuns: cases.length * 2 },
   );
+});
+
+test("a spread argument in the detail's place, `defect('x', ...ds)`, is one E1455 at it, message `defect code check cannot read`", () => {
+  const body = "export const a = defect('x', ...ds)";
+  const found = run(body);
+  expect(found).toHaveLength(1);
+  expect(pos(found[0])).toEqual(at(body, "...ds"));
+  expect(found[0]?.message).toBe(UNREADABLE);
+  expect(found[0]?.fix).toBeUndefined();
+});
+
+test("an `apply` array holding a spread in the detail's place, `defect.apply(null, ['x', ...ds])`, is one E1455 at that value, message `defect code check cannot read`", () => {
+  for (const body of [
+    "export const a = defect.apply(null, ['x', ...ds])",
+    "export const a = Reflect.apply(defect, null, ['x', ...ds])",
+  ]) {
+    const found = run(body);
+    expect(found, body).toHaveLength(1);
+    expect(pos(found[0]), body).toEqual(at(body, "['x', ...ds]"));
+    expect(found[0]?.message, body).toBe(UNREADABLE);
+  }
+});
+
+test("a third argument that is a spread, `defect('x', {}, ...ds)`, is one E1455 at it, message `defect detail is not an object literal`", () => {
+  const body = "export const a = defect('x', {}, ...ds)";
+  const found = run(body);
+  expect(found).toHaveLength(1);
+  expect(pos(found[0])).toEqual(at(body, "...ds"));
+  expect(found[0]?.message).toBe("defect detail is not an object literal");
+  expect(found[0]?.fix).toBeUndefined();
 });
