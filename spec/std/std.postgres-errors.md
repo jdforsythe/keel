@@ -6,7 +6,7 @@ status: implemented
 | The database answers | The caller gets |
 | --- | --- |
 | a row failing its schema | `postgres.result` |
-| class `23` | `postgres.constraint` |
+| class `23` | `postgres.constraint`, data `{ kind }`; the constraint's name only as a member of the app's own list, by `constraintOf` (std.postgres), never in data, a response or a log line |
 | `40001`, `40P01` | the statement or `fn` runs again, at most 3 runs; then `keel.conflict` whose `cause` is `postgres.database` with that SQLSTATE |
 | no answer: a refused, reset or lost connection; `57P01` to `57P03`; `53300`; `08000`, `08001`, `08003`, `08006` | `keel.unreachable`: nothing ran, or the connection went, and a later try may work |
 | `08007` | `postgres.database`: the commit's outcome is unknown, so a caller reads the state before it writes again |

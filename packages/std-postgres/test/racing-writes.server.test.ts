@@ -14,7 +14,7 @@ import { ok, s } from "@keel/schema";
 import type { KeelError, Result } from "@keel/schema";
 import { NoRows, fragment, sql } from "@keel/std-postgres";
 import type { TransactionOptions } from "@keel/std-postgres/server";
-import { database } from "@keel/std-postgres/server";
+import { constraintOf, database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import { fixedTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
@@ -299,7 +299,9 @@ for (const m of MODES) {
       // runs once more and its insert is then the unique violation.
       for (const o of out) {
         expect(o.runs).toBeLessThanOrEqual(2);
-        if (!o.r.ok) expect(o.r.error.data).toEqual({ constraint: x.titleKey, kind: "unique" });
+        if (!o.r.ok) expect(o.r.error.data).toEqual({ kind: "unique" });
+        if (!o.r.ok && o.r.error.code === "postgres.constraint")
+          expect(constraintOf(o.r.error, [x.titleKey])).toBe(x.titleKey);
       }
       const [first] = ctxs;
       if (first === undefined) throw new Error("no caller");

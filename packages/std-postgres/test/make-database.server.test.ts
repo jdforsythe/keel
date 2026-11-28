@@ -5,6 +5,7 @@ import { err, isDefect, ok, s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import fc from "fast-check";
 import { expect, test, vi } from "vitest";
+import { constraintOf } from "../src/server/constraintOf.server.ts";
 import type { Backend } from "../src/server/internal/Backend.ts";
 import type { Conn } from "../src/server/internal/Conn.ts";
 import type { Engine } from "../src/server/internal/Engine.ts";
@@ -248,13 +249,15 @@ test("a lone statement reruns on a serialization failure or deadlock, at most 3 
   const unique = scripted(() => {
     throw pgError("23505", { constraint: "t_name_key" });
   });
-  expect(await makeDatabase("t.db", unique.backend).run(sql(NoRows)`insert`)).toEqual(
-    err({
-      code: "postgres.constraint",
-      message: "A row breaks a constraint",
-      data: { constraint: "t_name_key", kind: "unique" },
-    }),
+  const broke = await makeDatabase("t.db", unique.backend).run(sql(NoRows)`insert`);
+  expect(broke).toEqual(
+    err({ code: "postgres.constraint", message: "A row breaks a constraint", data: { kind: "unique" } }),
   );
+  if (!broke.ok && broke.error.code === "postgres.constraint") {
+    expect(constraintOf(broke.error, ["other", "t_name_key"])).toBe("t_name_key");
+    expect(constraintOf(broke.error, ["other"])).toBeUndefined();
+    expect(constraintOf({ ...broke.error }, ["t_name_key"])).toBeUndefined();
+  }
   expect(unique.log).toEqual(["s insert"]);
 });
 
@@ -328,7 +331,7 @@ test("engine.tx throwing: a serialization failure reruns, a lost connection is u
     err({
       code: "postgres.constraint",
       message: "A row breaks a constraint",
-      data: { constraint: "t_fk", kind: "foreign" },
+      data: { kind: "foreign" },
     }),
   );
   const actionable = scripted(() => none, { txThrows: () => pgError("22012") });

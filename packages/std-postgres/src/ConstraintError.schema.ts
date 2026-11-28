@@ -1,12 +1,15 @@
 import type { KeelError } from "@keel/schema";
 import { s } from "@keel/schema";
 
-/** A unique, foreign key, check or not-null violation (std.postgres): the constraint's name (a not-null violation's column) and its kind. */
+/**
+ * A unique, foreign key, check or not-null violation (std.postgres): its kind. The constraint's name is no data:
+ * `constraintOf` gives it as a member of a list the app wrote.
+ */
 export const ConstraintError = s.error(
   "postgres.constraint",
-  s.object({ constraint: s.string(), kind: s.enum(["unique", "foreign", "check", "notNull"]) }),
+  s.object({ kind: s.enum(["unique", "foreign", "check", "notNull"]) }),
 );
 export type ConstraintError = KeelError<
   "postgres.constraint",
-  { readonly constraint: string; readonly kind: "unique" | "foreign" | "check" | "notNull" }
+  { readonly kind: "unique" | "foreign" | "check" | "notNull" }
 >;

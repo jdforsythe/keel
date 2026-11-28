@@ -1,6 +1,7 @@
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
+import { constraintOf } from "@keel/std-postgres/server";
 import { UTC, instantOf, plainDateOf } from "@keel/std-temporal";
 import { kitchen } from "./kitchen.contract.ts";
 import { kitchenDb } from "./kitchenDb.server.ts";
@@ -19,6 +20,6 @@ export const postRecipe = action(kitchen, "kitchen.add", {}, async (body, _args,
     values (${ctx.random.id("Recipe")}, ${body.title}, ${body.minutes}, ${body.price.amount},
             ${body.price.currency}, ${plainDateOf(now.value, UTC)})`);
   if (added.ok) return ok({});
-  const dup = added.error.code === "postgres.constraint" && added.error.data.constraint === "recipes_title_key";
+  const dup = added.error.code === "postgres.constraint" && constraintOf(added.error, ["recipes_title_key"]) !== undefined;
   return err(dup ? taken : added.error);
 });
