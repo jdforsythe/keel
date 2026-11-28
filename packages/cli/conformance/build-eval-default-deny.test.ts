@@ -2,7 +2,7 @@
 // Also states, k.compiler Build-time evaluation: "Each view denies by default: one allowlist, `HOST_VIEWS` in `@keel/compiler`, names what is observed or pure of the global object, `process` and each Node built-in."
 // Also states, k.compiler Build-time evaluation: "Pure: no host state (`path`, `Buffer`, `crypto` over given bytes, the clock)."
 // Also states, k.compiler Build-time evaluation: "The rest is refused with E1050: a member or built-in not listed, one Node adds too (a fact that moves on its own, `os.cpus()`; a stat's `atime`, which a read moves), a function at its call or construction (importing is allowed), any other value at its read; a `.node` addon, at its import; an open for writing; a read by a descriptor it did not open; a code file named at run time; `import.meta.resolve`; `WebAssembly` instantiation with imports."
-// Also states, k.compiler Rules: "E1050 a read the build-time evaluation cannot observe (Build-time evaluation), its message starting with what it refused: at the import for an addon; else at the refused call's first project-file frame, or unlocated with `at <package>/<path>:<line>` next when that frame is a package's, cut from its start to fit."
+// Also states, k.compiler Rules: "E1050 a read the build-time evaluation cannot observe (Build-time evaluation), its message starting with what it refused: at the import for an addon; else at the refused call's first project-file frame, or unlocated with `at <package>/<path>:<line>:<col>` next when that frame is a package's, cut from its start to fit."
 // Also states, k.check Diagnostics: a message is one line of at most 89 UTF-16 code units (the house rule the E1050 message is cut to).
 // Seed 1337 (recorded) for the one property. The household copy of derived-support.ts, built once and cloned per case; the `*.server.ts` file is `modules/setup/gate.guard.ts` (derived-cache-observed-support.ts).
 // The package `p` sits under the copy's `node_modules` (derived-cache-loader-support.ts `pkg`), its `index.mjs` line 1 the import the expression needs, line 2 `export default String(<expression>)`.
@@ -216,7 +216,7 @@ describe("k.compiler: E1050's position is the project file and line when the cal
   );
 });
 
-describe("k.compiler: in a package, the message holds `at <package>/<path>:<line>` after the refused name, cut from its start to fit 89 units", () => {
+describe("k.compiler: in a package, the message holds `at <package>/<path>:<line>:<col>` after the refused name, cut from its start to fit 89 units", () => {
   test(
     "a package of any name length whose `index.mjs` line 2 reads `process.pid` gives one E1050 of at most 89 units that starts `process.pid` and names `index.mjs:2`",
     () => {
