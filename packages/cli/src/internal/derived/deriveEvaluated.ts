@@ -43,13 +43,14 @@ function withCallers(surface: Readonly<Record<string, unknown>>, files: readonly
  * (`evaluateTree`; `work.evaluated`) and, with the folder, is stored with its inputs and probes. A project with no
  * route table, contract or `topology.ts` evaluates nothing: an empty surface. `held()` tells whether every input and
  * probe the derivation rests on still gets its answer, so a writer can skip a view when one changed during the run;
- * `files` are its inputs' files, as `keel dev` watches them.
+ * `files` are its inputs' files, as `keel dev` watches them. An aborted `signal` ends the evaluation and rejects.
  */
 export async function deriveEvaluated(
   root: string,
   files: readonly SourceFile[],
   codePaths: readonly string[],
   work: Work,
+  signal?: AbortSignal,
 ): Promise<{
   routes: string;
   surface: string;
@@ -77,8 +78,10 @@ export async function deriveEvaluated(
   } else {
     work.evaluated += 1;
     try {
-      e = await evaluateTree(real);
+      e = await evaluateTree(real, signal);
     } catch (thrown) {
+      // A superseded evaluation (`keel dev`) gives nothing: the caller starts the next.
+      if (signal?.aborted === true) throw thrown;
       // An evaluation that cannot run (a bundle that does not resolve, an evaluator failure) gives no view: its first
       // line is the problem, with its own code when it carries one, else E1049 (k.compiler Build-time evaluation).
       // esbuild's message starts `Build failed with 1 error:`; the line after it names the file and the error.

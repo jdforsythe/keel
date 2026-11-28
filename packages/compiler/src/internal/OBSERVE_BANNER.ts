@@ -15,7 +15,8 @@ import { UNRESOLVED_MARK } from "./UNRESOLVED_MARK.ts";
  *   records, an absent one Node's not-found error with its questions recorded, any other file refused; `resolve`
  *   the same lookup, and `cache`, `extensions` and `main` its own, empty. The bundle's free `require`, which a computed
  *   `import()` becomes, knows no file: it takes a built-in, an absolute path, or a name the bundle left unresolved
- *   (`__keelUnresolved`, whose questions `pathLinks` recorded at the importer), and refuses any other name.
+ *   (`__keelUnresolved`, whose questions `pathLinks` recorded at the importer), and refuses any other name (`a computed
+ *   import of "<name>"`, the name's last 24 units).
  * - `__keelMetaFor(url)`: a module's `import.meta`, its own `url`, `filename` and `dirname`, `resolve` refused.
  * Its last statement prepares the evaluator's global object (`__keelPrepare`), so the bundle's code meets only views.
  */
@@ -30,20 +31,22 @@ export const OBSERVE_BANNER = [
   RESOLVE_BANNER,
   "const __keelNotFound = (id) => { const e = new Error(`Cannot find module '${id}'`); e.code = 'MODULE_NOT_FOUND'; throw e; };",
   "const __keelJson = new Map();",
+  // A name in a refusal's message: its last 24 units, so the place that follows it fits (k.check Diagnostics).
+  "const __keelNameOf = (id) => { const s = String(id); return JSON.stringify(s.length > 24 ? `...${s.slice(-21)}` : s); };",
   "const __keelRequireFor = (base) => {",
   "  const b = base instanceof URL || (typeof base === 'string' && base.startsWith('file:')) ? __keelFileUrl(base) : base === undefined ? undefined : String(base);",
   "  const from = b === undefined ? undefined : b.endsWith('/') ? b : __keelPathReal.dirname(b);",
   "  const file = (id) => {",
   "    if (from === undefined) {",
   "      if (__keelUnresolved.has(id)) __keelNotFound(id);",
-  "      if (!__keelPathReal.isAbsolute(id)) __keelRefuse(`a require or import() of ${JSON.stringify(id)}, a name built at run time outside createRequire,`);",
+  "      if (!__keelPathReal.isAbsolute(id)) __keelRefuse(`a computed import of ${__keelNameOf(id)}`);",
   "    }",
   "    return __keelResolve(id, from ?? '/') ?? __keelNotFound(id);",
   "  };",
   "  const req = function require(id) {",
   "    if (typeof id === 'string' && __keelIsBuiltin(id)) return __keelBuiltin(id);",
   "    const f = file(String(id));",
-  "    if (!f.endsWith('.json')) __keelRefuse(`a require or import() of ${JSON.stringify(String(id))}, a code file named at run time,`);",
+  "    if (!f.endsWith('.json')) __keelRefuse(`a require or import() of ${__keelNameOf(id)}, a code file named at run time,`);",
   "    if (!__keelJson.has(f)) __keelJson.set(f, JSON.parse(__keelReadText(f)));",
   "    return __keelJson.get(f);",
   "  };",
