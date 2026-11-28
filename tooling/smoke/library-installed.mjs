@@ -3,7 +3,7 @@
 // packs one from the built packages (`evals/public/pack.ts`; run `pnpm build` first). Everything runs in a folder
 // under the temp folder, outside the repository, with every `@keel/*` range pointed at the kit's tarballs: the kit's
 // `keel scaffold library @acme/kit` gains a `./tokens` entry (`kitTokens`, a look its component wears) and a `./tools`
-// entry (a rule), each with `keel` first, naming a `.ts` file; `keel pack` and `pnpm pack` make its tarball. The kit's
+// entry (a rule), each with `keel` first, naming a `.ts` file; its build, `keel pack` and `pnpm pack` make its tarball. The kit's
 // `keel scaffold project shop` installs that tarball (so the library's files lie under `node_modules`, not linked),
 // lists it in `deps`, composes its tokens in `tokens.ts` and renders its component on `/`; then `keel check`,
 // `keel test` (a test that renders the component), `keel build` (the look's color in the built CSS) and `keel dev`
@@ -244,6 +244,8 @@ try {
   });
   await writeFile(join(lib, "pnpm-workspace.yaml"), yaml);
   await run("library install", "pnpm", ["install", "--prefer-offline"], lib);
+  // `keel pack` imports the built `./tools` file (k.library-pack Package), so the build comes first.
+  await run("library build", "pnpm", ["run", "build"], lib);
   await run("library keel pack", "pnpm", ["exec", "keel", "pack"], lib);
   await run("library pnpm pack (prepack: build, keel pack --check)", "pnpm", ["pack", "--pack-destination", tmp], lib);
   const tarball = (await readdir(tmp)).find((f) => /^acme-kit-.+\.tgz$/.test(f));
