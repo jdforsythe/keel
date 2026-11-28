@@ -54,6 +54,11 @@ ${LIFT}unsafe("the fixture rejects a promise at module scope on purpose", () => 
 });
 export const rejectOnLoad = true;
 `,
+  "unsafe/throwOnLoad.ts": `${LIFT}unsafe("the fixture throws as its module is evaluated on purpose", () => {
+  if (process.env.LEAVE_MODE === "throw") AbortSignal.abort(new Error(${JSON.stringify(PLANTED_ERROR)})).throwIfAborted();
+});
+export const throwOnLoad = true;
+`,
   "Pii.schema.ts": `import { s } from "@keel/schema";
 export const Pii = s.object({ email: s.string().pii("contact") });
 `,
@@ -126,6 +131,7 @@ import { app } from "./app.contract.ts";
 import { ok } from "@keel/schema";
 import { Data } from "./Data.schema.ts";
 import "./unsafe/rejectOnLoad.ts";
+import "./unsafe/throwOnLoad.ts";
 export const quiet = loader(app, "app.home", { output: Data }, () => Promise.resolve(ok({ title: "quiet" })));
 `,
   "app.contract.ts": `import { contract } from "@keel/router/contract";

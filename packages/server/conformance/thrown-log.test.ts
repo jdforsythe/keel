@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 // Spec: k.serverlog, clause "In production mode, a loader `p.def` throwing `new Error('user jane@x.com failed')`, the string `token=abc123`, the object `{ ssn: '078-05-1120' }` or `defect('user failed', { data: { email: 'jane@x.com' } })`, none of them a value the request declared, logs a `diag` whose message matches `^loader p\.def threw: (Error|value|Defect) #[0-9a-f]{8}( at \S+:\d+)?$`, and no logged line, compact or json, holds `jane`, `abc123` or `078`."
 // Spec: k.serverlog, clause "Two requests that throw `new Error('a')` from one place log the same fingerprint, also from a second process with the same `KEEL_SECRET`; `new Error('b')` there, and `new Error('a')` under another `KEEL_SECRET`, log another."
-// Spec: k.serverlog, clause "A loader throwing `defect('no row', 'E2801', { cause: e })`, `e` the error of `s.error('shop.gone', s.object({}))`, logs a message that starts `loader p.def threw: Defect E2801 #` and ends ` <- Result shop.gone`; with `e` the object `{ code: 'jane@x.com', message: 'm', data: null }` it ends ` <- Result [code]`."
+// Spec: k.serverlog, clause "A loader throwing `defect('no row', { code: 'E2801', cause: e })`, `e` the error of `s.error('shop.gone', s.object({}))`, logs a message that starts `loader p.def threw: Defect E2801 #` and ends ` <- Result shop.gone`; with `e` the object `{ code: 'jane@x.com', message: 'm', data: null }` it ends ` <- Result [code]`."
 // Spec: k.serverlog, clause "An `Error` whose `name` was set to `jane@x.com` logs the class `Error`; a `TypeError` logs `TypeError`."
 // Spec: k.serverlog, clause "With `mode: 'dev'`, that first loader's `Error` logs that `diag` and then one whose message is `loader p.def threw: Error: user jane@x.com failed`; where `jane@x.com` is a `.pii()` value of the request's input the second is `loader p.def threw: Error: user [pii] failed`."
-// Spec: k.serverlog, clause "With `KEEL_LOG_THROWN` an instant one hour after start, a throw logs two `diag` records before that instant and one after it; set to `yes`, or to an instant 25 hours after start, `createApp` fails with E1596 and the record holds no part of the value."
+// Spec: k.serverlog, clause "With `KEEL_LOG_THROWN` an instant one hour after start, a throw logs two `diag` records before that instant and one after it; set to `yes`, empty, or to an instant 25 hours after start, `createApp` fails with E1596 and the record holds no part of the value."
 // Seed 1337 (fixed throws; no random input).
 // Assumption: "the same fingerprint from a second process" is a second `createApp` in this process with the same `KEEL_SECRET` (the key is read from the environment at start).
 // Assumption: "an instant one hour after start" is read from the sim ctx clock the app is given; the process-start reading of a real server is the builder's to match.
@@ -184,9 +184,9 @@ describe("k.serverlog: production logs hold no thrown text", () => {
     expect(b).not.toBe(a1);
   });
 
-  it("defect('no row', 'E2801', { cause: e }) with e a declared KeelError logs `Defect E2801 #...` ending ` <- Result shop.gone`", async () => {
+  it("defect('no row', { code: 'E2801', cause: e }) with e a declared KeelError logs `Defect E2801 #...` ending ` <- Result shop.gone`", async () => {
     const lines = await throwFromLoader("production", "json", () =>
-      defect("no row", "E2801", { cause: Gone.make({}) }),
+      defect("no row", { code: "E2801", cause: Gone.make({}) }),
     );
     const m = diagMessages("json", lines).find((x) => x.startsWith("loader p.def threw")) ?? "";
     expect(m.startsWith("loader p.def threw: Defect E2801 #")).toBe(true);
@@ -195,7 +195,7 @@ describe("k.serverlog: production logs hold no thrown text", () => {
 
   it("with e the object { code: 'jane@x.com', message: 'm', data: null } the cause is ` <- Result [code]` and the text is nowhere", async () => {
     const lines = await throwFromLoader("production", "json", () =>
-      defect("no row", "E2801", { cause: { code: "jane@x.com", message: "m", data: null } }),
+      defect("no row", { code: "E2801", cause: { code: "jane@x.com", message: "m", data: null } }),
     );
     const m = diagMessages("json", lines).find((x) => x.startsWith("loader p.def threw")) ?? "";
     expect(m.endsWith(" <- Result [code]")).toBe(true);
@@ -275,6 +275,16 @@ describe("k.serverlog: dev mode and KEEL_LOG_THROWN print the text", () => {
     expect(String(got instanceof Error ? got.message : got)).toMatch(/^E1596/);
     expect(String(got instanceof Error ? got.message : got)).not.toContain("yes");
     expect(lines).toEqual([]);
+  });
+
+  it("KEEL_LOG_THROWN set empty fails createApp with E1596", async () => {
+    const got: unknown = await withEnv({ KEEL_LOG_THROWN: "" }, () =>
+      throwFromLoader("production", "json", () => new Error("x")).then(
+        () => undefined,
+        (e: unknown) => e,
+      ),
+    );
+    expect(String(got instanceof Error ? got.message : got)).toMatch(/^E1596/);
   });
 
   it("KEEL_LOG_THROWN an instant 25 hours after start fails createApp with E1596", async () => {
