@@ -1,4 +1,4 @@
-// Spec: std.tauri, clause "With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 whose fix restores it; removing `tauri` from `topology.ts` removes them."
+// Spec: std.tauri, clause "With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 under `keel check --frozen`, whose fix restores it; removing `tauri` from `topology.ts` removes them."
 // Seed: 1337 (the file and the byte position of the tamper are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes the shell files, `keel check` reads E1005 and its fix (a unified diff of the changed file).
 // ASSUMPTION: `Cargo.lock` is never generated (std.tauri Files), so the generated set is exactly the six files listed.
@@ -88,7 +88,7 @@ describe("std.tauri: shell files", () => {
           try {
             chmodSync(join(dir, rel), 0o644);
             writeFileSync(join(dir, rel), tampered);
-            const found = e1005(keel(dir, ["check"]).records, rel);
+            const found = e1005(keel(dir, ["check", "--frozen"]).records, rel);
             expect(found).toHaveLength(1);
             const fix = found[0]?.fix;
             expect(typeof fix).toBe("string");

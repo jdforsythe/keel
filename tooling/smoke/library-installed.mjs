@@ -247,7 +247,7 @@ try {
   // `keel pack` imports the built `./tools` file (k.library-pack Package), so the build comes first.
   await run("library build", "pnpm", ["run", "build"], lib);
   await run("library keel pack", "pnpm", ["exec", "keel", "pack"], lib);
-  await run("library pnpm pack (prepack: build, keel pack --check)", "pnpm", ["pack", "--pack-destination", tmp], lib);
+  await run("library pnpm pack (prepack: build, keel pack --frozen)", "pnpm", ["pack", "--pack-destination", tmp], lib);
   const tarball = (await readdir(tmp)).find((f) => /^acme-kit-.+\.tgz$/.test(f));
   step("library tarball", tarball !== undefined, tarball ?? "none");
 

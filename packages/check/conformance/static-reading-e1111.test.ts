@@ -1,6 +1,6 @@
-// k.contract, Static reading "Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is W1005 and E1111 at it; the entries beside it are read."
+// k.contract, Static reading "Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is E1111 at it; the entries beside it are read."
 // k.privacy, Rules "E1111 ... or a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key)"
-// This file covers the E1111 half (the W1005 half is in @keel/compiler's conformance).
+// This file covers the E1111 half (the compiler's reading of the unread parts is in @keel/compiler's conformance).
 // Examples only: fixed projects. No random inputs (a fast-check seed would be 1337).
 import { check } from "@keel/check";
 import { describe, expect, test } from "vitest";

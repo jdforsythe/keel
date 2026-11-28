@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -56,8 +57,10 @@ import { readJson } from "./internal/readJson.ts";
 import { registeredIn } from "./internal/registeredIn.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { rewriteLiftedReads } from "./internal/rewriteLiftedReads.ts";
+import { routeEntries } from "./internal/routeEntries.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { shortPath } from "./internal/shortPath.ts";
+import { storesFileMark } from "./internal/storesFileMark.ts";
 import { stylesMiddleware } from "./internal/stylesMiddleware.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
@@ -191,6 +194,7 @@ type DevServer = {
   reloadModule(module: ModuleNode): Promise<void>;
   ssrLoadModule?(id: string): Promise<Record<string, unknown>>;
   middlewares: Middlewares;
+  watcher?: { add(paths: string | readonly string[]): unknown };
 };
 type DevApp = {
   readonly name: string;
@@ -273,6 +277,15 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  */
 type CssMinify = "esbuild";
 
+/** The sha-256 digest of `file`'s bytes, or `""` when it cannot be read. */
+function bytesDigest(file: string): string {
+  try {
+    return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  } catch {
+    return "";
+  }
+}
+
 /**
  * The Keel Vite plugin (k.compiler): no options. Each transform compiles only the changed module
  * (cached by source text), fails the module on diagnostics, and merges its artifacts with those of the
@@ -336,6 +349,7 @@ export default function (): {
   closeBundle: { order: "post"; handler: () => Promise<void> };
   transform: (code: string, id: string, options?: HookOptions) => { code: string; map: string | null } | null;
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
+  api: { derivedRoutes: (routes: unknown) => void };
 } {
   let root = process.cwd();
   /** The app's libraries (`appLibraries`), compiled as its own files; read again when a manifest changes. */
@@ -354,6 +368,11 @@ export default function (): {
   let server: DevServer | undefined;
   let topology: Topology | undefined;
   let routes: Record<string, RouteEntry> = {};
+  /**
+   * Whether `keel dev` derives `routes.json` (k.derived Refresh) and hands each derivation over (`api.derivedRoutes`):
+   * then the plugin's evaluation is of the tokens alone, and `routes.json` is no view it writes.
+   */
+  let routesOwned = false;
   let css = "";
   /** The tokens' `look` sets, once evaluated: `compile` lowers a `look` to their classes. */
   let looks: Readonly<Record<string, unknown>> | undefined;
@@ -424,6 +443,13 @@ export default function (): {
     .map((o) => o.trim())
     .filter((o) => o !== "");
   const written = new Map<string, string>();
+  /**
+   * The real path of each file the last evaluation loaded or its code read (k.derived Refresh): a change to one
+   * evaluates again, a contract file the route tables import included.
+   */
+  let evaluatedFiles: ReadonlySet<string> = new Set();
+  /** The files outside the root an evaluation read that the dev server's watcher was given, once each. */
+  const watchedOutside = new Set<string>();
   let devApps: DevApp[] = [];
   /** Whether this dev server answers for `node` or `static` deployables (`keel dev` of a topology that has one). */
   let hasNode = false;
@@ -433,6 +459,8 @@ export default function (): {
   let loading: Promise<DevApp[]> | undefined;
   /** Whether a load has evaluated the server graph since it was last invalidated whole: an edit then has one to reload. */
   let evaluated = false;
+  /** Each watched file's bytes at its last `watchChange`, as a digest (`""`: unreadable or gone), by id. */
+  const seenBytes = new Map<string, string>();
   /** Under `keel dev`: the stack each capability was registered on, by name, as `register` records it (k.data Dev). */
   const registrations = new Map<string, string>();
   /** Invalidate the server graph whole, so the next load starts with an empty registry (k.data Dev). */
@@ -445,6 +473,10 @@ export default function (): {
   const dev: ReturnType<typeof devMiddleware> = devMiddleware(() => {
     const run = (async (): Promise<DevApp[]> => {
       await closed;
+      // A server graph whose build-time evaluation never finished (E1048) would never finish loading here either: the
+      // request is answered with that problem, and the next change evaluates again.
+      const unfinished = problems.find((p) => p.startsWith("E1048 "));
+      if (unfinished !== undefined) throw new Error(unfinished);
       evaluated = true;
       const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
       const apps: unknown = mod?.apps;
@@ -476,6 +508,12 @@ export default function (): {
       if (!hasNode) return [];
       await dev.apps();
       return devApps.map((a) => ({ name: a.name, app: a.app }));
+    },
+    // The derivation this plugin holds of the tree it serves (k.derived Readers), not the files on disk.
+    () => {
+      const parts = [...modules].filter(([k]) => isSourcePath(k)).map(([, e]) => e.artifacts);
+      const { artifacts } = mergeArtifacts(parts);
+      return { ids: artifacts["ids.json"], a11y: artifacts["a11y.json"], routes };
     },
   );
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
@@ -791,15 +829,24 @@ export default function (): {
     }
     const { artifacts, duplicates } = mergeArtifacts(parts);
     artifacts["routes.json"] = routes;
-    const writes = resolved && !clientBuild && !ownLibrary;
-    if (writes) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
-    const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
+    // A frozen command (k.derived Frozen) sets `KEEL_FROZEN=1` for its children: no view is written.
+    const writes = resolved && !clientBuild && !ownLibrary && process.env.KEEL_FROZEN !== "1";
+    const texts: [string, string][] = NAMES.filter((n) => !routesOwned || n !== "routes.json").map((n) => [
+      n,
+      artifactText(artifacts[n]),
+    ]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
     // Written once the tokens are evaluated, so a run that compiles no CSS leaves the file as it is.
     if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes], themes: [...themes] })]);
     for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
-      writeArtifact(root, name, text);
+      // A view that cannot be written is W1018 and the run goes on (k.derived Refresh): no write failure ends it.
+      try {
+        writeArtifact(root, name, text);
+      } catch (e) {
+        const why = Reflect.get(Object(e), "code");
+        warn(`keel: W1018 .keel/${name} not written (${String(why ?? e)}); judged from the derivation`);
+      }
       written.set(name, text);
     }
     const usages = canonicalJson(artifacts["styles.json"]);
@@ -885,30 +932,44 @@ export default function (): {
   const styleUsages = (): readonly StyleUsage[] =>
     mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts["styles.json"].usages;
 
+  /** The refresh a file change queued and that has not started yet, if any. */
+  let queued: Promise<void> | undefined;
   /** Re-evaluate tokens and route manifests: `keel.css` and `routes.json`. */
   const refresh = async (): Promise<void> => {
     stale = false;
     const usages = styleUsages();
-    const r = await evaluateProject({
-      root,
-      tokensFile: exists("tokens.ts") ? "tokens.ts" : undefined,
-      routesFiles: routesFiles(),
-      usages,
-    });
+    let r: Awaited<ReturnType<typeof evaluateProject>>;
+    try {
+      r = await evaluateProject({
+        root,
+        tokensFile: exists("tokens.ts") ? "tokens.ts" : undefined,
+        routesFiles: routesOwned ? [] : routesFiles(),
+        usages,
+      });
+    } catch (e) {
+      // An evaluation that gave no result (E1048, E1049, a refusal that ended it) is one problem as any other: dev
+      // prints it and keeps serving, and a build fails at render start (k.evaluator Placing).
+      const code: unknown = e instanceof Error ? Reflect.get(e, "code") : undefined;
+      if (!(e instanceof Error) || typeof code !== "string" || !e.message.startsWith(code)) throw e;
+      warn(`keel: ${e.message}`);
+      problems = [e.message];
+      return;
+    }
     for (const p of r.problems) warn(`keel: ${p}`);
     problems = r.problems;
+    const files = [...(r.inputs ?? []), ...(r.observe?.().reads ?? [])].map(onDisk);
+    evaluatedFiles = new Set(files);
+    // A file outside the root (a linked package's) is watched too, so its change reaches `watchChange`.
+    const outside = files.filter((f) => path.relative(root, f).startsWith("..") && !watchedOutside.has(f));
+    for (const f of outside) watchedOutside.add(f);
+    if (outside.length > 0) server?.watcher?.add(outside);
     css = r.css;
     looks = r.looks;
     schemes = r.schemes;
     themes = r.themes;
     schemesRead = true;
     looksKey = canonicalJson(r.looks);
-    routes = r.routes;
-    // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it.
-    const prior = path.join(root, ".keel", "routes.json");
-    const next = artifactText(routes);
-    if (command === "build" && !clientBuild && fs.existsSync(prior) && fs.readFileSync(prior, "utf8") !== next)
-      warn("keel: W1005 .keel/routes.json differed from routes.ts; rewritten");
+    if (!routesOwned) routes = r.routes;
     flush();
     stale = false;
   };
@@ -916,6 +977,22 @@ export default function (): {
   return {
     name: "keel",
     enforce: "pre",
+    api: {
+      /**
+       * `keel dev`'s derivation of the root project's `routes.json` (k.derived Refresh), after each refresh that gave
+       * one: the inspect document holds it (k.derived Readers), and the plugin evaluates the tokens alone and writes no
+       * `routes.json`. `undefined` (a refresh that derived none) gives both back to the plugin.
+       */
+      derivedRoutes: (next: unknown): void => {
+        if (next === undefined) {
+          if (routesOwned) stale = true;
+          routesOwned = false;
+          return;
+        }
+        routesOwned = true;
+        routes = routeEntries(next);
+      },
+    },
     config(user, env) {
       const name = process.env.KEEL_DEPLOYABLE;
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
@@ -1008,7 +1085,16 @@ export default function (): {
             // every module, not the project build's (forwarding needs each peer deployable's paths), `std.json`, and the
             // tokens' schemes and `choice` themes (k.schemes First paint), so a served or prerendered document lists the
             // themes the client's resume knows. Each deployable is read as `node`, so the client's modules and every
-            // placed stdlib module are listed.
+            // placed stdlib module are listed. `std.json` is the derivation of the project's module manifests (its own
+            // and its libraries'), never the file in `.keel/` (k.derived Readers): a frozen build writes no view, and the
+            // bundle is the same.
+            const onDisk = [
+              ...listSources(at)
+                .filter((f) => MANIFEST.test(f))
+                .map((f) => ({ path: f, source: fs.readFileSync(path.join(at, f), "utf8") })),
+              ...librarySources(at).filter((f) => MANIFEST.test(f.path)),
+            ];
+            const stdText = artifactText(stdArtifact(onDisk).data);
             const serverArtifacts = async (dir: string): Promise<void> => {
               const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
                 modules: d.modules,
@@ -1020,15 +1106,14 @@ export default function (): {
               const table = await evaluateProject({ root: at, tokensFile, routesFiles: all, usages: [] });
               if (table.problems.length > 0) throw evaluationFailed(table.problems);
               fs.writeFileSync(path.join(dir, "routes.json"), artifactText(table.routes));
-              if (fs.existsSync(path.join(at, ".keel", "std.json")))
-                fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(dir, "std.json"));
+              fs.writeFileSync(path.join(dir, "std.json"), stdText);
               fs.writeFileSync(
                 path.join(dir, "schemes.json"),
                 `${JSON.stringify({ schemes: table.schemes, themes: table.themes })}\n`,
               );
             };
             if (built) {
-              const std = path.join(at, ".keel", "std.json");
+              const std = path.join(at, ssrOut, "std.json");
               // Beside the build entry, which `writeStatic` removes with them.
               await serverArtifacts(path.join(at, ssrOut)).catch((e: unknown) => {
                 fs.rmSync(path.join(at, ssrOut), { recursive: true, force: true });
@@ -1040,7 +1125,7 @@ export default function (): {
                 name,
                 top,
                 process.env,
-                fs.existsSync(std) ? std : undefined,
+                std,
               );
               if (failed.length > 0) throw evaluationFailed(failed);
               if (await offersScheme(at)) addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
@@ -1355,7 +1440,11 @@ export default function (): {
         .map((d) => `E1404 ${rel} duplicate element id "${d.id.slice(0, 30)}" (also in another module)`);
       const failures = [...entry.failures, ...dupes];
       if (failures.length > 0) throw new Error(failures.join("\n"));
-      return entry.output === undefined ? kept : { code: entry.output.code, map: entry.output.map ?? null };
+      const out = entry.output === undefined ? kept : { code: entry.output.code, map: entry.output.map ?? null };
+      // k.data Dev: under `keel dev` alone, each app file the server graph loads names itself as its top level begins.
+      if (command !== "serve" || !hasNode || options?.ssr !== true || process.env.KEEL_DEV_DIR === undefined)
+        return out;
+      return { code: `${storesFileMark(id.split("?")[0] ?? id)}${out?.code ?? lifted ?? code}`, map: null };
     },
     watchChange(id, change) {
       const rel = relOf(id);
@@ -1393,7 +1482,18 @@ export default function (): {
           })
           .catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
       }
-      if (rel === null || !PROJECT_FILE.test(rel)) return;
+      // A file the last evaluation read, or a code file created or deleted (the code file paths), evaluates again.
+      const read = evaluatedFiles.has(onDisk(id)) || evaluatedFiles.has(id);
+      const paths = change.event !== "update" && rel !== null;
+      // With `routes.json` owned, a route table or schema file evaluates nothing it did not read.
+      const named = rel !== null && PROJECT_FILE.test(rel) && (!routesOwned || /^(?:tokens|topology)\.ts$/.test(rel));
+      if (!read && !paths && !named) return;
+      // The watcher reports one write more than once (an event per environment, a second one for the same bytes): an
+      // update whose bytes are those the file had at its last event starts no evaluation.
+      const digest = bytesDigest(id);
+      const unchanged = change.event === "update" && seenBytes.get(id) === digest;
+      seenBytes.set(id, digest);
+      if (unchanged) return;
       if (rel === "topology.ts") {
         readTopology();
         for (const [k, e] of [...modules]) {
@@ -1402,10 +1502,14 @@ export default function (): {
         }
       }
       stale = true;
-      if (server !== undefined)
-        void refresh()
-          .then(reloadCss)
-          .catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
+      // One watcher event reaches `watchChange` once per environment: an event before the queued refresh starts joins it.
+      if (server !== undefined && queued === undefined) {
+        queued = new Promise<void>((started) => setImmediate(started)).then(() => {
+          queued = undefined;
+          return refresh();
+        });
+        void queued.then(reloadCss).catch((e: unknown) => warn(`keel: ${e instanceof Error ? e.message : String(e)}`));
+      }
     },
   };
 }

@@ -16,11 +16,11 @@ import { viteConfigTs } from "../templates/viteConfigTs.ts";
 import { vitestConfigTs } from "../templates/vitestConfigTs.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
-import { GITIGNORE } from "./GITIGNORE.ts";
 import type { Writes } from "./Writes.ts";
 import { badInput } from "./badInput.ts";
 import { commit } from "./commit.ts";
 import { fail } from "./fail.ts";
+import { gitignoreOf } from "./gitignoreOf.ts";
 import { inputs } from "./inputs.ts";
 import { projectFiles } from "./projectFiles.ts";
 
@@ -53,7 +53,7 @@ export function opProject(input: unknown, files: ReadonlyMap<string, string>): R
     ["modules/app/module.ts", moduleTs("app")],
     ["modules/app/app.contract.ts", contractTs("app")],
     ["modules/app/routes.ts", routesTs("app")],
-    [".gitignore", GITIGNORE],
+    [".gitignore", gitignoreOf(undefined)],
   ]);
   if (workspace) {
     writes.set("vitest.config.ts", vitestConfigTs());

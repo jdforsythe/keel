@@ -2,10 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { stdRoutes } from "../std/stdRoutes.ts";
 import type { Topology } from "../types/Topology.ts";
+import { STORES_FILE_KEY } from "./STORES_FILE_KEY.ts";
 
 /** Specifiers the dev module imports; the app resolves them (the compiler itself never imports them). */
-const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
+const [RELOAD, STORES, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
   "@keel/compiler/inspect/inspectorsReload",
+  "@keel/store/internal",
   "@keel/server/internal/dom",
   "@keel/server/internal/onUncaught",
   "@keel/server",
@@ -17,7 +19,9 @@ const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = 
 
 /**
  * The `keel dev` server module (k.topology Local topology): after installing the server DOM, marking the inspector
- * sections registered by an earlier evaluation as carried over (`inspectorsReload`) and installing the process's
+ * sections and the module registry's stores of an earlier evaluation as carried over (`inspectorsReload`,
+ * `storesReload`), installing `storesFile` under `STORES_FILE_KEY` for the marks the plugin puts at each app file's
+ * start (k.data Dev) and installing the process's
  * uncaught-error listeners (`onUncaught` in dev: each records E1577 with the thrown text and serving goes on), it creates one dev
  * `createApp` per `node` and `static` deployable of `topology`, each with its own real `ctx` whose storage is the file
  * `.keel-dev/<name>.storage.json`, the `routeTable` of its modules' bindings (an app module's `routes.ts`, a stdlib
@@ -27,6 +31,7 @@ const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = 
  * deployable, `served(path)` telling whether a route of that deployable (an API route included) matches the path and
  * `mount` the identity source's `handle.path` (`undefined` without one). Each `createApp` takes `origins`, every
  * deployable's `origins` in `topology` (the static read's, k.origins), written as JSON, never the runtime value's.
+ * Whether its loading succeeds or throws, it ends with `storesLoaded`: the load's end of k.data Dev.
  */
 export function devEntryCode(root: string, topology: Topology): string {
   const abs = (rel: string): string => JSON.stringify(path.join(root, rel).split(path.sep).join("/"));
@@ -37,8 +42,13 @@ export function devEntryCode(root: string, topology: Topology): string {
   const lines = [
     `import { installServerDom } from ${DOM};`,
     `import { inspectorsReload } from ${RELOAD};`,
+    `import { storesFile, storesLoaded, storesReload } from ${STORES};`,
     "installServerDom();",
     "inspectorsReload();",
+    "storesReload();",
+    `globalThis[Symbol.for(${JSON.stringify(STORES_FILE_KEY)})] = storesFile;`,
+    "export const apps = [];",
+    "try {",
     `const log = { format: "compact", write: (l) => process.stdout.write(l + "\\n") };`,
     `(await import(${UNCAUGHT})).onUncaught(log, ${abs(".keel")}, () => true, () => undefined);`,
     `const { createApp } = await import(${SERVER});`,
@@ -50,7 +60,6 @@ export function devEntryCode(root: string, topology: Topology): string {
     "const made = {};",
     "const peers = {};",
     `for (const n of ${JSON.stringify(node)}) peers[n] = { fetch: (req) => made[n].fetch(req), close: async () => {} };`,
-    "export const apps = [];",
   ];
   const origins = JSON.stringify(
     Object.fromEntries(Object.entries(topology).flatMap(([n, d]) => (d.origins === undefined ? [] : [[n, d.origins]]))),
@@ -79,5 +88,6 @@ export function devEntryCode(root: string, topology: Topology): string {
       "}",
     );
   }
+  lines.push("} finally {", "  storesLoaded();", "}");
   return `${lines.join("\n")}\n`;
 }

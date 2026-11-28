@@ -1,12 +1,13 @@
-// Spec: k.compiler, clause "Changing any byte of a file under .keel/ makes keel check report E1005 on that file."
-// The test drives the k.check pipeline (check()) over the files `keel check` reads; the cli is later in deps order than testing.
-// Seed: 1337.
-import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { check } from "@keel/check";
 import keel from "@keel/compiler/vite";
+// Spec: k.compiler, clause "Changing any byte of a file under `.keel/` makes `keel check --frozen` report E1005 on that file."
+// k.derived In process: `check()` is frozen by nature, and a compiled view among its files that differs from its compile is E1005; `routes.json` and `surface.json` are evaluated views, compared only with a `derived` a caller passes, so the files tampered here are the compiled views.
+// The test drives the k.check pipeline (check()) over the files `keel check` reads; the cli is later in deps order than testing.
+// Seed: 1337.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -45,6 +46,7 @@ async function build(): Promise<File[]> {
     .readdirSync(path.join(root, ".keel"))
     .sort()
     .filter((n) => !n.endsWith(".tmp"))
+    .filter((n) => !["routes.json", "surface.json"].includes(n))
     .map((name) => ({ path: `.keel/${name}`, source: fs.readFileSync(path.join(root, ".keel", name), "utf8") }));
 }
 
@@ -67,7 +69,7 @@ describe("k.compiler: .keel/ tamper detection", () => {
       expect(files.length).toBeGreaterThan(0);
       for (const f of files) expect(f.path.endsWith(".json")).toBe(true);
       expect(files.map((f) => f.path)).toEqual(
-        expect.arrayContaining([".keel/a11y.json", ".keel/deps.json", ".keel/ids.json", ".keel/routes.json"]),
+        expect.arrayContaining([".keel/a11y.json", ".keel/deps.json", ".keel/ids.json"]),
       );
       expect(e1005(files)).toEqual([]);
     },

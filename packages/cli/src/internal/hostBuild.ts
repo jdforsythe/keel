@@ -1,9 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Diag } from "./Diag.ts";
-import { routesRun } from "./routesRun.ts";
 import { stepNotes } from "./stepNotes.ts";
-import { surfaceRun } from "./surfaceRun.ts";
 import { viteRun } from "./viteRun.ts";
 import { viteTargets } from "./viteTargets.ts";
 import { writeCspFiles } from "./writeCspFiles.ts";
@@ -12,22 +10,18 @@ import { writeCspFiles } from "./writeCspFiles.ts";
 const ERROR = /^E\d{4} /;
 
 /**
- * Binary only: the disk half of `keel build` (`Io.build`), after the engine's writes: `routes.json` when every
- * deployable is `node` (`routesRun`), then `surface.json` (`surfaceRun`, k.compat), then one `vite build` per
- * `viteTargets` (k.server Build, k.hosting), stopping at the first that fails, then each `client` and `static`
- * deployable's `csp.txt` (`writeCspFiles`, k.security). Keel-coded lines become diagnostics (`stepNotes`);
- * `stderr` is a failed step's text (a Vite build's message lines, `viteRun`). `code` is the largest step code; only a
- * rejected routes evaluation (E1000, E1049) stops the steps after it. An
- * error line of `routesRun` or a Vite build (an evaluation problem: E1006, E1807) is an error diagnostic, as each fails
- * its step (k.compiler Build-time evaluation); a warning line (W1005) is advisory, printed to stderr. A throwing
- * contract file is the surface step's E1006, so the routes step's line for that file is dropped.
- * `refresh` (k.scaffold Refresh) stops before the Vite builds: `routes.json` is evaluated whatever the deployables
- * are, since no Vite build follows to write it, then `surface.json`; no bundle, no `csp.txt`, nothing under `dist/`,
- * and no W1005 for the `routes.json` it rewrites.
+ * Binary only: the disk half of `keel build` (`Io.build`), after the engine's writes (the check before it has kept the
+ * derived views, `routes.json` and `surface.json` among them: k.derived Refresh): one `vite build` per `viteTargets`
+ * (k.server Build, k.hosting), stopping at the first that fails, then each `client` and `static` deployable's
+ * `csp.txt` (`writeCspFiles`, k.security). Keel-coded lines become diagnostics (`stepNotes`); `stderr` is a failed
+ * step's text (a Vite build's message lines, `viteRun`). An error line of a Vite build (an evaluation problem: E1006,
+ * E1807) is an error diagnostic, as it fails its step (k.compiler Build-time evaluation). `refresh` (k.scaffold
+ * Refresh) runs no step: no bundle, no `csp.txt`, nothing under `dist/`. `frozen` gives each Vite build `KEEL_FROZEN=1`.
  */
 export async function hostBuild(
   cwd: string,
   refresh = false,
+  frozen = false,
 ): Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }> {
   const topo = join(cwd, "topology.ts");
   const topology = existsSync(topo) ? readFileSync(topo, "utf8") : undefined;
@@ -38,29 +32,19 @@ export async function hostBuild(
   const sort = (notes: readonly string[]): void => {
     for (const n of notes) (ERROR.test(n) ? failing : advisory).push(n);
   };
-  const ran = await routesRun(cwd, topology, refresh);
-  const routes = refresh ? { ...ran, notes: ran.notes.filter((n) => !n.startsWith("W1005 ")) } : ran;
-  let code = routes.code;
-  if (routes.rejected === true) sort(routes.notes);
-  else {
-    const surface = await surfaceRun(cwd);
-    failing.push(...surface.notes);
-    const reported = surface.notes.flatMap((n) => /^E1006 (\S+) /.exec(n)?.[1] ?? []);
-    sort(routes.notes.filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
-    code = Math.max(code, surface.code);
-    for (const target of refresh ? [] : viteTargets(topology)) {
-      const b = viteRun(cwd, target);
-      sort((b?.notes ?? []).filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
-      if (b !== undefined && b.code !== 0) {
-        stderr += b.tail;
-        code = Math.max(code, 1);
-        break;
-      }
+  let code = 0;
+  for (const target of refresh ? [] : viteTargets(topology)) {
+    const b = viteRun(cwd, target, frozen);
+    sort(b?.notes ?? []);
+    if (b !== undefined && b.code !== 0) {
+      stderr += b.tail;
+      code = 1;
+      break;
     }
-    if (code === 0 && !refresh) advisory.push(...(await writeCspFiles(cwd, topology, process.env)));
   }
+  if (code === 0 && !refresh) advisory.push(...(await writeCspFiles(cwd, topology, process.env)));
   const diagnostics: Diag[] = [];
-  // A node deployable's Vite build evaluates the routes again: its lines repeat the routes step's.
+  // A node deployable's Vite build evaluates the routes again: its lines repeat.
   for (const [notes, soft] of [
     [[...new Set(advisory)], true],
     [[...new Set(failing)], false],

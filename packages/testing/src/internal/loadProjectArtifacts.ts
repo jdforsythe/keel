@@ -6,27 +6,27 @@ import type { HarnessArtifacts } from "../types/HarnessArtifacts.ts";
 import type { ProjectArtifacts } from "./ProjectArtifacts.ts";
 import { a11yEntries } from "./a11yEntries.ts";
 
-/** `.keel/a11y.json` of `dir`, if present and JSON; else none. */
-const a11yJson = (dir: string): Pick<HarnessArtifacts, "a11y.json"> => {
+/** `given`, the derived `a11y.json` bytes `keel test` hands over, else `.keel/a11y.json` of `dir`, if JSON; else none. */
+const a11yJson = (dir: string, given: string | undefined): Pick<HarnessArtifacts, "a11y.json"> => {
   const file = join(dir, ".keel", "a11y.json");
-  if (!existsSync(file)) return {};
+  if (given === undefined && !existsSync(file)) return {};
   try {
-    return { "a11y.json": a11yEntries(JSON.parse(readFileSync(file, "utf8"))) };
+    return { "a11y.json": a11yEntries(JSON.parse(given ?? readFileSync(file, "utf8"))) };
   } catch {
     return {};
   }
 };
 
 /**
- * The artifacts of the project in `dir` (k.a11y Artifacts): `.keel/a11y.json` as the compiler writes it, if present,
- * and the `tokens` export of `tokens.ts`, if present, evaluated as `keel check` and `keel build` evaluate it
+ * The artifacts of the project in `dir` (k.a11y Artifacts): the `a11y.json` derived from the tree, as `keel test`
+ * hands it to the test process (`given`, k.derived Readers), else `.keel/a11y.json` if present, and the `tokens` export of `tokens.ts`, if present, evaluated as `keel check` and `keel build` evaluate it
  * (`projectTokens` of `@keel/compiler`: bundled with the `keel` condition, a library's shipped tokens read from their
  * literal, k.looks), never by the runtime's own loader. A `tokens.ts` that throws, exports no `tokens` or whose
  * `tokens` fail `TokenSchema` gives the reason instead, each naming `tokens.ts` (the last with the first issue's
  * `<path>: <what>`).
  */
-export async function loadProjectArtifacts(dir: string): Promise<ProjectArtifacts> {
-  const a11y = a11yJson(dir);
+export async function loadProjectArtifacts(dir: string, given?: string): Promise<ProjectArtifacts> {
+  const a11y = a11yJson(dir, given);
   const evaluated = await projectTokens(dir);
   if (evaluated === undefined) return { ok: true, artifacts: a11y };
   if (!evaluated.ok) {

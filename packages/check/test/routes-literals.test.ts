@@ -1,4 +1,4 @@
-// routes.json compared with the contract and binding literals; one compile per project.
+// routes.json compared with the caller's derivation; one compile per project.
 import { parseTopology } from "@keel/compiler";
 import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import { describe, expect, it } from "vitest";
@@ -69,144 +69,67 @@ const project = (
 describe.each([
   ["root", ""],
   ["nested", "apps/a/"],
-])("routes.json vs contracts and bindings (%s project)", (_name, prefix) => {
+])("routes.json against the caller's derivation (%s project)", (_name, prefix) => {
   const json = `${prefix}.keel/routes.json`;
   const home = { "m.home": entry() };
-  const apiContract = contractOf(
-    `"m.home": { path: "/home" }, "m.api": { method: "GET", path: "/api", output: s.json() }`,
-  );
-  const apiBinding = bindingOf(`"m.home": { component: () => null }, "m.api": { loader: () => null }`);
-  const apiData = (over: Partial<Entry> = {}) => ({
-    ...home,
-    "m.api": entry({ api: true, method: "GET", path: "/api", ...over }),
+  const withDerived = (files: SourceFile[], text: string): readonly Diagnostic[] =>
+    check(files, { types: false, derived: { [prefix]: { "routes.json": text } } }).diagnostics;
+
+  it("without derived, an evaluated routes.json is not judged: no E1005, no W1005", () => {
+    const variants: Record<string, Entry>[] = [
+      home,
+      { ...home, "m.admin": entry({ path: "/admin" }) },
+      { "m.home": entry({ path: "/elsewhere" }) },
+      {},
+    ];
+    for (const data of variants) {
+      const ds = run(project(prefix, data));
+      expect(at(ds, "E1005", json)).toEqual([]);
+      expect(at(ds, "W1005", json)).toEqual([]);
+    }
+    const handEdit = `${canonicalJson({ data: home, hash: "fnv1a:00000000" })}\n`;
+    const pretty = `${JSON.stringify(JSON.parse(routesJson(home)), null, 2)}\n`;
+    for (const text of [handEdit, pretty]) {
+      const files = [
+        f(`${prefix}modules/m/m.contract.ts`, CONTRACT),
+        f(`${prefix}modules/m/routes.ts`, BINDING),
+        f(json, text),
+      ];
+      expect(at(run(files), "E1005", json)).toEqual([]);
+    }
   });
 
-  it("a genuine literal file has no E1005 and no W1005", () => {
-    const ds = run(project(prefix, home));
+  it("with derived equal to the file, there is no E1005 and no W1005", () => {
+    const ds = withDerived(project(prefix, home), routesJson(home));
     expect(at(ds, "E1005", json)).toEqual([]);
     expect(at(ds, "W1005", json)).toEqual([]);
   });
 
-  it("an added route is E1005 naming it, with no fix", () => {
-    const ds = at(run(project(prefix, { ...home, "m.admin": entry({ path: "/admin" }) })), "E1005", json);
-    expect(ds).toHaveLength(1);
-    expect(ds[0]?.message).toBe(
-      '.keel/routes.json differs from the contracts and bindings at "m.admin"; run keel build',
-    );
-    expect(ds[0]?.fix).toBeUndefined();
-  });
-
   it.each([
-    ["changed path", { "m.home": entry({ path: "/elsewhere" }) }],
-    ["changed module", { "m.home": entry({ module: "x" }) }],
-    ["missing route", {}],
+    ["an added route", { ...home, "m.admin": entry({ path: "/admin" }) }],
+    ["a changed path", { "m.home": entry({ path: "/elsewhere" }) }],
+    ["a changed module", { "m.home": entry({ module: "x" }) }],
+    ["a missing route", {}],
     ["wrong actions", { "m.home": entry({ actions: ["POST"] }) }],
-  ])("%s is E1005 at m.home", (_n, data) => {
-    const ds = at(run(project(prefix, data)), "E1005", json);
-    expect(ds).toHaveLength(1);
-    expect(ds[0]?.message).toContain('"m.home"');
+  ])("with derived, %s in the file is one E1005 and no W1005", (_n, data) => {
+    const ds = withDerived(project(prefix, data), routesJson(home));
+    expect(at(ds, "E1005", json)).toHaveLength(1);
+    expect(at(ds, "W1005", json)).toEqual([]);
   });
 
-  it("a bound action verb is read from the binding", () => {
-    const binding = bindingOf(`"m.home": { component: () => null, POST: () => null }`);
-    expect(
-      at(run(project(prefix, { "m.home": entry({ actions: ["POST"] }) }, CONTRACT, binding)), "E1005", json),
-    ).toEqual([]);
-    expect(at(run(project(prefix, home, CONTRACT, binding)), "E1005", json)[0]?.message).toContain('"m.home"');
-  });
-
-  it("params presence flipped is E1005", () => {
-    const c = contractOf(`"m.home": { path: "/home", params: { id: s.string() } }`);
-    expect(at(run(project(prefix, home, c)), "E1005", json)[0]?.message).toContain('"m.home"');
-    expect(at(run(project(prefix, { "m.home": entry({ params: {} }) }, c)), "E1005", json)).toEqual([]);
-  });
-
-  it("a guard differing from the imported guard is E1005 naming that id", () => {
-    const binding = `import { manifest } from "@keel/router";
-import { m } from "./m.contract.ts";
-import { g } from "./g.guard.ts";
-export const routes = manifest(m, { "m.home": { guard: g, component: () => null } });
-`;
-    const guardFile = f(`${prefix}modules/m/g.guard.ts`, GUARD_TS);
-    const ds = at(run(project(prefix, home, CONTRACT, binding, [guardFile])), "E1005", json);
-    expect(ds).toHaveLength(1);
-    expect(ds[0]?.message).toContain('"m.home"');
-  });
-
-  it("api and method in routes.json must match the contract entry's method", () => {
-    const ok = run(project(prefix, apiData(), apiContract, apiBinding));
-    expect(at(ok, "E1005", json)).toEqual([]);
-    expect(at(ok, "W1005", json)).toEqual([]);
-    const wrongMethod = apiData({ method: "DELETE" });
-    expect(at(run(project(prefix, wrongMethod, apiContract, apiBinding)), "E1005", json)[0]?.message).toContain(
-      '"m.api"',
-    );
-    const notApi = { ...home, "m.api": entry({ path: "/api" }) };
-    expect(at(run(project(prefix, notApi, apiContract, apiBinding)), "E1005", json)[0]?.message).toContain('"m.api"');
-  });
-
-  it("an api method that is not a literal is not compared (W1005 names it)", () => {
-    const c = contractOf(
-      `"m.home": { path: "/home" }, "m.api": { method: "GE" + "T", path: "/api", output: s.json() }`,
-    );
-    const ds = run(project(prefix, apiData({ method: "POST" }), c, apiBinding));
-    expect(at(ds, "E1005", json)).toEqual([]);
-    expect(at(ds, "W1005", json)[0]?.message).toContain("m.api method");
-    const whole = contractOf(`"m.home": makeRoute()`);
-    expect(at(run(project(prefix, home, whole)), "E1005", json)).toEqual([]);
-  });
-
-  it("a computed path with a genuine file is W1005 naming the part", () => {
-    const c = contractOf(`"m.home": { path: "/ho" + "me" }`);
-    const ds = run(project(prefix, home, c));
-    expect(at(ds, "E1005", json)).toEqual([]);
-    expect(at(ds, "W1005", json).map((d) => d.message)).toEqual([
-      ".keel/routes.json unverified, not literal: m.home path",
-    ]);
-  });
-
-  it("two unread parts end (+1 more)", () => {
-    const c = contractOf(`"m.home": { path: "/ho" + "me" }`);
-    const binding = bindingOf(`"m.home": { layout: "a" + "b", component: () => null }`);
-    const w = at(run(project(prefix, home, c, binding)), "W1005", json);
-    expect(w).toHaveLength(1);
-    expect(w[0]?.message.endsWith("(+1 more)")).toBe(true);
-  });
-
-  it("an extra id under a spread contract is W1005, not E1005 (open id set)", () => {
-    const c = contractOf(`...more, "m.home": { path: "/home" }`);
-    const ds = run(project(prefix, { ...home, "m.extra": entry({ path: "/extra" }) }, c));
-    expect(at(ds, "E1005", json)).toEqual([]);
-    expect(at(ds, "W1005", json)).toHaveLength(1);
-  });
-
-  it("an extra id under a spread binding is W1005, not E1005 (open id set)", () => {
-    const binding = bindingOf(`...more, "m.home": { component: () => null }`);
-    const ds = run(project(prefix, { ...home, "m.extra": entry({ path: "/extra" }) }, CONTRACT, binding));
-    expect(at(ds, "E1005", json)).toEqual([]);
-    expect(at(ds, "W1005", json)).toHaveLength(1);
-  });
-
-  it("non-canonical bytes of a matching file are E1005 with a fix", () => {
+  it("with derived, the same data in non-canonical bytes is one E1005", () => {
     const text = `${JSON.stringify(JSON.parse(routesJson(home)), null, 2)}\n`;
-    const ds = at(
-      run([f(`${prefix}modules/m/m.contract.ts`, CONTRACT), f(`${prefix}modules/m/routes.ts`, BINDING), f(json, text)]),
-      "E1005",
-      json,
-    );
-    expect(ds).toHaveLength(1);
-    expect(ds[0]?.fix).toBeDefined();
+    const files = [
+      f(`${prefix}modules/m/m.contract.ts`, CONTRACT),
+      f(`${prefix}modules/m/routes.ts`, BINDING),
+      f(json, text),
+    ];
+    expect(at(withDerived(files, routesJson(home)), "E1005", json)).toHaveLength(1);
   });
 
-  it("a file that is not self-consistent is E1005 hand edit", () => {
-    const text = `${canonicalJson({ data: home, hash: "fnv1a:00000000" })}\n`;
-    const ds = at(
-      run([f(`${prefix}modules/m/m.contract.ts`, CONTRACT), f(`${prefix}modules/m/routes.ts`, BINDING), f(json, text)]),
-      "E1005",
-      json,
-    );
-    expect(ds).toHaveLength(1);
-    expect(ds[0]?.message).toContain("hand edit");
+  it("the derived text, not the contracts and bindings, decides: a literal-matching file differing from derived is E1005", () => {
+    const ds = withDerived(project(prefix, home), routesJson({ "m.home": entry({ path: "/other" }) }));
+    expect(at(ds, "E1005", json)).toHaveLength(1);
   });
 });
 

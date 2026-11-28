@@ -1,1 +1,0 @@
-{"data":{"edges":[{"from":"modules/front/HomePage.tsx#props.data","to":"modules.front.HomePage:text:#text"}],"nodes":[{"file":"modules/front/HomePage.tsx","id":"modules.front.HomePage:text:#text","kind":"binding","name":"text #text"},{"file":"modules/front/HomePage.tsx","id":"modules/front/HomePage.tsx#props.data","kind":"prop","name":"data"}]},"hash":"fnv1a:d133e9c8"}

@@ -58,7 +58,7 @@ export const operations: readonly Operation[] = [
   {
     name: "check",
     description: "k.check over the project or given paths.",
-    input: s.object({ paths, base: s.string().optional(), ...diagnostic }),
+    input: s.object({ paths, base: s.string().optional(), frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",
@@ -68,6 +68,7 @@ export const operations: readonly Operation[] = [
     description: "The test harness under a sim ctx (k.testing).",
     input: s.object({
       paths,
+      frozen: s.boolean().optional(),
       e2e: s.boolean().optional(),
       engine: s.enum(["chromium", "firefox", "webkit"]).optional(),
       "no-sandbox": s.boolean().optional(),
@@ -79,11 +80,12 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "build",
-    description: "Compile, write .keel artifacts, vite build.",
+    description: "Compile, write .keel views, vite build.",
     input: s.object({
       target: s.enum(["capacitor", "tauri"]).optional(),
       platform: s.string().optional(),
       release: s.boolean().optional(),
+      frozen: s.boolean().optional(),
       ...diagnostic,
     }),
     output: outputOf(),
@@ -93,7 +95,12 @@ export const operations: readonly Operation[] = [
   {
     name: "dev",
     description: "Dev server and logs (k.server).",
-    input: s.object({ port: s.int({ min: 1, max: 65535 }).optional(), host: s.string().optional(), ...diagnostic }),
+    input: s.object({
+      port: s.int({ min: 1, max: 65535 }).optional(),
+      host: s.string().optional(),
+      frozen: s.boolean().optional(),
+      ...diagnostic,
+    }),
     output: outputOf(ReqSchema),
     positional: [],
     scope: "none",
@@ -179,8 +186,8 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "pack",
-    description: "A library's gate: check, test, write .keel/ledger.json; --check writes nothing (k.library-pack).",
-    input: s.object({ check: s.boolean().optional(), ...diagnostic }),
+    description: "A library's gate: check, test, write .keel/ledger.json; --frozen writes nothing (k.library-pack).",
+    input: s.object({ frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: [],
     scope: "ledger",

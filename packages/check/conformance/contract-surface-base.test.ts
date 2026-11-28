@@ -1,7 +1,7 @@
 // Spec: k.compat, clause "`keel check --base` naming a missing file, or one that is not JSON, is one W1568 and exits 0; with `topology.ts` unreadable, a base entry the current one refuses is E1562."
 // Spec: k.compat, clause "With a base where `y.add`'s `body` is `{ name }` and module `a`, which imports `y`'s contract, is in deployable `x`, adding a required `note` is one E1562 at `note` whose fix leaves none; with `a` and `y` in one deployable there is none."
 // Spec: k.compat, clause "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none; removing a base entry is one E1562 with no fix."
-// Spec: k.compat, clause "`keel check` without `--base` reports no E1562; a changed byte of `.keel/surface.json` is E1005."
+// Spec: k.compat, clause "`keel check` without `--base` reports no E1562; a changed byte of `.keel/surface.json` is E1005 under `keel check --frozen`."
 // ASSUMPTION (the spec names no key layout for `surface.json` v2 beyond "for each contract, its `module`, the modules that import it (`callers`), and each API entry's id, method, `path`, `params`, `query`, `body`, `output` and `errors`"):
 // `data = { version: 2, contracts: { <module>: { module, callers, entries: { <id>: { method, path, params, query, body, output, errors } } } }, stores }`.
 // The surface is `{ data, hash }` with the compiler's FNV-1a hash, as in fixtures-by-code.ts. Seed 1337.
@@ -101,12 +101,21 @@ describe("E1562 over a contract's API entries (surface v2)", () => {
     expect(moved[0]?.fix).toBeUndefined();
   });
 
-  test("a base that is not a `version: 2` surface is one W1568 and no E1562", () => {
+  test("a base that is not a `version` 2 or 3 surface is one W1568 and no E1562", () => {
     const current = surface(add(fields("name", "note")));
-    for (const base of [surface(add(fields("name")), 3), {}, "not json", null]) {
+    for (const base of [surface(add(fields("name")), 4), surface(add(fields("name")), 1), {}, "not json", null]) {
       const d = codes(current, base, SPLIT);
       expect(d.filter((x) => x.code === "W1568")).toHaveLength(1);
       expect(d.filter((x) => x.code === "E1562")).toEqual([]);
+    }
+  });
+
+  test("a base of version 2 or of version 3 is read: no W1568, and the entry the current one refuses is one E1562", () => {
+    const current = surface(add(fields("name", "note")));
+    for (const version of [2, 3]) {
+      const d = codes(current, surface(add(fields("name")), version), SPLIT);
+      expect(d.filter((x) => x.code === "W1568")).toEqual([]);
+      expect(d.filter((x) => x.code === "E1562")).toHaveLength(1);
     }
   });
 
@@ -117,9 +126,9 @@ describe("E1562 over a contract's API entries (surface v2)", () => {
     ).toEqual([]);
   });
 
-  test("a changed byte of `.keel/surface.json` is E1005", () => {
+  test("a changed byte of `.keel/surface.json` is no diagnostic of the in-memory check(), which compares an evaluated view only with a `derived` it is given (k.derived In process); E1005 under `keel check --frozen` is asserted by the cli suite", () => {
     const file = surfaceFile(surface(add(fields("name"))));
     const edited = { ...file, source: file.source.replace('"y.add"', '"y.add" ') };
-    expect(check([edited], { types: false }).diagnostics.map((x) => x.code)).toContain("E1005");
+    expect(check([edited], { types: false }).diagnostics.filter((x) => x.path === ".keel/surface.json")).toEqual([]);
   });
 });

@@ -1,6 +1,7 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { carriesReveal } from "./carriesReveal.ts";
 export { check } from "./check.ts";
+export { compiledViews } from "./compiledViews.ts";
 export { defineRule } from "./defineRule.ts";
 export { dependencyNeed } from "./dependencyNeed.ts";
 export { format } from "./format.ts";

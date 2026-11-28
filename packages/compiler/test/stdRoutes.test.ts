@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { routeLiterals } from "@keel/compiler";
-import { buildRoutes } from "@keel/compiler/routes";
+import { evaluateViews } from "@keel/compiler/routes";
 import { fixedTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -178,13 +178,8 @@ describe("stdRoutes (k.topology Route table)", () => {
       const literals = routeLiterals(files, { topology, root });
       expect(Object.keys(literals?.routes ?? {}).sort()).toEqual(["app.home", "frag.list"]);
       expect(literals?.closed).toBe(true);
-      await buildRoutes(root);
-      const written: unknown = JSON.parse(fs.readFileSync(path.join(root, ".keel/routes.json"), "utf8"));
-      const data: unknown = typeof written === "object" && written !== null ? Reflect.get(written, "data") : undefined;
-      expect(Object.keys(typeof data === "object" && data !== null ? data : {}).sort()).toEqual([
-        "app.home",
-        "frag.list",
-      ]);
+      const { routes } = await evaluateViews(root);
+      expect(Object.keys(routes).sort()).toEqual(["app.home", "frag.list"]);
     },
   );
 });

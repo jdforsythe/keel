@@ -1,7 +1,16 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { build } from "esbuild";
+import { EvaluateFailure } from "../EvaluateFailure.ts";
+import { evaluate } from "../evaluate.ts";
+import { OBSERVE_BANNER } from "../internal/OBSERVE_BANNER.ts";
+import { SERVER_ENV } from "../internal/SERVER_ENV.ts";
+import { UNRESOLVED_MARK } from "../internal/UNRESOLVED_MARK.ts";
 import { censusPlugin } from "../internal/censusPlugin.ts";
+import { evaluatorAnswers } from "../internal/evaluatorAnswers.ts";
+import { importMetaPlugin } from "../internal/importMetaPlugin.ts";
+import { observePlugin } from "../internal/observePlugin.ts";
 import type { TokensResult } from "./TokensResult.ts";
 import { shippedTokensPlugin } from "./shippedTokensPlugin.ts";
 
@@ -12,6 +21,7 @@ import { schemesOf } from ${JSON.stringify(UI_CSS)};
 const message = (e) => (e && typeof e === "object" && "message" in e ? String(e.message) : String(e));
 const refused = (path, text) => ({ ok: false, reason: text, path: path.map(String) });
 let result;
+__keelAt("tokens.ts");
 try {
   const m = await import("./tokens.ts");
   const tokens = m.tokens;
@@ -38,11 +48,10 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> => typeof 
  * first issue's path and `<path>: <what>` (k.themes Token errors); a throw or a bundle error otherwise
  * `tokens.ts throws: <message>`, and no `tokens` export `tokens.ts exports no tokens`. The file and everything it
  * imports are bundled with esbuild (Node's conditions and `keel`, as `evaluateProject`; a listed library's `./tokens`
- * is the module `shippedTokensPlugin` makes from its literal, so no library's tokens file runs, k.looks) into one
- * self-contained module, imported as a `data:` URL: Node's own loader runs it whatever loader the caller runs under
- * (a test runner's included), it needs no file, and a changed `tokens.ts` gives a new module, so a long-lived process
- * never judges a stale token. `keel check`, `keel build`, `keel test`'s setup and the evidence's contrast table all
- * evaluate `tokens.ts` here.
+ * is the module `shippedTokensPlugin` makes from its literal, so no library's tokens file runs, k.looks, with the
+ * evaluator's banner and views) and run in an evaluator (k.evaluator) on every call, so a long-lived process never
+ * judges a stale token and nothing the file does reaches it. `keel check`, `keel build`, `keel test`'s setup and the
+ * evidence's contrast table all evaluate `tokens.ts` here.
  */
 export async function projectTokens(root: string): Promise<TokensResult | undefined> {
   if (!fs.existsSync(path.join(root, "tokens.ts"))) return undefined;
@@ -58,7 +67,10 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
       target: "node20",
       logLevel: "silent",
       loader: { ".css": "empty" },
-      plugins: [shippedTokensPlugin(root), censusPlugin()],
+      banner: { js: OBSERVE_BANNER },
+      define: { "import.meta.env": JSON.stringify(SERVER_ENV), "import.meta": "__keelMeta" },
+      supported: { "dynamic-import": false },
+      plugins: [observePlugin(), shippedTokensPlugin(root), censusPlugin(), importMetaPlugin()],
     });
     text = out.outputFiles[0]?.text ?? "";
   } catch (e) {
@@ -66,11 +78,13 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
     const reason = isRecord(first) && typeof first.text === "string" ? first.text : String(e);
     return { ok: false, reason: `tokens.ts throws: ${reason}` };
   }
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "keel-tokens-")));
   try {
-    const mod: unknown = await import(
-      /* @vite-ignore */ `data:text/javascript;base64,${Buffer.from(text).toString("base64")}`
-    );
-    const result = isRecord(mod) ? mod.result : undefined;
+    const file = path.join(dir, "tokens.mjs");
+    fs.writeFileSync(file, text.replace(UNRESOLVED_MARK, "[]"));
+    const out = await evaluate({ kind: "data", entry: file, answer: evaluatorAnswers().answer });
+    if (out instanceof EvaluateFailure) return { ok: false, reason: `tokens.ts throws: ${out.message}` };
+    const result = out.result;
     if (isRecord(result) && result.ok === true) {
       const schemes = Array.isArray(result.schemes) ? result.schemes.filter((x) => typeof x === "string") : ["light"];
       return { ok: true, tokens: result.tokens, schemes };
@@ -80,7 +94,7 @@ export async function projectTokens(root: string): Promise<TokensResult | undefi
       return at === undefined ? { ok: false, reason: result.reason } : { ok: false, reason: result.reason, path: at };
     }
     return { ok: false, reason: "tokens.ts throws" };
-  } catch (e) {
-    return { ok: false, reason: `tokens.ts throws: ${e instanceof Error ? e.message : String(e)}` };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 }

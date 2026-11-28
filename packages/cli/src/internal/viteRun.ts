@@ -12,15 +12,20 @@ const FRAME = /^\s+at |Getter\/S|^}|^\s*$/;
  * failure the message lines of its stderr (stdout when stderr is empty) are returned, the bundler's own errors among
  * them (`<file>:<line>:<col>: ERROR: Could not resolve "<specifier>"`, a Keel-coded E1007): stack frames are dropped
  * and the last 12 lines kept under a count of the lines before them (`... +3 more`); on success (OUTPUT.md: success
- * is silent). Its Keel-coded lines are `notes`, on success and on failure: a rewritten `routes.json` (W1005), an
- * evaluation problem that failed the build (E1006, E1807, E1819); a failure that holds a Keel-coded error returns no
- * message lines, the record standing for them. Undefined when there is no Vite config. Vite runs with `NODE_ENV=production`
+ * is silent). Its Keel-coded lines are `notes`, on success and on failure: an evaluation problem that failed the build
+ * (E1006, E1807, E1819); a failure that holds a Keel-coded error returns no message lines, the record standing for
+ * them. Undefined when there is no Vite config. Vite runs with `NODE_ENV=production`
  * whatever the shell or a project `.env` sets, so the client is the production one (k.deploy Build); `deployable` sets
- * `KEEL_DEPLOYABLE` for that run (k.server Build).
+ * `KEEL_DEPLOYABLE` for that run (k.server Build); `frozen` sets `KEEL_FROZEN=1`, so the Vite plugin writes no view
+ * (k.derived Frozen).
  */
-export function viteRun(cwd: string, deployable?: string): { code: number; tail: string; notes: string[] } | undefined {
+export function viteRun(
+  cwd: string,
+  deployable?: string,
+  frozen = false,
+): { code: number; tail: string; notes: string[] } | undefined {
   if (!existsSync(join(cwd, "vite.config.ts"))) return undefined;
-  const base = { ...process.env, NODE_ENV: "production" };
+  const base = { ...process.env, NODE_ENV: "production", ...(frozen ? { KEEL_FROZEN: "1" } : {}) };
   const env = deployable === undefined ? base : { ...base, KEEL_DEPLOYABLE: deployable };
   const tool = toolCommand(cwd, "vite", "vite", ["build"]);
   const r = spawnSync(tool.cmd, tool.args, { cwd, env, encoding: "utf8", stdio: "pipe" });

@@ -55,7 +55,7 @@ export type Input = {
   readonly "fail-on"?: "warn";
   readonly accept?: string;
   readonly reason?: string;
-  readonly check?: boolean;
+  readonly frozen?: boolean;
   readonly e2e?: boolean;
   readonly engine?: "chromium" | "firefox" | "webkit";
   readonly "no-sandbox"?: boolean;

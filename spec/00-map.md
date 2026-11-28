@@ -13,7 +13,8 @@
 | deploy | Deployables, deploy files, client hosting and native shells |
 | data | Durable storage, concurrent writes and app data |
 | live | Channels, live views, the outbox and races |
-| tools | The checker, explanations, the CLI, installed docs and scaffold |
+| tools | The checker, derived files, the evaluator, explanations, the CLI and installed docs |
+| scaffold | Generators, codemods and creating a project |
 | testing | The harness, exploration, proofs, simulation and end-to-end tests |
 | evidence | The ledger, evidence bundles, sessions and production tallies |
 | security | Headers, origins, secrets, personal data, escapes and unsafe |

@@ -15,9 +15,9 @@
   "files": ["module.ts", "src", "dist", ".keel/ledger.json", "README.md"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "check": "keel check && keel pack --check",
+    "check": "keel check && keel pack --frozen",
     "test": "keel test",
-    "prepack": "tsc -p tsconfig.build.json && keel pack --check"
+    "prepack": "tsc -p tsconfig.build.json && keel pack --frozen"
   },
   "peerDependencies": {
     "@keel/compiler": "workspace:^",

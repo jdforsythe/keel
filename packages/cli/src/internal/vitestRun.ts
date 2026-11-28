@@ -39,6 +39,8 @@ const notPassed = (r: TestReport, reason: string): TestReport => ({
 
 /**
  * vitest, programmatically, on `root` (testCommand.ts says how); with `e2e` the end-to-end run's options (k.e2e Files).
+ * `view.a11y`, the derived `a11y.json` of the tree under test (k.derived Readers), is handed to each test process;
+ * `view.frozen` (k.derived Frozen) sets `KEEL_FROZEN`, so the Vite plugin under vitest writes no view either.
  */
 export async function vitestRun(
   root: string,
@@ -46,6 +48,7 @@ export async function vitestRun(
   claims: boolean,
   runReport: true | ((report: TestRunReport) => void),
   e2e?: E2eRun,
+  view: { readonly a11y?: string | undefined; readonly frozen?: boolean } = {},
 ): Promise<TestReport> {
   let report = EMPTY_REPORT;
   let run: Vitest | undefined;
@@ -66,7 +69,9 @@ export async function vitestRun(
   const exitCode = process.exitCode;
   const previous = process.env.KEEL_TEST;
   const pool = process.env.UV_THREADPOOL_SIZE;
+  const wasFrozen = process.env.KEEL_FROZEN;
   process.env.KEEL_TEST = "1";
+  if (view.frozen === true) process.env.KEEL_FROZEN = "1";
   // One thread-pool thread in every test process, whatever the environment holds (k.drive-law Order): libuv reads it
   // once per process, so it is in the environment the forked test processes start with (`pool: "forks"` below).
   process.env.UV_THREADPOOL_SIZE = "1";
@@ -95,7 +100,7 @@ export async function vitestRun(
                 hookTimeout: e2e.timeout,
               }),
         },
-        artifactsSetupConfig(root),
+        artifactsSetupConfig(root, view.a11y),
         { stdout: sink(), stderr: sink() },
       );
       await vitest?.close();
@@ -105,6 +110,8 @@ export async function vitestRun(
   } finally {
     if (previous === undefined) Reflect.deleteProperty(process.env, "KEEL_TEST");
     else process.env.KEEL_TEST = previous;
+    if (wasFrozen === undefined) Reflect.deleteProperty(process.env, "KEEL_FROZEN");
+    else process.env.KEEL_FROZEN = wasFrozen;
     for (const [k, v] of saved) {
       if (v === undefined) Reflect.deleteProperty(process.env, k);
       else process.env[k] = v;

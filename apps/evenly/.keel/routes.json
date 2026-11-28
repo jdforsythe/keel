@@ -1,1 +1,0 @@
-{"data":{"app.start":{"actions":[],"guard":null,"layout":null,"module":"app","params":null,"path":"/","search":null},"trip.show":{"actions":["POST"],"guard":null,"layout":null,"module":"trip","params":null,"path":"/trip","search":null}},"hash":"fnv1a:35b101ff"}

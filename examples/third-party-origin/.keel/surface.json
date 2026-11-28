@@ -1,1 +1,1 @@
-{"data":{"contracts":{},"sources":{"modules/app/Home.schema.ts":"fnv1a:7608d2aa","modules/app/HomePage.tsx":"fnv1a:e04bb478","modules/app/app.contract.ts":"fnv1a:d272ed51","modules/app/loadHome.server.ts":"fnv1a:a07ab5d6","modules/app/routes.ts":"fnv1a:cf2cacf1"},"stores":{},"version":2},"hash":"fnv1a:41ec930e"}
+{"data":{"contracts":{},"stores":{},"version":3},"hash":"fnv1a:aef53677"}

@@ -11,10 +11,10 @@ import type { Write } from "./Write.ts";
  * as a string they are served in one batch and the replies returned as stdout. `tty` and `env.KEEL_AGENT` select
  * the default format (OUTPUT.md). `fetch` is the network for `inspect`, `report` and `session ingest` (absent: I1055); `init` carries headers, method, body.
  * `read` returns the text of a file a flag names outside the loaded scope (`check --base`), relative to `cwd`, or undefined.
- * `build` is the disk half of `build` after the engine's writes (`routes.json`, `surface.json`, the Vite builds), so
- * `keel build` and MCP `build` run one path; absent, `build` writes the engine's artifacts only. `refresh` is that
- * half up to the bundles, for a scaffold in a built project (k.scaffold Refresh): `routes.json` and `surface.json`,
- * no Vite build, nothing under `dist/`. `shell` loads what
+ * `build` is the disk half of `build` after the engine's writes (the Vite builds; `frozen` runs them frozen), so
+ * `keel build` and MCP `build` run one path; absent, `build` writes the engine's files only. `refresh` is that
+ * half up to the bundles, for a scaffold in a built project (k.scaffold Refresh): no Vite build, nothing under
+ * `dist/` (the check before it keeps the views). `shell` loads what
  * `build --target` needs of the host (k.shell Build; absent: every tool is missing and no shell step runs).
  * `discard` removes folders under `cwd`, whole: a `keel build` failing with E1510 or E1511 leaves no `dist/<name>/` of
  * the deployable serving the entry (k.api Rules).
@@ -31,7 +31,7 @@ export type Io = {
   readonly fetch?: ((url: string, init?: RequestInit) => Promise<Response>) | undefined;
   readonly read?: ((path: string) => string | undefined) | undefined;
   readonly build?:
-    | ((cwd: string) => Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }>)
+    | ((cwd: string, frozen?: boolean) => Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }>)
     | undefined;
   readonly refresh?:
     | ((cwd: string) => Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }>)

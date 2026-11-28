@@ -148,7 +148,9 @@ export function buildIn(dir) {
     execFile(
       process.execPath,
       [cli, "build"],
-      { cwd: dir, env: { ...process.env, KEEL_AGENT: "1" }, maxBuffer: 64 * 1024 * 1024 },
+      // The copy is the smoke's own scratch tree, often edited (a planted origin): its build keeps its views as a
+      // developer's does, not frozen as CI's own checks are (k.derived Frozen).
+      { cwd: dir, env: { ...process.env, KEEL_AGENT: "1", CI: "", KEEL_FROZEN: "" }, maxBuffer: 64 * 1024 * 1024 },
       (err, stdout, stderr) => {
         if (err !== null) keepOutput(`build ${basename(dir)}`, `${stdout}\n${stderr}`.split("\n"));
         resolve(err === null);

@@ -460,7 +460,14 @@ describe("mcpCall", () => {
     expect(r).toEqual({
       content: [{ type: "text", text: "ok check 1 files, 0 errors, 0 warnings\n" }],
       structuredContent: {
-        records: [{ kind: "summary", ok: true, name: "check", counts: { files: 1, errors: 0, warnings: 0 } }],
+        records: [
+          {
+            kind: "summary",
+            ok: true,
+            name: "check",
+            counts: { files: 1, refreshed: 0, errors: 0, warnings: 0, evaluated: 0, cached: 0 },
+          },
+        ],
       },
       isError: false,
     });

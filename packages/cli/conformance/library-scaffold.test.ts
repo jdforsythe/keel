@@ -1,15 +1,15 @@
 // k.library-pack, Scaffold: "`keel scaffold library <name>`, `<name>` a scoped package name `@<scope>/<base>` of lowercase letters, digits and `-`, the scope not beginning with `-` and the base `-`-joined segments, the first beginning with a letter (so its lowerCamel form is a module id), writes folder `<base>/` in the working directory, holding:"
-// k.library-pack, Scaffold: "- `package.json`: `name`, `version` `0.1.0`, `"type": "module"`, `"keel": "library"`, `exports` `{ ".": { "keel": "./src/index.ts", "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" } }`, the `files` of Package, `scripts` `{ "build": "tsc -p tsconfig.build.json", "check": "keel check", "test": "keel test", "prepack": "tsc -p tsconfig.build.json && keel pack --check" }`, `peerDependencies` `@keel/compiler`, `@keel/reactive`, `@keel/runtime-dom`, `@keel/schema` and `@keel/ui`, each `^<version>`, `<version>` the running `@keel/cli`'s, and in `devDependencies` the same five, `@keel/cli`, `@keel/testing`, `@keel/router` and `@keel/server` at that range, with `@types/node`, `happy-dom`, `playwright-core`, `typescript`, `vite` and `vitest`, so its own folder resolves what its check, tests, build and host page import;"
+// k.library-pack, Scaffold: "- `package.json`: `name`, `version` `0.1.0`, `"type": "module"`, `"keel": "library"`, `exports` `{ ".": { "keel": "./src/index.ts", "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" } }`, the `files` of Package, `scripts` `{ "build": "tsc -p tsconfig.build.json", "check": "keel check", "test": "keel test", "prepack": "tsc -p tsconfig.build.json && keel pack --frozen" }`, `peerDependencies` `@keel/compiler`, `@keel/reactive`, `@keel/runtime-dom`, `@keel/schema` and `@keel/ui`, each `^<version>`, `<version>` the running `@keel/cli`'s, and in `devDependencies` the same five, `@keel/cli`, `@keel/testing`, `@keel/router` and `@keel/server` at that range, with `@types/node`, `happy-dom`, `playwright-core`, `typescript`, `vite` and `vitest`;"
 // k.library-pack, Scaffold: "- `module.ts`: `id` the base in lowerCamel (`keel-charts` gives `keelCharts`), `deps: []`, `capabilities: []`, `public: { exports: ['Example'] }`;"
 // k.library-pack, Scaffold: "- `src/index.ts` re-exporting `Example`; `src/Example.tsx`, a component whose props are `{ id: string }`, with its `Props` schema (k.testing renders by it), and which renders one `Text` with id `` `${props.id}.text` ``; `test/Example.test.ts`, rendering it and finding `<id>.text`; `test/Example.e2e.ts` (k.e2e Libraries);"
 // k.library-pack, Scaffold: "- `tokens.ts` as `keel scaffold project` writes it, `tsconfig.json`, `tsconfig.build.json` (`src/` built to `dist/`), `vitest.config.ts` (tests under `test/` and `src/`) and `README.md`, whose presence alone is fixed; then `.gitignore`, holding `.keel/e2e-host-*/`, `.keel/*.json` and `!.keel/ledger.json`, and the agent files (k.explain Agent files)."
-// k.library-pack, Scaffold: "It writes source alone: as written the library passes `keel check` and `keel test` and holds no `.keel/ledger.json`, so `keel pack --check` is E1164 naming `ledger` until `keel pack` writes it, and passes after. No `<name>` is k.cli E1052 `library needs <name>, as in keel scaffold library @acme/charts`. An existing `<base>/` is E1351 and a `<name>` of another form E1352 (k.scaffold); either writes nothing."
+// k.library-pack, Scaffold: "It writes source alone: as written the library passes `keel check` and `keel test` and holds no `.keel/ledger.json`, so `keel pack --frozen` is E1164 naming `ledger` until `keel pack` writes it, and passes after. No `<name>` is k.cli E1052 `library needs <name>, as in keel scaffold library @acme/charts`. An existing `<base>/` is E1351 and a `<name>` of another form E1352 (k.scaffold); either writes nothing."
 // k.library-pack, Package: "A library (k.library) publishes, as its `package.json` `files`: `module.ts`, `src/`, `unsafe/` when it has one, `dist/` (its `tsc` build: declarations, and the `./tools` file Node imports), `.keel/ledger.json` and its `README.md`. Each `exports` key maps `keel` to the source file, then `types` and `default` to the built files; `publishConfig.exports`, where a package has one, keeps `keel` at the source path. The `@keel/*` packages its files import, and `@keel/reactive` and `@keel/runtime-dom`, which the compiler's output of its JSX imports, are `peerDependencies` and never `dependencies`, so each resolves to the app's copy. Its root `tokens.ts` is not published: an app checks the library against its own."
 // k.library-pack, Package: "No check imports a library's entry: `keel check`, `keel build` and every path that registers a package's rules, formats and config (E1159, k.module) import a library only through its `./tools` export, when it declares one, and read its components from source. So a library with no `./tools` needs no build for any app command; one with `./tools` ships that file as Node imports it, and a declared `./tools` that does not import is E1159 `<name> ./tools <target> does not import; build it`, `<target>` as `exports` writes it."
 // Spec: k.library-pack, clause "`keel scaffold library charts` and `keel scaffold library @acme/Charts` are each one E1352 and write nothing; run twice with `@acme/charts`, the second run is one E1351 and writes nothing."
-// Spec: k.library-pack, clause "`keel scaffold library @acme/keel-charts` writes `keel-charts/` whose `package.json` has `\"keel\": \"library\"` and whose `module.ts` has `id: 'keelCharts'`; with its dependencies installed, `keel pack` there exits 0 and writes `.keel/ledger.json` with `unsafe` 0 and `hostElements` 0, after which `keel pack --check` exits 0."
+// Spec: k.library-pack, clause "`keel scaffold library @acme/keel-charts` writes `keel-charts/` whose `package.json` has `\"keel\": \"library\"` and whose `module.ts` has `id: 'keelCharts'`; with its dependencies installed, `keel pack` there exits 0 and writes `.keel/ledger.json` with `unsafe` 0 and `hostElements` 0, after which `keel pack --frozen` exits 0."
 // Seed: 1337 (the two properties over names; every other case is an example). Binary runs: 1 scaffold shared by the read-only cases, then per case: tsc 1 (the build case),
-// `keel check` 2 + 1, `keel test` 1, `keel pack` 1 and `keel pack --check` 3, `keel scaffold project` 1, `--dry-run` 1, no name 1, the refusals 2 + 8 (property) + 2 + 1, the valid-name property 6,
+// `keel check` 2 + 1, `keel test` 1, `keel pack` 1 and `keel pack --frozen` 3, `keel scaffold project` 1, `--dry-run` 1, no name 1, the refusals 2 + 8 (property) + 2 + 1, the valid-name property 6,
 // and the unbuilt-library app (shared by its three cases) `keel check` 1, `keel build` 1, `keel ledger` 1: before this change 1 tsc more.
 // ASSUMPTIONS (spec silent, readings asserted):
 // - The Scaffold list is the whole of what is written, but `README.md` (the Package `files` names it, the list does not write it).
@@ -171,13 +171,13 @@ describe("Scaffold: keel scaffold library <name>", () => {
   );
 
   test(
-    "Scaffold: `scripts` is `{ build: tsc -p tsconfig.build.json, check: keel check, test: keel test, prepack: tsc -p tsconfig.build.json && keel pack --check }`",
+    "Scaffold: `scripts` is `{ build: tsc -p tsconfig.build.json, check: keel check, test: keel test, prepack: tsc -p tsconfig.build.json && keel pack --frozen }`",
     () => {
       expect(pkgOf(lib().lib).scripts).toEqual({
         build: "tsc -p tsconfig.build.json",
         check: "keel check",
         test: "keel test",
-        prepack: "tsc -p tsconfig.build.json && keel pack --check",
+        prepack: "tsc -p tsconfig.build.json && keel pack --frozen",
       });
     },
     SLOW,
@@ -304,7 +304,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
   );
 
   test(
-    "Scaffold: as written the library holds no `.keel/ledger.json`, so `keel pack --check` is one E1164 naming `ledger` until `keel pack` has written it",
+    "Scaffold: as written the library holds no `.keel/ledger.json`, so `keel pack --frozen` is one E1164 naming `ledger` until `keel pack` has written it",
     () => {
       const dir = fresh();
       expect(existsSync(join(dir, ".keel/ledger.json"))).toBe(false);

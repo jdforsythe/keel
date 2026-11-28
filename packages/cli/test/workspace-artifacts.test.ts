@@ -1,5 +1,6 @@
-// Backlog 0144 (rfc:0055): in a workspace, `keel check` compares every app's `.keel/` with that app's own sources,
-// and reports the same files from the root as from inside the app. Runs the engine over a temp workspace on disk.
+// In a workspace, `keel check --frozen` compares every app's `.keel/` views with that app's own sources, and `keel
+// check` reports the same files from the root as from inside the app (k.derived). Runs the engine over a temp
+// workspace on disk.
 import { chmodSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
@@ -62,12 +63,16 @@ beforeAll(async () => {
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 describe("keel check in a workspace (0144)", () => {
-  it("counts the same files for an app from the root and from inside it, artifacts included, all genuine", async () => {
+  it("counts the same files for an app from the root and from inside it, all genuine", async () => {
     const inside = await check(join(root, "apps/a"), []);
     const fromRoot = await check(root, ["apps/a"]);
-    expect(inside.files).toBe(8); // src/A.tsx, src/uiTypes.ts and the six artifacts `keel build` writes
+    expect(inside.files).toBe(10); // src/A.tsx, src/uiTypes.ts and the eight views `keel build` keeps
     expect(fromRoot).toEqual(inside);
-    expect((await check(root, [])).e1005).toEqual([]);
+    const frozen = await check(join(root, "apps/a"), ["--frozen"]);
+    expect(frozen.files).toBe(10); // and, frozen, the eight views `keel build` keeps
+    expect(frozen.e1005).toEqual([]);
+    expect(await check(root, ["apps/a", "--frozen"])).toEqual(frozen);
+    expect((await check(root, ["--frozen"])).e1005).toEqual([]);
   });
 
   it("reports a forged app artifact from the root, compared with that app's own sources only", async () => {
@@ -77,10 +82,13 @@ describe("keel check in a workspace (0144)", () => {
     chmodSync(file, 0o644);
     writeFileSync(file, readFileSync(join(root, "apps/a/.keel/ids.json"), "utf8"));
     try {
-      expect((await check(root, [])).e1005).toEqual(["apps/b/.keel/ids.json"]);
-      expect((await check(root, ["apps/b/.keel"])).e1005).toEqual(["apps/b/.keel/ids.json"]);
-      expect((await check(join(root, "apps/b"), [])).e1005).toEqual([".keel/ids.json"]);
+      expect((await check(root, ["--frozen"])).e1005).toEqual(["apps/b/.keel/ids.json"]);
+      expect((await check(root, ["apps/b/.keel", "--frozen"])).e1005).toEqual(["apps/b/.keel/ids.json"]);
+      expect((await check(join(root, "apps/b"), ["--frozen"])).e1005).toEqual([".keel/ids.json"]);
+      expect((await check(root, [])).e1005).toEqual([]);
+      expect(readFileSync(file, "utf8")).toBe(genuine);
     } finally {
+      chmodSync(file, 0o644);
       writeFileSync(file, genuine);
     }
   });

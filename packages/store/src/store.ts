@@ -11,6 +11,7 @@ import { copy } from "./internal/copy.ts";
 import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
 import { declaredSources } from "./internal/declaredSources.ts";
+import { devLoad } from "./internal/devLoad.ts";
 import { freeze } from "./internal/freeze.ts";
 import { givenPiiOf } from "./internal/givenPiiOf.ts";
 import { holdsSecret } from "./internal/holdsSecret.ts";
@@ -66,7 +67,14 @@ export function store<T extends object>(
   const id = options?.id ?? `store.${++counter.next}`;
   secretGuard(id, schema);
   const registry = registryOf(owner());
-  if (registry.has(id)) throw new Error(`store ${id}: id already in use by a live store`);
+  const holder = registry.get(id);
+  // k.data Dev: a live id is taken over only from the store a dev load carried, by a store created at its file; the
+  // carried store then no longer holds the id, so a second one throws. Only module-registry stores are carried.
+  if (
+    holder !== undefined &&
+    (devLoad.carried.get(id) !== holder || devLoad.origins.get(holder)?.file !== devLoad.file)
+  )
+    throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
   const limit = options?.logLimit ?? LOG_LIMIT;
   if (!Number.isInteger(limit) || limit < 0)
@@ -409,6 +417,8 @@ export function store<T extends object>(
   // signal() above already threw E1203 outside a scope, so an owner exists here.
   records.store.add(Object.freeze(self));
   registry.set(id, self);
+  // Recorded only once the dev server module has called `storesReload` (k.data Dev): never in a build or a test.
+  if (devLoad.armed) devLoad.origins.set(self, { file: devLoad.file, scope: owner() });
   statePiiOf.set(self, () => statePii);
   storePayloads.set(self, payloads);
   owner()?.onDispose(() => {

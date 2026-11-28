@@ -4,7 +4,10 @@ import type { JsonSchema } from "./JsonSchema.ts";
 import { isRecord } from "./isRecord.ts";
 import { toJsonSchema } from "./toJsonSchema.ts";
 
-/** The JSON Schema of a schema this process made, or `null` when `x` is none (k.identity). */
+/**
+ * The JSON Schema of a schema, or `null` when `x` is none (k.identity): this runs inside the evaluator, in the one
+ * bundle whose `@keel/schema` made the app's schemas (`surfaceRead`).
+ */
 const ownJson = (x: unknown): JsonSchema | null => (isSchema(x) ? toJsonSchema(x.node) : null);
 
 /** The binding members that hold a handler: a loader, an API action and each page action verb. */
@@ -33,7 +36,7 @@ function contractsOf(e: Evaluated): Record<string, JsonSchema> {
     seen.add(c.module);
     const entries = Object.fromEntries(
       Object.entries(c.entries).flatMap(([id, entry]) => {
-        const api = apiEntry(entry, e.schemaJson ?? ownJson);
+        const api = apiEntry(entry, ownJson);
         return api === null ? [] : [[id, api]];
       }),
     );
@@ -45,7 +48,7 @@ function contractsOf(e: Evaluated): Record<string, JsonSchema> {
 
 /** Each store the bound loaders' and actions' `stores` factories create: its state and payload schemas, by id. */
 function storesOf(e: Evaluated): Record<string, JsonSchema> {
-  const schemaOf = e.schemaJson ?? ownJson;
+  const schemaOf = ownJson;
   const factories = new Set<unknown>();
   for (const b of e.bindings) {
     if (!isRecord(b)) continue;
@@ -72,9 +75,8 @@ function storesOf(e: Evaluated): Record<string, JsonSchema> {
  * its `module`, `callers` (sorted) and `entries`, each API entry by id with its `method`, `path`, `params`, `query`,
  * `body` (an absent one `null`), `output` and `errors` (`{}` without); pages and layouts are not recorded. `stores`,
  * each store a bound loader's or action's `stores` factory creates (one run on a sim ctx) by id, its state schema
- * and each transaction's payload schema; `sources`, the hash of each evaluated file's normal form (E1005 freshness). Schemas are
- * JSON Schema, as in `routes.json`. The file holds `version: 2`.
+ * and each transaction's payload schema. Schemas are JSON Schema, as in `routes.json`. The file holds `version: 3`.
  */
 export function surfaceOf(e: Evaluated): JsonSchema {
-  return { version: 2, contracts: contractsOf(e), stores: storesOf(e), sources: e.sources };
+  return { version: 3, contracts: contractsOf(e), stores: storesOf(e) };
 }

@@ -1,5 +1,5 @@
 # k.contract: Module contract
-status: conformance-covered
+status: implemented
 
 **Contract.** Each route a module serves is declared once in `modules/<id>/<id>.contract.ts` (a library's: k.library-pages), whose one export `<id>` is `contract('<id>', entries)` from `@keel/router/contract`, an entry that imports `@keel/schema` only:
 ```ts
@@ -20,7 +20,7 @@ It is client-safe (E1514); keys are route ids prefixed by the module id (E1155).
 
 A kind refuses members outside its row. `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; an API id is `<module>.<name>`, `name` one lowerCamel segment.
 
-**Static reading.** Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is W1005 and E1111 at it; the entries beside it are read.
+**Static reading.** Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is E1111 at it; the entries beside it are read.
 
 **Binding.** `routes.ts` exports `routes = manifest(contract, binding)`, binding every entry and nothing else: a page `{ component, loader?, guard?, layout?, errorElement?, title?, POST?, PUT?, PATCH?, DELETE? }` (verbs: page actions); a layout `{ component, loader?, guard?, layout?, errorElement? }`; an API GET `{ loader, guard? }`; an API write `{ action, guard? }`. `layout` names a layout of any module (k.routes); page and layout guards have a `redirect` (k.guards).
 

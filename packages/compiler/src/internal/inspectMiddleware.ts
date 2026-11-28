@@ -94,7 +94,8 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
 
 /**
  * `GET|POST /__keel/inspect` for the Vite dev and preview servers (k.inspect, RFC 0017).
- * GET returns `{ live, graph, stores, ids, a11y, routes, sections }`: artifacts read from `<root>/.keel/` per request, the live
+ * GET returns `{ live, graph, stores, ids, a11y, routes, sections }`: the derivation `views` gives (the plugin's, of
+ * the tree it serves: k.derived Readers), else the artifacts read from `<root>/.keel/` per request (preview), the live
  * half from the last report the open page posted (`live: false`, empty graph, stores and sections, until one arrives). Under
  * `keel dev`, `apps` gives the `node` deployables' dev apps by name: the document then also holds `deployables`,
  * `{ [name]: { sections } }`, each app's own sections (`served`) and, under the `deployable` a page's report names,
@@ -109,6 +110,7 @@ export function inspectMiddleware(
   root: () => string,
   origins: readonly string[] = [],
   apps: () => Promise<readonly Named[]> = () => Promise.resolve([]),
+  views?: () => { readonly ids: unknown; readonly a11y: unknown; readonly routes: unknown },
 ): Middleware {
   let live: Live | undefined;
   /** The sections each `client` deployable's page last posted, by the name its report carries. */
@@ -152,9 +154,11 @@ export function inspectMiddleware(
                         .map((name) => [name, { sections: { ...pages.get(name), ...byApp[name] } }]),
                     ),
                   }),
-              ids: artifact(dir, "ids.json"),
-              a11y: artifact(dir, "a11y.json"),
-              routes: artifact(dir, "routes.json"),
+              ...(views?.() ?? {
+                ids: artifact(dir, "ids.json"),
+                a11y: artifact(dir, "a11y.json"),
+                routes: artifact(dir, "routes.json"),
+              }),
             }),
           next,
         );

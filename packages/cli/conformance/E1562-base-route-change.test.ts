@@ -84,14 +84,18 @@ test("E1562: a change that no base endpoint refuses (an added optional field) is
   expect(keel(dir, ["check", "--base", base]).records.some((r) => r.kind === "diag" && r.code === "E1562")).toBe(false);
 });
 
-test("a base file absent or unreadable (not JSON, or not a `version: 2` surface) is W1568 and no E1562: a file that is not a surface is one W1568 and does not change the exit code", () => {
-  // k.compat Base: "a base file absent or unreadable (not JSON, or not a `version: 2` surface) is W1568 and no E1562".
+test("a base file absent or unreadable (not JSON, or not a `version` 2 or 3 surface) is W1568 and no E1562: a file that is not a surface is one W1568 and does not change the exit code", () => {
+  // k.compat Base: "a base file absent or unreadable (not JSON, or not a `version` 2 or 3 surface) is W1568 and no E1562".
   // `{}` and `not json` are unreadable as a surface.
   const dir = materialize(project({ split: true }));
   dirs.push(dir);
-  write(dir, { "bad-base.json": "{}", "text-base.json": "not json" });
+  write(dir, {
+    "bad-base.json": "{}",
+    "text-base.json": "not json",
+    "v4-base.json": '{"data":{"contracts":{},"stores":{},"version":4},"hash":"fnv1a:00000000"}\n',
+  });
   const plain = keel(dir, ["check"]).status;
-  for (const base of ["bad-base.json", "text-base.json"]) {
+  for (const base of ["bad-base.json", "text-base.json", "v4-base.json"]) {
     const run = keel(dir, ["check", "--base", base]);
     expect(diags(run, "W1568"), base).toHaveLength(1);
     expect(diags(run, "E1562"), base).toEqual([]);

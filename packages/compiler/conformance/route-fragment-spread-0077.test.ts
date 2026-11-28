@@ -1,4 +1,4 @@
-// k.compiler, clause "An id, `path`, `layout`, `actions` or guard `redirect` unlike its contract or `routes.ts` literal (a placed stdlib module's: its package's `./contract` and `./routes`) is E1005."
+// k.compiler, Artifacts "`routes.json`: `{ [routeId]: { path, params, search, actions, layout, guard, module } }`, an API entry adding `api: true` and `method` (k.api); `layout` is the id of the layout that wraps the page or layout, else `null`; `module` the module that declares the route; schemas as JSON Schema. It is derived by evaluating the route tables, a placed stdlib module's from its package's `./contract` and `./routes`."
 // This file covers the reader half of the clause: `routeLiterals` reads a placed stdlib module's `./contract` and `./routes` files, never an app file's spread.
 // Examples only: the inputs are fixed projects built in a temp dir. No random inputs (a fast-check seed would be 1337).
 // A stdlib module is placed by its manifest id (`frag`) in a deployable's `modules` list of the `topology` option; its package's `module.ts` holds the manifest and the app module's `deps` name the package (k.module).
@@ -126,7 +126,7 @@ test("a stdlib module no deployable places is not read", () => {
   expect(Object.keys(result?.routes ?? {}).filter((id) => id.startsWith("frag."))).toEqual([]);
 });
 
-test("`...x.routes` in an app binding reads nothing from the package and opens the id set (W1005 names the spread)", () => {
+test("`...x.routes` in an app binding reads nothing from the package and opens the id set (`unread` names the spread)", () => {
   buildPackage();
   const result = routeLiterals(buildApp(true), { root: tmp, topology: PLACED });
   expect(result).toBeDefined();

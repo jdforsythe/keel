@@ -1,4 +1,4 @@
-// Spec: k.compat, clause "`keel check` without `--base` reports no E1562; a changed byte of `.keel/surface.json` is E1005."
+// Spec: k.compat, clause "`keel check` without `--base` reports no E1562; a changed byte of `.keel/surface.json` is E1005 under `keel check --frozen`."
 // Seed 1337. Real binary over a temp project; the tamper is a one-character change at a generated offset.
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
@@ -20,7 +20,7 @@ test("`keel check` without `--base` reports no E1562", () => {
   expect(diags(buildAndCheck(dir), "E1562")).toEqual([]);
 });
 
-test("a changed byte of `.keel/surface.json` is E1005", () => {
+test("a changed byte of `.keel/surface.json` is E1005 under `keel check --frozen`", () => {
   const dir = materialize(project());
   dirs.push(dir);
   expect(keel(dir, ["build"]).status).toBe(0);
@@ -33,7 +33,7 @@ test("a changed byte of `.keel/surface.json` is E1005", () => {
       fc.pre(tampered !== original);
       try {
         write(dir, { ".keel/surface.json": tampered });
-        expect(diags(keel(dir, ["check"]), "E1005").map((d) => d.path)).toContain(".keel/surface.json");
+        expect(diags(keel(dir, ["check", "--frozen"]), "E1005").map((d) => d.path)).toContain(".keel/surface.json");
       } finally {
         write(dir, { ".keel/surface.json": original });
       }

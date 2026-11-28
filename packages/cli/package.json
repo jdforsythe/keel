@@ -32,6 +32,10 @@
       "types": "./src/shell/index.ts",
       "default": "./src/shell/index.ts"
     },
+    "./derive": {
+      "types": "./src/derive/index.ts",
+      "default": "./src/derive/index.ts"
+    },
     "./tokens": {
       "types": "./src/tokens/index.ts",
       "default": "./src/tokens/index.ts"
@@ -73,6 +77,10 @@
         "types": "./dist/src/shell/index.d.ts",
         "default": "./dist/src/shell/index.js"
       },
+      "./derive": {
+        "types": "./dist/src/derive/index.d.ts",
+        "default": "./dist/src/derive/index.js"
+      },
       "./tokens": {
         "types": "./dist/src/tokens/index.d.ts",
         "default": "./dist/src/tokens/index.js"
@@ -80,6 +88,9 @@
     }
   },
   "files": ["dist", "docs", "skills"],
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",

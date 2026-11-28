@@ -9,6 +9,7 @@ import type { OutRecord } from "../types/OutRecord.ts";
 import type { Outcome } from "./Outcome.ts";
 import { appMarkedLibrary } from "./appMarkedLibrary.ts";
 import { checkCommand } from "./checkCommand.ts";
+import { frozenRun } from "./derived/frozenRun.ts";
 import { isError } from "./isError.ts";
 import { isRecord } from "./isRecord.ts";
 import { jsonFieldAt } from "./jsonFieldAt.ts";
@@ -77,17 +78,18 @@ function unwritable(cwd: string): string | undefined {
 }
 
 /**
- * `keel pack [--check]` (k.library-pack Pack), in a library's own folder: the steps `kind` (the folder's
+ * `keel pack [--frozen]` (k.library-pack Pack), in a library's own folder: the steps `kind` (the folder's
  * `package.json` marks a library under a scoped name), `package` (`packageShape`), `check` (`keel check` there),
  * `test` (`keel test` there, its run report held, not written) and `ledger` (`keel ledger --write .keel/ledger.json`
- * over that run's report in place of any on disk; with `--check`, the shipped file's
+ * over that run's report in place of any on disk; run frozen (`--frozen`, or `CI` set: `frozenRun`), the shipped file's
  * `unsafe`, `hostElements` and `exports` as an app reads them, `readLibraryLedger`, against the ones it would write).
  * In an app's folder (`appMarkedLibrary`) it runs no step: one E1170 and the summary. It stops at the first step that fails: that step's own records, then one E1164 whose message begins with the step's
  * name. On success one summary whose `counts` are the written ledger's `{ unsafe, hostElements, exports }`, and, without
- * `--check`, the ledger file as the one write. Nothing else is written, so a failing run leaves the folder as it was.
+ * frozen, the ledger file as the one write. Nothing else is written, so a failing run leaves the folder as it was.
  */
 export async function packCommand(input: Input, io: Io): Promise<Outcome> {
-  const name = input.check === true ? "pack --check" : "pack";
+  const frozen = frozenRun(input.frozen, io.env);
+  const name = frozen ? "pack --frozen" : "pack";
   const stop = (records: readonly OutRecord[], diag: OutRecord): Outcome => ({
     records: [...records, diag, summary(name, [diag], {})],
     writes: [],
@@ -99,7 +101,7 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
   if (!k.ok) return stop([], k.diag);
   const shape = packageShape(io.cwd, k.pkg, k.text);
   if (shape !== undefined) return stop([], shape);
-  const checked = (await checkCommand({}, io)).filter((r) => r.kind !== "summary");
+  const checked = (await checkCommand(frozen ? { frozen: true } : {}, io)).filter((r) => r.kind !== "summary");
   const errors = checked.filter(isError).length;
   if (errors > 0)
     return stop(checked, makeDiag("E1164", `check: ${plural(errors, "error")}; nothing packed`, { see: SEE }));
@@ -132,7 +134,7 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
     exports: fresh.value.exports.length,
   };
   const at = { path: LEDGER, line: 1, col: 1, see: SEE };
-  if (input.check === true) {
+  if (frozen) {
     const file = join(io.cwd, LEDGER);
     const shipped = readLibraryLedger(existsSync(file) ? readFileSync(file, "utf8") : undefined);
     if (!shipped.ok)

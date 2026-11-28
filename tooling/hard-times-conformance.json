@@ -300,18 +300,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/cli/conformance/surface-normal-sources.test.ts",
-    "line": 34,
-    "text": "21 * 2 * 40_000",
-    "needs": "fixedTime"
-  },
-  {
-    "path": "packages/cli/conformance/surface-v2-layout.test.ts",
-    "line": 7,
-    "text": "180_000",
-    "needs": "fixedTime"
-  },
-  {
     "path": "packages/cli/conformance/test-run-load-failure-count.test.ts",
     "line": 11,
     "text": "240_000",

@@ -41,7 +41,7 @@
     }
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
   "scripts": {

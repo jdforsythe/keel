@@ -2959,8 +2959,11 @@ describe("project passes", () => {
       ),
       block("intact", E("E1005", [f(".keel/routes.json", hashed({}))])),
       block("forged: data changed, hash recomputed", E("E1005", [f(".keel/routes.json", okFile)])),
-      block("routes manifest: routes.json not verified", E("W1005", [f(".keel/routes.json", okFile), manifest()])),
-      block("routes manifest: W1005 only", E("E1005", [f(".keel/routes.json", okFile), manifest()])),
+      block(
+        "routes manifest: routes.json is not judged without derived",
+        E("W1005", [f(".keel/routes.json", okFile), manifest()]),
+      ),
+      block("routes manifest: no W1005", E("E1005", [f(".keel/routes.json", okFile), manifest()])),
       block(
         "routes manifest: not self-consistent",
         E("E1005", [f(".keel/routes.json", `{"data":{"a":1},"hash":"${hashOf({})}"}\n`), manifest()]),
@@ -2971,8 +2974,8 @@ describe("project passes", () => {
       ),
       block("nested dir: self-consistent", E("E1005", [f("apps/a/.keel/routes.json", okFile)])),
       block("nested dir: genuine", E("E1005", [f("apps/a/.keel/routes.json", hashed({}))])),
-      block("nested manifest: W1005", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest("apps/a/")])),
-      block("root manifest: not nested", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest()])),
+      block("nested manifest: no W1005", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest("apps/a/")])),
+      block("root manifest: no W1005", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest()])),
       block(
         "nested source: its own project",
         E("E1005", [f("apps/a/.keel/ids.json", hashed({})), f("apps/a/src/C.tsx", COMPONENT)]),
@@ -3021,8 +3024,23 @@ describe("project passes", () => {
         E("E1005", [f(".keel/ids.json", okFile)], { types: false, artifacts: { hashes: {} } }),
       ),
       block(
-        "project: sources come from it",
+        "project: routes.json is not judged",
         E("W1005", [f(".keel/routes.json", okFile)], { types: false, project: [manifest()] }),
+      ),
+      block(
+        "derived: the same bytes",
+        E("E1005", [f(".keel/routes.json", okFile)], { types: false, derived: { "": { "routes.json": okFile } } }),
+      ),
+      block(
+        "derived: differing bytes",
+        E("E1005", [f(".keel/routes.json", okFile)], { types: false, derived: { "": { "routes.json": hashed({}) } } }),
+      ),
+      block(
+        "derived: nested dir differing bytes",
+        E("E1005", [f("apps/a/.keel/routes.json", okFile)], {
+          types: false,
+          derived: { "apps/a/": { "routes.json": hashed({}) } },
+        }),
       ),
       block("project: empty", E("E1005", [f(".keel/routes.json", okFile)], { types: false, project: [] })),
       block("unknown name", E("E1005", [f(".keel/x.json", hashed({}))])),
@@ -3044,75 +3062,69 @@ describe("project passes", () => {
       # intact
 
       # forged: data changed, hash recomputed
-      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
-      # routes manifest: routes.json not verified
-      .keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
-      # routes manifest: W1005 only
+
+      # routes manifest: routes.json is not judged without derived
+
+      # routes manifest: no W1005
 
       # routes manifest: not self-consistent
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # routes manifest: non-canonical bytes
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
-      --- a/.keel/routes.json
-      +++ b/.keel/routes.json
-      @@ -1 +1 @@
-      -{"hash":"fnv1a:5465b825","data":{}}
-      \\ No newline at end of file
-      +{"data":{},"hash":"fnv1a:5465b825"}
+
       # nested dir: self-consistent
-      apps/a/.keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
+
       # nested dir: genuine
 
-      # nested manifest: W1005
-      apps/a/.keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
-      # root manifest: not nested
+      # nested manifest: no W1005
+
+      # root manifest: no W1005
 
       # nested source: its own project
-      apps/a/.keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
+      apps/a/.keel/ids.json:1:1 .keel/ids.json differs from the tree; keel check rewrites it
       # root source: not nested
 
       # two projects, one compile each
-      apps/b/.keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
+      apps/b/.keel/ids.json:1:1 .keel/ids.json differs from the tree; keel check rewrites it
       # nested topology
 
       # forged ids.json beside its source
-      .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
+      .keel/ids.json:1:1 .keel/ids.json differs from the tree; keel check rewrites it
       # non-canonical bytes keep data
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
-      --- a/.keel/routes.json
-      +++ b/.keel/routes.json
-      @@ -1 +1 @@
-      -{"hash":"fnv1a:5465b825","data":{}}
-      \\ No newline at end of file
-      +{"data":{},"hash":"fnv1a:5465b825"}
+
       # bad hash
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # not json
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # json null
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # json array
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # hash not string
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # data undefined
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # 0143: hashes naming the forged hash are ignored
-      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
+
       # 0143: empty hashes are ignored
-      .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
-      # project: sources come from it
-      .keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
+      .keel/ids.json:1:1 .keel/ids.json differs from the tree; keel check rewrites it
+      # project: routes.json is not judged
+
+      # derived: the same bytes
+
+      # derived: differing bytes
+      .keel/routes.json:1:1 .keel/routes.json differs from the tree; keel check rewrites it
+      # derived: nested dir differing bytes
+      apps/a/.keel/routes.json:1:1 .keel/routes.json differs from the tree; keel check rewrites it
       # project: empty
-      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
+
       # unknown name
-      .keel/x.json:1:1 .keel/x.json is not among the compiled artifacts; remove it
+      .keel/x.json:1:1 .keel/x.json is no derived file; remove it
       # nested dir
-      apps/a/.keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+
       # not .keel
 
       # long name
-      .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.json:1:1 .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn is not among the compiled artifacts; remove it"
+      .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.json:1:1 .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn is no derived file; remove it"
     `);
   });
 

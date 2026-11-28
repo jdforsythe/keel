@@ -1,7 +1,7 @@
 // k.a11y-static Tokens and Build: every command that runs the check pipeline reads the project's `tokens.ts`, fresh
 // on every run; a broken one is E1807 at tokens.ts 1:1; `keel build` refuses a static a11y error.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tempDir } from "@keel/tooling/test-tmp";
@@ -68,11 +68,14 @@ describe("k.a11y-static: every check path reads tokens.ts", () => {
     expect(r.status).toBe(1);
   });
 
-  it("keel build refuses it and writes nothing", () => {
+  it("keel build refuses it and writes nothing: `.keel/` stays as the check left it", () => {
+    const before = readdirSync(join(dir, ".keel")).map((n) => [n, readFileSync(join(dir, ".keel", n), "utf8")]);
     const r = keel(dir, ["build"]);
     expect(r.status).toBe(1);
     expect(coded(r.records, "E1804")).toEqual(want);
-    expect(existsSync(join(dir, ".keel"))).toBe(false);
+    expect(readdirSync(join(dir, ".keel")).map((n) => [n, readFileSync(join(dir, ".keel", n), "utf8")])).toEqual(
+      before,
+    );
     expect(existsSync(join(dir, "dist"))).toBe(false);
   });
 
@@ -168,7 +171,9 @@ describe("k.a11y-static: a changed token is judged by the next check, cache or n
     const warm = keel(dir, ["check"]);
     expect(coded(warm.records, "E1804")).toEqual(["modules/m/C.tsx:5"]);
     rmSync(join(dir, "node_modules", ".cache", "keel"), { recursive: true, force: true });
-    expect(keel(dir, ["check"]).stdout).toBe(warm.stdout);
+    // The same bytes but the work counts (k.derived Work): the cold run evaluates what the warm one took from the cache.
+    const work = (out: string): string => out.replace(/,"evaluated":\d+,"cached":\d+/, "");
+    expect(work(keel(dir, ["check"]).stdout)).toBe(work(warm.stdout));
   });
 
   it("a long-lived process judges a change to a file tokens.ts imports", async () => {

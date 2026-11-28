@@ -7,8 +7,10 @@ import { libraryEntryDiags } from "@keel/check";
 import { INDEX_HTML_IGNORED } from "@keel/compiler/hosting/INDEX_HTML_IGNORED";
 import { operations } from "../operations.ts";
 import type { DevServer } from "./DevServer.ts";
+import { frozenRun } from "./derived/frozenRun.ts";
 import { devPoll } from "./devPoll.ts";
 import { devPort } from "./devPort.ts";
+import { devRefresh } from "./devRefresh.ts";
 import { errorText } from "./errorText.ts";
 import { hostIo } from "./hostIo.ts";
 import { libraryProjectFiles } from "./libraryProjectFiles.ts";
@@ -49,7 +51,8 @@ const STOPS = [
  * input schema. The project's Vite creates the server (strict port; `--port` when given), the port it resolved is
  * probed on every address, and a port that will not bind is one E1560 line (exit 1): the server is closed and never
  * listens, so it cannot move to another port. Otherwise it listens, prints Vite's banner and URLs, and serves until
- * SIGINT or SIGTERM closes it; a project `index.html` is one W1012 record first (k.head). `KEEL_DEV_DIR` is set to the app's `.keel-dev/` folder first (k.data Files). Undefined when the engine answers instead: flags that do not parse (E1052).
+ * SIGINT or SIGTERM closes it; a project `index.html` is one W1012 record first (k.head). Not frozen, it keeps the
+ * evaluated views and deploy files refreshed (`devRefresh`). `KEEL_DEV_DIR` is set to the app's `.keel-dev/` folder first (k.data Files). Undefined when the engine answers instead: flags that do not parse (E1052).
  *
  * It listens on loopback alone (k.topology Local topology): a Vite `server.host` past loopback is one E1560 naming
  * `server.host`, and `--host <address>` (`0.0.0.0` or an address of this machine, else E1560 naming `--host`) is the one
@@ -133,6 +136,9 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
   setDefaultResultOrder("ipv4first");
   // Where a capability keeps its dev data (k.data Files), beside each deployable's storage file.
   process.env.KEEL_DEV_DIR = join(resolve(cwd), ".keel-dev");
+  // A frozen dev server (k.derived Frozen) writes no view: the Vite plugin reads `KEEL_FROZEN`.
+  const frozen = frozenRun(input.frozen, hostIo(false).env);
+  if (frozen) process.env.KEEL_FROZEN = "1";
   let server: DevServer;
   try {
     server = await viteServer(cwd, input.port, input.host, input.format !== "pretty");
@@ -181,6 +187,18 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
         .stdout,
     );
   }
+  // The evaluated views and deploy files follow every change to what their derivation read (k.derived Refresh).
+  if (!frozen)
+    devRefresh(cwd, server, (diags) => {
+      process.stdout.write(
+        respond([...diags], hostIo(false), {
+          command: "dev",
+          format: input.format,
+          quiet: input.quiet,
+          limit: input.limit,
+        }).stdout,
+      );
+    });
   for (const [signal, n] of STOPS) {
     process.once(signal, () => {
       void server.close().finally(() => process.exit(128 + n));

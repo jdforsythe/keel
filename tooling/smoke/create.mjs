@@ -4,7 +4,7 @@
 // `--library`, its bin runs in an empty folder under the temp folder (outside the repository) with pnpm's user agent,
 // one `pnpm-workspace.yaml` of `overrides` points each `@keel/*` at its tarball (the stand-in for the registry), and the
 // commands the bin printed run as printed: the install, then `keel check`, `keel test`, `keel build` (`keel pack`, which
-// is what a fresh library's next line says, then `keel pack --check`), then `keel docs --sync`, which must change no
+// is what a fresh library's next line says, then `keel pack --frozen`), then `keel docs --sync`, which must change no
 // file. The `node` kind's `dist/web/server.mjs` is started on a free port and `GET /` must answer 200 with the
 // project's name. Every child is bounded and stopped; the temp folders are removed unless `--keep`.
 import { execFile, spawn } from "node:child_process";
@@ -206,8 +206,8 @@ try {
     }
     if (!ok) continue;
     if (kind === "library") {
-      const verify = await sh("pnpm keel pack --check", dir);
-      r.step(`${kind}: pnpm keel pack --check`, verify.ok, verify.ok ? "" : tail(verify.out));
+      const verify = await sh("pnpm keel pack --frozen", dir);
+      r.step(`${kind}: pnpm keel pack --frozen`, verify.ok, verify.ok ? "" : tail(verify.out));
     }
     const before = await snapshot(dir);
     const sync = await sh("pnpm keel docs --sync", dir);

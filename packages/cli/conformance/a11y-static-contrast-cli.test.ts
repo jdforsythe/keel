@@ -532,7 +532,9 @@ describe("k.a11y-static: the tokens are read on every run, never from a cache", 
       expect(at(changed, "Fails")).toHaveLength(1);
       rmSync(join(dir, "node_modules", ".cache", "keel"), { recursive: true, force: true });
       const fresh = keel(dir, ["check"]);
-      expect(changed.stdout).toBe(fresh.stdout);
+      // the cache changes only the json summary's `evaluated` and `cached` counts (k.derived Derivation cache)
+      const noCacheCounts = (out: string): string => out.replace(/,"evaluated":\d+,"cached":\d+/g, "");
+      expect(noCacheCounts(changed.stdout)).toBe(noCacheCounts(fresh.stdout));
     },
     fixedTime(240_000),
   );
@@ -574,14 +576,16 @@ describe("k.a11y-static: E1802, E1804, E1807 and E1820 make `keel build` exit 1 
         const errors = (r: Run): CliRecord[] =>
           r.records.filter((x) => x.kind === "diag" && String(x.code).startsWith("E"));
         expect(errors(checked).map((x) => x.code)).toEqual([code]);
-        const built = keel(dir, ["build"]);
+        // `keel check` refreshes the views beside an error (k.derived Refresh), so the build runs in a tree no check has touched.
+        const fresh = project(`a11y-static-build-only-${code}`, files);
+        const built = keel(fresh, ["build"]);
         expect(built.status).toBe(1);
         expect(
           errors(built).map((x) => `${x.code} ${x.path}`),
           built.stdout,
         ).toEqual([`${code} ${String(errors(checked)[0]?.path)}`]);
-        expect(existsSync(join(dir, ".keel"))).toBe(false);
-        expect(existsSync(join(dir, "dist"))).toBe(false);
+        expect(existsSync(join(fresh, ".keel"))).toBe(false);
+        expect(existsSync(join(fresh, "dist"))).toBe(false);
       },
       fixedTime(240_000),
     );

@@ -5,6 +5,8 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { EMPTY_REPORT } from "./EMPTY_REPORT.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
+import type { Work } from "./derived/Work.ts";
+import { frozenRun } from "./derived/frozenRun.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { ownLibrary } from "./ownLibrary.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -34,10 +36,19 @@ export async function testCommand(
   const configured = existsSync(io.cwd) && readdirSync(io.cwd).some((n) => VITEST_CONFIG.test(n));
   const runnable = configured || projectFiles(io).some((f) => TEST_FILE.test(f.path));
   // A library holds no page route, so its own folder keeps no render claims (k.library-pack Own folder).
+  const own = ownLibrary(io.cwd) === undefined;
+  // Over the disk, the derivation of the tree under test (k.derived Readers): `a11y.json` is handed to each test
+  // process, and, not frozen, the views are refreshed first.
+  const frozen = frozenRun(input.frozen, io.env);
+  const work: Work = { evaluated: 0, cached: 0, refreshed: 0 };
+  const derived =
+    runnable && own && io.load !== undefined
+      ? await (await import("@keel/cli/derive")).testViews(io.cwd, projectFiles(io), frozen, work)
+      : undefined;
   const r = runnable
-    ? await vitestRun(io.cwd, input.paths ?? [], ownLibrary(io.cwd) === undefined, report)
+    ? await vitestRun(io.cwd, input.paths ?? [], own, report, undefined, { a11y: derived?.a11y, frozen })
     : EMPTY_REPORT;
-  const diags = r.diagnostics.map((d) => makeDiag(d.code, d.message, d));
+  const diags = [...(derived?.diags ?? []), ...r.diagnostics.map((d) => makeDiag(d.code, d.message, d))];
   const counts = { tests: r.tests, failed: r.failed, skipped: r.skipped };
   return [...diags, { kind: "summary", ok: r.failed === 0 && r.errors === 0, name: "test", counts }];
 }

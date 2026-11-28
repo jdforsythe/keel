@@ -39,15 +39,15 @@ function evaluated() {
     contracts: [y, pages, ...routes.contracts],
     bindings: [...bindingsOf(routes).values()].map((b) => b.binding),
     callers: { y: ["b", "a"] },
-    sources: { "modules/y/y.contract.ts": "fnv1a:00000000" },
   };
 }
 
 describe("surfaceOf", () => {
   it("records each contract with an API entry by module: its callers sorted and each API entry by id", () => {
     const d = surfaceOf(evaluated());
+    expect(d).not.toHaveProperty("sources");
     expect(d).toMatchObject({
-      version: 2,
+      version: 3,
       contracts: {
         y: {
           module: "y",
@@ -67,7 +67,6 @@ describe("surfaceOf", () => {
         },
       },
       stores: {},
-      sources: { "modules/y/y.contract.ts": "fnv1a:00000000" },
     });
     expect(Object.keys(d.contracts ?? {})).toEqual(["y"]);
     const y = d.contracts;
@@ -103,7 +102,7 @@ describe("baseInput", () => {
     expect(baseInput({}, io({}))).toEqual({ value: undefined });
     expect(baseInput({ base: "base.json" }, io({ "base.json": surface }))).toEqual({ value: JSON.parse(surface) });
     expect(baseInput({ base: "../b.json" }, io({}, { "../b.json": surface })).warn).toBeUndefined();
-    const other = surface.replace('"version":2', '"version":3');
+    const other = surface.replace('"version":2', '"version":4');
     const noContracts = JSON.stringify({ data: { version: 2, routes: {} } });
     for (const files of [
       {},
@@ -117,7 +116,7 @@ describe("baseInput", () => {
       expect([r.warn?.code, r.warn?.path, r.warn?.message]).toEqual([
         "W1568",
         "base.json",
-        "no base surface of version 2; E1562 not checked",
+        "no base surface of version 2 or 3; E1562 not checked",
       ]);
     }
   });

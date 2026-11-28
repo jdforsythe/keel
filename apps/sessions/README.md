@@ -25,7 +25,7 @@ The `sessions-nightly` workflow (`tooling/sessions-nightly.source.json`) runs `p
 
 ## Run
 Run these from `apps/sessions`:
-1. `pnpm build` runs `keel build`. It writes the `.keel/` artifacts, `dist/sessions/` (`server.mjs`, the generated entry with every dependency bundled, beside the client build, `routes.json` and `std.json`) and `deploy/`.
+1. `pnpm build` runs `keel build`. It keeps the `.keel/` views and writes `dist/sessions/` (`server.mjs`, the generated entry with every dependency bundled, beside the client build, `routes.json` and `std.json`) and `deploy/`.
 2. `PORT=4200 KEEL_SECRET=<32+ bytes> pnpm start` serves `dist/sessions/server.mjs` on port 4200 (default 8080). Node's localStorage in `.sessions.storage` backs `ctx.storage`. On SIGTERM or SIGINT it stops listening and exits 0.
 
 `pnpm test` runs the service in plain node over a sim ctx.

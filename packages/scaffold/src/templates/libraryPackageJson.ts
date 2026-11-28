@@ -31,7 +31,7 @@ export function libraryPackageJson(
       build: "tsc -p tsconfig.build.json",
       check: "keel check",
       test: "keel test",
-      prepack: "tsc -p tsconfig.build.json && keel pack --check",
+      prepack: "tsc -p tsconfig.build.json && keel pack --frozen",
     },
     peerDependencies: Object.fromEntries(PEERS.map((p) => [p, v])),
     devDependencies: {

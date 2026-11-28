@@ -39,3 +39,31 @@ it("the library whose folder holds the file names its folder", () => {
   const b = lib(path.join(path.sep, "w", "b"), "bb", "@acme/b");
   expect(libraryRel([a, b], path.join(path.sep, "w", "b", "src", "x.ts"))).toBe("modules/bb/src/x.ts");
 });
+
+/** The reading by `path.relative`, against which the prefix reading is held. */
+const byRelative = (libraries: readonly Library[], file: string): string | undefined => {
+  for (const l of libraries) {
+    const rel = path.relative(l.dir, file);
+    if (rel.startsWith("..") || path.isAbsolute(rel)) continue;
+    const posix = rel.split(path.sep).join("/");
+    if (posix.startsWith("src/") || posix.startsWith("unsafe/")) return `modules/${l.id ?? l.name}/${posix}`;
+  }
+  return undefined;
+};
+
+it("reads as path.relative does: a sibling folder sharing the name's start, `..` and `.` segments, a trailing separator", () => {
+  fc.assert(
+    fc.property(
+      fc.constantFrom("/w/charts", "/w/charts/", "/w/./charts", "/w/x/../charts"),
+      fc.array(fc.constantFrom("w", "charts", "charts2", "src", "unsafe", "..", ".", "a.ts"), {
+        minLength: 1,
+        maxLength: 6,
+      }),
+      (dir, parts) => {
+        const file = `/${parts.join("/")}`;
+        expect(libraryRel([lib(dir, "c")], file)).toBe(byRelative([lib(dir, "c")], file));
+      },
+    ),
+    { seed: 1337, numRuns: 200 },
+  );
+});

@@ -1,37 +1,44 @@
-// A committed a11y rung kept with no `reports/a11y.json` (`keptNoReport`) is replaced at step 5 of rfc:0235 by the first case below under its Pending marker; the case after it stands.
-// Spec: k.ledger, clause "In a project whose `.keel/routes.json` lists page route `r` (`path: '/r'`) and which has no `reports/a11y.json`, `keel ledger --write tooling/ledger/ledger.json` run in the project over a `tooling/ledger/ledger.json` whose `a11y` holds `a11y:.:r#1.4.3` at `example` writes `a11y:.:r#1.4.3` at `none` and reports one W1733 at `reports/a11y.json`, and `keel ledger --diff` against that ledger reports E1706 for it."
-// Spec: k.ledger, clause "The same project with a `reports/a11y.json` holding one failed run of `r` whose `violations` hold a rule mapped to 1.4.3: `keel ledger --write` over the ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, and `keel ledger --diff` against that ledger reports E1706; with that run passed and its `violations` empty, `--write` writes it at `example`."
-// Spec: k.ledger, clause "Over a ledger whose `a11y` also holds `a11y:.:gone#1.4.3` and `a11y:r#1.4.3` at `example`, with `gone` not in `.keel/routes.json`, `keel ledger --write` writes neither item, with and without `reports/a11y.json`."
-// Spec: k.ledger, clause "From a committed claim for `packages/a/src/a.ts` whose `sha` the file no longer hashes to, and a report on disk whose `files` hold `src/a.ts` with the tree's source and only `Ignored` mutants, `keel ledger --write` stores no claim for `packages/a/src/a.ts` and `keel ledger --diff` reports no W1714; with one `Killed` mutant in place of the `Ignored` one it stores a claim for it whose `sha` is the file's, and `--diff` reports no W1714."
-// Seed: 1337 (no property: fixed projects, the real `keel` binary over temp projects in the OS tmpdir).
-// ASSUMPTIONS: the committed ledger is first written by `keel ledger --write` over the bare project, then its `a11y` list is edited (an array of `{ item, rung }`, as tooling/ledger/ledger.json holds it); `.keel/routes.json` is `{ data: { r: { path: "/r" } }, hash }` (a page route: a non-null `path`, no `api: true`);
-// an `A11yRun` is `{ route, component, rules, violations: [{ rule, element }], file, test, passed }`; `E1804` is the rule mapped to 1.4.3; `--diff` reads the committed ledger at tooling/ledger/ledger.json.
-import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+// A committed a11y rung kept with no `reports/a11y.json` (`keptNoReport`) is replaced at step 5 of rfc:0235 by the first case below under its Pending marker; the case after it stands.
+// Spec: k.ledger, clause "In a project whose route tables give page route `r` (`path: '/r'`) and which has no `reports/a11y.json`, `keel ledger --write tooling/ledger/ledger.json` run in the project over a `tooling/ledger/ledger.json` whose `a11y` holds `a11y:.:r#1.4.3` at `example` writes `a11y:.:r#1.4.3` at `none` and reports one W1733 at `reports/a11y.json`, and `keel ledger --diff` against that ledger reports E1706 for it."
+// Spec: k.ledger, clause "The same project with a `reports/a11y.json` holding one failed run of `r` whose `violations` hold a rule mapped to 1.4.3: `keel ledger --write` over the ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, and `keel ledger --diff` against that ledger reports E1706; with that run passed and its `violations` empty, `--write` writes it at `example`."
+// Spec: k.ledger, clause "Over a ledger whose `a11y` also holds `a11y:.:gone#1.4.3` and `a11y:r#1.4.3` at `example`, with `gone` not among the project's routes, `keel ledger --write` writes neither item, with and without `reports/a11y.json`."
+// Spec: k.ledger, clause "From a committed claim for `packages/a/src/a.ts` whose `sha` the file no longer hashes to, and a report on disk whose `files` hold `src/a.ts` with the tree's source and only `Ignored` mutants, `keel ledger --write` stores no claim for `packages/a/src/a.ts` and `keel ledger --diff` reports no W1714; with one `Killed` mutant in place of the `Ignored` one it stores a claim for it whose `sha` is the file's, and `--diff` reports no W1714."
+// Seed: 1337 (no property: fixed projects, the real `keel` binary over temp projects in the OS tmpdir).
+// ASSUMED: the clause's route `r` is `m.r` (E1155: a route id of module `m` is `m.<name>`).
+// ASSUMPTIONS: the committed ledger is first written by `keel ledger --write` over the bare project, then its `a11y` list is edited (an array of `{ item, rung }`, as tooling/ledger/ledger.json holds it); the route tables are TABLES below (module `m`, route id `r`, a page route: a non-null `path`, no `api: true`); ASSUMED: the project has no `.keel/` and `keel ledger` derives its routes (k.a11y Claims);
+// an `A11yRun` is `{ route, component, rules, violations: [{ rule, element }], file, test, passed }`; `E1804` is the rule mapped to 1.4.3; `--diff` reads the committed ledger at tooling/ledger/ledger.json.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, describe, expect, it } from "vitest";
+import { keelProject } from "./a11y-project-support.ts";
 import { collect, diags, mutantsOf, mutationReport, sha256 } from "./ledger-fixture-kinds.ts";
 import {
   type CliRecord,
   type Run,
+  childOutput,
   keel,
-  makeProject,
   removeProject,
   root,
   summaryOf,
   writeFiles,
-  childOutput,
 } from "./test-sim-project.ts";
 
 const COMMITTED = "tooling/ledger/ledger.json";
-const ITEM = "a11y:.:r#1.4.3";
-const GONE = "a11y:.:gone#1.4.3";
+const ITEM = "a11y:.:m.r#1.4.3";
+const GONE = "a11y:.:m.gone#1.4.3";
 // the item form without a project: no current key is this, so `--write` drops it
-const OLD = "a11y:r#1.4.3";
-const ROUTES = `${JSON.stringify({ data: { r: { path: "/r" } }, hash: "fnv1a:00000000" })}\n`;
+const OLD = "a11y:m.r#1.4.3";
+/** The route tables of a project whose one module `m` has the page route `r` (`path: '/r'`). */
+const TABLES: Readonly<Record<string, string>> = {
+  "topology.ts": `export default { api: { modules: ["m"], adapter: "node" } };\n`,
+  "modules/m/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`,
+  "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n  "m.r": { path: "/r" },\n});\n`,
+  "modules/m/routes.ts": `import { manifest } from "@keel/router";\nimport { Text } from "@keel/ui";\nimport { m } from "./m.contract.ts";\n\nexport const routes = manifest(m, {\n  "m.r": { component: () => Text({ id: "m.r.msg", children: "r" }), title: () => "r" },\n});\n`,
+};
 const run = (passed: boolean, violations: readonly { rule: string; element: string }[]) =>
-  `${JSON.stringify([{ route: "r", component: null, rules: ["E1804"], violations, file: "modules/m/test/r.test.ts", test: "renders r", passed }], null, 2)}\n`;
+  `${JSON.stringify([{ route: "m.r", component: null, rules: ["E1804"], violations, file: "modules/m/test/r.test.ts", test: "renders r", passed }], null, 2)}\n`;
 const FAILED = run(false, [{ rule: "E1804", element: "r.msg" }]);
 const PASSED = run(true, []);
 
@@ -40,7 +47,7 @@ afterEach(() => {
   for (const d of created.splice(0)) removeProject(d);
 });
 const project = (prefix: string, files: Readonly<Record<string, string>>): string => {
-  const dir = makeProject(prefix, files);
+  const dir = keelProject(prefix, files);
   created.push(dir);
   return dir;
 };
@@ -80,7 +87,7 @@ describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
   it(
     "in a project with page route `r` and no `reports/a11y.json`, `--write` over a ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, reports one W1733 at `reports/a11y.json`, holds no `keptNoReport` in `counts`, and `--diff` reports E1706 for it",
     () => {
-      const dir = project("ledger-no-report", { ".keel/routes.json": ROUTES });
+      const dir = project("ledger-no-report", TABLES);
       commit(dir, [{ item: ITEM, rung: "example" }]);
       const written = keel(dir, ["ledger", "--write", COMMITTED]);
       expect(rungOf(dir, ITEM)).toBe("none");
@@ -95,7 +102,7 @@ describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
   it(
     "with a `reports/a11y.json` holding one failed run of `r` with an E1804 violation, `--write` writes `a11y:.:r#1.4.3` at `none`, no `keptNoReport`, and `--diff` reports E1706; with the run passed and no violations it is `example`",
     () => {
-      const dir = project("ledger-recomputed", { ".keel/routes.json": ROUTES, "reports/a11y.json": FAILED });
+      const dir = project("ledger-recomputed", { ...TABLES, "reports/a11y.json": FAILED });
       commit(dir, [{ item: ITEM, rung: "example" }]);
       const diff = keel(dir, ["ledger", "--diff"]);
       expect(diags(diff, "E1706").length).toBeGreaterThan(0);
@@ -112,11 +119,11 @@ describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
   );
 
   it(
-    "`a11y:.:gone#1.4.3` for a route not in `.keel/routes.json` and the old-form `a11y:r#1.4.3` are not written, with and without `reports/a11y.json`",
+    "`a11y:.:gone#1.4.3` for a route not among the project's routes and the old-form `a11y:r#1.4.3` are not written, with and without `reports/a11y.json`",
     () => {
       for (const report of [undefined, FAILED, PASSED]) {
         const dir = project("ledger-gone", {
-          ".keel/routes.json": ROUTES,
+          ...TABLES,
           ...(report === undefined ? {} : { "reports/a11y.json": report }),
         });
         commit(dir, [

@@ -1,5 +1,5 @@
 # std.tauri: Tauri shell target
-status: conformance-covered
+status: implemented
 **Extension points.** Shell target (k.shell): `@keel/std-tauri/tools` calls `shellTarget('tauri', target)`. Its drivers are std.shells'. It follows Tauri 2's releases: the versions here change with this section, not the kernel's.
 
 **Files.** `platforms` is `[]`. `files` gives, under `deploy/<name>/tauri/`: `tauri.conf.json` (`identifier`, `productName`, `version`, `build.frontendDist` `www`, one window titled `name`, `app.security.csp` the `client` policy (k.security) without peer origins, with `ipc: http://ipc.localhost` added to `connect-src`, `id` as deep-link scheme, `plugins.http.scopeRedirects` `true`; none while `policy` is unset), `Cargo.toml` (the crate named from `pkg`, exact versions of `tauri`, `tauri-build`, `serde_json`, `tauri-plugin-store`, `tauri-plugin-http`, and for launch and return links (k.links) `tauri-plugin-deep-link`, `tauri-plugin-single-instance`; with `identity` also `tauri-plugin-opener`), `build.rs`, `src/main.rs`, `src/lib.rs` (starting each of those plugins), `capabilities/default.json` (core, store and deep-link; with `identity` the opener for `https:` URLs). Cargo writes `Cargo.lock` there on the first build; it is committed and not generated, and a build copies a new one back. `icons/icon.png` there is the app's own, committed and not generated; without one the build uses Keel's mark.
@@ -21,7 +21,7 @@ status: conformance-covered
 **Rules.** None.
 
 **Conformance.** A case that sets `KEEL_ORIGIN` has a `node` deployable `api` in its topology (k.shell Build 2).
-- With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 whose fix restores it; removing `tauri` from `topology.ts` removes them.
+- With `web` (`client`) declaring `tauri`, `keel build` writes the `deploy/web/tauri/` files and no Capacitor file; a changed byte is E1005 under `keel check --frozen`, whose fix restores it; removing `tauri` from `topology.ts` removes them.
 - `tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`.
 - With no `cargo` on `PATH`, `keel build --target tauri` prints one E1575 naming `cargo` and Rust 1.95, exits 1 and writes nothing under `dist/web/tauri/`.
 - The Tauri shell files register `id` as a scheme: Tauri's deep-link schemes.

@@ -15,6 +15,7 @@ import { choiceThemes } from "./choiceThemes.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployArtifactCount } from "./deployArtifactCount.ts";
 import { deployBuildWrites } from "./deployBuildWrites.ts";
+import { frozenRun } from "./derived/frozenRun.ts";
 import { failedDist } from "./failedDist.ts";
 import { hostingDiags } from "./hostingDiags.ts";
 import { inWorkspace } from "./inWorkspace.ts";
@@ -70,11 +71,21 @@ async function steps(
       : (await import("@keel/cli/shell")).shellPlan(input, io.env ?? {}, io.cwd, targets, host?.probe);
   if (pre.diags.length > 0)
     return { records: [...pre.diags, summary("build", pre.diags, { errors: pre.diags.length })], writes: [] };
-  // `keel check` first (k.boundary Build gate): an error stops the build with its records and nothing written. E1005,
-  // generated output that differs from its sources, is what the build rewrites.
-  const checked = await checkCommand({}, io);
-  if (checked.some((r) => r.kind === "diag" && r.code !== "E1005" && isError(r)))
-    return { records: checked, writes: [] };
+  // `keel check` first (k.boundary Build gate): an error stops the build with its records and nothing written. Not
+  // frozen, the check has kept the derived views (k.derived Refresh) and an E1005 left is a file the build removes from
+  // nothing; frozen, a differing view is E1005 and stops the build too, since nothing may be written.
+  const frozen = frozenRun(input.frozen, io.env);
+  let refreshViews: () => readonly OutRecord[] = () => [];
+  // An evaluation problem (E1006, E1049, ...) fails the build after its Vite builds have run, as a failed step does.
+  let late: readonly OutRecord[] = [];
+  const run = await checkCommand(frozen ? { frozen: true } : {}, io, (r, problems) => {
+    refreshViews = r;
+    late = problems;
+  });
+  const checked = run.filter((r) => r.kind !== "summary");
+  const gate = checked.filter((r) => !late.includes(r));
+  if (gate.some((r) => r.kind === "diag" && (frozen || r.code !== "E1005") && isError(r)))
+    return { records: [...checked, summary("build", checked, { errors: checked.filter(isError).length })], writes: [] };
   // Only the root project's files: a nested project (`projectDirs`, the rule `keel check` groups by) builds itself.
   const dirs = projectDirs(project);
   const files = codeFiles(io, undefined).filter(
@@ -109,19 +120,22 @@ async function steps(
       : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
   const failed = diags.some(isError);
+  // The views the check derived are written only by a build that goes on (k.derived Refresh): a failing one writes nothing.
+  if (!failed && !frozen) diags.push(...refreshViews());
+  diags.push(...late);
   // The libraries' manifests join the tree: their `env` names reach `deploy/compose.yaml` (k.server-deps Environment).
   const deployTree = [...project, ...libraryManifestFiles(io.cwd, project)];
   const deploy = failed ? [] : deployBuildWrites(deployTree, !inWorkspace(io), policy, targets.shells);
-  const writes: Write[] = failed
-    ? []
-    : [
-        ...[
+  // An engine run over given files (no `Io.load`) keeps no views in its check: the build returns them as writes.
+  const views =
+    io.load !== undefined
+      ? []
+      : [
           ...ARTIFACTS.map((name) => ({ path: `.keel/${name}`, data: r.artifacts[name], hash: r.hashes[name] })),
           { path: ".keel/std.json", data: std.data, hash: std.hash },
           { path: ".keel/schemes.json", data: schemes, hash: hashOf(schemes) },
-        ].map(({ path, data, hash }) => ({ path, content: `${canonicalJson({ data, hash })}\n`, readonly: true })),
-        ...deploy,
-      ];
+        ].map(({ path, data, hash }) => ({ path, content: `${canonicalJson({ data, hash })}\n`, readonly: true }));
+  const writes: Write[] = failed || frozen ? [] : [...views, ...deploy];
   const artifacts = failed
     ? 0
     : ARTIFACTS.length + 2 + (topology === undefined ? 0 : deployArtifactCount(project, deploy, targets.paths));
@@ -134,11 +148,29 @@ async function steps(
       errors: Math.max(all.filter(isError).length, code === 0 ? 0 : 1),
     }),
   ];
-  const half = refresh ? io.refresh : io.build;
+  const { refresh: again, build: bundle } = io;
+  const half = refresh
+    ? again === undefined
+      ? undefined
+      : () => again(io.cwd)
+    : bundle === undefined
+      ? undefined
+      : () => bundle(io.cwd, frozen);
   if (failed || half === undefined) return { records: done(diags), writes };
   // The disk half reads what the engine wrote, so the writes land first (`Io.build`).
   io.apply?.(writes);
-  const post = await half(io.cwd);
+  const ran = await half();
+  // A Vite build evaluates the routes again: a line for a file the check's evaluation already reported is dropped.
+  const same = (d: OutRecord): boolean =>
+    late.some(
+      (l) =>
+        l.kind === "diag" &&
+        d.kind === "diag" &&
+        l.code === d.code &&
+        (l.path === d.path ||
+          (typeof l.path === "string" && typeof d.path === "string" && d.path.endsWith(`/${l.path}`))),
+    );
+  const post = { ...ran, diagnostics: ran.diagnostics.filter((d) => !same(d)) };
   const plan = pre.plan;
   if (plan === undefined || post.code !== 0 || post.diagnostics.some(isError) || host === undefined)
     return {

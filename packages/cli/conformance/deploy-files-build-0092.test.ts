@@ -1,4 +1,4 @@
-// Spec: k.deploy, clause "With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow."
+// Spec: k.deploy, clause "With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 under `keel check --frozen`, whose fix restores it, and is rewritten by `keel check`; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow."
 // k.deploy (rfc:0092)
 // Seed 1337 (the byte position comes from `fc.nat`). The real binary (the host `Io` path of `build`) over a temp project with
 // `@keel/*` and `vite` linked; `keel check` reads E1005. The fix is applied with the small unified-diff applier below.
@@ -111,7 +111,7 @@ const writeFile = (rel: string, text: string): void => {
 };
 
 test(
-  "With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow.",
+  "With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 under `keel check --frozen`, whose fix restores it, and is rewritten by `keel check`; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow.",
   () => {
     const built = keel(dir, ["build"]);
     expect(built.status).toBe(0);
@@ -130,7 +130,7 @@ test(
         const tampered = `${original.slice(0, at)}${original[at] === "#" ? "%" : "#"}${original.slice(at + 1)}`;
         try {
           writeFile(rel, tampered);
-          const found = diags(keel(dir, ["check"]), "E1005").filter((d) => d.path === rel);
+          const found = diags(keel(dir, ["check", "--frozen"]), "E1005").filter((d) => d.path === rel);
           expect(found).toHaveLength(1);
           const fix = found[0]?.fix;
           expect(typeof fix).toBe("string");
@@ -141,6 +141,13 @@ test(
       }),
       { seed: SEED, numRuns: 3 },
     );
+
+    // Not frozen, `keel check` rewrites the changed byte and reports nothing for it.
+    const target = "deploy/compose.yaml";
+    const original = before.get(target) ?? "";
+    writeFile(target, `# edited\n${original}`);
+    expect(diags(keel(dir, ["check"]), "E1005").filter((d) => d.path === target)).toEqual([]);
+    expect(readFileSync(join(dir, target), "utf8")).toBe(original);
 
     writeFile("topology.ts", topologySrc("x"));
     expect(keel(dir, ["build"]).status).toBe(0);
