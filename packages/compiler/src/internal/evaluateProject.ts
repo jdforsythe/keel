@@ -332,6 +332,8 @@ export async function evaluateProject(input: {
             loader: "text",
           }));
           b.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, (args) => {
+            // A superseded evaluation (`keel dev`) compiles nothing more: its bundle ends at the next file.
+            if (input.signal?.aborted === true) return { errors: [{ text: "superseded" }] };
             const own = path.relative(root, args.path).split(path.sep).join("/");
             const rel = libraryRel(libraries, args.path) ?? own;
             if (rel.startsWith("../") || path.isAbsolute(rel) || rel.split("/").includes("node_modules"))
@@ -367,6 +369,7 @@ export async function evaluateProject(input: {
     ],
   });
   const result = await bundled.catch((e: unknown) => {
+    if (input.signal?.aborted === true) throw input.signal.reason;
     if (syntax.length > 0) return undefined;
     throw bundleFailure(e, root);
   });
