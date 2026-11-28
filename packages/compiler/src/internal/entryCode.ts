@@ -29,7 +29,7 @@ const SHELLS = {
  * `served` (the topology has a `node` deployable, whose origin a tag can name) it reads the tags even when `deployables` is empty,
  * starts the router on the browser history, and mounts its `App` into `#app` with
  * the ctx and `mode`, a string literal: `"dev"` only when Vite serves, `"production"` for a build (k.runtime, k.deploy); the
- * entry reads no `import.meta.env`. Under `"dev"` it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`; with `deployable`, also that name as `deployable`) to
+ * entry reads no `import.meta.env`. Under `"dev"` it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.inspect; `sections` are the registered inspector hooks read with `ctx`; with `deployable`, also that name as `deployable`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports. With `shell` (a `keel build --target` build, k.shell
  * Shell ctx) the ctx is `createCtx({ mode: 'shell', drivers })`, the drivers of that shell's std.shells package for
@@ -54,6 +54,7 @@ export function entryCode(
   identity = false,
   served = false,
   deployable?: string,
+  themes: readonly string[] = [],
 ): string {
   const native = shell === undefined ? undefined : SHELLS[shell.kind];
   const given = shell?.origin;
@@ -69,6 +70,7 @@ export function entryCode(
     `import { createCtx } from ${q(CTX)};`,
     `import { browserHistory, createRouter, routeTable } from ${q(ROUTER)};`,
     `import { mount } from ${q(RUNTIME)};`,
+    ...(themes.length === 0 ? [] : [`import { rendered as __keelRendered } from ${q(`${RUNTIME}/internal`)};`]),
     `import { inspect } from ${q(REACTIVE)};`,
     `import { stores } from ${q(STORE)};`,
     `import { inspectorSections } from ${q(SECTIONS)};`,
@@ -101,6 +103,10 @@ export function entryCode(
     `const router = createRouter(${table}, { ctx, history: browserHistory(), mode${identity ? ", mount: __keelIdentity.path" : ""} });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,
+    // The `choice` themes, kept with the document for this ctx so `appearance(ctx)` knows them (k.schemes Choice); none, no bytes.
+    ...(themes.length === 0
+      ? []
+      : [`__keelRendered.set(ctx, { document, artifacts: { themes: ${JSON.stringify(themes)} } });`]),
     "mount(router.App, el, { ctx, mode });",
     'if (mode === "dev") {',
     '  let last = "";',

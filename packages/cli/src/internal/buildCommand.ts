@@ -11,10 +11,12 @@ import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { checkCommand } from "./checkCommand.ts";
+import { choiceThemes } from "./choiceThemes.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployArtifactCount } from "./deployArtifactCount.ts";
 import { deployBuildWrites } from "./deployBuildWrites.ts";
 import { frozenRun } from "./derived/frozenRun.ts";
+import { failedDist } from "./failedDist.ts";
 import { hostingDiags } from "./hostingDiags.ts";
 import { inWorkspace } from "./inWorkspace.ts";
 import { isError } from "./isError.ts";
@@ -39,9 +41,26 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * The declared shells' targets load first (`shellTargets`). `--target` (k.shell Build) then runs `shellPlan`'s checks, and any diagnostic there ends the build with nothing
  * written; after a clean disk half the host (`Io.shell`) builds the shell, and the trailer names each artifact.
  * `refresh` (k.scaffold Refresh) runs the same steps with `Io.refresh` as the disk half: no bundle, nothing under `dist/`.
+ * A build failing with E1510 or E1511, at any step, leaves no `dist/<name>/` of the deployable serving the entry, an
+ * earlier build's or this run's part-written one (`failedDist`, `Io.discard`; k.api Rules).
  */
 export async function buildCommand(io: Io, input: Input = {}, refresh = false): Promise<Outcome> {
   const project = projectFiles(io);
+  const out = await steps(io, project, input, refresh);
+  const failed = out.records.filter((r) => isError(r));
+  if (!refresh && failed.length > 0) {
+    const dirs = failedDist(failed, projectTopology(project));
+    if (dirs.length > 0) io.discard?.(dirs);
+  }
+  return out;
+}
+
+async function steps(
+  io: Io,
+  project: ReturnType<typeof projectFiles>,
+  input: Input,
+  refresh: boolean,
+): Promise<Outcome> {
   const policy = await shellPolicy(io.cwd, project);
   const targets = await loadShells(io.cwd, project, policy);
   // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).
@@ -77,9 +96,13 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
   // The artifacts derive from the app's sources and its libraries' files (k.library In an app), as the plugin's do.
   const r = compile([...files, ...librarySources(io.cwd)], topology === undefined ? {} : { topology });
   const std = stdArtifact(files);
-  // The tokens' color schemes, for a node deployable's first paint (k.schemes); no `tokens.ts`, one scheme.
+  // The tokens' color schemes and `choice` themes, for a node deployable's first paint (k.schemes); no `tokens.ts`,
+  // one scheme and no themes.
   const evaluated = await projectTokens(io.cwd);
-  const schemes = { schemes: evaluated?.ok === true ? [...evaluated.schemes] : ["light"] };
+  const schemes = {
+    schemes: evaluated?.ok === true ? [...evaluated.schemes] : ["light"],
+    themes: evaluated?.ok === true ? choiceThemes(evaluated.tokens) : [],
+  };
   const paths = [
     ...identityDiags(project, io.cwd, true),
     ...(topology === undefined

@@ -11,7 +11,7 @@ const NOT_FOUND = "/.keel-not-found";
 /**
  * Render a `static` deployable at build (`@keel/server/internal/prerender`, k.hosting Static; only the generated build
  * entry calls it): one `createApp` in production with a real `ctx` (memory storage), the client build in `dir` as
- * its assets and `std` bound, then a cookieless document GET (caller `''`) of each page route's one path, in table order, and of a
+ * its assets, `artifacts` its artifacts (as a node deployable's `start` passes its own folder) and `std` bound, then a cookieless document GET (caller `''`) of each page route's one path, in table order, and of a
  * path no route declares (`id` undefined), which is the not-found document. Each answer is returned with its status;
  * the app is closed before it returns.
  */
@@ -27,6 +27,7 @@ export async function prerender(o: PrerenderOptions): Promise<readonly Prerender
     identity: o.identity,
     log: { format: "compact", write: () => undefined },
     ...(o.std === undefined ? {} : { std: o.std }),
+    ...(o.artifacts === undefined ? {} : { artifacts: o.artifacts }),
   });
   const modules = o.topology[o.deployable]?.modules ?? [];
   const pages = compileRoutes(o.routes).located.filter(

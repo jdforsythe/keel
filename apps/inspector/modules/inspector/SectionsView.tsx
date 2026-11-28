@@ -6,7 +6,7 @@ import { SectionView } from "./SectionView.schema.ts";
 export const Props = s.object({ sections: s.record(SectionView) });
 
 /**
- * Every inspector section a stdlib module registered (k.cli Inspector hooks), rendered generically: the id, the
+ * Every inspector section a stdlib module registered (k.inspect Inspector hooks), rendered generically: the id, the
  * schema's `doc()` as the type line, and the value as JSON text, or the E1057 the app reported for it.
  */
 export default function SectionsView(props: Infer<typeof Props>) {

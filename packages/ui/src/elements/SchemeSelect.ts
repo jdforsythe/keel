@@ -1,8 +1,12 @@
+import type { Ctx } from "@keel/ctx";
+import { renderArtifacts, renderCtx } from "@keel/runtime-dom/internal";
 import { reveal } from "@keel/runtime-dom/ops";
+import { appearance } from "../appearance.ts";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { bound } from "../internal/bound.ts";
+import { keepDocument } from "../internal/keepDocument.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import type { ControlStyles } from "../types/ControlStyles.ts";
@@ -10,9 +14,6 @@ import type { StyleProps } from "../types/StyleProps.ts";
 
 const CHOICES = ["system", "light", "dark"] as const;
 type Choice = (typeof CHOICES)[number];
-/** A year, the cookie's lifetime when a person picks a scheme. */
-const YEAR = 31536000;
-
 /** The words of the three options, from the app's message set. */
 type Labels = { readonly system: string; readonly light: string; readonly dark: string };
 /** Exactly one of `label` (a visible `<label>`, also the select's `aria-label`) and `labelledBy` (an element id). */
@@ -26,22 +27,16 @@ const current = (doc: Document): Choice => {
   return v === "light" || v === "dark" ? v : "system";
 };
 
-/** Apply a pick: the attribute on `<html>` and the `keel-scheme` cookie (k.schemes Choice); the cookie holds no identifier. */
-const pick = (doc: Document, v: string): void => {
-  const secure = doc.location?.protocol === "https:" ? "; Secure" : "";
-  if (v === "light" || v === "dark") {
-    doc.documentElement.setAttribute("data-k-scheme", v);
-    doc.cookie = `keel-scheme=${v}; Path=/; Max-Age=${YEAR}; SameSite=Lax${secure}`;
-  } else {
-    doc.documentElement.removeAttribute("data-k-scheme");
-    doc.cookie = `keel-scheme=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
-  }
+/** Apply a pick through `appearance(ctx)` (k.schemes Choice), the one writer of the attribute and the cookie. */
+const pick = (ctx: Ctx | undefined, v: string): void => {
+  if (ctx === undefined) return;
+  if (v === "system" || v === "light" || v === "dark") appearance(ctx).set({ scheme: v });
 };
 
 /**
  * The one control for a person's color scheme (k.schemes Choice): a select with the options `system`, `light` and
- * `dark` in that order, worded by `labels`, its value `<html>`'s `data-k-scheme` else `system`. Picking `light` or
- * `dark` sets the attribute and writes `keel-scheme=<value>; Path=/; Max-Age=31536000; SameSite=Lax` (`; Secure` on
+ * `dark` in that order, worded by `labels`, its value `<html>`'s `data-k-scheme` else `system`. A pick goes through
+ * `appearance(ctx)`: picking `light` or `dark` sets the attribute and writes `keel-scheme=<value>; Path=/; Max-Age=31536000; SameSite=Lax` (`; Secure` on
  * https); picking `system` removes the attribute and expires the cookie. Bound (`data-k`); role class `k-control`.
  * Its wrapper, holding the label and the select, renders `hidden` until the runtime mounts or resumes it.
  */
@@ -56,8 +51,11 @@ export function SchemeSelect(
       readonly styles?: ControlStyles;
     },
 ): Node {
+  const ctx = renderCtx();
+  const artifacts = renderArtifacts();
   const control = (id: string): HTMLSelectElement =>
     make("select", (el) => {
+      keepDocument(ctx, artifacts, el.ownerDocument);
       el.setAttribute("id", id);
       applyIdLang(el, props, false);
       if (props.label !== undefined) el.setAttribute("aria-label", props.label);
@@ -76,7 +74,7 @@ export function SchemeSelect(
       el.value = now;
       bound(el);
       applyStyle(el, props, "k-control");
-      listen(el, "change", () => pick(el.ownerDocument, el.value));
+      listen(el, "change", () => pick(ctx, el.value));
     });
   const label = props.label;
   const styles = props.styles;

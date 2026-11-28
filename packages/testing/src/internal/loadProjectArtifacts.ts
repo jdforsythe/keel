@@ -1,11 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { TokenSchema } from "@keel/ui";
+import { projectTokens } from "@keel/compiler/hosting/projectTokens";
+import { TokenSchema } from "@keel/ui/tokens";
 import type { HarnessArtifacts } from "../types/HarnessArtifacts.ts";
 import type { ProjectArtifacts } from "./ProjectArtifacts.ts";
 import { a11yEntries } from "./a11yEntries.ts";
-
-const messageOf = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
 /** `given`, the derived `a11y.json` bytes `keel test` hands over, else `.keel/a11y.json` of `dir`, if JSON; else none. */
 const a11yJson = (dir: string, given: string | undefined): Pick<HarnessArtifacts, "a11y.json"> => {
@@ -20,22 +19,21 @@ const a11yJson = (dir: string, given: string | undefined): Pick<HarnessArtifacts
 
 /**
  * The artifacts of the project in `dir` (k.a11y Artifacts): the `a11y.json` derived from the tree, as `keel test`
- * hands it to the test process (`a11y`, k.derived Readers), else `.keel/a11y.json` if present, and the `tokens` export of `tokens.ts`, if present. A `tokens.ts` that throws, exports no `tokens` or whose
- * `tokens` fail `TokenSchema` gives the reason instead.
+ * hands it to the test process (`given`, k.derived Readers), else `.keel/a11y.json` if present, and the `tokens` export of `tokens.ts`, if present, evaluated as `keel check` and `keel build` evaluate it
+ * (`projectTokens` of `@keel/compiler`: bundled with the `keel` condition, a library's shipped tokens read from their
+ * literal, k.looks), never by the runtime's own loader. A `tokens.ts` that throws, exports no `tokens` or whose
+ * `tokens` fail `TokenSchema` gives the reason instead, each naming `tokens.ts` (the last with the first issue's
+ * `<path>: <what>`).
  */
 export async function loadProjectArtifacts(dir: string, given?: string): Promise<ProjectArtifacts> {
   const a11y = a11yJson(dir, given);
-  const file = join(dir, "tokens.ts");
-  if (!existsSync(file)) return { ok: true, artifacts: a11y };
-  let mod: unknown;
-  try {
-    mod = await import(/* @vite-ignore */ file);
-  } catch (e) {
-    return { ok: false, reason: `tokens.ts failed to evaluate: ${messageOf(e)}` };
+  const evaluated = await projectTokens(dir);
+  if (evaluated === undefined) return { ok: true, artifacts: a11y };
+  if (!evaluated.ok) {
+    const schema = evaluated.path !== undefined;
+    return { ok: false, reason: schema ? `tokens.ts: tokens fail TokenSchema: ${evaluated.reason}` : evaluated.reason };
   }
-  const tokens: unknown = typeof mod === "object" && mod !== null ? Reflect.get(mod, "tokens") : undefined;
-  if (tokens === undefined) return { ok: false, reason: "tokens.ts exports no tokens" };
-  const parsed = TokenSchema.parse(tokens);
+  const parsed = TokenSchema.parse(evaluated.tokens);
   if (!parsed.ok) return { ok: false, reason: `tokens.ts: tokens fail TokenSchema: ${parsed.error.message}` };
   return { ok: true, artifacts: { ...a11y, tokens: parsed.value } };
 }

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
+import { createServer } from "node:http";
 import { join } from "node:path";
-import { serve } from "@hono/node-server";
+import { RequestError, getRequestListener } from "@hono/node-server";
 import { peerKey } from "@keel/compiler/hosting/peerKey";
 import { createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
@@ -8,6 +9,9 @@ import { onUncaught } from "@keel/server/internal/onUncaught";
 import type { StartOptions } from "../types/StartOptions.ts";
 import { DeployEnv } from "./DeployEnv.ts";
 import { diagLine } from "./diagLine.ts";
+import { parserRefusal } from "./parserRefusal.ts";
+import { readableHost } from "./readableHost.ts";
+import { startRefusal } from "./startRefusal.ts";
 
 const line = (text: string): void => {
   process.stdout.write(`${text}\n`);
@@ -18,7 +22,7 @@ const line = (text: string): void => {
  * it). A `'sqlite'` deployable on a Node older than 22.13 (`node`, the running version by default) prints one E1560 naming
  * both versions and exits 1 before the driver loads. Parses `process.env` with `DeployEnv`: a failure prints one E1560 naming the key, never its value, and exits 1.
  * Then serves `createApp` (production, real `ctx`, its route table, runners, the identity source, peers by `KEEL_PEER_<NAME>`, `origin`
- * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT`, its storage the driver `open` opened on
+ * from `KEEL_ORIGIN`, `allow` from `KEEL_ALLOW_ORIGINS`) on `PORT` at `HOST` (every interface when unset), its storage the driver `open` opened on
  * `KEEL_DATABASE_URL` when given (k.deploy Storage; a std.db E2152 or E2153 prints that diag and exits 1), and on
  * SIGTERM or SIGINT stops listening, awaits `close()`, then the driver's `close()`, and exits 0, or 1 when either rejects (nothing is printed);
  * a second signal during shutdown does nothing. Every `uncaughtException` and `unhandledRejection` prints one E1577
@@ -29,7 +33,15 @@ const line = (text: string): void => {
 export async function start(o: StartOptions, node = process.versions.node): Promise<void> {
   const peers = Object.keys(o.topology).filter((n) => n !== o.deployable && o.topology[n]?.adapter === "node");
   const storage = o.topology[o.deployable]?.storage ?? "file";
-  const keys = ["PORT", "KEEL_ORIGIN", "KEEL_SECRET", "KEEL_ALLOW_ORIGINS", "KEEL_DATABASE_URL", ...peers.map(peerKey)];
+  const keys = [
+    "PORT",
+    "HOST",
+    "KEEL_ORIGIN",
+    "KEEL_SECRET",
+    "KEEL_ALLOW_ORIGINS",
+    "KEEL_DATABASE_URL",
+    ...peers.map(peerKey),
+  ];
   const given: Record<string, string> = {};
   for (const k of keys) {
     const v = process.env[k];
@@ -39,7 +51,7 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   const format = json ? "json" : "compact";
   // Set as startup reaches them, so a fault at any point drains what exists.
   const live: {
-    server?: ReturnType<typeof serve>;
+    server?: ReturnType<typeof createServer>;
     app?: Awaited<ReturnType<typeof createApp>>;
     opened?: Awaited<ReturnType<NonNullable<StartOptions["open"]>>>;
   } = {};
@@ -116,10 +128,45 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   });
   live.app = app;
   const port = env.value.PORT ?? 8080;
-  const srv = serve({ fetch: app.fetch, port }, (a) => {
-    line(json ? JSON.stringify({ kind: "summary", name: "listen", port: a.port }) : `ok listening on port ${a.port}`);
+  // `HOST` unset: every interface, as Node's `listen(port)` binds (k.deploy).
+  const host = env.value.HOST;
+  const https = env.value.KEEL_ORIGIN?.startsWith("https:") === true;
+  // The request listener hands `app.fetch` each request's connection, whose remote address a `local: true` route reads
+  // (k.contract). A `Host` it cannot read back (`[::ffff:127.0.0.1]:<port>`) reaches no route: refused as a foreign one
+  // (k.contract Local routes); any other request it cannot read stays 400, as it answers alone. Each carries the
+  // k.security headers (`startRefusal`).
+  const listener = getRequestListener(app.fetch, {
+    ...(host === undefined ? {} : { hostname: host }),
+    errorHandler: (e) =>
+      startRefusal(
+        e instanceof RequestError && e.message === "Invalid host header"
+          ? "host refused"
+          : new Response(null, { status: e instanceof RequestError ? 400 : 500 }),
+        https,
+      ),
+  });
+  // A request with no `Host` or an empty one, over HTTP/1.0 or HTTP/1.1, more than one, or one it cannot read as a host
+  // and optional port reaches no route: 403 `keel.denied`, never 400 (k.contract Local routes, `readableHost`). Node's
+  // own 400 for an HTTP/1.1 one is turned off so this answers it. A request the parser rejects is 400 with the
+  // k.security headers and no handler run (`parserRefusal`).
+  const srv = createServer({ requireHostHeader: false }, (req, res) => {
+    if (readableHost(req.rawHeaders) !== undefined) return listener(req, res);
+    const r = startRefusal("host refused", https);
+    return r.text().then((body) => {
+      res.writeHead(r.status, Object.fromEntries(r.headers));
+      res.end(body);
+    });
+  });
+  srv.listen(port, host, () => {
+    const a = srv.address();
+    const at = typeof a === "object" && a !== null ? a.port : port;
+    line(json ? JSON.stringify({ kind: "summary", name: "listen", port: at }) : `ok listening on port ${at}`);
   });
   live.server = srv;
+  srv.on("clientError", (e, socket) => {
+    const code: unknown = Reflect.get(e, "code");
+    parserRefusal(typeof code === "string" ? code : undefined, socket, https);
+  });
   srv.on("request", (_q, res) => {
     busy++;
     res.on("close", () => {

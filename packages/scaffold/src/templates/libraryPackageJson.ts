@@ -10,9 +10,15 @@ const PEERS = ["@keel/compiler", "@keel/reactive", "@keel/runtime-dom", "@keel/s
  * `package.json` of a library (k.library-pack Scaffold): `"keel": "library"`, the `keel` condition first in `exports`,
  * the published `files`, the build, check, test and prepack scripts, and the `@keel/*` packages it imports as
  * `peerDependencies` at `^<version>` (the scaffolding `@keel/cli`'s), each also a dev dependency beside `@keel/cli`
- * and `@keel/testing` so the library's own `keel check`, `keel test` and build resolve them.
+ * and `@keel/testing`, so the library's own `keel check`, `keel test` and build resolve them, `@keel/router`,
+ * `@keel/server` and `playwright-core` (pinned) that its `keel test --e2e` host project and browser need (k.e2e Libraries),
+ * and `packageManager` when given (k.create-manager).
  */
-export function libraryPackageJson(name: string, version: string): string {
+export function libraryPackageJson(
+  name: string,
+  version: string,
+  packageManager: string | undefined = undefined,
+): string {
   const v = `^${version}`;
   const pkg = {
     name,
@@ -31,13 +37,17 @@ export function libraryPackageJson(name: string, version: string): string {
     devDependencies: {
       "@keel/cli": v,
       ...Object.fromEntries(PEERS.map((p) => [p, v])),
+      "@keel/router": v,
+      "@keel/server": v,
       "@keel/testing": v,
       "@types/node": "^22",
       "happy-dom": "^21.0.4",
+      "playwright-core": "1.65.0",
       typescript: "^5.6",
       vite: "^8.3.6",
       vitest: "^4.1.12",
     },
+    ...(packageManager === undefined ? {} : { packageManager }),
   };
   return `${jsonText(pkg)}\n`;
 }

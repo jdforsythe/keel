@@ -1,4 +1,5 @@
-// A fresh project outside the repository, the way a public user has one: the scaffold run by the packed `@keel/cli`,
+// A fresh project outside the repository, the way a public user starts one: `create-app` of the packed
+// `@keel/create-app` (what `pnpm create @keel/app` runs), with the user agent of the pnpm that installs it,
 // every `@keel/*` range pointed at the kit's tarballs through `overrides` in `pnpm-workspace.yaml`, installed from the
 // shared pnpm store. Nothing of the repository is on its path, so no parent `CLAUDE.md` or `.claude/` is found.
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
@@ -30,8 +31,8 @@ function must(label: string, step: Step): void {
 }
 
 /**
- * Makes `<tmp>/keel-public-<random>/<name>` (or `<into>/<name>`): a bootstrap folder installs the kit's `@keel/cli`, runs its
- * `keel scaffold project <name>` (the scaffold writes `AGENTS.md`, `CLAUDE.md` and the skills), then goes away; the
+ * Makes `<tmp>/keel-public-<random>/<name>` (or `<into>/<name>`): a bootstrap folder installs the kit's
+ * `@keel/create-app`, runs its `create-app <name>` (it writes `AGENTS.md`, `CLAUDE.md` and the skills), then goes away; the
  * project installs from the kit with `pnpm install --prefer-offline` (the shared store first; a version it lacks comes from the registry).
  */
 export async function setupProject(kit: string, name: string, into?: string): Promise<Project> {
@@ -42,17 +43,17 @@ export async function setupProject(kit: string, name: string, into?: string): Pr
     await mkdir(boot);
     await writeFile(
       join(boot, "package.json"),
-      `${JSON.stringify({ name: "bootstrap", private: true, dependencies: { "@keel/cli": "0.0.0" } })}\n`,
+      `${JSON.stringify({ name: "bootstrap", private: true, dependencies: { "@keel/create-app": "0.0.0" } })}\n`,
     );
     await writeFile(join(boot, "pnpm-workspace.yaml"), yaml);
     must("bootstrap install", await sh("pnpm", ["install", "--prefer-offline"], boot));
+    const pnpm = await sh("pnpm", ["--version"], parent);
+    must("pnpm --version", pnpm);
     must(
-      "scaffold",
-      await sh(
-        "node",
-        [join(boot, "node_modules", "@keel", "cli", "dist", "src", "bin.js"), "scaffold", "project", name],
-        parent,
-      ),
+      "create",
+      await sh("node", [join(boot, "node_modules", "@keel", "create-app", "dist", "bin.js"), name], parent, {
+        npm_config_user_agent: `pnpm/${pnpm.output.trim().split("\n").at(-1) ?? ""} node/${process.version}`,
+      }),
     );
     await rm(boot, { recursive: true, force: true });
     const dir = join(parent, name);

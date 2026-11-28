@@ -36,7 +36,7 @@ describe("the session command", () => {
     expect(command.scope).toBe("query");
     expect(command.positional).toEqual(["op", "target"]);
     expect(command.description).toBe(
-      "Capture, ingest, replay, minimize, or turn into a test a recorded session (std.sessions).",
+      "Capture, ingest, replay, minimize or make a test of a recorded session (std.sessions).",
     );
   });
 

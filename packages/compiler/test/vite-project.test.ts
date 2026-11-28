@@ -59,7 +59,7 @@ beforeEach(() => {
       fs.symlinkSync(path.join(packages, p), path.join(root, "node_modules", "@keel", p));
   write(
     "tokens.ts",
-    `import { defineTokens } from "@keel/ui";
+    `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: { fg: { light: "#111", dark: "#eee" }, bg: { light: "#fff", dark: "#111" }, accent: "#0a5" },
   space: { 1: "4px", 2: "8px", 3: "16px" },

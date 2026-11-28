@@ -20,8 +20,8 @@ beforeEach(() => {
     if (fs.existsSync(path.join(packages, p, "package.json")))
       fs.symlinkSync(path.join(packages, p), path.join(root, "node_modules", "@keel", p));
   const body = `{ color: { fg: "#111", bg: "#fff" }, space: { 1: "4px", 2: "8px" }, breakpoint: { md: "768px" } }`;
-  write("tokens.ts", `import { defineTokens } from "@keel/ui";\nexport default defineTokens(${body});`);
-  write("tokens2.ts", `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens(${body});`);
+  write("tokens.ts", `import { defineTokens } from "@keel/ui/tokens";\nexport default defineTokens(${body});`);
+  write("tokens2.ts", `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens(${body});`);
   write("tokens3.ts", `export const tokens = { color: { fg: "#1}11" }, space: { 1: "4px" } };`);
   write("tokens4.ts", "export const other = 1;");
 });
@@ -47,6 +47,7 @@ describe("evaluateProject (mutation)", () => {
       css: "",
       looks: {},
       schemes: ["light"],
+      themes: [],
       routes: {},
       problems: [],
     });
@@ -63,6 +64,7 @@ describe("evaluateProject (mutation)", () => {
       css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n.k-bg-bg{background-color:var(--k-color-bg)}\n@media (min-width: 768px){\n.k-md-hover-p-2:hover{padding:var(--k-space-2)}\n}\n`,
       looks: {},
       schemes: ["light"],
+      themes: [],
       routes: {},
       problems: [],
     });
@@ -82,6 +84,7 @@ describe("evaluateProject (mutation)", () => {
         css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n`,
         looks: {},
         schemes: ["light"],
+        themes: [],
         routes: {},
         problems: ['E1801 p="9" is not a space token'],
       });
@@ -102,8 +105,9 @@ describe("evaluateProject (mutation)", () => {
         css: "",
         looks: {},
         schemes: ["light"],
+        themes: [],
         routes: {},
-        problems: ["E1807 token color.fg is not in its group's form"],
+        problems: ["E1807 color.fg: not a color value"],
       });
     },
   );
@@ -231,6 +235,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
       css: "",
       looks: {},
       schemes: ["light"],
+      themes: [],
       routes: {},
       problems: ["E1006 r/none.ts exports no routes"],
     });
@@ -290,6 +295,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
         css: "",
         looks: {},
         schemes: ["light"],
+        themes: [],
         routes: {},
         problems: ["E1000 r/syntax.ts:1:56 syntax error: Expected `,` or `}` but found `;`"],
       });

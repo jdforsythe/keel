@@ -4,8 +4,8 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2676,
-    "probabilistic": 464,
+    "example": 2860,
+    "probabilistic": 468,
     "exhaustive": 21,
     "proven": 92,
     "monitored": 8
@@ -2403,7 +2403,7 @@
       "pkg": "inspector",
       "name": "loadInspect",
       "file": "inspector:inspector/loadInspect.server.ts",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "pkg": "check",
@@ -2596,6 +2596,54 @@
       "name": "stdArtifact",
       "file": "packages/compiler/src/stdArtifact.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "create-app",
+      "name": "caselessAt",
+      "file": "packages/create-app/src/caselessAt.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "ownPackage",
+      "file": "packages/create-app/src/ownPackage.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "parseFlags",
+      "file": "packages/create-app/src/parseFlags.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "create-app",
+      "name": "readInputs",
+      "file": "packages/create-app/src/readInputs.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "realOf",
+      "file": "packages/create-app/src/realOf.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "render",
+      "file": "packages/create-app/src/render.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "run",
+      "file": "packages/create-app/src/run.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "create-app",
+      "name": "writePlan",
+      "file": "packages/create-app/src/writePlan.ts",
+      "rung": "probabilistic"
     },
     {
       "pkg": "ctx",
@@ -3823,27 +3871,15 @@
     },
     {
       "pkg": "ui",
-      "name": "TokenSchema",
-      "file": "packages/ui/src/TokenSchema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "ui",
-      "name": "contrastTable",
-      "file": "packages/ui/src/contrastTable.ts",
-      "rung": "probabilistic"
+      "name": "appearance",
+      "file": "packages/ui/src/appearance.ts",
+      "rung": "example"
     },
     {
       "pkg": "ui",
       "name": "customElement",
       "file": "packages/ui/src/customElement.ts",
       "rung": "proven"
-    },
-    {
-      "pkg": "ui",
-      "name": "defineTokens",
-      "file": "packages/ui/src/defineTokens.ts",
-      "rung": "probabilistic"
     },
     {
       "pkg": "ui",
@@ -3882,7 +3918,7 @@
       "rung": "example"
     },
     {
-      "item": "k.a11y-static#d1e18007",
+      "item": "k.a11y-static#20187a26",
       "rung": "example"
     },
     {
@@ -3907,6 +3943,22 @@
     },
     {
       "item": "k.a11y-static#8d857f72",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#80ea9ae5",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#3714c048",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#0626106a",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#87a73099",
       "rung": "example"
     },
     {
@@ -4058,6 +4110,10 @@
       "rung": "example"
     },
     {
+      "item": "k.api#5feaac0b",
+      "rung": "example"
+    },
+    {
       "item": "k.aria#c9278545",
       "rung": "proven"
     },
@@ -4108,6 +4164,14 @@
     {
       "item": "k.aria#271851f2",
       "rung": "proven"
+    },
+    {
+      "item": "k.aria#d8aa36ac",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#5048e710",
+      "rung": "example"
     },
     {
       "item": "k.boundary#224ae0db",
@@ -4262,6 +4326,14 @@
       "rung": "example"
     },
     {
+      "item": "k.check-time#7c2619fd",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-time#3584c9f4",
+      "rung": "example"
+    },
+    {
       "item": "k.check#4f39c912",
       "rung": "example"
     },
@@ -4390,11 +4462,19 @@
       "rung": "example"
     },
     {
+      "item": "k.cli#2b8ad806",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#98dc8d48",
+      "rung": "example"
+    },
+    {
       "item": "k.cli#07d28201",
       "rung": "example"
     },
     {
-      "item": "k.cli#fcbada40",
+      "item": "k.cli#9374a0ad",
       "rung": "example"
     },
     {
@@ -4426,35 +4506,11 @@
       "rung": "example"
     },
     {
-      "item": "k.cli#0350f362",
-      "rung": "example"
-    },
-    {
       "item": "k.cli#ce50206a",
       "rung": "example"
     },
     {
       "item": "k.cli#398abea4",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#37360651",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#230e07eb",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#35e83788",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#4c74ea7c",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#74b07083",
       "rung": "example"
     },
     {
@@ -4466,7 +4522,11 @@
       "rung": "example"
     },
     {
-      "item": "k.cli#390ee352",
+      "item": "k.cli#15fcca56",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#c381e8ab",
       "rung": "example"
     },
     {
@@ -4730,6 +4790,178 @@
       "rung": "example"
     },
     {
+      "item": "k.contract#1e74399a",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#cece7782",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#1a0e5e4a",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#8143f161",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.contract#32e7c498",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#a6c80192",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#80123bbc",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#3407503d",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#3ca69852",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#b07b7b04",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#284d76d1",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#d2b092d9",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#5e4ff4ea",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#6dc1cada",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#4d0e8cf6",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#a3cb12a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#3ab069df",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#fc177b14",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#964e816d",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#9c3ca074",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#4fcd4632",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#240629b2",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4bb31ef7",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#016e77e1",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#eb6b3008",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#da096e98",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2e707ab2",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#8855ad56",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#55b02fb5",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4edddd90",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#e4aec79c",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2d8cb4ef",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#3141d042",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0c658d38",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0aa22e84",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0a665250",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2379d4c3",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#138a83e9",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#899f68d4",
+      "rung": "none"
+    },
+    {
+      "item": "k.create#ef7594f7",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4d5882a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#6b2332ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#81d2e835",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#8aeb0ad7",
       "rung": "probabilistic"
     },
@@ -4939,6 +5171,34 @@
     },
     {
       "item": "k.deploy#d1f26eb4",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#2723ae2a",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#055069f3",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#7c8e0445",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#3d5775bb",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#189f5676",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#1514e35c",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#a1a47789",
       "rung": "example"
     },
     {
@@ -5154,6 +5414,250 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.e2e-page#6d02c883",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#8bd02b76",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#abd32f12",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#c87b11ef",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#4ed1dc09",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#01df96ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#5c9dc87e",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#1c68d683",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#af6cffe1",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#22e4aaf1",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#6c574ee7",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#70ca6532",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#5ae7d928",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#f7c3a0cc",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#c14a9906",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#91db91d0",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#8e4d0aff",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#d1bc366e",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#5c70a037",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#720c4841",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#00289f94",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#bf8b1c00",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#6eb44f5c",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#b73a00f8",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#3a7ab295",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#da02474f",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#aacfafc2",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#7e0cc0e2",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#6d52c2dd",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#5a214457",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#0b8abe03",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#0628e86c",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#e9373ed7",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#4efab90b",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#aab6a480",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#832fbabd",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#91f1e879",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#2739645f",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#8e80ae7b",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#0bb5d388",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#4bbb8376",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#84310ccd",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#a3f7ca57",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#8dd2b3d9",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#100836a0",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#4648c44a",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#59c379e4",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#fe5fbedc",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#e77f7c44",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#062e600b",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#923484c6",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#6c658d97",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#30ad3fc9",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#0613d569",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#b115259e",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#0c9a404d",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#dd189898",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#6969d362",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#27e31f45",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#832d950d",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#6aa33ba9",
+      "rung": "example"
+    },
+    {
       "item": "k.entries#05328e09",
       "rung": "example"
     },
@@ -5163,6 +5667,10 @@
     },
     {
       "item": "k.entries#f09b6b8f",
+      "rung": "example"
+    },
+    {
+      "item": "k.entries#974865cc",
       "rung": "example"
     },
     {
@@ -5314,6 +5822,22 @@
       "rung": "example"
     },
     {
+      "item": "k.explain#bea8d924",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#f43d664d",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#a3e6a41a",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#e1314763",
+      "rung": "example"
+    },
+    {
       "item": "k.formats#a4a148e7",
       "rung": "probabilistic"
     },
@@ -5427,6 +5951,50 @@
     },
     {
       "item": "k.forms#a4f583de",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#4299cc56",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#cea5d136",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#db84d93c",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#7c5c8723",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#53a743e3",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#96aed0ce",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#221b089a",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#d94dee76",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#dadbff15",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#990cdbba",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#c77cfd9c",
       "rung": "example"
     },
     {
@@ -5642,6 +6210,38 @@
       "rung": "example"
     },
     {
+      "item": "k.hosting#ff9436ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#0350f362",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#37360651",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#230e07eb",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#35e83788",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#4c74ea7c",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#74b07083",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#390ee352",
+      "rung": "example"
+    },
+    {
       "item": "k.leave#02f1bed9",
       "rung": "example"
     },
@@ -5763,6 +6363,10 @@
     },
     {
       "item": "k.ledger-items#48c24338",
+      "rung": "example"
+    },
+    {
+      "item": "k.ledger-items#35f09f7a",
       "rung": "example"
     },
     {
@@ -6043,6 +6647,10 @@
     },
     {
       "item": "k.looks#b5a23548",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#5a129582",
       "rung": "example"
     },
     {
@@ -7106,6 +7714,34 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold-needs#99662289",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#7cd97b47",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#32777646",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#d3fcca97",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#6ea9154f",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#57d08dd2",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#14b2412b",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold-service#a9444bcb",
       "rung": "example"
     },
@@ -7186,6 +7822,10 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#d2ee049d",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold#980af00f",
       "rung": "example"
     },
@@ -7214,7 +7854,7 @@
       "rung": "example"
     },
     {
-      "item": "k.scaffold#f7d2895f",
+      "item": "k.scaffold#3f0d7bc7",
       "rung": "example"
     },
     {
@@ -7230,7 +7870,15 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#00af183c",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold#27e8ecd6",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#17345bd2",
       "rung": "example"
     },
     {
@@ -7251,6 +7899,10 @@
     },
     {
       "item": "k.scaffold#8b7a66df",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#ab964dca",
       "rung": "example"
     },
     {
@@ -7338,7 +7990,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.schemes#55b54379",
+      "item": "k.schemes#62a32a22",
       "rung": "example"
     },
     {
@@ -7370,7 +8022,7 @@
       "rung": "example"
     },
     {
-      "item": "k.schemes#78586903",
+      "item": "k.schemes#612fe775",
       "rung": "example"
     },
     {
@@ -7387,6 +8039,30 @@
     },
     {
       "item": "k.schemes#56b3430f",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#5c121336",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#a85f2ffa",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#e00c91e3",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#6583a7c5",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#cd80d75c",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#ea5ad213",
       "rung": "example"
     },
     {
@@ -7439,6 +8115,10 @@
     },
     {
       "item": "k.security#a4cc0fd5",
+      "rung": "example"
+    },
+    {
+      "item": "k.security#b578427c",
       "rung": "example"
     },
     {
@@ -7982,6 +8662,10 @@
       "rung": "example"
     },
     {
+      "item": "k.test-run#9dc1e939",
+      "rung": "example"
+    },
+    {
       "item": "k.test-run#1b8c6748",
       "rung": "example"
     },
@@ -8102,6 +8786,50 @@
       "rung": "example"
     },
     {
+      "item": "k.themes#9daccf53",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.themes#fb1737ae",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#024cf1d4",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#14de2622",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#55121ac7",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#2ded09c9",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#3e9ea50d",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#5e99f596",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#a1b3d145",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#65b94cc1",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#2bc31ee7",
+      "rung": "example"
+    },
+    {
       "item": "k.topology#41a5d6a2",
       "rung": "example"
     },
@@ -8167,6 +8895,34 @@
     },
     {
       "item": "k.topology#1c21e75b",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#d4cdb549",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#4227f8ef",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#2255e822",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#9d75dfd8",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#0d04856c",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#4403e85a",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#a67b8519",
       "rung": "example"
     },
     {
@@ -8279,6 +9035,10 @@
     },
     {
       "item": "k.ui#6f0927d4",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#61026efb",
       "rung": "example"
     },
     {
@@ -8416,6 +9176,18 @@
     {
       "item": "k.values#893a9074",
       "rung": "example"
+    },
+    {
+      "item": "k.values#8bc1acb8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#0652c486",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#2ebac48c",
+      "rung": "probabilistic"
     },
     {
       "item": "std.brands#d54b9d13",

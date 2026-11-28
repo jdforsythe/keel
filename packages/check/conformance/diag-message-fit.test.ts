@@ -43,6 +43,22 @@ describe("k.check: a diagnostic's message fits", () => {
     );
   }
 
+  // Paragraph k.themes Check-time entries (no Conformance sentence of its own): "Message: `<entry> is check and build time only; use token names or @keel/ui/brand`, `<entry>` `@keel/ui/tokens` or `@keel/ui/css`; fix: none."
+  test(
+    "E1818: its fixture's message is `@keel/ui/tokens is check and build time only; use token names or @keel/ui/brand`, with no fix, and fits",
+    () => {
+      const fx = CODE_FIXTURES.E1818;
+      if (fx === undefined) throw new Error("no fixture for E1818");
+      const found = check(fx.bad, fx.badOpts ?? fx.opts ?? {}).diagnostics.filter((d) => d.code === "E1818");
+      expect(found.map((d) => d.message)).toEqual([
+        "@keel/ui/tokens is check and build time only; use token names or @keel/ui/brand",
+      ]);
+      expect(found[0]?.fix).toBeUndefined();
+      fits(found);
+    },
+    fixedTime(60_000),
+  );
+
   test(
     "E1756: every diagnostic its fixture (a registered rule that throws) reports has a message of at most 89 UTF-16 code units that does not end in `...`",
     () => {

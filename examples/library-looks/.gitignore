@@ -1,0 +1,3 @@
+.keel/e2e-host-*/
+.keel/*.json
+!.keel/ledger.json

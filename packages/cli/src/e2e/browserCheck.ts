@@ -1,0 +1,61 @@
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { Diag } from "../internal/Diag.ts";
+import { makeDiag } from "../internal/makeDiag.ts";
+import { playwrightAt } from "./playwrightAt.ts";
+
+/** The `playwright-core` version `@keel/testing` pins as its optional peer (k.e2e Browser). */
+function pinned(): string {
+  let dir = dirname(fileURLToPath(import.meta.resolve("@keel/testing")));
+  for (;;) {
+    const file = join(dir, "package.json");
+    if (existsSync(file)) {
+      const pkg: unknown = JSON.parse(readFileSync(file, "utf8"));
+      const peers = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "peerDependencies") : undefined;
+      const v = typeof peers === "object" && peers !== null ? Reflect.get(peers, "playwright-core") : undefined;
+      if (typeof v === "string") return v;
+    }
+    const up = dirname(dir);
+    if (up === dir) return "1.65.0";
+    dir = up;
+  }
+}
+
+/**
+ * The browser check of `keel test --e2e` (k.e2e Browser), before any file runs: `playwright-core` resolved from the
+ * project's folder, then the engine's browser installed. Either missing is one E1734 at `package.json`.
+ */
+export async function browserCheck(cwd: string, engine: "chromium" | "firefox" | "webkit"): Promise<Diag | undefined> {
+  const at = playwrightAt(cwd);
+  if (at === undefined)
+    return makeDiag("E1734", "playwright-core is not installed", {
+      path: "package.json",
+      line: 1,
+      col: 1,
+      fix: `+    "playwright-core": "${pinned()}",`,
+      see: "k.e2e",
+    });
+  const mod: unknown = createRequire(import.meta.url)(at);
+  // A CommonJS package's names may sit on the namespace or on its `default` only.
+  const ns = typeof mod === "object" && mod !== null ? mod : {};
+  const fallback: unknown = Reflect.get(ns, "default");
+  const type: unknown =
+    Reflect.get(ns, engine) ??
+    (typeof fallback === "object" && fallback !== null ? Reflect.get(fallback, engine) : undefined);
+  const path = typeof type === "object" && type !== null ? Reflect.get(type, "executablePath") : undefined;
+  let exe = "";
+  try {
+    exe = typeof path === "function" ? String(path.call(type)) : "";
+  } catch {
+    exe = "";
+  }
+  if (exe !== "" && existsSync(exe)) return undefined;
+  return makeDiag("E1734", `the ${engine} browser is not installed: run playwright-core install ${engine}`, {
+    path: "package.json",
+    line: 1,
+    col: 1,
+    see: "k.e2e",
+  });
+}

@@ -139,6 +139,7 @@ function entrySource(
     "let css = '';",
     "let looks = {};",
     "let schemes = ['light'];",
+    "let themes = [];",
     "const message = (e) => (e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e));",
     "const coded = (e) => e && typeof e === 'object' && 'code' in e && /^E[0-9]{4}$/.test(String(e.code));",
     // A refusal is a record of its own (k.evaluator Placing); a diagnostic-shaped error keeps its code; any other throw
@@ -159,6 +160,8 @@ function entrySource(
       "else if (tokens !== undefined) {",
       "  if (tokens.look !== null && typeof tokens.look === 'object') looks = tokens.look;",
       "  try { schemes = [...schemesOf(tokens)]; } catch (e) { report(e); }",
+      // The `choice` themes, in `themes` order (k.themes), for the first paint and `appearance(ctx)`.
+      "  if (tokens.themes !== null && typeof tokens.themes === 'object') themes = Object.entries(tokens.themes).filter(([, t]) => t !== null && typeof t === 'object' && (t.when === undefined || t.when === 'choice')).map(([n]) => n);",
       "  try { css = compileStyles({ tokens, usages }).css; }",
       "  catch { try { css = compileStyles({ tokens, usages: usages.filter(fits) }).css; } catch (e) { report(e); } }",
       "}",
@@ -207,7 +210,7 @@ function entrySource(
     );
   lines.push(
     `const routes = Object.assign({}, ${routesFiles.map(([f, c]) => `await manifest(${q(f)}, () => import(${spec(f)}), ${c === undefined ? "undefined, undefined" : `${q(c)}, () => import(${spec(c)})`})`).join(", ")});`,
-    `export default JSON.stringify({ css, looks, schemes, problems, internal: [...new Set(internal)], routes${surface === undefined ? "" : ", surface"} });`,
+    `export default JSON.stringify({ css, looks, schemes, themes, problems, internal: [...new Set(internal)], routes${surface === undefined ? "" : ", surface"} });`,
   );
   return lines.join("\n");
 }
@@ -235,6 +238,7 @@ export async function evaluateProject(input: {
   css: string;
   looks: Readonly<Record<string, unknown>>;
   schemes: readonly string[];
+  themes: readonly string[];
   routes: Record<string, RouteEntry>;
   problems: string[];
   /** The absolute path of every file the bundle loaded (esbuild's inputs), sorted; none when nothing was bundled. */
@@ -253,7 +257,7 @@ export async function evaluateProject(input: {
   const surfaceInput = input.surface;
   const none = surfaceInput === undefined || surfaceInput.contracts.length + surfaceInput.tables.length === 0;
   if (input.tokensFile === undefined && input.routesFiles.length === 0 && none)
-    return { css: "", looks: {}, schemes: ["light"], routes: {}, problems: [] };
+    return { css: "", looks: {}, schemes: ["light"], themes: [], routes: {}, problems: [] };
   // The tokens module is imported dynamically (so its throw is catchable), which esbuild treats as optional.
   if (input.tokensFile !== undefined && !fs.existsSync(path.join(root, input.tokensFile)))
     throw new Error(`keel: Could not resolve "./${input.tokensFile}" (tokens file)`);
@@ -326,7 +330,12 @@ export async function evaluateProject(input: {
             let c = compiled.get(args.path);
             if (c === undefined || c.rel !== rel || c.source !== source) {
               const r = compile([{ path: rel, source }]);
-              c = { rel, source, broken: r.diagnostics.filter((d) => d.code === "E1000"), code: r.outputs[0]?.code ?? "" };
+              c = {
+                rel,
+                source,
+                broken: r.diagnostics.filter((d) => d.code === "E1000"),
+                code: r.outputs[0]?.code ?? "",
+              };
               compiled.set(args.path, c);
             }
             const broken = c.broken;
@@ -350,7 +359,7 @@ export async function evaluateProject(input: {
     throw bundleFailure(e, root);
   });
   if (result === undefined)
-    return { css: "", looks: {}, schemes: ["light"], routes: {}, problems: [...new Set(syntax)] };
+    return { css: "", looks: {}, schemes: ["light"], themes: [], routes: {}, problems: [...new Set(syntax)] };
   // A metafile input is relative to `root`, or `<namespace>:<path>` for a plugin's namespace; the entry and esbuild's
   // own `<define:...>` inputs are no files.
   const inputs = [
@@ -415,5 +424,6 @@ export async function evaluateProject(input: {
     return { ...o, reads: [...new Set([...o.reads, ...links.files])], probes: [...o.probes, ...links.probes] };
   };
   const surface: unknown = json.surface;
-  return { css: json.css, looks, schemes, routes, problems, inputs, observe, ...(none ? {} : { surface }) };
+  const themes = Array.isArray(json.themes) ? json.themes.filter((x) => typeof x === "string") : [];
+  return { css: json.css, looks, schemes, themes, routes, problems, inputs, observe, ...(none ? {} : { surface }) };
 }

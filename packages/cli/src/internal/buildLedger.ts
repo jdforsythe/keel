@@ -3,13 +3,13 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
 import type { Diag } from "./Diag.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
-import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
 import { clauseCitations } from "./clauseCitations.ts";
 import { clauseKey } from "./clauseKey.ts";
 import { countExpectations } from "./countExpectations.ts";
 import { headerCodes } from "./headerCodes.ts";
 import { isNegativeTypeTest } from "./isNegativeTypeTest.ts";
+import { isTestFile } from "./isTestFile.ts";
 import { ledgerProjects } from "./ledgerProjects.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { monitoredEvidence } from "./monitoredEvidence.ts";
@@ -136,17 +136,16 @@ export function buildLedger(
     if (a?.[1] === undefined || a[2] === undefined) continue;
     appUnsafe[a[1]] = (appUnsafe[a[1]] ?? 0) + n.unsafe;
     appHosts[a[1]] = (appHosts[a[1]] ?? 0) + n.hostElements;
-    if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
+    if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && isTestFile(f.path))) add(`apps/${a[1]}`, f);
   }
   if (own !== undefined)
-    for (const f of code)
-      if (f.path.startsWith("test/") || (OWN_SRC.test(f.path) && TEST_FILE.test(f.path))) add(OWN, f);
+    for (const f of code) if (f.path.startsWith("test/") || (OWN_SRC.test(f.path) && isTestFile(f.path))) add(OWN, f);
   const projects = ledgerProjects(files);
-  const read = new Set([...areas.values()].flatMap((fs) => fs.map((f) => f.path).filter((p) => TEST_FILE.test(p))));
+  const read = new Set([...areas.values()].flatMap((fs) => fs.map((f) => f.path).filter((p) => isTestFile(p))));
   for (const f of code) {
     const e = EXAMPLE_TEST.exec(f.path)?.[1];
     const mine = e === undefined ? own === undefined && ROOT_TEST.test(f.path) : projects.includes(`examples/${e}`);
-    if (mine && TEST_FILE.test(f.path)) read.add(f.path);
+    if (mine && isTestFile(f.path)) read.add(f.path);
   }
   const runs = runReports(files, projects, [...read]);
   const known = new Set(code.map((f) => f.path));
@@ -170,14 +169,14 @@ export function buildLedger(
         if (name !== undefined) push(`${f.path}#${name}`, p[1], `packages/${p[1]}`, name, f.path);
       }
     const base = f.path.split("/").pop() ?? "";
-    if (own !== undefined && OWN_SRC.test(f.path) && !TEST_FILE.test(f.path))
+    if (own !== undefined && OWN_SRC.test(f.path) && !isTestFile(f.path))
       for (const l of scrubCode(f.source)) {
         const name = EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);
         if (name !== undefined && !APP_PARTS.has(name)) push(`${f.path}#${name}`, own, OWN, name, f.path);
       }
     const a = APP.exec(f.path);
     const rel = a?.[2]?.startsWith("modules/") ? a[2].slice("modules/".length) : undefined;
-    if (a?.[1] === undefined || rel === undefined || TEST_FILE.test(f.path) || APP_MANIFESTS.has(base)) continue;
+    if (a?.[1] === undefined || rel === undefined || isTestFile(f.path) || APP_MANIFESTS.has(base)) continue;
     for (const l of scrubCode(f.source)) {
       const name = EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);
       if (name !== undefined && !APP_PARTS.has(name))
@@ -199,7 +198,7 @@ export function buildLedger(
 
   const clauses = specClauses(files);
   const sections = new Set(clauses.map((c) => c.id));
-  const conformance = code.filter((f) => PKG.exec(f.path)?.[2] === "conformance" && TEST_FILE.test(f.path));
+  const conformance = code.filter((f) => PKG.exec(f.path)?.[2] === "conformance" && isTestFile(f.path));
   const diags: Diag[] = [...monitored.diags, ...runs.diags];
   const headed = conformance.map((f) => {
     const head = header(f.source);

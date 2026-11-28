@@ -66,7 +66,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
         : await mount.fn(sent, sv.ctx, { routes: sv.routes });
     return { response, route: undefined, diags: [] };
   }
-  const resumeEntry = servedEntry(raw, url.pathname, sv.built);
+  const resumeEntry = servedEntry(raw, url.pathname, sv.built, sv.themes);
   if (resumeEntry !== null) return resumeEntry;
   // No page at a path that decodes to the mount or under it (k.mount-scope): `handle` above took the textual ones.
   const found = matchUrl(sv.table, `${path}${url.search}`, mount?.path);

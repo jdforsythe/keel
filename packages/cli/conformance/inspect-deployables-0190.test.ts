@@ -1,6 +1,6 @@
-// Spec: k.cli, clause "`keel inspect` of a document with `deployables` prints one `inspect.section` per deployable and section."
+// Spec: k.inspect, clause "`keel inspect` of a document with `deployables` prints one `inspect.section` per deployable and section."
 // Seed 1337. Driven through `run(['inspect', url, '--format=json'], { fetch })` with an injected fetch, as inspect-sections.test.ts.
-// Assumes (k.cli Inspect, RFC 0190): records carry `deployable`, deployables by name then sections by id; counts.sections counts those records; a document without `deployables` prints as before.
+// Assumes (k.inspect Inspect, RFC 0190): records carry `deployable`, deployables by name then sections by id; counts.sections counts those records; a document without `deployables` prints as before.
 import { run } from "@keel/cli";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

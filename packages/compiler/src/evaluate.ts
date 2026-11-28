@@ -23,7 +23,12 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 /** `text` with each control character removed, a run of tabs and line breaks becoming one space (k.evaluator Placing). */
 const clean = (text: string): string =>
-  text.replace(/[\t\n\r]+/g, " ").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
+  [...text.replace(/[\t\n\r]+/g, " ")]
+    .filter((c) => {
+      const n = c.codePointAt(0) ?? 0;
+      return n > 0x1f && (n < 0x7f || n > 0x9f);
+    })
+    .join("");
 const pair = (line: number, col: number): readonly [number, number] => [line, col];
 const frameList = (x: unknown): (readonly [number, number])[] =>
   Array.isArray(x)

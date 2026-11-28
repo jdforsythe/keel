@@ -5,9 +5,9 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { loader, manifest } from "@keel/router";
-import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import * as router from "@keel/router";
+import { contract } from "@keel/router/contract";
 import * as schema from "@keel/schema";
 import { ok, s } from "@keel/schema";
 import * as store from "@keel/store";

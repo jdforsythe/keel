@@ -6,7 +6,7 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
-import { scope, signal as newSignal } from "@keel/reactive";
+import { signal as newSignal, scope } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { createRouter, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

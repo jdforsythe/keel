@@ -12,7 +12,7 @@
 
 ## Extension points
 
-Uses **inspector hooks** (k.cli).
+Uses **inspector hooks** (k.inspect).
 
 ## Unsafe
 

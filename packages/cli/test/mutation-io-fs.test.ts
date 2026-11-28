@@ -375,6 +375,16 @@ describe("viteRun", () => {
     expect(viteRun(d)?.notes).toEqual(["W1005 .keel/routes.json differed; rewritten\n", "E1006 x\n"]);
     fakeVite(d, 'echo "keel: W1005 y"\nexit 3');
     expect(viteRun(d)).toEqual({ code: 3, tail: "keel: W1005 y\n", notes: ["W1005 y\n"] });
+    // A failure a Keel-coded error explains returns that record alone, not Vite's printout of the throw.
+    fakeVite(
+      d,
+      `printf 'error during build:\\nError: keel: E1819 --k-color-a is #00857f in the built CSS, expected rgb(0 133 127)\\n  code: PLUGIN_ERROR\\n' >&2\nexit 1`,
+    );
+    expect(viteRun(d)).toEqual({
+      code: 1,
+      tail: "",
+      notes: ["E1819 --k-color-a is #00857f in the built CSS, expected rgb(0 133 127)\n"],
+    });
     expect(realpathSync(readFileSync(join(d, "cwd.txt"), "utf8").trim())).toBe(d);
   });
 

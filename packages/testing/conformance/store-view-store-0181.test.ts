@@ -5,8 +5,8 @@
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { SEED, control, routes } from "./view-store-page.ts";
 import { simCtx } from "./fixtures.ts";
+import { SEED, control, routes } from "./view-store-page.ts";
 
 const items = fc.array(fc.stringMatching(/^[a-z]{1,6}$/), { maxLength: 4 });
 

@@ -44,8 +44,8 @@ export const vocabulary: Readonly<Record<StyleProp, Entry>> = {
   gap: token("gap", "space"),
   w: size("width", "size", "space"),
   h: size("height", "size", "space"),
-  bg: token("background-color", "color"),
-  fg: token("color", "color"),
+  bg: token("background-color", "color", "overlay"),
+  fg: token("color", "color", "overlay"),
   radius: token("border-radius", "radius"),
   font: token("font-family", "font"),
   fontSize: token("font-size", "fontSize"),
@@ -75,4 +75,7 @@ export const vocabulary: Readonly<Record<StyleProp, Entry>> = {
   }),
   wrap: flex("flex-wrap", { wrap: "wrap", nowrap: "nowrap", reverse: "wrap-reverse" }),
   textAlign: text("text-align", { start: "start", center: "center", end: "end" }),
+  breakBefore: text("break-before", { page: "page", avoid: "avoid" }),
+  breakAfter: text("break-after", { page: "page", avoid: "avoid" }),
+  breakInside: text("break-inside", { avoid: "avoid" }),
 };

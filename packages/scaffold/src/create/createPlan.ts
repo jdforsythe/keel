@@ -1,0 +1,188 @@
+import { posix } from "node:path";
+import { type Result, err, ok } from "@keel/schema";
+import { fail } from "../internal/fail.ts";
+import { managerOf } from "../internal/managerOf.ts";
+import { sortedKeys } from "../internal/sortedKeys.ts";
+import { workspaceOf } from "../internal/workspaceOf.ts";
+import type { CreateInput } from "../types/CreateInput.ts";
+import type { CreatePlan } from "../types/CreatePlan.ts";
+import type { CreateRecord } from "../types/CreateRecord.ts";
+import type { ScaffoldDiag } from "../types/ScaffoldDiag.ts";
+import type { ScaffoldError } from "../types/ScaffoldError.ts";
+import { LISTED } from "./LISTED.ts";
+import { MARKER } from "./MARKER.ts";
+import { libraryTree } from "./libraryTree.ts";
+import { managerWord } from "./managerWord.ts";
+import { projectTree } from "./projectTree.ts";
+import { suggestName } from "./suggestName.ts";
+
+const SEE = "k.create";
+const AT = { line: 1, col: 1 };
+/** Entries a folder may hold and still be empty (k.create-folder Folder). */
+const QUIET = new Set([".git", ".DS_Store", "Thumbs.db"]);
+const NAME = /^[a-z][a-z0-9-]*$/;
+const refuse = (
+  code: string,
+  path: string,
+  message: string,
+  see: "k.create" | "k.create-folder" = code === "E1360" || code === "E1366" ? "k.create-folder" : SEE,
+): Result<never, ScaffoldError> => fail(code, path, message, undefined, AT, see);
+const cut = (s: string, n = 24): string => (s.length > n ? `${s.slice(0, n - 3)}...` : s);
+/** A path a person can paste after `cd`: quoted when it holds anything but letters, digits and `._/-`. */
+const shellPath = (p: string): string => (/^[A-Za-z0-9._/-]+$/.test(p) ? p : `'${p.replaceAll("'", "'\\''")}'`);
+
+/** Whether `version` (`22.15.0`, `v22.15.0`) is older than 22.15; an unreadable one counts as older. */
+function older(version: string): boolean {
+  const m = /^v?(\d+)\.(\d+)/.exec(version);
+  if (m === null) return true;
+  const major = Number(m[1]);
+  return major < 22 || (major === 22 && Number(m[2]) < 15);
+}
+
+/**
+ * The plan of `create-app` (k.create): pure over its input, the files to write keyed from the folder and the records to
+ * print, or the one diagnostic that refuses the run with nothing to write. In order: Node older than 22.15 (E1362),
+ * `--adapter` with `--library` (E1052), the name (E1352), another `@keel/cli` above (E1363), a folder that is not empty
+ * (E1360) or, with `existing`, a path the plan writes that exists (E1361). A folder the workspace's globs leave out is
+ * W1364, and the files are planned.
+ */
+export function createPlan(input: CreateInput): Result<CreatePlan, ScaffoldError> {
+  // A caller without types can leave `skills` out; the agent files would then be missing, so the plan is refused.
+  if (!Array.isArray(input.skills))
+    return refuse("E1052", "", "createPlan: skills is required (the skills the project copies)");
+  if (older(input.nodeVersion))
+    return refuse("E1362", "", `Node ${cut(input.nodeVersion, 16)} is older than 22.15; install Node 22.15 or later`);
+  if (input.library !== undefined && input.adapter !== undefined)
+    return refuse("E1052", "", "--adapter makes an app and --library a library; pass one of them");
+  const folder = posix.normalize((input.folder ?? ".").replace(/\/+$/, "") || ".");
+  const at = (p: string): string => (folder === "." ? p : posix.join(folder, p));
+  const word = managerWord(input.userAgent);
+  const m = managerOf(word.packageManager ?? `${word.name}@`);
+  const leaf = posix.basename(folder === "." ? (input.realPath ?? "") : folder);
+  const name = input.name ?? leaf;
+  if (input.library === undefined) {
+    if (!NAME.test(name)) {
+      const fix = suggestName(name);
+      const hint =
+        fix === undefined
+          ? "a --name of a-z, 0-9 and -"
+          : `--name ${fix.length > 40 ? fix.slice(0, 40).replace(/-+$/, "") : fix}`;
+      return refuse("E1352", "", `project name ${cut(name)} is not [a-z][a-z0-9-]*; pass ${hint}`);
+    }
+    if (name.length > 64) return refuse("E1352", "", "project name is over 64 characters; pass a shorter --name");
+    if (LISTED.has(name))
+      return refuse("E1352", "", `project name ${cut(name)} is a package the project lists; pass another --name`);
+  }
+  const ws = workspaceOf(folder, input.ancestors ?? {}, input.cwd);
+  if (ws.cli !== undefined && ws.cli !== input.version)
+    return refuse(
+      "E1363",
+      "",
+      `@keel/cli ${cut(ws.cli, 16)} is above, create is ${cut(input.version, 16)}; run ${m.name} create @keel/app@${cut(ws.cli, 16)}`,
+    );
+  const listing = input.listing ?? [];
+  if (listing.includes(MARKER))
+    return refuse(
+      "E1366",
+      at(MARKER),
+      "a stopped create-app run left this; remove what it lists, in order, then it; or the folder",
+    );
+  if (input.existing !== true) {
+    const busy = listing.find((p) => !QUIET.has(p.split("/")[0] ?? ""));
+    if (busy !== undefined)
+      return refuse("E1360", at(busy), `${cut(folder)}/ holds ${cut(busy)}; name a new folder, or add --existing`);
+  }
+  const member = ws.root !== undefined;
+  const tree =
+    input.library === undefined
+      ? projectTree({
+          name,
+          adapter: input.adapter ?? "client",
+          version: input.version,
+          packageManager: word.packageManager,
+          member,
+          skills: input.skills,
+        })
+      : libraryTree({
+          name: input.library,
+          version: input.version,
+          skills: input.skills,
+          packageManager: member ? undefined : word.packageManager,
+        });
+  // A name is a flag's value or the folder's, in no file yet: its diagnostic names no path (k.create Names).
+  if (!tree.ok)
+    return refuse(
+      tree.error.data.code,
+      tree.error.data.code === "E1352" ? "" : at(tree.error.data.path),
+      tree.error.data.message,
+    );
+  const files = tree.value;
+  // Where the file system ignores case, `agents.md` is `AGENTS.md` and `Modules/` is `modules/` (k.create-folder Folder).
+  const key = (p: string): string => (input.caseless === true ? p.toLowerCase() : p);
+  const spelled = new Map(listing.map((p) => [key(p.replace(/\/$/, "")), p]));
+  // The folder's own README is kept: the project's is a guide, not a file the project needs (k.create-folder Folder).
+  if (input.existing === true && spelled.has(key("README.md")) && input.library === undefined)
+    files.delete("README.md");
+  const found = new Set<string>();
+  let caseOnly = false;
+  for (const p of sortedKeys(files.keys())) {
+    const segs = p.split("/");
+    for (let i = 1; i <= segs.length; i += 1) {
+      const here = segs.slice(0, i).join("/");
+      const had = spelled.get(key(here));
+      if (had === undefined) continue;
+      const leaf = i === segs.length;
+      const other = had.replace(/\/$/, "") !== here;
+      // A file at a path the plan writes, a file where a folder goes, or a folder spelled another way.
+      if (leaf || !had.endsWith("/") || other) found.add(had);
+      if (other) {
+        found.add(leaf ? here : `${here}/`);
+        caseOnly = true;
+      }
+    }
+  }
+  const clashes = [...found].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const [first] = clashes;
+  if (first !== undefined) {
+    const one = clashes.length === 1;
+    const message = caseOnly
+      ? `${clashes.length} names clash, as this file system ignores case; move them aside, or use a new folder`
+      : one
+        ? `${cut(first, 40)} exists; move it aside, or use a new folder`
+        : `${clashes.length} files this writes exist; move them aside, or use a new folder`;
+    const data: ScaffoldDiag = {
+      kind: "diag",
+      code: "E1361",
+      path: at(first),
+      ...AT,
+      message,
+      see: "k.create-folder",
+      paths: clashes.map(at),
+    };
+    return err({ code: "scaffold.rejected", message: `E1361 ${message}`, data });
+  }
+  const records: CreateRecord[] = sortedKeys(files.keys()).map((path) => ({
+    kind: "scaffold.edit",
+    action: "create",
+    path,
+  }));
+  if (member && !ws.member) {
+    const warn: ScaffoldDiag = {
+      kind: "diag",
+      code: "W1364",
+      path: "",
+      ...AT,
+      message: `${cut(folder, 40)} is not in the workspace's package globs; add it to them`,
+      see: SEE,
+    };
+    records.push(warn);
+  }
+  const next = (command: string): CreateRecord => ({ kind: "create.next", command });
+  if (folder !== ".") records.push(next(`cd ${shellPath(folder)}`));
+  if (input.gitAbove !== true) records.push(next("git init -b main"));
+  // The manager finds the workspace's root from any folder in it, so the install is printed as it is typed.
+  records.push(next(m.install));
+  const steps = input.library === undefined ? ["dev", "check", "test", "build"] : ["check", "test", "pack"];
+  for (const s of steps) records.push(next(`${m.run} ${s}`));
+  return ok({ files, records });
+}

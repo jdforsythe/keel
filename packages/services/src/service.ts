@@ -12,6 +12,7 @@ import { fail } from "./internal/fail.ts";
 import { isEndpoint } from "./internal/isEndpoint.ts";
 import { keelOrigin } from "./internal/keelOrigin.ts";
 import { moduleTarget } from "./internal/moduleTarget.ts";
+import { serverBound } from "./internal/serverBound.ts";
 
 const DEFAULT_TIMEOUT = 10_000;
 const DEFAULT_MAX_BYTES = 1_048_576;
@@ -31,7 +32,8 @@ function bytes(n: number): number {
  * `AsyncIterable` of them for an `events: true` endpoint. A `contract`'s calls are resolved per call by k.topology
  * (`moduleTarget`), one method per API entry named by its id after the module; a `base` service's go through
  * `ctx.net.fetch` with `redirect: "manual"`, so no redirect is followed, and carry `x-keel: 1` only to a Keel origin
- * (`keelOrigin`): to a third party a request carries no Keel header and no cookie. A call reads at most `maxBytes` (default
+ * (`keelOrigin`), with `x-keel-forwarded: 1` too from a server (`serverBound`): to a third party a request carries
+ * no Keel header and no cookie. A call reads at most `maxBytes` (default
  * 1 MiB) of a response body. Throws at construction on a non-absolute `base`, a timeout that is not a finite ms > 0
  * or a `maxBytes` that is not an integer > 0; a call never throws.
  */
@@ -58,6 +60,7 @@ export function service(opts: ServiceOptions): unknown {
       : {
           base: base ?? "",
           keel: keelOrigin(ctx, base ?? ""),
+          ...(keelOrigin(ctx, base ?? "") && serverBound(ctx) ? { server: true as const } : {}),
           send: (req) => ctx.net.fetch(new Request(req, { redirect: "manual" })),
         };
   const named: [string, unknown][] =

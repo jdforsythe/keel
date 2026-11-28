@@ -4,7 +4,7 @@ import type { Verb } from "./Verb.ts";
 
 /**
  * `routes.json` (k.compiler): one entry per route id; schemas as JSON Schema; layouts have `path: null`; an API entry
- * has `api: true` and its `method`, and its `query` as `search`.
+ * has `api: true` and its `method`, and its `query` as `search`; a `local: true` entry has `local: true`.
  */
 export type RoutesArtifact = Readonly<
   Record<
@@ -14,6 +14,7 @@ export type RoutesArtifact = Readonly<
       readonly api?: true;
       readonly guard: string | null;
       readonly layout: string | null;
+      readonly local?: true;
       readonly method?: Method;
       readonly module: string;
       readonly params: JsonValue;

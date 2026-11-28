@@ -131,7 +131,7 @@ test(
       exports: { "./tokens": { keel: "./src/chartsTokens.ts", default: "./index.js" } },
       files: {
         "src/chartsTokens.ts":
-          "import { defineTokens } from '@keel/ui'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n",
+          "import { defineTokens } from '@keel/ui/tokens'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n",
         "src/Badge.tsx":
           "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`} p=\"charts.2\" />\n}\n",
       },
@@ -139,7 +139,7 @@ test(
     const dir = materialize({
       ...project({ adapter: "static", home: true, libraries: [shipped] }),
       "tokens.ts":
-        "import { defineTokens } from '@keel/ui'\nimport { brandTokens } from '@keel/ui/brand'\nimport { chartsTokens } from '@acme/charts/tokens'\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } })\n",
+        "import { defineTokens } from '@keel/ui/tokens'\nimport { brandTokens } from '@keel/ui/brand'\nimport { chartsTokens } from '@acme/charts/tokens'\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } })\n",
     });
     try {
       expect(keel(dir, ["build"]).status).toBe(0);

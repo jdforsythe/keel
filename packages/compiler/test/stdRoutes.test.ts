@@ -98,6 +98,34 @@ describe("stdRoutes (k.topology Route table)", () => {
     expect(stdContract(root, "app")).toBeUndefined();
   });
 
+  // k.library Kind: an entry's `keel` target is the code every surface reads, linked or installed; its built `default`
+  // (JSX left in, a file under `node_modules` the dev server cannot transform) is never the binding.
+  it("for an installed library, resolves ./routes and ./contract to the entries' keel sources, not the built files", () => {
+    const lib = "node_modules/@acme/frag";
+    write(
+      `${lib}/package.json`,
+      JSON.stringify({
+        name: "@acme/frag",
+        type: "module",
+        keel: "library",
+        exports: {
+          ".": { keel: "./src/index.ts", default: "./dist/src/index.js" },
+          "./contract": { keel: "./src/contract.ts", default: "./dist/src/contract.js" },
+          "./routes": { keel: "./src/routes.ts", default: "./dist/src/routes.js" },
+        },
+      }),
+    );
+    write(`${lib}/module.ts`, 'export default { id: "frag", deps: [], capabilities: [] };\n');
+    for (const f of ["index", "contract", "routes"]) {
+      write(`${lib}/src/${f}.ts`, "export {};\n");
+      write(`${lib}/dist/src/${f}.js`, "export {};\n");
+    }
+    write("modules/app/module.ts", 'export default { id: "app", deps: ["@acme/frag"], capabilities: [] };\n');
+    const pkg = fs.realpathSync(path.join(root, lib));
+    expect(stdRoutes(root, "frag")).toEqual([path.join(pkg, "src/routes.ts"), pkg, "@acme/frag/routes"]);
+    expect(stdContract(root, "frag")).toEqual([path.join(pkg, "src/contract.ts"), pkg, "@acme/frag/contract"]);
+  });
+
   it("gives nothing for an app module, an unknown id, a package not in deps, or one without ./routes", () => {
     expect(stdRoutes(root, "app")).toBeUndefined();
     expect(stdRoutes(root, "nope")).toBeUndefined();

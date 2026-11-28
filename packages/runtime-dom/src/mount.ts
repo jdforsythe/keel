@@ -21,7 +21,7 @@ import type { MountOptions } from "./types/MountOptions.ts";
  * removes the rendered nodes, every root listener, and every binding and subscription. Idempotent.
  */
 export function mount(component: Component, el: Element, options: MountOptions): () => void {
-  const root = createRoot(el, options.ctx, options.mode);
+  const root = createRoot(el, options.ctx, options.mode, options.artifacts);
   const owner = createOwner(null, root, null);
   const before = el.lastChild;
   const anchor = el.appendChild(el.ownerDocument.createComment(""));

@@ -21,6 +21,7 @@ packages/*/conformance/.tmp-*
 **/.keel/styles.json
 packages/*/.keel/
 .keel-dev/
+**/.keel/e2e-host-*/
 .DS_Store
 .env*
 !.env.example

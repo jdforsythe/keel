@@ -4,8 +4,10 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { testTime } from "@keel/tooling/test-time";
 import { tempDir } from "@keel/tooling/test-tmp";
-import { Text, defineTokens } from "@keel/ui";
+import { Text } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 import { afterEach, describe, expect, it } from "vitest";
 import { harnessArtifacts } from "../src/internal/harnessArtifacts.ts";
 import { loadProjectArtifacts } from "../src/internal/loadProjectArtifacts.ts";
@@ -56,12 +58,48 @@ describe("loadProjectArtifacts", () => {
       const r = await loadProjectArtifacts(project({ "tokens.ts": source }));
       return r.ok ? undefined : r.reason;
     };
-    expect(await reason('throw new Error("broken");\n')).toMatch(/^tokens\.ts failed to evaluate: broken/);
+    expect(await reason('throw new Error("broken");\n')).toMatch(/^tokens\.ts throws: broken/);
     expect(await reason("export const other = 1;\nexport default { color: {} };\n")).toBe(
       "tokens.ts exports no tokens",
     );
     expect(await reason("export const tokens = { color: 5 };\n")).toMatch(/^tokens\.ts: tokens fail TokenSchema/);
   });
+
+  // k.looks Shipped tokens: an installed library's `./tokens` (its `keel` target a `.ts` file under `node_modules`)
+  // reaches `tokens.ts` as the literal's data, as `keel check` and `keel build` give it; the file itself never runs,
+  // so a runtime that refuses `.ts` under `node_modules` or a top-level throw there changes nothing.
+  it(
+    "composes an installed library's shipped tokens from the literal, never running the library's file",
+    async () => {
+      const dir = project({
+        "modules/app/module.ts": "export default { id: 'app', deps: ['@acme/kit'], capabilities: [] };\n",
+        "node_modules/@acme/kit/package.json": JSON.stringify({
+          name: "@acme/kit",
+          version: "1.0.0",
+          type: "module",
+          keel: "library",
+          exports: { "./tokens": { keel: "./src/kitTokens.ts", default: "./dist/src/kitTokens.js" } },
+        }),
+        "node_modules/@acme/kit/module.ts": "export default { id: 'kit', deps: [], capabilities: [] };\n",
+        "node_modules/@acme/kit/src/kitTokens.ts": [
+          'import { defineTokens } from "@keel/ui/tokens";',
+          'export const kitTokens = defineTokens({ color: { "kit.accent": "#0b5cad" } });',
+          'throw new Error("the shipped tokens file ran");',
+          "",
+        ].join("\n"),
+        "tokens.ts": [
+          'import { kitTokens } from "@acme/kit/tokens";',
+          'export const tokens = { color: { fg: "#111111", ...kitTokens.color } };',
+          "",
+        ].join("\n"),
+      });
+      expect(await loadProjectArtifacts(dir)).toMatchObject({
+        ok: true,
+        artifacts: { tokens: { color: { fg: "#111111", "kit.accent": "#0b5cad" } } },
+      });
+    },
+    testTime(20_000),
+  );
 });
 
 describe("harnessArtifacts", () => {

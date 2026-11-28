@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// The dev inspect route of createApp (k.cli Inspect, RFC 0017): live graph and stores of the process, artifacts
+// The dev inspect route of createApp (k.inspect, RFC 0017): live graph and stores of the process, artifacts
 // from the `.keel` directory, CORS only for an admitted origin, absent in production, one `req` record per request.
 import fs from "node:fs";
 import path from "node:path";

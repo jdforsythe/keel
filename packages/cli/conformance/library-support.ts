@@ -34,7 +34,7 @@ export type LibraryShape = {
 
 /** `src/chartsTokens.ts` of the second Conformance clause of k.library. */
 export const CHARTS_TOKENS =
-  "import { defineTokens } from '@keel/ui'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n";
+  "import { defineTokens } from '@keel/ui/tokens'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n";
 
 /** The `./tokens` entry of the second Conformance clause of k.library. */
 export const TOKENS_EXPORT = { "./tokens": { keel: "./src/chartsTokens.ts", default: "./index.js" } };
@@ -223,7 +223,7 @@ export function linkInside(dir: string, rel: string, name = NAME): void {
 
 /** The app's `tokens.ts` of the `site` project: a color pair and a space scale. The fixture's library names no token. */
 export const TOKENS =
-  'import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" }, space: { 1: "4px", 2: "8px", 3: "16px" } });\n';
+  'import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" }, space: { 1: "4px", 2: "8px", 3: "16px" } });\n';
 
 /** The `site` project of the second Conformance clause of k.library: `project` with a `static` deployable `site` whose `/` page renders `<Badge id="shop.badge" />`, and the app's `tokens.ts`. */
 export const siteTree = (libraries?: Tree[]): Tree => ({
@@ -233,7 +233,7 @@ export const siteTree = (libraries?: Tree[]): Tree => ({
 
 /** The app's `tokens.ts` as E1810's fix writes it over `brandTokens` for the library of the second Conformance clause. */
 export const CHARTS_APP_TOKENS =
-  'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nimport { chartsTokens } from "@acme/charts/tokens";\n\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } });\n';
+  'import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nimport { chartsTokens } from "@acme/charts/tokens";\n\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } });\n';
 
 /** The `site` project of the second Conformance clause of k.library: the library ships `chartsTokens` and its Badge's `Box` takes `p="charts.2"`; `badge` replaces the Badge's source (the build without it). */
 export const chartsSiteTree = (badge?: string): Tree => ({

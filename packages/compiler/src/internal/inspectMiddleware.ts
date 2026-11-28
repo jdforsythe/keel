@@ -4,6 +4,7 @@ import path from "node:path";
 import { INSPECT_PATH } from "../inspect/INSPECT_PATH.ts";
 import { LOOPBACK } from "../inspect/LOOPBACK.ts";
 import { artifactData } from "../inspect/artifactData.ts";
+import { loopbackPeer } from "../inspect/loopbackPeer.ts";
 import { originListed as listed } from "../inspect/originListed.ts";
 
 /** Largest live report a page may post. */
@@ -92,7 +93,7 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
 };
 
 /**
- * `GET|POST /__keel/inspect` for the Vite dev and preview servers (k.cli Inspect, RFC 0017).
+ * `GET|POST /__keel/inspect` for the Vite dev and preview servers (k.inspect, RFC 0017).
  * GET returns `{ live, graph, stores, ids, a11y, routes, sections }`: the derivation `views` gives (the plugin's, of
  * the tree it serves: k.derived Readers), else the artifacts read from `<root>/.keel/` per request (preview), the live
  * half from the last report the open page posted (`live: false`, empty graph, stores and sections, until one arrives). Under
@@ -102,6 +103,8 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
  * and, of two apps, the first by name kept. POST takes the page's report as JSON. Both answer only (RFC 0022) a `Host` that is loopback or in `origins`, with an `Origin`
  * that is the server's own or in `origins` (`:*` for any port); others get 403 `keel.denied`. A GET may omit `Origin`
  * (a navigation or curl); a POST or any other method must send one. A listed cross-origin `Origin` is echoed for CORS.
+ * Whatever the headers say, a connection whose remote address is not loopback is 403 `keel.denied` too (k.topology Local
+ * topology: under `keel dev --host` the store values it holds stay on this machine).
  */
 export function inspectMiddleware(
   root: () => string,
@@ -125,7 +128,7 @@ export function inspectMiddleware(
     const write = req.method !== "GET" && req.method !== "HEAD";
     const same = origin === undefined ? !write : from !== undefined && from.host === self?.host;
     const crossOk = origin !== undefined && !same && listed(origins, origin);
-    if (!hostOk || !(same || crossOk))
+    if (!loopbackPeer(req.socket.remoteAddress) || !hostOk || !(same || crossOk))
       return send(res, 403, { ok: false, error: { code: "keel.denied", message: "inspect origin refused", data: {} } });
     if (crossOk) {
       res.setHeader("access-control-allow-origin", origin);

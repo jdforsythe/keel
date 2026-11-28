@@ -1,4 +1,4 @@
-import { defineTokens } from "@keel/ui";
+import { defineTokens } from "@keel/ui/tokens";
 
 export const acmeTokens = defineTokens({
   color: {
@@ -69,5 +69,13 @@ export const acmeTokens = defineTokens({
       states: { disabled: { fg: "acme.track" } },
     },
     "acme.knob": { w: "acme.knob", h: "acme.knob", radius: "acme.round", bg: "acme.knob", fg: "acme.text" },
+  },
+  themes: {
+    contrast: {
+      color: {
+        "acme.accent": { light: "#08427D", dark: "#B5D3F7" },
+        "acme.track": { light: "#4A4A52", dark: "#C4C4CC" },
+      },
+    },
   },
 });

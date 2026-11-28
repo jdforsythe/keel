@@ -1,7 +1,7 @@
 # k.security: Response headers, CSP and the caller cookie
 status: conformance-covered
 
-**Headers.** Every `createApp` response (documents, JSON, event streams, assets, redirects, errors) carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, `X-Frame-Options: DENY` and `Permissions-Policy: camera=(), microphone=(), payment=(), usb=()`; on https (the cookie's rule below) also `Strict-Transport-Security: max-age=63072000`.
+**Headers.** Every `createApp` response (documents, JSON, event streams, assets, redirects, errors) and every refusal `server.mjs` answers before it carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, `X-Frame-Options: DENY` and `Permissions-Policy: camera=(), microphone=(), payment=(), usb=()`; on https (the cookie's rule below) also `Strict-Transport-Security: max-age=63072000`. Those refusals: a missing, empty, repeated or unreadable `Host`, 403 `keel.denied` (k.contract Local routes); and a request its HTTP parser rejects (conflicting `Content-Length` and `Transfer-Encoding`, an unknown method, a bad HTTP version, a NUL in a header), 400, with no handler run.
 
 **Policy.** Every document carries `Content-Security-Policy` (`Content-Security-Policy-Report-Only` in dev) with `Reporting-Endpoints: keel-csp="/__keel/csp"`:
 ```
@@ -37,3 +37,4 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 - `keel build` of a fixture with a `client` deployable writes its `csp.txt` with `script-src 'self'`.
 - `import { serverState } from '@keel/store/internal'` in `modules/a/x.ts`, `import('@keel/router/internal')` in `test/a.test.ts` and `export * from '@keel/std-jobs/tools/internal'` are each one E1576; the first in `packages/std-x/src/a.ts` or `node_modules/@keel/std-x/a.ts`, and `import '@keel/router/match'`, are not.
 - In one window, 50 reports with `x-forwarded-for: 192.0.2.1` log 10 and a later one from `192.0.2.2` is logged; `dropped: 40` follows the window; no record holds an address.
+- `server.mjs` of a `keel build` fixture answers a `GET /` carrying both `Content-Length: 5` and `Transfer-Encoding: chunked`, a request with method `BREW`, a request line `GET / HTTP/9.9`, and a `GET /` whose header `x-a` holds a NUL byte, each 400 carrying the six k.security headers, with no handler run.

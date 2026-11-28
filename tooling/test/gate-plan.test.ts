@@ -14,6 +14,7 @@ import {
   slowParallel,
   slowRunArgs,
   slowSetupScript,
+  slowBrowserDepsScript,
   slowShards,
   slowSteps,
   applyRewrites,
@@ -28,7 +29,8 @@ import {
   nodeMajor,
   planJobs,
   resultPath,
-  runsAfterFailure,
+  parseOutputs,
+  stepRuns,
   stepName,
   verdict,
   versionCheck,
@@ -165,11 +167,68 @@ describe("expr", () => {
   });
 });
 
-describe("runsAfterFailure", () => {
-  it("is true for always(), false with no if, and throws on any other condition", () => {
-    expect(runsAfterFailure({ run: "x", if: "always()" })).toBe(true);
-    expect(runsAfterFailure({ run: "x" })).toBe(false);
-    expect(() => runsAfterFailure({ run: "x", if: "failure()" })).toThrow('unknown step condition "failure()"');
+describe("step outputs and conditions", () => {
+  it("answers steps.<id>.outputs.<name> from what the step wrote, empty when it wrote nothing", () => {
+    const ctx = { steps: { browser: { browser: "true", playwright: "1.50.0" } } };
+    expect(expr("pw-${{ steps.browser.outputs.playwright }}", ctx)).toBe("pw-1.50.0");
+    expect(expr("${{ steps.browser.outputs.other }}|${{ steps.none.outputs.x }}", ctx)).toBe("|");
+    expect(expr("${{ steps.browser.outputs.playwright }}", {})).toBe("");
+  });
+  it("reads name=value lines and name<<DELIMITER blocks of a GITHUB_OUTPUT file", () => {
+    expect(parseOutputs("browser=true\nplaywright=1.50.0\n")).toEqual({ browser: "true", playwright: "1.50.0" });
+    expect(parseOutputs("a=1\nlog<<EOF\nx=y\nz\nEOF\nb=a=b\na=2\n")).toEqual({ a: "2", log: "x=y\nz", b: "a=b" });
+    expect(parseOutputs("")).toEqual({});
+  });
+  it("runs a step by its condition: always() after a failure, an output test only while passing, else only while passing", () => {
+    const out = { browser: { browser: "true" } };
+    expect(stepRuns({ run: "x" }, false)).toBe(true);
+    expect(stepRuns({ run: "x" }, true)).toBe(false);
+    expect(stepRuns({ run: "x", if: "always()" }, true)).toBe(true);
+    const yes = { run: "x", if: "steps.browser.outputs.browser == 'true'" };
+    expect(stepRuns(yes, false, out)).toBe(true);
+    expect(stepRuns(yes, false, { browser: { browser: "false" } })).toBe(false);
+    expect(stepRuns(yes, false, {})).toBe(false);
+    expect(stepRuns(yes, true, out)).toBe(false);
+    expect(stepRuns({ run: "x", if: "steps.t.outputs.cache-hit != 'true'" }, false, {})).toBe(true);
+    expect(() => stepRuns({ run: "x", if: "failure()" }, false)).toThrow('unknown step condition "failure()"');
+  });
+  it("carries the id and condition of a shard's steps into the container run", () => {
+    const { steps } = slowSteps(realSource, 2);
+    const probe = steps.find((s) => s.id === "browser");
+    expect(probe?.run).toContain("ci-shards.mjs --browser 2");
+    expect(steps.filter((s) => s.if === "steps.browser.outputs.browser == 'true'").length).toBeGreaterThan(0);
+  });
+  it("runs the browser step as the user, its libraries installed as root only when a shard drives a browser", () => {
+    const { steps } = slowSteps(realSource, 1);
+    const install = steps.find((st) => /playwright-core install/.test(st.run));
+    expect(install?.run).toBe("pnpm exec playwright-core install chromium");
+    expect(install?.if).toBe("steps.browser.outputs.browser == 'true'");
+    const script = slowBrowserDepsScript([1, 2, 3]);
+    expect(script).toContain("for n in 1 2 3;");
+    expect(script).toContain("ci-shards.mjs --browser");
+    expect(script).toContain("install-deps chromium");
+    expect(script).toMatch(/if \[ -n "\$\{need:-\}" \]/);
+    const args = slowRunArgs({ name: "n", image: "i" });
+    expect(args.join(" ")).toContain("--security-opt seccomp=unconfined");
+    expect(args).not.toContain("--no-sandbox");
+    expect(args.slice(args.indexOf("--user"), args.indexOf("--user") + 2)).toEqual(["--user", SLOW.user]);
+  });
+  it("runs no step with sudo in the slow container: a sysctl is not set from inside it", () => {
+    for (const shard of slowShards(realSource)) {
+      const { install, steps } = slowSteps(realSource, shard);
+      for (const step of [...install, ...steps]) expect(step.run).not.toMatch(/\bsudo\b/);
+    }
+  });
+  it("gives every job's steps only expressions and conditions the gate answers", () => {
+    const names = Object.keys(realSource.jobs).filter((n) => JOBS[n]?.run === true);
+    const ctx = { matrix: { shard: 1 }, workspace: "/w", runnerOs: "macOS", runnerArch: "ARM64", needs: {}, steps: {} };
+    for (const n of names)
+      for (const step of expandSteps(realSource, n)) {
+        if (typeof step !== "object") continue;
+        if (step.run !== undefined)
+          expr(step.run, { ...ctx, needs: Object.fromEntries(names.map((m) => [m, "success"])) });
+        stepRuns(step, false, {});
+      }
   });
 });
 
@@ -206,6 +265,17 @@ describe("applyRewrites", () => {
     expect(text).not.toContain("127.0.0.1:5432/");
     expect(text).not.toContain("--name pg-tls");
     expect(text).not.toContain("docker exec pg-tls");
+  });
+  it("matches the real built-smokes job of the CI source: its postgres service has a container and port", () => {
+    const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
+    const rule = JOBS["built-smokes"];
+    expect(rule.services?.postgres).toEqual({ container: "keel-gate-pg-smokes", port: "pg-smokes" });
+    expect(Object.keys(source.jobs["built-smokes"].services)).toEqual(Object.keys(rule.services ?? {}));
+    const out = applyRewrites(source.jobs["built-smokes"], expandSteps(source, "built-smokes"), rule.rewrites, {
+      "pg-smokes": 41002,
+    });
+    expect(out.env.KEEL_TEST_POSTGRES_URL).toContain("127.0.0.1:41002/");
+    expect(JSON.stringify(out)).not.toContain("sudo sysctl");
   });
   it("runs the ledger job's own steps, its artifact unpacking included", () => {
     const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));

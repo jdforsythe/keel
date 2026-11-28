@@ -3,15 +3,15 @@
 import { chmodSync, linkSync, lstatSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
+import { linkEscapes } from "@keel/scaffold/links";
 import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { applyWrites } from "../src/internal/applyWrites.ts";
-import { linkEscapes } from "../src/internal/linkEscapes.ts";
 import { shellTargets } from "../src/internal/shellTargets.ts";
 
-vi.mock("../src/internal/linkEscapes.ts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/internal/linkEscapes.ts")>();
+vi.mock("@keel/scaffold/links", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@keel/scaffold/links")>();
   return { linkEscapes: vi.fn(actual.linkEscapes) };
 });
 

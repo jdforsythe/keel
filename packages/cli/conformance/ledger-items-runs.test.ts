@@ -2,6 +2,7 @@
 // Spec: k.ledger-items, clause "An `it.each([1, 2])` test whose report holds two tests at its line, one `passed` and one `failed`, gives no evidence; with both `passed` it gives `example`."
 // Spec: k.ledger-items, clause "A test file held at its `sha` by both `reports/tests/run.json` and `reports/tests/1-of-2.json` gives no evidence, and `keel ledger` reports one W1733."
 // Spec: k.ledger-items, clause "An export of `packages/p/src/f.ts` referenced only by a test its report records `failed` is `none`."
+// Spec: k.ledger-items, clause "In app `apps/a`, an export referenced only by `test/shop.e2e.ts`, with `apps/a/reports/tests/e2e.json` holding that file at its `sha` and its test `passed`, is `example`; with no `e2e.json`, it is `none` and `keel ledger` reports one W1733 at `apps/a/reports/tests/`."
 // Seed: 1337 (the one property, 5 runs). Binary runs: 1 per case (`keel ledger`, no report written for the fixture: `reports: "none"`), 2 for the property's run (the report stands again once the file is restored).
 // The real `keel` binary over temp projects (OS tmpdir). Package `p` is `packages/p` with a `package.json`; the cited section `k.x` is `spec/kernel/k.x.md`; the file's call is lines 3 to 5.
 // The brief's list gives "a report where the test failed" and "a report listing the file but not the test" one W1733 each; k.ledger-items Run evidence gives W1733 for a missing report, a stale
@@ -267,6 +268,42 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
       expect(rung("g")).toBe("example");
       const both = ledgerAsIs(project("items-run-export-ok", files("passed", "passed")));
       expect(both.records.find((r) => r.item === "packages/p/src/f.ts#f")?.rung).toBe("example");
+    },
+    SLOW,
+  );
+
+  it(
+    "an export of `apps/a/modules/m/f.ts` referenced only by `test/shop.e2e.ts` is `example` with `e2e.json` holding the file at its `sha` and `passed`, `none` with no `e2e.json` and one W1733 at `apps/a/reports/tests/`",
+    () => {
+      // An app's export item is `<folder name>:<path under modules/>#<name>` (`a:m/f.ts#f`), and its `modules/` files are read.
+      const test = [
+        'import { expect, it } from "vitest";',
+        'import { f } from "../modules/m/f.ts";',
+        'it("buys", () => {',
+        "  expect(f()).toBe(1);",
+        "});",
+        "",
+      ].join("\n");
+      const src = "export function f(): number {\n  return 1;\n}\n";
+      const base: Record<string, string> = {
+        "apps/a/package.json": packageJson("a"),
+        "apps/a/modules/m/f.ts": src,
+        "apps/a/test/shop.e2e.ts": test,
+      };
+      const rung = (run: Run): unknown => run.records.find((r) => r.item === "a:m/f.ts#f")?.rung;
+      const withReport = ledgerAsIs(
+        project("items-run-e2e", {
+          ...base,
+          "apps/a/reports/tests/e2e.json": reportText({
+            "test/shop.e2e.ts": { source: test, tests: [{ line: 3, state: "passed" }] },
+          }),
+        }),
+      );
+      expect(rung(withReport)).toBe("example");
+      expect(w1733(withReport)).toEqual([]);
+      const without = ledgerAsIs(project("items-run-e2e-none", base));
+      expect(rung(without)).toBe("none");
+      expect(w1733(without)).toEqual([expect.objectContaining({ path: "apps/a/reports/tests/" })]);
     },
     SLOW,
   );

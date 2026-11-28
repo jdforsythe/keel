@@ -6,6 +6,7 @@ import { testTime } from "@keel/tooling/test-time";
 import { type ChildProcess, spawn } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
+import { networkInterfaces } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { setTimeout as pause } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -121,13 +122,36 @@ export const stopAll = (): Promise<void[]> => Promise.all([...started].map(stop)
 process.once("exit", () => {
   for (const p of started) signal(p, "SIGKILL");
 });
-export const freePort = (): Promise<number> =>
+/**
+ * A port free where the server under test binds it: `"dev"` (the default) is `keel dev`'s own address, 127.0.0.1 (k.cli: `keel dev` listens on 127.0.0.1 only, or on the Vite config's `server.host`);
+ * `"all"` is `node dist/<name>/server.mjs`'s, every address (k.deploy: it listens on every address on `PORT`), so the probe binds no host.
+ */
+export const freePort = (bind: "dev" | "all" = "dev"): Promise<number> =>
   new Promise((res, rej) => {
     const srv = net.createServer();
-    srv.listen(0, () => {
+    const done = (): void => {
       const a = srv.address();
       srv.close(() => (typeof a === "object" && a !== null ? res(a.port) : rej(new Error("no port"))));
-    });
+    };
+    if (bind === "all") srv.listen(0, done);
+    else srv.listen(0, "127.0.0.1", done);
+  });
+/** A non-loopback IPv4 address of this machine (its LAN address), or `undefined` when it has none. */
+export const lanAddress = (): string | undefined =>
+  Object.values(networkInterfaces())
+    .flatMap((list) => list ?? [])
+    .find((i) => i.family === "IPv4" && !i.internal)?.address;
+/** Whether a TCP connect to `host:port` succeeds (a refusal, an error or no answer in a bounded time is `false`); no external program. */
+export const connects = (host: string, port: number): Promise<boolean> =>
+  new Promise((res) => {
+    const sock = net.connect({ host, port });
+    const end = (ok: boolean): void => {
+      sock.destroy();
+      res(ok);
+    };
+    sock.setTimeout(testTime(5_000), () => end(false));
+    sock.once("connect", () => end(true));
+    sock.once("error", () => end(false));
   });
 export type Reply = { readonly status: number; readonly body: string };
 export const get = (port: number, path: string): Promise<Reply | null> =>
@@ -161,7 +185,7 @@ export async function served(p: Proc, port: number): Promise<boolean> {
 const SERVER_SECRET = "s".repeat(32);
 /** Runs `node dist/<name>/server.mjs` (k.hosting) on a free port with `PORT` and `KEEL_SECRET`, polls `GET /` (bounded), calls `fn(port)`, then kills the group. */
 export async function withServer(dir: string, name: string, fn: (port: number) => Promise<void>): Promise<void> {
-  const port = await freePort();
+  const port = await freePort("all");
   const env = childEnv();
   env.PORT = String(port);
   env.KEEL_SECRET = SERVER_SECRET;
