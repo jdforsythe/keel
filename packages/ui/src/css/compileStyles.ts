@@ -89,7 +89,7 @@ type Layer = {
 };
 
 const at = (conds: readonly (string | undefined)[], body: string): string => {
-  const c = conds.filter((x): x is string => x !== undefined);
+  const c = conds.flatMap((x) => (x === undefined ? [] : [x]));
   return c.length === 0 ? body : `@media ${c.join(" and ")}{\n${body}\n}`;
 };
 

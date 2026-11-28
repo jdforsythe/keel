@@ -33,6 +33,8 @@ Every output record has a `kind`, each kind one formatter. `json` is the record 
 
 **Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, flag value invalid for the input schema, or a required input missing, named as typed (`--to <module>`) with a line passing it · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter.
 
+**Dev watcher.** `keel dev` (k.topology Local topology) reads `KEEL_DEV_POLL` once at start, in its own process: `1` passes Vite `server.watch` `usePolling: true` and `interval: 100` over the project's `server.watch`, whose other keys stay; unset, empty or `0` passes none (the project's Vite config decides); any other value prints one E1560 (k.deploy) naming `KEEL_DEV_POLL` and not the value, listens on no port and exits 1.
+
 **Command form.** A line `keel` prints names each `keel <command>` in the form the reader runs it from: when `npm_config_user_agent` names pnpm, npm, yarn or bun, that manager's (`pnpm keel build`, `npx --no keel build`, `yarn keel build`, `bun run keel build`), since a `keel` on PATH may be another program; with none, `keel build`. A `keel` already in a manager's form is left as it is. Compact and pretty only; json keeps each record's text.
 
 **Conformance.**

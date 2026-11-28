@@ -137,7 +137,10 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
 export function check(input: readonly SourceFile[], inputOptions: CheckOptions = {}): CheckResult {
   // A library of the project's own tree is read once: through `node_modules/<name>/` when the project lists it, else
   // where it lies, as a library's file (k.library Kind).
-  const ws = workspaceLibraries(inputOptions.project === undefined ? input : [...input, ...inputOptions.project]);
+  const ws = workspaceLibraries(
+    inputOptions.project === undefined ? input : [...input, ...inputOptions.project],
+    path.resolve(inputOptions.root ?? process.cwd()),
+  );
   const given = input.filter((f) => !ws.twin(f.path));
   const options: CheckOptions =
     inputOptions.project === undefined

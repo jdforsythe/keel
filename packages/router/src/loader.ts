@@ -2,6 +2,7 @@ import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { type Infer, type KeelError, type Result, type Schema, type Secret, isSchema } from "@keel/schema";
 import { isolate } from "@keel/store";
+import { splitLive } from "../unsafe/splitLive.ts";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
 import { firstYield } from "./internal/firstYield.ts";
@@ -55,8 +56,6 @@ type Base = Omit<LoaderInput, "user" | "bearer" | "stores"> & {
 type PlainFn = (args: Base, ctx: Ctx) => Promise<Out<unknown>>;
 type LiveFn = (args: Base & { readonly currentUser: CurrentUser }, ctx: Ctx) => AsyncGenerator<Out<unknown>>;
 type Fn = PlainFn | LiveFn;
-/** Whether `fn` is an async generator function: a live loader's. */
-const isLive = (fn: Fn): fn is LiveFn => Reflect.get(fn, Symbol.toStringTag) === "AsyncGeneratorFunction";
 
 /** An `events: true` API GET entry's live loader: `fn` is an async generator of `Result`s of the entry's `output`. */
 export function loader<M extends string, C extends Entries, K extends LiveIds<C>, St = undefined>(
@@ -102,13 +101,14 @@ export function loader(
   if (output === undefined) throw new TypeError(`loader("${id}"): no output (a page or layout loader declares one)`);
   if (own !== undefined) refuseSecret(own);
   const { stores } = decl;
+  const kind = splitLive<PlainFn, LiveFn>(fn);
   // A plain loader's `fn` gets exactly the keys k.contract lists; a live one's also `currentUser` (k.user).
   const run = (args: LoaderInput, ctx: Ctx): Promise<Out<unknown>> =>
     withStores(stores, args.stores, ctx, (st) =>
       firstYield((signal) => {
         const user = args.user ?? "";
         const at = { ...args, user, bearer: args.bearer, stores: st, signal };
-        return isLive(fn) ? fn({ ...at, currentUser: fixedUser(user) }, ctx) : fn(at, ctx);
+        return "live" in kind ? kind.live({ ...at, currentUser: fixedUser(user) }, ctx) : kind.plain(at, ctx);
       }),
     );
   const base = {
@@ -119,8 +119,8 @@ export function loader(
     ...(stores === undefined ? {} : { stores }),
     run,
   };
-  if (!isLive(fn)) return madeFrozen(base, "loader");
-  const gen = fn;
+  if (!("live" in kind)) return madeFrozen(base, "loader");
+  const gen = kind.live;
   return madeFrozen(
     {
       ...base,
