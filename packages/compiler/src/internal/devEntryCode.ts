@@ -4,7 +4,7 @@ import { stdRoutes } from "../std/stdRoutes.ts";
 import type { Topology } from "../types/Topology.ts";
 
 /** Specifiers the dev module imports; the app resolves them (the compiler itself never imports them). */
-const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = [
+const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL, REACTIVE, REACTIVE_INTERNAL] = [
   "@keel/compiler/inspect/inspectorsReload",
   "@keel/server/internal/dom",
   "@keel/server/internal/onUncaught",
@@ -13,6 +13,8 @@ const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = 
   "@keel/ctx/node",
   "@keel/router",
   "@keel/router/internal",
+  "@keel/reactive",
+  "@keel/reactive/internal",
 ].map((x) => JSON.stringify(x));
 
 /**
@@ -46,11 +48,16 @@ export function devEntryCode(root: string, topology: Topology): string {
     `const { fileStorage } = await import(${CTX_NODE});`,
     `const { routeTable } = await import(${ROUTER});`,
     `const { compileRoutes, matchUrl } = await import(${ROUTER_INTERNAL});`,
+    `const { scope } = await import(${REACTIVE});`,
+    `const { holdOwner } = await import(${REACTIVE_INTERNAL});`,
+    "export const root = scope(() => undefined, { detached: true });",
+    "export const apps = [];",
+    "const release = holdOwner(root);",
+    "try {",
     `const { default: topology } = await import(${abs("topology.ts")});`,
     "const made = {};",
     "const peers = {};",
     `for (const n of ${JSON.stringify(node)}) peers[n] = { fetch: (req) => made[n].fetch(req), close: async () => {} };`,
-    "export const apps = [];",
   ];
   const origins = JSON.stringify(
     Object.fromEntries(Object.entries(topology).flatMap(([n, d]) => (d.origins === undefined ? [] : [[n, d.origins]]))),
@@ -79,5 +86,6 @@ export function devEntryCode(root: string, topology: Topology): string {
       "}",
     );
   }
+  lines.push("} finally {", "  release();", "}");
   return `${lines.join("\n")}\n`;
 }
