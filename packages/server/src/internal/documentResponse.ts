@@ -12,7 +12,9 @@ import { headHtml } from "./headHtml.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { nonceOf } from "./nonceOf.ts";
 import { policyHeader } from "./policyHeader.ts";
+import { schemeOf } from "./schemeOf.ts";
 import { snapshotStores } from "./snapshotStores.ts";
+import { themeOf } from "./themeOf.ts";
 
 /**
  * An HTML document response: the head and `<html lang>` of `head` (k.head: the route's title, else the deployable's
@@ -24,7 +26,8 @@ import { snapshotStores } from "./snapshotStores.ts";
  * `createApp({ std })` bound, which the resume entry binds in the browser (k.module); absent when that part
  * is empty. HEAD has no body. Each document draws a fresh nonce (`nonceOf`) and carries the k.security policy with it,
  * widened by the served deployable's declared origins (k.origins; report-only in dev) less the document's own origin
- * under `frame` (in dev `http://localhost:<port>`, logged once as an E1590 `diag`), and `Reporting-Endpoints`; `cache-control: private, no-store`, since no cache may replay its nonce.
+ * under `frame` (in dev `http://localhost:<port>`, logged once as an E1590 `diag`), and `Reporting-Endpoints`; in an
+ * app with both schemes `<html>` carries the request's `keel-scheme` pick (k.schemes First paint); `cache-control: private, no-store`, since no cache may replay its nonce.
  */
 export function documentResponse(
   r: Req,
@@ -65,6 +68,8 @@ export function documentResponse(
     headHtml(head.title ?? r.sv.name, r.sv.css, r.sv.built?.files.has("/keel-mark.svg") === true),
     head.lang,
     nonce,
+    r.sv.schemes === true ? schemeOf(r.raw) : undefined,
+    themeOf(r.raw, r.sv.themes),
   );
   return new Response(r.method === "HEAD" ? null : html, {
     status,

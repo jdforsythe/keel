@@ -2,11 +2,13 @@
 // Spec: k.ledger-items, clause "An `it.each([1, 2])` test whose report holds two tests at its line, one `passed` and one `failed`, gives no evidence; with both `passed` it gives `example`."
 // Spec: k.ledger-items, clause "A test file held at its `sha` by both `reports/tests/run.json` and `reports/tests/1-of-2.json` gives no evidence, and `keel ledger` reports one W1733."
 // Spec: k.ledger-items, clause "An export of `packages/p/src/f.ts` referenced only by a test its report records `failed` is `none`."
+// Spec: k.ledger-items, clause "In app `apps/a`, an export referenced only by `test/shop.e2e.ts`, with `apps/a/reports/tests/e2e.json` holding that file at its `sha` and its test `passed`, is `example`; with no `e2e.json`, it is `none` and `keel ledger` reports one W1733 at `apps/a/reports/tests/`."
 // Seed: 1337 (the one property, 5 runs). Binary runs: 1 per case (`keel ledger`, no report written for the fixture: `reports: "none"`), 2 for the property's run (the report stands again once the file is restored).
 // The real `keel` binary over temp projects (OS tmpdir). Package `p` is `packages/p` with a `package.json`; the cited section `k.x` is `spec/kernel/k.x.md`; the file's call is lines 3 to 5.
 // The brief's list gives "a report where the test failed" and "a report listing the file but not the test" one W1733 each; k.ledger-items Run evidence gives W1733 for a missing report, a stale
 // `sha` and a file held twice only, so a fresh report whose test failed, skipped or sits outside the call is `none` with no W1733 (asserted).
 // ASSUMED: W1733's message names the first test file as its path under the project (`conformance/a.test.ts`), the files sorted by path; "the first one" is read as the first in that order.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import {
@@ -271,6 +273,42 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
   );
 
   it(
+    "an export of `apps/a/modules/m/f.ts` referenced only by `test/shop.e2e.ts` is `example` with `e2e.json` holding the file at its `sha` and `passed`, `none` with no `e2e.json` and one W1733 at `apps/a/reports/tests/`",
+    () => {
+      // An app's export item is `<folder name>:<path under modules/>#<name>` (`a:m/f.ts#f`), and its `modules/` files are read.
+      const test = [
+        'import { expect, it } from "vitest";',
+        'import { f } from "../modules/m/f.ts";',
+        'it("buys", () => {',
+        "  expect(f()).toBe(1);",
+        "});",
+        "",
+      ].join("\n");
+      const src = "export function f(): number {\n  return 1;\n}\n";
+      const base: Record<string, string> = {
+        "apps/a/package.json": packageJson("a"),
+        "apps/a/modules/m/f.ts": src,
+        "apps/a/test/shop.e2e.ts": test,
+      };
+      const rung = (run: Run): unknown => run.records.find((r) => r.item === "a:m/f.ts#f")?.rung;
+      const withReport = ledgerAsIs(
+        project("items-run-e2e", {
+          ...base,
+          "apps/a/reports/tests/e2e.json": reportText({
+            "test/shop.e2e.ts": { source: test, tests: [{ line: 3, state: "passed" }] },
+          }),
+        }),
+      );
+      expect(rung(withReport)).toBe("example");
+      expect(w1733(withReport)).toEqual([]);
+      const without = ledgerAsIs(project("items-run-e2e-none", base));
+      expect(rung(without)).toBe("none");
+      expect(w1733(without)).toEqual([expect.objectContaining({ path: "apps/a/reports/tests/" })]);
+    },
+    SLOW,
+  );
+
+  it(
     "a test renamed since the report gives no evidence: its file's `sha` is no longer the report's",
     () => {
       const renamed = citingFile(HEADER, { title: "holds under another name" }).source;
@@ -282,29 +320,33 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it("a report edited by hand to say `passed` for a test whose file changed keeps no rung: any edit of the file after the run voids it (property)", () => {
-    fc.assert(
-      fc.property(fc.stringMatching(/^[a-z ]{1,12}$/), fc.constantFrom("append", "weaken", "fail"), (text, how) => {
-        const edited =
-          how === "append"
-            ? `${CITING.source}// ${text}\n`
-            : how === "weaken"
-              ? CITING.source.replace("expect(1 + 1).toBe(2);", `expect(${text.length}).toBeGreaterThan(-1);`)
-              : CITING.source.replace("toBe(2)", "toBe(3)");
-        fc.pre(edited !== CITING.source);
-        // the report says `passed` at the sha of the source as it was run, which the edit has changed
-        const files = { ...pkg("p", "k.x"), [`packages/p/${A}`]: edited };
-        const dir = project("items-run-hand", files);
-        const run = ledgerAsIs(dir);
-        expect(rungOf(run, "k.x")).toBe("none");
-        expect(w1733(run)).toEqual([expect.objectContaining({ path: "packages/p/reports/tests/" })]);
-        // restored to the run's source, the same report stands again
-        writeFiles(dir, { [`packages/p/${A}`]: CITING.source });
-        expect(rungOf(ledgerAsIs(dir), "k.x")).toBe("example");
-      }),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 600_000);
+  it(
+    "a report edited by hand to say `passed` for a test whose file changed keeps no rung: any edit of the file after the run voids it (property)",
+    () => {
+      fc.assert(
+        fc.property(fc.stringMatching(/^[a-z ]{1,12}$/), fc.constantFrom("append", "weaken", "fail"), (text, how) => {
+          const edited =
+            how === "append"
+              ? `${CITING.source}// ${text}\n`
+              : how === "weaken"
+                ? CITING.source.replace("expect(1 + 1).toBe(2);", `expect(${text.length}).toBeGreaterThan(-1);`)
+                : CITING.source.replace("toBe(2)", "toBe(3)");
+          fc.pre(edited !== CITING.source);
+          // the report says `passed` at the sha of the source as it was run, which the edit has changed
+          const files = { ...pkg("p", "k.x"), [`packages/p/${A}`]: edited };
+          const dir = project("items-run-hand", files);
+          const run = ledgerAsIs(dir);
+          expect(rungOf(run, "k.x")).toBe("none");
+          expect(w1733(run)).toEqual([expect.objectContaining({ path: "packages/p/reports/tests/" })]);
+          // restored to the run's source, the same report stands again
+          writeFiles(dir, { [`packages/p/${A}`]: CITING.source });
+          expect(rungOf(ledgerAsIs(dir), "k.x")).toBe("example");
+        }),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(600_000),
+  );
 
   it(
     "a report that exists but holds no entry for a test file gives that file no evidence and is one W1733 naming the file",

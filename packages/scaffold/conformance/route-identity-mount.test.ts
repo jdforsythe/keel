@@ -22,11 +22,24 @@ import mount from "./identity.ts"
 export default identity({ identify: async () => "", handle: { path: mount.path, fn: () => new Response("") } })
 `;
 
+const HOME_TEST = `import { renderRoute } from "@keel/testing";
+import { expect, it } from "vitest";
+import mount from "../../identity.ts";
+import { routes } from "./routes.ts";
+
+it("shows the project's name as the home page's heading", async () => {
+  const page = await renderRoute("app.home", { routes, params: {}, mount });
+  expect(page.find("app.home.title").text).toBe("shop");
+  page.dispose();
+});
+`;
 function identityProject(): Map<string, string> {
   const files = apply("module", { id: "gate" }, fresh()).files;
   files.set("topology.ts", TOPOLOGY);
   files.set("identity.ts", IDENTITY);
   files.set("identity.server.ts", IDENTITY_SERVER);
+  // The project's own home route test is a route test of an identity project too: it passes identity.ts's default export as `mount`.
+  files.set("modules/app/home.route.test.ts", HOME_TEST);
   return files;
 }
 const testOf = (created: readonly string[]): string => {

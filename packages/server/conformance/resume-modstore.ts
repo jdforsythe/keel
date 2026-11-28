@@ -13,9 +13,12 @@ function make() {
 }
 
 let made: ReturnType<typeof make> | undefined;
-scope(() => {
-  made = make();
-});
+scope(
+  () => {
+    made = make();
+  },
+  { detached: true },
+);
 if (made === undefined) throw new Error("fixture: store scope did not run");
 
 /** A module-level store: it sits in the module registry of the graph that evaluates this file. */

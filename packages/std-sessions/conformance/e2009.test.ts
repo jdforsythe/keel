@@ -5,6 +5,7 @@
 // @vitest-environment node
 // Skipped until the rules exist. E2009 is a `check` rule (as E2005); E2010 is driven through `keel session monitor`.
 // Assumption: `monitor` is listed in `modules/cart/runners.server.ts` as `export const runners = [monitor]`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -242,21 +243,33 @@ const codes = (adapter: "node" | "static" | "client", extra: { path: string; sou
   diagCodes(check([...cartModuleFiles([]), ...extra, topologySource(adapter)], { types: false }));
 
 describe("std.monitor: E2009 fires on a fixture and not on its clean twin.", () => {
-  test("E2009 fires on `monitor` in the runners of a static deployable, not of a node one", () => {
-    const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
-    expect(codes("static", fixture)).toContain("E2009");
-    expect(codes("node", fixture)).not.toContain("E2009");
-  }, 30_000);
+  test(
+    "E2009 fires on `monitor` in the runners of a static deployable, not of a node one",
+    () => {
+      const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
+      expect(codes("static", fixture)).toContain("E2009");
+      expect(codes("node", fixture)).not.toContain("E2009");
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2009 fires on `monitor` in the runners of a client deployable, not of a node one", () => {
-    const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
-    expect(codes("client", fixture)).toContain("E2009");
-    expect(codes("node", fixture)).not.toContain("E2009");
-  }, 30_000);
+  test(
+    "E2009 fires on `monitor` in the runners of a client deployable, not of a node one",
+    () => {
+      const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
+      expect(codes("client", fixture)).toContain("E2009");
+      expect(codes("node", fixture)).not.toContain("E2009");
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2009 does not fire on a client deployable whose runners hold no `monitor`", () => {
-    expect(codes("client", [RUNNERS_PLAIN, ROUTES_PLAIN])).not.toContain("E2009");
-  }, 30_000);
+  test(
+    "E2009 does not fire on a client deployable whose runners hold no `monitor`",
+    () => {
+      expect(codes("client", [RUNNERS_PLAIN, ROUTES_PLAIN])).not.toContain("E2009");
+    },
+    fixedTime(30_000),
+  );
 });
 
 describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`.", () => {
@@ -272,52 +285,68 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
       fetch,
     });
 
-  test("E2010 fires on an unreachable URL, writes nothing", async () => {
-    const dir = mkDir();
-    const r = await monitorRun(dir, () => Promise.reject(new TypeError("fetch failed")));
-    expect(r.stdout).toMatch(/E2010/);
-    expect(r.code).toBe(1);
-    expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
-  }, 30_000);
+  test(
+    "E2010 fires on an unreachable URL, writes nothing",
+    async () => {
+      const dir = mkDir();
+      const r = await monitorRun(dir, () => Promise.reject(new TypeError("fetch failed")));
+      expect(r.stdout).toMatch(/E2010/);
+      expect(r.code).toBe(1);
+      expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2010 fires on any non-2xx answer, writes nothing", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.constantFrom(301, 400, 403, 404, 500, 503), async (status) => {
-        const dir = mkDir();
-        const r = await monitorRun(dir, answer(JSON.stringify({ v: 1, from: 0, to: 0, tx: {} }), status));
-        expect(r.stdout).toMatch(/E2010/);
-        expect(r.code).toBe(1);
-        expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
-      }),
-      { seed: 1337, numRuns: 6 },
-    );
-  }, 30_000);
-
-  test("E2010 fires on a 2xx answer that is not a Tally, writes nothing", async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.constantFrom("<html></html>", "{}", "[]", "null", '{"v":2,"from":0,"to":0,"tx":{}}', '{"v":1,"tx":{}}'),
-        async (body) => {
+  test(
+    "E2010 fires on any non-2xx answer, writes nothing",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.constantFrom(301, 400, 403, 404, 500, 503), async (status) => {
           const dir = mkDir();
-          const r = await monitorRun(dir, answer(body, 200));
+          const r = await monitorRun(dir, answer(JSON.stringify({ v: 1, from: 0, to: 0, tx: {} }), status));
           expect(r.stdout).toMatch(/E2010/);
           expect(r.code).toBe(1);
           expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
-        },
-      ),
-      { seed: 1337, numRuns: 6 },
-    );
-  }, 30_000);
+        }),
+        { seed: 1337, numRuns: 6 },
+      );
+    },
+    fixedTime(30_000),
+  );
 
-  test("E2010 does not fire on its clean twin, a served Tally", async () => {
-    const t = await boot();
-    t.map.set(TALLY_KEY, JSON.stringify({ v: 1, from: 0, to: 60_000, tx: { "api.addTodo": 2 } }));
-    const token = await mint(t);
-    allow(t.ctx, token);
-    const dir = mkDir();
-    const r = await monitorRun(dir, forwarding(t.tallyApp, token));
-    expect(r.stdout).not.toMatch(/E2010/);
-    expect(r.code).toBe(0);
-    expect(fs.existsSync(path.join(dir, MONITORED))).toBe(true);
-  }, 30_000);
+  test(
+    "E2010 fires on a 2xx answer that is not a Tally, writes nothing",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.constantFrom("<html></html>", "{}", "[]", "null", '{"v":2,"from":0,"to":0,"tx":{}}', '{"v":1,"tx":{}}'),
+          async (body) => {
+            const dir = mkDir();
+            const r = await monitorRun(dir, answer(body, 200));
+            expect(r.stdout).toMatch(/E2010/);
+            expect(r.code).toBe(1);
+            expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
+          },
+        ),
+        { seed: 1337, numRuns: 6 },
+      );
+    },
+    fixedTime(30_000),
+  );
+
+  test(
+    "E2010 does not fire on its clean twin, a served Tally",
+    async () => {
+      const t = await boot();
+      t.map.set(TALLY_KEY, JSON.stringify({ v: 1, from: 0, to: 60_000, tx: { "api.addTodo": 2 } }));
+      const token = await mint(t);
+      allow(t.ctx, token);
+      const dir = mkDir();
+      const r = await monitorRun(dir, forwarding(t.tallyApp, token));
+      expect(r.stdout).not.toMatch(/E2010/);
+      expect(r.code).toBe(0);
+      expect(fs.existsSync(path.join(dir, MONITORED))).toBe(true);
+    },
+    fixedTime(30_000),
+  );
 });

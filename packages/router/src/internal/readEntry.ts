@@ -1,31 +1,36 @@
-import type { ObjectSchema } from "@keel/schema";
+import { type ObjectSchema, isObjectSchema, isSchema } from "@keel/schema";
 import type { EntryShape } from "./EntryShape.ts";
 import { codedError } from "./codedError.ts";
 import { compilePath } from "./compilePath.ts";
 import { fieldsOf } from "./fieldsOf.ts";
 import { isMethod } from "./isMethod.ts";
-import { isObjectSchema } from "./isObjectSchema.ts";
-import { isSchema } from "./isSchema.ts";
 import { ownValue } from "./ownValue.ts";
 import { refuseSecret } from "./refuseSecret.ts";
 
-const PAGE = ["path", "params", "search"];
-const API = ["method", "path", "params", "query", "body", "output", "errors", "timeout", "events"];
+const PAGE = ["path", "params", "search", "local"];
+const API = ["method", "path", "params", "query", "body", "output", "errors", "timeout", "events", "local"];
 const NAME = /^[a-z][A-Za-z0-9]*$/;
 
 const refused = (id: string, keys: readonly string[], row: readonly string[], kind: string): void => {
   const bad = keys.find((k) => !row.includes(k));
   if (bad !== undefined) throw codedError("E1510", `${id}: a ${kind} entry takes no "${bad}"`);
 };
+/** `local` of entry `e` (k.contract Local routes): absent, or the literal `true`; any other value is E1510. */
+const localOf = (id: string, e: object): { readonly local?: true } => {
+  if (!Object.hasOwn(e, "local")) return {};
+  if (ownValue(e, "local") !== true) throw codedError("E1510", `${id}: "local" is the literal true`);
+  return { local: true };
+};
 const objectSchema = (id: string, e: object, k: string): ObjectSchema<unknown> | undefined => {
   const v = ownValue(e, k);
-  if (v === undefined || isObjectSchema(v)) return v;
+  if (v === undefined) return undefined;
+  if (isObjectSchema(v)) return v;
   throw codedError("E1510", `${id}: "${k}" is no object schema`);
 };
 
 /**
  * Read and check entry `id` of module `module`'s contract (k.contract, k.routes). Throws an Error with `code`: E1510
- * an entry of no kind or with a member its kind refuses; E1513 an API id whose name after the module is not one
+ * an entry of no kind or with a member its kind refuses, or `local` other than `true`; E1513 an API id whose name after the module is not one
  * lowerCamel segment; E1503 a `:name` in `path` without a `params` field, or the reverse, or a malformed path;
  * E1504 a required field in a page's `search`; E1653 a `body` on a GET; E1113 an API `output` holding `s.secret`.
  */
@@ -76,6 +81,7 @@ export function readEntry(module: string, id: string, e: unknown): EntryShape {
         : { errors: Object.fromEntries(Object.entries(errors).filter(([, v]) => isSchema(v))) }),
       ...(timeout === undefined ? {} : { timeout }),
       ...(events === undefined ? {} : { events }),
+      ...localOf(id, e),
     };
   } else if (Object.hasOwn(e, "layout")) {
     if (ownValue(e, "layout") !== true) throw codedError("E1510", `${id}: a layout entry is { layout: true }`);
@@ -96,6 +102,7 @@ export function readEntry(module: string, id: string, e: unknown): EntryShape {
       segments: compilePath(id, path),
       ...(params === undefined ? {} : { params }),
       ...(search === undefined ? {} : { search }),
+      ...localOf(id, e),
     };
   } else
     throw codedError(

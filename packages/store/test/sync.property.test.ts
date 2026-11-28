@@ -22,9 +22,12 @@ function make(concurrent: "reject" | "rebase", logLimit?: number, keyLimit?: num
     invariant(bag, (st) => st.items.length <= CAP);
     return { bag, push };
   };
-  const sc = scope(() => {
-    box.kit = build();
-  });
+  const sc = scope(
+    () => {
+      box.kit = build();
+    },
+    { detached: true },
+  );
   if (box.kit === undefined) throw new Error("scope body did not run");
   return { ...box.kit, dispose: sc.dispose };
 }
@@ -238,14 +241,17 @@ describe("@keel/store sync examples", () => {
   it("a transaction exposes concurrent, 'reject' by default; an unknown value throws", () => {
     const k = make("rebase");
     expect(k.push.concurrent).toBe("rebase");
-    scope(() => {
-      const other = store(Bag, { items: [] });
-      expect(transaction(other, "bag.a", Push, (st) => st).concurrent).toBe("reject");
-      // JSON.parse yields untyped options, standing in for a caller that bypasses the types.
-      expect(() => transaction(other, "bag.b", Push, (st) => st, JSON.parse('{"concurrent":"merge"}'))).toThrow(
-        /concurrent merge/,
-      );
-    }).dispose();
+    scope(
+      () => {
+        const other = store(Bag, { items: [] });
+        expect(transaction(other, "bag.a", Push, (st) => st).concurrent).toBe("reject");
+        // JSON.parse yields untyped options, standing in for a caller that bypasses the types.
+        expect(() => transaction(other, "bag.b", Push, (st) => st, JSON.parse('{"concurrent":"merge"}'))).toThrow(
+          /concurrent merge/,
+        );
+      },
+      { detached: true },
+    ).dispose();
     k.dispose();
   });
 
@@ -331,24 +337,30 @@ describe("@keel/store sync examples", () => {
   it("an undeclared transaction is store.undeclared even when its key is held", () => {
     const k = make("reject");
     tx(k.push, { v: 1 }, { key: "k" });
-    scope(() => {
-      k.bag.uses([]);
-      const r = tx(k.push, { v: 2 }, { key: "k" });
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error.code).toBe("store.undeclared");
-    }).dispose();
+    scope(
+      () => {
+        k.bag.uses([]);
+        const r = tx(k.push, { v: 2 }, { key: "k" });
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.error.code).toBe("store.undeclared");
+      },
+      { detached: true },
+    ).dispose();
     k.dispose();
   });
 
   it("head() is reactive", () => {
     const k = make("reject");
     const seen: number[] = [];
-    const sc = scope(() => {
-      const h = k.bag.select(() => k.bag.head());
-      seen.push(h.get());
-      tx(k.push, { v: 1 });
-      seen.push(h.get());
-    });
+    const sc = scope(
+      () => {
+        const h = k.bag.select(() => k.bag.head());
+        seen.push(h.get());
+        tx(k.push, { v: 1 });
+        seen.push(h.get());
+      },
+      { detached: true },
+    );
     expect(seen).toEqual([0, 1]);
     sc.dispose();
     k.dispose();

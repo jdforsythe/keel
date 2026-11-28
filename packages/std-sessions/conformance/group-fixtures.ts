@@ -78,31 +78,34 @@ export function serve(ctx: SimCtx): { fetch(req: Request): Promise<Response> } {
       const sets: unknown[] = [];
       let reply = "{}";
       let status = 200;
-      const sc = scope(() => {
-        const st = serverStores();
-        if (boardSnap !== undefined) st.board.restore(boardSnap);
-        if (logSnap !== undefined) st.log.restore(logSnap);
-        if (url.pathname === "/api/title") {
-          const p = Title.parse(body);
-          if (p.ok) void tx(st.setTitle, p.value, { meta: { caller } });
-          else status = 422;
-        }
-        if (url.pathname === "/api/append") {
-          const p = Text1.parse(body);
-          if (p.ok) void tx(st.append, p.value, { meta: { caller } });
-          else status = 422;
-        }
-        if (req.method === "POST") {
-          sets.push(ctx.storage.set("keel.store.board", JSON.stringify(st.board.snapshot())));
-          sets.push(ctx.storage.set("keel.store.log", JSON.stringify(st.log.snapshot())));
-        }
-        reply = JSON.stringify({
-          title: st.board.get("title"),
-          head: st.log.head() + st.board.head(),
-          items: st.log.get("items"),
-          caller,
-        });
-      });
+      const sc = scope(
+        () => {
+          const st = serverStores();
+          if (boardSnap !== undefined) st.board.restore(boardSnap);
+          if (logSnap !== undefined) st.log.restore(logSnap);
+          if (url.pathname === "/api/title") {
+            const p = Title.parse(body);
+            if (p.ok) void tx(st.setTitle, p.value, { meta: { caller } });
+            else status = 422;
+          }
+          if (url.pathname === "/api/append") {
+            const p = Text1.parse(body);
+            if (p.ok) void tx(st.append, p.value, { meta: { caller } });
+            else status = 422;
+          }
+          if (req.method === "POST") {
+            sets.push(ctx.storage.set("keel.store.board", JSON.stringify(st.board.snapshot())));
+            sets.push(ctx.storage.set("keel.store.log", JSON.stringify(st.log.snapshot())));
+          }
+          reply = JSON.stringify({
+            title: st.board.get("title"),
+            head: st.log.head() + st.board.head(),
+            items: st.log.get("items"),
+            caller,
+          });
+        },
+        { detached: true },
+      );
       sc.dispose();
       await Promise.all(sets);
       return new Response(reply, { status, headers });
@@ -202,9 +205,12 @@ function build() {
 }
 
 const made: ReturnType<typeof build>[] = [];
-scope(() => {
-  made.push(build());
-});
+scope(
+  () => {
+    made.push(build());
+  },
+  { detached: true },
+);
 const [built] = made;
 if (built === undefined) throw new Error("group fixture: build failed");
 

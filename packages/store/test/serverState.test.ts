@@ -131,7 +131,7 @@ describe("openStores", () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     await ctx.storage.set(KEY, JSON.stringify({ state: { n: 4 }, log: [], initial: { n: 4 } }));
     const states: unknown[] = [];
-    const held: StateRequest = { scope: scope(() => undefined), held: new Map() };
+    const held: StateRequest = { scope: scope(() => undefined, { detached: true }), held: new Map() };
     await openStores(ctx, held, factory, (_schema, st) => states.push(st));
     expect(states).toEqual([{ n: 4 }]);
     expect(await saveStores(ctx, held)).toBeNull();
@@ -141,7 +141,7 @@ describe("openStores", () => {
   it("takes a store id back once the factory that opened it is dropped from held", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1 });
     const twin = () => factory();
-    const rq: StateRequest = { scope: scope(() => undefined), held: new Map() };
+    const rq: StateRequest = { scope: scope(() => undefined, { detached: true }), held: new Map() };
     await openStores(ctx, rq, factory);
     await expect(openStores(ctx, rq, twin)).rejects.toThrow(/already in use/);
     rq.held.clear();

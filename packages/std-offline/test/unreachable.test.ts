@@ -42,9 +42,12 @@ test("an outbox leaves that entry queued, and posts it again once the server ans
   let up = false;
   const ctx = ctxWith("http://api.keel.invalid/save", () => up);
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox("unreach.outbox", Api);
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox("unreach.outbox", Api);
+    },
+    { detached: true },
+  );
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
   const r = await send(ctx, o, "save", { body: { title: "x" } }, { base: 0, owner: "u1" });

@@ -58,9 +58,12 @@ async function clickIt(
   });
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const sc = scope(() => {
-    mount(C, host, { ctx });
-  });
+  const sc = scope(
+    () => {
+      mount(C, host, { ctx });
+    },
+    { detached: true },
+  );
   const btn = host.querySelector("button");
   if (btn === null) throw new Error("fixture: missing button");
   const compilerId = btn.id;

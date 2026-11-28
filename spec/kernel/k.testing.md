@@ -1,5 +1,5 @@
 # k.testing: Harness and properties
-status: implemented
+status: conformance-covered
 **Harness.** From `@keel/testing`:
 ```ts
 const t = render(CartView, { props: { compact: false }, state: [[cart, { items: [] }]] })
@@ -20,7 +20,7 @@ t.dispose()
 
 **ctx.** Harness renders use a sim ctx (k.ctx); under `keel test` (`KEEL_TEST=1`) a test's `ctx` defaults to sim.
 
-**a11y.** `a11y(id?)` is built from the live DOM: nodes `{ id, role, name, state: { checked?, disabled?, expanded?, selected?, invalid?, focused?, active?, sort?, rowindex?, rowcount? }, children }`, with implicit roles and accessible names per WAI-ARIA: `checked` `'mixed'` for a mixed checkbox, `active` the id `aria-activedescendant` names, `sort` the `aria-sort` value, `rowindex` and `rowcount` the integer `aria-rowindex` and `aria-rowcount`. After the first render and after every `fire`, the harness runs the render checks of k.a11y.
+**a11y.** `a11y(id?)` is built from the live DOM, nodes `{ id, role, name, state: { checked?, disabled?, expanded?, pressed?, selected?, invalid?, focused?, active?, sort?, rowindex?, rowcount? }, children }`, implicit roles and accessible names per WAI-ARIA: `checked` `'mixed'` for a mixed checkbox, `active` the id `aria-activedescendant` names, `sort` the `aria-sort` value, `rowindex`, `rowcount` the integer `aria-rowindex`, `aria-rowcount`. After the first render and every `fire`, the harness runs k.a11y's render checks.
 
 **Properties.**
 `properties(target, { runs = 100, seed? })` asserts, for a component: renders without throwing, matches `a11y.json`, no axe violations, two renders of one seed are equal. For a transaction: output parses with the store schema, every `invariant` of the store holds, equal inputs give equal outputs, `undo` restores the input. Invariants: `invariant(store, fn)` from `@keel/store`, beside the store (`@keel/testing` re-exports nothing). `KEEL_SEED=<n>` replays a run's seed. Under `keelConfig` a test that calls `properties` or `simulate` and declares no timeout is given 300 ms per run its calls name, at least the configured test timeout; a call reached through a helper is not counted, and a call inside a loop counts once.

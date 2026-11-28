@@ -3,10 +3,12 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 3100,
-    "spec.map": 1660,
+    "spec.map": 400,
+    "spec.area": 500,
     "explain": 300,
     "mcp.tools-list": 2150,
-    "docs.map": 1690,
+    "docs.map": 900,
+    "docs.area": 500,
     "docs.section": 3100,
     "docs.skill": 3700,
     "docs.for": 400,
@@ -14,19 +16,19 @@
   },
   "size": {
     "@keel/check": {
-      "max": "93kb",
+      "max": "127kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "22kb",
+      "max": "27.2kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "39kb",
+      "max": "43.2kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
-      "max": "3kb",
+      "max": "4.5kb",
       "platform": "node"
     },
     "@keel/cli/shell": {
@@ -34,39 +36,39 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "36kb",
+      "max": "36.3kb",
       "platform": "node"
     },
-    "@keel/ctx": "4.7kb",
+    "@keel/ctx": "4.9kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "14.6kb",
-    "@keel/router/contract": "3.2kb",
+    "@keel/router": "15.6kb",
+    "@keel/router/contract": "3.35kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "10.75kb",
+    "@keel/runtime-dom/ops": "11.1kb",
     "@keel/scaffold": {
-      "max": "23.5kb",
+      "max": "26.5kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {
-      "max": "1.5kb",
+      "max": "2.35kb",
       "platform": "node"
     },
-    "@keel/schema": "6.5kb",
+    "@keel/schema": "8.1kb",
     "@keel/server": {
-      "max": "30.5kb",
+      "max": "32.9kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
     "@keel/server/internal/start": {
-      "max": "2.5kb",
+      "max": "4.4kb",
       "platform": "node"
     },
-    "@keel/services": "4.1kb",
+    "@keel/services": "4.65kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "3.25kb",
+      "max": "3.35kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {
@@ -85,7 +87,7 @@
       "max": "1.25kb",
       "platform": "node"
     },
-    "@keel/std-i18n": "1.2kb",
+    "@keel/std-i18n": "1kb",
     "@keel/std-i18n/tools": {
       "max": "4kb",
       "platform": "node"
@@ -99,12 +101,12 @@
       "platform": "node"
     },
     "@keel/std-live": "1kb",
-    "@keel/std-messages": "2kb",
+    "@keel/std-messages": "1.6kb",
     "@keel/std-messages/tools": {
       "max": "7kb",
       "platform": "node"
     },
-    "@keel/std-money": "2kb",
+    "@keel/std-money": "1.75kb",
     "@keel/std-offline": "4.25kb",
     "@keel/std-offline/tools": {
       "max": "3kb",
@@ -149,7 +151,7 @@
       "max": "4kb",
       "platform": "node"
     },
-    "@keel/std-tables": "4.75kb",
+    "@keel/std-tables": "4.25kb",
     "@keel/std-db/sqlite": {
       "max": "1.9kb",
       "platform": "node"
@@ -162,13 +164,13 @@
       "max": "1.5kb",
       "platform": "node"
     },
-    "@keel/std-postgres": "1.05kb",
+    "@keel/std-postgres": "1.15kb",
     "@keel/std-postgres/server": {
-      "max": "8.4kb",
+      "max": "9.5kb",
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
-      "max": "1.65kb",
+      "max": "1.9kb",
       "platform": "node"
     },
     "@keel/std-postgres/tools": {
@@ -191,26 +193,26 @@
       "platform": "node"
     },
     "@keel/std-tokens/tools": {
-      "max": "2kb",
+      "max": "1.5kb",
       "platform": "node"
     },
     "@keel/std-temporal": "5kb",
     "@keel/std-text": "1.5kb",
-    "@keel/store": "4kb",
+    "@keel/store": "4.15kb",
     "@keel/store/internal": {
       "max": "2.25kb",
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "22kb",
+      "max": "23.55kb",
       "platform": "node"
     },
     "@keel/testing/prove": {
       "max": "8.25kb",
       "platform": "node"
     },
-    "@keel/ui": "5.5kb",
-    "@keel/ui/aria": "3.6kb"
+    "@keel/ui": "8kb",
+    "@keel/ui/aria": "3.75kb"
   },
   "mutate": {
     "default": 30

@@ -2,6 +2,7 @@
 // Spec: k.reactive, clause "A fetcher typed `Promise<Result<T, E>>` gives `Resource<T>`, and one typed `Promise<{ ok: boolean; value?: T }>` compiles and gives a `Resource` of that type."
 // Seed 1337 for the property tests (fast-check). Clause B has no random inputs: the TypeScript compiler is the oracle,
 // as in packages/store/conformance/payload-type-compile-error.test.ts (in-memory probe, package tsconfig, no suppressions).
+import { fixedTime } from "@keel/tooling/test-time";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resource, scope } from "@keel/reactive";
@@ -29,10 +30,13 @@ interface Settled {
 /** Runs a resource over `fetcher` in a scope, flushes microtasks, returns the settled state. */
 async function settle(fetcher: () => Promise<unknown>): Promise<Settled> {
   let get: () => Settled = () => ({ state: "unset" });
-  scope(() => {
-    const r = resource(fetcher);
-    get = () => r.get();
-  });
+  scope(
+    () => {
+      const r = resource(fetcher);
+      get = () => r.get();
+    },
+    { detached: true },
+  );
   await flush();
   return get();
 }
@@ -40,7 +44,7 @@ async function settle(fetcher: () => Promise<unknown>): Promise<Settled> {
 describe(`k.reactive: ${CLAUSE_A}`, () => {
   it(`${CLAUSE_A} err(e) settles error with e`, async () => {
     await fc.assert(
-      fc.asyncProperty(fc.anything(), async (e) => {
+      fc.asyncProperty(fc.record({ code: fc.string(), message: fc.string(), data: fc.anything() }), async (e) => {
         const s = await settle(() => Promise.resolve(err(e)));
         expect(s.state).toBe("error");
         expect(Object.is(s.error, e)).toBe(true);
@@ -167,8 +171,8 @@ const GOOD: readonly Case[] = [
     code: "(() => { const r = resource(typedResult); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
   },
   {
-    name: "resource<Result<number, string>>(async () => ok(1)) is Resource<number>",
-    code: "(() => { const r = resource<Result<number, string>>(async () => ok(1)); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
+    name: "resource<Result<number, E0>>(async () => ok(1)) is Resource<number>",
+    code: "(() => { const r = resource<Result<number, E0>>(async () => ok(1)); const c: Eq<typeof r, Resource<number>> = true; return c; })()",
   },
   {
     name: "a fetcher typed () => Promise<{ ok: boolean; value?: string }> is Resource<{ ok: boolean; value?: string }>",
@@ -236,7 +240,7 @@ describe(`k.reactive: ${CLAUSE_B}`, () => {
 
   beforeAll(() => {
     errors = typeErrors(source);
-  }, 120_000);
+  }, fixedTime(120_000));
 
   it("the probe's imports resolve and its prelude type-checks (every error is on a case line)", () => {
     expect(errors.filter((e) => e.code === 2307)).toEqual([]);

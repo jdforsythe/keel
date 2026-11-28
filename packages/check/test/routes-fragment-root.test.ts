@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { canonicalJson, hashOf } from "@keel/compiler/internal";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { check } from "../src/check.ts";
 import type { SourceFile } from "../src/index.ts";
@@ -18,12 +19,12 @@ const put = (rel: string, text: string): void => {
 };
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "keel-frag-root-"));
+  root = tempDir("keel-frag-root-", fs.realpathSync(os.tmpdir()));
   put(
     "apps/a/modules/m/module.ts",
     `export default module({ id: "m", deps: ["${PKG}"], capabilities: [], public: { exports: [], routes: [] } });\n`,
   );
-  elsewhere = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "keel-frag-else-"));
+  elsewhere = tempDir("keel-frag-else-", fs.realpathSync(os.tmpdir()));
   put(
     `apps/a/node_modules/${PKG}/package.json`,
     JSON.stringify({ exports: { "./contract": "./src/contract.ts", "./routes": "./src/routes.ts" } }),

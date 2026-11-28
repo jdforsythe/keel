@@ -16,7 +16,7 @@ afterEach(() => {
 
 /** A fresh `api.board` with the four `api.*` transactions bound to it, in an isolated scope disposed after the test. */
 function bound() {
-  const sc = scope(() => undefined);
+  const sc = scope(() => undefined, { detached: true });
   isolate(sc);
   scopes.push(sc);
   return sc.run(() => {

@@ -30,11 +30,15 @@ export const opArb: fc.Arbitrary<Op> = fc.oneof(
 );
 
 /** Run `fn` inside a scope and return its result (no casts, no non-null assertions). */
+// `scope(fn, { detached: true })` is the sanctioned test root (k.reactive, Module roots): a test file has no module root, and a plain `scope` with no owner is the E1208 defect.
 export function inScope<T>(fn: () => T): T {
   const box: { v: { value: T } | undefined } = { v: undefined };
-  const sc = scope(() => {
-    box.v = { value: fn() };
-  });
+  const sc = scope(
+    () => {
+      box.v = { value: fn() };
+    },
+    { detached: true },
+  );
   if (box.v === undefined) throw new Error("scope body did not run");
   const out = box.v.value;
   // Scope intentionally left open: callers inspect live stores after return.

@@ -10,6 +10,7 @@ import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { KINDS, NOTES_KEY, SEED, field, makeRig } from "./support.server.ts";
@@ -30,7 +31,8 @@ let arrivals: ((h: Held) => void)[] = [];
 const arrived = (): Promise<Held> => new Promise((r) => arrivals.push(r));
 
 const write = action(t, "t.page", { input: Add, stores: factory }, async ({ text }, { stores }) => {
-  void tx(stores.add, { text });
+  const added = tx(stores.add, { text });
+  if (!added.ok) return added;
   await new Promise<void>((release) => {
     const h = { text, release };
     held.push(h);
@@ -66,7 +68,7 @@ const RUNS = 5;
  * WebAssembly, about 1.5 s. The bound is 12,000 ms a run and 15,000 ms for the load, so a runner ten times slower
  * (scale 0.1) still has 1.2 s a run and 1.5 s to load. SQLite takes the same bound and a small part of it.
  */
-const RACE_BOUND = RUNS * 12_000 + 15_000;
+const RACE_BOUND = fixedTime(RUNS * 12_000 + 15_000);
 
 for (const kind of KINDS) {
   describe(`${kind} driver`, () => {

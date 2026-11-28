@@ -1,8 +1,8 @@
 // The client build's service map (k.hosting Peers, k.bundle E1011): the entry maps the modules of every deployable the
 // browser code imports, and the build fails when the bundler's graph holds a file of a module the map leaves out.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { unmappedModule } from "../src/internal/unmappedModule.ts";
 import keel from "../src/vite.ts";
@@ -50,7 +50,7 @@ describe("the client build's service map", () => {
     fs.writeFileSync(path.join(root, f), text);
   };
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-svcmap-"));
+    root = tempDir("keel-svcmap-");
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 

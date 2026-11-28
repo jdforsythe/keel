@@ -73,6 +73,8 @@ it("reachResolve follows a listed library's entry to its file, never another spe
       ["@acme/charts/gone", "modules/charts/src/gone.ts"],
     ]),
     files: new Set(["modules/charts/src/index.ts", "modules/charts/src/fields.ts"]),
+    inPlace: new Set(),
+    real: (p) => p,
   });
   const resolve = reachResolve(array, "", new Set(files.map((f) => f.path)));
   expect(resolve("modules/shop/Page.tsx", "@acme/charts")).toBe("modules/charts/src/index.ts");

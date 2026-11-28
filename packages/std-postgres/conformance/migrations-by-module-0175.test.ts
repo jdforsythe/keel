@@ -9,7 +9,7 @@ import { execFile } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { s } from "@keel/schema";
+import { isDefect, s } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
 import fc from "fast-check";
 import { afterEach, beforeEach, expect, test } from "vitest";
@@ -87,13 +87,20 @@ test("a lone `0002-x.sql` rejects the first call with E2453", async () => {
   expect(await failure(db(simCtx(cap, none(20))).query(sql(Count)`select 1::int as c`))).toContain("E2453");
 });
 
-test("no folder makes no table and no error: the first call succeeds; a query on the missing table is an unexpected database error and throws its SQLSTATE", async () => {
+test("no folder makes no table and no error: the first call succeeds; a query on the missing table is rejects with the E2461 defect holding its SQLSTATE", async () => {
   const { cap, table } = fresh();
   process.env.KEEL_APP_DIR = app;
   const ctx = simCtx(cap, none(20));
   const db = databaseFound(cap);
   expect(okOf(await db(ctx).query(sql(Count)`select 1::int as c`))[0]?.c).toBe(1);
-  expect(await failure(db(ctx).query(sql(Count)`select count(*)::int as c from ${sqlName(table)}`))).toContain("42P01");
+  const thrown: unknown = await db(ctx)
+    .query(sql(Count)`select count(*)::int as c from ${sqlName(table)}`)
+    .then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+  expect(isDefect(thrown, "E2461")).toBe(true);
+  expect(Reflect.get(Object(thrown), "data")).toEqual({ sqlstate: "42P01" });
 });
 
 const CHILD = join(import.meta.dirname, "app-dir-child.ts");

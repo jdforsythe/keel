@@ -2,10 +2,14 @@
 // Spec: k.privacy, clause "An action throwing an `Error` whose message or a stack frame's file path holds a marked input value logs a `diag` record with `[pii]` in its place, in dev and production."
 // Spec: k.privacy, clause "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await` or made earlier and revealed in it, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
 // k.privacy Sinks "Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`."
+// Spec: k.serverlog, clause "In production mode with `KEEL_LOG_THROWN` an instant one hour after start, an action throwing an `Error` whose message holds a marked input value, and one throwing the revealed value of a `Secret` input, log a second `diag` holding `[pii]` or `[secret]` in its place and not the value, as each does under `mode: 'dev'`."
 // Seed: 1337.
+// Production holds the scrubbed text only inside the `KEEL_LOG_THROWN` window, so each production iteration opens it one hour after the sim clock's start (set before `createApp`, restored after the iteration).
 // Input schemas are generated objects of string fields (some nested), some nodes marked
 // `.pii(class)`; the action throws an Error whose message holds every input value. Marked values are lowercase letters,
 // unmarked ones digits, so no unmarked text can hide or mimic a marked value.
+// k.serverlog: a thrown value's text is in the log in dev mode (its second `diag`) and in production inside the window; these cases read that record. Production outside the window holds none of it: privacy-production-absence.test.ts asserts it.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -14,6 +18,18 @@ import { topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { Params, SEED, createApp, post } from "./fixtures.ts";
+import { isoOfEpochMs } from "./iso-instant.ts";
+
+const HOUR = 3_600_000;
+/** Sets `KEEL_LOG_THROWN` to one hour after `ctx`'s clock for production, and returns the restoring function. */
+function openWindow(mode: string, ctx: ReturnType<typeof createCtx>): () => void {
+  const saved = process.env.KEEL_LOG_THROWN;
+  if (mode === "production") process.env.KEEL_LOG_THROWN = isoOfEpochMs(Number(ctx.clock.now()) + HOUR);
+  return () => {
+    if (saved === undefined) delete process.env.KEEL_LOG_THROWN;
+    else process.env.KEEL_LOG_THROWN = saved;
+  };
+}
 
 const CLASSES = ["name", "contact", "location", "identifier", "financial", "special", "network", "content"] as const;
 type Mark = (typeof CLASSES)[number] | null;
@@ -65,45 +81,54 @@ const words = fc.array(fc.stringMatching(/^[a-z]{12,20}$/), { minLength: 8, maxL
 
 describe("k.privacy server log", () => {
   for (const mode of ["dev", "production"] as const) {
-    it(`an action throwing an Error whose message holds a marked input value logs a diag record holding [pii] and not the value, in ${mode}`, async () => {
-      await fc.assert(
-        fc.asyncProperty(inputArb, words, async (spec, pool) => {
-          const all = leaves(spec, "", false);
-          const value = (l: Leaf, i: number): string => (l.marked ? (pool[i % pool.length] ?? "") : `${i}0123456789`);
-          const fields = Object.fromEntries(all.map((l, i) => [l.key, value(l, i)]));
-          const secrets = all.flatMap((l, i) => (l.marked ? [value(l, i)] : []));
-          const message = `cannot save ${Object.values(fields).join(" ")}`;
-          const ordersContract = contract("orders", {
-            "orders.show": { path: "/orders/:kind", params: Params },
-          });
-          const save = action(ordersContract, "orders.show", { input: objectOf(spec) }, () =>
-            Promise.reject(new Error(message)),
-          );
-          const routes = manifest(ordersContract, {
-            "orders.show": { component: () => document.createElement("main"), POST: save },
-          });
-          const lines: string[] = [];
-          const app = await createApp({
-            topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
-            routes,
-            ctx: createCtx({ mode: "sim", seed: SEED }),
-            mode,
-            log: { format: "json", write: (l: string) => void lines.push(l) },
-          });
-          await app.fetch(post("/orders/open", fields, { accept: "application/json" }));
-          const diags = lines.filter((l) => {
-            const rec: unknown = JSON.parse(l);
-            return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
-          });
-          expect(diags.length).toBeGreaterThan(0);
-          for (const line of diags) {
-            expect(line).toContain("[pii]");
-            for (const secret of secrets) expect(line).not.toContain(secret);
-          }
-        }),
-        { seed: SEED, numRuns: 100 },
-      );
-    }, 120_000);
+    it(
+      `an action throwing an Error whose message holds a marked input value logs a diag record holding [pii] and not the value, in ${mode}`,
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(inputArb, words, async (spec, pool) => {
+            const all = leaves(spec, "", false);
+            const value = (l: Leaf, i: number): string => (l.marked ? (pool[i % pool.length] ?? "") : `${i}0123456789`);
+            const fields = Object.fromEntries(all.map((l, i) => [l.key, value(l, i)]));
+            const secrets = all.flatMap((l, i) => (l.marked ? [value(l, i)] : []));
+            const message = `cannot save ${Object.values(fields).join(" ")}`;
+            const ordersContract = contract("orders", {
+              "orders.show": { path: "/orders/:kind", params: Params },
+            });
+            const save = action(ordersContract, "orders.show", { input: objectOf(spec) }, () =>
+              Promise.reject(new Error(message)),
+            );
+            const routes = manifest(ordersContract, {
+              "orders.show": { component: () => document.createElement("main"), POST: save },
+            });
+            const lines: string[] = [];
+            const ctx = createCtx({ mode: "sim", seed: SEED });
+            const restore = openWindow(mode, ctx);
+            try {
+              const app = await createApp({
+                topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
+                routes,
+                ctx,
+                mode,
+                log: { format: "json", write: (l: string) => void lines.push(l) },
+              });
+              await app.fetch(post("/orders/open", fields, { accept: "application/json" }));
+              const diags = lines.filter((l) => {
+                const rec: unknown = JSON.parse(l);
+                return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
+              });
+              // dev writes the thrown text in a second diag; the first holds none (k.serverlog Thrown values)
+              expect(diags).toHaveLength(2);
+              expect(diags[1]).toContain("[pii]");
+              for (const line of diags) for (const secret of secrets) expect(line).not.toContain(secret);
+            } finally {
+              restore();
+            }
+          }),
+          { seed: SEED, numRuns: 100 },
+        );
+      },
+      fixedTime(120_000),
+    );
   }
 
   const TOKEN = "tok-7f3a9c";
@@ -126,24 +151,28 @@ describe("k.privacy server log", () => {
           "orders.show": { component: () => document.createElement("main"), POST: save },
         });
         const lines: string[] = [];
-        const app = await createApp({
-          topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
-          routes,
-          ctx: createCtx({ mode: "sim", seed: SEED }),
-          mode,
-          log: { format: "json", write: (l: string) => void lines.push(l) },
-        });
-        await app.fetch(post("/orders/open", { k: TOKEN }, { accept: "application/json" }));
-        const diags = lines.filter((l) => {
-          const rec: unknown = JSON.parse(l);
-          return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
-        });
-        expect(diags.length).toBeGreaterThan(0);
-        for (const line of diags) {
-          expect(line).toContain("[secret]");
-          for (const form of forms) expect(line).not.toContain(form);
+        const ctx = createCtx({ mode: "sim", seed: SEED });
+        const restore = openWindow(mode, ctx);
+        try {
+          const app = await createApp({
+            topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
+            routes,
+            ctx,
+            mode,
+            log: { format: "json", write: (l: string) => void lines.push(l) },
+          });
+          await app.fetch(post("/orders/open", { k: TOKEN }, { accept: "application/json" }));
+          const diags = lines.filter((l) => {
+            const rec: unknown = JSON.parse(l);
+            return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
+          });
+          expect(diags).toHaveLength(2);
+          expect(diags[1]).toContain("[secret]");
+          for (const line of diags) for (const form of forms) expect(line).not.toContain(form);
+          for (const line of lines) for (const form of forms) expect(line).not.toContain(form);
+        } finally {
+          restore();
         }
-        for (const line of lines) for (const form of forms) expect(line).not.toContain(form);
       });
     }
   }

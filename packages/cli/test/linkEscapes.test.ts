@@ -1,27 +1,17 @@
 // k.scaffold Links: what `linkEscapes` judges, behind E1357 (`applyWrites`) and E1585 (`shellTargets`). Real temporary
 // folders and links under the system temp folder; `<parent>/proj` is the root and `<parent>/proj-evil` its sibling.
-import {
-  chmodSync,
-  linkSync,
-  lstatSync,
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, linkSync, lstatSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
+import { linkEscapes } from "@keel/scaffold/links";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { applyWrites } from "../src/internal/applyWrites.ts";
-import { linkEscapes } from "../src/internal/linkEscapes.ts";
 import { shellTargets } from "../src/internal/shellTargets.ts";
 
-vi.mock("../src/internal/linkEscapes.ts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/internal/linkEscapes.ts")>();
+vi.mock("@keel/scaffold/links", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@keel/scaffold/links")>();
   return { linkEscapes: vi.fn(actual.linkEscapes) };
 });
 
@@ -33,7 +23,7 @@ afterEach(() => {
 
 /** `<parent>/proj` and `<parent>/proj-evil`, both real paths. */
 function layout(): { parent: string; proj: string; evil: string } {
-  const parent = realpathSync(mkdtempSync(join(tmpdir(), "keel-link-escapes-")));
+  const parent = realpathSync(tempDir("keel-link-escapes-"));
   made.push(parent);
   const proj = join(parent, "proj");
   const evil = join(parent, "proj-evil");
@@ -110,7 +100,7 @@ describe("linkEscapes", () => {
   test.runIf(realpathSync("/tmp") !== "/tmp")(
     "the system `/tmp` reached through its link is judged by its real path",
     () => {
-      const dir = mkdtempSync("/tmp/keel-link-escapes-");
+      const dir = tempDir("keel-link-escapes-", "/tmp");
       made.push(dir);
       expect(linkEscapes(realpathSync(dir), join(dir, "a.txt"))).toBe(false);
       expect(linkEscapes(dir, join(dir, "a.txt"))).toBe(true);

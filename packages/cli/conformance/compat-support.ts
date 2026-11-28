@@ -45,7 +45,7 @@ export type Rec = {
   fix?: unknown;
   [k: string]: unknown;
 };
-export type Run = { status: number | null; records: Rec[] };
+export type Run = { status: number | null; records: Rec[]; stdout?: string; stderr?: string };
 
 function isRec(v: unknown): v is Rec {
   return typeof v === "object" && v !== null && "kind" in v && typeof v.kind === "string";
@@ -72,7 +72,7 @@ export function keel(dir: string, args: string[]): Run {
       // non-JSON line: ignored
     }
   }
-  return { status: r.status, records };
+  return { status: r.status, records, stdout: r.stdout, stderr: r.stderr };
 }
 
 export const diags = (run: Run, code: string): Rec[] => run.records.filter((r) => r.kind === "diag" && r.code === code);
@@ -260,4 +260,15 @@ export function baseSurfaceOnce(files: Tree): { dir: string; base: string } {
   const built = baseSurface(files);
   bases.set(key, readFileSync(built.base, "utf8"));
   return built;
+}
+
+/** A failed child's diagnostics on one line: the non-empty lines of stdout and of stderr, each joined with ` | ` and cut to its last 440 characters, the two joined with ` | `. */
+export function childOutput(r: { stdout?: string; stderr?: string }): string {
+  const tail = (s: string | undefined): string =>
+    (s ?? "")
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .join(" | ")
+      .slice(-440);
+  return `${tail(r.stdout)} | ${tail(r.stderr)}`;
 }

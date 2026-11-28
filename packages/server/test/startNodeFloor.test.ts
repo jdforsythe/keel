@@ -1,8 +1,8 @@
 // `start` on `storage: 'sqlite'` checks the running Node against 22.13 before the driver's `open` (k.deploy Rules E1560).
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { routeTable } from "@keel/router";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { start } from "../src/internal/start.ts";
@@ -11,7 +11,7 @@ import type { StartOptions } from "../src/types/StartOptions.ts";
 type Storage = "file" | "sqlite" | "postgres";
 const SECRET = "s".repeat(32);
 const built = (): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-floor-"));
+  const d = tempDir("keel-floor-");
   fs.mkdirSync(path.join(d, ".vite"), { recursive: true });
   fs.mkdirSync(path.join(d, "assets"), { recursive: true });
   fs.writeFileSync(

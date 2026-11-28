@@ -1,7 +1,10 @@
 import { blankLabel } from "../rules/blankLabel.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
+import { checkTimeEntries } from "../rules/checkTimeEntries.ts";
 import { componentCtxSignature } from "../rules/componentCtxSignature.ts";
+import { defectCode } from "../rules/defectCode.ts";
 import { dynamicImport } from "../rules/dynamicImport.ts";
+import { errKeelError } from "../rules/errKeelError.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
 import { foreignUrlFetch } from "../rules/foreignUrlFetch.ts";
@@ -12,8 +15,11 @@ import { hostCodeImport } from "../rules/hostCodeImport.ts";
 import { identityFile } from "../rules/identityFile.ts";
 import { identityMountElsewhere } from "../rules/identityMountElsewhere.ts";
 import { identityMountMissing } from "../rules/identityMountMissing.ts";
+import { keelSymbols } from "../rules/keelSymbols.ts";
+import { libraryTokenName } from "../rules/libraryTokenName.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
+import { moduleSignalWrite } from "../rules/moduleSignalWrite.ts";
 import { negativeTypeTestHome } from "../rules/negativeTypeTestHome.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noAmbientLocale } from "../rules/noAmbientLocale.ts";
@@ -35,18 +41,24 @@ import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { nodePageWithoutApp } from "../rules/nodePageWithoutApp.ts";
 import { oneExport } from "../rules/oneExport.ts";
+import { overlayBackdrop } from "../rules/overlayBackdrop.ts";
 import { passwordField } from "../rules/passwordField.ts";
 import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
 import { piiInRouteUrl } from "../rules/piiInRouteUrl.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
 import { resourceViaMatch } from "../rules/resourceViaMatch.ts";
+import { resultDiscard } from "../rules/resultDiscard.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
 import { revealedValue } from "../rules/revealedValue.ts";
 import { reversedFocusOrder } from "../rules/reversedFocusOrder.ts";
 import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
+import { schemeSelectOneScheme } from "../rules/schemeSelectOneScheme.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
+import { superviseInApp } from "../rules/superviseInApp.ts";
+import { themeSelectChoice } from "../rules/themeSelectChoice.ts";
+import { throwingBuiltin } from "../rules/throwingBuiltin.ts";
 import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unknownToken } from "../rules/unknownToken.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
@@ -75,6 +87,12 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   sameAppBaseService,
   noThrow,
   noTryCatch,
+  defectCode,
+  resultDiscard,
+  throwingBuiltin,
+  errKeelError,
+  superviseInApp,
+  keelSymbols,
   noAmbientCapability,
   noCodeFromString,
   dynamicImport,
@@ -92,12 +110,14 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   componentCtxSignature,
   noEagerElement,
   lowContrast,
+  overlayBackdrop,
   resourceViaMatch,
   noDetachedScope,
   noRuntimeOpImport,
   noInternalEntry,
   noDomGlobal,
   loaderInServerFile,
+  moduleSignalWrite,
   guardInGuardFile,
   identityFile,
   slotSignature,
@@ -108,6 +128,10 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   reversedFocusOrder,
   gapWithoutDirection,
   unknownToken,
+  libraryTokenName,
+  schemeSelectOneScheme,
+  themeSelectChoice,
+  checkTimeEntries,
   blankLabel,
   hostCodeImport,
   stylesheetImport,

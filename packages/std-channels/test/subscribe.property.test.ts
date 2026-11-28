@@ -38,9 +38,12 @@ test("the reopen delay doubles from 1 s to a 30 s cap after drops, and starts ov
   await fc.assert(
     fc.asyncProperty(fc.array(fc.boolean(), { minLength: 1, maxLength: 9 }), async (resets) => {
       const h = harness((i) => resets[i] === true);
-      const sc = scope(() => {
-        subscribe(h.ctx, ORIGIN, room, { room: "a b" }, () => undefined);
-      });
+      const sc = scope(
+        () => {
+          subscribe(h.ctx, ORIGIN, room, { room: "a b" }, () => undefined);
+        },
+        { detached: true },
+      );
       await settle();
       let delay = 1000;
       for (let i = 0; i < resets.length; i++) {
@@ -62,9 +65,12 @@ test("close() stops the subscription like disposing its scope: no later request,
   const h = harness(() => true);
   const got: unknown[] = [];
   let handle: ReturnType<typeof subscribe> | undefined;
-  scope(() => {
-    handle = subscribe(h.ctx, ORIGIN, room, { room: "a" }, (e) => got.push(e));
-  });
+  scope(
+    () => {
+      handle = subscribe(h.ctx, ORIGIN, room, { room: "a" }, (e) => got.push(e));
+    },
+    { detached: true },
+  );
   await settle();
   expect(got).toEqual([{ kind: "reset" }]);
   handle?.close();

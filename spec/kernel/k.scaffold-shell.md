@@ -19,7 +19,7 @@ keel scaffold shell capacitor --id com.acme.shop --name 'Acme Shop' --to web
 **Refusals.** Each writes nothing, judged in this order:
 - `shell` neither `tauri` nor `capacitor`, no `id`, no `name` and no `package.json` `name` to derive one from, `to` naming no deployable, no `topology.ts`, or a `package.json` that is not a JSON object: E1052.
 - An `id` that is not reverse-DNS: E1353 naming E1573.
-- No `client` deployable, several and no `to`, or `to` naming one that is not `client`: E1359, naming the deployables.
+- No `client` deployable, several and no `to`, or `to` naming one that is not `client`: E1359, naming the deployables; with none, what it needs (k.scaffold-needs).
 - The deployable already declares `<shell>`: E1351. Its deployable or `shells` written as something other than an object literal: E1052.
 
 **Rules.** E1359 `scaffold shell` has no one `client` deployable to take the shell: none, several and no `--to`, or `--to` naming another adapter; names them (no fix: pass `--to <client deployable>`, or `keel codemod place <module> --to <name> --adapter client`).

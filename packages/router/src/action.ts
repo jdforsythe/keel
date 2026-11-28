@@ -1,9 +1,18 @@
 import type { Ctx } from "@keel/ctx";
-import { type Infer, type KeelError, type ObjectSchema, type Result, type Schema, type Secret, s } from "@keel/schema";
+import {
+  type Infer,
+  type KeelError,
+  type ObjectSchema,
+  type Result,
+  type Schema,
+  type Secret,
+  isObjectSchema,
+  isSchema,
+  s,
+} from "@keel/schema";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
-import { isObjectSchema } from "./internal/isObjectSchema.ts";
-import { isSchema } from "./internal/isSchema.ts";
+import { madeFrozen } from "./internal/madeFrozen.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { withStores } from "./internal/withStores.ts";
 import { routeTable } from "./routeTable.ts";
@@ -115,7 +124,7 @@ export function action<I, P, St>(
   const output = ownValue(at, "output");
   if (decl.input === undefined && isSchema(output)) {
     const body = ownValue(at, "body");
-    return Object.freeze({ ...base, input: isObjectSchema(body) ? body : EMPTY, output });
+    return madeFrozen({ ...base, input: isObjectSchema(body) ? body : EMPTY, output }, "action");
   }
-  return Object.freeze({ ...base, input: decl.input ?? EMPTY });
+  return madeFrozen({ ...base, input: decl.input ?? EMPTY }, "action");
 }

@@ -8,6 +8,7 @@
 // Spec: std.contracts, clause "`keel check` over a module whose contract holds a channel's two entries and whose binding names `channelRoute`'s handlers reports no E1111 and no W1005, and `routes.json` lists both ids; a `.pii()` in the channel's `params` is E1111 at each entry's `query`."
 // Spec: std.contracts, clause "A contract file importing a channel from a `*.schema.ts` file is no E1514; from `boardChannel.ts`, one E1514."
 // Seed 1337 (no random input: fixed fixtures).
+import { fixedTime } from "@keel/tooling/test-time";
 import { check } from "@keel/check";
 import { routeLiterals } from "@keel/compiler";
 import { manifest } from "@keel/router";
@@ -25,7 +26,8 @@ const messageOf = (fn: () => unknown): { code: unknown; message: string } => {
   } catch (e) {
     return {
       code: typeof e === "object" && e !== null && "code" in e ? e.code : "no-code",
-      message: e instanceof Error ? e.message : String(e),
+      // a defect's message is the code's literal words; the members it names may stand in its `data` (k.defects)
+      message: `${e instanceof Error ? e.message : String(e)} ${typeof e === "object" && e !== null && "data" in e ? JSON.stringify(e.data) : ""}`,
     };
   }
   return { code: null, message: "" };
@@ -251,12 +253,16 @@ describe("std.contracts: std-channels", () => {
     },
   ];
 
-  test("`keel check` over a module whose contract holds a channel's two entries and whose binding names `channelRoute`'s handlers reports no E1111 and no W1005", () => {
-    const ds = check(boardFiles(false), { types: false }).diagnostics.filter(
-      (d) => d.code === "E1111" || d.code === "W1005",
-    );
-    expect(ds).toEqual([]);
-  }, 30_000);
+  test(
+    "`keel check` over a module whose contract holds a channel's two entries and whose binding names `channelRoute`'s handlers reports no E1111 and no W1005",
+    () => {
+      const ds = check(boardFiles(false), { types: false }).diagnostics.filter(
+        (d) => d.code === "E1111" || d.code === "W1005",
+      );
+      expect(ds).toEqual([]);
+    },
+    fixedTime(30_000),
+  );
 
   test("`routes.json` lists both of the channel's entry ids (the compiler reads them statically, nothing unread)", () => {
     const r = routeLiterals(boardFiles(false), { root: "." });
@@ -266,32 +272,40 @@ describe("std.contracts: std-channels", () => {
     expect(r?.routes["api.boardPublish"]).toMatchObject({ path: "/api/board/events", method: "POST" });
   });
 
-  test("a `.pii()` in the channel's `params` is E1111 at each entry's `query`", () => {
-    const files = boardFiles(true);
-    const src = files.find((f) => f.path === "modules/api/api.contract.ts")?.source.split("\n") ?? [];
-    const hits = check(files, { types: false }).diagnostics.filter((d) => d.code === "E1111");
-    expect(hits).toHaveLength(2);
-    expect(hits.map((d) => (src[d.line - 1] ?? "").slice(d.col - 1, d.col - 1 + 5))).toEqual(["query", "query"]);
-  }, 30_000);
+  test(
+    "a `.pii()` in the channel's `params` is E1111 at each entry's `query`",
+    () => {
+      const files = boardFiles(true);
+      const src = files.find((f) => f.path === "modules/api/api.contract.ts")?.source.split("\n") ?? [];
+      const hits = check(files, { types: false }).diagnostics.filter((d) => d.code === "E1111");
+      expect(hits).toHaveLength(2);
+      expect(hits.map((d) => (src[d.line - 1] ?? "").slice(d.col - 1, d.col - 1 + 5))).toEqual(["query", "query"]);
+    },
+    fixedTime(30_000),
+  );
 
-  test("a contract file importing a channel from a `*.schema.ts` file is no E1514; from `boardChannel.ts`, one E1514", () => {
-    const run = (file: string) =>
-      check(
-        [
-          modFile,
-          {
-            path: `modules/api/${file}`,
-            source:
-              "import { channel } from '@keel/std-channels'\nimport { s } from '@keel/schema'\nexport const boardChannel = channel('api.board', { path: '/api/board/events', params: s.object({}), message: s.object({}) })\n",
-          },
-          {
-            path: "modules/api/api.contract.ts",
-            source: `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nimport { boardChannel } from './${file}'\nexport const api = contract('api', {\n  'api.ev': { method: 'GET', path: '/api/board/events', query: s.object({}), events: true, output: boardChannel.events },\n})\n`,
-          },
-        ],
-        { types: false },
-      ).diagnostics.filter((d) => d.code === "E1514");
-    expect(run("Board.schema.ts")).toEqual([]);
-    expect(run("boardChannel.ts")).toHaveLength(1);
-  }, 30_000);
+  test(
+    "a contract file importing a channel from a `*.schema.ts` file is no E1514; from `boardChannel.ts`, one E1514",
+    () => {
+      const run = (file: string) =>
+        check(
+          [
+            modFile,
+            {
+              path: `modules/api/${file}`,
+              source:
+                "import { channel } from '@keel/std-channels'\nimport { s } from '@keel/schema'\nexport const boardChannel = channel('api.board', { path: '/api/board/events', params: s.object({}), message: s.object({}) })\n",
+            },
+            {
+              path: "modules/api/api.contract.ts",
+              source: `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nimport { boardChannel } from './${file}'\nexport const api = contract('api', {\n  'api.ev': { method: 'GET', path: '/api/board/events', query: s.object({}), events: true, output: boardChannel.events },\n})\n`,
+            },
+          ],
+          { types: false },
+        ).diagnostics.filter((d) => d.code === "E1514");
+      expect(run("Board.schema.ts")).toEqual([]);
+      expect(run("boardChannel.ts")).toHaveLength(1);
+    },
+    fixedTime(30_000),
+  );
 });

@@ -1,5 +1,6 @@
 // Spec: k.scaffold-service, clause "Each project below holds module `orders`. In a `--adapter node` project, `service { id: 'orders', base: 'https://api.example.com' }` creates exactly `modules/orders/OrdersApi.schema.ts` (one export, `OrdersApi = endpoints({})`) and `modules/orders/api.server.ts` (one export, `api = service({ base: 'https://api.example.com', schema: OrdersApi })`), neither with a generated first line; it changes `package.json` alone, which gains `@keel/services` at the version of `@keel/server`; `keel check` and `keel test` are clean."
 // seed 1337 (property over module ids; the project and its version are fixed).
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { RUNS, SEED, apiName, apply, lowerName, read } from "./fixtures.ts";
@@ -67,10 +68,14 @@ describe("service { id, base } in a --adapter node project", () => {
       { seed: SEED, numRuns: RUNS },
     );
   });
-  it("leaves keel check and keel test clean", () => {
-    const tree = apply("service", { id: "orders", base: ORIGIN }, freshNode()).files;
-    const dir = materialize(tree);
-    dirs.push(dir);
-    expectCheckAndTestClean(dir, testFileCount(tree));
-  }, 120000);
+  it(
+    "leaves keel check and keel test clean",
+    () => {
+      const tree = apply("service", { id: "orders", base: ORIGIN }, freshNode()).files;
+      const dir = materialize(tree);
+      dirs.push(dir);
+      expectCheckAndTestClean(dir, testFileCount(tree));
+    },
+    fixedTime(120000),
+  );
 });

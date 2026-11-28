@@ -1,6 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { type Id, type KeelError, type Result, err, ok, pathToString } from "@keel/schema";
-import { refuse } from "../../unsafe/refuse.ts";
+import { type Id, type KeelError, type Result, defect, err, keelError, ok, pathToString } from "@keel/schema";
 import type { EnqueueOptions } from "../EnqueueOptions.ts";
 import type { JobTable } from "../JobTable.ts";
 import { chanOf } from "./chanOf.ts";
@@ -20,11 +19,11 @@ export async function enqueue(
   opts: EnqueueOptions,
 ): Promise<Result<Id<"Job">, KeelError<string, unknown>>> {
   const j = table[id];
-  if (j === undefined) refuse(`std.jobs: no job ${id} in this queue`);
+  if (j === undefined) defect("std.jobs: no such job in this queue", { data: { job: id } });
   const r = j.input.parse(input);
   if (!r.ok) {
     const data = Object.fromEntries(r.error.data.issues.map((i) => [pathToString(i.path), i.rule]));
-    return err({ code: "keel.fields", message: "keel.fields", data });
+    return err(keelError.fields.make(data));
   }
   const job = {
     id: ctx.random.id("Job"),

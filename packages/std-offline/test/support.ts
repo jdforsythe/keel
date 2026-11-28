@@ -6,6 +6,7 @@ import { scope } from "@keel/reactive";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
+import { expect } from "vitest";
 import { Write, drain, outbox, writeFor } from "../src/index.ts";
 
 export const SEED = 1337;
@@ -68,9 +69,12 @@ const json = (status: number, body: unknown): Response =>
 /** One sim server. `script` is the queue of behaviors for successive posts; an empty queue means `apply`. */
 export function createServer() {
   const made: { st?: ReturnType<typeof build> } = {};
-  scope(() => {
-    made.st = build();
-  });
+  scope(
+    () => {
+      made.st = build();
+    },
+    { detached: true },
+  );
   const st = made.st;
   if (st === undefined) throw new Error("server store did not build");
   const posts: Post[] = [];
@@ -133,7 +137,7 @@ export function createServer() {
     },
     /** A write by another caller: moves the server's head. */
     other(todoId: string, title: string): void {
-      void tx(st.edit, { todoId, title });
+      expect(tx(st.edit, { todoId, title }).ok).toBe(true);
     },
     /** While gated, every post waits for `release()` before the server answers it. */
     gated(on: boolean): void {
@@ -161,6 +165,11 @@ function build() {
 }
 let serverCounter = 0;
 
+/** `make` run in a root of its own that no test disposes: a test's stand-in for a module's top level. */
+export function root<T>(make: () => T): T {
+  return scope(() => undefined, { detached: true }).run(make);
+}
+
 let outboxCounter = 0;
 
 const declare = (id: string, opts: { limit?: number; maxBytes?: number }) => outbox(id, Api, { ...opts });
@@ -169,12 +178,15 @@ const declare = (id: string, opts: { limit?: number; maxBytes?: number }) => out
 export function makeClient(opts: { limit?: number; maxBytes?: number; id?: string } = {}) {
   const id = opts.id ?? `t${++outboxCounter}.outbox`;
   const held: { o?: ReturnType<typeof declare> } = {};
-  const sc = scope(() => {
-    held.o = declare(id, {
-      ...(opts.limit === undefined ? {} : { limit: opts.limit }),
-      ...(opts.maxBytes === undefined ? {} : { maxBytes: opts.maxBytes }),
-    });
-  });
+  const sc = scope(
+    () => {
+      held.o = declare(id, {
+        ...(opts.limit === undefined ? {} : { limit: opts.limit }),
+        ...(opts.maxBytes === undefined ? {} : { maxBytes: opts.maxBytes }),
+      });
+    },
+    { detached: true },
+  );
   const o = held.o;
   if (o === undefined) throw new Error("outbox did not build");
   return { o, id, storageKey: `keel.outbox.${id}`, dispose: () => sc.dispose() };
@@ -182,9 +194,12 @@ export function makeClient(opts: { limit?: number; maxBytes?: number; id?: strin
 
 /** `drain(ctx, o, { owner })` inside its own scope; the returned function disposes that scope. */
 export function startDrain(ctx: SimCtx, o: ReturnType<typeof declare>, owner = OWNER): () => void {
-  const sc = scope(() => {
-    void drain(ctx, o, { owner });
-  });
+  const sc = scope(
+    () => {
+      void drain(ctx, o, { owner });
+    },
+    { detached: true },
+  );
   return () => sc.dispose();
 }
 

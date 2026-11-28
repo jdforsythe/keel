@@ -31,7 +31,12 @@ const done = (records: OutRecord[], counts: Record<string, number>, ok: boolean)
   writes: [],
 });
 
-const diag = (code: string, message: string): OutRecord => ({ kind: "diag", code, message, see: "k.cli" });
+const diag = (code: string, message: string): OutRecord => ({
+  kind: "diag",
+  code,
+  message,
+  see: code === "E1056" ? "k.inspect" : "k.cli",
+});
 
 /** `url` without its query and fragment, cut to `URL_MAX`: the form an E1056 message names. */
 const shown = (url: string): string => {
@@ -64,7 +69,7 @@ const routeOf = (url: string): URL | undefined => {
  */
 export const command: StdOperation = {
   name: "report",
-  description: "Print the tallies of a dev app's inspect sections, or of a route url answering them (std.report).",
+  description: "Tallies of a dev app's inspect sections, or of a route url's (std.report).",
   input: s.object({
     url: s.string().optional(),
     format: s.enum(["compact", "json", "pretty"]).optional(),

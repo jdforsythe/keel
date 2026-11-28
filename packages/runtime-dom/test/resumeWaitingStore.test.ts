@@ -15,9 +15,12 @@ const T = template('<div data-k-island="C"><p>x</p></div>');
 /** The `#k-state` snapshot of a store of `id` at `{ n }`. */
 const served = (id: string, n: number): unknown => {
   const out: { snap?: unknown } = {};
-  scope(() => {
-    out.snap = store(Count, { n }, { id }).snapshot();
-  }).dispose();
+  scope(
+    () => {
+      out.snap = store(Count, { n }, { id }).snapshot();
+    },
+    { detached: true },
+  ).dispose();
   return out.snap;
 };
 
@@ -62,9 +65,12 @@ describe("a store an island creates while it resumes", () => {
 
   it("a store in `stores` that refuses its snapshot is an E1253 warning", () => {
     const out: { known?: { get: (k: "n") => number; restore: (snap: unknown) => unknown } } = {};
-    scope(() => {
-      out.known = store(Count, { n: 0 }, { id: "waiting.known" });
-    });
+    scope(
+      () => {
+        out.known = store(Count, { n: 0 }, { id: "waiting.known" });
+      },
+      { detached: true },
+    );
     const known = out.known;
     if (known === undefined) throw new Error("fixture: store scope did not run");
     const C = (): Node => clone(T);

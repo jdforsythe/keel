@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { type Files, apply } from "./helpers.ts";
 
@@ -54,7 +55,8 @@ const CONSUMER: ReadonlyMap<string, string> = new Map([
 ]);
 
 function scaffolded(): Files {
-  let files: Files = apply("project", { name: "shop" }, new Map());
+  // A `node` project: an API route needs a node deployable (k.scaffold-needs).
+  let files: Files = apply("project", { name: "shop", adapter: "node" }, new Map());
   files = apply("module", { id: "orders" }, files);
   files = apply("route", { id: "orders.list", path: "/orders" }, files);
   files = apply("route", { id: "orders.tag", path: "/tags/:slug" }, files);
@@ -70,7 +72,7 @@ function scaffolded(): Files {
 }
 
 function typecheck(files: Files): { status: number | null; out: string } {
-  const dir = fs.mkdtempSync(nodePath.join(os.tmpdir(), "keel-scaffold-tsc-"));
+  const dir = tempDir("keel-scaffold-tsc-");
   try {
     for (const [p, text] of files) {
       fs.mkdirSync(nodePath.dirname(nodePath.join(dir, p)), { recursive: true });
@@ -96,20 +98,28 @@ function typecheck(files: Files): { status: number | null; out: string } {
 }
 
 describe("a scaffolded project type-checks against the kernel packages", () => {
-  it("project, module, page routes, API routes by method, components with and without ctx, an href link and a service client", () => {
-    const r = typecheck(scaffolded());
-    expect(r.out.trim()).toBe("");
-    expect(r.status).toBe(0);
-  }, 240_000);
+  it(
+    "project, module, page routes, API routes by method, components with and without ctx, an href link and a service client",
+    () => {
+      const r = typecheck(scaffolded());
+      expect(r.out.trim()).toBe("");
+      expect(r.status).toBe(0);
+    },
+    fixedTime(240_000),
+  );
 
-  it("the check is live: a link to an id the contract lacks, and a binding for another entry, fail", () => {
-    const files = scaffolded();
-    files.set(
-      "modules/shop/link.ts",
-      `import { orders } from "../orders/orders.contract.ts";\nexport const x = orders.href("orders.nope");\n`,
-    );
-    const r = typecheck(files);
-    expect(r.status).not.toBe(0);
-    expect(r.out).toContain("modules/shop/link.ts");
-  }, 240_000);
+  it(
+    "the check is live: a link to an id the contract lacks, and a binding for another entry, fail",
+    () => {
+      const files = scaffolded();
+      files.set(
+        "modules/shop/link.ts",
+        `import { orders } from "../orders/orders.contract.ts";\nexport const x = orders.href("orders.nope");\n`,
+      );
+      const r = typecheck(files);
+      expect(r.status).not.toBe(0);
+      expect(r.out).toContain("modules/shop/link.ts");
+    },
+    fixedTime(240_000),
+  );
 });

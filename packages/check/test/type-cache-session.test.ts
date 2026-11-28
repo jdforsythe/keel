@@ -1,11 +1,11 @@
 // k.check-cache In one process: nothing an earlier `check()` call parsed, loaded or registered changes a later call's
 // answer. A parsed file is reused only under the same compiler options; a `@keel/std-*` package's formats apply only
 // while the project's app manifests reach it, and so do its rules when `importDeps` imported it first.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { importDeps } from "@keel/compiler/std/importDeps";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, expect, it, vi } from "vitest";
 import { check, defineRule } from "../src/index.ts";
 import { packageName } from "../src/internal/packageName.ts";
@@ -22,7 +22,7 @@ function put(path: string, text: string): void {
   writeFileSync(path, text);
 }
 function scratch(): string {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-session-")));
+  const root = realpathSync(tempDir("keel-session-"));
   bases.push(root);
   put(join(root, "package.json"), '{"name":"p","private":true,"type":"module"}\n');
   mkdirSync(join(root, "node_modules"));
@@ -132,7 +132,7 @@ it("a rule runs unless its std package was imported first by importDeps and is o
 });
 
 it("a file under no package.json that names a package has no owner (null), the case ruleInScope runs", () => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "keel-noowner-")));
+  const dir = realpathSync(tempDir("keel-noowner-"));
   bases.push(dir);
   expect(packageName(join(dir, "x.mjs"), () => undefined)).toBeNull();
 });

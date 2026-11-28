@@ -12,9 +12,12 @@ let made: { readonly value: ReturnType<typeof makeStore> } | undefined;
 function makeStore() {
   return store(s.object({ n: s.int() }), { n: 0 }, { id: "test.txInRender" });
 }
-scope(() => {
-  made = { value: makeStore() };
-});
+scope(
+  () => {
+    made = { value: makeStore() };
+  },
+  { detached: true },
+);
 const held = made?.value;
 if (held === undefined) throw new Error("test: scope did not run");
 const seed = transaction(held, "test.txInRender.seed", s.object({ n: s.int() }), (_st, p) => ({ n: p.n }));

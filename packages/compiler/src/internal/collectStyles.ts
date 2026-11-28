@@ -50,11 +50,22 @@ const STYLE_PROPS: readonly string[] = [
   "justify",
   "wrap",
   "textAlign",
+  "breakBefore",
+  "breakAfter",
+  "breakInside",
 ];
+
+/** Attributes a base element writes as literals that are usages of their own (k.aria Scheme and Print): `media` on any, `scheme` on a `Box`. */
+const OWN_USAGE: Readonly<Record<string, readonly string[]>> = {
+  media: ["screen", "print"],
+  scheme: ["light", "dark"],
+};
 const STATES: readonly State[] = [
   "selected",
   "checked",
+  "pressed",
   "expanded",
+  "current",
   "highlighted",
   "hover",
   "focusVisible",
@@ -65,7 +76,8 @@ const STATES: readonly State[] = [
 /** Base elements whose `styles` hold part styles (`field`, `label`, `error`). */
 const CONTROLS: ReadonlySet<string> = new Set(["Input", "TextArea", "Select", "Checkbox"]);
 
-const isState = (k: string): k is State => STATES.some((s) => s === k);
+/** The state `k` names, or `undefined`. */
+const stateOf = (k: string): State | undefined => STATES.find((s) => s === k);
 
 /** The `look` sets of `tokens.ts` as data (the build evaluates them), by name. */
 type Looks = Readonly<Record<string, unknown>>;
@@ -112,8 +124,9 @@ function lookName(e: Expression | null | undefined): string | undefined {
 function stateKeys(st: ObjectExpression): string[] {
   const out: string[] = [];
   for (const q of st.properties) {
-    const s = keyOf(q);
-    if (s === undefined || q.type !== "Property" || !isState(s)) continue;
+    const k = keyOf(q);
+    const s = k === undefined ? undefined : stateOf(k);
+    if (s === undefined || q.type !== "Property") continue;
     const inner = unparen(q.value);
     if (inner.type === "ObjectExpression")
       for (const r of inner.properties) {
@@ -209,8 +222,9 @@ function statesObject(e: Expression, out: Leaf[]): boolean {
   if (x.type !== "ObjectExpression") return false;
   let fixed = true;
   for (const p of x.properties) {
-    const k = keyOf(p);
-    if (k === undefined || p.type !== "Property" || !isState(k)) {
+    const key = keyOf(p);
+    const k = key === undefined ? undefined : stateOf(key);
+    if (k === undefined || p.type !== "Property") {
       fixed = false;
       continue;
     }
@@ -296,7 +310,43 @@ export function collectStyles(
     return u === undefined ? [] : [u];
   });
   for (const look of [...named].sort()) usages.push({ props: {}, look });
+  usages.push(...ownUsages(a, base, ui));
   return { usages, rewrites, edits, diagnostics };
+}
+
+/** One usage per distinct literal `media` (a literal leaf of a dynamic one too) on a base element and `scheme` on a `Box`, in that order (k.aria Scheme and Print). */
+function ownUsages(a: Analysis, base: ReadonlySet<string>, ui: ReadonlyMap<string, string>): StyleUsage[] {
+  const seen = new Map<string, StyleUsage>();
+  for (const j of a.jsx) {
+    if (j.type !== "JSXElement") continue;
+    const n = j.openingElement.name;
+    if (n.type !== "JSXIdentifier" || !base.has(n.name)) continue;
+    for (const at of j.openingElement.attributes) {
+      if (at.type === "JSXSpreadAttribute") continue;
+      const name = attrNameOf(at.name);
+      const allowed = OWN_USAGE[name];
+      if (allowed === undefined || (name === "scheme" && ui.get(n.name) !== "Box")) continue;
+      const sv = staticValueOf(at.value);
+      const v = at.value;
+      // `media` takes the literal leaves of a dynamic `?:`/`&&` value too, so its classes and blocks exist (k.aria Print).
+      const values =
+        sv !== undefined
+          ? sv.bare
+            ? []
+            : [sv.text]
+          : name === "media" &&
+              v !== null &&
+              v.type === "JSXExpressionContainer" &&
+              v.expression.type !== "JSXEmptyExpression"
+            ? tokensOf(v.expression).tokens
+            : [];
+      for (const text of values) if (allowed.includes(text)) seen.set(`${name}:${text}`, { props: { [name]: text } });
+    }
+  }
+  return [...seen.keys()].sort().flatMap((k) => {
+    const u = seen.get(k);
+    return u === undefined ? [] : [u];
+  });
 }
 
 function element(

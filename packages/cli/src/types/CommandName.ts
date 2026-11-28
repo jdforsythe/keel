@@ -11,6 +11,7 @@ export type CommandName =
   | "scaffold"
   | "codemod"
   | "ledger"
+  | "tokens"
   | "evidence"
   | "review"
   | "pack"

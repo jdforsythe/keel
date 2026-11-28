@@ -1,11 +1,12 @@
 import type { Ctx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
-import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
+import { type KeelError, type Result, err, ok } from "@keel/schema";
 import type { ServerRequest, ServerState } from "@keel/store/internal";
 import type { Loader } from "../types/Loader.ts";
 import type { Level } from "./Level.ts";
 import type { Rec } from "./Rec.ts";
 import { STORES_SERVER_ONLY } from "./STORES_SERVER_ONLY.ts";
+import { owned } from "./owned.ts";
 import { unexpected } from "./unexpected.ts";
 
 type Outcome = Result<unknown, KeelError<string, unknown>>;
@@ -18,12 +19,11 @@ async function runOne(
 ): Promise<Outcome> {
   const from = l.stores;
   if (from !== undefined && rq === undefined) return err(unexpected(STORES_SERVER_ONLY));
-  const r = await attempt(async () =>
+  const r = await owned(async () =>
     l.run({ ...args, stores: from === undefined ? undefined : await rq?.stores(from) }, ctx),
   );
   if (!r.ok) return r;
-  if (!r.value.ok) return r.value;
-  const checked = l.output.parse(r.value.value);
+  const checked = l.output.parse(r.value);
   return checked.ok ? ok(checked.value) : err(unexpected("E1554 loader data fails its output schema"));
 }
 

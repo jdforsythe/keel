@@ -5,6 +5,7 @@ export { createRouter } from "./createRouter.ts";
 export { Form } from "./Form.ts";
 export { guard } from "./guard.ts";
 export { identityMount } from "./identityMount.ts";
+export { isRouteTable } from "./isRouteTable.ts";
 export { loader } from "./loader.ts";
 export { manifest } from "./manifest.ts";
 export { navigate } from "./navigate.ts";

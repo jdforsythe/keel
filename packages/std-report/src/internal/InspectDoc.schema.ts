@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 
-/** The parts of `GET /__keel/inspect` (k.cli Inspect) that mark an inspect document; `sections` is absent without inspector hooks. */
+/** The parts of `GET /__keel/inspect` (k.inspect) that mark an inspect document; `sections` is absent without inspector hooks. */
 export const InspectDoc = s.object({
   live: s.boolean(),
   graph: s.object({}),

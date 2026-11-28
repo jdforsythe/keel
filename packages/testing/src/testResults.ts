@@ -1,5 +1,6 @@
 import { clipMessage } from "@keel/schema/internal";
 
+import { traceDetail } from "./internal/traceDetail.ts";
 import type { TestDiag } from "./types/TestDiag.ts";
 import type { TestReport } from "./types/TestReport.ts";
 
@@ -14,6 +15,8 @@ const strip = (s: string): string => s.replace(ANSI, "");
 const firstLine = (s: string): string => strip(s).split("\n")[0] ?? "";
 /** A T0001 message by the k.check rule (89 UTF-16 code units). */
 const clip89 = (s: string): string => clipMessage(s, 89);
+/** An end-to-end test file (k.e2e Files). */
+const E2E = /\.e2e\.[cm]?[jt]sx?$/;
 const FRAME = /(?:^|[\s(])(?:file:\/\/)?((?:\/|[A-Za-z]:[\\/])[^():]+):(\d+):(\d+)\)?$/;
 
 const isApp = (f: string): boolean =>
@@ -72,18 +75,31 @@ function uncaught(e: unknown, cwd: string): TestDiag {
 
 /** A fast-check failure's first line, and its lines that replay and show it: seed and path, the shrunk counterexample, the error. */
 const PROPERTY = /^Property failed after /;
+const TRACE = /^E1729 /;
+/** An E1704 of `properties` or `simulate`: its lines after the first hold the shrunk inputs (`props`, `payload`, `state`). */
+const SHRUNK = /^E1704 /;
+const SHRUNK_LINE = /^ {2}(?:props|payload|state): /;
 const PROPERTY_LINE = /^(?:\{ seed: |Counterexample: |Shrunk \d|Got error: )/;
 /** The longest line a failure's detail keeps (a counterexample can be a whole generated page). */
 const DETAIL = 512;
 
 /**
  * The failure's own lines the message could not hold: its first line when the clipped message cut it, and for a
- * fast-check failure its seed and path, counterexample, shrink count and error line, each clipped to DETAIL.
+ * fast-check failure its seed and path, counterexample, shrink count and error line, for an E1704 its shrunk `props`, `payload` and `state` lines, and for E1729 the two trace
+ * entries that differ without their data (`traceDetail`), each clipped to DETAIL.
  */
 function detail(message: string, shown: string, said: string): string[] {
   const lines = strip(message).split("\n");
   const out = shown.includes(said) ? [] : [said];
   if (PROPERTY.test(lines[0] ?? "")) out.push(...lines.filter((l) => PROPERTY_LINE.test(l)));
+  if (SHRUNK.test(lines[0] ?? ""))
+    out.push(
+      ...lines
+        .slice(1)
+        .filter((l) => SHRUNK_LINE.test(l))
+        .map((l) => l.trim()),
+    );
+  if (TRACE.test(lines[0] ?? "")) out.push(...traceDetail(lines[1], lines[2]));
   return out.map((l) => clipMessage(l, DETAIL));
 }
 
@@ -105,7 +121,7 @@ function compactDiff(d: string | undefined): string | undefined {
  * a harness failure carrying an E17xx `code` (E1704 `properties` and `simulate`, E1708-E1710 `explore`) as that code
  * at the test file's own frame, the message `first line (suite > test)`; each with
  * a `fix` carrying the failure's first line when the message cut it, a fast-check failure's seed and path,
- * counterexample, shrink count and error line, the compact diff and up to four more app frames; a file that failed outside any test gets
+ * counterexample, shrink count and error line, an E1729's two differing trace entries, the compact diff and up to four more app frames; a file that failed outside any test gets
  * one T0001 at line 1 and counts as one test, failed (so `failed` never exceeds `tests`); each error outside any test's result (vitest's unhandled errors, or one `keel test` held
  * around the run) one T0001 `uncaught: <code> <first line>` at its first app frame, else at 1:1 of its
  * `VITEST_TEST_PATH`, else unlocated. Pure; shared by the cli and the repository's vitest reporter.
@@ -129,8 +145,10 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         // A harness failure (E1702-E1710) keeps its code; it is located at the test's own frame when it has one.
         const raw = str(e.code) ?? "";
         const coded: `E17${string}` | undefined = /^E17\d\d$/.test(raw) ? `E17${raw.slice(3)}` : undefined;
+        const e2e = E2E.test(file);
         const all = frames(e);
-        const own = coded === undefined ? -1 : all.findIndex((f) => f.file === file);
+        // A coded failure, and any e2e one, is located at the test file's own frame when it has one.
+        const own = coded === undefined && !e2e ? -1 : all.findIndex((f) => f.file === file);
         const fs = (own > 0 ? [...all.slice(own, own + 1), ...all.slice(0, own), ...all.slice(own + 1)] : all).slice(
           0,
           5,
@@ -139,22 +157,35 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         const more = fs.slice(1).map((f) => `at ${relative(cwd, f.file)}:${f.line}:${f.col}`);
         const whole = str(e.message) ?? "test failed";
         const said = firstLine(whole);
+        // In an e2e test, an error neither Keel's nor an assertion's (a Node system error, a driver's) is
+        // `uncaught: <code> <first line>`, its app frames below it and never under `fix:` (k.e2e-run Output).
+        const foreign = e2e && !/^[EWT]\d{4}$/.test(raw) && str(e.name) !== "AssertionError";
+        // An e2e test's failure is one T0001 whose message is the code and its line (k.e2e-page Failure output).
         const message = clip89(
-          coded === undefined
-            ? `${name.join(" > ")}: ${said}`
-            : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
+          foreign
+            ? `uncaught: ${raw === "" ? "" : `${raw} `}${said}`
+            : coded === undefined
+              ? `${name.join(" > ")}: ${said}`
+              : e2e
+                ? said
+                : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
         );
-        const fix = [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
-          .filter((x): x is string => x !== undefined)
-          .join("\n");
+        const kept = Array.isArray(e.keelDetail) ? e.keelDetail.filter((l): l is string => typeof l === "string") : [];
+        const lines = foreign ? [...more, ...kept] : kept;
+        const fix = foreign
+          ? ""
+          : [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
+              .filter((x): x is string => typeof x === "string")
+              .join("\n");
         diagnostics.push({
           kind: "diag",
-          code: coded ?? "T0001",
+          code: e2e ? "T0001" : (coded ?? "T0001"),
           path: relative(cwd, top?.file ?? file),
           line: top?.line ?? 1,
           col: top?.col ?? 1,
           message,
-          ...(fix === "" ? {} : { fix }),
+          ...(fix === "" || (e2e && coded !== undefined) ? {} : { fix }),
+          ...(lines.length === 0 ? {} : { detail: lines.map((l) => clipMessage(l, DETAIL)).join("\n") }),
         });
       } else if (state === "skip" || state === "todo" || node.mode === "skip" || node.mode === "todo") skipped++;
     }

@@ -43,7 +43,7 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
     expect(files.some((f) => f.path === ".keel/ids.json")).toBe(true);
     expect(await e1005(files)).toEqual([]);
     const steps: string[] = [];
-    const e = await runEngine(["scaffold", "route", "app.releases", "--path", "/releases"], {
+    const e = await runEngine(["scaffold", "route", "app.releases", "--path", "/releases", "--loader"], {
       cwd: CWD,
       files,
       apply: (w) => steps.push(`apply ${w.map((x) => x.path).join(" ")}`),
@@ -74,7 +74,7 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
 
   it("a failing disk half fails the scaffold with its diagnostics and exit code", async () => {
     const files = await builtProject();
-    const e = await runEngine(["scaffold", "route", "app.releases", "--path", "/releases"], {
+    const e = await runEngine(["scaffold", "route", "app.releases", "--path", "/releases", "--loader"], {
       cwd: CWD,
       files,
       refresh: async () => ({
@@ -108,7 +108,7 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
     });
     expect(dry.writes).toEqual([]);
     const bare = files.filter((f) => !f.path.startsWith(".keel/"));
-    const e = await runEngine(["scaffold", "route", "app.releases", "--path", "/releases"], {
+    const e = await runEngine(["scaffold", "route", "app.releases", "--path", "/releases", "--loader"], {
       cwd: CWD,
       files: bare,
       build,

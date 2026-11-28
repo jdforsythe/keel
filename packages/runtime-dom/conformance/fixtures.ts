@@ -66,9 +66,12 @@ export const click = (el: Element): void => {
 /** Runs `fn` inside an ownership scope (k.reactive E1203); `dispose` frees the scope. */
 export const inScope = <T>(fn: () => T): { value: T; dispose: () => void } => {
   const slot: T[] = [];
-  const sc = scope(() => {
-    slot.push(fn());
-  });
+  const sc = scope(
+    () => {
+      slot.push(fn());
+    },
+    { detached: true },
+  );
   // reduce without a seed yields the single element typed T (throws if fn threw before pushing).
   return { value: slot.reduce((_, x) => x), dispose: () => sc.dispose() };
 };
@@ -99,10 +102,13 @@ export const STORE_ISLAND_HTML = '<div data-k-island="StoreCounter"><button id="
 const StoreCounterT = template(STORE_ISLAND_HTML);
 const made = (() => {
   let out: { st: ReturnType<typeof makeStore>; bump: ReturnType<typeof makeBump> } | undefined;
-  scope(() => {
-    const st = makeStore();
-    out = { st, bump: makeBump(st) };
-  });
+  scope(
+    () => {
+      const st = makeStore();
+      out = { st, bump: makeBump(st) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();

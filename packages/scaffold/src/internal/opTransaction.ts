@@ -15,7 +15,8 @@ import { targetsGenerated } from "./targetsGenerated.ts";
 
 /**
  * `scaffold transaction <module>.<store>.<name>`: `<Name>Payload.schema.ts`, `<name>.transaction.ts` on the store
- * `<module>.<store>` (which must exist, else E1052), and its 100-run invariant property test.
+ * `<module>.<store>` of a module of the project (else E1052, an unknown target), which must exist, else E1052 printing the line that makes
+ * it, and its 100-run invariant property test.
  */
 export function opTransaction(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.transaction.parse(input);
@@ -27,8 +28,9 @@ export function opTransaction(input: unknown, files: ReadonlyMap<string, string>
   if (segs.length !== 3 || !segs.every(isLowerCamel))
     return fail("E1352", id, `transaction id ${id} must be <module>.<store>.<name>, each lowerCamel`);
   const dir = `modules/${mod}`;
+  if (!files.has(`${dir}/module.ts`)) return fail("E1052", id, `${mod} is not a module of this project`);
   if (!files.has(`${dir}/${store}.store.ts`))
-    return fail("E1052", id, `no store ${mod}.${store}; run scaffold store ${mod}.${store} first`);
+    return fail("E1052", id, `transaction needs a store first: keel scaffold store ${mod}.${store}`);
   const schema = `${pascal(name)}Payload`;
   const inTestDir = files.has("vitest.config.ts");
   const test = inTestDir ? `test/${id}.transaction.test.ts` : `${dir}/${name}.transaction.test.ts`;

@@ -1,5 +1,7 @@
 import { compile, isSourcePath, pathCollisions, projectDirs, serverOnlyCalls, stdArtifact } from "@keel/compiler";
 import { identityDiags } from "@keel/compiler/hosting/identityDiags";
+import { projectTokens } from "@keel/compiler/hosting/projectTokens";
+import { hashOf } from "@keel/compiler/internal";
 import { importDeps } from "@keel/compiler/std/importDeps";
 import { librarySources } from "@keel/compiler/std/librarySources";
 import type { Input } from "../types/Input.ts";
@@ -9,9 +11,11 @@ import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { canonicalJson } from "./canonicalJson.ts";
 import { checkCommand } from "./checkCommand.ts";
+import { choiceThemes } from "./choiceThemes.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployArtifactCount } from "./deployArtifactCount.ts";
 import { deployBuildWrites } from "./deployBuildWrites.ts";
+import { failedDist } from "./failedDist.ts";
 import { hostingDiags } from "./hostingDiags.ts";
 import { inWorkspace } from "./inWorkspace.ts";
 import { isError } from "./isError.ts";
@@ -29,16 +33,33 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
 /**
  * `keel build`: run `keel check` and stop on an error (E1005 aside), then compile every app source of the root project (`isSourcePath`, the rule the Vite plugin and `keel
  * check` share; nested projects by `projectDirs`) with `@keel/compiler`. Diagnostics flow through unchanged; with no error, the `.keel/` artifacts
- * (`{ data, hash }`, sorted keys, read-only) are returned as writes, with `std.json` from `stdArtifact` after the
+ * (`{ data, hash }`, sorted keys, read-only) are returned as writes, with `std.json` from `stdArtifact` and `schemes.json` from the evaluated tokens after the
  * stdlib `deps` are imported (E1159; its E1158 too; E1559 from `pathCollisions`; E1579 from `identityDiags`; E1558 from `serverOnlyCalls`; E1552, E1565 and E1566 from `hostingDiags`; check's W1012), and the deploy files of `topology.ts` (k.deploy; the CI workflow unless the project is an app inside a workspace).
  * With no error and a host `Io.build`, the writes are applied and the disk half runs (`routes.json`, `surface.json`,
  * the Vite builds), its diagnostics, stderr and exit code joining the result: `keel build` and MCP `build` run one path.
  * The declared shells' targets load first (`shellTargets`). `--target` (k.shell Build) then runs `shellPlan`'s checks, and any diagnostic there ends the build with nothing
  * written; after a clean disk half the host (`Io.shell`) builds the shell, and the trailer names each artifact.
  * `refresh` (k.scaffold Refresh) runs the same steps with `Io.refresh` as the disk half: no bundle, nothing under `dist/`.
+ * A build failing with E1510 or E1511, at any step, leaves no `dist/<name>/` of the deployable serving the entry, an
+ * earlier build's or this run's part-written one (`failedDist`, `Io.discard`; k.api Rules).
  */
 export async function buildCommand(io: Io, input: Input = {}, refresh = false): Promise<Outcome> {
   const project = projectFiles(io);
+  const out = await steps(io, project, input, refresh);
+  const failed = out.records.filter((r) => isError(r));
+  if (!refresh && failed.length > 0) {
+    const dirs = failedDist(failed, projectTopology(project));
+    if (dirs.length > 0) io.discard?.(dirs);
+  }
+  return out;
+}
+
+async function steps(
+  io: Io,
+  project: ReturnType<typeof projectFiles>,
+  input: Input,
+  refresh: boolean,
+): Promise<Outcome> {
   const policy = await shellPolicy(io.cwd, project);
   const targets = await loadShells(io.cwd, project, policy);
   // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).
@@ -64,6 +85,13 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
   // The artifacts derive from the app's sources and its libraries' files (k.library In an app), as the plugin's do.
   const r = compile([...files, ...librarySources(io.cwd)], topology === undefined ? {} : { topology });
   const std = stdArtifact(files);
+  // The tokens' color schemes and `choice` themes, for a node deployable's first paint (k.schemes); no `tokens.ts`,
+  // one scheme and no themes.
+  const evaluated = await projectTokens(io.cwd);
+  const schemes = {
+    schemes: evaluated?.ok === true ? [...evaluated.schemes] : ["light"],
+    themes: evaluated?.ok === true ? choiceThemes(evaluated.tokens) : [],
+  };
   const paths = [
     ...identityDiags(project, io.cwd, true),
     ...(topology === undefined
@@ -90,12 +118,13 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
         ...[
           ...ARTIFACTS.map((name) => ({ path: `.keel/${name}`, data: r.artifacts[name], hash: r.hashes[name] })),
           { path: ".keel/std.json", data: std.data, hash: std.hash },
+          { path: ".keel/schemes.json", data: schemes, hash: hashOf(schemes) },
         ].map(({ path, data, hash }) => ({ path, content: `${canonicalJson({ data, hash })}\n`, readonly: true })),
         ...deploy,
       ];
   const artifacts = failed
     ? 0
-    : ARTIFACTS.length + 1 + (topology === undefined ? 0 : deployArtifactCount(project, deploy, targets.paths));
+    : ARTIFACTS.length + 2 + (topology === undefined ? 0 : deployArtifactCount(project, deploy, targets.paths));
   // One trailer, after every step has settled; a step that exits non-zero without a diagnostic still counts one error.
   const done = (all: readonly OutRecord[], code = 0): OutRecord[] => [
     ...all,

@@ -6,11 +6,12 @@ import { type Schema, s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction } from "@keel/store";
 import { explore } from "@keel/testing";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 const SEED = 1337;
-const LONG = 300_000;
+const LONG = fixedTime(300_000);
 const MAX = 8;
 type State = { xs: boolean[]; m: Record<string, number>; on: boolean; n: number };
 const State = s.object({
@@ -96,38 +97,41 @@ const build = (c: fc.RecordValue<typeof shape extends fc.Arbitrary<infer R> ? R 
   const id = `pp${seq}`;
   let txs: Transaction<State, unknown>[] = [];
   const payloads: Record<string, readonly unknown[]> = {};
-  scope(() => {
-    const st = store(State, { xs: [], m: {}, on: false, n: c.init }, { id });
-    const check = compiled<(state: State) => boolean>(["state"], `return state.n ${c.inv.rel} ${c.inv.a};`, isCheck);
-    invariant(st, check);
-    // Two that fill the array and the map, so explore reaches reads inside them too.
-    const push = transaction(st, `${id}.push`, s.object({ v: s.boolean() }), (state, p) => ({
-      ...state,
-      xs: state.xs.length < 2 ? [...state.xs, p.v] : state.xs,
-    }));
-    const put = transaction(
-      st,
-      `${id}.put`,
-      s.object({ k: s.enum(["a", "b"]), v: s.int({ min: 0, max: 1 }) }),
-      (state, p) => ({
+  scope(
+    () => {
+      const st = store(State, { xs: [], m: {}, on: false, n: c.init }, { id });
+      const check = compiled<(state: State) => boolean>(["state"], `return state.n ${c.inv.rel} ${c.inv.a};`, isCheck);
+      invariant(st, check);
+      // Two that fill the array and the map, so explore reaches reads inside them too.
+      const push = transaction(st, `${id}.push`, s.object({ v: s.boolean() }), (state, p) => ({
         ...state,
-        m: { ...state.m, [p.k]: p.v },
-      }),
-    );
-    payloads[push.name] = [{ v: true }, { v: false }];
-    payloads[put.name] = [
-      { k: "a", v: 0 },
-      { k: "a", v: 1 },
-      { k: "b", v: 0 },
-    ];
-    txs = [push, put];
-    for (const [i, o] of c.ops.entries()) {
-      const { body, schema, payloads: ps } = ofOp(o);
-      const t = transaction(st, `${id}.t${i}`, schema, compiled(["state", "p"], body, isStep));
-      payloads[t.name] = ps;
-      txs.push(t);
-    }
-  });
+        xs: state.xs.length < 2 ? [...state.xs, p.v] : state.xs,
+      }));
+      const put = transaction(
+        st,
+        `${id}.put`,
+        s.object({ k: s.enum(["a", "b"]), v: s.int({ min: 0, max: 1 }) }),
+        (state, p) => ({
+          ...state,
+          m: { ...state.m, [p.k]: p.v },
+        }),
+      );
+      payloads[push.name] = [{ v: true }, { v: false }];
+      payloads[put.name] = [
+        { k: "a", v: 0 },
+        { k: "a", v: 1 },
+        { k: "b", v: 0 },
+      ];
+      txs = [push, put];
+      for (const [i, o] of c.ops.entries()) {
+        const { body, schema, payloads: ps } = ofOp(o);
+        const t = transaction(st, `${id}.t${i}`, schema, compiled(["state", "p"], body, isStep));
+        payloads[t.name] = ps;
+        txs.push(t);
+      }
+    },
+    { detached: true },
+  );
   return { txs, payloads };
 };
 const codeOf = async (run: () => unknown): Promise<string> => {

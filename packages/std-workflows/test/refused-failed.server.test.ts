@@ -12,7 +12,7 @@ import { expect, test } from "vitest";
 import { workflow } from "../src/index.server.ts";
 import { jobsOf } from "./modules/api/jobs.server.ts";
 import { runnersOf } from "./modules/api/runners.server.ts";
-import { type Data, close, nextId, pass, settle, sim } from "./support.server.ts";
+import { type Data, close, inRoot, nextId, pass, settle, sim } from "./support.server.ts";
 
 const Codes = ["api.nope", "workflows.attempts", "schema.invalid"] as const;
 type Code = (typeof Codes)[number];
@@ -23,30 +23,34 @@ type Out = Result<{ freed: number }, KeelError<string, unknown>>;
 /** The removal chart whose `stuck` payload takes only the codes in `allowed`. */
 function flow(allowed: readonly [Code, ...Code[]], run: () => Promise<Out>) {
   const id = nextId("refused");
-  const c = chart(nextId("refusedChart"), {
-    data: DataSchema,
-    start: { n: 0, freed: 0, code: "" },
-    events: {
-      begin: empty,
-      purged: s.object({ freed: s.int({ min: 0, max: 3 }) }),
-      stuck: s.object({ code: s.enum(allowed) }),
-    },
-    actions: {
-      record: (d, p) => ({ ...d, freed: p.freed }),
-      fail: (d, p) => ({ ...d, code: p.code }),
-    },
-    initial: "queued",
-    states: {
-      queued: { on: { begin: "purging" } },
-      purging: { on: { purged: { to: "purged", do: "record" }, stuck: { to: "stuck", do: "fail" } } },
-      purged: { final: true },
-      stuck: { final: true },
-    },
-  });
-  const wf = workflow(id, {
-    chart: c,
-    steps: { purging: { run, done: "purged", failed: "stuck", attempts: 3 } },
-  });
+  const c = inRoot(() =>
+    chart(nextId("refusedChart"), {
+      data: DataSchema,
+      start: { n: 0, freed: 0, code: "" },
+      events: {
+        begin: empty,
+        purged: s.object({ freed: s.int({ min: 0, max: 3 }) }),
+        stuck: s.object({ code: s.enum(allowed) }),
+      },
+      actions: {
+        record: (d, p) => ({ ...d, freed: p.freed }),
+        fail: (d, p) => ({ ...d, code: p.code }),
+      },
+      initial: "queued",
+      states: {
+        queued: { on: { begin: "purging" } },
+        purging: { on: { purged: { to: "purged", do: "record" }, stuck: { to: "stuck", do: "fail" } } },
+        purged: { final: true },
+        stuck: { final: true },
+      },
+    }),
+  );
+  const wf = inRoot(() =>
+    workflow(id, {
+      chart: c,
+      steps: { purging: { run, done: "purged", failed: "stuck", attempts: 3 } },
+    }),
+  );
   return { id, wf, jobs: jobsOf(wf) };
 }
 
@@ -61,11 +65,12 @@ async function runOne(f: ReturnType<typeof flow>) {
   });
   const id = ctx.random.id("Flow");
   const data: Data = { n: 1, freed: 0, code: "needle-4711" };
-  void (await commitStores(ctx, f.wf.stores, (S) => {
-    void tx(S.start, { id, data });
-    void tx(S.events.begin, { id, payload: {} });
+  const begun = await commitStores(ctx, f.wf.stores, (S) => {
+    expect(tx(S.start, { id, data }).ok).toBe(true);
+    expect(tx(S.events.begin, { id, payload: {} }).ok).toBe(true);
     return ok(null);
-  }));
+  });
+  expect(begun.ok).toBe(true);
   await settle();
   await pass(ctx, 120_000);
   const r = await commitStores(ctx, f.wf.stores, (S) => ok(structuredClone(S.store.get("instances")[id])));

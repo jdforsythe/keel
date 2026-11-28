@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import { scope } from "@keel/reactive";
 // @vitest-environment happy-dom
 // k.leave, Snapshots "`#k-state` `stores` holds a request store's snapshot only when an island needs it to resume: the store was created, looked up through `stores()` or read (`get`, `select`, `snapshot`, `log`, `head`) while a level's component rendered on the server, that level being an island root (k.runtime). A store only a guard, loader, action or static level touched is not in it, however much it holds; nor is a factory store (k.server). A document with no island has `stores` `{}`. `#k-state` is not a k.privacy sink: a snapshot holds the store's state and log as they are, so a `.pii()`-marked value in a store an island creates reaches the browser, as the island needs it to render. The check reports E1107 (below). No `s.secret` value reaches a snapshot: a state schema holding one throws E1303, and a snapshot folds every log entry up to the last secret payload (k.store)."
@@ -161,7 +162,7 @@ describe("k.leave Snapshots: #k-state carries a request store only when an islan
 
   it("negative: a guard that creates `g` for an auth lookup, then an island page: `g` is absent", async () => {
     const auth = guard({ redirect: "ls.login" }, () => {
-      scope(() => store(Count, { n: 9 }, { id: "ls.g" }));
+      scope(() => store(Count, { n: 9 }, { id: "ls.g" }), { detached: true });
       return Promise.resolve(ok(null));
     });
     const levels = routesOf({
@@ -184,18 +185,22 @@ describe("k.leave Snapshots: #k-state carries a request store only when an islan
     expect(stateOf(doc.text).stores).toEqual({});
   });
 
-  it("property: for any email, a loader's `.pii('contact')` store never reaches a static page or an island page that does not touch it", async () => {
-    const emails = fc.stringMatching(/^[a-z]{5,10}@[a-z]{3,6}\.test$/);
-    await fc.assert(
-      fc.asyncProperty(emails, fc.boolean(), async (email, island) => {
-        const doc = await get(
-          { "ls.page": { path: "/", source: island ? islandPage("") : staticPage(""), loader: seeding(email) } },
-          "/",
-        );
-        expect(stateOf(doc.text).stores).toEqual({});
-        expect(doc.text).not.toContain(email);
-      }),
-      { seed: SEED, numRuns: 12 },
-    );
-  }, 120_000);
+  it(
+    "property: for any email, a loader's `.pii('contact')` store never reaches a static page or an island page that does not touch it",
+    async () => {
+      const emails = fc.stringMatching(/^[a-z]{5,10}@[a-z]{3,6}\.test$/);
+      await fc.assert(
+        fc.asyncProperty(emails, fc.boolean(), async (email, island) => {
+          const doc = await get(
+            { "ls.page": { path: "/", source: island ? islandPage("") : staticPage(""), loader: seeding(email) } },
+            "/",
+          );
+          expect(stateOf(doc.text).stores).toEqual({});
+          expect(doc.text).not.toContain(email);
+        }),
+        { seed: SEED, numRuns: 12 },
+      );
+    },
+    fixedTime(120_000),
+  );
 });

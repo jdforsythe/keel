@@ -3,17 +3,21 @@ import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
-const LONG = 120_000;
+const LONG = fixedTime(120_000);
 
 const counter = (() => {
   let out: Transaction<unknown, unknown> | undefined;
-  scope(() => {
-    const st = store(s.object({ n: s.int() }), { n: 0 }, { id: "rl1" });
-    invariant(st, (state: { n: number }) => state.n >= 0);
-    out = transaction(st, "rl1.reset", s.object({}), () => ({ n: 0 }));
-  });
+  scope(
+    () => {
+      const st = store(s.object({ n: s.int() }), { n: 0 }, { id: "rl1" });
+      invariant(st, (state: { n: number }) => state.n >= 0);
+      out = transaction(st, "rl1.reset", s.object({}), () => ({ n: 0 }));
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();

@@ -96,7 +96,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
   const patterns = Object.values(options.routes ?? {}).flatMap((r) => (typeof r?.path === "string" ? [r.path] : []));
   const diagnostics: Diagnostic[] = [];
   const usages = new Map<string, StyleUsage>();
-  const done: { a: Analysis; elements: ElementInfo[]; bindings: BindingInfo[]; code: string }[] = [];
+  const done: { a: Analysis; elements: ElementInfo[]; bindings: BindingInfo[]; code: string; map: string }[] = [];
   for (const file of files) {
     const a = analyze(file);
     if (a.parseErrors.length > 0) {
@@ -118,7 +118,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
     diagnostics.push(...styles.diagnostics);
     for (const u of styles.usages) usages.set(canonicalJson(u), u);
     const lowered = lowerFile(a, elements, [...destructuring.edits, ...styles.edits], styles.rewrites);
-    done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });
+    done.push({ a, elements, bindings: lowered.bindings, code: lowered.code, map: lowered.map });
   }
   diagnostics.push(...duplicateIds(done));
   // E1004 (k.boundary Reach): a server-only import in client-reachable code, with the chain from a client entry.
@@ -165,6 +165,6 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
       "routes.json": hashOf(artifacts["routes.json"]),
       "styles.json": hashOf(artifacts["styles.json"]),
     },
-    outputs: done.map((d) => ({ path: d.a.path, code: d.code })),
+    outputs: done.map((d) => Object.defineProperty({ path: d.a.path, code: d.code }, "map", { value: d.map })),
   };
 }

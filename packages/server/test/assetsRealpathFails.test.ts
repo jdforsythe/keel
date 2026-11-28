@@ -1,8 +1,8 @@
 // When the real path of `assets/` cannot be read while its listing can (k.server Build), loadAssets admits no file:
 // an unknown prefix fails closed, so the entry is missing (E1555) and no symlink target is ever read.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, expect, it, vi } from "vitest";
 import { loadAssets } from "../src/internal/loadAssets.ts";
 
@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 it("an unreadable real path of assets/ admits nothing, not even a symlink to a secret", async () => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-realpath-"));
+  const d = tempDir("keel-realpath-");
   made.push(d);
   fs.mkdirSync(path.join(d, ".vite"));
   fs.mkdirSync(path.join(d, "assets"));

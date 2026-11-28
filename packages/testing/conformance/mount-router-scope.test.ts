@@ -9,8 +9,8 @@
 // Seed 1337 (fc.assert below). A raw `/a/\x` has no manifest `href`; `raw` below types it as an `Href` through a type predicate.
 import { createCtx } from "@keel/ctx";
 import { identityMount, manifest } from "@keel/router";
-import { contract } from "@keel/router/contract";
 import type { Href, IdentityMount } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";

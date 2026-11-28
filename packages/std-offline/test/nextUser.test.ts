@@ -37,10 +37,13 @@ async function queuedByA(ctx: SimCtx): Promise<void> {
 /** One page load: a fresh outbox store over the ctx's storage, drained for `owner`. */
 function page(ctx: SimCtx, owner: string) {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox("shared.outbox", Api);
-    void drain(ctx, held.o, { owner });
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox("shared.outbox", Api);
+      void drain(ctx, held.o, { owner });
+    },
+    { detached: true },
+  );
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc };
 }

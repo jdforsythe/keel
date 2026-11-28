@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
 import type { Ctx, SimCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
-import type { Result } from "@keel/schema";
+import type { KeelError, Result } from "@keel/schema";
 import { fragment } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
@@ -62,11 +62,11 @@ export function simCtx(
 
 export const none = (n: number) => Array.from({ length: n }, () => ({ delay: 0, fault: "none" as const }));
 
-export function errOf<T, E>(r: Result<T, E>): E {
+export function errOf<T, E extends KeelError<string, unknown>>(r: Result<T, E>): E {
   if (r.ok) throw new Error("expected err, got ok");
   return r.error;
 }
-export function okOf<T, E>(r: Result<T, E>): T {
+export function okOf<T, E extends KeelError<string, unknown>>(r: Result<T, E>): T {
   if (!r.ok) throw new Error(`expected ok, got err ${JSON.stringify(r.error)}`);
   return r.value;
 }

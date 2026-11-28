@@ -1,5 +1,5 @@
 # std.db: SQLite and Postgres storage
-status: conformance-covered
+status: implemented
 
 **Extension points.** Storage drivers (k.persist Drivers): `@keel/std-db/sqlite` and `@keel/std-db/postgres` export the drivers a `node` deployable's generated entry opens when `topology.ts` sets `storage` (k.deploy). Check rule registry: `@keel/std-db/tools` registers E2151. App code never imports the package (E2151): its state reaches the database only through stores and `ctx.storage`.
 
@@ -18,10 +18,11 @@ Each resolves k.persist's storage plus `close()` (k.persist Drivers). In `postgr
 
 **On disk.** Exactly what `ctx.storage` receives: each server store's `snapshot({ meta: true })` (state, `initial`, `head`, and the kept log with payloads, write keys and `caller` hashes), std.jobs queues, std.schedules marks and std.workflows stores. No `Secret` arrives: `store()` refuses `s.secret` in state (E1303), a snapshot folds a secret payload, job inputs refuse it (E2503), and a secret serializes only as its marker (k.privacy). A value `reveal`ed into a plain field is plain data, stored as written (k.privacy, E1112). Personal data (`.pii`, k.privacy) is stored as the store holds it: the database is the app's own data, not a sink. std.db puts no value in a log line, a diagnostic or an error message; they name keys. A notification holds the token and store keys, never a value. A value removed from state leaves the database once its last log entry folds past `logLimit`; SQLite then overwrites the freed pages, and Postgres keeps dead row versions until vacuum. Encryption at rest is the volume's or the host's.
 
-**Rules.** E2151 an app file imports `@keel/std-db` (no fix) · E2152 the database's `layout` is newer than the package's (at startup) · E2153 the database cannot be opened or refuses the connection, naming `KEEL_DATABASE_URL` and no part of its value (at startup), also when its `layout` is not a version.
+**Rules.** E2151 an app file imports `@keel/std-db` (no fix) · E2152 the database's `layout` is newer than the package's (at startup) · E2153 the database cannot be opened or refuses the connection, naming `KEEL_DATABASE_URL` and no part of its value (at startup), also when its `layout` is not a version. The driver says so by its failure: an `Error`, or an object with a string `code` or a number `errcode`; any other thrown value passes on as thrown (k.deploy Refusals at start: E1577). A failed storage call is a defect whose `cause` is `db.failed`, its data closed (k.expect Carries): `driver`, `op`, `class` and `errcode`, `class` the SQLSTATE class of a Postgres code (`57` for `57P01`), `sqlite` with SQLite's numeric `errcode`, `system` for a code like `ECONNREFUSED`, else `unknown`, and `errcode` `0` but for SQLite; no code's text.
 
 **Conformance.**
 - Each driver, on a temporary SQLite file and on Postgres (PGlite, and a Postgres 17 service in CI), passes k.persist's storage clauses.
+- A SQLite storage whose `get` meets a driver error with `errcode` 1 rejects with a defect whose `cause.data` is `{ driver: 'sqlite', op: 'get', class: 'sqlite', errcode: 1 }`; a Postgres `set` meeting `code` `57P01` with `{ driver: 'postgres', op: 'set', class: '57', errcode: 0 }`, and one meeting `code` `dup key jane@x.com` with `class` `unknown`.
 - Two processes on one SQLite file, each serving `createApp` on its driver, with overlapping actions on one store: one saves, the other is 409, and the file holds the first's snapshot.
 - A process killed with SIGKILL after an action's response restarts on the same database and serves the same stored snapshot byte for byte; its next commit's head is one higher.
 - For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`.

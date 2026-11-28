@@ -44,8 +44,18 @@ type FileOf = {
   readonly returns: readonly { readonly owner: number; readonly argument: Expression | null }[];
 };
 
-const isFn = (n: Expression | Fn): n is Fn =>
-  n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression";
+const fnType = (t: string): boolean =>
+  t === "FunctionDeclaration" || t === "FunctionExpression" || t === "ArrowFunctionExpression";
+/** `n` when it is a function declaration, function expression or arrow function. */
+const asFn = (n: Expression | Fn): Fn | undefined =>
+  n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression"
+    ? n
+    : undefined;
+/** `n` when it is no function. */
+const notFn = (n: Expression | Fn): Expression | undefined =>
+  n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression"
+    ? undefined
+    : n;
 const files = new WeakMap<Program, FileOf>();
 
 function fileOf(path: string, ast: Program): FileOf {
@@ -129,8 +139,9 @@ export const noEagerElement: RuleDef = {
           if (p.type !== "Property") continue;
           const prop = keyName(p) ?? "prop";
           const v = unwrapExpression(p.value);
-          if (isFn(v)) {
-            if (reader.thunkHolds(here, v, 0)) report(p.value.start, prop, false);
+          const fn = asFn(v);
+          if (fn !== undefined) {
+            if (reader.thunkHolds(here, fn, 0)) report(p.value.start, prop, false);
           } else if (reader.eager(here, v, 0)) report(p.value.start, prop, !p.shorthand && v.type !== "Identifier");
         }
       },
@@ -205,17 +216,19 @@ function makeReader(project: readonly SourceFile[]) {
         if (keel !== undefined) return keel.has(imp.name);
         if (imp.source.startsWith("@keel/std-")) return /^[A-Z]/.test(imp.name);
         const x = far(f, imp);
-        return x !== null && isFn(x.value) && r.returnsElement(x.file, x.value, depth + 1);
+        const fn = x === null ? undefined : asFn(x.value);
+        return x !== null && fn !== undefined && r.returnsElement(x.file, fn, depth + 1);
       }
       const decl = f.g.functionOf(local, at);
       return decl !== null && r.returnsElement(f, decl, depth + 1);
     },
     /** Whether a callee denotes a component (an IIFE is not followed). */
     component(f: FileOf, callee: Expression, depth: number): boolean {
-      if (isFn(unwrapExpression(callee))) return false;
+      if (fnType(unwrapExpression(callee).type)) return false;
       const x = f.g.initOf(callee);
       if (x.type === "Identifier") return r.named(f, x.name, x.start, depth);
-      if (isFn(x)) return r.returnsElement(f, x, depth + 1);
+      const fn = asFn(x);
+      if (fn !== undefined) return r.returnsElement(f, fn, depth + 1);
       if (x.type !== "MemberExpression" || x.computed || x.object.type !== "Identifier") return false;
       const imp = importOf(f, x.object.name, x.object.start);
       if (imp === undefined || imp.name !== "*") return false;
@@ -250,10 +263,11 @@ function makeReader(project: readonly SourceFile[]) {
           return r.eager(f, x.left, depth + 1) || r.eager(f, x.right, depth + 1);
         case "Identifier": {
           const init = f.g.initOf(x);
-          if (init !== x) return !isFn(init) && r.eager(f, init, depth + 1);
+          if (init !== x) return !fnType(init.type) && r.eager(f, init, depth + 1);
           const imp = importOf(f, x.name, x.start);
           const y = imp === undefined ? null : far(f, imp);
-          return y !== null && !isFn(y.value) && r.eager(y.file, y.value, depth + 1);
+          const v = y === null ? undefined : notFn(y.value);
+          return y !== null && v !== undefined && r.eager(y.file, v, depth + 1);
         }
         default:
           return false;
@@ -262,13 +276,15 @@ function makeReader(project: readonly SourceFile[]) {
     /** Whether a `map` callback returns an element: a function, or a name of one. */
     callbackEager(f: FileOf, cb: Expression, depth: number): boolean {
       const x = f.g.initOf(cb);
-      if (isFn(x)) return r.returnsElement(f, x, depth);
+      const fn = asFn(x);
+      if (fn !== undefined) return r.returnsElement(f, fn, depth);
       if (x.type !== "Identifier") return false;
       const decl = f.g.functionOf(x.name, x.start);
       if (decl !== null) return r.returnsElement(f, decl, depth);
       const imp = importOf(f, x.name, x.start);
       const y = imp === undefined ? null : far(f, imp);
-      return y !== null && isFn(y.value) && r.returnsElement(y.file, y.value, depth);
+      const there = y === null ? undefined : asFn(y.value);
+      return y !== null && there !== undefined && r.returnsElement(y.file, there, depth);
     },
     /** Whether a thunk returns, alone or in an array, a binding declared outside it that holds an eager element. */
     thunkHolds(f: FileOf, fn: Fn, depth: number): boolean {

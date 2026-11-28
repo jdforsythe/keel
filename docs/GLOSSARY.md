@@ -20,11 +20,17 @@ Canonical names. Changing one requires an RFC.
 - **rung**: proven, exhaustive, probabilistic, example, monitored.
 - **conformance suite**: the executable, implementation-independent form of a spec section.
 - **spec status**: proposed -> implemented -> conformance-covered -> frozen.
+- **area**: a named group of spec sections, one row of the spec map with an area map of its own (`spec/areas/<area>.md`, `keel docs <area>`); each section is in exactly one (k.docs).
 - **extension point**: schema type registry, check rule registry, capability registry, module manifest, inspector hooks (`inspector({ id, schema, read })`: a named, schema-typed section of the inspect document), output formatter registry.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.
 - **base**: the `tokens.ts` group of style sets the compiled stylesheet applies to each element role (`page`, `heading`, `link`, `button`, `control`, `label`, `fieldError`, `summary`), with the `focus` color of the keyboard focus ring; any style prop at a use wins (k.ui).
 - **look**: a named style set in the `look` group of `tokens.ts`, applied as `look="<name>"`; the element's own props replace the set's per prop (k.ui).
+- **library tokens**: the tokens object a library ships from its `./tokens` entry, `<id>Tokens`, each name `<id>.<name>`; the app spreads it into its own `tokens.ts`, and its names are the ones the library's files may write (k.looks).
+- **color scheme**: `light` or `dark`, one value of each color token; an app's `schemes` names one or both, and with both the person's system preference or a `SchemeSelect` pick decides (k.schemes).
+- **theme**: a named, partial set of token values under `themes` in `tokens.ts`, turned on by its `when`: `choice` (a visitor's pick through `ThemeSelect`), `contrast` (`prefers-contrast: more`) or `print`; it re-values custom properties and changes no class (k.themes, k.schemes).
+- **combination**: one color scheme with the themes on at once, the values a visitor sees and contrast is judged in, named like `dark+slate+hc` (k.themes).
+- **overlay**: a token of the `overlay` group, a color with alpha and the opaque colors it may sit on, judged composited over each (k.values).
 - **host element**: `Host` from `@keel/ui`, the one element whose node outside code owns (a chart library, d3, a standard custom element), given a schema-typed value and run by `hostCode({ mount, update, dispose })`; client only, opaque to the harness and replay, counted in the ledger (k.host-element).
 - **driver**: an object passed as `createCtx({ drivers })` that supplies `storage` or `net` on a `real` or `shell` ctx and keeps that capability's contract.
 - **shell**: a native package of a `client` deployable, `capacitor` (Android, iOS) or `tauri` (desktop), declared in `topology.ts` as `shells`.
@@ -36,6 +42,7 @@ Canonical names. Changing one requires an RFC.
 - **escape**: a place where code opts out of a protection by its sanctioned name (an opt-in: `unsafe`, a declared origin, `reveal`) or goes around one (a workaround); one finding of `keel review` (k.review, k.escapes).
 - **user**: the id `identify` answers for a request, `""` for no one; distinct from the anonymous `caller`, which grants nothing (k.user).
 - **request log**: the list `requests()` returns of the requests a harness sent while open: `{ method, url, headers }`, header names only (k.requests).
+- **end-to-end test**: a test file `*.e2e.ts` that `keel test --e2e` runs against the app's built deployables in a real browser, through `serve` from `@keel/testing/e2e` (k.e2e).
 - **replica**: `replica(ctx)` of a sim ctx, a sim ctx standing for another process on the same storage, as two replicas of a `node` deployable are (k.sim, k.persist).
 - **watch**: the one optional part of a storage's contract, `watch(on)`, reporting the saves other processes commit to the same data (k.persist).
 - **lifted range**: the function written as the second argument of a justified `unsafe(` call in an `unsafe/` file, where a listed set of kernel codes is not reported (k.check).
@@ -47,6 +54,12 @@ Canonical names. Changing one requires an RFC.
 - **held work**: a capability's sim work passed to `hold(label, start)`, the work that answers through something made outside the run; it is held until delivered, holds in the order they started (k.sim, k.drive-law).
 - **law check**: with `law` on (the default under `keel test`), each run of `simulate` that passed runs a second time with its `SimRun` and the two traces are compared; traces that differ fail with E1729 (k.drive-law).
 - **type cache**: the results of `keel check`'s type pass kept across processes in `node_modules/.cache/keel/` (or `check()`'s `typeCache` folder), each entry keyed by content and used only when every file system question it recorded gets the same answer; it changes the time a run takes, never its output (k.check-cache).
+- **defect**: a failure no caller is meant to handle (a bug in the calling code, a broken invariant, stored state that fails its own shape, a fault under a contract that throws), raised by `defect(message, detail?)` from `@keel/schema` with a literal message; never a `Result`'s `err`, and never passed to `attempt`'s `expect` (k.defects).
+- **module root**: the scope the compiler runs a module's top-level statement in, with no parent, living as long as the module; the only root code outside the kernel gets, since a scope made while no scope runs elsewhere is E1208 (k.reactive).
+- **kernel-held identity**: the record a maker's package keeps of the values it made (a loader, an action, a guard, a schema, a store, a `Secret`, a defect, a coded refusal), held in the package's own module and reachable by no name, so no copy or hand-written object passes for one; what `isStore`, `isSchema` and `isDefect` read (k.identity, k.realm).
+- **supervisor**: code that runs other code and must outlive whatever it throws (a job runner, a channel route, a live view); it calls `supervise(ctx, id, fn, failed)`, which reports each throw once and gives the supervisor's own failure (k.supervise).
+- **coded refusal**: a value a kernel package raises with one of its own E codes; at start it is printed with its code, message and `see`, never as E1577 (k.deploy).
+- **fix chain**: a fixture that walks from a start project through each diagnostic's offered fix, or the edit its message names, to an end project a probe runs (k.fixes).
 
 subject: spec/ packages/*/package.json
 verified: 73b4d1ef9220bab121ee35682833de03d269bd58

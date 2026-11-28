@@ -65,25 +65,28 @@ test("optionsChart agrees with a naive list model under generated event sequence
   fc.assert(
     fc.property(fc.array(ev, { maxLength: 20 }), (evs) => {
       n += 1;
-      const sc = scope(() => {
-        const i = instance(optionsChart, `p${n}`);
-        let m: Naive = { open: false, list: [], active: null, back: false };
-        for (const x of evs) {
-          if (x.e === "open") void tx(i.events.open, { count: x.count, at: x.at });
-          else if (x.e === "close") void tx(i.events.close, { back: x.back });
-          else if (x.e === "choose") void tx(i.events.choose, {});
-          else if (x.e === "move") void tx(i.events.move, { by: x.by, wrap: x.wrap });
-          else if (x.e === "jump") void tx(i.events.jump, { to: x.to });
-          else void tx(i.events.items, { count: x.count });
-          m = step(m, x);
-          const v = i.store.snapshot().state;
-          expect(v.state).toBe(m.open ? "open" : "closed");
-          expect(v.data.active).toBe(m.active ?? -1);
-          expect(v.data.back).toBe(m.back);
-          expect(v.data.count).toBe(m.list.length);
-          expect(v.data.active === -1 || v.data.active < v.data.count).toBe(true);
-        }
-      });
+      const sc = scope(
+        () => {
+          const i = instance(optionsChart, `p${n}`);
+          let m: Naive = { open: false, list: [], active: null, back: false };
+          for (const x of evs) {
+            if (x.e === "open") expect(tx(i.events.open, { count: x.count, at: x.at }).ok).toBe(true);
+            else if (x.e === "close") expect(tx(i.events.close, { back: x.back }).ok).toBe(true);
+            else if (x.e === "choose") expect(tx(i.events.choose, {}).ok).toBe(true);
+            else if (x.e === "move") expect(tx(i.events.move, { by: x.by, wrap: x.wrap }).ok).toBe(true);
+            else if (x.e === "jump") expect(tx(i.events.jump, { to: x.to }).ok).toBe(true);
+            else expect(tx(i.events.items, { count: x.count }).ok).toBe(true);
+            m = step(m, x);
+            const v = i.store.snapshot().state;
+            expect(v.state).toBe(m.open ? "open" : "closed");
+            expect(v.data.active).toBe(m.active ?? -1);
+            expect(v.data.back).toBe(m.back);
+            expect(v.data.count).toBe(m.list.length);
+            expect(v.data.active === -1 || v.data.active < v.data.count).toBe(true);
+          }
+        },
+        { detached: true },
+      );
       sc.dispose();
     }),
     { seed: 1337, numRuns: 300 },

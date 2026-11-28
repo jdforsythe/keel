@@ -48,15 +48,21 @@ export function mount(
   read: (ctx: SimCtx, signal: AbortSignal) => Promise<Result<number, KeelError<string, unknown>>>,
 ) {
   const made: { view?: ReturnType<typeof makeView> } = {};
-  scope(() => {
-    made.view = makeView(`unit.view${++n}`);
-  });
+  scope(
+    () => {
+      made.view = makeView(`unit.view${++n}`);
+    },
+    { detached: true },
+  );
   const view = made.view;
   if (view === undefined) throw new Error("no view");
   const got: { status?: () => string } = {};
-  const sc = scope(() => {
-    got.status = live(ctx, ORIGIN, ch, {}, { read, hydrate: view.hydrate });
-  });
+  const sc = scope(
+    () => {
+      got.status = live(ctx, ORIGIN, ch, {}, { read, hydrate: view.hydrate });
+    },
+    { detached: true },
+  );
   return { view: view.store, status: () => got.status?.() ?? "", dispose: () => sc.dispose() };
 }
 

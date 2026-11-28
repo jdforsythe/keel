@@ -2,7 +2,6 @@
 // k.topology Calls and peers: module `a`'s API entries call module `b`'s through `service({ contract })`, in one
 // deployable and split across two. Seed 1337; sim ctxs only.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { type Ctx, type SimCtx, createCtx } from "@keel/ctx";
 import { action, loader, manifest, routeTable, routesArtifact } from "@keel/router";
@@ -11,6 +10,7 @@ import { err, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import type { ServerApp } from "@keel/server";
 import { service } from "@keel/services";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
@@ -135,7 +135,7 @@ describe("k.topology: module calls", () => {
           ctx: yCtx,
           runners,
         });
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-split-"));
+        const dir = tempDir("keel-split-");
         fs.writeFileSync(path.join(dir, "routes.json"), JSON.stringify({ data: routesArtifact(m.bRoutes), hash: "" }));
         const x = await createApp({
           topology: split(),

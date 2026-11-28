@@ -6,6 +6,8 @@ import { run } from "../src/run.ts";
 
 const n = { modules: ["a"], adapter: "node" } as const;
 const web = { modules: ["w"], adapter: "client" } as const;
+const MODULE = (id: string): string =>
+  `declare const module: (m: object) => object\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 
 describe("hostingDiags", () => {
   it("is empty for a good servedBy and good peers", () => {
@@ -100,6 +102,8 @@ describe("hostingDiags", () => {
           source:
             'declare const topology: (t: object) => object\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client" } })',
         },
+        { path: "modules/a/module.ts", source: MODULE("a") },
+        { path: "modules/w/module.ts", source: MODULE("w") },
       ],
     });
     expect(r.code).not.toBe(0);

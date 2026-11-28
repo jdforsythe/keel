@@ -2,14 +2,14 @@
 // (explain-and-fixture-per-code.test.ts). A std-sessions disk fixture links back to its own package from
 // `conformance/.tmp-<pid>-<n>/node_modules/@keel/std-sessions`; a scan that follows it walked every stale copy inside
 // every copy and ran the worker out of heap after 716 green tests. No random inputs (seed 1337 unused).
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, expect, test } from "vitest";
 import { sourceFilesUnder } from "../conformance/support.ts";
 
-const root = mkdtempSync(join(tmpdir(), "keel-scan-"));
+const root = tempDir("keel-scan-");
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 /** A package whose conformance holds `copies` disk fixtures, each linking back to the package. */

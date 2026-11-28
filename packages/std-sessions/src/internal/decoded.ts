@@ -1,8 +1,8 @@
-import type { JsonValue, ObjectSchema } from "@keel/schema";
+import type { JsonValue, Schema } from "@keel/schema";
 
 /** The decoded value of `raw` under `schema`, else `raw` (a route with no schema takes it as is). */
 export function decoded(
-  schema: ObjectSchema<unknown> | undefined,
+  schema: Schema<unknown> | undefined,
   raw: { readonly [k: string]: JsonValue },
 ): Readonly<Record<string, unknown>> {
   if (schema === undefined) return raw;

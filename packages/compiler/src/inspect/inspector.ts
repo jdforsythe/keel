@@ -2,7 +2,7 @@ import type { InspectorDef } from "./InspectorDef.ts";
 import { inspectors } from "./inspectors.ts";
 
 /**
- * Register a named, schema-typed section of the inspect document (k.cli Inspector hooks, extension point). Every
+ * Register a named, schema-typed section of the inspect document (k.inspect Inspector hooks, extension point). Every
  * inspect request reads it with the app's `ctx` into `sections[id]`. A second registration of an `id` throws E1057,
  * unless the first was made before `inspectorsReload`: a module `keel dev` evaluates again replaces its section.
  */

@@ -57,7 +57,12 @@ const summary = (op: string, ok: boolean, sessions: number) => ({
   name: `session ${op}`,
   counts: { sessions },
 });
-const diag = (code: string, message: string, see = "k.cli") => ({ kind: "diag", code, message, see });
+const diag = (code: string, message: string, see = code === "E1056" ? "k.inspect" : "k.cli") => ({
+  kind: "diag",
+  code,
+  message,
+  see,
+});
 
 /** An `io` whose fetch answers with `answer` and notes what it was asked. */
 function net(answer: (url: string) => Response | Promise<Response>, env?: Record<string, string>) {

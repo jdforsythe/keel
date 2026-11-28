@@ -4,6 +4,7 @@
 // Skipped until `monitor` exists. Payloads (which also enter the store's state) hold a marker; the caller token and its hash are
 // the other values that must not leave. Untestable in general: "entry time" and "request detail" have no named value to look for,
 // so the tally is checked to hold exactly the keys `v`, `from`, `to` and `tx`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -233,49 +234,53 @@ const CLAUSE =
 const markerArb = fc.stringMatching(/^[a-z0-9]{8,12}$/).map((m) => `zq9${m}`);
 
 describe("std.monitor: privacy", () => {
-  test(CLAUSE, async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.uniqueArray(markerArb, { minLength: 2, maxLength: 5 }), async (markers) => {
-        const t = await boot();
-        const token = await mint(t, "zq9mint");
-        allow(t.ctx, token);
-        const ac = new AbortController();
-        const done = monitor.run(t.ctx, ac.signal);
-        await flush();
-        for (const [i, m] of markers.entries()) {
-          expect((await commit(t.actions, i % 2 === 0 ? "add" : "toggle", m, token)).status).toBe(200);
+  test(
+    CLAUSE,
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.uniqueArray(markerArb, { minLength: 2, maxLength: 5 }), async (markers) => {
+          const t = await boot();
+          const token = await mint(t, "zq9mint");
+          allow(t.ctx, token);
+          const ac = new AbortController();
+          const done = monitor.run(t.ctx, ac.signal);
           await flush();
-        }
-        await t.base.clock.advance(60_000);
-        await flush();
-        ac.abort();
-        await done;
+          for (const [i, m] of markers.entries()) {
+            expect((await commit(t.actions, i % 2 === 0 ? "add" : "toggle", m, token)).status).toBe(200);
+            await flush();
+          }
+          await t.base.clock.advance(60_000);
+          await flush();
+          ac.abort();
+          await done;
 
-        const stored = t.map.get(TALLY_KEY);
-        expect(stored).toBeDefined();
-        const raw: unknown = JSON.parse(stored ?? "null");
-        expect(Object.keys(Object(raw)).sort()).toEqual(["from", "to", "tx", "v"]);
+          const stored = t.map.get(TALLY_KEY);
+          expect(stored).toBeDefined();
+          const raw: unknown = JSON.parse(stored ?? "null");
+          expect(Object.keys(Object(raw)).sort()).toEqual(["from", "to", "tx", "v"]);
 
-        // what the route returns, and the file the command writes from it
-        const served = await getTally(t.tallyApp, token);
-        expect(served.status).toBe(200);
-        const body = await served.clone().text();
-        const dir = mkDir();
-        const r = await run(["session", "monitor", "http://localhost", "--format=json"], {
-          cwd: dir,
-          apply: applyTo(dir),
-          env: { KEEL_SESSIONS_TOKEN: token },
-          fetch: forwarding(t.tallyApp, token),
-        });
-        expect(r.code).toBe(0);
-        const file = fs.readFileSync(path.join(dir, MONITORED), "utf8");
+          // what the route returns, and the file the command writes from it
+          const served = await getTally(t.tallyApp, token);
+          expect(served.status).toBe(200);
+          const body = await served.clone().text();
+          const dir = mkDir();
+          const r = await run(["session", "monitor", "http://localhost", "--format=json"], {
+            cwd: dir,
+            apply: applyTo(dir),
+            env: { KEEL_SESSIONS_TOKEN: token },
+            fetch: forwarding(t.tallyApp, token),
+          });
+          expect(r.code).toBe(0);
+          const file = fs.readFileSync(path.join(dir, MONITORED), "utf8");
 
-        const secrets = [...markers, "zq9mint", token, hashOf(token)];
-        for (const text of [stored ?? "", body, file]) {
-          for (const secret of secrets) expect(text).not.toContain(secret);
-        }
-      }),
-      { seed: 1337, numRuns: 6 },
-    );
-  }, 30_000);
+          const secrets = [...markers, "zq9mint", token, hashOf(token)];
+          for (const text of [stored ?? "", body, file]) {
+            for (const secret of secrets) expect(text).not.toContain(secret);
+          }
+        }),
+        { seed: 1337, numRuns: 6 },
+      );
+    },
+    fixedTime(30_000),
+  );
 });

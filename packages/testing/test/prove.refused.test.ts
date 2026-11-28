@@ -5,9 +5,10 @@ import { scope } from "@keel/reactive";
 import { type Schema, s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
-const LONG = 120_000;
+const LONG = fixedTime(120_000);
 let seq = 0;
 const isStep = <T, P>(f: unknown): f is (state: T, p: P) => T => typeof f === "function";
 const isCheck = <T>(f: unknown): f is (state: T) => boolean => typeof f === "function";
@@ -21,12 +22,15 @@ const declared = <T extends object, P>(
 ): Transaction<T, P> => {
   seq += 1;
   let out: { value: Transaction<T, P> } | undefined;
-  scope(() => {
-    const st = store(schema, initial, { id: `pr${seq}` });
-    if (!isCheck<T>(check) || !isStep<T, P>(step)) throw new Error("fixture: not a function");
-    invariant(st, check);
-    out = { value: transaction(st, `pr${seq}.t`, pay, step) };
-  });
+  scope(
+    () => {
+      const st = store(schema, initial, { id: `pr${seq}` });
+      if (!isCheck<T>(check) || !isStep<T, P>(step)) throw new Error("fixture: not a function");
+      invariant(st, check);
+      out = { value: transaction(st, `pr${seq}.t`, pay, step) };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out.value;
 };

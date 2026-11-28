@@ -8,7 +8,7 @@ import { installedPglite } from "../src/server/internal/installedPglite.server.t
 
 const resolve = createRequire(import.meta.url).resolve;
 const none = (id: string): string => {
-  throw new Error(`Cannot find module '${id}'`);
+  throw Object.assign(new Error(`Cannot find module '${id}'`), { code: "MODULE_NOT_FOUND" });
 };
 
 test("the installed package's folder is found, and nothing when no package resolves", () => {

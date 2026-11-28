@@ -1,8 +1,8 @@
-import { attempt } from "@keel/schema";
 import type { Backend } from "./Backend.ts";
 import type { Engine } from "./Engine.ts";
 import type { Held } from "./Held.ts";
 import type { Migration } from "./Migration.ts";
+import { forgetting } from "./forgetting.server.ts";
 import { localChanges } from "./localChanges.server.ts";
 import { migrate } from "./migrate.server.ts";
 import { reloadTypes } from "./reloadTypes.server.ts";
@@ -40,30 +40,32 @@ export function simBackend(
     changes: () => changes,
     ensure(): Promise<Engine> {
       if (made !== undefined) return made;
-      const making = (async () => {
-        const shared = await hold(`${name} boot`, simEngine);
-        // Every call into the shared PGlite goes through `held`, a migration's included (k.drive).
-        const engine: Engine = {
-          types: shared.types,
-          statement: (text, params) => shared.statement(text, params, held),
-          tx: (level, fn) => shared.tx(level, fn, held),
-        };
-        await engine.tx("read committed", async (c) => {
-          await c.exec(`create schema if not exists ${schema}`);
-          return { value: null, commit: true };
-        });
-        if (
-          await migrate(engine, name, files(), async (c) => {
-            await c.query(`set local search_path to ${schema}`, []);
-          })
-        )
-          await reloadTypes(engine);
-        return engine;
-      })();
+      const making: Promise<Engine> = forgetting(
+        async () => {
+          const shared = await hold(`${name} boot`, simEngine);
+          // Every call into the shared PGlite goes through `held`, a migration's included (k.drive).
+          const engine: Engine = {
+            types: shared.types,
+            statement: (text, params) => shared.statement(text, params, held),
+            tx: (level, fn) => shared.tx(level, fn, held),
+          };
+          await engine.tx("read committed", async (c) => {
+            await c.exec(`create schema if not exists ${schema}`);
+            return { value: null, commit: true };
+          });
+          if (
+            await migrate(engine, name, files(), async (c) => {
+              await c.query(`set local search_path to ${schema}`, []);
+            })
+          )
+            await reloadTypes(engine);
+          return engine;
+        },
+        () => {
+          if (made === making) made = undefined;
+        },
+      );
       made = making;
-      void attempt(() => making).then((r) => {
-        if (!r.ok && made === making) made = undefined;
-      });
       return making;
     },
   };

@@ -78,15 +78,19 @@ function bindingLayouts(file: SourceFile, program: Program): Entry[] {
   return out;
 }
 
-/** E1155: contract route ids, store ids, transaction names, and error codes not prefixed `<module id>.` (fix: prefix). */
-function unprefixed({ file, module, facts, routes }: Scanned): Diagnostic[] {
+/**
+ * E1155: contract route ids, store ids, transaction names, and error codes not prefixed `<module id>.` (fix: prefix; a
+ * route id's uses in the module's `others` files too).
+ */
+function unprefixed({ file, module, facts, routes }: Scanned, others: readonly SourceFile[]): Diagnostic[] {
   const want = `${module.prefix}.`;
-  const all = [...routes.map((e) => ({ ...e, kind: "route id" })), ...facts.ids];
+  const all = [...routes.map((e) => ({ ...e, kind: "route id", route: true })), ...facts.ids];
   return all
     .filter((e) => !e.value.startsWith(want))
     .map((e) => {
       const msg = `${e.kind} '${short(e.value)}' is not prefixed by module id '${short(module.prefix)}.'`;
-      return moduleDiag("E1155", file, e.start, msg, prefixFix(file, e, module.prefix));
+      const route = "route" in e && e.route;
+      return moduleDiag("E1155", file, e.start, msg, prefixFix(file, e, module.prefix, route, route ? others : []));
     });
 }
 
@@ -192,7 +196,12 @@ export function moduleChecks(
   }
   out.push(...unusedDeps(scanned, project));
   for (const s of scanned) {
-    out.push(...unprefixed(s));
+    out.push(
+      ...unprefixed(
+        s,
+        scanned.filter((o) => o.module === s.module && o.file !== s.file).map((o) => o.file),
+      ),
+    );
     if (s.module.manifest !== null) out.push(...access(s, s.module.manifest, project));
   }
   return out;

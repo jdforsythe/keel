@@ -1,6 +1,6 @@
 // Spec: k.topology, clause "Under `keel dev` of a `client` deployable `web` and a `node` deployable `api` whose page and app both serve section `x`, the inspect document's `sections.x` is `api`'s and `deployables.web.sections.x` and `deployables.api.sections.x` are each its own."
 // Seed: 1337 (the page's value is generated; one dev process serves every run). Section `x` is `a.x`, registered by module `a` of `api`; the page of `web` posts `{ graph, stores, sections, deployable: "web" }` to `/__keel/inspect` with its own `Origin`.
-// Also (Local topology): "`sections` is their union": a section only the page serves is in `sections` and in `deployables.web` alone; `deployables.api` holds none of the page's.
+// Also (k.inspect, the `deployables` of `keel dev`): "`sections` is their union": a section only the page serves is in `sections` and in `deployables.web` alone; `deployables.api` holds none of the page's.
 // Untestable here, one line: "of two `node` deployables, the first by name is kept" needs two `node` deployables serving different values for one id, and the inspector registry is process-global in one dev process, so both serve the same value.
 import fc from "fast-check";
 import { afterAll, beforeAll, expect, test } from "vitest";

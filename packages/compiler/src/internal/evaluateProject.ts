@@ -2,12 +2,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { s } from "@keel/schema";
 import { build } from "esbuild";
 import { compile } from "../compile.ts";
+import { shippedTokensPlugin } from "../hosting/shippedTokensPlugin.ts";
 import { appLibraries } from "../std/appLibraries.ts";
 import { libraryRel } from "../std/libraryRel.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
+import { censusPlugin } from "./censusPlugin.ts";
 import { contractOf } from "./contractOf.ts";
 import { internalFailure } from "./internalFailure.ts";
 
@@ -28,6 +31,8 @@ const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 const isNullableString = (x: unknown): x is string | null => x === null || typeof x === "string";
 
+const Json = s.json();
+
 function isRouteEntry(x: unknown): x is RouteEntry {
   return (
     isRecord(x) &&
@@ -37,8 +42,10 @@ function isRouteEntry(x: unknown): x is RouteEntry {
     isNullableString(x.layout) &&
     typeof x.module === "string" &&
     isNullableString(x.path) &&
-    "params" in x &&
-    "search" in x
+    (x.api === undefined || x.api === true) &&
+    (x.method === undefined || typeof x.method === "string") &&
+    Json.parse(x.params).ok &&
+    Json.parse(x.search).ok
   );
 }
 
@@ -49,7 +56,7 @@ function entrySource(
   usages: readonly StyleUsage[],
 ) {
   const lines: string[] = [];
-  if (tokensFile !== undefined) lines.push(`import { compileStyles } from ${q(UI_CSS)};`);
+  if (tokensFile !== undefined) lines.push(`import { compileStyles, schemesOf } from ${q(UI_CSS)};`);
   if (routesFiles.length > 0) lines.push(`import { routesArtifact } from ${q(ROUTER)};`);
   lines.push(
     `const usages = ${JSON.stringify(usages)};`,
@@ -57,21 +64,28 @@ function entrySource(
     "const internal = [];",
     "let css = '';",
     "let looks = {};",
+    "let schemes = ['light'];",
+    "let themes = [];",
     "const message = (e) => (e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e));",
     "const coded = (e) => e && typeof e === 'object' && 'code' in e && /^E[0-9]{4}$/.test(String(e.code));",
+    // A coded error is its code then its message, written once when the message already starts with it (a refusal's).
+    "const codedText = (e) => { const m = message(e); return m.startsWith(`${e.code} `) ? m : `${e.code} ${m}`; };",
     // A diagnostic-shaped error keeps its code; any other throw from the compiler call is an internal failure.
-    "const report = (e) => { if (coded(e)) problems.push(`${e.code} ${message(e)}`); else internal.push(message(e)); };",
+    "const report = (e) => { if (coded(e)) problems.push(codedText(e)); else internal.push(message(e)); };",
   );
   if (tokensFile !== undefined)
     lines.push(
       "let tokens;",
       // The tokens module throwing while it evaluates means tokens.ts is unusable: E1807 unless it carries its own code.
       `try { const m = await import(${q(`./${tokensFile}`)}); tokens = m.tokens ?? m.default; }`,
-      `catch (e) { problems.push(coded(e) ? \`\${e.code} \${message(e)}\` : \`E1807 ${tokensFile} failed to evaluate: \${message(e)}\`); }`,
+      `catch (e) { problems.push(coded(e) ? codedText(e) : \`E1807 ${tokensFile} failed to evaluate: \${message(e)}\`); }`,
       "const fits = (u) => { try { compileStyles({ tokens, usages: [u] }); return true; } catch (e) { report(e); return false; } };",
       `if (tokens === undefined && problems.length === 0) problems.push('E1807 ${tokensFile} exports no tokens');`,
       "else if (tokens !== undefined) {",
       "  if (tokens.look !== null && typeof tokens.look === 'object') looks = tokens.look;",
+      "  try { schemes = [...schemesOf(tokens)]; } catch (e) { report(e); }",
+      // The `choice` themes, in `themes` order (k.themes), for the first paint and `appearance(ctx)`.
+      "  if (tokens.themes !== null && typeof tokens.themes === 'object') themes = Object.entries(tokens.themes).filter(([, t]) => t !== null && typeof t === 'object' && (t.when === undefined || t.when === 'choice')).map(([n]) => n);",
       "  try { css = compileStyles({ tokens, usages }).css; }",
       "  catch { try { css = compileStyles({ tokens, usages: usages.filter(fits) }).css; } catch (e) { report(e); } }",
       "}",
@@ -83,11 +97,11 @@ function entrySource(
       "const manifest = async (file, load, contract, loadContract) => {",
       "  if (contract !== undefined) {",
       "    try { await loadContract(); }",
-      "    catch (e) { problems.push(coded(e) ? `${e.code} ${message(e)}` : `E1006 ${contract} failed to evaluate: ${message(e)}`); return {}; }",
+      "    catch (e) { problems.push(coded(e) ? codedText(e) : `E1006 ${contract} failed to evaluate: ${message(e)}`); return {}; }",
       "  }",
       "  let m;",
       "  try { m = await load(); }",
-      "  catch (e) { problems.push(coded(e) ? `${e.code} ${message(e)}` : `E1006 ${file} failed to evaluate: ${message(e)}`); return {}; }",
+      "  catch (e) { problems.push(coded(e) ? codedText(e) : `E1006 ${file} failed to evaluate: ${message(e)}`); return {}; }",
       "  if (m.routes === undefined) { problems.push(`E1006 ${file} exports no routes`); return {}; }",
       "  try { if (m.routes === null || typeof m.routes !== 'object' || m.routes.kind !== 'keel.routeTable') { problems.push(`E1006 ${file} exports no route table`); return {}; } }",
       "  catch (e) { report(e); return {}; }",
@@ -96,7 +110,7 @@ function entrySource(
     );
   lines.push(
     `const routes = Object.assign({}, ${routesFiles.map(([f, c]) => `await manifest(${q(f)}, () => import(${spec(f)}), ${c === undefined ? "undefined, undefined" : `${q(c)}, () => import(${spec(c)})`})`).join(", ")});`,
-    "export default JSON.stringify({ css, looks, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
+    "export default JSON.stringify({ css, looks, schemes, themes, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
   );
   return lines.join("\n");
 }
@@ -105,7 +119,7 @@ function entrySource(
  * Evaluate the app's `tokens.ts`, contracts and `routes.ts` bindings at build time (D24): bundle a generated entry with
  * esbuild from `root` (app modules under `root` and the app's libraries' files, resolved with the `keel` condition, go
  * through `compile`, as in Vite (k.library In an app); other packages are bundled as is, with a
- * `require` from `createRequire` as the server build has), run its module top levels once in Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`), the tokens' `look` sets as data and the merged
+ * `require` from `createRequire` as the server build has), run its module top levels once in Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`), the tokens' `look` sets as data, their color schemes (`schemesOf`, k.schemes; `['light']` without tokens) and the merged
  * `routes.json` (`routesArtifact` from `@keel/router` per manifest). Usages with an unknown token are left out
  * of the CSS and listed in `problems` (E1801; `keel check` reports them at their source). Error mapping (k.compiler
  * Build-time evaluation): a diagnostic-shaped error keeps its `code`; `tokens.ts` throwing while it evaluates, or
@@ -121,12 +135,14 @@ export async function evaluateProject(input: {
 }): Promise<{
   css: string;
   looks: Readonly<Record<string, unknown>>;
+  schemes: readonly string[];
+  themes: readonly string[];
   routes: Record<string, RouteEntry>;
   problems: string[];
 }> {
   const { root } = input;
   if (input.tokensFile === undefined && input.routesFiles.length === 0)
-    return { css: "", looks: {}, routes: {}, problems: [] };
+    return { css: "", looks: {}, schemes: ["light"], themes: [], routes: {}, problems: [] };
   // The tokens module is imported dynamically (so its throw is catchable), which esbuild treats as optional.
   if (input.tokensFile !== undefined && !fs.existsSync(path.join(root, input.tokensFile)))
     throw new Error(`keel: Could not resolve "./${input.tokensFile}" (tokens file)`);
@@ -159,6 +175,8 @@ export async function evaluateProject(input: {
     // A stylesheet a host element code file imports (k.host-code) is the browser build's asset: here it is nothing.
     loader: { ".css": "empty" },
     plugins: [
+      shippedTokensPlugin(root),
+      censusPlugin(),
       {
         name: "keel-jsx",
         setup(b) {
@@ -194,7 +212,8 @@ export async function evaluateProject(input: {
     if (syntax.length > 0) return undefined;
     throw e;
   });
-  if (result === undefined) return { css: "", looks: {}, routes: {}, problems: [...new Set(syntax)] };
+  if (result === undefined)
+    return { css: "", looks: {}, schemes: ["light"], themes: [], routes: {}, problems: [...new Set(syntax)] };
   const text = result.outputFiles[0]?.text ?? "";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evaluate-"));
   const file = path.join(dir, "evaluate.mjs");
@@ -222,5 +241,14 @@ export async function evaluateProject(input: {
     if (isRouteEntry(entry)) routes[id] = entry;
   }
   const looks = isRecord(json.looks) ? json.looks : {};
-  return { css: json.css, looks, routes, problems: json.problems.filter((p) => typeof p === "string") };
+  const schemes = Array.isArray(json.schemes) ? json.schemes.filter((x) => x === "light" || x === "dark") : ["light"];
+  const themes = Array.isArray(json.themes) ? json.themes.filter((x) => typeof x === "string") : [];
+  return {
+    css: json.css,
+    looks,
+    schemes,
+    themes,
+    routes,
+    problems: json.problems.filter((p) => typeof p === "string"),
+  };
 }

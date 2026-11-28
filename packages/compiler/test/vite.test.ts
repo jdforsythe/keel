@@ -2,11 +2,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 let root = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-vite-"));
+  root = tempDir(".tmp-vite-", import.meta.dirname);
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });

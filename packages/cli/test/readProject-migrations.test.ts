@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { readProject } from "../src/internal/readProject.ts";
 
@@ -11,7 +11,7 @@ const put = (rel: string, text: string): void => {
 };
 
 beforeAll(() => {
-  root = realpathSync(mkdtempSync(join(tmpdir(), "keel-sql-")));
+  root = realpathSync(tempDir("keel-sql-"));
   put("apps/a/modules/kitchen/migrations/0001-init.sql", "create table t (id int)");
   put("modules/kitchen/migrations/0001-init.sql", "create table u (id int)");
   put("modules/kitchen/seed.sql", "insert into t values (1)");

@@ -1,10 +1,10 @@
 // What kernel producers and the harness rely on: a browser's ctx beside another, plan schemas, muted `fire` reports,
 // route calls in flight, the default mode, the kernel capability names, the schedule's schemas and the sim net's
 // faults, in this copy of the package and in a second one. Property seed 1337.
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
@@ -429,7 +429,7 @@ describe("sim net faults", () => {
 describe("storage", () => {
   const dirs: string[] = [];
   const file = (text: string): string => {
-    const d = mkdtempSync(join(tmpdir(), "keel-ctx-kernel-"));
+    const d = tempDir("keel-ctx-kernel-");
     dirs.push(d);
     const f = join(d, "store.json");
     writeFileSync(f, text);

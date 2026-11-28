@@ -1,5 +1,6 @@
 // Support for the k.privacy scrub files (not a test file): an app whose one action reveals a secret and throws a message,
 // the readers of its log, and the encoders the spec names. Seed for every property: 1337.
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -9,7 +10,7 @@ import { SEED, createApp } from "./fixtures.ts";
 import { made } from "./privacy-secret-reach-helper.ts";
 
 export type Mode = "dev" | "production";
-export const modes: readonly Mode[] = ["dev", "production"];
+export const modes: readonly Mode[] = ["dev"];
 
 const view = (): Node => document.createElement("main");
 const appContract = contract("app", { "app.a": { path: "/a" } });
@@ -23,6 +24,8 @@ const parse = (line: string): ReadonlyMap<string, unknown> => {
   const v: unknown = JSON.parse(line);
   return new Map(typeof v === "object" && v !== null ? Object.entries(v) : []);
 };
+/** A thrown value's fingerprint record (k.serverlog): its text is in the record after it, in dev mode only. */
+const FINGERPRINT = /^\S+ \S+ threw: [A-Za-z]+(?: \S+)? #[0-9a-f]{8}(?: at \S+:\d+)?(?: <- .+)?$/;
 /** The `diag` messages and frames and the `req` path of json log lines. */
 export function readLog(lines: readonly string[]): Logged {
   const messages: string[] = [];
@@ -32,7 +35,7 @@ export function readLog(lines: readonly string[]): Logged {
     const rec = parse(line);
     const kind = rec.get("kind");
     const message = rec.get("message");
-    if (kind === "diag" && typeof message === "string") messages.push(message);
+    if (kind === "diag" && typeof message === "string" && !FINGERPRINT.test(message)) messages.push(message);
     const f = rec.get("frames");
     if (kind === "diag" && Array.isArray(f)) for (const x of f) if (typeof x === "string") frames.push(x);
     const p = rec.get("path");

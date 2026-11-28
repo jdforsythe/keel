@@ -16,9 +16,12 @@ const Api = contract("app", {
 let n = 0;
 function declare() {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox(`sendstore${++n}.outbox`, Api);
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(`sendstore${++n}.outbox`, Api);
+    },
+    { detached: true },
+  );
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc };
 }

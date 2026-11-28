@@ -33,9 +33,12 @@ const label = (s: string) => (): Node => {
 const cases = { loading: label("L"), ready: label("R"), error: label("E") };
 const made = <T>(fetcher: () => Promise<T>): Resource<Settled<T>> => {
   const box: { r: Resource<Settled<T>> | null } = { r: null };
-  scope(() => {
-    box.r = resource(fetcher);
-  });
+  scope(
+    () => {
+      box.r = resource(fetcher);
+    },
+    { detached: true },
+  );
   if (box.r === null) throw new Error("scope did not run");
   return box.r;
 };

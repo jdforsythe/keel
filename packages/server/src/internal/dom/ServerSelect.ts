@@ -17,7 +17,7 @@ export class ServerSelect extends ServerControl {
   }
 
   get options(): ServerOption[] {
-    return this.querySelectorAll("option").filter((o): o is ServerOption => o instanceof ServerOption);
+    return this.querySelectorAll("option").flatMap((o) => (o instanceof ServerOption ? [o] : []));
   }
 
   override get value(): string {

@@ -1,7 +1,7 @@
 // std.jobs API: "`enqueue` parses `input` with the job's schema (fail: `err` `keel.fields`), stores
 // `{ id, job, input, at: now + delayMs, attempt: 0 }` under `ctx.storage` key `std.jobs.<module>`". Seed 1337
 import { createCtx } from "@keel/ctx";
-import { ok, s } from "@keel/schema";
+import { isDefect, ok, s } from "@keel/schema";
 import { expect, test } from "vitest";
 import { job, queue } from "../src/index.ts";
 
@@ -31,5 +31,9 @@ test("A job is stored under `std.jobs.<module>` with its encoded input, `at` and
 test("A stored value that is not a queue rejects instead of dropping jobs", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   await ctx.storage.set("std.jobs.orders", JSON.stringify({ q: "nope" }));
-  await expect(jobs().enqueue(ctx, "orders.work", { n: 1 })).rejects.toThrow(/std\.jobs\.orders/);
+  const caught = await jobs()
+    .enqueue(ctx, "orders.work", { n: 1 })
+    .catch((e: unknown) => e);
+  expect(isDefect(caught)).toBe(true);
+  expect(Reflect.get(Object(caught), "data")).toEqual({ key: "std.jobs.orders" });
 });

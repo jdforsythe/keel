@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Property: `Part` renders every role, given generated required props inside its required parent, with no axe violation.
 import { mount } from "@keel/runtime-dom";
+import { fixedTime } from "@keel/tooling/test-time";
 import { Part } from "@keel/ui/aria";
 import type { PartRole } from "@keel/ui/aria";
 import axe from "axe-core";
@@ -185,28 +186,74 @@ const cases: Record<PartRole, (g: Gen) => Node[]> = {
     }),
   ],
   radio: (g) => cases.radiogroup(g),
+  switch: (g) => [Part({ id: "w", role: "switch", label: g.name, checked: g.on, disabled: g.on, children: text(g) })],
+  toolbar: (g) => [
+    Part({
+      id: "t",
+      role: "toolbar",
+      label: g.name,
+      orientation: g.on ? "vertical" : "horizontal",
+      children: () => [
+        Part({ id: "t.a", role: "button", pressed: g.on, tabIndex: 0, children: text(g) }),
+        Part({ id: "t.b", role: "button", describedBy: "t.a", tabIndex: -1, children: text(g) }),
+      ],
+    }),
+  ],
+  menubar: (g) => [
+    Part({
+      id: "m",
+      role: "menubar",
+      label: g.name,
+      children: () => [
+        Part({ id: "m.a", role: "menuitem", hasPopup: "menu", expanded: g.on, tabIndex: 0, children: text(g) }),
+        Part({ id: "m.b", role: "menuitemradio", checked: g.on, tabIndex: -1, children: text(g) }),
+      ],
+    }),
+  ],
+  menuitemradio: (g) => [
+    Part({
+      id: "m",
+      role: "menu",
+      label: g.name,
+      children: () => [
+        Part({ id: "m.a", role: "menuitemradio", checked: g.on, children: text(g) }),
+        Part({ id: "m.b", role: "menuitemradio", checked: !g.on, children: text(g) }),
+      ],
+    }),
+  ],
+  meter: (g) => [
+    Part({ id: "d", role: "meter", label: g.name, min: 0, max: 10, value: 4, valueText: g.name, children: text(g) }),
+  ],
+  progressbar: (g) => [
+    Part({ id: "p", role: "progressbar", label: g.name, value: g.on ? 3 : undefined, max: 10, children: text(g) }),
+  ],
+  region: (g) => [Part({ id: "r", role: "region", label: g.name, children: text(g) })],
 };
 
 afterEach(() => {
   document.body.innerHTML = "";
 });
 
-test("every role with generated required props has no axe violations", async () => {
-  document.documentElement.setAttribute("lang", "en");
-  document.head.innerHTML = "<title>Part</title>";
-  const roles = Object.keys(cases).filter((r): r is PartRole => r in cases);
-  await fc.assert(
-    fc.asyncProperty(fc.constantFrom(...roles), gen, async (role, g) => {
-      document.body.innerHTML = '<main><div id="host"></div></main>';
-      const host = document.getElementById("host");
-      if (host === null) throw new Error("no host");
-      const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host, {
-        ctx: testCtx,
-      });
-      const r = await axe.run(host, config);
-      expect(r.violations.map((v) => `${role}: ${v.id}`)).toEqual([]);
-      off();
-    }),
-    { seed: SEED, numRuns: 93 },
-  );
-}, 60_000);
+test(
+  "every role with generated required props has no axe violations",
+  async () => {
+    document.documentElement.setAttribute("lang", "en");
+    document.head.innerHTML = "<title>Part</title>";
+    const roles = Object.keys(cases).filter((r): r is PartRole => r in cases);
+    await fc.assert(
+      fc.asyncProperty(fc.constantFrom(...roles), gen, async (role, g) => {
+        document.body.innerHTML = '<main><div id="host"></div></main>';
+        const host = document.getElementById("host");
+        if (host === null) throw new Error("no host");
+        const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host, {
+          ctx: testCtx,
+        });
+        const r = await axe.run(host, config);
+        expect(r.violations.map((v) => `${role}: ${v.id}`)).toEqual([]);
+        off();
+      }),
+      { seed: SEED, numRuns: 120 },
+    );
+  },
+  fixedTime(60_000),
+);

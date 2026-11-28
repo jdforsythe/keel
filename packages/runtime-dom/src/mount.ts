@@ -1,9 +1,10 @@
-import { scope } from "@keel/reactive";
+import { owner as running, scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";
 import { createOwner } from "./internal/createOwner.ts";
 import { createRoot } from "./internal/createRoot.ts";
 import { disposeOwner } from "./internal/disposeOwner.ts";
 import { rootFallback } from "./internal/rootFallback.ts";
+import { showRevealed } from "./internal/showRevealed.ts";
 import { stampOf } from "./internal/stampOf.ts";
 import { withCx } from "./internal/withCx.ts";
 import { boundary } from "./ops/boundary.ts";
@@ -20,7 +21,7 @@ import type { MountOptions } from "./types/MountOptions.ts";
  * removes the rendered nodes, every root listener, and every binding and subscription. Idempotent.
  */
 export function mount(component: Component, el: Element, options: MountOptions): () => void {
-  const root = createRoot(el, options.ctx, options.mode);
+  const root = createRoot(el, options.ctx, options.mode, options.artifacts);
   const owner = createOwner(null, root, null);
   const before = el.lastChild;
   const anchor = el.appendChild(el.ownerDocument.createComment(""));
@@ -37,25 +38,31 @@ export function mount(component: Component, el: Element, options: MountOptions):
     }
   };
   try {
-    sc = scope(() => {
-      withCx(owner, null, () =>
-        boundary(
-          anchor,
-          () => component({}, options.ctx),
-          (error) => {
-            const fallback = rootFallback(error, options.mode);
-            options.onError?.(error);
-            return fallback;
-          },
-          // A throw at no element of its own (the root component's effect, computed or render): the stamp at the
-          // root's place, as for a resumed island (k.errors).
-          { at: stampOf(el) },
-        ),
-      );
-    });
+    sc = scope(
+      () => {
+        withCx(owner, null, () =>
+          boundary(
+            anchor,
+            () => component({}, options.ctx),
+            (error) => {
+              const fallback = rootFallback(error, options.mode);
+              options.onError?.(error);
+              return fallback;
+            },
+            // A throw at no element of its own (the root component's effect, computed or render): the stamp at the
+            // root's place, as for a resumed island (k.errors).
+            { at: stampOf(el) },
+          ),
+        );
+      },
+      // A root of its own only where none runs (an entry point); under a scope it nests (a request's, k.store).
+      { detached: running() === undefined },
+    );
   } catch (error) {
     dispose();
     throw error;
+  } finally {
+    showRevealed();
   }
   return dispose;
 }

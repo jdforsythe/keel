@@ -1,4 +1,4 @@
-/** Kernel code blocks and their owning spec section (spec/00-map.md Code ranges): E1000-E1799 in 50s, then E18xx, E19xx. */
+/** Kernel code blocks and their owning spec section (`keel docs --for E15xx` lists a block's codes, k.docs): E1000-E1799 in 50s, then E18xx, E19xx. */
 const BLOCKS: readonly (readonly [number, string])[] = [
   [1000, "k.compiler"],
   [1050, "k.cli"],
@@ -25,6 +25,8 @@ const MOVED: ReadonlyMap<string, string> = new Map([
   ["E1406", "k.place"],
   ["E1508", "k.guards"],
   ["E1558", "k.topology"],
+  ["E1596", "k.serverlog"],
+  ["E1765", "k.realm"],
 ]);
 
 /**

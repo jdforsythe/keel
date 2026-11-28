@@ -6,11 +6,22 @@
 
 Keel is a full-stack web framework whose primary author is a coding agent. It has 35 packages under `packages/` (15 kernel, 20 `std-*`); `tooling/ledger/ledger.json` lists 603 spec clauses: 162 have property, exhaustive or proof evidence, 440 have example tests, and 1 has no test yet. It records 14 `unsafe` uses. All 59 spec sections under `spec/` carry a status: 57 are `conformance-covered` and 2 are `implemented`. `keel ledger --diff` fails the build if a covered section ever has an untested clause (E1707). Status: pre-0.1, nothing is stable. The brand and voice rules are in `docs/BRAND.md` and `docs/VOICE.md`.
 
+## Start a project
+
+```sh
+pnpm create @keel/app shop
+cd shop
+pnpm install
+pnpm keel dev
+```
+
+`npm create @keel/app shop`, `yarn create @keel/app shop` and `bun create @keel/app shop` run the same package. It asks nothing, writes the project with its `AGENTS.md` and skill copies, and prints the commands to run next; `--adapter node` makes an app with a server, `--library @acme/charts` a library. Run `keel` through the project (`pnpm keel check`), never from a global install: the project pins its own Keel version. After an upgrade, `pnpm keel docs --sync` refreshes the agent files.
+
 ## Start here
 
-Read order for an agent on a fresh start: `docs/HANDOFF.md`, `docs/PRINCIPLES.md`, `docs/GLOSSARY.md`, `docs/ARCHITECTURE.md`. Load the `keel-architecture` skill, then run `/resume`. Retrieve spec and ADR sections with `pnpm spec <topic>` instead of reading `spec/` or `docs/adr/` whole.
+Read order for an agent on a fresh start: `docs/HANDOFF.md`, `docs/PRINCIPLES.md`, `docs/GLOSSARY.md`, `docs/ARCHITECTURE.md`. Load the `keel-architecture` skill, then run `/resume`. Retrieve spec sections with `pnpm spec` (the areas), `pnpm spec <area>`, `pnpm spec <id>` and `pnpm spec --for <code, name or term>`, and ADR sections the same way, instead of reading `spec/` or `docs/adr/` whole.
 
-Commands: `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec <topic>`. Each prints compact structured output (`docs/OUTPUT.md`); pass `--format=pretty` for a human.
+Commands: `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec`. Each prints compact structured output (`docs/OUTPUT.md`); pass `--format=pretty` for a human.
 
 First run: `pnpm install && pnpm check`.
 

@@ -1,3 +1,4 @@
+import { setImmediate, setTimeout } from "node:timers";
 // @vitest-environment happy-dom
 // Spec: k.drive-law, clause "A scenario that starts ten waiters `ctx.clock.after(Math.floor(ctx.random.float() * 1000))`, each recording its index and `ctx.clock.now()` as it resolves, then awaits `run()`: under `simulate` with `{ runs: 20, seed: 7 }` each run's record lists all ten ordered by time, ties by index, and `replay` of the `SimRun` that run received records an equal list."
 // k.drive-law, Law "The drive draws no random and reads no real time."
@@ -8,9 +9,9 @@
 // Seed: 1337 (fc.assert below); the ten-waiter clause runs under `simulate` seed 7.
 // ASSUMPTION: "moments in the same order" is observed as the clock time at which each scenario-visible completion (waiter, save, net call, and a real completion the scenario records) is seen, in completion order; "store snapshots" are read as the final values of the keys the scenario wrote to `ctx.storage` (a `get` takes a storage step like any other, so the read is part of the run); observer events are the `net` events of the schedule's offline windows.
 // ASSUMPTION: real asynchronous work in the generated scenarios runs in one sequential chain (one real operation in flight at a time), so the only order under test is real work against the sim clock, never two real timers racing each other in real time, which no drive can fix.
+import { fixedTime } from "@keel/tooling/test-time";
 import type { Schedule, SimCtx } from "@keel/ctx";
 import { observe } from "@keel/ctx";
-import { setImmediate, setTimeout } from "node:timers";
 import { simulate } from "@keel/testing";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -234,7 +235,7 @@ async function runMixed(
 
 test(
   "for a generated scenario mixing sim-clock waits, saves, net calls and real asynchronous work of generated real durations, two runs of one `SimRun` give identical traces, and so do two runs where every real duration is multiplied by a generated factor from 1 to 5",
-  { timeout: 120_000 },
+  { timeout: fixedTime(120_000) },
   async () => {
     await fc.assert(
       fc.asyncProperty(
@@ -264,7 +265,7 @@ test(
 
 test(
   "a real delay of 8 ms and one of 12 ms beside `ctx.clock.after(10)` give the same order, the real completion at 0 then the timer at 10, as does any real delay and any slowdown of it",
-  { timeout: 60_000 },
+  { timeout: fixedTime(60_000) },
   async () => {
     const orderFor = async (ms: number): Promise<[string, number][]> => {
       const out = await runMixed(

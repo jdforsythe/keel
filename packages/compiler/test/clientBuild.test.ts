@@ -6,6 +6,7 @@ import path from "node:path";
 import { CLIENT_MANIFEST } from "@keel/compiler/internal/entry/CLIENT_MANIFEST";
 import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** What the plugin's `config` always gives: the locked `envPrefix` and the worker bundles' plugin. */
@@ -22,7 +23,7 @@ const OWN = { ...SERVE, define: { "import.meta.env.DEV": "false", "import.meta.e
 let root = "";
 const saved = process.env.KEEL_DEPLOYABLE;
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-client-build-"));
+  root = tempDir(".tmp-client-build-", import.meta.dirname);
   fs.writeFileSync(
     path.join(root, "topology.ts"),
     'export default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client" }, pre: { modules: ["p"], adapter: "static" } })\n',

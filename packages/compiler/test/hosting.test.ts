@@ -4,10 +4,10 @@
 // `servedBy`, the client entry binds the `keel-peer` tags, and the Vite plugin builds a `client` deployable into
 // `dist/<name>/` with a default `index.html`, the peer tags and the mark, then copies it into what serves it. Seed 1337.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { originOf } from "../src/hosting/originOf.ts";
@@ -233,7 +233,7 @@ describe("client build", () => {
     }
   });
   const project = (top: string): string => {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-client-"));
+    const d = tempDir("keel-client-");
     made.push(d);
     fs.writeFileSync(path.join(d, "topology.ts"), `export default topology(${top})\n`);
     return d;
@@ -275,10 +275,10 @@ describe("client build", () => {
     p.config({ root }, { command: "build" });
     p.configResolved({ root, command: "build" });
     fs.mkdirSync(path.join(root, "dist", "web"), { recursive: true });
-    p.closeBundle();
+    p.closeBundle.handler();
     expect(fs.readFileSync(path.join(root, "dist", "web", "keel-mark.svg"), "utf8")).toBe(keelMark());
     fs.writeFileSync(path.join(root, "dist", "web", "keel-mark.svg"), "<svg/>");
-    p.closeBundle();
+    p.closeBundle.handler();
     expect(fs.readFileSync(path.join(root, "dist", "web", "keel-mark.svg"), "utf8")).toBe("<svg/>");
   });
 
@@ -288,7 +288,7 @@ describe("client build", () => {
     const p = keel();
     p.configResolved({ root, command: "build" });
     expect(p.transformIndexHtml()).toEqual([]);
-    p.closeBundle();
+    p.closeBundle.handler();
     expect(fs.existsSync(path.join(root, "dist"))).toBe(false);
   });
 
@@ -300,7 +300,7 @@ describe("client build", () => {
 
 describe("hostClient", () => {
   it("copies the client build without overwriting the host's files and records its assets", () => {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-hostclient-"));
+    const d = tempDir("keel-hostclient-");
     try {
       const put = (rel: string, text: string): void => {
         fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true });

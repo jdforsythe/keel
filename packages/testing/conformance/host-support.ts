@@ -3,8 +3,8 @@
 // Assumed: a direct call `Host({ id, role, label, input, value, code, events?, onEvent? })` takes `value` as a plain value, a signal or a computed (as `Part` does for its ARIA props), `code` as a function returning a `HostCode` or a promise of one, and reads the ctx `mount` passes to its root component.
 // Frames: `requestAnimationFrame` and `cancelAnimationFrame` are replaced by a manual queue, so no timer runs; `frames.step()` runs the callbacks queued at that moment.
 import { createCtx } from "@keel/ctx";
-import { hostCode } from "@keel/ui";
 import { s } from "@keel/schema";
+import { hostCode } from "@keel/ui";
 import { vi } from "vitest";
 
 export const SEED = 1337;

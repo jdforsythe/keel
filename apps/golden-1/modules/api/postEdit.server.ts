@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
@@ -15,12 +15,12 @@ export const postEdit = action(api, "api.editTodo", { stores: boardStores }, (in
   const { todoId } = params;
   const todos = stores.board.get("todos");
   const todo = todos.find((t) => t.id === todoId);
-  if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
+  if (todo === undefined) return err(keelError.notFound.make({}));
   const { write, ...draft } = input;
   const w = writeFor(write, "");
   if (!w.ok) return err(w.error);
   if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === draft.title))
-    return err({ code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } });
+    return err(keelError.fields.make({ title: "Another todo has this title" }, "Duplicate title"));
   const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...w.value });
   return r.ok ? ok({}) : err(r.error);
 });

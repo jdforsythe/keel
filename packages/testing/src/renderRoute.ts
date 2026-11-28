@@ -10,6 +10,7 @@ import { documentRoute } from "./internal/documentRoute.ts";
 import { fail } from "./internal/fail.ts";
 import { harnessArtifacts } from "./internal/harnessArtifacts.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
+import { notInE2e } from "./internal/notInE2e.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { requestLog } from "./internal/requestLog.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
@@ -66,6 +67,7 @@ export async function renderRoute<T extends RouteTable>(
   id: string,
   options: RouteRenderOptions<T>,
 ): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
+  notInE2e("renderRoute");
   // The project's artifacts under `keel test` when none are given; E1807 for an unusable `tokens.ts` before anything renders.
   const artifacts = harnessArtifacts(options.artifacts);
   const given = options.routes;

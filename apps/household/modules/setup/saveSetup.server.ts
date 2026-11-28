@@ -14,7 +14,7 @@ export const saveSetup = action(
     const r = tx(stores.name, input, { meta: { caller } });
     if (!r.ok) return err(r.error);
     // The page the guard sent the member from, when `next` names one of this app's pages; else the page stays.
-    const back = pageHref(routes, new URL(url).searchParams.get("next") ?? "");
+    const back = pageHref(routes, URL.parse(url)?.searchParams.get("next") ?? "");
     return ok(back.ok ? back.value : null);
   },
 );

@@ -1,3 +1,4 @@
+import { keelError } from "@keel/schema";
 import { properties, render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { ErrorReply } from "../modules/kitchen/ErrorReply.schema.ts";
@@ -14,7 +15,11 @@ import { LocaleParams } from "../modules/recipes/LocaleParams.schema.ts";
 import NewRecipePage from "../modules/recipes/NewRecipePage.tsx";
 import { RecipeData } from "../modules/recipes/RecipeData.schema.ts";
 import RecipeError from "../modules/recipes/RecipeError.tsx";
+import errorDe from "../modules/recipes/RecipeErrorText/de-DE.ts";
+import errorEn from "../modules/recipes/RecipeErrorText/en-US.ts";
+import errorJa from "../modules/recipes/RecipeErrorText/ja-JP.ts";
 import RecipeList from "../modules/recipes/RecipeList.tsx";
+import { RecipeNotFound } from "../modules/recipes/RecipeNotFound.schema.ts";
 import RecipePage from "../modules/recipes/RecipePage.tsx";
 import { RecipeParams } from "../modules/recipes/RecipeParams.schema.ts";
 import { RecipeSearch } from "../modules/recipes/RecipeSearch.schema.ts";
@@ -209,10 +214,22 @@ describe("fieldText", () => {
 });
 
 describe("RecipeError", () => {
-  it("heads with the message and names the code", () => {
-    const t = render(RecipeError, { props: { error: { code: "keel.notFound", message: "Kein Rezept x" } } });
-    expect(t.find("recipes.error").text).toBe("Kein Rezept x");
-    expect(t.find("recipes.error.code").text).toBe("keel.notFound");
+  it("heads a missing recipe with its locale's notFound text and names the code", () => {
+    for (const [locale, entry] of [
+      ["en-US", errorEn],
+      ["de-DE", errorDe],
+      ["ja-JP", errorJa],
+    ] as const) {
+      const error = keelError.notFound.causedBy(RecipeNotFound.make({ locale }), {});
+      const t = render(RecipeError, { props: { error } });
+      expect(t.find("recipes.error").text).toBe(entry.notFound);
+      expect(t.find("recipes.error.code").text).toBe("keel.notFound");
+      t.dispose();
+    }
+  });
+  it("heads any other error with its message", () => {
+    const t = render(RecipeError, { props: { error: { code: "keel.unexpected", message: "unexpected" } } });
+    expect(t.find("recipes.error").text).toBe("unexpected");
     t.dispose();
   });
   it("holds its properties", async () => {
@@ -292,6 +309,8 @@ describe("client loaders, actions and guard (through the api deployable)", () =>
     const api = await simApi();
     const id = await addAndFind(api, "Soup");
     await api.app.fetch(asJson("POST", `/api/recipes/${id}/favorite`, {}));
+    // The box lists by `added_on` (a day), then id: an add a day later lists after, whatever ids the seed mints.
+    api.server.clock.advance(86_400_000);
     await addAndFind(api, "Stew");
     const req = reqOf(LocaleParams, { locale: "en-US" });
     const all = await loadIndex.run({ ...req, search: {} }, api.ctx);
@@ -301,7 +320,7 @@ describe("client loaders, actions and guard (through the api deployable)", () =>
     const favs = await loadIndex.run({ ...req, search: { only: "favorites" } }, api.ctx);
     expect(favs.ok && favs.value.recipes.map((x) => x.title)).toEqual(["Soup"]);
   });
-  it("loadRecipe finds by id or answers keel.notFound in the locale", async () => {
+  it("loadRecipe finds by id or answers keel.notFound caused by recipes.notFound in the locale", async () => {
     const api = await simApi();
     const id = await addAndFind(api, "Soup");
     const found = await loadRecipe.run(
@@ -315,8 +334,7 @@ describe("client loaders, actions and guard (through the api deployable)", () =>
     );
     expect(missing.ok ? null : missing.error).toMatchObject({
       code: "keel.notFound",
-      message: "Kein solches Rezept",
-      data: null,
+      cause: { code: "recipes.notFound", data: { locale: "de-DE" } },
     });
     expect(JSON.stringify(missing.ok ? null : missing.error)).not.toContain("nope");
   });

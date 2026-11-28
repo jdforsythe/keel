@@ -5,6 +5,7 @@ import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { servedByEdit } from "@keel/compiler/hosting/servedByEdit";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
+import { hashOf } from "@keel/compiler/internal";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
 import { aliasedImports } from "./internal/aliasedImports.ts";
@@ -13,6 +14,7 @@ import { applyEdits } from "./internal/applyEdits.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { chainStoreIds } from "./internal/chainStoreIds.ts";
+import { choiceThemes } from "./internal/choiceThemes.ts";
 import { compatChecks } from "./internal/compat/compatChecks.ts";
 import { contractChecks } from "./internal/contractChecks.ts";
 import { depsRuleOwners } from "./internal/depsRuleOwners.ts";
@@ -27,6 +29,11 @@ import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
 import { libraryPages } from "./internal/libraryPages.ts";
+import { localNotLiteral } from "./internal/localNotLiteral.ts";
+import { looksDiags } from "./internal/looks/looksDiags.ts";
+import { looksOf } from "./internal/looks/looksOf.ts";
+import { ownThemes } from "./internal/looks/ownThemes.ts";
+import { projectLooks } from "./internal/looks/projectLooks.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
@@ -42,15 +49,19 @@ import { ruleInScope } from "./internal/ruleInScope.ts";
 import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
+import { schemesIn } from "./internal/schemesIn.ts";
 import { stdInScope } from "./internal/stdInScope.ts";
 import { strayManifest } from "./internal/strayManifest.ts";
 import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
 import { topologyNeeds } from "./internal/topologyNeeds.ts";
+import { twoCopies } from "./internal/twoCopies.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
 import { typeReferences } from "./internal/typeReferences.ts";
 import { unifiedDiff } from "./internal/unifiedDiff.ts";
+import { unknownModules } from "./internal/unknownModules.ts";
+import { workspaceLibraries } from "./internal/workspaceLibraries.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
 import type { CheckResult } from "./types/CheckResult.ts";
@@ -96,7 +107,15 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
       .map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const topology = topologyOf(dir, project, opts);
     const options = topology === undefined ? {} : { topology };
-    const hashes = artifactHashes(sources, options);
+    const compiled = artifactHashes(sources, options);
+    // `schemes.json` (k.schemes) is derived from the evaluated tokens: with no `tokens.ts`, one scheme and no themes.
+    const tokens: unknown = opts.artifacts?.tokens ?? opts.projectArtifacts?.[dir]?.tokens;
+    const hasTokens = project.some((f) => f.path === `${dir}tokens.ts`);
+    const schemes = tokens !== undefined ? schemesIn(tokens) : hasTokens ? undefined : ["light"];
+    const hashes =
+      schemes === undefined
+        ? compiled
+        : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes], themes: choiceThemes(tokens) }) };
     // Packages a route manifest spreads resolve from the project's own directory, as its imports do.
     const literal = { ...options, root: path.join(opts.root ?? process.cwd(), dir) };
     out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, literal) } : { hashes });
@@ -108,7 +127,7 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
- * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
+ * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, E1765, the k.module pass
  * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  *
@@ -117,14 +136,25 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there; E1106 reports
  * in none of them.
  */
-export function check(input: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
-  const raw = options.project === undefined ? input : [...input, ...options.project];
+export function check(input: readonly SourceFile[], inputOptions: CheckOptions = {}): CheckResult {
+  // A library of the project's own tree is read once: through `node_modules/<name>/` when the project lists it, else
+  // where it lies, as a library's file (k.library Kind).
+  const ws = workspaceLibraries(
+    inputOptions.project === undefined ? input : [...input, ...inputOptions.project],
+    path.resolve(inputOptions.root ?? process.cwd()),
+  );
+  const once = input.filter((f) => !ws.twin(f.path));
+  const options: CheckOptions =
+    inputOptions.project === undefined
+      ? inputOptions
+      : { ...inputOptions, project: inputOptions.project.filter((f) => !ws.twin(f.path)) };
+  const raw = options.project === undefined ? once : [...once, ...options.project];
   const libs = libraryFolders(raw);
+  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined || ws.inPlace(p);
   // E1171: a `module.ts` that is no manifest is reported and leaves every later step, so no rule's project holds it.
-  const stray = (f: SourceFile): boolean => strayManifest(f.path, libs.folder(f.path) !== undefined);
-  const given = input.filter((f) => !stray(f));
+  const stray = (f: SourceFile): boolean => strayManifest(f.path, isLibrary(f.path));
+  const given = once.filter((f) => !stray(f));
   const realAll = raw.filter((f) => !stray(f));
-  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined;
   // Each library's folder (`<p>node_modules/<name>/`): where the k.module pass finds it, and its files' view.
   const libraryRoots = new Set(libs.packages.map((f) => f.path.slice(0, -"package.json".length)));
   const viewed = (f: SourceFile): SourceFile => {
@@ -141,7 +171,7 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
   // One compile per project, with its paths and topology, so a workspace root sees what the app sees (rfc:0059).
   const all = opts.project === undefined ? files : [...files, ...opts.project];
   const dirs = projectDirs(all);
-  const out: Diagnostic[] = input.filter(stray).map((f) => ({
+  const out: Diagnostic[] = once.filter(stray).map((f) => ({
     kind: "diag",
     code: "E1171",
     path: f.path,
@@ -169,8 +199,9 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
     projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
     // The rules that follow the client's reach follow an import of a library into its files (k.library In an app).
-    const libraryFiles = new Set([...members.keys()].filter((p) => isLibrary(libs.real(p))));
-    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles });
+    const libraryFiles = new Set([...members.keys()].filter((p) => libs.folder(libs.real(p)) !== undefined));
+    const inPlace = new Set([...members.keys()].filter((p) => ws.inPlace(p)));
+    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles, inPlace, real: libs.real });
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
@@ -178,6 +209,8 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
     const placed = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
     const resolve = reachResolve(project, dir, new Set(sources.map((f) => f.path)));
     const compiled = compile(sources, placed === undefined ? { resolve } : { topology: placed, resolve });
+    // E1510: a `local` member that is not the literal `true` (k.contract Local routes).
+    out.push(...localNotLiteral(dir, sources));
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
@@ -187,10 +220,12 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
     const needs = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
     const pkg = all.find((f) => f.path === `${dir}package.json`)?.source;
     if (needs !== undefined) out.push(...topologyDiags(dir, needs, top), ...topologyNeeds(dir, needs, top ?? "", pkg));
-    // E1586: a placed stdlib module whose package resolves `./contract` and no `./routes`, at its id in `topology.ts`.
+    // E1586: a placed stdlib module whose package resolves `./contract` and no `./routes`; E1552: a module unknown to
+    // the project; each at its id in `topology.ts`.
     if (needs !== undefined && top !== undefined) {
       const own = project.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
-      out.push(...placedWithoutRoutes(dir, needs, top, own, path.join(opts.root ?? process.cwd(), dir)));
+      const at = path.join(opts.root ?? process.cwd(), dir);
+      out.push(...placedWithoutRoutes(dir, needs, top, own, at), ...unknownModules(dir, needs, top, own, at));
     }
     // E1587: a `styles` entry that is no string literal or no package `.css` export; W1012: an `index.html` Keel never reads.
     if (top !== undefined) out.push(...stylesDiags(dir, top, path.join(opts.root ?? process.cwd(), dir)));
@@ -220,7 +255,36 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
       reported.set(path, (reported.get(path) ?? new Set()).add(d.code));
     }
     const own = opts.projectArtifacts?.[dir];
-    for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...own, ...opts.artifacts });
+    const artifacts = { ...compiled.artifacts, ...own, ...opts.artifacts };
+    for (const f of group) artifactsOf.set(f.path, artifacts);
+    // k.looks: the libraries' shipped tokens read as text, judged against the tokens the project is given.
+    const looks = looksOf(realAll, dir);
+    projectLooks.set(project, {
+      libraryOf: (p) => looks.libraryOf(libs.real(p)),
+      ownSchemes: [
+        ...(looks.own?.shipped?.value.color === undefined ? [] : Object.values(Object(looks.own.shipped.value.color))),
+      ].some((v) => typeof v === "object" && v !== null)
+        ? ["light", "dark"]
+        : undefined,
+      ownThemes: ownThemes(looks),
+      lookLibrary: (look) => {
+        // A library's look by the `look` group's keys alone (k.a11y-static Library contrast).
+        const lib = looks.listed.find((l) => !l.own && l.shipped?.names.get("look")?.includes(look) === true);
+        return lib?.id;
+      },
+      libraryFileOf: (p) => {
+        const lib = looks.libraryOf(libs.real(p));
+        return lib === undefined || lib.own ? undefined : lib.id;
+      },
+      ships: (name) => looks.listed.some((l) => [...(l.shipped?.names.values() ?? [])].some((n) => n.includes(name))),
+      shippedLook: (look) => {
+        const lib = looks.listed.find((l) => l.shipped?.names.get("look")?.includes(look) === true);
+        const at = lib?.shipped?.keys.get(`look\u0000${look}`);
+        return lib === undefined || at === undefined ? undefined : { path: libs.view(lib.shippedPath), at };
+      },
+    });
+    const tokens: unknown = Reflect.get(artifacts, "tokens");
+    out.push(...looksDiags(looks, realAll, { given: tokens !== undefined, value: tokens }));
   }
 
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
@@ -254,7 +318,21 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
     const dates = typed?.dates.get(libs.real(file.path)) ?? (typed === undefined ? undefined : new Set<number>());
     const input = { file, ast: parsed.program, artifacts, project };
     // One by one: a file may give more findings than a spread call takes arguments.
-    for (const d of runRules(registered, dates === undefined ? input : { ...input, dates })) out.push(d);
+    const at = (m: ReadonlyMap<string, ReadonlySet<number>> | undefined): ReadonlySet<number> =>
+      m?.get(libs.real(file.path)) ?? new Set<number>();
+    const typedInput =
+      dates === undefined
+        ? input
+        : {
+            ...input,
+            dates,
+            types: true,
+            schemeSelects: at(typed?.schemeSelects),
+            themeSelects: at(typed?.themeSelects),
+            boxes: at(typed?.boxes),
+            keelThrows: at(typed?.keelThrows),
+          };
+    for (const d of runRules(registered, typedInput)) out.push(d);
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
   // The passes that read a library's files where they lie.
@@ -289,6 +367,8 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
     // E1005 derives each artifact from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
     ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
     ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base),
+    // E1765 (k.realm One copy): a kernel package each project's dependencies reach in two folders.
+    ...[...new Set(["", ...dirs])].flatMap((dir) => twoCopies(dir, realAll, options.root)),
   );
 
   // A diagnostic in a library file is located where the file lies and carries no fix (k.library In an app).
@@ -301,7 +381,7 @@ export function check(input: readonly SourceFile[], options: CheckOptions = {}):
       const { kind, code, line, col, message, see } = d;
       return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
     });
-  // A lifted range (k.check, App code) reports none of its nine codes.
+  // A lifted range (k.check, App code) reports none of its codes.
   const diagnostics = normalize(dropLifted(located, realCode));
   return { diagnostics, summary: summarize(diagnostics) };
 }

@@ -2,6 +2,7 @@
 // k.scaffold, Refresh "It prints nothing while it runs and no W1005 for an artifact it rewrites; a diagnostic of the refresh follows the edit lines and the edits stay written."
 // No random input: one fixed project per generator. ASSUMED trailer (json): { kind: "summary", name: "scaffold <op>", counts: { created, changed, removed, artifacts } };
 // pretty trailer: `ok scaffold <op> <n> created, <n> changed, <n> removed, <n> artifacts, <n> errors`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -69,21 +70,25 @@ const generators: [string, () => Files, string[]][] = [
 
 describe("in a built project, a scaffold refreshes in place of a build", () => {
   for (const [name, mk, args] of generators) {
-    it(`${name} leaves check clean, no E1005, dist/ byte-identical, no W1005, artifacts above 0`, () => {
-      const dir = built(mk());
-      const distBefore = under(readTree(dir), "dist/");
-      expect(distBefore.length).toBeGreaterThan(0);
-      const gen = keel(dir, ["scaffold", ...args]);
-      expect(gen.status, text(gen.records)).toBe(0);
-      expect(text(gen.records)).not.toContain("E1005");
-      expect(text(gen.records)).not.toContain("W1005");
-      expect(Number(trailerCounts(gen.records).artifacts), text(gen.records)).toBeGreaterThan(0);
-      expect(under(readTree(dir), "dist/")).toEqual(distBefore);
-      const after = keel(dir, ["check"]);
-      expect(after.status, text(after.records)).toBe(0);
-      expect(diagCodes(after.records)).toEqual([]);
-      expect(text(after.records)).not.toContain("E1005");
-    }, 180000);
+    it(
+      `${name} leaves check clean, no E1005, dist/ byte-identical, no W1005, artifacts above 0`,
+      () => {
+        const dir = built(mk());
+        const distBefore = under(readTree(dir), "dist/");
+        expect(distBefore.length).toBeGreaterThan(0);
+        const gen = keel(dir, ["scaffold", ...args]);
+        expect(gen.status, text(gen.records)).toBe(0);
+        expect(text(gen.records)).not.toContain("E1005");
+        expect(text(gen.records)).not.toContain("W1005");
+        expect(Number(trailerCounts(gen.records).artifacts), text(gen.records)).toBeGreaterThan(0);
+        expect(under(readTree(dir), "dist/")).toEqual(distBefore);
+        const after = keel(dir, ["check"]);
+        expect(after.status, text(after.records)).toBe(0);
+        expect(diagCodes(after.records)).toEqual([]);
+        expect(text(after.records)).not.toContain("E1005");
+      },
+      fixedTime(180000),
+    );
   }
 });
 
@@ -101,41 +106,57 @@ describe("the refresh prints nothing while it runs", () => {
     });
     return { status: r.status, lines: r.stdout.split("\n").filter((l) => l.trim() !== "") };
   };
-  it("keel scaffold route app.home --path / --no-loader: the edit lines, then one ok trailer with artifacts, nothing else", () => {
-    const dir = built(fresh());
-    const r = run(dir, ["scaffold", "route", "app.home", "--path", "/", "--no-loader"], []);
-    expect(r.status, r.lines.join("\n")).toBe(0);
-    const last = r.lines.at(-1) ?? "";
-    expect(last).toMatch(/^ok scaffold route \d+ created, \d+ changed, \d+ removed, [1-9]\d* artifacts, 0 errors$/);
-    expect(r.lines.slice(0, -1).filter((l) => !/^(create|change|remove) \S+$/.test(l))).toEqual([]);
-    expect(r.lines.join("\n")).not.toContain("W1005");
-  }, 180000);
+  it(
+    "keel scaffold route app.about --path /about --no-loader: the edit lines, then one ok trailer with artifacts, nothing else",
+    () => {
+      const dir = built(fresh());
+      const r = run(dir, ["scaffold", "route", "app.about", "--path", "/about", "--no-loader"], []);
+      expect(r.status, r.lines.join("\n")).toBe(0);
+      const last = r.lines.at(-1) ?? "";
+      expect(last).toMatch(/^ok scaffold route \d+ created, \d+ changed, \d+ removed, [1-9]\d* artifacts, 0 errors$/);
+      expect(r.lines.slice(0, -1).filter((l) => !/^(create|change|remove) \S+$/.test(l))).toEqual([]);
+      expect(r.lines.join("\n")).not.toContain("W1005");
+    },
+    fixedTime(180000),
+  );
   // OUTPUT.md fixes the compact trailer only; k.scaffold states for every format just "no W1005" and success.
-  it("keel scaffold route app.home --path / --no-loader --format=pretty: exit 0 and no W1005", () => {
-    const dir = built(fresh());
-    const r = run(dir, ["scaffold", "route", "app.home", "--path", "/", "--no-loader"], ["--format=pretty"]);
-    expect(r.status, r.lines.join("\n")).toBe(0);
-    expect(r.lines.join("\n")).not.toContain("W1005");
-  }, 180000);
+  it(
+    "keel scaffold route app.about --path /about --no-loader --format=pretty: exit 0 and no W1005",
+    () => {
+      const dir = built(fresh());
+      const r = run(dir, ["scaffold", "route", "app.about", "--path", "/about", "--no-loader"], ["--format=pretty"]);
+      expect(r.status, r.lines.join("\n")).toBe(0);
+      expect(r.lines.join("\n")).not.toContain("W1005");
+    },
+    fixedTime(180000),
+  );
 });
 
 describe("no refresh", () => {
-  it("--dry-run in a built project writes no file under .keel/ and the trailer has no artifacts", () => {
-    const dir = built(fresh());
-    const before = under(readTree(dir), ".keel/");
-    expect(before.length).toBeGreaterThan(0);
-    const r = keel(dir, ["scaffold", "service", "orders", "--base", ORIGIN, "--reason", REASON, "--dry-run"]);
-    expect(r.status, text(r.records)).toBe(0);
-    expect(under(readTree(dir), ".keel/")).toEqual(before);
-    expect("artifacts" in trailerCounts(r.records)).toBe(false);
-  }, 180000);
-  it("in a project keel build never ran in, no file under .keel/ is written and the trailer has no artifacts", () => {
-    const dir = materialize(fresh());
-    dirs.push(dir);
-    const before = under(readTree(dir), ".keel/");
-    const r = keel(dir, ["scaffold", "route", "orders.show", "--path", "/orders/:id"]);
-    expect(r.status, text(r.records)).toBe(0);
-    expect(under(readTree(dir), ".keel/")).toEqual(before);
-    expect("artifacts" in trailerCounts(r.records)).toBe(false);
-  }, 120000);
+  it(
+    "--dry-run in a built project writes no file under .keel/ and the trailer has no artifacts",
+    () => {
+      const dir = built(fresh());
+      const before = under(readTree(dir), ".keel/");
+      expect(before.length).toBeGreaterThan(0);
+      const r = keel(dir, ["scaffold", "service", "orders", "--base", ORIGIN, "--reason", REASON, "--dry-run"]);
+      expect(r.status, text(r.records)).toBe(0);
+      expect(under(readTree(dir), ".keel/")).toEqual(before);
+      expect("artifacts" in trailerCounts(r.records)).toBe(false);
+    },
+    fixedTime(180000),
+  );
+  it(
+    "in a project keel build never ran in, no file under .keel/ is written and the trailer has no artifacts",
+    () => {
+      const dir = materialize(fresh());
+      dirs.push(dir);
+      const before = under(readTree(dir), ".keel/");
+      const r = keel(dir, ["scaffold", "route", "orders.show", "--path", "/orders/:id"]);
+      expect(r.status, text(r.records)).toBe(0);
+      expect(under(readTree(dir), ".keel/")).toEqual(before);
+      expect("artifacts" in trailerCounts(r.records)).toBe(false);
+    },
+    fixedTime(120000),
+  );
 });

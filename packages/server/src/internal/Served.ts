@@ -8,6 +8,7 @@ import type { BuiltClient } from "./BuiltClient.ts";
 import type { CallerKeys } from "./CallerKeys.ts";
 import type { Mode } from "./Mode.ts";
 import type { ReportWindow } from "./ReportWindow.ts";
+import type { ThrownRecords } from "./ThrownRecords.ts";
 
 /**
  * A built deployable: its served routes (`table`), `ctx`, mode, its route table `routes` and every route of it by id
@@ -23,7 +24,8 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * (the deployable's `styles` and the atomic CSS, served by the compiler's dev server), else none.
  * `lifecycle` aborts on `close()`, ending runners and open event streams. `maxStreams` caps the open event streams
  * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`). `reports` is the CSP report window
- * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`). `log` is
+ * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`), and `thrown` makes a
+ * thrown value's records (`thrownLog`: its form, and its text under `mode: 'dev'` or `KEEL_LOG_THROWN`). `log` is
  * `createApp({ log })`, for records written after the response has started (an event stream's). `eager` holds the
  * route ids that have logged E1257 (k.claim Server), once each, and `nothing` those that have logged E1406 (k.place).
  * `identity` is `createApp({ identity })` (k.user) and `days` the served deployable's `caller: { days }`; `origins` its
@@ -53,9 +55,14 @@ export type Served = {
   readonly nothing: Set<string>;
   readonly reports: ReportWindow;
   readonly frames: (thrown: unknown) => readonly string[];
+  readonly thrown: ThrownRecords;
   readonly log?: LogSink;
   readonly identity?: Identity | undefined;
   readonly days?: number | undefined;
   readonly origins?: Origins | undefined;
   readonly framed?: Set<string>;
+  /** Whether the app has both color schemes (`schemes.json`, k.schemes): documents then follow `keel-scheme`. */
+  readonly schemes?: boolean;
+  /** The app's `choice` themes (`schemes.json`, k.schemes): documents then follow `keel-theme` when it names one. */
+  readonly themes?: readonly string[];
 };

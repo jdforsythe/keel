@@ -1,11 +1,13 @@
 // Keeps the nine published skills (packages/cli/skills/<name>/SKILL.md) true. Usage: node tooling/docs-check.mjs
-// [--write]; `--write` replaces .claude/skills/<name>/ with a copy of each published skill and checks nothing.
+// [--write]; `--write` replaces .claude/skills/<name>/ and packages/create-app/skills/<name>/ with a copy of each
+// published skill and checks nothing.
 //
 // D0006 a fenced ts or tsx block does not type-check; D0007 more than two `ts fragment` blocks in a skill; D0008 an
 // `import { ... } from '@keel/...'` (fence or code span) names a package or export that does not exist; D0009 a
 // diagnostic code is in neither the explain catalog nor a spec section, or a range (`E19xx`, `E165x`) holds no code;
 // D0010 a cited section id has no spec file; D0011 a repo-only path or command; D0012 size over the target, or `name`
-// or `description` frontmatter missing; D0013 .claude/skills/<name>/ differs from the published skill; D0014 a block
+// or `description` frontmatter missing; D0013 .claude/skills/<name>/ or packages/create-app/skills/<name>/ (the
+// copies `create-app` writes into a new project, k.create Package) differs from the published skill; D0014 a block
 // imports a relative path no other block of the skill provides.
 //
 // The scaffold templates (`AGENTS.md` and `CLAUDE.md` as `keel scaffold project` and `keel docs --sync` write them,
@@ -41,6 +43,8 @@ import { parseArgs, run } from "./output.ts";
 const root = path.join(import.meta.dirname, "..");
 const SKILLS_DIR = "packages/cli/skills";
 const COPY_DIR = ".claude/skills";
+/** Every folder that holds a copy of the published skills. */
+export const COPY_DIRS = [COPY_DIR, "packages/create-app/skills"];
 
 /** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host, createApp's std, one frame across modules) and for `keel review` in the keel skill, view stores seeded with `initial` (keel-client, keel-server), node pages tested with `app` and two users as two harnesses (keel-testing), a channel that follows std-postgres writes (keel-data), one factory per store id across a layout and its page and its code E1550 (keel-server), a crashed workflow step stalling for its `timeoutMs` (keel-data), the client `user` a `client` page's guard reads from `/__keel/user` (keel-client, keel-server, keel-testing), a client with no `node` deployable and a `connect` origin's preflight (keel-deploy), the tokens' `base` and `look` and E1809 (keel-client, keel), E1589 for an `identity.ts` no origin answers (keel-server, keel-deploy), `scaffold service --base` and its `--reason` on a `client` deployable (keel-server), a key sent to the focused element, a select pick and renders disposed at test end, `requests()` (keel-testing), a format literal and E1108 (keel, keel-testing), a wide table's scroll region and a numeric column's `textAlign` (keel-client), a return target read through `pageHref` (keel-client, keel-server), a guard several modules bind and E1153's guard message (keel-server), `scaffold service --name` (keel-server), a store save reaching every replica's streams on postgres (keel-data), `KEEL_DEV_POLL` (keel-deploy), a session of a node page replayed through its app with `--user` and its `to-test` file in `test/` (keel-testing, keel-compliance); keel-testing re-based 2700 to 2850 for the union of that and `requests()`, then to 3100 for `simulate` driving the clock, `run(ms)`, `hold`, E1727 and E1728, then to 3250 for tracking by async context, `hold(label, start)`, the law check and E1729, then to 3300 for E1728 per piece of work and work outliving the scenario, then to 3400 for held work's delivery order, the collection rule, harness calls waiting on the drive and the law check's default (rfc:0218), then to 3450 with W1608 (an `import()` is a load simulate does not track; rfc:0220), and keel to 1130 for W1608, then to 3550 for a route test naming the identity mount and E1730 (rfc:0219); keel-server to 2900 for the one identity mount, E1593, and a `handle.path` not at `/assets` (rfc:0232); keel to 1200 and keel-testing to 3600 for negative type tests, E1760 and E1761; keel to 1230 for E1015 and keel-compliance to 1680 for E1107's reach and E1111's held field object (rfc:0231); keel-client to 3150 for where `keel check` judges contrast and where `keel test` does (rfc:0234); keel-data to 2950 for the channel stream caps and keel-compliance to 1750 for what a recording holds (rfc:0236); keel-data to 3000 for a library export taking its `register` name at the app's call beside the channel caps, and keel-deploy to 2200 for `env` names, E1167 and the files copied beside `server.mjs` (E1014; rfc:0163); keel to 1330 for a library's commands and keel-client to 3170 for its ids (rfc:0163); keel-testing to 3700 for the run report, the citation form, E1732 and E1733 (rfc:0235). */
 export const TARGETS = {
@@ -53,6 +57,8 @@ export const TARGETS = {
   "keel-compliance": 1750,
   "keel-escapes": 1700,
   "keel-library": 1200,
+  "keel-e2e": 700,
+  "keel-errors": 1100,
 };
 export const MAX_FRAGMENTS = 2;
 
@@ -193,11 +199,11 @@ function tree(dir) {
   return out;
 }
 
-/** D0013: .claude/skills/<name>/ against the published folder. */
-export function checkCopy(repo, name) {
+/** D0013: `<dir>/<name>/` (default .claude/skills) against the published folder. */
+export function checkCopy(repo, name, dir = COPY_DIR) {
   const want = tree(path.join(repo, SKILLS_DIR, name));
-  const have = tree(path.join(repo, COPY_DIR, name));
-  const file = `${COPY_DIR}/${name}`;
+  const have = tree(path.join(repo, dir, name));
+  const file = `${dir}/${name}`;
   const diags = [];
   for (const [rel, bytes] of want) {
     const got = have.get(rel);
@@ -212,13 +218,14 @@ export function checkCopy(repo, name) {
   return diags;
 }
 
-/** Replaces .claude/skills/<name>/ with the published folder for each name. */
-export function writeCopies(repo, names) {
-  for (const name of names) {
-    const dest = path.join(repo, COPY_DIR, name);
-    fs.rmSync(dest, { recursive: true, force: true });
-    fs.cpSync(path.join(repo, SKILLS_DIR, name), dest, { recursive: true });
-  }
+/** Replaces `<dir>/<name>/` with the published folder for each name, in each of `dirs` (default every copy folder). */
+export function writeCopies(repo, names, dirs = COPY_DIRS) {
+  for (const dir of dirs)
+    for (const name of names) {
+      const dest = path.join(repo, dir, name);
+      fs.rmSync(dest, { recursive: true, force: true });
+      fs.cpSync(path.join(repo, SKILLS_DIR, name), dest, { recursive: true });
+    }
 }
 
 const IMPORT_RE = /import\s+(?:type\s+)?(?:(\w+)\s*,?\s*)?(?:\{([^}]*)\})?\s*from\s*(['"])([^'"]+)\3/g;
@@ -440,7 +447,10 @@ export function checkRepo(repo, names = Object.keys(TARGETS)) {
       ...checkRepoOnly(name, text),
       ...checkCodes(name, text, known),
       ...checkSections(name, text, ids),
-      ...checkCopy(repo, name),
+      // packages/create-app/skills is checked wherever that package exists (a test repo may hold only the cli).
+      ...COPY_DIRS.filter(
+        (d) => d === COPY_DIR || fs.existsSync(path.join(repo, path.dirname(d), "package.json")),
+      ).flatMap((d) => checkCopy(repo, name, d)),
     );
   }
   diags.push(...typeCheck(repo, skills));

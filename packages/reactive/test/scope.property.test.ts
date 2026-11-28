@@ -33,11 +33,14 @@ describe("scope properties", () => {
               for (const c of children[i] ?? []) build(c, s);
             });
           };
-          const root = scope(() => {
-            const s = signal(Number.NaN);
-            set = (v) => s.set(v);
-            build(0, s);
-          });
+          const root = scope(
+            () => {
+              const s = signal(Number.NaN);
+              set = (v) => s.set(v);
+              build(0, s);
+            },
+            { detached: true },
+          );
           const target = pick % n;
           const inside = new Set<number>();
           const walk = (i: number): void => {

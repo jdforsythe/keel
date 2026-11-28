@@ -123,12 +123,12 @@ export async function runAction(
     records.push(...diagsOf(ran));
     if (!onlyE2004(ran)) failed = true;
   };
-  /** A record safe to print and to title an issue with: this fingerprint, an id-grammar route and code. */
-  const safe = (r: SessionRecord | undefined, fp: string, file: string): r is SessionRecord => {
-    if (r === undefined) return false;
-    if (r.fingerprint === fp && ID.test(r.route) && (r.error === null || ID.test(r.error))) return true;
+  /** `r` when it is safe to print and to title an issue with (this fingerprint, an id-grammar route and code), else `undefined`. */
+  const safe = (r: SessionRecord | undefined, fp: string, file: string): SessionRecord | undefined => {
+    if (r === undefined) return undefined;
+    if (r.fingerprint === fp && ID.test(r.route) && (r.error === null || ID.test(r.error))) return r;
     records.push(sessionDiag("E2002", "session route or error code is not an id; skipped", clean(file)));
-    return false;
+    return undefined;
   };
 
   for (const [fp, list] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
@@ -155,7 +155,8 @@ export async function runAction(
     }
     if (stop) continue;
     if (reproduced === undefined) {
-      if (issue === undefined || !safe(newestSeen, fp, newest)) continue;
+      const seen = issue === undefined ? undefined : safe(newestSeen, fp, newest);
+      if (issue === undefined || seen === undefined) continue;
       const last = await gh.lastComment(issue.number);
       if (!last.ok) {
         failed = true;
@@ -163,8 +164,8 @@ export async function runAction(
         continue;
       }
       if (last.value?.includes(MARKER) === true) continue;
-      const body = `${NOT_REPRODUCED}${issueBody(sessionCompact(newestSeen))}`;
-      report(await gh.comment(issue.number, body), "commented", fp, newestSeen, issue.number);
+      const body = `${NOT_REPRODUCED}${issueBody(sessionCompact(seen))}`;
+      report(await gh.comment(issue.number, body), "commented", fp, seen, issue.number);
       continue;
     }
     if (issue === undefined && (counts.created ?? 0) >= MAX_ISSUES_PER_RUN) {
@@ -177,8 +178,8 @@ export async function runAction(
       broken(emitted);
       continue;
     }
-    const [out] = sessionsOf(emitted.records);
-    if (!safe(out, fp, reproduced)) continue;
+    const out = safe(sessionsOf(emitted.records)[0], fp, reproduced);
+    if (out === undefined) continue;
     const test =
       out.file === `modules/${out.route.split(".")[0]}/test/session-${fp}.test.ts` ||
       out.file === `test/session-${fp}.test.ts`

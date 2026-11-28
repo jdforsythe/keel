@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { freshness, parseSubject, pathspecs } from "../docs-freshness.mjs";
 
@@ -37,7 +37,7 @@ describe("freshness", () => {
   const codes = () => freshness(root, 2).diags.map((d) => `${d.code} ${d.path}`);
 
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-fresh-"));
+    root = tempDir("keel-fresh-");
     git("init", "-q");
     git("config", "user.email", "t@example.com");
     git("config", "user.name", "t");

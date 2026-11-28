@@ -7,22 +7,24 @@ import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { EVENTS, STATES, editor, nextId, setState } from "./fixtures.ts";
+import { EVENTS, STATES, editor, nextId, setState, inRoot } from "./fixtures.ts";
 
 const Add = s.object({ by: s.int({ min: 0, max: 3 }) });
 const gate = () =>
-  chart(nextId("gate"), {
-    data: s.object({ n: s.int({ min: 0, max: 3 }) }),
-    start: { n: 0 },
-    events: { add: Add, tick: s.object({}), close: s.object({}) },
-    guards: { fits: (d, p) => d.n + p.by <= 3 },
-    actions: { sum: (d, p) => ({ n: d.n + p.by }), bump: (d) => ({ n: Math.min(3, d.n + 1) }) },
-    initial: "open",
-    states: {
-      open: { on: { add: { guard: "fits", do: "sum" }, tick: { do: "bump" }, close: "shut" } },
-      shut: { final: true },
-    },
-  });
+  inRoot(() =>
+    chart(nextId("gate"), {
+      data: s.object({ n: s.int({ min: 0, max: 3 }) }),
+      start: { n: 0 },
+      events: { add: Add, tick: s.object({}), close: s.object({}) },
+      guards: { fits: (d, p) => d.n + p.by <= 3 },
+      actions: { sum: (d, p) => ({ n: d.n + p.by }), bump: (d) => ({ n: Math.min(3, d.n + 1) }) },
+      initial: "open",
+      states: {
+        open: { on: { add: { guard: "fits", do: "sum" }, tick: { do: "bump" }, close: "shut" } },
+        shut: { final: true },
+      },
+    }),
+  );
 
 describe("std.statecharts: enabled agrees with tx", () => {
   test("`enabled(state, event, payload)` is true exactly when `tx` of that event changes the state's name or applies a `do`", async () => {

@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // Real packages dir via a workspace link, so this also holds in Stryker's sandbox copy (where ../.. is not packages/).
@@ -34,7 +36,7 @@ const dataOf = (file: string): Record<string, unknown> => {
 };
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-node-routes-"));
+  root = tempDir(".tmp-node-routes-", import.meta.dirname);
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))
@@ -59,24 +61,28 @@ afterEach(() => {
 });
 
 describe("@keel/compiler/vite node deployable build", () => {
-  it("writes dist/<name>/routes.json with every module's routes and copies std.json", { timeout: 30000 }, async () => {
-    process.env.KEEL_DEPLOYABLE = "api";
-    const made = keel().config({ root }, { command: "build" });
-    const config = made !== null && "builder" in made ? made : undefined;
-    const built: unknown[] = [];
-    await config?.builder.buildApp({
-      environments: { client: "client", ssr: "ssr" },
-      // Vite's builds create the out dir.
-      build: async (e) => {
-        built.push(e);
-        fs.mkdirSync(path.join(root, "dist", "api"), { recursive: true });
-      },
-    });
-    expect(built).toEqual(["client", "ssr"]);
-    const routes = dataOf(path.join(root, "dist", "api", "routes.json"));
-    expect(Object.keys(routes).sort()).toEqual(["a.show", "b.show", "w.show"]);
-    expect(Reflect.get(routes["b.show"] ?? {}, "path")).toBe("/b");
-    expect(Reflect.get(routes["b.show"] ?? {}, "module")).toBe("b");
-    expect(fs.readFileSync(path.join(root, "dist", "api", "std.json"), "utf8")).toBe('{"data":{},"hash":"x"}\n');
-  });
+  it(
+    "writes dist/<name>/routes.json with every module's routes and copies std.json",
+    { timeout: fixedTime(30000) },
+    async () => {
+      process.env.KEEL_DEPLOYABLE = "api";
+      const made = keel().config({ root }, { command: "build" });
+      const config = made !== null && "builder" in made ? made : undefined;
+      const built: unknown[] = [];
+      await config?.builder.buildApp({
+        environments: { client: "client", ssr: "ssr" },
+        // Vite's builds create the out dir.
+        build: async (e) => {
+          built.push(e);
+          fs.mkdirSync(path.join(root, "dist", "api"), { recursive: true });
+        },
+      });
+      expect(built).toEqual(["client", "ssr"]);
+      const routes = dataOf(path.join(root, "dist", "api", "routes.json"));
+      expect(Object.keys(routes).sort()).toEqual(["a.show", "b.show", "w.show"]);
+      expect(Reflect.get(routes["b.show"] ?? {}, "path")).toBe("/b");
+      expect(Reflect.get(routes["b.show"] ?? {}, "module")).toBe("b");
+      expect(fs.readFileSync(path.join(root, "dist", "api", "std.json"), "utf8")).toBe('{"data":{},"hash":"x"}\n');
+    },
+  );
 });

@@ -60,10 +60,13 @@ test("live outside a scope throws E1203", () => {
   const { ctx } = server();
   const ch = channel("unit.other", { path: "/events", params: s.object({}) });
   const held: { hydrate?: Transaction<{ n: number }, number> } = {};
-  const sc = scope(() => {
-    const view = store(s.object({ n: s.int() }), { n: 0 }, { id: "unit.outside" });
-    held.hydrate = transaction(view, "view.hydrate", s.int(), (_st, p) => ({ n: p }));
-  });
+  const sc = scope(
+    () => {
+      const view = store(s.object({ n: s.int() }), { n: 0 }, { id: "unit.outside" });
+      held.hydrate = transaction(view, "view.hydrate", s.int(), (_st, p) => ({ n: p }));
+    },
+    { detached: true },
+  );
   const hydrate = held.hydrate;
   if (hydrate === undefined) throw new Error("no hydrate");
   expect(() => live(ctx, ORIGIN, ch, {}, { read: async () => ok(1), hydrate })).toThrow(/^E1203/);

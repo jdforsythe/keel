@@ -7,7 +7,7 @@ const MAX = 60;
 const clip = (s: string): string => (s.length > MAX ? `${s.slice(0, MAX - 3)}...` : s);
 
 /**
- * Read every registered inspector section with `ctx` (k.cli Inspector hooks): `{ doc, value }` with the value encoded
+ * Read every registered inspector section with `ctx` (k.inspect Inspector hooks): `{ doc, value }` with the value encoded
  * by its schema, or `{ doc, error }` when `read` throws or its value fails the schema. `diags` holds one E1057 per
  * failed section, for the serving process's dev log; `error` is its code and message.
  */

@@ -12,7 +12,7 @@ const opts = { seed: 1337, numRuns: 100 };
 
 /** Run `fn` in a scope with its own registry, so each store of one id lives apart (scope left open: callers use the stores after return). */
 function isolated<T>(fn: () => T): T {
-  const sc = scope(() => {});
+  const sc = scope(() => {}, { detached: true });
   isolate(sc);
   return sc.run(fn);
 }

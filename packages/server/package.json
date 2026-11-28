@@ -12,6 +12,10 @@
       "types": "./src/internal/start.ts",
       "default": "./src/internal/start.ts"
     },
+    "./internal/startFailed": {
+      "types": "./src/internal/startFailed.ts",
+      "default": "./src/internal/startFailed.ts"
+    },
     "./internal/prerender": {
       "types": "./src/internal/prerender.ts",
       "default": "./src/internal/prerender.ts"
@@ -38,6 +42,10 @@
       "./internal/start": {
         "types": "./dist/src/internal/start.d.ts",
         "default": "./dist/src/internal/start.js"
+      },
+      "./internal/startFailed": {
+        "types": "./dist/src/internal/startFailed.d.ts",
+        "default": "./dist/src/internal/startFailed.js"
       },
       "./internal/prerender": {
         "types": "./dist/src/internal/prerender.d.ts",

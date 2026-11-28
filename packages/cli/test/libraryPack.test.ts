@@ -1,9 +1,9 @@
 // Seed 1337. The parts of `keel pack` that read a library's folder without running it (k.library-pack Pack): the
 // `package` step (`packageShape`) refuses, with one E1164 at the `package.json` field, what an app could not read the
 // same way; `jsonFieldAt` finds a top-level key and never a nested one; `filesSelect` and `packFiles` select as `files` does.
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { filesSelect } from "../src/internal/filesSelect.ts";
@@ -41,7 +41,7 @@ const FILES: Record<string, string> = {
 
 /** A library folder: `pkg` as its `package.json` (two-space JSON), `files` beside it. */
 function folder(pkg: Record<string, unknown>, files: Record<string, string> = FILES): { dir: string; text: string } {
-  const dir = mkdtempSync(join(tmpdir(), "keel-pack-"));
+  const dir = tempDir("keel-pack-");
   made.push(dir);
   const text = `${JSON.stringify(pkg, null, 2)}\n`;
   for (const [rel, src] of Object.entries({ ...files, "package.json": text })) {

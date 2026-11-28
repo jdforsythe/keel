@@ -35,14 +35,17 @@ function parse() {
 
 function bindAll(els: ReturnType<typeof parse>) {
   const handle: { f?: ReturnType<typeof form<typeof S>> } = {};
-  const root = scope(() => {
-    const f = form(S, { initial: { title: "Ada", notes: "notes", priority: "high", done: true } });
-    handle.f = f;
-    f.field("title").bind(els.input);
-    f.field("notes").bind(els.area);
-    f.field("priority").bind(els.select);
-    f.field("done").bind(els.box);
-  });
+  const root = scope(
+    () => {
+      const f = form(S, { initial: { title: "Ada", notes: "notes", priority: "high", done: true } });
+      handle.f = f;
+      f.field("title").bind(els.input);
+      f.field("notes").bind(els.area);
+      f.field("priority").bind(els.select);
+      f.field("done").bind(els.box);
+    },
+    { detached: true },
+  );
   if (handle.f === undefined) throw new Error("no form");
   return { f: handle.f, root };
 }

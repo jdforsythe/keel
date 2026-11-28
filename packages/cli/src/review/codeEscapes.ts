@@ -1,10 +1,24 @@
-import { type Expression, type ObjectExpression, type PropertyKey, Visitor, parseSync } from "oxc-parser";
+import {
+  type ArrowFunctionExpression,
+  type Expression,
+  type Function as FunctionNode,
+  type ObjectExpression,
+  type Program,
+  type PropertyKey,
+  type Statement,
+  Visitor,
+  parseSync,
+} from "oxc-parser";
 import { isExpectation } from "../internal/isExpectation.ts";
 import { isNegativeTypeTest } from "../internal/isNegativeTypeTest.ts";
 import type { Danger } from "./Danger.ts";
 import type { FileKind } from "./FileKind.ts";
 import type { Raw } from "./Raw.ts";
+import { alwaysExits } from "./alwaysExits.ts";
 import { foldString } from "./foldString.ts";
+import { okFacts } from "./okFacts.ts";
+import { reviewedProof } from "./reviewedProof.ts";
+import { wideExpect } from "./wideExpect.ts";
 
 /** A TypeScript suppression comment, as E1757 reads one. */
 /** A ts-suppression comment: a line of its text starts with a directive, leading white space, `/` and `*` aside. */
@@ -85,6 +99,29 @@ function hasMember(e: Expression, names: ReadonlySet<string>): boolean {
   return hasMember(e.object, names);
 }
 
+/** A callee that is `name`, bare or as a non-computed member. */
+const calls = (c: Expression, name: string): boolean =>
+  (c.type === "Identifier" && c.name === name) ||
+  (c.type === "MemberExpression" && !c.computed && c.property.type === "Identifier" && c.property.name === name);
+
+/** A callee `object.member`, both by name. */
+const isMember = (c: Expression, object: string, member: string): boolean =>
+  c.type === "MemberExpression" &&
+  !c.computed &&
+  c.object.type === "Identifier" &&
+  c.object.name === object &&
+  c.property.type === "Identifier" &&
+  c.property.name === member;
+
+const WINDOWS = ["globalThis", "window", "self"];
+const PROCESS_LISTEN = ["on", "once", "addListener", "prependListener"];
+
+/** A callee that can register a listener for uncaught throws (R1020): `addEventListener`, bare or on a global, or `process.on` and its kin. */
+const listensUncaught = (c: Expression): boolean =>
+  (c.type === "Identifier" && c.name === "addEventListener") ||
+  WINDOWS.some((w) => isMember(c, w, "addEventListener")) ||
+  PROCESS_LISTEN.some((m) => isMember(c, "process", m));
+
 /** `process.env`, by name or literal key. */
 const isProcessEnv = (e: Expression): boolean =>
   e.type === "MemberExpression" &&
@@ -93,6 +130,22 @@ const isProcessEnv = (e: Expression): boolean =>
   (e.computed
     ? e.property.type === "Literal" && e.property.value === "env"
     : e.property.type === "Identifier" && e.property.name === "env");
+
+/** The names a file calls `defect` of `@keel/schema` by: imported names, and namespaces whose `.defect` it is. */
+function defectNames(program: Program): { names: Set<string>; spaces: Set<string> } {
+  const names = new Set<string>();
+  const spaces = new Set<string>();
+  for (const st of program.body) {
+    if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/schema") continue;
+    for (const sp of st.specifiers) {
+      if (sp.type === "ImportNamespaceSpecifier") spaces.add(sp.local.name);
+      if (sp.type !== "ImportSpecifier") continue;
+      const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
+      if (imported === "defect") names.add(sp.local.name);
+    }
+  }
+  return { names, spaces };
+}
 
 /** A function returning 1-based line and column for a UTF-16 offset of `source`. */
 function locator(source: string): (at: number) => { line: number; col: number } {
@@ -110,12 +163,44 @@ function locator(source: string): (at: number) => { line: number; col: number } 
   };
 }
 
+/** The own-key listings that yield symbol keys (R1019 when their argument is no literal, k.realm). */
+const LISTINGS: readonly (readonly [string, string])[] = [
+  ["Object", "getOwnPropertySymbols"],
+  ["Object", "getOwnPropertyDescriptors"],
+  ["Reflect", "ownKeys"],
+];
+
+/** The names a file imports, local name to specifier and imported name, and its namespace imports, local to specifier. */
+function importsOf(program: Program): { named: Map<string, [string, string]>; spaces: Map<string, string> } {
+  const named = new Map<string, [string, string]>();
+  const spaces = new Map<string, string>();
+  for (const st of program.body) {
+    if (st.type !== "ImportDeclaration" || st.importKind === "type") continue;
+    for (const sp of st.specifiers) {
+      if (sp.type === "ImportNamespaceSpecifier") spaces.set(sp.local.name, st.source.value);
+      else if (sp.type === "ImportDefaultSpecifier") named.set(sp.local.name, [st.source.value, "default"]);
+      else if (sp.importKind !== "type")
+        named.set(sp.local.name, [
+          st.source.value,
+          sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value,
+        ]);
+    }
+  }
+  return { named, spaces };
+}
+
 /**
  * The escapes one code file holds (k.escapes): every row read by syntax. A file that does not parse is one R1150 and
  * nothing else. `kind` says where the file sits; it decides R1050, R1057, R1058, R1059 and R1010. R2451 is an `allow` of
  * the object a `.transaction(` call takes: `'lost updates'` high, any other value the row's medium; `reason` its reason.
+ * `supervisor` names, for an imported name, the library file whose function of that name supervises (R1018's app call).
  */
-export function codeEscapes(path: string, source: string, kind: FileKind): Raw[] {
+export function codeEscapes(
+  path: string,
+  source: string,
+  kind: FileKind,
+  supervisor: (spec: string, name: string) => string | undefined = () => undefined,
+): Raw[] {
   const parsed = parseSync(path, source, { sourceType: "module", lang: langOf(path) });
   const at = locator(source);
   const first = parsed.errors[0];
@@ -129,6 +214,56 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
   let folded = -1;
   const envs = new Set<number>();
   let unsafeCalls = 0;
+  const defects = defectNames(parsed.program);
+  const imported = importsOf(parsed.program);
+  /** The library file a call's callee, an imported name or a namespace member, supervises in; app code only. */
+  const supervisedBy = (c: Expression): { name: string; at: string } | undefined => {
+    if (!kind.app && !kind.unsafeDir) return undefined;
+    let ref: readonly [string, string] | undefined;
+    if (c.type === "Identifier") ref = imported.named.get(c.name);
+    else if (c.type === "MemberExpression" && !c.computed && c.object.type === "Identifier") {
+      const spec = imported.spaces.get(c.object.name);
+      if (spec !== undefined && c.property.type === "Identifier") ref = [spec, c.property.name];
+    }
+    if (ref === undefined) return undefined;
+    const at = supervisor(ref[0], ref[1]);
+    return at === undefined ? undefined : { name: ref[1], at };
+  };
+  /**
+   * Spans reachable only where a `Result` is not ok (R1013), as TypeScript narrows `ok`: an `if`'s branch, a
+   * conditional's operand, the right of `&&` or `||`, and the statements after an `if` whose other branch always exits.
+   */
+  const errSpans: { start: number; end: number }[] = [];
+  const errIf = (cond: boolean, start: number, end: number): void => {
+    if (cond) errSpans.push({ start, end });
+  };
+  const statements = (list: readonly Statement[]): void => {
+    const last = list.at(-1);
+    if (last === undefined) return;
+    for (const st of list) {
+      if (st.type !== "IfStatement") continue;
+      const f = okFacts(st.test);
+      const exitsOk = alwaysExits(st.consequent);
+      const exitsErr = st.alternate !== null && alwaysExits(st.alternate);
+      errIf((exitsOk && f.whenFalse) || (exitsErr && f.whenTrue), st.end, last.end);
+    }
+  };
+  /** The spans of `unsafe(` calls (R1015). */
+  const unsafeSpans: { start: number; end: number }[] = [];
+  const predicate = (n: FunctionNode | ArrowFunctionExpression): void => {
+    if (n.body === null || n.returnType?.typeAnnotation.type !== "TSTypePredicate") return;
+    if (unsafeSpans.some((s) => n.start >= s.start && n.end <= s.end) || !reviewedProof(n)) return;
+    add("R1015", n.start, n.end);
+  };
+  const isDefectCall = (c: Expression): boolean =>
+    c.type === "Identifier"
+      ? defects.names.has(c.name)
+      : c.type === "MemberExpression" &&
+        !c.computed &&
+        c.object.type === "Identifier" &&
+        defects.spaces.has(c.object.name) &&
+        c.property.type === "Identifier" &&
+        c.property.name === "defect";
 
   const specifier = (start: number, end: number, spec: string): void => {
     if (PRIVATE_KEEL.test(spec) || (spec.startsWith(".") && INTO_KEEL.test(spec))) add("R1055", start, end);
@@ -164,15 +299,61 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
     TemplateLiteral: (n) => fold(n),
     BinaryExpression: (n) => fold(n),
     TaggedTemplateExpression: (n) => fold(n),
+    Program: (n) => statements(n.body),
+    BlockStatement: (n) => statements(n.body),
+    StaticBlock: (n) => statements(n.body),
+    SwitchCase: (n) => statements(n.consequent),
+    IfStatement: (n) => {
+      const f = okFacts(n.test);
+      errIf(f.whenTrue, n.consequent.start, n.consequent.end);
+      if (n.alternate !== null) errIf(f.whenFalse, n.alternate.start, n.alternate.end);
+    },
+    ConditionalExpression: (n) => {
+      const f = okFacts(n.test);
+      errIf(f.whenTrue, n.consequent.start, n.consequent.end);
+      errIf(f.whenFalse, n.alternate.start, n.alternate.end);
+    },
+    LogicalExpression: (n) => {
+      const f = okFacts(n.left);
+      if (n.operator === "&&") errIf(f.whenTrue, n.right.start, n.right.end);
+      if (n.operator === "||") errIf(f.whenFalse, n.right.start, n.right.end);
+    },
+    FunctionDeclaration: predicate,
+    FunctionExpression: predicate,
+    ArrowFunctionExpression: predicate,
     CallExpression: (n) => {
       fold(n);
       const c = n.callee;
+      if (isDefectCall(c) && errSpans.some((s) => n.start >= s.start && n.end <= s.end)) add("R1013", n.start, n.end);
       const a0 = n.arguments[0];
       const arg = a0 === undefined || a0.type === "SpreadElement" ? undefined : a0;
       for (const a of n.arguments) if (a.type !== "SpreadElement") evalRef(a);
+      const attempted =
+        (c.type === "Identifier" && c.name === "attempt") ||
+        (c.type === "MemberExpression" &&
+          !c.computed &&
+          c.property.type === "Identifier" &&
+          c.property.name === "attempt");
+      if (attempted && wideExpect(parsed.program, n.arguments[1])) add("R1017", n.start, n.end);
+      if (calls(c, "supervise")) add("R1018", n.start, n.end);
+      else {
+        const by = supervisedBy(c);
+        if (by !== undefined) add("R1018", n.start, n.end, { message: `${by.name} supervises its work (${by.at})` });
+      }
+      if (
+        LISTINGS.some(([o, m]) => isMember(c, o, m)) &&
+        arg?.type !== "ObjectExpression" &&
+        arg?.type !== "ArrayExpression"
+      )
+        add("R1019", n.start, n.end, {
+          message: "own symbol keys listed of a value review cannot tell from the global object",
+        });
+      if (isMember(c, "Symbol", "for") && (arg === undefined || foldString(arg) === null)) add("R1019", n.start, n.end);
+      if (listensUncaught(c) && (arg === undefined || foldString(arg) === null)) add("R1020", n.start, n.end);
       if (c.type === "Identifier") {
         if (c.name === "unsafe") {
           unsafeCalls++;
+          unsafeSpans.push({ start: n.start, end: n.end });
           const reason = arg === undefined ? null : foldString(arg);
           add("R1001", n.start, n.end, reason === null ? {} : { reason });
         } else if (c.name === "reveal") add("R1012", n.start, n.end);

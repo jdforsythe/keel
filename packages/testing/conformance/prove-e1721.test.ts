@@ -1,7 +1,3 @@
-// k.prove, Rules "E1721 `prove` called in a worker thread, where Z3 can abort or hang (fix: vitest `pool: "forks"`)."
-// Spec: k.prove, clause "In a worker thread, `prove` rejects E1721."
-// Seed: 1337. The worker body is prove-e1721.worker.ts, loaded through Node's type stripping.
-import { testTime } from "@keel/tooling/test-time";
 import { once } from "node:events";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -11,6 +7,10 @@ import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+// k.prove, Rules "E1721 `prove` called in a worker thread, where Z3 can abort or hang (fix: vitest `pool: "forks"`)."
+// Spec: k.prove, clause "In a worker thread, `prove` rejects E1721."
+// Seed: 1337. The worker body is prove-e1721.worker.ts, loaded through Node's type stripping.
+import { testTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
 const SEED = 1337;
@@ -49,12 +49,15 @@ describe("k.prove: E1721", () => {
     "on the main thread the same store proves, naming both transactions",
     async () => {
       const txs: Parameters<typeof prove>[0][number][] = [];
-      scope(() => {
-        const st = store(s.object({ n: s.int({ min: 0, max: 9 }) }), { n: 0 }, { id: "mt.count" });
-        invariant(st, (state) => state.n >= 0);
-        txs.push(transaction(st, "mt.inc", s.object({}), (state) => ({ n: state.n < 9 ? state.n + 1 : state.n })));
-        txs.push(transaction(st, "mt.dec", s.object({}), (state) => ({ n: state.n > 0 ? state.n - 1 : state.n })));
-      });
+      scope(
+        () => {
+          const st = store(s.object({ n: s.int({ min: 0, max: 9 }) }), { n: 0 }, { id: "mt.count" });
+          invariant(st, (state) => state.n >= 0);
+          txs.push(transaction(st, "mt.inc", s.object({}), (state) => ({ n: state.n < 9 ? state.n + 1 : state.n })));
+          txs.push(transaction(st, "mt.dec", s.object({}), (state) => ({ n: state.n > 0 ? state.n - 1 : state.n })));
+        },
+        { detached: true },
+      );
       const result = await prove(txs);
       expect([...result.proven].sort()).toEqual(["mt.dec", "mt.inc"]);
     },

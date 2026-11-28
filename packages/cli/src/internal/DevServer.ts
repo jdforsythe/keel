@@ -4,7 +4,11 @@ export type DevServer = {
   readonly version: string;
   /** `config.server.port` as Vite resolved it: the given port, the config's `server.port`, or Vite's default. */
   readonly port: unknown;
+  /** `config.server.host` as Vite resolved it: `--host` when given, else the config's own, else undefined. */
+  readonly host: unknown;
   listen(): Promise<unknown>;
+  /** Listens on `127.0.0.1:<port>` too, with the same request and upgrade handlers, and closes with the server. */
+  loopback(port: number): Promise<void>;
   close(): Promise<unknown>;
   printUrls(): void;
   /** Writes a line through Vite's logger. */

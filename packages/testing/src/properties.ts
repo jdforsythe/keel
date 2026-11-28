@@ -4,6 +4,7 @@ import * as fc from "fast-check";
 import { checkComponent } from "./internal/checkComponent.ts";
 import { checkTransaction } from "./internal/checkTransaction.ts";
 import { fail } from "./internal/fail.ts";
+import { idShaped } from "./internal/idShaped.ts";
 import { jsonOf } from "./internal/jsonOf.ts";
 import { propertyFailure } from "./internal/propertyFailure.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
@@ -16,7 +17,8 @@ const DEFAULT_RUNS = 100;
 
 /**
  * Schema-generated properties (k.testing Properties). A component renders every generated `Props` value without
- * throwing or breaking an axe rule, and two renders with one seed are equal. A transaction, for every generated
+ * throwing or breaking an axe rule, and two renders with one seed are equal; a plain-string `id` prop is generated
+ * id-shaped (`idShaped`), as an element's id is. A transaction, for every generated
  * store state satisfying the store's invariants and every generated payload, commits with every invariant holding,
  * is undone exactly, and is deterministic; the shrunk (payload, state) pair is reported. The seed is `options.seed`, else `KEEL_SEED`, else 1337. A failure throws E1704 with the seed,
  * the failing run, and the shrunk case; success resolves `{ seed, runs }`.
@@ -34,7 +36,10 @@ export async function properties<T, P>(
     if (props === undefined)
       throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
     const out = fc.check(
-      fc.property(gen(props), (p) => checkComponent(target, p, seed)),
+      fc.property(
+        gen(props).map((p) => idShaped(props, p)),
+        (p) => checkComponent(target, p, seed),
+      ),
       { seed, numRuns: runs },
     );
     if (out.failed && out.counterexample !== null) {

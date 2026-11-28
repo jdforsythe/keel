@@ -1,7 +1,7 @@
+import { isTag } from "../../unsafe/isTag.ts";
 import { Mismatch } from "../internal/Mismatch.ts";
 import { claimNext } from "../internal/claimNext.ts";
 import { cx } from "../internal/cx.ts";
-import { isTag } from "../internal/isTag.ts";
 import { nextClaimable } from "../internal/nextClaimable.ts";
 import { placed } from "../internal/placed.ts";
 import { stamp } from "../internal/stamp.ts";

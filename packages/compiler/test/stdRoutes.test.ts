@@ -6,6 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { routeLiterals } from "@keel/compiler";
 import { buildRoutes } from "@keel/compiler/routes";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { devEntryCode } from "../src/internal/devEntryCode.ts";
 import { projectManifests } from "../src/internal/projectManifests.ts";
@@ -27,7 +29,7 @@ const topology: Topology = { api: { modules: ["app", "frag"], adapter: "node" } 
 const routesFile = (): string => fs.realpathSync(path.join(root, "node_modules/@keel/std-frag/src/routes.ts"));
 
 beforeEach(() => {
-  root = fs.realpathSync(fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-std-routes-")));
+  root = fs.realpathSync(tempDir(".tmp-std-routes-", import.meta.dirname));
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))
@@ -96,6 +98,34 @@ describe("stdRoutes (k.topology Route table)", () => {
     expect(stdContract(root, "app")).toBeUndefined();
   });
 
+  // k.library Kind: an entry's `keel` target is the code every surface reads, linked or installed; its built `default`
+  // (JSX left in, a file under `node_modules` the dev server cannot transform) is never the binding.
+  it("for an installed library, resolves ./routes and ./contract to the entries' keel sources, not the built files", () => {
+    const lib = "node_modules/@acme/frag";
+    write(
+      `${lib}/package.json`,
+      JSON.stringify({
+        name: "@acme/frag",
+        type: "module",
+        keel: "library",
+        exports: {
+          ".": { keel: "./src/index.ts", default: "./dist/src/index.js" },
+          "./contract": { keel: "./src/contract.ts", default: "./dist/src/contract.js" },
+          "./routes": { keel: "./src/routes.ts", default: "./dist/src/routes.js" },
+        },
+      }),
+    );
+    write(`${lib}/module.ts`, 'export default { id: "frag", deps: [], capabilities: [] };\n');
+    for (const f of ["index", "contract", "routes"]) {
+      write(`${lib}/src/${f}.ts`, "export {};\n");
+      write(`${lib}/dist/src/${f}.js`, "export {};\n");
+    }
+    write("modules/app/module.ts", 'export default { id: "app", deps: ["@acme/frag"], capabilities: [] };\n');
+    const pkg = fs.realpathSync(path.join(root, lib));
+    expect(stdRoutes(root, "frag")).toEqual([path.join(pkg, "src/routes.ts"), pkg, "@acme/frag/routes"]);
+    expect(stdContract(root, "frag")).toEqual([path.join(pkg, "src/contract.ts"), pkg, "@acme/frag/contract"]);
+  });
+
   it("gives nothing for an app module, an unknown id, a package not in deps, or one without ./routes", () => {
     expect(stdRoutes(root, "app")).toBeUndefined();
     expect(stdRoutes(root, "nope")).toBeUndefined();
@@ -132,22 +162,29 @@ describe("stdRoutes (k.topology Route table)", () => {
     expect(projectManifests(topology, ["modules/app/routes.ts"])).toEqual(["modules/app/routes.ts"]);
   });
 
-  it("reads the stdlib routes statically and evaluates them into routes.json", { timeout: 30000 }, async () => {
-    const files = ["modules/app/module.ts", "modules/app/app.contract.ts", "modules/app/routes.ts", "topology.ts"].map(
-      (p) => ({
+  it(
+    "reads the stdlib routes statically and evaluates them into routes.json",
+    { timeout: fixedTime(30000) },
+    async () => {
+      const files = [
+        "modules/app/module.ts",
+        "modules/app/app.contract.ts",
+        "modules/app/routes.ts",
+        "topology.ts",
+      ].map((p) => ({
         path: p,
         source: fs.readFileSync(path.join(root, p), "utf8"),
-      }),
-    );
-    const literals = routeLiterals(files, { topology, root });
-    expect(Object.keys(literals?.routes ?? {}).sort()).toEqual(["app.home", "frag.list"]);
-    expect(literals?.closed).toBe(true);
-    await buildRoutes(root);
-    const written: unknown = JSON.parse(fs.readFileSync(path.join(root, ".keel/routes.json"), "utf8"));
-    const data: unknown = typeof written === "object" && written !== null ? Reflect.get(written, "data") : undefined;
-    expect(Object.keys(typeof data === "object" && data !== null ? data : {}).sort()).toEqual([
-      "app.home",
-      "frag.list",
-    ]);
-  });
+      }));
+      const literals = routeLiterals(files, { topology, root });
+      expect(Object.keys(literals?.routes ?? {}).sort()).toEqual(["app.home", "frag.list"]);
+      expect(literals?.closed).toBe(true);
+      await buildRoutes(root);
+      const written: unknown = JSON.parse(fs.readFileSync(path.join(root, ".keel/routes.json"), "utf8"));
+      const data: unknown = typeof written === "object" && written !== null ? Reflect.get(written, "data") : undefined;
+      expect(Object.keys(typeof data === "object" && data !== null ? data : {}).sort()).toEqual([
+        "app.home",
+        "frag.list",
+      ]);
+    },
+  );
 });

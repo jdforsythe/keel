@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { check } from "@keel/check";
+import { check, libraryEntryDiags } from "@keel/check";
 import { importDeps } from "@keel/compiler/std/importDeps";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { CheckDiagnostic } from "./CheckDiagnostic.ts";
@@ -19,7 +19,8 @@ import { relPath } from "./relPath.ts";
  * `base` is the parsed `surface.json` of `keel check --base` (k.compat E1562). The type pass keeps its results in the
  * project's `node_modules/.cache/keel` when the project has `node_modules` (k.check-cache), so a `keel check` after a
  * `keel build` (whose check runs here too) over the same files reuses the build's; a reused result is the one a run
- * with the folder deleted gives. Each project's `tokens.ts` is evaluated first (`checkTokens`, k.a11y-static Tokens): its
+ * with the folder deleted gives. Each project's `tokens.ts` is evaluated first (`checkTokens`, k.a11y-static Tokens), unless a library's entry is
+ * E1815 (`libraryEntryDiags`), when nothing is imported or evaluated (k.looks Entries): its
  * tokens reach the rules that judge them (E1804, E1809, E1801 over `base` and looks), and one that gives none is E1807.
  * The files of the libraries `project`'s manifests reach join `project` and, with `libraries`, the checked files
  * (`checkInputs`, k.library In an app). `reach` holds the manifests whose `deps` name the libraries read and imported
@@ -37,12 +38,15 @@ export async function runCheck(
   own?: string,
 ): Promise<Diag[]> {
   const { all, checked } = checkInputs(cwd, files, project, libraries, reach);
-  const loaded = await importDeps(cwd, reach, own);
+  // While a library's entry lists `keel` other than first (E1815, which check() reports), nothing is evaluated: no
+  // package is imported and no `tokens.ts` run, so no file other than the one check reads as source can load.
+  const guarded = libraryEntryDiags(all).length > 0;
+  const loaded = guarded ? [] : await importDeps(cwd, reach, own);
   const topology = projectTopology(project);
   const options = topology === undefined ? {} : { topology };
   const modules = join(cwd, "node_modules");
   const cache = existsSync(modules) ? { typeCache: join(modules, ".cache", "keel") } : {};
-  const tokens = await checkTokens(cwd, project);
+  const tokens = guarded ? { projectArtifacts: {}, diags: [] } : await checkTokens(cwd, project);
   const found: readonly CheckDiagnostic[] = [
     ...loaded,
     ...tokens.diags,

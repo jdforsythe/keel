@@ -4,7 +4,7 @@
 // Not built yet: every case is `test.skip`; the builder changes `test.skip` to `test` in each.
 // Assumed: the E1807 for a low `base.focus` is thrown by `defineTokens` and by `compileStyles`, as the other E1807 causes are (rules-e1801-e1807-codes-0065.test.ts), and `TokenSchema.parse` returns `ok: false`.
 // The Tab and click behavior is Chromium's and is not testable here (no browser in this suite); the CSS it follows from is asserted: a 2px solid outline in the focus color at 2px offset on `:focus-visible`, and no `:focus` outline.
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { SEED, ratio } from "./fixtures.ts";

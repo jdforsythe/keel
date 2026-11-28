@@ -1,10 +1,8 @@
 import { owner } from "@keel/reactive";
 import type { Contract } from "@keel/router/contract";
-import { s, secretPath } from "@keel/schema";
+import { defect, s, secretPath } from "@keel/schema";
 import { type Endpoint, service } from "@keel/services";
 import { store, transaction } from "@keel/store";
-import { detached } from "../unsafe/detached.ts";
-import { raise } from "../unsafe/raise.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import { OutboxEntry } from "./OutboxEntry.schema.ts";
 import { Resolution } from "./Resolution.schema.ts";
@@ -14,15 +12,15 @@ import { OutboxState } from "./internal/OutboxState.schema.ts";
 import { Resolve } from "./internal/Resolve.schema.ts";
 import { Settle } from "./internal/Settle.schema.ts";
 import { declareConfig } from "./internal/declareConfig.ts";
-import { isWrite } from "./internal/isWrite.ts";
+import { writeOf } from "./internal/writeOf.ts";
 
 /**
  * Declare an outbox (std.offline) over the API write entries of `contract` (k.contract), sent through
  * `service({ contract })` with an undeclared 400 or 409 read as JSON: the client store `id` with state `{ entries }`,
  * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. A GET, `events` or page entry is not sent. Inside a
- * scope the store is created now and the outbox stops flushing when that scope is disposed; outside one (a
- * module-level declaration) it is created on first use and lives as long as the module; each ctx that uses it reaches
- * only the entries it added or loaded. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it.
+ * scope or at a module's top level the store is created now in that scope, and the outbox stops flushing when the
+ * scope is disposed; with no scope (after an `await`) it is E1203. Each ctx that uses it reaches only the
+ * entries it added or loaded. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it.
  * Throws E2651 (an Error with `code`) when a write entry's body holds an `s.secret`: entries are stored in the browser.
  */
 export function outbox<const C extends Contract>(
@@ -31,21 +29,24 @@ export function outbox<const C extends Contract>(
   opts: { readonly limit?: number | undefined; readonly maxBytes?: number | undefined } = {},
 ): Outbox<Writes<C>> {
   const api: Record<string, Endpoint> = {};
-  for (const [entry, e] of Object.entries(contract.entries)) {
-    if (!isWrite(e)) continue;
+  for (const [entry, value] of Object.entries(contract.entries)) {
+    const e = writeOf(value);
+    if (e === undefined) continue;
     const name = entry.slice(contract.module.length + 1);
     const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
-      const message = `E2651 outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`;
-      return raise(message, "E2651");
+      return defect("an outbox endpoint body holds an s.secret", {
+        code: "E2651",
+        data: { outbox: id, endpoint: name, at: at || "(root)" },
+      });
     }
     api[name] = e;
   }
   const entries = Object.fromEntries(
-    Object.entries(contract.entries).map(([entry, e]) => [
-      entry,
-      isWrite(e) ? { ...e, errors: { 400: s.json(), 409: s.json(), ...e.errors } } : e,
-    ]),
+    Object.entries(contract.entries).map(([entry, e]) => {
+      const w = writeOf(e);
+      return [entry, w === undefined ? e : { ...e, errors: { 400: s.json(), 409: s.json(), ...w.errors } }];
+    }),
   );
   const client = service({ contract: { ...contract, entries } });
   let c: Config | undefined;
@@ -81,13 +82,13 @@ export function outbox<const C extends Contract>(
     };
     return c;
   };
-  const sc = owner();
-  sc?.onDispose(() => {
+  // At a module's top level `owner()` is the compiler's module root; the store is made in it now.
+  const at = owner() ?? defect("outbox() outside a scope or a module top level", { code: "E1203" });
+  at.onDispose(() => {
     if (c) c.live = false;
   });
-  if (sc) make();
-  // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const cfg = (): Config => c ?? detached(make);
+  const made = at.run(make);
+  const cfg = (): Config => made;
   const st = () => cfg().store;
   const o: Outbox<Writes<C>> = {
     id,

@@ -11,13 +11,13 @@ const URL_MAX = 48;
 
 const fail = (why: string, url: string): OutRecord[] => {
   const d = makeDiag("E1056", `${why}: ${url.length > URL_MAX ? `${url.slice(0, URL_MAX - 3)}...` : url}`, {
-    see: "k.cli",
+    see: "k.inspect",
   });
   return [d, summary("inspect", [d], {})];
 };
 
 /**
- * `keel inspect [url]` (k.cli Inspect): fetch `<url>/__keel/inspect` from a running dev app and summarize it, one
+ * `keel inspect [url]` (k.inspect): fetch `<url>/__keel/inspect` from a running dev app and summarize it, one
  * `inspect.store` record per store, then per inspector section (both sorted by id) an `inspect.section` record, or
  * E1057 for a section the target failed to read or validate, then counts. A document with `deployables` gives one
  * record per deployable (by name) and section, carrying `deployable`. Unreachable, non-2xx, or a body that is not
@@ -65,7 +65,7 @@ export async function inspectCommand(input: Input, io: Io): Promise<OutRecord[]>
       const at = deployable === undefined ? {} : { deployable };
       records.push(
         "error" in sec
-          ? makeDiag("E1057", sec.error.replace(/^E1057 /, ""), { see: "k.cli" })
+          ? makeDiag("E1057", sec.error.replace(/^E1057 /, ""), { see: "k.inspect" })
           : { kind: "inspect.section", id, ...at, doc: sec.doc, value: sec.value },
       );
     }

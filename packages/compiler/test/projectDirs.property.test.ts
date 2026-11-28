@@ -116,4 +116,21 @@ describe("projectDirs", () => {
       { seed: 1337, numRuns: 100 },
     );
   });
+  it("a folder whose package.json marks it a library, and every folder in it, is no project root", () => {
+    const lib = '{"name":"@fx/sup","keel":"library"}';
+    fc.assert(
+      fc.property(dir, fc.constantFrom(".keel/ledger.json", ".keel/surface.json", "demo/.keel/routes.json"), (d, a) => {
+        const at = `${d}libs/sup/`;
+        const files = [
+          { path: `${at}package.json`, source: lib },
+          { path: `${at}${a}`, source: "{}" },
+          { path: `${at}topology.ts`, source: "export default {}\n" },
+        ];
+        expect(projectDirs(files).filter((p) => p.startsWith(at))).toEqual([]);
+        const plain = [{ path: `${at}package.json`, source: '{"name":"@fx/sup"}' }, ...files.slice(1)];
+        if (!at.split("/").includes("modules")) expect(projectDirs(plain)).toContain(at);
+      }),
+      { seed: 1337, numRuns: 100 },
+    );
+  });
 });

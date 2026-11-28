@@ -1,4 +1,3 @@
-import { attempt } from "@keel/schema";
 import type { RouteProps } from "../types/RouteProps.ts";
 import type { DocHead } from "./DocHead.ts";
 import type { Located } from "./Located.ts";
@@ -16,6 +15,12 @@ export function pageHead(route: Located | null, params: Rec, props: RouteProps, 
   const lang = typeof value === "string" ? value : "en";
   const def = route?.def;
   if (failed || def?.title === undefined) return { title: null, lang };
-  const made = attempt(() => def.title?.(props));
-  return { title: made.ok && typeof made.value === "string" ? made.value : null, lang };
+  let made: unknown = null;
+  // The owner of `title`: any throw, a defect among them, is the fallback title (k.head).
+  try {
+    made = def.title?.(props);
+  } catch {
+    made = null;
+  }
+  return { title: typeof made === "string" ? made : null, lang };
 }

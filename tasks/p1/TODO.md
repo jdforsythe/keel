@@ -30,7 +30,7 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [x] `done` backlog 0991: a scaffolded project builds on first run
 - [ ] `next` the gate equals CI: `pnpm gate` runs CI's jobs from `tooling/ci.source.json` and every test time bound goes through one scale (done); the whole gate has failed three times on time bounds at one tenth scale, four bounds and one smoke left (`tasks/0963-to-p1/PLAN.md`, checkpoint 104); then CI green on the pushed head
 - [ ] `next` backlog 1040 (the concurrency cap), 1103, 1115, 1119
-- [ ] `next` a slow-machine job in `pnpm gate`: the test shards in a Linux container with CPUs constrained to CI's runner or less, since three CI failures in a row (charts' property timeout, the watchdog's hook bound, household's simulation budget) passed on this machine and failed on a 4-core runner
+- [ ] `running` a slow-machine job in `pnpm gate` (built; step outputs, the `built-smokes` database and Chromium in the container mended; one whole `pnpm gate` owed as proof): the test shards in a Linux container with CPUs constrained to CI's runner or less, since three CI failures in a row (charts' property timeout, the watchdog's hook bound, household's simulation budget) passed on this machine and failed on a 4-core runner
 - [ ] `next` check's 13 mutation chunks on the main line, when the machine is quiet
 
 ### W1 Freeze
@@ -55,6 +55,7 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [x] `done` lane 09 pii-and-data: RFC 0236
 - [ ] `running` lane 03 ledger-integrity: RFC 0235 steps 1 to 5 on the main line (the ledger rests on run reports; items keyed by text); step 6 next
 - [ ] `next` lanes 02, 04, 05 and 10 to 17 and 33, in the triage's order, as lanes free up
+- [ ] `next` the kernel held to its own rules: thirteen discarded `Result`s in kernel code (E1453) found when the floating-promise sweep ran over `packages/*/src`; then every app rule run over the kernel's own source as a standing check, each finding fixed or the rule's kernel exemption stated in the spec
 - [ ] `blocked` (A1) the A2 lanes 18 to 32
 - [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
 
@@ -94,13 +95,14 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 
 ### W17 The end user's seat (the personas, hands-on from the kit)
 `tasks/p1/personas.md` holds who Keel is for; `tasks/p1/end-user-review.md` holds each review's findings. Two reviews are in (a component library author; a product engineer with a third-party library): both "yes, with pain". In this order:
-- [ ] `next` the install path: `pnpm create keel` (a `create-keel` package), a kit README with the `overrides` recipe until npm; the clean-runner job of W12 uses it
+- [ ] `running` the install path (RFC 0247 on the main line and green in CI; left to confirm before this closes: the kit README's `overrides` recipe and the clean-runner job): `pnpm create @keel/app` (RFC 0247, `@keel/create-app` over `@keel/scaffold/create`), a kit README with the `overrides` recipe until npm; the clean-runner job of W12 uses it
+- [ ] `next` `topology` from a package with no server in its name, before 1.0, so a `client` project lists no server package; then k.create's no-server clause names `@keel/server` too (RFC 0247 depends on it)
 - [ ] `next` the library trust holes, as RFC 0240's next part: a library's `./tools` (code that runs at check and build) and its `unsafe/` are capabilities an app grants; a library's ledger rungs are verified from its shipped run report or shown as claimed; the scaffolded CI runs `keel ledger --diff`
 - [ ] `next` `@keel/server` answers 500 and keeps running when server-render code rejects (E1577)
 - [ ] `running` token names at `keel check` (RFC 0241, app code); then a library's own folder and a listed library's `src/`, and E1801 with file and line at build
 - [ ] `next` an RFC for a library's look (the plan's D188): a library ships a tokens object the app composes in its own `tokens.ts` as it composes `brandTokens`; needed names declared, namespaced by library id and checked against the app's at `keel check`; nothing applies without the app's import; `Part` roles a component library needs (switch, slider, radio and the rest of the authoring practices)
 - [ ] `next` testing as an app or library developer finds it: `fire` submit with `app`; `simulate` over `createApp` (E1729 with its two entries); `properties(Component)` with an id-shaped id; a probe's property credits its component; `console.log` visible; an own-folder a11y report, evidence and a mutation command for a library
-- [ ] `next` an RFC for end-to-end tests: `keel test --e2e` over the built app in a real browser, from `@keel/testing`; the repo's smokes move onto it
+- [ ] `running` end-to-end tests (RFC 0244, on the main line and green in CI; left to confirm before this closes: the repo's smokes moved onto it): `keel test --e2e` over the built app in a real browser, from `@keel/testing`; the repo's smokes move onto it
 - [ ] `next` a library's publish story: a Publish paragraph in k.library-pack and keel-library, a scaffolded CI workflow with provenance; `keel scaffold library` writes the agent files and `.gitignore`
 - [ ] `next` the paper cuts of both reviews (the leftover `app` module and E1552, E1005 after each edit, generated form ids, E1052's message, `keel review` on a fresh app, `keel docs` for installed libraries, a no-server app importing `@keel/server`, E1751's cut message, slot and `Part` examples in keel-library)
 - [ ] `next` the remaining reviews, each a role and a kind: a static content site (A1, K1); a designer re-theming an app and a library (A5); a compliance owner reading `keel evidence` (A6); a tester (A7); a service library such as maps with a script from another origin (L3); a plain npm package inside an app (L6); a storefront (K2); a SaaS over services (K4); each also run by Codex as the agent form
@@ -108,6 +110,13 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `next` a second colour scheme (dark mode): decided inside the look RFC, since it is a question about tokens; no line held it before
 - [ ] `next` measured claims for the pitch: an agent builds the same app in Keel and in the comparison frameworks (W16), and a runtime and bundle size comparison produced by CI (none is planned elsewhere); until both exist the site claims neither
 - [ ] `next` the repository's own numbers agree: the README says 603 clauses and 35 packages against the ledger's 1,479 and 41; the handoff says 78 of 79 kernel sections conformance-covered where the spec status lines read 73 of 83; the `unsafe` count is 33 in the ledger; whether golden-2 already runs on the Postgres battery (its README says so, W14 says next); the two database variables (`KEEL_DATABASE_URL`, `KEEL_POSTGRES_URL`) explained in one place. Counts are generated, not typed, wherever a doc states one
+- [ ] `next` colour forms a designer expects: k.values allows `#rgb` and `#rrggbb` only; widen to every opaque form contrast can judge exactly (`rgb()`, `hsl()`, `oklch()`), and decide what a colour with alpha is (an overlay token whose backdrop is stated, so contrast is still judged)
+- [ ] `next` session recordings redesigned (RFC 0248, the plan's D199): a write-only ingest that needs a short-lived signed upload grant; a configured sink the server never reads back; no list route, reader guard or viewer registration; `keel session` works from the storage or a local folder; the nightly job reads the storage directly
+- [ ] `running` themes (RFC 0249 merged into the main line at 8ac4bb019, CI pending; left to confirm before this closes: the Figma guide) (the plan's D200): named themes beside light and dark, each a partial token set with a condition; print against screen; contrast per theme; every opaque colour form; `keel tokens import` from a design tokens file with modes as themes; a guide from a Figma file to a styled app
+- [ ] `next` motion (RFC 0252, the plan's D203): transitions and easings as tokens and style props; named keyframes with enter and exit; page and shared-element transitions through the router; scroll-driven animation; reduced motion by construction and checked; a scope-owned way for code to animate
+- [ ] `next` design mode in `keel dev` (RFC 0253, the plan's D205): token values edited live across the app or scoped to a page or component, contrast judged as they change, themes created and switched, the result exported as a patch to `tokens.ts` for a pull request
+- [ ] `next` `keel check` refreshes its derived `.keel/` files before judging, so an edit needs no build in between; a stale committed artifact is an error only in CI's frozen mode
+- [ ] `blocked` (freeze) a browser tool over the queryable runtime (RFC 0250): one extension for Chrome and Firefox with stores, the dependency graph, scopes and tasks, the a11y tree, tokens and contrast, the session recorder, and a server panel
 - [ ] `human` another product ships a global `keel` binary: the bin name before npm
 
 ### W12 Release
@@ -127,3 +136,10 @@ Nothing blocks on a person now. Near the end of P1, in one sitting: a domain and
 - [ ] The site live
 - [ ] An outsider builds an app from the docs
 - [ ] 1.0.0 after four weeks with no kernel semantic change and no frozen section reopened
+- [ ] Tests leave temp folders behind (137,000 `keel-*` folders, 45 GB, found on one machine): fix at the shared helpers so a test's temp folders are removed at its end, and add a check that a suite leaves none.
+- [ ] A stdlib library for device capabilities behind ctx seams, each with a simulated form: clipboard, share, media queries, in-view and resize observers, image preloading. Required before public: RFC 0251's globals rule (E1763) leaves these unlisted, so without the library an ordinary modern page needs `unsafe`.
+- [ ] A static site's canonical URL: `ctx.origin` is `undefined` at prerender; decide how a prerendered page states its public origin.
+- [ ] RFC 0256 built: the device libraries (std-device, std-share, std-screen), seven slices, after RFC 0251 merges.
+- [ ] RFC 0257: a head API (the canonical link, social cards, per-page head). Owed before public.
+- [ ] RFC 0258: images (lazy loading, priority, decode, sizes). Owed before public.
+- [ ] An installed library's `./tokens` entry fails the app's `keel test` (E1807: Node does not strip types under `node_modules`) though check and build pass: RFC 0243's path for a library installed from a tarball. Found by the `pnpm create` review.

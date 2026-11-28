@@ -3,6 +3,7 @@
 // k.scaffold-service, Input "`<Name>` being `name` with its first letter upper-cased. It is lowerCamel, as a module id is (else E1352, nothing written, in either form); without it, `name` is the module id. The client is `api` in `api.server.ts` whatever the name, so a module holds one scaffolded service: a second is E1351."
 // seed 1337 (properties over lowerCamel names and over strings outside the rule).
 // Both forms over file maps: `{ id, name, base }` and `{ id, name, schema, service }`. The `--openapi` flag form runs in cli-service-flags.test.ts.
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { RUNS, SEED, apiName, apply, errText, read, scaffoldRaw, serviceInput, snap } from "./fixtures.ts";
@@ -53,12 +54,16 @@ describe("service name, base form", () => {
     for (const [p, c] of before) if (p !== "package.json") expect(out.files.get(p), p).toBe(c);
     expect(dependencies(out.files)["@keel/services"]).toBe(dependencies(before)["@keel/server"]);
   });
-  it("it leaves keel check and keel test clean", () => {
-    const tree = apply("service", { id: "orders", name: "gitHub", base: GITHUB }, freshNode()).files;
-    const dir = materialize(tree);
-    dirs.push(dir);
-    expectCheckAndTestClean(dir, testFileCount(tree));
-  }, 120000);
+  it(
+    "it leaves keel check and keel test clean",
+    () => {
+      const tree = apply("service", { id: "orders", name: "gitHub", base: GITHUB }, freshNode()).files;
+      const dir = materialize(tree);
+      dirs.push(dir);
+      expectCheckAndTestClean(dir, testFileCount(tree));
+    },
+    fixedTime(120000),
+  );
   it("with name: 'orders' the edit set equals that of no name", () => {
     const a = apply("service", { id: "orders", base: GITHUB }, freshNode());
     const b = apply("service", { id: "orders", name: "orders", base: GITHUB }, freshNode());

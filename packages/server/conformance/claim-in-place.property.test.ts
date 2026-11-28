@@ -3,6 +3,7 @@
 // Seed: 1337 (fc.assert below). Property: over random trees of components with one to four children, structural ops with
 // multi-child branches and rows, fragments and text, a served page resumes with no element or region comment removed, no element added,
 // each served element the same object in the same region, and `detached()` 0.
+import { fixedTime } from "@keel/tooling/test-time";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { resumeDocument } from "@keel/testing";
@@ -92,37 +93,41 @@ export default function Page() {
 const indexIn = (before: readonly Element[], lists: readonly (readonly Element[])[]): number[][] =>
   lists.map((l) => l.map((e) => before.indexOf(e)));
 
-it("Property: over random trees of components, fragments and structural ops with several items, resume removes no element or region comment, adds no element, keeps each element in its region, and detached() is 0", async () => {
-  let run = 0;
-  await fc.assert(
-    fc.asyncProperty(fc.array(tree, { minLength: 1, maxLength: 3 }), async (roots) => {
-      run += 1;
-      const k = `pp${run}`;
-      const page = compilePage(`${k}.page`, source(k, roots));
-      const kContract = contract(k, { [`${k}.page`]: { path: `/${k}` } });
-      const routes = manifest(kContract, { [`${k}.page`]: { component: page } });
-      const doc = await serveRoutes(routes, [k], `/${k}`);
-      expect(doc.status).toBe(200);
+it(
+  "Property: over random trees of components, fragments and structural ops with several items, resume removes no element or region comment, adds no element, keeps each element in its region, and detached() is 0",
+  async () => {
+    let run = 0;
+    await fc.assert(
+      fc.asyncProperty(fc.array(tree, { minLength: 1, maxLength: 3 }), async (roots) => {
+        run += 1;
+        const k = `pp${run}`;
+        const page = compilePage(`${k}.page`, source(k, roots));
+        const kContract = contract(k, { [`${k}.page`]: { path: `/${k}` } });
+        const routes = manifest(kContract, { [`${k}.page`]: { component: page } });
+        const doc = await serveRoutes(routes, [k], `/${k}`);
+        expect(doc.status).toBe(200);
 
-      install(doc);
-      const before = elementsOf(document.body);
-      const regions = indexIn(before, regionElements(document.body));
-      const { result, seen } = observed(document.body, () => resumeBody({ [`${k}.page`]: page }, "production"));
-      expect(result.warnings).toEqual([]);
-      expect(structural(seen.removed)).toEqual([]);
-      expect(elementsIn(seen.added)).toEqual([]);
-      expectKept(before);
-      expect(indexIn(before, regionElements(document.body))).toEqual(regions);
-      q(`${k}.hit`).dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-      await settle();
-      expect(q(`${k}.out`).textContent).toBe("1");
+        install(doc);
+        const before = elementsOf(document.body);
+        const regions = indexIn(before, regionElements(document.body));
+        const { result, seen } = observed(document.body, () => resumeBody({ [`${k}.page`]: page }, "production"));
+        expect(result.warnings).toEqual([]);
+        expect(structural(seen.removed)).toEqual([]);
+        expect(elementsIn(seen.added)).toEqual([]);
+        expectKept(before);
+        expect(indexIn(before, regionElements(document.body))).toEqual(regions);
+        q(`${k}.hit`).dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        await settle();
+        expect(q(`${k}.out`).textContent).toBe("1");
 
-      document.body.innerHTML = "";
-      const t = await resumeDocument(doc.text, { routes });
-      expect(t.removed()).toBe(0);
-      expect(t.detached()).toBe(0);
-      t.dispose();
-    }),
-    { seed: SEED, numRuns: 12 },
-  );
-}, 120_000);
+        document.body.innerHTML = "";
+        const t = await resumeDocument(doc.text, { routes });
+        expect(t.removed()).toBe(0);
+        expect(t.detached()).toBe(0);
+        t.dispose();
+      }),
+      { seed: SEED, numRuns: 12 },
+    );
+  },
+  fixedTime(120_000),
+);

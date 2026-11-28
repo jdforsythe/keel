@@ -65,7 +65,7 @@ const setup = (initial: readonly Row[]) => {
 };
 
 /** Signals are created in a scope (k.reactive E1203). */
-const owner = scope(() => undefined);
+const owner = scope(() => undefined, { detached: true });
 const signal = <T>(v: T): Signal<T> => owner.run(() => newSignal(v));
 
 const ids = (n: number): Row[] => Array.from({ length: n }, (_, i) => ({ id: `r${i}` }));

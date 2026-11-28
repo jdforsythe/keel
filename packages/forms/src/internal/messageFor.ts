@@ -31,6 +31,7 @@ export function messageFor(node: Node | undefined, rule: Rule): string {
     case "discriminant":
       return "Invalid choice";
     case "format":
+    case "json":
       return "Invalid value";
     case "unknown-key":
       return "Not allowed";

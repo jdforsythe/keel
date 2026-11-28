@@ -1,11 +1,13 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
 // RFC 0222: E1108 (a `@keel/std-*` package added to `deps`) and E1589 (`servedBy` added, one `node` deployable) carry a fix.
-// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, E1808 and E1810 carry one; RFC 0035 lists why the others cannot."
 // RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
 // RFC 0219: E1730 carries one (k.guards Test files); its exact result is asserted in testing-E1730-identity-mount.test.ts.
 // RFC 0231: E1016 carries one (k.boundary Ambient types; its fix deletes the reference line); E1015 carries none.
 // RFC 0225: E1013 carries one (k.bundle Aliases); its exact diff is asserted in bundle-E1013-aliased-import.test.ts.
 // RFC 0204: E1165 carries one (its fix removes the `deps` entry).
+// RFC 0249: E1816 and E1817 carry one (k.themes Fixes; their exact results are asserted in theme-fixes.test.ts; E1817's re-check is given the tokens the patched `tokens.ts` evaluates to); E1818 carries none (k.themes Check-time entries: fix: none).
+// RFC 0243: E1810 carries one (k.looks Fix; its exact result is asserted in library-looks-e1810.test.ts; the re-check is given the tokens the patched `tokens.ts` evaluates to, k.looks In an app); E1811, E1812, E1813, E1814 and E1815 carry none.
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -58,7 +60,7 @@ const manifest = (id: string, deps: string[], exports: string[]): Files[number] 
 const fixtureOf = (code: string) => {
   const fx = CODE_FIXTURES[code];
   if (fx === undefined) throw new Error(`no fixture for ${code}`);
-  return { files: fx.bad, opts: fx.badOpts ?? fx.opts ?? {} };
+  return { files: fx.bad, opts: fx.badOpts ?? fx.opts ?? {}, after: fx.fixedOpts };
 };
 
 /** Sorted-key JSON, the canonical form of a `.keel/*.json` file (k.compiler Artifacts). */
@@ -95,6 +97,8 @@ interface FixedCase {
   code: string;
   files: Files;
   opts: Options;
+  /** Options for the re-check of the patched files, when the fix changes what an artifact evaluates to (E1810: the tokens `tokens.ts` gives). */
+  after?: Options | undefined;
 }
 
 const FIXED: FixedCase[] = [
@@ -122,6 +126,9 @@ const FIXED: FixedCase[] = [
   { name: "E1152", code: "E1152", ...fixtureOf("E1152") },
   { name: "E1154", code: "E1154", ...fixtureOf("E1154") },
   { name: "E1165 (remove the deps entry)", code: "E1165", ...fixtureOf("E1165") },
+  { name: "E1810 (import acmeTokens and spread its groups)", code: "E1810", ...fixtureOf("E1810") },
+  { name: "E1816 (delete the element)", code: "E1816", ...fixtureOf("E1816") },
+  { name: "E1817 (add the backdrop to over)", code: "E1817", ...fixtureOf("E1817") },
   {
     name: "E1589 (add servedBy: 'api' to the client deployable beside one node deployable)",
     code: "E1589",
@@ -167,24 +174,19 @@ const FIXED: FixedCase[] = [
     opts: {},
   },
   {
-    name: "E1451",
+    name: "E1451 (throw of a KeelError in a Result function becomes return err(...))",
     code: "E1451",
-    files: [f("C.tsx", `export function f() { throw new Error("x") }\n`)],
-    opts: {},
+    ...fixtureOf("E1451"),
   },
-  {
-    name: "E1452 (try)",
-    code: "E1452",
-    files: [f("C.tsx", "export function f() { try { return 1 } catch (e) { return 2 } }\n")],
-    opts: {},
-  },
+  { name: "E1452 (cleanup and rethrow becomes try/finally with a flag)", code: "E1452", ...fixtureOf("E1452") },
+  { name: "E1455 (a defect on a failed Result gains { cause: r.error })", code: "E1455", ...fixtureOf("E1455") },
   { name: "E1407 (parameter list rewritten to (props, ctx: Ctx))", code: "E1407", ...fixtureOf("E1407") },
   { name: "E1510 (the refused member removed)", code: "E1510", ...fixtureOf("E1510") },
   { name: "E1515 (the extra binding key removed)", code: "E1515", ...fixtureOf("E1515") },
   {
     name: "E1601",
     code: "E1601",
-    files: [f("C.tsx", "export const stamp = () => Date.now()\n")],
+    files: [f("C.tsx", "import type { Ctx } from '@keel/ctx'\nexport const stamp = (ctx: Ctx) => Date.now()\n")],
     opts: {},
   },
   {
@@ -310,7 +312,7 @@ for (const c of FIXED) {
       expect(fix.startsWith("--- a/")).toBe(true);
       const patched = applyFix(c.files, fix);
       expect(patched).not.toEqual(c.files);
-      expect(check(patched, c.opts).diagnostics.map((d) => d.code)).not.toContain(c.code);
+      expect(check(patched, c.after ?? c.opts).diagnostics.map((d) => d.code)).not.toContain(c.code);
     },
     CHECK_CASE_BOUND,
   );
@@ -332,6 +334,9 @@ const FIX = [
   "E1152",
   "E1154",
   "E1165",
+  "E1810",
+  "E1816", // k.themes Fixes: deletes the element, or adds or deletes a `labels` property
+  "E1817", // k.themes Fixes: adds the backdrop to `over` when it is an array literal of fewer than 8 names
   "E1155",
   "E1156",
   "E1401",
@@ -339,6 +344,7 @@ const FIX = [
   "E1405",
   "E1451",
   "E1452",
+  "E1455",
   "E1601",
   "E1652",
   "E1653",
@@ -377,10 +383,13 @@ const NO_FIX = [
   "E1166", // k.library Rules: no fix stated; which of the two ids to rename is the author's choice
   "E1167", // k.server-deps Rules: no fix stated; the name an `env` entry should hold is the author's
   "E1171", // k.module Rules: fix none; whether the file is a stray or a module of its own is the author's
+  "E1203", // k.reactive Static: no fix; the scope to run in is the author's to capture
   "E1204", // the Case per resource state is the author's
   "E1207", // whether to drop the detached scope or own it differently is a design change
+  "E1208", // k.reactive Static: no fix; the scope to nest in or run in is the author's to capture
   "E1251", // the JSX that replaces an op is the author's
   "E1252", // the JSX or ctx replacement is the author's
+  "E1256", // k.shared Rules: no fix; where the per-request state lives is the author's choice
   "E1302", // moving the effect out of the transaction is a design change
   "E1303", // removing the field or the reveal call is a design change
   "E1304", // k.store Rules: the fix is a hint (create the store with the data as `initial`, or move the call to a handler), a design change
@@ -388,6 +397,11 @@ const NO_FIX = [
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
+  "E1457", // k.attempt Rules: no fix; whether to parse or attempt is the author's choice
+  "E1458", // k.attempt Rules: no fix; the KeelError to declare is the author's
+  "E1459", // k.attempt Rules: no fix; which Result to return is the author's
+  "E1460", // k.expect Rules: no fix; the data a message becomes is the author's
+  "E1461", // k.supervise Rules: no fix; a library owns supervised work
   "E1501", // the target route id is unknown to the checker
   "E1502", // which path to change is the author's choice
   "E1503", // the params field is the author's to write
@@ -429,11 +443,20 @@ const NO_FIX = [
   "E1758", // the locale or time zone is an argument the caller holds
   "E1760", // k.unsafe Rules: none carries a fix; the reason is the author's to write
   "E1761", // k.unsafe Rules: none carries a fix; where the negative type test lives is the author's choice
+  "E1762", // k.unsafe Rules: no fix; moving the predicate into unsafe() or giving it a key guard is the author's choice
   "E1801", // a look name that no `look` declares has no nearest token; the author names the look or declares it
   "E1802", // the missing prop value is the author's choice
+  "E1765", // k.realm Rules: no fix; which copy to keep is the project's dependency choice
+  "E1766", // k.realm Rules: no fix; the kernel owns those names
   "E1607", // which registered name to keep is the author's choice
   "E1803", // the replacement token is the author's choice
   "E1804", // which token pair to use is a design choice
+  "E1811", // which shipped token the file means is the library author's choice
+  "E1812", // the shipped file is rewritten by the library author
+  "E1813", // whether the key is a typo or an override to delete is the designer's choice
+  "E1815", // which condition order the library author means is theirs to write
+  "E1814", // whether to declare a second scheme or drop the control is the author's choice
+  "E1818", // k.themes Check-time entries: fix: none; which token names to use is the author's choice
   "E1823", // which literal to write is the author's choice
   "E1824", // the code prop is rewritten to the literal form by the author, who names the file and export
   "E1825", // moving the stylesheet import to the code file is a design change
@@ -459,12 +482,14 @@ interface Bad {
   code: string;
   files: Files;
   opts: Options;
+  after?: Options | undefined;
 }
 const BAD: Bad[] = [
   ...Object.entries(CODE_FIXTURES).map(([code, fx]) => ({
     code,
     files: fx.bad,
     opts: fx.badOpts ?? fx.opts ?? {},
+    after: fx.fixedOpts,
   })),
   ...FIXTURES.map((x) => ({
     code: x.code,
@@ -485,7 +510,7 @@ test(
             if (line.startsWith("--- a/") || line.startsWith("+++ b/")) expect(line).not.toContain("node_modules/");
           }
           const patched = applyFix(bad.files, d.fix);
-          const after = check(patched, bad.opts).diagnostics;
+          const after = check(patched, bad.after ?? bad.opts).diagnostics;
           expect(after.filter((x) => x.code === d.code).length).toBeLessThan(
             before.filter((x) => x.code === d.code).length,
           );

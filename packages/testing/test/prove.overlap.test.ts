@@ -6,9 +6,10 @@ import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { type Transaction, invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it, vi } from "vitest";
 
-const LONG = 120_000;
+const LONG = fixedTime(120_000);
 
 const z3 = vi.hoisted((): { afterStart: (() => void) | undefined; enter: () => void } => ({
   afterStart: undefined,
@@ -42,19 +43,22 @@ vi.mock("z3-solver", async (importOriginal) => {
 
 const built = (() => {
   let out: { holds: Transaction<unknown, unknown>; breaks: Transaction<unknown, unknown> } | undefined;
-  scope(() => {
-    const st = store(
-      s.object({ xs: s.array(s.int({ min: 0 })), n: s.int({ min: 0 }) }),
-      { xs: [], n: 0 },
-      { id: "po.list" },
-    );
-    invariant(st, (state) => state.n <= 14);
-    const by = s.object({ id: s.int({ min: 1, max: 9 }) });
-    out = {
-      holds: transaction(st, "po.holds", by, (state) => ({ xs: state.xs, n: state.n < 14 ? state.n + 1 : 14 })),
-      breaks: transaction(st, "po.breaks", by, (state, p) => ({ xs: state.xs, n: state.n + p.id })),
-    };
-  });
+  scope(
+    () => {
+      const st = store(
+        s.object({ xs: s.array(s.int({ min: 0 })), n: s.int({ min: 0 }) }),
+        { xs: [], n: 0 },
+        { id: "po.list" },
+      );
+      invariant(st, (state) => state.n <= 14);
+      const by = s.object({ id: s.int({ min: 1, max: 9 }) });
+      out = {
+        holds: transaction(st, "po.holds", by, (state) => ({ xs: state.xs, n: state.n < 14 ? state.n + 1 : 14 })),
+        breaks: transaction(st, "po.breaks", by, (state, p) => ({ xs: state.xs, n: state.n + p.id })),
+      };
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();

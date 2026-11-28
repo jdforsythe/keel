@@ -2,6 +2,7 @@
 // temporary folder: which documents land where, what is stripped and added, E1588 and what is removed after.
 import fs from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { keelMark } from "../src/internal/keelMark.ts";
 import { writeStatic } from "../src/internal/writeStatic.ts";
@@ -11,7 +12,7 @@ let root = "";
 let out = "";
 let entry = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-static-"));
+  root = tempDir(".tmp-static-", import.meta.dirname);
   out = path.join(root, "dist", "web");
   entry = path.join(root, "dist", ".web-entry", "server.mjs");
   fs.mkdirSync(path.join(out, ".vite"), { recursive: true });
@@ -174,6 +175,16 @@ describe("writeStatic", () => {
     );
     expect(await run()).toEqual([]);
     expect(JSON.parse(text("index.html"))).toEqual([out, null]);
+  });
+
+  it("calls render with the entry's folder as the artifacts folder", async () => {
+    build(
+      [],
+      "export const render = (out, std, artifacts) => [{ id: 'args', path: '/', status: 200, html: JSON.stringify(artifacts ?? null) }]",
+    );
+    const at = path.dirname(entry);
+    expect(await run()).toEqual([]);
+    expect(JSON.parse(text("index.html"))).toBe(at);
   });
 
   it("removes the manifest folder and the entry's folder when it succeeds", async () => {

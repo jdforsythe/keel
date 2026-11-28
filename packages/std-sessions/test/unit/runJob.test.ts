@@ -2,9 +2,9 @@
 // makes, the result it reads back, what it answers when there is none, and that it leaves nothing behind.
 // Seed 1337 (no random inputs)
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { run } from "@keel/cli";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { runJob } from "../../src/internal/runJob.ts";
 
@@ -17,7 +17,7 @@ beforeEach(() => {
   keel.mockReset();
 });
 
-const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "keel-run-job-"));
+const cwd = tempDir("keel-run-job-");
 afterAll(() => fs.rmSync(cwd, { recursive: true, force: true }));
 const dir = path.join(cwd, ".keel", "sessions");
 const session = { v: 1, id: "s1", note: 'quote " and \\ slash' };

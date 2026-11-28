@@ -2,26 +2,18 @@
 // name the file; E1062 for a content file, an added file and a removed one; E1063 for the manifest and the signature.
 // The bundle is written by bundleWrite over a small project; the byte to flip comes from a seeded generator.
 import { createHash, createPublicKey, generateKeyPairSync } from "node:crypto";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  truncateSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, truncateSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { bundleVerify } from "../src/internal/bundleVerify.ts";
 import { bundleWrite } from "../src/internal/bundleWrite.ts";
 import type { Io } from "../src/types/Io.ts";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
-const SLOW = 180_000;
+const SLOW = fixedTime(180_000);
 const SEED = 1337;
 const dirs: string[] = [];
 afterAll(() => {
@@ -58,7 +50,7 @@ let pristine = "";
 let names: string[] = [];
 
 beforeAll(async () => {
-  const cwd = mkdtempSync(join(here, ".tmp-tamper-"));
+  const cwd = tempDir(".tmp-tamper-", here);
   dirs.push(cwd);
   for (const [path, text] of Object.entries(TREE)) {
     mkdirSync(dirname(join(cwd, path)), { recursive: true });
@@ -75,7 +67,7 @@ beforeAll(async () => {
 }, SLOW);
 
 const copy = (): { cwd: string; dir: string } => {
-  const cwd = mkdtempSync(join(here, ".tmp-tamper-copy-"));
+  const cwd = tempDir(".tmp-tamper-copy-", here);
   dirs.push(cwd);
   cpSync(pristine, join(cwd, "bundle"), { recursive: true });
   return { cwd, dir: join(cwd, "bundle") };
@@ -137,6 +129,34 @@ describe("evidence tamper", () => {
         ).toEqual(named.map(() => code(name)));
       }
     });
+  }
+
+  // The seeded flip above lands on one byte; which diagnostic that byte earns depends on the manifest's length. Every
+  // bit of every byte of the two signed files is flipped here, so no position can pass verify or go unnamed.
+  for (const name of ["manifest.json", "manifest.sig"]) {
+    test(
+      `every bit of ${name} flipped fails verify naming ${name} and E1063`,
+      () => {
+        const size = readFileSync(join(pristine, name)).length;
+        const b = copy();
+        const file = join(b.dir, name);
+        for (let i = 0; i < size; i++) {
+          for (let bit = 0; bit < 8; bit++) {
+            const bytes = readFileSync(join(pristine, name));
+            bytes[i] = (bytes[i] ?? 0) ^ (1 << bit);
+            writeFileSync(file, bytes);
+            const found = diags(verify(b.cwd));
+            const why = `${name} byte ${i} bit ${bit}`;
+            expect(found.length, why).toBeGreaterThan(0);
+            expect(
+              found.every((d) => d.code === "E1063" && (d.path === `bundle/${name}` || d.message.includes(name))),
+              why,
+            ).toBe(true);
+          }
+        }
+      },
+      SLOW,
+    );
   }
 
   test("an added file the manifest does not list is E1062 naming it", () => {

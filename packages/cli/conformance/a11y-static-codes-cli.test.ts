@@ -5,6 +5,7 @@
 // Seed: 1337 (fixed projects).
 // The static a11y codes (E1802, E1804, E1820; the rest of the Rules line is render-only) seen through the real `keel check` binary. E1804 is in a11y-static-contrast-cli.test.ts.
 // The binary reads the project's own files; these cases hand it no types flag, so what the binary does with types is its own. Assumed: a diagnostic record is `{ kind: "diag", code, path, line }`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { TOPOLOGY, keelProject } from "./a11y-project-support.ts";
 import { type CliRecord, type Run, keel, removeProject } from "./test-sim-project.ts";
@@ -34,7 +35,7 @@ const FILES: [string, string][] = [
   view("ReversedOne", `<Box direction="row-reverse"><Button onClick={() => {}}>A</Button></Box>`),
   view("Forward", `<Box direction="row">${BTN}</Box>`),
 ];
-const tokens = `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" } });\n`;
+const tokens = `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" } });\n`;
 const hit = (run: Run, code: string, name: string): CliRecord[] =>
   run.records.filter((r) => r.kind === "diag" && r.code === code && r.path === `modules/m/${name}.tsx`);
 
@@ -49,7 +50,7 @@ describe("k.a11y: the static a11y codes through the real `keel check`", () => {
     });
     created.push(dir);
     run = keel(dir, ["check"]);
-  }, 180_000);
+  }, fixedTime(180_000));
 
   it('`keel check` reports E1802 for `<Box as="nav" label="">` and `Input({ label: " " })`', () => {
     expect(hit(run, "E1802", "NavBlank")).toHaveLength(1);

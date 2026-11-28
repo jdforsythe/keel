@@ -2,6 +2,7 @@
 // k.host-code, Styles and policy "The build serves it from the app's origin and loads it with the code's chunk, which `style-src 'self'` allows."
 // Seed: 1337 (no generated inputs). The real `keel build` over a temp project.
 // Ambiguous: the build's output folder is not named in k.host-code; the test walks `dist` for built files.
+import { fixedTime } from "@keel/tooling/test-time";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -39,18 +40,22 @@ const walk = (dir: string, out: string[] = []): string[] => {
 let dir = "";
 beforeAll(() => {
   dir = materialize(files);
-}, 120_000);
+}, fixedTime(120_000));
 afterAll(() => {
   cleanup(dir);
 });
 
 describe("k.host-code: a host element code file's stylesheet", () => {
-  it("the build emits `chart.css` as a `.css` asset and inlines it in no document or chunk", () => {
-    const run = keel(dir, ["build"]);
-    expect(run.status).toBe(0);
-    const built = walk(join(dir, "dist"));
-    const holding = built.filter((p) => readFileSync(p, "utf8").includes("chart-marker-7f3a"));
-    expect(holding.length).toBeGreaterThan(0);
-    expect(holding.every((p) => p.endsWith(".css"))).toBe(true);
-  }, 120_000);
+  it(
+    "the build emits `chart.css` as a `.css` asset and inlines it in no document or chunk",
+    () => {
+      const run = keel(dir, ["build"]);
+      expect(run.status).toBe(0);
+      const built = walk(join(dir, "dist"));
+      const holding = built.filter((p) => readFileSync(p, "utf8").includes("chart-marker-7f3a"));
+      expect(holding.length).toBeGreaterThan(0);
+      expect(holding.every((p) => p.endsWith(".css"))).toBe(true);
+    },
+    fixedTime(120_000),
+  );
 });

@@ -1,12 +1,13 @@
 import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import type { Infer, KeelError, Result, Schema, Secret } from "@keel/schema";
+import { type Infer, type KeelError, type Result, type Schema, type Secret, isSchema } from "@keel/schema";
 import { isolate } from "@keel/store";
+import { splitLive } from "../unsafe/splitLive.ts";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
 import { firstYield } from "./internal/firstYield.ts";
 import { fixedUser } from "./internal/fixedUser.ts";
-import { isSchema } from "./internal/isSchema.ts";
+import { madeFrozen } from "./internal/madeFrozen.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { refuseSecret } from "./internal/refuseSecret.ts";
 import { withStores } from "./internal/withStores.ts";
@@ -46,16 +47,15 @@ type ViewIds<C> = {
       ? K
       : never;
 }[keyof C & string];
-type Fn = (
-  args: Omit<LoaderInput, "user" | "bearer" | "stores"> & {
-    readonly stores: unknown;
-    readonly user: string;
-    readonly bearer: Secret<string> | undefined;
-    readonly signal: AbortSignal;
-    readonly currentUser: CurrentUser;
-  },
-  ctx: Ctx,
-) => Promise<Out<unknown>> | AsyncGenerator<Out<unknown>>;
+type Base = Omit<LoaderInput, "user" | "bearer" | "stores"> & {
+  readonly stores: unknown;
+  readonly user: string;
+  readonly bearer: Secret<string> | undefined;
+  readonly signal: AbortSignal;
+};
+type PlainFn = (args: Base, ctx: Ctx) => Promise<Out<unknown>>;
+type LiveFn = (args: Base & { readonly currentUser: CurrentUser }, ctx: Ctx) => AsyncGenerator<Out<unknown>>;
+type Fn = PlainFn | LiveFn;
 
 /** An `events: true` API GET entry's live loader: `fn` is an async generator of `Result`s of the entry's `output`. */
 export function loader<M extends string, C extends Entries, K extends LiveIds<C>, St = undefined>(
@@ -101,11 +101,14 @@ export function loader(
   if (output === undefined) throw new TypeError(`loader("${id}"): no output (a page or layout loader declares one)`);
   if (own !== undefined) refuseSecret(own);
   const { stores } = decl;
+  const kind = splitLive<PlainFn, LiveFn>(fn);
+  // A plain loader's `fn` gets exactly the keys k.contract lists; a live one's also `currentUser` (k.user).
   const run = (args: LoaderInput, ctx: Ctx): Promise<Out<unknown>> =>
     withStores(stores, args.stores, ctx, (st) =>
       firstYield((signal) => {
         const user = args.user ?? "";
-        return fn({ ...args, user, bearer: args.bearer, stores: st, signal, currentUser: fixedUser(user) }, ctx);
+        const at = { ...args, user, bearer: args.bearer, stores: st, signal };
+        return "live" in kind ? kind.live({ ...at, currentUser: fixedUser(user) }, ctx) : kind.plain(at, ctx);
       }),
     );
   const base = {
@@ -116,18 +119,22 @@ export function loader(
     ...(stores === undefined ? {} : { stores }),
     run,
   };
-  if (Reflect.get(fn, Symbol.toStringTag) !== "AsyncGeneratorFunction") return Object.freeze(base);
-  return Object.freeze({
-    ...base,
-    live: (a: LiveInput, ctx: Ctx) => {
-      const user = a.user ?? "";
-      const currentUser = a.currentUser ?? fixedUser(user);
-      const at = { ...a, user, bearer: a.bearer, currentUser };
-      return a.stores !== undefined || stores === undefined
-        ? yields(fn({ ...at, stores: a.stores }, ctx))
-        : liveWithStores(stores, ctx, (st) => yields(fn({ ...at, stores: st }, ctx)));
+  if (!("live" in kind)) return madeFrozen(base, "loader");
+  const gen = kind.live;
+  return madeFrozen(
+    {
+      ...base,
+      live: (a: LiveInput, ctx: Ctx) => {
+        const user = a.user ?? "";
+        const currentUser = a.currentUser ?? fixedUser(user);
+        const at = { ...a, user, bearer: a.bearer, currentUser };
+        return a.stores !== undefined || stores === undefined
+          ? yields(gen({ ...at, stores: a.stores }, ctx))
+          : liveWithStores(stores, ctx, (st) => yields(gen({ ...at, stores: st }, ctx)));
+      },
     },
-  });
+    "loader",
+  );
 }
 
 /** A live loader's yields with `stores` made by `factory` for `ctx` in a detached, isolated scope, disposed at its end. */

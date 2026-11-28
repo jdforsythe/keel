@@ -1,5 +1,5 @@
-import { attempt } from "@keel/schema";
 import type { Engine } from "./Engine.ts";
+import { forgetting } from "./forgetting.server.ts";
 import { pgEngine } from "./pgEngine.server.ts";
 import { pgliteEngine } from "./pgliteEngine.server.ts";
 import { pgliteModules } from "./pgliteModules.server.ts";
@@ -13,7 +13,7 @@ type Open = { engine: Promise<Engine>; busy: number; used: number; readonly clos
  * Shared by every evaluation of this module in the process: a `keel dev` reload evaluates it again, and the new
  * evaluation reuses the folders and pools the last one opened instead of opening them a second time.
  */
-const KEY = Symbol.for("keel.postgres.engines");
+const KEY = Symbol.for("@keel/std-postgres:engines");
 
 function sharedEngines(): Map<string, Open> {
   const shared: unknown = Reflect.get(globalThis, KEY);
@@ -69,24 +69,34 @@ export function engineFor(value: string | undefined): Promise<Engine> {
   }
   if (scheme === "pglite") evict();
   let closer: (() => Promise<void>) | undefined;
-  const made: Promise<Engine> =
-    scheme === "pglite"
-      ? import("@electric-sql/pglite").then(async ({ PGlite }) => {
-          const db = await PGlite.create({ dataDir: url.slice("pglite:".length), ...(await pgliteModules()) });
-          closer = () => db.close();
-          return pgliteEngine(db);
-        })
-      : Promise.resolve(pgEngine(url));
+  let settle = (): void => undefined;
+  const settled = new Promise<void>((resolve) => {
+    settle = resolve;
+  });
+  const make = async (): Promise<Engine> => {
+    try {
+      if (scheme !== "pglite") return tracked(open, pgEngine(url));
+      const { PGlite } = await import("@electric-sql/pglite");
+      const db = await PGlite.create({ dataDir: url.slice("pglite:".length), ...(await pgliteModules()) });
+      closer = () => db.close();
+      return tracked(open, await pgliteEngine(db));
+    } finally {
+      settle();
+    }
+  };
   // A folder evicted while it is still opening closes once it has opened, so no second PGlite holds the folder.
   const close = async (): Promise<void> => {
-    void (await attempt(() => made));
+    await settled;
     await closer?.();
   };
-  const open: Open = { engine: made, busy: 0, used: ++clock, close };
-  open.engine = made.then((e) => tracked(open, e));
-  void attempt(() => open.engine).then((r) => {
-    if (!r.ok) engines.delete(url);
-  });
+  const open: Open = {
+    engine: forgetting(make, () => {
+      if (engines.get(url) === open) engines.delete(url);
+    }),
+    busy: 0,
+    used: ++clock,
+    close,
+  };
   engines.set(url, open);
   return open.engine;
 }

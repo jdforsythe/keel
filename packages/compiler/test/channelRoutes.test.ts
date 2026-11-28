@@ -4,6 +4,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { routeLiterals } from "../src/routeLiterals.ts";
 import type { SourceFile } from "../src/types/SourceFile.ts";
@@ -60,7 +62,7 @@ const api = { file: "modules/api/api.contract.ts", layout: null, guard: null, pa
 
 let root = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-channel-routes-"));
+  root = tempDir(".tmp-channel-routes-", import.meta.dirname);
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))
@@ -86,20 +88,24 @@ describe("a channel in a module's contract", () => {
   });
 
   // The plugin's build start compiles the fixture's sources and imports the stdlib it names: about 3.5 s here, so 60 s.
-  it("builds a routes.json holding the same ids, paths and methods, with no warning", { timeout: 60_000 }, async () => {
-    const warnings: string[] = [];
-    const p = keel();
-    p.configResolved({ root, command: "build" });
-    await p.buildStart.call({ warn: (m: string) => void warnings.push(m) });
-    expect(warnings).toEqual([]);
-    const v: unknown = JSON.parse(fs.readFileSync(path.join(root, ".keel", "routes.json"), "utf8"));
-    const data: unknown = typeof v === "object" && v !== null ? Reflect.get(v, "data") : undefined;
-    const pick = (id: string): unknown[] => {
-      const r: unknown = typeof data === "object" && data !== null ? Reflect.get(data, id) : undefined;
-      return typeof r === "object" && r !== null ? [Reflect.get(r, "path"), Reflect.get(r, "method")] : [];
-    };
-    expect(pick("api.boardEvents")).toEqual(["/api/board/events", "GET"]);
-    expect(pick("api.boardPublish")).toEqual(["/api/board/events", "POST"]);
-    expect(pick("api.board")).toEqual(["/api/board", "GET"]);
-  });
+  it(
+    "builds a routes.json holding the same ids, paths and methods, with no warning",
+    { timeout: fixedTime(60_000) },
+    async () => {
+      const warnings: string[] = [];
+      const p = keel();
+      p.configResolved({ root, command: "build" });
+      await p.buildStart.call({ warn: (m: string) => void warnings.push(m) });
+      expect(warnings).toEqual([]);
+      const v: unknown = JSON.parse(fs.readFileSync(path.join(root, ".keel", "routes.json"), "utf8"));
+      const data: unknown = typeof v === "object" && v !== null ? Reflect.get(v, "data") : undefined;
+      const pick = (id: string): unknown[] => {
+        const r: unknown = typeof data === "object" && data !== null ? Reflect.get(data, id) : undefined;
+        return typeof r === "object" && r !== null ? [Reflect.get(r, "path"), Reflect.get(r, "method")] : [];
+      };
+      expect(pick("api.boardEvents")).toEqual(["/api/board/events", "GET"]);
+      expect(pick("api.boardPublish")).toEqual(["/api/board/events", "POST"]);
+      expect(pick("api.board")).toEqual(["/api/board", "GET"]);
+    },
+  );
 });

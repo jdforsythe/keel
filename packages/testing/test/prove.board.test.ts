@@ -5,9 +5,10 @@ import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { invariant, store, transaction } from "@keel/store";
 import { prove } from "@keel/testing/prove";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
-const LONG = 120_000;
+const LONG = fixedTime(120_000);
 const Priority = s.enum(["low", "normal", "high"]);
 const TodoList = s.object({
   id: s.id("TodoList"),
@@ -95,9 +96,12 @@ const board = () => {
 
 const built = () => {
   let out: ReturnType<typeof board> | undefined;
-  scope(() => {
-    out = board();
-  });
+  scope(
+    () => {
+      out = board();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 };

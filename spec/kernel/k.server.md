@@ -2,10 +2,10 @@
 status: conformance-covered
 
 **API.** App code imports only `topology` and `commitStores` (k.persist) from `@keel/server` (a test also imports `createApp`); `loader`/`action` (`@keel/router`) run over HTTP.
-- `loader(contract, id, { output?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>` encoded with `output` (the entry's on an API entry, k.contract).
+- `loader(contract, id, { output?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores, signal }` and `ctx`; a route that must judge where a request came from declares `local` (k.contract Local routes); `url` carries `KEEL_ORIGIN`'s origin where set; returns `Promise<Result<T, KeelError>>` encoded with `output` (the entry's on an API entry, k.contract).
 - `action(contract, id, { input?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, user, stores, routes }` and `ctx`, `routes` the route table it is served from (k.router Return targets); returns `Result<Href | null, KeelError>` on a page (an API entry's `output` on one: k.api); the binding places it (k.contract).
 - A loader's `run(args, ctx)` and an action's `run(input, args, ctx)` call `fn` directly, outside a request (tests). `args.url` is the absolute request URL as a string. `args.stores` is optional: absent, `fn` gets the value the declared factory returns for `ctx` (Server state), `undefined` without one; `run` saves nothing. An action's `args.routes` is optional: absent, `fn` gets `routeTable()`, a table with no pages.
-- Only an `events: true` entry's loader is live (E1515, E1558), `fn` an async generator: a JSON GET takes its first yield, event-stream GET all; args add `signal` and `currentUser` (k.user).
+- Only an `events: true` entry's loader is live (E1515, E1558), `fn` an async generator: a JSON GET takes its first yield, event-stream GET all; args add `currentUser` (k.user).
 
 **Server state.** `stores` names a factory `(ctx) => S` of stores (explicit `id`s) and transactions. Per request each named factory runs once, restoring its stores from `ctx.storage` `keel.store.<id>`; `fn` gets `S`. A request holds one live store per id (k.store Registries), so the loaders of one route chain share a store by naming one factory; two factories they name that create one id are E1550. An action's `ok` saves its changed stores unless another request saved any of the factory's since (409 `keel.conflict`), in one `commit`; `err` or a throw saves none; saves reach `observe` (k.sync). `caller` is the base64url SHA-256 of the cookie token, HMAC-signed with `createApp({ secret })` (<32 bytes: E1556; default per process, W1556 in production); `tx` meta `{ caller }` scopes `undoWhere`. Factory stores skip `#k-state` and inspect; server code never writes module stores; client routers refuse `stores`.
 
@@ -16,7 +16,7 @@ status: conformance-covered
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · `keel.unreachable` 502 (names no host) · `keel.busy` 503 · other `err` 400 · uncaught throw 500 `keel.unexpected` (production: message `unexpected`). `mode` defaults to `production`. `#k-state` stores: k.leave.
 
-**Document.** Each route level is a candidate island root by route id. Head, `<html lang>`, the `keel.notFound` alert: k.head. Headers, policy, caller cookie, `/__keel/csp`: k.security.
+**Document.** Each route level is a candidate island root by route id. Head, `<html lang>`, the `keel.notFound` alert: k.head. Headers, policy, caller cookie, `/__keel/csp`: k.security. In dev, or with no `assets` in development/test, a document scripts `/@keel/entry.ts?d=<deployable>`, the resume entry of the islands of `createApp({ deployable })`'s modules (none given: every `node` module's).
 
 **Build.** k.deploy, k.topology.
 

@@ -1,4 +1,4 @@
-import type { Computed } from "@keel/reactive";
+import { readValue } from "../../unsafe/readValue.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { ariaText } from "../internal/ariaText.ts";
@@ -9,8 +9,6 @@ import { make } from "../internal/make.ts";
 import { put } from "../internal/put.ts";
 import { runHost } from "../internal/runHost.ts";
 import type { HostProps } from "../types/HostProps.ts";
-
-const readable = <T>(v: T | Computed<T>): v is Computed<T> => isReadable(v);
 
 /**
  * The host element (k.host-element): the one element whose node outside code owns. Renders an empty `div` with
@@ -28,15 +26,12 @@ export function Host<I, E = never>(props: HostProps<I, E>): Node {
     put(el, p, "labelledBy", "aria-labelledby", ariaText);
     put(el, p, "describedBy", "aria-describedby", ariaText);
     applyStyle(el, p);
-    const value = (): I => {
-      const v = props.value;
-      return readable(v) ? v.get() : v;
-    };
+    const value = (): I => readValue(props.value);
     runHost(el, {
       id: props.id,
       input: props.input,
       value,
-      live: isGetter(props, "value") || readable(props.value),
+      live: isGetter(props, "value") || isReadable(props.value),
       code: props.code,
       events: props.events,
       onEvent: props.onEvent,

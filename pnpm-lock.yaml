@@ -51,6 +51,9 @@ importers:
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       tsx:
         specifier: ^4
         version: 4.23.15
@@ -251,6 +254,15 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -357,6 +369,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -463,6 +478,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -515,6 +533,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -629,6 +650,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -678,6 +702,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -727,6 +754,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -776,6 +806,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -785,6 +818,9 @@ importers:
       '@example/library-charts':
         specifier: workspace:*
         version: link:../library-charts
+      '@example/library-looks':
+        specifier: workspace:*
+        version: link:../library-looks
       '@keel/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
@@ -816,6 +852,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../../packages/check
       '@keel/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -828,11 +867,62 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
 
   examples/library-charts:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
+      typescript:
+        specifier: ^5.6
+        version: 5.9.3
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+      vitest:
+        specifier: ^4.1.12
+        version: 4.1.12(@types/node@22.20.5)(@vitest/coverage-v8@4.1.12)(happy-dom@21.0.4)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
+
+  examples/library-looks:
     devDependencies:
       '@keel/cli':
         specifier: workspace:*
@@ -852,12 +942,18 @@ importers:
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
       '@keel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
@@ -916,6 +1012,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1093,6 +1192,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1148,6 +1250,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1197,6 +1302,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1246,6 +1354,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
@@ -1261,12 +1372,18 @@ importers:
       '@keel/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../../packages/runtime-dom
       '@keel/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -1282,6 +1399,9 @@ importers:
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       typescript:
         specifier: ^5.6
         version: 5.9.3
@@ -1433,6 +1553,21 @@ importers:
         specifier: ^21.0.4
         version: 21.0.4
 
+  packages/create-app:
+    devDependencies:
+      '@keel/scaffold':
+        specifier: workspace:*
+        version: link:../scaffold
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
+
   packages/ctx:
     dependencies:
       '@keel/schema':
@@ -1467,12 +1602,22 @@ importers:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
 
   packages/reactive:
+    dependencies:
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
 
   packages/router:
     dependencies:
@@ -1863,6 +2008,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/router':
         specifier: workspace:*
         version: link:../router
@@ -2063,6 +2211,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2276,6 +2427,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2352,6 +2506,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2736,6 +2893,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -2815,6 +2975,9 @@ importers:
       axe-core:
         specifier: 4.14.0
         version: 4.14.0
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
       fast-check:
         specifier: ^3
         version: 3.23.2
@@ -2834,6 +2997,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       z3-solver:
         specifier: 5.3.3
         version: 5.3.3

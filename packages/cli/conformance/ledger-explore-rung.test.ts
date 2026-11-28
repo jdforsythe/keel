@@ -2,6 +2,7 @@
 // k.ledger, Ledger "`exhaustive`: a passing `explore` (k.model) given `from`, `payloads` or `depth`; evidence lists a literal `depth`."
 // The real `keel` binary over a temp project (OS tmpdir). Each case explores its own one-transaction store, so one
 // `keel ledger` run reports every case. `explore` is @keel/testing's (k.model). Seed: 1337 (no property in this file).
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import { ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
 import { keel } from "./test-sim-project.ts";
@@ -56,17 +57,25 @@ const files = (): Record<string, string> => {
 };
 
 describe("k.ledger: `explore` evidence", () => {
-  it("A passing `explore` with `from`, `payloads` or `depth` makes the transactions it names `exhaustive`; one with none of them makes them `proven`; one whose options are an imported variable gives `exhaustive`.", () => {
-    const run = withProject("ledger-explore", files(), (dir) => keel(dir, ["ledger"]));
-    for (const c of CASES) {
-      expect(ledgerRecord(run, `packages/m/src/${c.name}.ts#${c.name}Set`)?.rung, c.name).toBe(c.rung);
-    }
-  }, 60_000);
+  it(
+    "A passing `explore` with `from`, `payloads` or `depth` makes the transactions it names `exhaustive`; one with none of them makes them `proven`; one whose options are an imported variable gives `exhaustive`.",
+    () => {
+      const run = withProject("ledger-explore", files(), (dir) => keel(dir, ["ledger"]));
+      for (const c of CASES) {
+        expect(ledgerRecord(run, `packages/m/src/${c.name}.ts#${c.name}Set`)?.rung, c.name).toBe(c.rung);
+      }
+    },
+    fixedTime(60_000),
+  );
 
-  it("`explore` with a literal `depth` lists that depth in the `exhaustive` evidence", () => {
-    const record = withProject("ledger-explore-depth", files(), (dir) =>
-      ledgerRecord(keel(dir, ["ledger"]), "packages/m/src/withDepth.ts#withDepthSet"),
-    );
-    expect(record?.evidence).toBe("exhaustive depth 2 packages/m/test/withDepth.test.ts");
-  }, 60_000);
+  it(
+    "`explore` with a literal `depth` lists that depth in the `exhaustive` evidence",
+    () => {
+      const record = withProject("ledger-explore-depth", files(), (dir) =>
+        ledgerRecord(keel(dir, ["ledger"]), "packages/m/src/withDepth.ts#withDepthSet"),
+      );
+      expect(record?.evidence).toBe("exhaustive depth 2 packages/m/test/withDepth.test.ts");
+    },
+    fixedTime(60_000),
+  );
 });

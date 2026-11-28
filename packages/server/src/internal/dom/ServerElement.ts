@@ -41,7 +41,7 @@ export class ServerElement extends ServerNode {
   }
 
   get children(): ServerElement[] {
-    return this.childNodes.filter((c): c is ServerElement => c instanceof ServerElement);
+    return this.childNodes.flatMap((c) => (c instanceof ServerElement ? [c] : []));
   }
 
   get firstElementChild(): ServerElement | null {

@@ -25,7 +25,7 @@ const BASE = "http://localhost";
 
 /** `fn` over a fresh `archiveStores()` in its own isolated scope, as k.server opens one per request. */
 function fresh(fn: (st: ReturnType<typeof archiveStores>) => void): void {
-  const sc = scope(() => undefined);
+  const sc = scope(() => undefined, { detached: true });
   isolate(sc);
   try {
     sc.run(() => fn(archiveStores()));

@@ -1,5 +1,5 @@
 # k.escapes: Escape codes
-status: conformance-covered
+status: implemented
 
 **Purpose.** The findings `keel review` reports (k.review): each code, its danger, and what it reads. A file is read by syntax, as `keel check` reads it; a range code reads the changes between `<base>` and `<head>`. A test file is `*.test.*` or `*.spec.*`, or under `test/`, `tests/` or `__tests__/`; a server file is named `*.server.*` or `*.guard.*` (k.boundary's server-only names); app code is k.check's. A finding's text (its `id`, k.review) is the source of the node its row names; of a JSON or YAML entry, its key and value as written; of a whole file, empty; of a range code, its message. A call is one whose callee is that name.
 
@@ -10,6 +10,12 @@ status: conformance-covered
 | R1010 | opt-in | each entry of `origins` in `topology.ts` (`origins: { img: { 'https://img.cdn.example': 'photos' } }`, k.origins): `connect`, `frame` high; `img`, `media`, `font` low; the value its reason |
 | R1011 | high, opt-in | an `allow` property of the object a `createApp(` call takes, or the word `KEEL_ALLOW_ORIGINS` in a tracked file but Markdown |
 | R1012 | high, opt-in | a `reveal` call |
+| R1013 | medium | a `defect` call (k.errors) reachable only when a `Result` is not ok: read as TypeScript narrows `ok`, without types, on any name, member or call whose `.ok` is tested (`!`, `===` or `!==` against a boolean, `&&`, `\|\|`, `?:`, `if`/`else`, and the statements after `if (x.ok)` whose branch always returns) |
+| R1015 | low | a type predicate or assertion proven by structure or by its module's own set (k.identity) |
+| R1017 | medium | an `attempt` whose `expect` returns an error for a value tested only by `instanceof Error` or `instanceof Object`, by `typeof`, by `!==`, in the branch where its test fails, by no class or property of it, or by a call of a function that is not declared in the project with a body that tests a class or a property (k.expect) |
+| R1018 | medium, opt-in | a `supervise` call, and an app call of a library function whose body holds one (k.supervise Who writes it) |
+| R1019 | critical | a `Symbol.for` call whose argument does not fold to a string, or an `Object.getOwnPropertySymbols`, `Object.getOwnPropertyDescriptors` or `Reflect.ownKeys` call whose argument is no object or array literal (k.realm) |
+| R1020 | high | `addEventListener` on `globalThis`, `window` or `self`, or bare, or `process.on`, `once`, `addListener` or `prependListener`, with an event name that is no literal (k.unsafe Other spellings) |
 | R1014 | high, opt-in | a `handle` property of the object an `identity(` call takes, or of `createApp(`'s `identity` object |
 | R1050 | medium | a cast (not `as const`), `any`, `!` or ts-suppression comment (a negative type test's expectation aside, k.unsafe) in a test file, a `.d.ts`, a `*.config.*` file, or a file under `unsafe/` or `.keel/` |
 | R1051 | medium | a comment that starts `eslint-disable`, `biome-ignore` or `oxlint-disable` |
@@ -49,3 +55,8 @@ status: conformance-covered
 - A tracked `.ts` file that does not parse is one R1150, and the other findings still print.
 - A test file losing one `expect` call between `<base>` and `<head>` is one R1060; a test file renamed unchanged is none.
 - A file kept by the range with one `.pii(` call fewer is one R1108.
+- R1013 is one finding each for `if (!r.ok) return defect('x')`, `if (r.ok) use(r.value); else defect('x')`, `const v = r.ok ? r.value : defect('x')`, `if (r.ok) return r.value; return defect('x')`, `r.ok || defect('x')`, `!r.ok && defect('x')`, `if (r.ok !== true) defect('x')` and `if (!g().ok) defect('x')` in `modules/m/a.ts`; `return rows[0] ?? defect('x')`, `if (r.ok) defect('x')` and `r.ok && defect('x')` are none.
+- R1015 is one finding for `(x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'` in `modules/m/a.ts` and none for `(x: unknown): x is Store<unknown> => isStore(x)` there.
+- R1017 is one finding each for `attempt(f, (x) => (x instanceof Error ? T : undefined))` and `attempt(f, (x) => (x ? T : undefined))` in `modules/m/a.ts`, and none for `attempt(f, (x) => (x instanceof RangeError ? T : undefined))` or `attempt(f, (x) => (x instanceof Error && x.name === 'CardError' ? T : undefined))`.
+- R1017 is one finding each for `attempt(f, (x) => (x instanceof Object ? T : undefined))`, `attempt(f, (x) => (typeof x !== 'bigint' ? T : undefined))`, `attempt(f, (x) => (x !== 1 ? T : undefined))`, `attempt(f, (x) => (x instanceof RangeError ? undefined : T))` and `attempt(f, (x) => (any(x) ? T : undefined))` with `const any = (x: unknown) => true` in the file, in `modules/m/a.ts`; none for `attempt(f, (x) => (isUnique(x) ? T : undefined))` with `const isUnique = (x: unknown) => typeof x === 'object' && x !== null && Reflect.get(x, 'code') === '23505'` in the file.
+- R1018 is one finding for `supervise(ctx, 'jobs.run', f, T)` in a library's file (a file of a `"keel": "library"` package, k.library); R1019 one for `Symbol.for(name)` with `name` a parameter and none for `Symbol.for('app.key')`; R1020 one each for `window.addEventListener(name, h)` and `process.on(name, h)` with `name` a parameter, and none for `el.addEventListener(name, h)` with `el` an element.

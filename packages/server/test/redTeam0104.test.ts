@@ -7,6 +7,7 @@ import { contract } from "@keel/router/contract";
 import { ok, reveal, s } from "@keel/schema";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
+import { textRecords } from "./textRecords.ts";
 
 const SEED = 1337;
 const TOKEN = "zzTOKENzz1234567890";
@@ -22,7 +23,9 @@ async function boot(routes: RouteTable, mode: "dev" | "production") {
     mode,
     log: { format: "json", write: (l) => void lines.push(l) },
   });
-  const diags = (): string[] => lines.filter((l) => field(JSON.parse(l), "kind") === "diag");
+  // With full text on (dev), the text records; in production, each throw's one form record (k.serverlog Thrown values).
+  const diags = (): string[] =>
+    (mode === "dev" ? textRecords(lines) : lines).filter((l) => field(JSON.parse(l), "kind") === "diag");
   return { app, lines, diags };
 }
 const get = (path: string, accept: string): Request =>
@@ -34,7 +37,7 @@ afterEach(() => {
 
 describe("red team 0104", () => {
   for (const mode of ["dev", "production"] as const) {
-    it(`a live loader throwing the revealed bearer writes one [secret] diag and an err line, nothing to the console (${mode})`, async () => {
+    it(`a live loader throwing the revealed bearer writes one diag, [secret] where it holds text, and an err line, nothing to the console (${mode})`, async () => {
       const printed: string[] = [];
       vi.spyOn(console, "error").mockImplementation((...a: unknown[]) => void printed.push(a.map(String).join(" ")));
       const c = contract("api", {
@@ -60,7 +63,9 @@ describe("red team 0104", () => {
       expect(printed).toEqual([]);
       const diags = t.diags();
       expect(diags).toHaveLength(1);
-      expect(diags[0]).toContain("[secret]");
+      if (mode === "dev") expect(diags[0]).toContain("[secret]");
+      else
+        expect(field(JSON.parse(diags[0] ?? "{}"), "message")).toMatch(/^loader api\.live threw: Error #[0-9a-f]{8}/);
       expect(diags[0]).toContain("loader api.live threw");
       for (const l of t.lines) expect(l).not.toContain(TOKEN);
     });
@@ -119,7 +124,7 @@ describe("red team 0104", () => {
   });
 
   for (const mode of ["dev", "production"] as const) {
-    it(`a guard throwing the revealed bearer answers 500 without it and logs one [secret] diag (${mode})`, async () => {
+    it(`a guard throwing the revealed bearer answers 500 without it and logs one diag, [secret] where it holds text (${mode})`, async () => {
       const g = guard({}, async ({ bearer }) => {
         if (bearer !== undefined) throw new Error(`guard boom ${reveal(bearer)}`);
         return ok(null);
@@ -137,7 +142,8 @@ describe("red team 0104", () => {
       const diags = t.diags();
       expect(diags).toHaveLength(1);
       expect(diags[0]).toContain("guard api.g threw");
-      expect(diags[0]).toContain("[secret]");
+      if (mode === "dev") expect(diags[0]).toContain("[secret]");
+      else expect(field(JSON.parse(diags[0] ?? "{}"), "message")).toMatch(/^guard api\.g threw: Error #[0-9a-f]{8}/);
       for (const l of t.lines) expect(l).not.toContain(TOKEN);
     });
   }

@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
 import { removalStores } from "./removalStores.server.ts";
@@ -15,8 +15,7 @@ export const postRemove = action(
   (_input, { params, caller, stores }, ctx) => {
     const { listId } = params;
     const list = stores.board.get("lists").find((l) => l.id === listId);
-    if (list === undefined || list.hidden === true)
-      return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
+    if (list === undefined || list.hidden === true) return err(keelError.notFound.make({}));
     const hidden = tx(stores.hideList, { id: listId }, { meta: { caller } });
     if (!hidden.ok) return err(hidden.error);
     const started = tx(

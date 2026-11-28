@@ -14,9 +14,12 @@ const Plain = s.object({ n: s.int() });
 
 function make(initial: { total: number } = { total: 0 }) {
   const box: { v: { value: ReturnType<typeof build> } | undefined } = { v: undefined };
-  const sc = scope(() => {
-    box.v = { value: build(initial) };
-  });
+  const sc = scope(
+    () => {
+      box.v = { value: build(initial) };
+    },
+    { detached: true },
+  );
   void sc;
   if (box.v === undefined) throw new Error("scope body did not run");
   return box.v.value;

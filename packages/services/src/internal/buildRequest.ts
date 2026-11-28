@@ -16,7 +16,8 @@ const Bearer = s.secret(s.string());
  * built: a `bearer` that is not a secret whose text is a token68 of 1 to 4,096 characters (k.api Bearer) is `format` at
  * `bearer`. A `user` is sent as `x-keel-user`, signed by the target's `sign` over the body as sent (k.user); a `user`
  * that is not a string, or one on a target with no `sign` (a ctx no `createApp` bound), is `api.input` `type` at `user`,
- * and one the signer refuses (over 256 characters) `max`. An input that names no `user` carries `fallback` (k.user Testing). A Request the platform refuses (bad URL, body on GET) is `api.network`.
+ * and one the signer refuses (over 256 characters) `max`. An input that names no `user` carries `fallback` (k.user Testing).
+ * A call a server sends (`server`) carries `x-keel-forwarded: 1`, so no `local` route answers it (k.topology Calls and peers). A Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
   e: Endpoint,
@@ -27,6 +28,7 @@ export function buildRequest(
   sign?: Target["sign"],
   fallback?: string,
   keel = true,
+  server = false,
 ): Result<Request, ApiError<never>> {
   const params = encodePart(e.params, "params", input);
   if (!params.ok) return params;
@@ -43,9 +45,9 @@ export function buildRequest(
   if (!path.ok) return path;
   const qs = query.value === undefined ? "" : encodeQuery(query.value).toString();
   // The URL as the Request will hold it, so the `x-keel-user` signature covers the URL sent.
-  const parsed = attempt(() => new URL(`${base.replace(/\/+$/, "")}${path.value}${qs === "" ? "" : `?${qs}`}`).href);
-  if (!parsed.ok) return err(fail.network());
-  const url = parsed.value;
+  const parsed = URL.parse(`${base.replace(/\/+$/, "")}${path.value}${qs === "" ? "" : `?${qs}`}`);
+  if (parsed === null) return err(fail.network());
+  const url = parsed.href;
   const json = body.value;
   // The body is JSON text, held whole before sending, so a signed `user` covers every byte sent; no stream is built.
   const text = json === undefined ? "" : JSON.stringify(json);
@@ -57,6 +59,7 @@ export function buildRequest(
   const headers: Record<string, string> = keel ? { accept, "x-keel": "1" } : { accept };
   if (b !== undefined) headers.authorization = `Bearer ${token}`;
   if (signed !== undefined) headers["x-keel-user"] = signed;
+  if (server) headers["x-keel-forwarded"] = "1";
   const init: RequestInit =
     json === undefined
       ? { method: e.method, headers, signal }
@@ -66,6 +69,9 @@ export function buildRequest(
           body: text,
           signal,
         };
-  const req = attempt(() => new Request(url, init));
+  const req = attempt(
+    () => new Request(url, init),
+    (x) => (x instanceof TypeError ? fail.network() : undefined),
+  );
   return req.ok ? ok(req.value) : err(fail.network());
 }

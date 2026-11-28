@@ -1,12 +1,14 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // Seed 1337. The internal read @keel/server takes of each Secret a request makes: its strings, numbers and data keys,
 // read beside the node it was sealed under, and never a declared field name.
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Secret } from "../src/Secret.ts";
+import type { Secret } from "../src/Secret.ts";
 import { gen } from "../src/gen.ts";
 import { type Schema, piiValues, s } from "../src/index.ts";
 import type { Node } from "../src/internal/Node.ts";
 import { isRecord } from "../src/internal/isRecord.ts";
+import { secretAccess } from "../src/internal/secretAccess.ts";
 import { secretValues } from "../src/internal/secretValues.ts";
 
 const opts = { seed: 1337, numRuns: 100 };
@@ -36,8 +38,8 @@ const whole = (x: unknown, out: Set<string> = new Set()): Set<string> => {
 const valuesOnly = (x: unknown, inside = false, out: string[] = []): string[] => {
   let v = x;
   let at = inside;
-  while (Secret.is(v)) {
-    v = Secret.open(v);
+  while (secretAccess.is(v)) {
+    v = secretAccess.open(v);
     at = true;
   }
   if ((typeof v === "string" || typeof v === "number") && at && String(v) !== "") out.push(String(v));
@@ -126,7 +128,7 @@ function dataOf(node: Node, x: unknown): Set<string> {
     let at = n;
     while (at.kind === "nullable" || at.kind === "optional" || at.kind === "format" || at.kind === "secret")
       at = at.kind === "format" ? at.base : at.inner;
-    const raw = Secret.is(v) ? Secret.open(v) : v;
+    const raw = secretAccess.is(v) ? secretAccess.open(v) : v;
     if (at.kind === "object" && isRecord(raw)) {
       for (const [k, f] of Object.entries(at.fields)) if (Object.hasOwn(raw, k)) walk(f, raw[k]);
     } else if (at.kind === "array" && Array.isArray(raw)) for (const item of raw) walk(at.item, item);
@@ -162,7 +164,7 @@ test("an object's undeclared keys and values are given whole, open or closed; it
   fc.assert(
     fc.property(extra, fc.string({ minLength: 1 }), fc.boolean(), (more, v, closed) => {
       const node: Node = { kind: "object", fields: { FKEY: s.string().node }, closed };
-      const got = secretValues(Secret.of({ FKEY: v, ...more }, node));
+      const got = secretValues(secretAccess.of({ FKEY: v, ...more }, node));
       expect(new Set(got)).toEqual(whole([v, more]));
       if (v !== "FKEY") expect(got).not.toContain("FKEY");
     }),
@@ -184,8 +186,8 @@ test("a value no union variant or anyOf member fits is given whole", () => {
     .map((d) => ({ ...d, t: "zzz" }));
   fc.assert(
     fc.property(stray, (x) => {
-      expect(new Set(secretValues(Secret.of(x, tagged.node)))).toEqual(whole(x));
-      expect(new Set(secretValues(Secret.of(x, members.node)))).toEqual(whole(x));
+      expect(new Set(secretValues(secretAccess.of(x, tagged.node)))).toEqual(whole(x));
+      expect(new Set(secretValues(secretAccess.of(x, members.node)))).toEqual(whole(x));
     }),
     opts,
   );
@@ -195,9 +197,9 @@ test("a value no union variant or anyOf member fits is given whole", () => {
 });
 
 test("a value whose shape is not its node's is given whole", () => {
-  expect(new Set(secretValues(Secret.of({ k1: ["v1"] }, s.string().node)))).toEqual(new Set(["k1", "v1"]));
-  expect(new Set(secretValues(Secret.of({ k2: 2 }, s.array(s.int()).node)))).toEqual(new Set(["k2", "2"]));
-  expect(secretValues(Secret.of(["e1"], s.record(s.string()).node))).toEqual(["e1"]);
+  expect(new Set(secretValues(secretAccess.of({ k1: ["v1"] }, s.string().node)))).toEqual(new Set(["k1", "v1"]));
+  expect(new Set(secretValues(secretAccess.of({ k2: 2 }, s.array(s.int()).node)))).toEqual(new Set(["k2", "2"]));
+  expect(secretValues(secretAccess.of(["e1"], s.record(s.string()).node))).toEqual(["e1"]);
 });
 
 test("a secret inside a secret gives the inner one's values once, by its own node", () => {
@@ -217,7 +219,7 @@ test("a secret inside a secret gives the inner one's values once, by its own nod
 test("a secret's empty keys and strings are left out, and a boolean is not a value", () => {
   const value = parsed(s.secret(s.record(s.boolean())), { "": true, on: false });
   expect(secretValues(value)).toEqual(["on"]);
-  expect(secretValues(Secret.of({ "": "", a: [true, ""] }, json))).toEqual(["a"]);
+  expect(secretValues(secretAccess.of({ "": "", a: [true, ""] }, json))).toEqual(["a"]);
 });
 
 test("every value the read by value alone gives is still given", () => {
@@ -236,29 +238,29 @@ test("every value the read by value alone gives is still given", () => {
 test(
   "a 1,000,000-deep json secret returns without overflowing the stack, and gives nothing past the visit cap",
   {
-    timeout: 2 * 1_000_000 * 0.005,
+    timeout: fixedTime(2 * 1_000_000 * 0.005),
   },
   () => {
     let deep: unknown = "bottom";
     for (let i = 0; i < 1_000_000; i++) deep = [deep];
-    expect(secretValues(Secret.of(deep, json))).toEqual([]);
+    expect(secretValues(secretAccess.of(deep, json))).toEqual([]);
     let shallow: unknown = "bottom";
     for (let i = 0; i < 999_998; i++) shallow = [shallow];
-    expect(secretValues(Secret.of(shallow, json))).toEqual(["bottom"]);
+    expect(secretValues(secretAccess.of(shallow, json))).toEqual(["bottom"]);
   },
 );
 
-test("Secret.innerOf gives the node a secret was made under, and the secret stays frozen", () => {
+test("secretAccess.innerOf gives the node a secret was made under, and the secret stays frozen", () => {
   const nodes = fc.constantFrom<Node>(json, s.string().node, s.record(s.int()).node, s.object({ a: s.json() }).node);
   fc.assert(
     fc.property(fc.jsonValue(), nodes, (v, n) => {
-      const made = Secret.of(v, n);
-      expect(Secret.innerOf(made)).toBe(n);
+      const made = secretAccess.of(v, n);
+      expect(secretAccess.innerOf(made)).toBe(n);
       expect(Object.isFrozen(made)).toBe(true);
     }),
     opts,
   );
   const inner = s.record(s.string());
   const value = parsed(s.secret(inner), { a: "b" });
-  expect(Secret.is(value) && Secret.innerOf(value)).toBe(inner.node);
+  expect(secretAccess.is(value) && secretAccess.innerOf(value)).toBe(inner.node);
 });

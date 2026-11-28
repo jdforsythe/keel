@@ -4,6 +4,7 @@
 // Seed 1337
 // Driven through `keel session replay <f>` (the surface E2002 uses), on a file with a top-level `users` key.
 // Assumption: the command writes compact lines `<code> <file>:1:1 ...` to stdout by default, as for E2002.
+import { fixedTime } from "@keel/tooling/test-time";
 import { run } from "@keel/cli";
 import { SessionGroup, openGroup } from "@keel/std-sessions/group";
 import "@keel/std-sessions/tools";
@@ -28,7 +29,7 @@ beforeAll(async () => {
   if (typeof encoded !== "object" || encoded === null || Array.isArray(encoded))
     throw new Error("group: not an object");
   clean = { ...encoded };
-}, 120_000);
+}, fixedTime(120_000));
 
 const withoutSeed = (): Record<string, unknown> => {
   const users = clean["users"];
@@ -43,32 +44,52 @@ const withoutSeed = (): Record<string, unknown> => {
 };
 
 describe("std.multi: E2007 and E2008", () => {
-  test("E2007 fires on a group file that fails SessionGroup", async () => {
-    const r = await replayOf({ ...clean, v: 2 });
-    expect(r.stdout).toMatch(/E2007/);
-    expect(r.code).toBe(1);
-  }, 60_000);
+  test(
+    "E2007 fires on a group file that fails SessionGroup",
+    async () => {
+      const r = await replayOf({ ...clean, v: 2 });
+      expect(r.stdout).toMatch(/E2007/);
+      expect(r.code).toBe(1);
+    },
+    fixedTime(60_000),
+  );
 
-  test("E2007 does not fire on its clean twin, a group file recorded by openGroup", async () => {
-    const r = await replayOf(clean);
-    expect(r.stdout).not.toMatch(/E2007/);
-  }, 60_000);
+  test(
+    "E2007 does not fire on its clean twin, a group file recorded by openGroup",
+    async () => {
+      const r = await replayOf(clean);
+      expect(r.stdout).not.toMatch(/E2007/);
+    },
+    fixedTime(60_000),
+  );
 
-  test("E2007 and E2008 diag the file at 1:1", async () => {
-    const a = await replayOf({ ...clean, v: 2 });
-    expect(a.stdout).toMatch(new RegExp(`E2007 ${FILE}:1:1`));
-    const b = await replayOf(withoutSeed());
-    expect(b.stdout).toMatch(new RegExp(`E2008 ${FILE}:1:1`));
-  }, 60_000);
+  test(
+    "E2007 and E2008 diag the file at 1:1",
+    async () => {
+      const a = await replayOf({ ...clean, v: 2 });
+      expect(a.stdout).toMatch(new RegExp(`E2007 ${FILE}:1:1`));
+      const b = await replayOf(withoutSeed());
+      expect(b.stdout).toMatch(new RegExp(`E2008 ${FILE}:1:1`));
+    },
+    fixedTime(60_000),
+  );
 
-  test("E2008 fires on a group file whose user session has no seed", async () => {
-    const r = await replayOf(withoutSeed());
-    expect(r.stdout).toMatch(/E2008/);
-    expect(r.code).toBe(1);
-  }, 60_000);
+  test(
+    "E2008 fires on a group file whose user session has no seed",
+    async () => {
+      const r = await replayOf(withoutSeed());
+      expect(r.stdout).toMatch(/E2008/);
+      expect(r.code).toBe(1);
+    },
+    fixedTime(60_000),
+  );
 
-  test("E2008 does not fire on its clean twin, every user session seeded", async () => {
-    const r = await replayOf(clean);
-    expect(r.stdout).not.toMatch(/E2008/);
-  }, 60_000);
+  test(
+    "E2008 does not fire on its clean twin, every user session seeded",
+    async () => {
+      const r = await replayOf(clean);
+      expect(r.stdout).not.toMatch(/E2008/);
+    },
+    fixedTime(60_000),
+  );
 });

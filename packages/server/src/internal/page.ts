@@ -1,12 +1,13 @@
 import { type Match, pageHead } from "@keel/router/internal";
 import { publicError } from "@keel/router/internal";
-import { servedForm } from "@keel/runtime-dom/internal";
+import { E1255, servedForm } from "@keel/runtime-dom/internal";
 import { type JsonValue, type KeelError, err, ok } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { Submission } from "./Submission.ts";
 import { attempted } from "./attempted.ts";
+import { caught } from "./caught.ts";
 import { devMessageOf } from "./devMessageOf.ts";
 import { documentResponse } from "./documentResponse.ts";
 import { encodeOr } from "./encodeOr.ts";
@@ -19,6 +20,7 @@ import { renderChain } from "./renderChain.ts";
 import { runLoaders } from "./runLoaders.ts";
 import { scrubbedError } from "./scrubbedError.ts";
 import { statusOf } from "./statusOf.ts";
+import { withScheme } from "./withScheme.ts";
 import { withServedForm } from "./withServedForm.ts";
 import { withoutPasswords } from "./withoutPasswords.ts";
 
@@ -41,7 +43,7 @@ export async function page(
   const { chain, def, id } = m.route;
   const publicize = (e: KeelError<string, unknown>) => publicError(scrubbedError(e, r.rq), r.sv.mode);
   const outcomes = await runLoaders(r, chain, { params: m.params, search: m.search, url: r.url });
-  const diags = outcomes.flatMap((o) => (o.diag === null ? [] : [o.diag]));
+  const diags = outcomes.flatMap((o) => o.diags);
   const failedAt = outcomes.findIndex((o) => !o.result.ok);
   const failed = outcomes[failedAt]?.result;
   const loaderError = failed === undefined || failed.ok ? null : failed.error;
@@ -70,23 +72,28 @@ export async function page(
   // The rejected post goes to the `<Form>` that posted it (its `action` and method), so its controls render the
   // submitted values and errors (k.forms Submit); the render is synchronous, the slot cleared after it.
   const posted = submission === null || shown !== null ? null : { ...submission, href: m.url };
-  const rendered = attempted(() =>
-    inRequest(r.rq, () =>
-      withServedForm(posted, () =>
-        renderChain({
-          chain,
-          params: m.params,
-          search: m.search,
-          data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
-          props,
-          failure: shown,
-          prepend: (html) => (submission === null || shown !== null ? "" : fieldSummary(submission, html)),
-          ctx: r.sv.ctx,
-          publicize,
-        }),
+  const ran = await caught(
+    () =>
+      inRequest(r.rq, () =>
+        withScheme(r, () =>
+          withServedForm(posted, () =>
+            renderChain({
+              chain,
+              params: m.params,
+              search: m.search,
+              data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
+              props,
+              failure: shown,
+              prepend: (html) => (submission === null || shown !== null ? "" : fieldSummary(submission, html)),
+              ctx: r.sv.ctx,
+              publicize,
+            }),
+          ),
+        ),
       ),
-    ),
+    r.sv.frames,
   );
+  const rendered = ran.result;
   // The served route, for the resume entry to report as the ctx's first `nav` (k.runtime).
   const route = { id, path: def.path ?? "", href: m.url, params, search };
   // A failed loader's error as the resume entry reports it (k.runtime): its code and `data.at`, nothing the page's
@@ -95,9 +102,13 @@ export async function page(
   const error = loaderError === null ? {} : { error: { code: loaderError.code, message: loaderError.code, data: at } };
   const base = { route, ...error };
   if (!rendered.ok) {
-    // A throw outside every route boundary: the root default alert, 500. A thrown kernel code (E1255) is logged.
+    // A throw outside every route boundary: the root default alert, 500. The kernel's own E1255 is logged as itself;
+    // any other thrown value as its records, by its form (k.serverlog Thrown values).
     const thrown = scrubbedError(rendered.error, r.rq).message;
-    const coded = /(E\d{4}) (.*)/.exec(thrown);
+    const kernel = ran.thrown instanceof Error && ran.thrown.message === E1255;
+    const logged = kernel
+      ? [{ code: "E1255", message: E1255.slice(6) }]
+      : r.sv.thrown("keel.unexpected", `render ${id} threw: `, ran.thrown, ran.frames);
     const fallback = renderChain({
       chain: [],
       params: {},
@@ -119,7 +130,7 @@ export async function page(
         pageHead(m.route, m.params, { params: m.params, search: m.search, data: undefined }, true),
       ),
       route: id,
-      diags: coded === null ? diags : [...diags, { code: coded[1] ?? "", message: coded[2] ?? "" }],
+      diags: [...diags, ...logged],
     };
   }
   // Only the route's own component renders the password inputs that name the keys to drop; at an errorElement the
@@ -144,6 +155,21 @@ export async function page(
   if (r.sv.mode === "dev" && rendered.value.nothing && !r.sv.nothing.has(id)) {
     r.sv.nothing.add(id);
     diags.push({ code: "E1406", message: `${id}: a text binding renders nothing; place the node with {props.x()}` });
+  }
+  // A throw a route boundary caught is logged as any thrown value is, by its form (k.serverlog Thrown values).
+  const caughtThrow = rendered.value.thrown;
+  // A frame reader that throws on the value (a Proxy's `stack`) gives no frames, as `caught` does.
+  const framesOf = (v: unknown): readonly string[] => {
+    const read = attempted(() => r.sv.frames(v));
+    return read.ok ? read.value : [];
+  };
+  if (caughtThrow !== null) {
+    const kernel = caughtThrow.value instanceof Error && caughtThrow.value.message === E1255;
+    diags.push(
+      ...(kernel
+        ? [{ code: "E1255", message: E1255.slice(6) }]
+        : r.sv.thrown("keel.unexpected", `render ${id} threw: `, caughtThrow.value, framesOf(caughtThrow.value))),
+    );
   }
   return { response: documentResponse(r, final, rendered.value, extra, dev, head), route: id, diags };
 }

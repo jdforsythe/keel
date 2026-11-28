@@ -20,8 +20,9 @@ const unwrap = (e: Expression): Expression =>
     ? unwrap(e.expression)
     : e;
 
-const isFn = (e: Expression | null | undefined): e is ReadFn =>
-  e !== null && e !== undefined && (e.type === "ArrowFunctionExpression" || e.type === "FunctionExpression");
+/** `e` when it is a function or arrow expression. */
+const asFn = (e: Expression | null | undefined): ReadFn | undefined =>
+  e?.type === "ArrowFunctionExpression" || e?.type === "FunctionExpression" ? e : undefined;
 
 const tops = new WeakMap<Program, readonly Top[]>();
 const parents = new WeakMap<Program, ReadonlyMap<string, MemberExpression>>();
@@ -62,7 +63,8 @@ function topFunctions(program: Program): readonly Top[] {
     else if (d.type === "VariableDeclaration")
       for (const v of d.declarations) {
         const init = v.init === null || v.init === undefined ? undefined : unwrap(v.init);
-        if (isFn(init)) add(init);
+        const fn = asFn(init);
+        if (fn !== undefined) add(fn);
       }
   }
   tops.set(program, out);

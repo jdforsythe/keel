@@ -46,9 +46,8 @@ async function step(
     );
     if (!ran.result.ok) {
       const clean = scrubbedCause(ran.result.error, rq);
-      const lead = `guard ${lvl.id} threw: `;
-      const diag = { code: "keel.unexpected", lead, message: lead + clean.data.cause, frames: ran.frames };
-      return { kind: "fail", at: i, error: clean, diags: [diag] };
+      const diags = sv.thrown("keel.unexpected", `guard ${lvl.id} threw: `, ran.thrown, ran.frames);
+      return { kind: "fail", at: i, error: clean, diags };
     }
     const r = ran.result.value;
     if (r.ok) continue;
@@ -62,8 +61,8 @@ async function step(
       return {
         kind: "fail",
         at: i,
-        error: unexpected(carried.error),
-        diags: [{ code: "E1508", message: carried.error.slice(6, 95) }],
+        error: unexpected(carried.error.message),
+        diags: [{ code: "E1508", message: carried.error.message.slice(6, 95) }],
       };
     const to = attempted(() => encodeHref(id, target, carried.value, {}));
     if (!to.ok)

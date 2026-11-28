@@ -1,5 +1,4 @@
-import { secretPath } from "@keel/schema";
-import { refuse } from "../unsafe/refuse.ts";
+import { defect, secretPath } from "@keel/schema";
 import type { JobTable } from "./JobTable.ts";
 import type { Queue } from "./Queue.type.ts";
 import { enqueue } from "./internal/enqueue.ts";
@@ -12,7 +11,11 @@ import { runQueue } from "./internal/runQueue.ts";
 export function queue<T extends JobTable>(table: T): Queue<T> {
   for (const [id, j] of Object.entries(table)) {
     const at = secretPath(j.input);
-    if (at !== null) refuse(`E2503 job ${id} input holds s.secret at ${at || "(root)"}; a job's input is stored`);
+    if (at !== null)
+      defect("a job's input holds an s.secret; a job's input is stored", {
+        code: "E2503",
+        data: { job: id, at: at || "(root)" },
+      });
   }
   const module = Object.keys(table)[0]?.split(".")[0] ?? "";
   return {

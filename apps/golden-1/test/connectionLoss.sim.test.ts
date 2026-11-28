@@ -6,6 +6,7 @@ import { scope } from "@keel/reactive";
 import { type LiveStatus, live } from "@keel/std-live";
 import { drain, send } from "@keel/std-offline";
 import { renderRoute, simulate } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, describe, expect, it } from "vitest";
 import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
 import { boardChannel } from "../modules/api/boardChannel.schema.ts";
@@ -143,93 +144,104 @@ describe("the live stream drops", () => {
 
 describe("under generated schedules", () => {
   // The shell's wiring (`AppShell`) in a scope, as in `offlineConflictLive.sim.test.ts`; the run after it renders the page.
-  it("a toggle sent through drops, lost answers and windows is applied at most once, and A ends showing the board", async () => {
-    const T1 = TodoIdParams.parse({ todoId: "t1" });
-    if (!T1.ok) throw new Error(T1.error.message);
-    const t1 = T1.value;
-    await simulate(
-      async ({ ctx, run }) => {
-        open?.dispose();
-        open = undefined;
-        fresh();
-        await seedBoard(shared);
-        const app = await apiApp();
-        const a = browser(ctx, app);
-        let status = (): LiveStatus => "connecting";
-        const page = scope(() => {
-          status = live(ctx, location.origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
-          void drain(ctx, boardOutbox, { owner: "" });
-        });
-        open = page;
-        const sent = send(ctx, boardOutbox, "toggleTodo", { params: t1, body: {} }, { base: 0, owner: "" }).catch(
-          () => null,
-        );
-        await run();
-        // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
-        for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
-          ctx.clock.advance(60_000);
+  it(
+    "a toggle sent through drops, lost answers and windows is applied at most once, and A ends showing the board",
+    async () => {
+      const T1 = TodoIdParams.parse({ todoId: "t1" });
+      if (!T1.ok) throw new Error(T1.error.message);
+      const t1 = T1.value;
+      await simulate(
+        async ({ ctx, run }) => {
+          open?.dispose();
+          open = undefined;
+          fresh();
+          await seedBoard(shared);
+          const app = await apiApp();
+          const a = browser(ctx, app);
+          let status = (): LiveStatus => "connecting";
+          const page = scope(
+            () => {
+              status = live(ctx, location.origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
+              void drain(ctx, boardOutbox, { owner: "" });
+            },
+            { detached: true },
+          );
+          open = page;
+          const sent = send(ctx, boardOutbox, "toggleTodo", { params: t1, body: {} }, { base: 0, owner: "" }).catch(
+            () => null,
+          );
           await run();
-        }
-        await sent;
-        const applied = await commits("api.toggleTodo");
-        const left = boardOutbox.get("entries");
-        // A flip applied twice would read as not done: the key keeps it to one.
-        expect(applied).toBeLessThanOrEqual(1);
-        if (left.length === 0) expect(applied).toBe(1);
-        else expect(left.map((e) => e.state)).toEqual(["failed"]);
-        const board = await readBoard();
-        expect(board.todos.find((t) => t.id === "t1")?.done).toBe(applied === 1);
-        expect(view.get("todos")).toEqual(board.todos);
-        expect(status()).toBe("live");
-        page.dispose();
-        open = undefined;
-      },
-      { runs: 100, seed: 31 },
-    );
-  }, 300_000);
+          // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
+          for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
+            ctx.clock.advance(60_000);
+            await run();
+          }
+          await sent;
+          const applied = await commits("api.toggleTodo");
+          const left = boardOutbox.get("entries");
+          // A flip applied twice would read as not done: the key keeps it to one.
+          expect(applied).toBeLessThanOrEqual(1);
+          if (left.length === 0) expect(applied).toBe(1);
+          else expect(left.map((e) => e.state)).toEqual(["failed"]);
+          const board = await readBoard();
+          expect(board.todos.find((t) => t.id === "t1")?.done).toBe(applied === 1);
+          expect(view.get("todos")).toEqual(board.todos);
+          expect(status()).toBe("live");
+          page.dispose();
+          open = undefined;
+        },
+        { runs: 100, seed: 31 },
+      );
+    },
+    fixedTime(300_000),
+  );
 
-  it("the rendered list page, through the same schedules, ends Live and showing the board", async () => {
-    const T1 = TodoIdParams.parse({ todoId: "t1" });
-    if (!T1.ok) throw new Error(T1.error.message);
-    const t1 = T1.value;
-    await simulate(
-      async ({ ctx, run }) => {
-        open?.dispose();
-        open = undefined;
-        fresh();
-        await seedBoard(shared);
-        browser(ctx, await apiApp());
-        const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
-        open = r;
-        const sent = send(ctx, boardOutbox, "toggleTodo", { params: t1, body: {} }, { base: 0, owner: "" }).catch(
-          () => null,
-        );
-        await run();
-        // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
-        for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
-          ctx.clock.advance(60_000);
+  it(
+    "the rendered list page, through the same schedules, ends Live and showing the board",
+    async () => {
+      const T1 = TodoIdParams.parse({ todoId: "t1" });
+      if (!T1.ok) throw new Error(T1.error.message);
+      const t1 = T1.value;
+      await simulate(
+        async ({ ctx, run }) => {
+          open?.dispose();
+          open = undefined;
+          fresh();
+          await seedBoard(shared);
+          browser(ctx, await apiApp());
+          const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
+          open = r;
+          const sent = send(ctx, boardOutbox, "toggleTodo", { params: t1, body: {} }, { base: 0, owner: "" }).catch(
+            () => null,
+          );
           await run();
-        }
-        await sent;
-        await r.settle();
-        const applied = await commits("api.toggleTodo");
-        expect(applied).toBeLessThanOrEqual(1);
-        const board = await readBoard();
-        expect(view.get("todos")).toEqual(board.todos);
-        // A first load that faults or outlasts the 10 s service timeout shows the list's error element naming the api
-        // error, and one made offline reads the empty view the page holds, so the list is not found; any other shows
-        // the list.
-        const ids = r.a11y().flatMap(function walk(n): string[] {
-          return [n.id, ...n.children.flatMap(walk)];
-        });
-        if (ids.includes("todos.error"))
-          expect(r.find("todos.error").text).toMatch(/^(api\.(timeout|network|status)|keel\.notFound)/);
-        else expect(r.find("todos.toggle.t1").state.checked).toBe(applied === 1);
-        expect(r.find("todos.live").text).toBe("Live");
-        r.dispose();
-        open = undefined;
-      },
-      { runs: 30, seed: 37 },
-    );
-  }, 300_000);
+          // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
+          for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
+            ctx.clock.advance(60_000);
+            await run();
+          }
+          await sent;
+          await r.settle();
+          const applied = await commits("api.toggleTodo");
+          expect(applied).toBeLessThanOrEqual(1);
+          const board = await readBoard();
+          expect(view.get("todos")).toEqual(board.todos);
+          // A first load that faults or outlasts the 10 s service timeout shows the list's error element naming the api
+          // error, and one made offline reads the empty view the page holds, so the list is not found; any other shows
+          // the list.
+          const ids = r.a11y().flatMap(function walk(n): string[] {
+            return [n.id, ...n.children.flatMap(walk)];
+          });
+          if (ids.includes("todos.error"))
+            expect(r.find("todos.error").text).toMatch(/^(api\.(timeout|network|status)|keel\.notFound)/);
+          else expect(r.find("todos.toggle.t1").state.checked).toBe(applied === 1);
+          expect(r.find("todos.live").text).toBe("Live");
+          r.dispose();
+          open = undefined;
+        },
+        { runs: 30, seed: 37 },
+      );
+    },
+    fixedTime(300_000),
+  );
 });

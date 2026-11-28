@@ -1,4 +1,4 @@
-// Spec: k.cli, clause "`GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the
+// Spec: k.inspect, clause "`GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the
 // `inspect()` graph; in production mode it is the route table's 404."
 // Property seed: 1337. Components are never rendered, so no DOM is needed.
 import { createCtx } from "@keel/ctx";
@@ -51,18 +51,21 @@ describe("k.cli GET /__keel/inspect", () => {
         async (names, bys) => {
           const ids = names.map((n) => `app.${n}`);
           const applied: Record<string, { name: string; payload: { by: number } }[]> = {};
-          const sc = scope(() => {
-            for (const id of ids) {
-              const st = store(Counter, { n: 0 }, { id });
-              const add = transaction(st, `${id}.add`, By, (state, { by }) => ({ n: state.n + by }));
-              applied[id] = [];
-              for (const by of bys) {
-                const r = tx(add, { by });
-                expect(r.ok).toBe(true);
-                applied[id]?.push({ name: `${id}.add`, payload: { by } });
+          const sc = scope(
+            () => {
+              for (const id of ids) {
+                const st = store(Counter, { n: 0 }, { id });
+                const add = transaction(st, `${id}.add`, By, (state, { by }) => ({ n: state.n + by }));
+                applied[id] = [];
+                for (const by of bys) {
+                  const r = tx(add, { by });
+                  expect(r.ok).toBe(true);
+                  applied[id]?.push({ name: `${id}.add`, payload: { by } });
+                }
               }
-            }
-          });
+            },
+            { detached: true },
+          );
           try {
             const before = parts(JSON.parse(JSON.stringify(inspect())));
             const res = await app.fetch(new Request(`${BASE}/__keel/inspect`));

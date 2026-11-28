@@ -2,6 +2,7 @@
 // The real `keel` binary over a temp project (OS tmpdir). Each case has its own one-transaction store, so one `keel ledger` run
 // reports every case. `prove` is @keel/testing/prove's (k.prove). Seed: 1337 (no property in this file).
 // Assumption: a test that names a transaction without a credited `prove` holds the rung `example` (k.ledger, `example`: a passing test references the item).
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import { ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";
 import { keel } from "./test-sim-project.ts";
@@ -98,14 +99,22 @@ describe("k.ledger: a `prove` the body awaits or returns", () => {
     ledgerRecord(r, `packages/m/src/${name}.ts#${name}Set`)?.rung;
 
   for (const c of cases.filter((x) => x.proves)) {
-    it(`a passing test whose body has ${c.name} \`prove\` makes the transaction \`proven\`: ${c.body(c.name).split("\n")[0]}`, () => {
-      expect(rungOf(run(), c.name)).toBe("proven");
-    }, 60_000);
+    it(
+      `a passing test whose body has ${c.name} \`prove\` makes the transaction \`proven\`: ${c.body(c.name).split("\n")[0]}`,
+      () => {
+        expect(rungOf(run(), c.name)).toBe("proven");
+      },
+      fixedTime(60_000),
+    );
   }
 
   for (const c of cases.filter((x) => !x.proves)) {
-    it(`a \`prove\` that is ${c.name} (${c.body(c.name).split("\n")[0]}) does not make the transaction \`proven\`; the test only names it`, () => {
-      expect(rungOf(run(), c.name)).toBe("example");
-    }, 60_000);
+    it(
+      `a \`prove\` that is ${c.name} (${c.body(c.name).split("\n")[0]}) does not make the transaction \`proven\`; the test only names it`,
+      () => {
+        expect(rungOf(run(), c.name)).toBe("example");
+      },
+      fixedTime(60_000),
+    );
   }
 });

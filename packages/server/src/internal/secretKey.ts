@@ -1,18 +1,37 @@
 import type { Schema } from "@keel/schema";
+import { heldMap } from "@keel/schema/internal";
 
 type Node = Schema<unknown>["node"];
 
-const isNode = (v: unknown): v is Node => typeof v === "object" && v !== null && "kind" in v;
-const held = new WeakMap<Node, boolean>();
+/** The nodes directly under `n`. */
+const childrenOf = (n: Node): readonly Node[] => {
+  switch (n.kind) {
+    case "object":
+      return Object.values(n.fields);
+    case "array":
+      return [n.item];
+    case "record":
+      return [n.value];
+    case "union":
+      return n.variants;
+    case "anyOf":
+      return n.members;
+    case "nullable":
+    case "optional":
+    case "secret":
+      return [n.inner];
+    case "format":
+      return [n.base];
+    default:
+      return [];
+  }
+};
+const held = heldMap<Node, boolean>();
 /** True when the subtree holds an `s.secret` node; decided once per schema node. */
 const holds = (n: Node): boolean => {
   let v = held.get(n);
   if (v === undefined) {
-    v =
-      n.kind === "secret" ||
-      Object.values(n.kind === "object" ? n.fields : n)
-        .flat()
-        .some((c) => isNode(c) && holds(c));
+    v = n.kind === "secret" || childrenOf(n).some(holds);
     held.set(n, v);
   }
   return v;

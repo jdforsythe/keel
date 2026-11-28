@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok, reveal } from "@keel/schema";
+import { err, keelError, ok, reveal } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { tokens } from "@keel/std-tokens/server";
 import { accounts } from "./accounts.contract.ts";
@@ -14,7 +14,7 @@ const TTL = 30 * 24 * 60 * 60 * 1000;
  * itself, is `keel.denied`: a token never mints another, so its 30 days end.
  */
 export const postToken = action(accounts, "accounts.mint", {}, async (_body, { user, bearer }, ctx) => {
-  if (user === "" || bearer !== undefined) return err({ code: "keel.denied", message: "Sign in first", data: null });
+  if (user === "" || bearer !== undefined) return err(keelError.denied.make({}, "Sign in first"));
   const minted = tokens(ctx).mint({ ttl: TTL });
   if (!minted.ok) return err(minted.error);
   const { token, id, digest, expiresAt } = minted.value;

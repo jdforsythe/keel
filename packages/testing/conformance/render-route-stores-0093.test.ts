@@ -8,14 +8,14 @@
 // the public router's refusal shows as `keel.unexpected` in the route's `errorElement`.
 import type { Ctx } from "@keel/ctx";
 import { Form, action, createRouter, loader, manifest } from "@keel/router";
-import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
-import { Input } from "@keel/ui";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
+import { Input } from "@keel/ui";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, simCtx, thrown } from "./fixtures.ts";

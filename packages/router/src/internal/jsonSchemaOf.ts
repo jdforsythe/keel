@@ -9,9 +9,6 @@ const sorted = (o: Readonly<Record<string, JsonValue>>): JsonValue =>
       .map((k) => [k, o[k] ?? null]),
   );
 
-const isObject = (v: JsonValue): v is { readonly [k: string]: JsonValue } =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
-
 /** JSON Schema for a schema node, keys sorted (routes.json, k.compiler). Optional unwraps; ids keep their brand. */
 export function jsonSchemaOf(node: SchemaNode): JsonValue {
   switch (node.kind) {
@@ -19,7 +16,8 @@ export function jsonSchemaOf(node: SchemaNode): JsonValue {
       return jsonSchemaOf(node.inner);
     case "format": {
       const base = jsonSchemaOf(node.base);
-      return isObject(base) ? sorted({ ...base, format: node.name }) : base;
+      if (typeof base !== "object" || base === null || Array.isArray(base)) return base;
+      return sorted({ ...Object.fromEntries(Object.entries(base)), format: node.name });
     }
     case "string":
       return sorted({

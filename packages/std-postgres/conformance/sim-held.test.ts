@@ -6,7 +6,8 @@
 // Assumption: "a database no earlier run used" is a `fresh()` capability name, so the first query boots the engine inside the run; its boot is held, a plan step takes no part in it.
 // Assumption: the capability's plan is `plans[<database name>]` (k.sim); the first query's migration takes no step and is held (a held call the drive waits for).
 // Assumption: "the wait for the database to be free": a lone statement started while a `transaction` is open waits behind it; it answers once the transaction's `fn` has finished, so no E1728 and no deadlock.
-import { err, ok } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
+import { err, ok, s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { ready } from "@keel/std-postgres/testing";
 import { simulate } from "@keel/testing";
@@ -131,6 +132,8 @@ test("a lone statement started while a `transaction` is open waits for the datab
   );
 });
 
+const NoReason = s.error("t.no", s.object({}));
+
 test("a `transaction` whose `fn` returns `err` rolls back with every PGlite call held and answered, the clock unmoved", async () => {
   const { cap, table } = fresh();
   const db = notesDb(cap, table);
@@ -139,7 +142,7 @@ test("a `transaction` whose `fn` returns `err` rolls back with every PGlite call
     async ({ ctx }) => {
       const r = await db(ctx).transaction(async (tx) => {
         okOf(await tx.run(sql(NoRows)`insert into ${T} values (1, 'a')`));
-        return err({ code: "t.no" });
+        return err(NoReason.make({}));
       });
       expect(r.ok).toBe(false);
       expect(ctx.clock.now()).toBe(0);
@@ -226,13 +229,17 @@ test("In an empty replay (k.drive), a scenario that runs two `insert` statements
   expect(r.ms).toBeLessThan(5000);
 });
 
-test("two committing `insert` statements through `query` leave no work for any two distinct ids: the scenario resolves at `ctx.clock.now()` 10", async () => {
-  await fc.assert(
-    fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), fc.integer({ min: 1001, max: 2000 }), async (a, b) => {
-      const r = await twoInserts([a, b]);
-      expect(r.now).toBe(10);
-      expect(r.ms).toBeLessThan(5000);
-    }),
-    { seed: SEED, numRuns: 5 },
-  );
-}, 60_000);
+test(
+  "two committing `insert` statements through `query` leave no work for any two distinct ids: the scenario resolves at `ctx.clock.now()` 10",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), fc.integer({ min: 1001, max: 2000 }), async (a, b) => {
+        const r = await twoInserts([a, b]);
+        expect(r.now).toBe(10);
+        expect(r.ms).toBeLessThan(5000);
+      }),
+      { seed: SEED, numRuns: 5 },
+    );
+  },
+  fixedTime(60_000),
+);

@@ -6,11 +6,12 @@ import http from "node:http";
 import { Socket } from "node:net";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
 let root = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-devreload-"));
+  root = tempDir(".tmp-devreload-", import.meta.dirname);
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });

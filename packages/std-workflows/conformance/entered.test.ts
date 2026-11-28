@@ -9,7 +9,7 @@ import { workflow } from "@keel/std-workflows";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { nextId, sim } from "./fixtures.ts";
+import { nextId, sim, inRoot } from "./fixtures.ts";
 
 const none = s.object({});
 const Flag = s.int({ min: 0, max: 1 });
@@ -17,19 +17,21 @@ const flag = fc.integer({ min: 0, max: 1 });
 const Data = s.object({ a: Flag, b: Flag });
 
 const pickFlow = () => {
-  const c = chart(nextId("enteredChart"), {
-    data: Data,
-    start: { a: 0, b: 0 },
-    events: { begin: none, pick: none, finish: none },
-    guards: { a: (d) => d.a === 1, b: (d) => d.b === 1 },
-    initial: "queued",
-    states: {
-      queued: { on: { begin: "picking" } },
-      picking: { on: { pick: [{ to: "picking", guard: "a" }, { guard: "b" }], finish: "done" } },
-      done: { final: true },
-    },
-  });
-  return workflow(nextId("entered"), { chart: c, steps: {}, waits: {} });
+  const c = inRoot(() =>
+    chart(nextId("enteredChart"), {
+      data: Data,
+      start: { a: 0, b: 0 },
+      events: { begin: none, pick: none, finish: none },
+      guards: { a: (d) => d.a === 1, b: (d) => d.b === 1 },
+      initial: "queued",
+      states: {
+        queued: { on: { begin: "picking" } },
+        picking: { on: { pick: [{ to: "picking", guard: "a" }, { guard: "b" }], finish: "done" } },
+        done: { final: true },
+      },
+    }),
+  );
+  return inRoot(() => workflow(nextId("entered"), { chart: c, steps: {}, waits: {} }));
 };
 
 test("a taken target with a `to`, its own state too, raises `entered` by one and `attempt` resets to 0: a chart whose event has `[{ to: <its own state>, guard: a }, { guard: b }]` raises `entered` exactly when `a` holds", async () => {

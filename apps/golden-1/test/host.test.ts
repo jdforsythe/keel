@@ -2,16 +2,16 @@
 // topology.ts names `api` as the host of `web` (k.hosting): over a client build in `assets`, the `api` app answers a
 // document request that matches none of its routes with the client's index.html, and its own API routes still win.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
 
 const INDEX = '<!doctype html><html><head><title>todos</title></head><body><div id="app"></div></body></html>';
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "golden-1-host-"));
+const dir = tempDir("golden-1-host-");
 fs.mkdirSync(path.join(dir, ".vite"));
 fs.mkdirSync(path.join(dir, "assets"));
 fs.writeFileSync(path.join(dir, "index.html"), INDEX);

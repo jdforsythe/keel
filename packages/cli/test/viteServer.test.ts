@@ -1,10 +1,10 @@
 // viteServer: the inline config `keel dev` hands the project's Vite. A stand-in `vite` in a temp project answers
 // `createServer` with its argument as `config.server.port`, which `viteServer` hands back unread, and a logger whose
 // lines it keeps in `written`.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { isRecord } from "../src/internal/isRecord.ts";
 import { viteServer } from "../src/internal/viteServer.ts";
@@ -19,7 +19,7 @@ export const createServer = (inline) => {
 
 let project = "";
 beforeAll(() => {
-  project = realpathSync(mkdtempSync(join(tmpdir(), "keel-vite-server-")));
+  project = realpathSync(tempDir("keel-vite-server-"));
   mkdirSync(join(project, "node_modules", "vite"), { recursive: true });
   writeFileSync(
     join(project, "node_modules", "vite", "package.json"),
@@ -59,7 +59,7 @@ describe("viteServer", () => {
     vi.stubEnv("KEEL_DEV_POLL", "");
     const mod: unknown = await import(pathToFileURL(join(project, "node_modules", "vite", "index.js")).href);
     const written = isRecord(mod) && Array.isArray(mod.written) ? mod.written : [];
-    (await viteServer(project, undefined, true)).printUrls();
+    (await viteServer(project, undefined, undefined, true)).printUrls();
     (await viteServer(project, undefined)).printUrls();
     const esc = String.fromCharCode(27);
     expect(written).toEqual([

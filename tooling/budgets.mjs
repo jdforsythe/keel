@@ -2,10 +2,9 @@ import { spawnSync } from "node:child_process";
 // Enforces tooling/budgets.json: output token budgets and package size budgets.
 import fs from "node:fs";
 import path from "node:path";
-import zlib from "node:zlib";
-import { build } from "esbuild";
-import { buildDocs, listPackages, readSections } from "./docs-pack.mjs";
+import { buildDocs, listPackages, readAreas, readSections } from "./docs-pack.mjs";
 import { run } from "./output.ts";
+import { entryOf, gzipBytes } from "./size.mjs";
 
 const root = path.join(import.meta.dirname, "..");
 const budgets = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "budgets.json"), "utf8"));
@@ -38,13 +37,6 @@ await run("budgets", async () => {
         breach("spec.section", relp(path.join(specDir, f)), t, out["spec.section"], "tokens");
     }
   }
-  const map = path.join(root, "spec", "00-map.md");
-  if (out["spec.map"] !== undefined && fs.existsSync(map)) {
-    const t = tokens(fs.readFileSync(map, "utf8"));
-    measured++;
-    if (t > out["spec.map"]) breach("spec.map", relp(map), t, out["spec.map"], "tokens");
-  }
-
   const KEEL_BIN = "packages/cli/src/bin.ts";
   const agentEnv = { ...process.env, KEEL_AGENT: "1" };
   const measure = (key, where, text) => {
@@ -82,7 +74,7 @@ await run("budgets", async () => {
     measure("mcp.tools-list", "keel mcp tools/list", keel(["mcp"], '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n'));
 
   // Installed docs (k.docs Budgets): every section's and skill's text, the AGENTS.md block, and the compact output
-  // of `keel docs` and `keel docs --for E1451` in a project with every package installed, its docs packed in memory
+  // of `keel docs`, `keel docs <area>` for every area and `keel docs --for E1451` in a project with every package installed, its docs packed in memory
   // from spec/ and tooling/docs-owners.json as `pnpm docs:pack` packs them.
   const skillsDir = path.join(root, "packages", "cli", "skills");
   const skillFiles = (fs.existsSync(skillsDir) ? fs.readdirSync(skillsDir).sort() : [])
@@ -90,6 +82,16 @@ await run("budgets", async () => {
     .filter((s) => fs.existsSync(s.file))
     .map((s) => ({ ...s, text: fs.readFileSync(s.file, "utf8") }));
   const sections = readSections(path.join(root, "spec"));
+  const areas = readAreas(path.join(root, "spec"));
+  // The spec map and each area as `pnpm spec` and `pnpm spec <area>` print them: the `docs` operation over the repo.
+  if (out["spec.map"] !== undefined || out["spec.area"] !== undefined) {
+    const { run: keelRun } = await import("../packages/cli/src/run.ts");
+    const { hostIo } = await import("../packages/cli/src/internal/hostIo.ts");
+    const spec = async (args) => (await keelRun(["docs", ...args, "--format=compact"], hostIo(false))).stdout;
+    if (out["spec.map"] !== undefined) measure("spec.map", "pnpm spec", await spec([]));
+    if (out["spec.area"] !== undefined)
+      for (const a of areas) measure("spec.area", `pnpm spec ${a.id}`, await spec([a.id]));
+  }
   if (out["docs.section"] !== undefined)
     for (const s of sections) {
       const t = tokens(s.text);
@@ -109,14 +111,17 @@ await run("budgets", async () => {
     const text = agents.ok ? (agents.value.find((f) => f.path === "AGENTS.md")?.want ?? "") : "";
     measure("docs.agents", "AGENTS.md Keel block", text.trimEnd());
   }
-  if (out["docs.map"] !== undefined || out["docs.for"] !== undefined) {
+  if (out["docs.map"] !== undefined || out["docs.area"] !== undefined || out["docs.for"] !== undefined) {
     const { run: keelRun } = await import("../packages/cli/src/run.ts");
     const packages = listPackages(root);
     const owners = JSON.parse(fs.readFileSync(path.join(root, "tooling", "docs-owners.json"), "utf8"));
+    const glossary = fs.readFileSync(path.join(root, "docs", "GLOSSARY.md"), "utf8");
     const built = buildDocs(
       sections,
       owners,
       packages.map((p) => p.name),
+      areas,
+      glossary,
     );
     const files = [
       {
@@ -138,6 +143,8 @@ await run("budgets", async () => {
     const docs = async (args) =>
       (await keelRun(["docs", ...args, "--format=compact"], { cwd: "/budget", files })).stdout;
     if (out["docs.map"] !== undefined) measure("docs.map", "keel docs", await docs([]));
+    if (out["docs.area"] !== undefined)
+      for (const a of areas) measure("docs.area", `keel docs ${a.id}`, await docs([a.id]));
     if (out["docs.for"] !== undefined) measure("docs.for", "keel docs --for E1451", await docs(["--for", "E1451"]));
   }
 
@@ -158,40 +165,16 @@ await run("budgets", async () => {
     } else skipped++;
   }
 
-  // Package size: the package's own code bundled from src/index.ts (minified esm, dependencies external), gzipped.
+  // Package size: the package's own code bundled from src/index.ts (minified esm, dependencies external), gzipped; a
+  // browser entry loads each server-only file as its browser stub (size.mjs).
   // The tsc dist entry is a re-export file of ~100 bytes and measured nothing (backlog 0035).
   for (const [name, limit] of Object.entries(budgets.size ?? {})) {
     const max = typeof limit === "string" ? limit : limit.max;
     const platform = typeof limit === "string" ? "browser" : (limit.platform ?? "browser");
     const m = /^(\d+(?:\.\d+)?)\s*kb$/i.exec(max);
-    // A subpath export (`@keel/router/match`) is its own entry: `packages/<pkg>/src/<subpath>/index.ts` (rfc:0071).
-    const [pkg, ...sub] = name.replace(/^@keel\//, "").split("/");
-    // A subpath with no folder index is the file `packages/<pkg>/src/<subpath>.ts` (`@keel/std-sessions/routes`, 0093).
-    const nested = path.join(root, "packages", pkg, "src", ...sub, "index.ts");
-    const file = path.join(root, "packages", pkg, "src", `${sub.join("/")}.ts`);
-    // A library's `exports` entry names its source under `keel` (`./src/index.server.ts`, k.library-pack).
-    const pj = path.join(root, "packages", pkg, "package.json");
-    const target = fs.existsSync(pj)
-      ? JSON.parse(fs.readFileSync(pj, "utf8")).exports?.[sub.length > 0 ? `./${sub.join("/")}` : "."]?.keel
-      : undefined;
-    const entry =
-      typeof target === "string"
-        ? path.join(root, "packages", pkg, target)
-        : sub.length > 0 && !fs.existsSync(nested)
-          ? file
-          : nested;
-    if (!m || !fs.existsSync(entry)) continue;
-    const bundle = await build({
-      entryPoints: [entry],
-      bundle: true,
-      minify: true,
-      format: "esm",
-      platform,
-      packages: "external",
-      write: false,
-      logLevel: "silent",
-    });
-    const bytes = zlib.gzipSync(bundle.outputFiles[0].contents).length;
+    const entry = entryOf(root, name);
+    if (!m || entry === undefined) continue;
+    const bytes = await gzipBytes(entry, platform);
     measured++;
     if (bytes > Number(m[1]) * 1024)
       breach(name, relp(entry), bytes, `${m[1]}kb (${Math.round(Number(m[1]) * 1024)} bytes)`, "bytes gzip");

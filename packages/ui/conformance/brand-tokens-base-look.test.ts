@@ -3,7 +3,7 @@
 // Seed: 1337 (property over the three surfaces).
 // Not built yet: the cases about `brandTokens.base` and `brandTokens.look` are `test.skip`; the builder changes `test.skip` to `test` in each. The contrast ratios are live: they are the existing palette's.
 // `brandTokens.base` and `.look` are read with `Reflect.get` so the file type-checks before `Tokens` names the groups.
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import { brandTokens } from "@keel/ui/brand";
 import * as fc from "fast-check";
 import { describe, expect, test } from "vitest";

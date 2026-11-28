@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -47,6 +48,7 @@ const polls = (): boolean => !["", "0", "false"].includes((process.env.CHOKIDAR_
 /**
  * Binary only: the project's own `vite` (the nearest `node_modules/vite` at or above `cwd`, as `npx --no-install vite`
  * finds it) creates a dev server for `cwd` with `server.strictPort`, `server.port` only when `port` is given, and
+ * `server.host` only when `host` (`keel dev --host`) is given, and
  * `server.watch` `{ usePolling: true, interval: 100 }` when `KEEL_DEV_POLL` is `1` (merged over the project's own
  * `server.watch`; unset, empty or `0` passes none). Any other value throws. This
  * evaluates the project's `vite.config.ts` and its plugins' `config` hooks once; nothing listens yet. What
@@ -54,7 +56,12 @@ const polls = (): boolean => !["", "0", "false"].includes((process.env.CHOKIDAR_
  * (docs/OUTPUT.md: compact and json carry no color, whatever `CI` makes Vite's colors think). Throws when `vite` cannot
  * be resolved or does not fit.
  */
-export async function viteServer(cwd: string, port: number | undefined, plain = false): Promise<DevServer> {
+export async function viteServer(
+  cwd: string,
+  port: number | undefined,
+  host: string | undefined = undefined,
+  plain = false,
+): Promise<DevServer> {
   const mod: unknown = await import(pathToFileURL(projectVite(cwd)).href);
   const create = method(mod, "createServer");
   const version = field(mod, "version");
@@ -65,6 +72,7 @@ export async function viteServer(cwd: string, port: number | undefined, plain = 
     server: {
       strictPort: true,
       ...(port === undefined ? {} : { port }),
+      ...(host === undefined ? {} : { host }),
       ...(poll === "on" ? { watch: { usePolling: true, interval: 100 } } : {}),
     },
   });
@@ -72,15 +80,40 @@ export async function viteServer(cwd: string, port: number | undefined, plain = 
   if (plain) plainLogger(field(config, "logger"));
   const info = method(field(config, "logger"), "info");
   const listen = method(server, "listen");
-  const close = method(server, "close");
+  const closeVite = method(server, "close");
+  const http = field(server, "httpServer");
+  const twins: ReturnType<typeof createServer>[] = [];
+  const close = async (): Promise<unknown> => {
+    for (const t of twins.splice(0)) await new Promise<void>((done) => t.close(() => done()));
+    return closeVite();
+  };
   const printUrls = method(server, "printUrls");
   const shortcuts =
     typeof field(server, "bindCLIShortcuts") === "function" ? method(server, "bindCLIShortcuts") : undefined;
   return {
     version: typeof version === "string" ? version : "",
     port: field(field(config, "server"), "port"),
+    host: field(field(config, "server"), "host"),
     listen: () => Promise.resolve(listen()),
-    close: () => Promise.resolve(close()),
+    loopback: (at) =>
+      new Promise((resolve, reject) => {
+        const twin = createServer();
+        for (const event of ["request", "upgrade"]) {
+          const ls = typeof field(http, "listeners") === "function" ? method(http, "listeners")(event) : [];
+          if (Array.isArray(ls))
+            for (const l of ls)
+              if (typeof l === "function")
+                twin.on(event, (...args: unknown[]) => {
+                  Reflect.apply(l, http, args);
+                });
+        }
+        twin.once("error", reject);
+        twin.listen(at, "127.0.0.1", () => {
+          twins.push(twin);
+          resolve();
+        });
+      }),
+    close,
     printUrls: () => {
       printUrls();
     },

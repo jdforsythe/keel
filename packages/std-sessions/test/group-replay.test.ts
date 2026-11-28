@@ -2,15 +2,15 @@
 // `keel session replay <f>` on a file with a top-level `users` key: E2007 and E2008 at the file, 1:1, nothing replayed;
 // a valid group gets a one-line summary and exit 0. E2007 and E2008 are explained.
 // Seed 1337
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { explain } from "@keel/check/explain";
 import { afterAll, describe, expect, test } from "vitest";
 import "../src/tools.ts";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { commandRun } from "../src/internal/commandRun.ts";
 
-const cwd = mkdtempSync(path.join(tmpdir(), "keel-group-replay-"));
+const cwd = tempDir("keel-group-replay-");
 afterAll(() => rmSync(cwd, { recursive: true, force: true }));
 
 const session = (seed?: number) => ({

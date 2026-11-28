@@ -4,7 +4,7 @@
 import { existsSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { collect } from "./ledger-fixture-kinds.ts";
-import { type CliRecord, type Run, keel, makeProject, root } from "./test-sim-project.ts";
+import { type CliRecord, type Run, childOutput, keel, makeProject, root } from "./test-sim-project.ts";
 
 /** The fixture test's environment line is joined from two parts so vitest does not read it as the support file's own. */
 export const ENV = ["// @vitest", "environment happy-dom"].join("-");
@@ -13,7 +13,7 @@ export const COMMITTED = "tooling/ledger/ledger.json";
 
 /** `fg` over `#ffffff`: 4.5:1 or better for `#111111`, 4.41:1 for `#787878`, below 3.5:1 for `#8a8a8a`. */
 export const tokensSource = (fg: string): string =>
-  `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "${fg}", bg: "#ffffff" } });\n`;
+  `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { fg: "${fg}", bg: "#ffffff" } });\n`;
 
 /** A temp project with every `@keel/*` package linked. The caller removes it. */
 export function keelProject(prefix: string, files: Readonly<Record<string, string>>): string {
@@ -36,6 +36,7 @@ export function moduleFiles(ids: readonly string[], styled: boolean): Record<str
     .join("\n");
   return {
     "topology.ts": TOPOLOGY,
+    "modules/m/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "m", deps: [], capabilities: [], public: { exports: [] } });\n`,
     "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", {\n${entries}\n});\n`,
     "modules/m/routes.ts": `import { manifest } from "@keel/router";\nimport { Text } from "@keel/ui";\nimport { m } from "./m.contract.ts";\n\nexport const routes = manifest(m, {\n${bound}\n});\n`,
   };
@@ -53,7 +54,8 @@ const ctx = () => createCtx({ mode: "sim", seed: 1337 });
 /** `keel build` must succeed; `keel test` is returned, its status is the caller's to judge. */
 export function buildAndTest(dir: string): Run {
   const built = keel(dir, ["build"]);
-  if (built.status !== 0) throw new Error(`keel build failed in ${dir}: ${built.stdout}`);
+  if (built.status !== 0)
+    throw new Error(`keel build failed in ${dir} (status ${String(built.status)}): ${childOutput(built)}`);
   return keel(dir, ["test"]);
 }
 

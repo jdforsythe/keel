@@ -2,6 +2,7 @@
 import { ok, s } from "@keel/schema";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { schedule } from "../src/index.ts";
+import { dataOf } from "./dataOf.ts";
 import { jobs as orders } from "./modules/orders/jobs.server.ts";
 
 const REFUSED = "America/Ciudad_Juarez";
@@ -25,9 +26,10 @@ const jobs = () => ({ ...orders });
 const table = (zone: string) => ({ "orders.x": { cron: "0 3 * * *", zone, job: "orders.digest", input: {} } }) as const;
 
 test("a pinned zone the host's Intl lacks throws E2551 naming the zone", () => {
-  expect(() => schedule(jobs(), table(REFUSED))).toThrow(
-    `E2551 schedule orders.x: zone '${REFUSED}' is not in this host's Intl time zone data`,
-  );
+  expect(dataOf(() => schedule(jobs(), table(REFUSED)))).toEqual({
+    schedule: "orders.x",
+    reason: `zone '${REFUSED}' is not in this host's Intl time zone data`,
+  });
 });
 
 test("a zone the host knows, and UTC, still build a runner", () => {
@@ -36,5 +38,8 @@ test("a zone the host knows, and UTC, still build a runner", () => {
 });
 
 test("a zone off the pinned list is still refused as not a TimeZone", () => {
-  expect(() => schedule(jobs(), table("Mars/Olympus"))).toThrow("zone 'Mars/Olympus' is not a TimeZone");
+  expect(dataOf(() => schedule(jobs(), table("Mars/Olympus")))).toEqual({
+    schedule: "orders.x",
+    reason: "zone 'Mars/Olympus' is not a TimeZone",
+  });
 });

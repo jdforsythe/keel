@@ -1,6 +1,7 @@
 // Spec: k.module, clause "With `@keel/std-brands` in a module's `deps`, `keel check` reports E2101 for a lowercase `s.id` brand; a `deps` package that cannot be imported reports E1159 naming it."
 // Seed 1337
 // E2101 runs the real binary in a subprocess so the check-rule registry starts empty; E1159 runs in process.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -85,39 +86,55 @@ const fakePkg = (tmp: string, name: string): void => {
 };
 
 describe("k.module: keel check loads the stdlib packages in deps", () => {
-  it("With `@keel/std-brands` in a module's `deps`, `keel check` reports E2101 for a lowercase `s.id` brand", () => {
-    const codes = bin(project(["@keel/std-brands"], "order")).map((d) => d.code);
-    expect(codes).toContain("E2101");
-    expect(codes).not.toContain("E1159");
-  }, 120_000);
+  it(
+    "With `@keel/std-brands` in a module's `deps`, `keel check` reports E2101 for a lowercase `s.id` brand",
+    () => {
+      const codes = bin(project(["@keel/std-brands"], "order")).map((d) => d.code);
+      expect(codes).toContain("E2101");
+      expect(codes).not.toContain("E1159");
+    },
+    fixedTime(120_000),
+  );
 
-  it("Without `@keel/std-brands` in `deps` nothing is imported, so E2101 is absent", () => {
-    const codes = bin(project([], "order")).map((d) => d.code);
-    expect(codes).not.toContain("E2101");
-  }, 120_000);
+  it(
+    "Without `@keel/std-brands` in `deps` nothing is imported, so E2101 is absent",
+    () => {
+      const codes = bin(project([], "order")).map((d) => d.code);
+      expect(codes).not.toContain("E2101");
+    },
+    fixedTime(120_000),
+  );
 
-  it("A PascalCase `s.id` brand with `@keel/std-brands` in `deps` reports no E2101", () => {
-    const codes = bin(project(["@keel/std-brands"], "Order")).map((d) => d.code);
-    expect(codes).not.toContain("E2101");
-  }, 120_000);
+  it(
+    "A PascalCase `s.id` brand with `@keel/std-brands` in `deps` reports no E2101",
+    () => {
+      const codes = bin(project(["@keel/std-brands"], "Order")).map((d) => d.code);
+      expect(codes).not.toContain("E2101");
+    },
+    fixedTime(120_000),
+  );
 
-  it("a `deps` package that cannot be imported reports E1159 naming it", async () => {
-    // seed 1337
-    await fc.assert(
-      fc.asyncProperty(fc.stringMatching(/^[a-z]{3,10}$/), async (suffix) => {
-        const pkg = `@keel/std-nope${suffix}`;
-        const tmp = mkTmp();
-        const files = [{ path: "modules/a/module.ts", source: manifest("a", [pkg]) }];
-        fs.mkdirSync(path.join(tmp, "modules/a"), { recursive: true });
-        fs.writeFileSync(path.join(tmp, files[0]?.path ?? ""), files[0]?.source ?? "");
-        const r = await run(["check", "--format=json"], { cwd: tmp, files, env: { KEEL_AGENT: "1" } });
-        const hits = diags(r.stdout).filter((d) => d.code === "E1159");
-        expect(hits.map((d) => d.code)).toContain("E1159");
-        expect(hits.some((d) => d.message.includes(pkg))).toBe(true);
-      }),
-      { seed: 1337, numRuns: 5 },
-    );
-  }, 120_000);
+  it(
+    "a `deps` package that cannot be imported reports E1159 naming it",
+    async () => {
+      // seed 1337
+      await fc.assert(
+        fc.asyncProperty(fc.stringMatching(/^[a-z]{3,10}$/), async (suffix) => {
+          const pkg = `@keel/std-nope${suffix}`;
+          const tmp = mkTmp();
+          const files = [{ path: "modules/a/module.ts", source: manifest("a", [pkg]) }];
+          fs.mkdirSync(path.join(tmp, "modules/a"), { recursive: true });
+          fs.writeFileSync(path.join(tmp, files[0]?.path ?? ""), files[0]?.source ?? "");
+          const r = await run(["check", "--format=json"], { cwd: tmp, files, env: { KEEL_AGENT: "1" } });
+          const hits = diags(r.stdout).filter((d) => d.code === "E1159");
+          expect(hits.map((d) => d.code)).toContain("E1159");
+          expect(hits.some((d) => d.message.includes(pkg))).toBe(true);
+        }),
+        { seed: 1337, numRuns: 5 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
   it("a `deps` package that can be imported reports no E1159", async () => {
     const tmp = mkTmp();

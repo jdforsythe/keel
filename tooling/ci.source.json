@@ -84,6 +84,30 @@
       "steps": [
         "$setup",
         {
+          "name": "whether this shard runs a test file that drives a browser (ci-shards --browser)",
+          "id": "browser",
+          "run": "node tooling/ci-shards.mjs --browser ${{ matrix.shard }} >> \"$GITHUB_OUTPUT\"\necho \"playwright=$(node -p \"require('playwright-core/package.json').version\")\" >> \"$GITHUB_OUTPUT\""
+        },
+        {
+          "name": "Chromium cache, keyed by the playwright-core version",
+          "if": "steps.browser.outputs.browser == 'true'",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.cache/ms-playwright",
+            "key": "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+          }
+        },
+        {
+          "name": "unprivileged user namespaces for Chromium's sandbox, which Ubuntu 24.04's AppArmor refuses by default (k.e2e-run Browser)",
+          "if": "steps.browser.outputs.browser == 'true'",
+          "run": "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0"
+        },
+        {
+          "name": "Chromium for the end-to-end conformance of this shard (k.e2e-run Browser): a cached browser is not downloaded again",
+          "if": "steps.browser.outputs.browser == 'true'",
+          "run": "pnpm exec playwright-core install --with-deps chromium"
+        },
+        {
           "name": "turbo cache: the builds the check job ran",
           "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
@@ -128,7 +152,7 @@
     },
     "ledger": {
       "if": "github.event_name != 'schedule'",
-      "needs": ["test-shard", "postgres"],
+      "needs": ["test-shard", "postgres", "built-smokes"],
       "runs-on": "ubuntu-latest",
       "timeout-minutes": 30,
       "steps": [
@@ -151,8 +175,8 @@
           }
         },
         {
-          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept): the shards', then std-postgres' run on Postgres 17 over its shard run",
-          "run": "set -e\nfor t in test-reports/test-reports-[0-9]*/test-reports.tar test-reports/test-reports-postgres/test-reports.tar; do tar -xf \"$t\"; done"
+          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept): the shards', the end-to-end runs', then std-postgres' run on Postgres 17 over its shard run",
+          "run": "set -e\nfor t in test-reports/test-reports-[0-9]*/test-reports.tar test-reports/test-reports-postgres/test-reports.tar test-reports/test-reports-e2e/test-reports.tar; do tar -xf \"$t\"; done"
         },
         {
           "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",
@@ -260,7 +284,7 @@
     "built-smokes": {
       "needs": "check",
       "runs-on": "ubuntu-latest",
-      "timeout-minutes": 25,
+      "timeout-minutes": 40,
       "steps": [
         "$setup",
         {
@@ -280,48 +304,97 @@
           "run": "pnpm build"
         },
         {
-          "name": "built golden-1 on SQLite: the stored board row is byte-equal after SIGKILL and restart",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/restart.mjs"
+          "name": "playwright-core version, the Chromium cache's key",
+          "id": "browser",
+          "run": "echo \"playwright=$(node -p \"require('playwright-core/package.json').version\")\" >> \"$GITHUB_OUTPUT\""
         },
         {
-          "name": "built golden-1 on SQLite: the removal workflow resumes after a SIGKILL inside a step and ends once",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/workflow.mjs"
+          "name": "Chromium cache, keyed by the playwright-core version",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.cache/ms-playwright",
+            "key": "playwright-${{ runner.os }}-${{ steps.browser.outputs.playwright }}"
+          }
         },
         {
-          "name": "built golden-1 on Postgres 17: the removal workflow resumes after a SIGKILL inside a step, its effect once",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/workflow-postgres.mjs"
+          "name": "unprivileged user namespaces for Chromium's sandbox, which Ubuntu 24.04's AppArmor refuses by default (k.e2e-run Browser)",
+          "run": "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0"
         },
         {
-          "name": "built golden-1 and a node example: document policies carry csp.txt and the declared origins, no other",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/csp.mjs"
+          "name": "Chromium for the end-to-end tests (k.e2e-run Browser): a cached browser is not downloaded again",
+          "run": "pnpm exec playwright-core install --with-deps chromium"
         },
         {
-          "name": "keel dev on golden-2: sign-up and sign-in through the identity mount, stubs for the browser",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/dev-signin.mjs"
+          "name": "golden-1 end to end: persistence, restart, the removal workflow on SQLite and Postgres 17, monitor, content security policy",
+          "working-directory": "apps/golden-1",
+          "run": "node ../../packages/cli/src/bin.ts test --e2e"
         },
         {
-          "name": "Chromium for the browser smoke",
-          "run": "pnpm exec playwright install --with-deps chromium"
+          "name": "golden-2 end to end: resume in place, keel dev sign-in, the personal-data canaries",
+          "working-directory": "apps/golden-2",
+          "run": "node ../../packages/cli/src/bin.ts test --e2e"
         },
         {
-          "name": "served golden-2 pages, and the built household's setup page with its form and live panel, resume in place in Chromium, three runs",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
+          "name": "household end to end: sign-in, guards, the outbox offline, conflicts, the weekly run, resume of the setup page",
+          "working-directory": "apps/household",
+          "run": "node ../../packages/cli/src/bin.ts test --e2e"
         },
         {
-          "name": "built household: sign-in guard, list, receipts, API tokens, a pii canary, and the data kept through SIGKILL on PGlite and Postgres 17",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"
+          "name": "inspector end to end: served as a node deployable under its own policy, reading golden-1 under keel dev on its server",
+          "working-directory": "apps/inspector",
+          "run": "node ../../packages/cli/src/bin.ts test --e2e"
         },
         {
-          "name": "built golden-2: canaries in every personal-data and secret field reach no log, error answer, URL, cookie, build file or evidence bundle; keel evidence --verify passes over golden-2 and household",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/canary.mjs"
+          "name": "values in Chromium: every rule the compiler emits from token values kept, each attack value refused before emission (k.values)",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/values.mjs"
         },
         {
-          "name": "built brand: a page with no styling of its own gets the brand's base, focus ring and responsive row in Chromium",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/brand.mjs"
+          "name": "examples: check, test and build in each, then its end-to-end files where it has them",
+          "run": "set -e\nfor d in examples/*/; do\n  (cd \"$d\" && node ../../packages/cli/src/bin.ts check && node ../../packages/cli/src/bin.ts test && if grep -q '\"keel\": \"library\"' package.json; then node ../../packages/cli/src/bin.ts pack --check; else node ../../packages/cli/src/bin.ts build; fi && if ls test/*.e2e.ts >/dev/null 2>&1; then node ../../packages/cli/src/bin.ts test --e2e; fi)\ndone"
         },
         {
-          "name": "examples: check, test, build and one proof on the built output of each",
-          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/examples.mjs"
+          "name": "a library packed and installed from its tarball into a fresh app outside the repository: its tokens and tools entries under check, test, build and dev",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/library-installed.mjs"
+        },
+        {
+          "name": "e2e run reports: each project's reports/tests/e2e.json, paths kept, for the ledger",
+          "if": "always()",
+          "run": "find apps examples -path '*/node_modules' -prune -o -path '*/reports/tests/e2e.json' -print | tar -cf test-reports.tar -T -"
+        },
+        {
+          "if": "always()",
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
+          "with": {
+            "name": "test-reports-e2e",
+            "path": "test-reports.tar",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
+        }
+      ],
+      "services": {
+        "postgres": {
+          "image": "postgres:17",
+          "env": {
+            "POSTGRES_PASSWORD": "keel-ci-throwaway"
+          },
+          "ports": ["5432:5432"],
+          "options": "--health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 30"
+        }
+      },
+      "env": {
+        "KEEL_TEST_POSTGRES_URL": "postgres://postgres:keel-ci-throwaway@127.0.0.1:5432/postgres"
+      }
+    },
+    "create-kit": {
+      "needs": "check",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 40,
+      "steps": [
+        "$setup",
+        {
+          "name": "pnpm create @keel/app from the packed kit: each kind created in an empty folder, installed, checked, tested and built",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/create.mjs"
         }
       ]
     },
@@ -636,7 +709,7 @@
     },
     "mutate-pr": {
       "if": "github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'mutate')",
-      "needs": ["test", "postgres"],
+      "needs": ["test", "postgres", "built-smokes"],
       "runs-on": "ubuntu-latest",
       "steps": [
         "$setup",

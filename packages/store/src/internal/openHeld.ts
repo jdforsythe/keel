@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import type { Schema } from "@keel/schema";
+import { type Schema, defect } from "@keel/schema";
 import { isolate } from "../isolate.ts";
 import { stores } from "../stores.ts";
 import { copyOf } from "./copyOf.ts";
@@ -58,9 +58,13 @@ async function restoreAll<S>(
   return { value, opened };
 }
 
+const member = (x: unknown, key: string): unknown =>
+  typeof x === "object" && x !== null ? Reflect.get(x, key) : undefined;
+
 /**
  * Open `factory` on the request (k.persist Server saves): its instance is registered in `rq.held` before it resolves,
  * so `saveStores` saves it. A caller that needs the factory's own type (`commitStores`) opens on a fresh request.
+ * Arguments of the wrong kind are a defect raised before any work starts, so no promise is left unread (k.defects).
  */
 export function openHeld<S>(
   ctx: Ctx,
@@ -68,6 +72,15 @@ export function openHeld<S>(
   factory: (ctx: Ctx) => S,
   seen?: (schema: Schema<unknown>, state: unknown) => void,
 ): Promise<Held<S>> {
+  const given: unknown[] = [ctx, rq, factory, seen];
+  const [c, r, f, w] = given;
+  const fits =
+    typeof member(member(c, "storage"), "read") === "function" &&
+    member(r, "held") instanceof Map &&
+    typeof member(member(r, "scope"), "run") === "function" &&
+    typeof f === "function" &&
+    (w === undefined || typeof w === "function");
+  if (!fits) defect("openHeld takes a ctx with storage, a state request and a stores factory");
   const held = restoreAll(ctx, rq, factory, seen);
   rq.held.set(factory, held);
   return held;

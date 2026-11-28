@@ -4,10 +4,10 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2615,
-    "probabilistic": 458,
+    "example": 3009,
+    "probabilistic": 501,
     "exhaustive": 21,
-    "proven": 83,
+    "proven": 92,
     "monitored": 8
   },
   "exports": [
@@ -217,6 +217,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "PurgeFailed",
+      "file": "golden-1:api/PurgeFailed.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
       "name": "Removal",
       "file": "golden-1:api/Removal.schema.ts",
       "rung": "probabilistic"
@@ -226,6 +232,12 @@
       "name": "RemovalData",
       "file": "golden-1:api/RemovalData.schema.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "RestoreFailed",
+      "file": "golden-1:api/RestoreFailed.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -454,6 +466,12 @@
       "name": "Digest",
       "file": "golden-1:digest/Digest.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
+      "name": "FeedClosed",
+      "file": "golden-1:digest/FeedClosed.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -697,6 +715,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "reread",
+      "file": "golden-1:todos/reread.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-1",
       "name": "resolveEdit",
       "file": "golden-1:todos/resolveEdit.ts",
       "rung": "example"
@@ -787,6 +811,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "AuthUnavailable",
+      "file": "golden-2:accounts/AuthUnavailable.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
       "name": "BearerToken",
       "file": "golden-2:accounts/BearerToken.schema.ts",
       "rung": "example"
@@ -814,6 +844,12 @@
       "name": "MintedToken",
       "file": "golden-2:accounts/MintedToken.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "MissingSecret",
+      "file": "golden-2:accounts/MissingSecret.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-2",
@@ -1111,9 +1147,39 @@
     },
     {
       "pkg": "golden-2",
+      "name": "RecipeErrorText",
+      "file": "golden-2:recipes/RecipeErrorText.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "de-DE",
+      "file": "golden-2:recipes/RecipeErrorText/de-DE.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "en-US",
+      "file": "golden-2:recipes/RecipeErrorText/en-US.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ja-JP",
+      "file": "golden-2:recipes/RecipeErrorText/ja-JP.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "RecipeList",
       "file": "golden-2:recipes/RecipeList.tsx",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "RecipeNotFound",
+      "file": "golden-2:recipes/RecipeNotFound.schema.ts",
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -1297,6 +1363,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "notFoundText",
+      "file": "golden-2:recipes/notFoundText.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
       "name": "raiseToast",
       "file": "golden-2:recipes/raiseToast.ts",
       "rung": "probabilistic"
@@ -1381,6 +1453,12 @@
     },
     {
       "pkg": "household",
+      "name": "AuthUnavailable",
+      "file": "household:members/AuthUnavailable.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "BearerToken",
       "file": "household:members/BearerToken.schema.ts",
       "rung": "example"
@@ -1414,6 +1492,12 @@
       "name": "MintedToken",
       "file": "household:members/MintedToken.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "MissingSecret",
+      "file": "household:members/MissingSecret.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "household",
@@ -1510,6 +1594,12 @@
       "name": "TokenExpiry",
       "file": "household:members/TokenExpiry.schema.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenExpiryRefused",
+      "file": "household:members/TokenExpiryRefused.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "household",
@@ -2389,6 +2479,18 @@
     },
     {
       "pkg": "inspector",
+      "name": "Unreachable",
+      "file": "inspector:inspector/Unreachable.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
+      "name": "UnreachableData",
+      "file": "inspector:inspector/UnreachableData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
       "name": "inspectApi",
       "file": "inspector:inspector/inspectApi.service.ts",
       "rung": "example"
@@ -2403,7 +2505,13 @@
       "pkg": "inspector",
       "name": "loadInspect",
       "file": "inspector:inspector/loadInspect.server.ts",
-      "rung": "example"
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
+      "name": "unreachableText",
+      "file": "inspector:inspector/unreachableText.ts",
+      "rung": "none"
     },
     {
       "pkg": "check",
@@ -2452,6 +2560,12 @@
       "name": "ledgerCount",
       "file": "packages/check/src/ledgerCount.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "check",
+      "name": "libraryEntryDiags",
+      "file": "packages/check/src/libraryEntryDiags.ts",
+      "rung": "none"
     },
     {
       "pkg": "check",
@@ -2592,6 +2706,54 @@
       "rung": "example"
     },
     {
+      "pkg": "create-app",
+      "name": "caselessAt",
+      "file": "packages/create-app/src/caselessAt.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "ownPackage",
+      "file": "packages/create-app/src/ownPackage.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "parseFlags",
+      "file": "packages/create-app/src/parseFlags.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "create-app",
+      "name": "readInputs",
+      "file": "packages/create-app/src/readInputs.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "realOf",
+      "file": "packages/create-app/src/realOf.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "render",
+      "file": "packages/create-app/src/render.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "create-app",
+      "name": "run",
+      "file": "packages/create-app/src/run.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "create-app",
+      "name": "writePlan",
+      "file": "packages/create-app/src/writePlan.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "ctx",
       "name": "NetStep",
       "file": "packages/ctx/src/NetStep.schema.ts",
@@ -2637,6 +2799,12 @@
       "pkg": "ctx",
       "name": "seedOf",
       "file": "packages/ctx/src/seedOf.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "ctx",
+      "name": "supervise",
+      "file": "packages/ctx/src/supervise.ts",
       "rung": "probabilistic"
     },
     {
@@ -2737,6 +2905,12 @@
     },
     {
       "pkg": "router",
+      "name": "isRouteTable",
+      "file": "packages/router/src/isRouteTable.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "router",
       "name": "loader",
       "file": "packages/router/src/loader.ts",
       "rung": "proven"
@@ -2799,12 +2973,18 @@
       "pkg": "schema",
       "name": "Secret",
       "file": "packages/schema/src/Secret.ts",
-      "rung": "probabilistic"
+      "rung": "none"
     },
     {
       "pkg": "schema",
       "name": "attempt",
       "file": "packages/schema/src/attempt.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "defect",
+      "file": "packages/schema/src/defect.ts",
       "rung": "probabilistic"
     },
     {
@@ -2823,6 +3003,24 @@
       "pkg": "schema",
       "name": "gen",
       "file": "packages/schema/src/gen.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "isDefect",
+      "file": "packages/schema/src/isDefect.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "isObjectSchema",
+      "file": "packages/schema/src/isObjectSchema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "schema",
+      "name": "isSchema",
+      "file": "packages/schema/src/isSchema.ts",
       "rung": "probabilistic"
     },
     {
@@ -3133,6 +3331,12 @@
     },
     {
       "pkg": "std-live",
+      "name": "Rejected",
+      "file": "packages/std-live/src/Rejected.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-live",
       "name": "live",
       "file": "packages/std-live/src/live.ts",
       "rung": "example"
@@ -3229,9 +3433,27 @@
     },
     {
       "pkg": "std-postgres",
+      "name": "ConstraintError",
+      "file": "packages/std-postgres/src/ConstraintError.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-postgres",
+      "name": "DatabaseError",
+      "file": "packages/std-postgres/src/DatabaseError.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "std-postgres",
       "name": "NoRows",
       "file": "packages/std-postgres/src/NoRows.schema.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-postgres",
+      "name": "ResultError",
+      "file": "packages/std-postgres/src/ResultError.schema.ts",
+      "rung": "none"
     },
     {
       "pkg": "std-postgres",
@@ -3709,6 +3931,18 @@
     },
     {
       "pkg": "store",
+      "name": "isStore",
+      "file": "packages/store/src/isStore.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "isTransaction",
+      "file": "packages/store/src/isTransaction.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
       "name": "isolate",
       "file": "packages/store/src/isolate.ts",
       "rung": "probabilistic"
@@ -3817,27 +4051,15 @@
     },
     {
       "pkg": "ui",
-      "name": "TokenSchema",
-      "file": "packages/ui/src/TokenSchema.ts",
+      "name": "appearance",
+      "file": "packages/ui/src/appearance.ts",
       "rung": "example"
-    },
-    {
-      "pkg": "ui",
-      "name": "contrastTable",
-      "file": "packages/ui/src/contrastTable.ts",
-      "rung": "probabilistic"
     },
     {
       "pkg": "ui",
       "name": "customElement",
       "file": "packages/ui/src/customElement.ts",
       "rung": "proven"
-    },
-    {
-      "pkg": "ui",
-      "name": "defineTokens",
-      "file": "packages/ui/src/defineTokens.ts",
-      "rung": "probabilistic"
     },
     {
       "pkg": "ui",
@@ -3876,7 +4098,7 @@
       "rung": "example"
     },
     {
-      "item": "k.a11y-static#716a1a2d",
+      "item": "k.a11y-static#20187a26",
       "rung": "example"
     },
     {
@@ -3889,6 +4111,34 @@
     },
     {
       "item": "k.a11y-static#a03d791e",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#9f30d601",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#f615b232",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#8d857f72",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#80ea9ae5",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#3714c048",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#0626106a",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#87a73099",
       "rung": "example"
     },
     {
@@ -4040,6 +4290,10 @@
       "rung": "example"
     },
     {
+      "item": "k.api#5feaac0b",
+      "rung": "example"
+    },
+    {
       "item": "k.aria#c9278545",
       "rung": "proven"
     },
@@ -4078,6 +4332,86 @@
     {
       "item": "k.aria#549d6a68",
       "rung": "example"
+    },
+    {
+      "item": "k.aria#97a3a541",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#61b2f02f",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#271851f2",
+      "rung": "proven"
+    },
+    {
+      "item": "k.aria#d8aa36ac",
+      "rung": "example"
+    },
+    {
+      "item": "k.aria#5048e710",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#e4207c4e",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#b7551491",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#9972cf8d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#d535a651",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#855ffcda",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#5fde96f3",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#45ffd79f",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#d9823e4d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#abce74e5",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#1ce1aa30",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#d8daddfb",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#06084fe7",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#508ddf5d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.attempt#5c2659df",
+      "rung": "example"
+    },
+    {
+      "item": "k.attempt#c40af7e8",
+      "rung": "probabilistic"
     },
     {
       "item": "k.boundary#224ae0db",
@@ -4232,11 +4566,19 @@
       "rung": "example"
     },
     {
+      "item": "k.check-time#7c2619fd",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-time#3584c9f4",
+      "rung": "example"
+    },
+    {
       "item": "k.check#4f39c912",
       "rung": "example"
     },
     {
-      "item": "k.check#90e5b6c1",
+      "item": "k.check#992e115b",
       "rung": "example"
     },
     {
@@ -4292,7 +4634,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.check#78baf2c3",
+      "item": "k.check#9535b727",
       "rung": "probabilistic"
     },
     {
@@ -4360,11 +4702,19 @@
       "rung": "example"
     },
     {
+      "item": "k.cli#2b8ad806",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#98dc8d48",
+      "rung": "example"
+    },
+    {
       "item": "k.cli#07d28201",
       "rung": "example"
     },
     {
-      "item": "k.cli#fcbada40",
+      "item": "k.cli#9374a0ad",
       "rung": "example"
     },
     {
@@ -4396,35 +4746,11 @@
       "rung": "example"
     },
     {
-      "item": "k.cli#0350f362",
-      "rung": "example"
-    },
-    {
       "item": "k.cli#ce50206a",
       "rung": "example"
     },
     {
       "item": "k.cli#398abea4",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#37360651",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#230e07eb",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#35e83788",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#4c74ea7c",
-      "rung": "example"
-    },
-    {
-      "item": "k.cli#74b07083",
       "rung": "example"
     },
     {
@@ -4436,7 +4762,11 @@
       "rung": "example"
     },
     {
-      "item": "k.cli#390ee352",
+      "item": "k.cli#15fcca56",
+      "rung": "example"
+    },
+    {
+      "item": "k.cli#c381e8ab",
       "rung": "example"
     },
     {
@@ -4700,6 +5030,178 @@
       "rung": "example"
     },
     {
+      "item": "k.contract#1e74399a",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#cece7782",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#1a0e5e4a",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#8143f161",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.contract#32e7c498",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#a6c80192",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#80123bbc",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#3407503d",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#3ca69852",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#b07b7b04",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#284d76d1",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#d2b092d9",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#5e4ff4ea",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#6dc1cada",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#4d0e8cf6",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#a3cb12a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#3ab069df",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#fc177b14",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#964e816d",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#9c3ca074",
+      "rung": "example"
+    },
+    {
+      "item": "k.create-folder#4fcd4632",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#240629b2",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4bb31ef7",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#016e77e1",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#eb6b3008",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#da096e98",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2e707ab2",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#8855ad56",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#55b02fb5",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4edddd90",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#e4aec79c",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2d8cb4ef",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#3141d042",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0c658d38",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0aa22e84",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#0a665250",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#2379d4c3",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#138a83e9",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#899f68d4",
+      "rung": "none"
+    },
+    {
+      "item": "k.create#ef7594f7",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#4d5882a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#6b2332ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.create#81d2e835",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#8aeb0ad7",
       "rung": "probabilistic"
     },
@@ -4725,6 +5227,10 @@
     },
     {
       "item": "k.ctx#396f14e0",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#f4bbb0c0",
       "rung": "example"
     },
     {
@@ -4860,6 +5366,42 @@
       "rung": "example"
     },
     {
+      "item": "k.defects#5c47e678",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#451068b7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#8e7bccca",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#bf77014d",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.defects#1eb4662b",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#c94db915",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#1a0d38f4",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#3a3b2747",
+      "rung": "example"
+    },
+    {
+      "item": "k.defects#1614c6b3",
+      "rung": "example"
+    },
+    {
       "item": "k.deploy#9a4ebc5f",
       "rung": "example"
     },
@@ -4912,6 +5454,42 @@
       "rung": "example"
     },
     {
+      "item": "k.deploy#9378f534",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#2d7adf04",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#2723ae2a",
+      "rung": "example"
+    },
+    {
+      "item": "k.deploy#055069f3",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#7c8e0445",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#3d5775bb",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#189f5676",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#1514e35c",
+      "rung": "example"
+    },
+    {
+      "item": "k.design-tokens#a1a47789",
+      "rung": "example"
+    },
+    {
       "item": "k.docs#9a97dcf3",
       "rung": "example"
     },
@@ -4920,7 +5498,7 @@
       "rung": "example"
     },
     {
-      "item": "k.docs#79a4a37d",
+      "item": "k.docs#49d50c63",
       "rung": "example"
     },
     {
@@ -4932,11 +5510,35 @@
       "rung": "example"
     },
     {
-      "item": "k.docs#74fe695b",
+      "item": "k.docs#22aba3b7",
       "rung": "example"
     },
     {
-      "item": "k.docs#0998d75c",
+      "item": "k.docs#914e0cf3",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#7763b1d9",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#47f25003",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#0903d149",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#ce5f28d6",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#7b50575a",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#eade7048",
       "rung": "example"
     },
     {
@@ -4956,7 +5558,7 @@
       "rung": "example"
     },
     {
-      "item": "k.docs#dadf93de",
+      "item": "k.docs#73d0364d",
       "rung": "example"
     },
     {
@@ -5100,6 +5702,266 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.e2e-page#6d02c883",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#8bd02b76",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#abd32f12",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#c87b11ef",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#4ed1dc09",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#01df96ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#5c9dc87e",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#1c68d683",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#af6cffe1",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#22e4aaf1",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#6c574ee7",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#70ca6532",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#5ae7d928",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#f7c3a0cc",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#c14a9906",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#91db91d0",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#8e4d0aff",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#d1bc366e",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#5c70a037",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#720c4841",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#00289f94",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#bf8b1c00",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#6eb44f5c",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#b73a00f8",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#3a7ab295",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-page#da02474f",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#aacfafc2",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#7e0cc0e2",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#6d52c2dd",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#5a214457",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#0b8abe03",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#0628e86c",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#e9373ed7",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#4efab90b",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#aab6a480",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#832fbabd",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#91f1e879",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e-run#2739645f",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#8e80ae7b",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#0bb5d388",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#4bbb8376",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#84310ccd",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#a3f7ca57",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#8dd2b3d9",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#100836a0",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#4648c44a",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#59c379e4",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#fe5fbedc",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#e77f7c44",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#062e600b",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#923484c6",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#6c658d97",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#30ad3fc9",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#0613d569",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#b115259e",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#0c9a404d",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#dd189898",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#6969d362",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#27e31f45",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#832d950d",
+      "rung": "example"
+    },
+    {
+      "item": "k.e2e#6aa33ba9",
+      "rung": "example"
+    },
+    {
+      "item": "k.entries#05328e09",
+      "rung": "example"
+    },
+    {
+      "item": "k.entries#24811811",
+      "rung": "example"
+    },
+    {
+      "item": "k.entries#f09b6b8f",
+      "rung": "example"
+    },
+    {
+      "item": "k.entries#974865cc",
+      "rung": "example"
+    },
+    {
       "item": "k.errors#3f4e7e6f",
       "rung": "probabilistic"
     },
@@ -5108,7 +5970,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.errors#eb6f63ca",
+      "item": "k.errors#275c52d8",
       "rung": "probabilistic"
     },
     {
@@ -5128,7 +5990,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.errors#e8bad4b7",
+      "item": "k.errors#4abe06c4",
       "rung": "example"
     },
     {
@@ -5153,6 +6015,26 @@
     },
     {
       "item": "k.errors#8fa8c50b",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#e5488655",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#a0b7bf7f",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#61bf9a92",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#6d8c0381",
+      "rung": "example"
+    },
+    {
+      "item": "k.errors#a987cdfd",
       "rung": "example"
     },
     {
@@ -5189,6 +6071,26 @@
     },
     {
       "item": "k.escapes#7a853aee",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#a3dc8f39",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#12acc760",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#42575237",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#7b5ec7a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#76ea8c84",
       "rung": "example"
     },
     {
@@ -5232,6 +6134,46 @@
       "rung": "example"
     },
     {
+      "item": "k.expect#8996c3b4",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#68d76781",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#cb4da481",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#d5164916",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#a607feb3",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#79570723",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#bcd17112",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.expect#90e988de",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#44282934",
+      "rung": "example"
+    },
+    {
+      "item": "k.expect#0fd2ead3",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.explain#30744567",
       "rung": "example"
     },
@@ -5245,6 +6187,78 @@
     },
     {
       "item": "k.explain#67f0e492",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#52089f94",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#c4fddb05",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#bea8d924",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#f43d664d",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#a3e6a41a",
+      "rung": "example"
+    },
+    {
+      "item": "k.explain#e1314763",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#84e8ad17",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#16de50cd",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#5aa30886",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#e26f90d5",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#442eb6fc",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#c1667b5e",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#0cfdacdc",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.fixes#6b886e32",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.fixes#f1528785",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#48009468",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.fixes#b2a617ac",
+      "rung": "example"
+    },
+    {
+      "item": "k.fixes#4eed49ad",
       "rung": "example"
     },
     {
@@ -5361,6 +6375,50 @@
     },
     {
       "item": "k.forms#a4f583de",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#4299cc56",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#cea5d136",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#db84d93c",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#7c5c8723",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#53a743e3",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#96aed0ce",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#221b089a",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#d94dee76",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#dadbff15",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#990cdbba",
+      "rung": "example"
+    },
+    {
+      "item": "k.gamut#c77cfd9c",
       "rung": "example"
     },
     {
@@ -5576,6 +6634,82 @@
       "rung": "example"
     },
     {
+      "item": "k.hosting#ff9436ad",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#44f0ace2",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#56eca3d0",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#7908e52c",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#9622f7c7",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#353d75df",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.identity#d4893cde",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.identity#c429f6f8",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#6d7ad3e2",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#c9668d91",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#e0e57489",
+      "rung": "example"
+    },
+    {
+      "item": "k.identity#ab2cb12c",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#0350f362",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#37360651",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#230e07eb",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#35e83788",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#4c74ea7c",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#74b07083",
+      "rung": "example"
+    },
+    {
+      "item": "k.inspect#390ee352",
+      "rung": "example"
+    },
+    {
       "item": "k.leave#02f1bed9",
       "rung": "example"
     },
@@ -5700,6 +6834,10 @@
       "rung": "example"
     },
     {
+      "item": "k.ledger-items#35f09f7a",
+      "rung": "example"
+    },
+    {
       "item": "k.ledger-items#c26be638",
       "rung": "example"
     },
@@ -5804,11 +6942,11 @@
       "rung": "example"
     },
     {
-      "item": "k.library#17176882",
+      "item": "k.library#e9951397",
       "rung": "example"
     },
     {
-      "item": "k.library#6000d59e",
+      "item": "k.library#ea1ca39c",
       "rung": "example"
     },
     {
@@ -5820,7 +6958,7 @@
       "rung": "example"
     },
     {
-      "item": "k.library#38e12e12",
+      "item": "k.library#39fd396c",
       "rung": "example"
     },
     {
@@ -5921,6 +7059,66 @@
     },
     {
       "item": "k.links#e439c86f",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#5eebba90",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#8a34e638",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#660cdfbb",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#2bce984f",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#c856dd27",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#297337d4",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#f1d5ea46",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#dfee4a50",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#6ca23b00",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#e66e14df",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#49e9c581",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#e83df9b2",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#71197280",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#b5a23548",
+      "rung": "example"
+    },
+    {
+      "item": "k.looks#5a129582",
       "rung": "example"
     },
     {
@@ -6556,7 +7754,7 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.reactive#e7f24cef",
+      "item": "k.reactive#2669a9f8",
       "rung": "example"
     },
     {
@@ -6588,7 +7786,75 @@
       "rung": "probabilistic"
     },
     {
-      "item": "k.reactive#7be0dc11",
+      "item": "k.reactive#8383d7d1",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#2fe5436c",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#bf43dd2a",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#531fcd22",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#7ff038aa",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#37c7906f",
+      "rung": "example"
+    },
+    {
+      "item": "k.reactive#556199b4",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#2d4b6f60",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#75702f9d",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#9b317324",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#49b48891",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#b8c46db2",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#c3208ccb",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#d4b672b0",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#696c598a",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#f32ab902",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#792c8e2c",
+      "rung": "example"
+    },
+    {
+      "item": "k.realm#128276da",
       "rung": "example"
     },
     {
@@ -6784,6 +8050,34 @@
       "rung": "example"
     },
     {
+      "item": "k.roles#015966e1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#29aba082",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#29027f94",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#25dfecca",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#96315fb8",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#59c96e39",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#e8152bf6",
+      "rung": "example"
+    },
+    {
       "item": "k.router#eb8f5717",
       "rung": "probabilistic"
     },
@@ -6956,6 +8250,34 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold-needs#99662289",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#7cd97b47",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#32777646",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#d3fcca97",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#6ea9154f",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#57d08dd2",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-needs#14b2412b",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold-service#a9444bcb",
       "rung": "example"
     },
@@ -7036,6 +8358,10 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#d2ee049d",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold#980af00f",
       "rung": "example"
     },
@@ -7064,7 +8390,7 @@
       "rung": "example"
     },
     {
-      "item": "k.scaffold#f7d2895f",
+      "item": "k.scaffold#3f0d7bc7",
       "rung": "example"
     },
     {
@@ -7080,7 +8406,15 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#00af183c",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold#27e8ecd6",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#17345bd2",
       "rung": "example"
     },
     {
@@ -7101,6 +8435,10 @@
     },
     {
       "item": "k.scaffold#8b7a66df",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#ab964dca",
       "rung": "example"
     },
     {
@@ -7188,6 +8526,86 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.schema#57e908a7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schemes#62a32a22",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#b5469b5c",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#ea5496ee",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#dc10b009",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#e8c53c65",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#df1bee48",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#1e874786",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#fae691f8",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#612fe775",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#92194bf1",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#fe36241d",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#6d0659d0",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#56b3430f",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#5c121336",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#a85f2ffa",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#e00c91e3",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#6583a7c5",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#cd80d75c",
+      "rung": "example"
+    },
+    {
+      "item": "k.schemes#ea5ad213",
+      "rung": "example"
+    },
+    {
       "item": "k.security#ce4eda49",
       "rung": "example"
     },
@@ -7240,6 +8658,10 @@
       "rung": "example"
     },
     {
+      "item": "k.security#b578427c",
+      "rung": "example"
+    },
+    {
       "item": "k.server-deps#65dded00",
       "rung": "example"
     },
@@ -7277,6 +8699,10 @@
     },
     {
       "item": "k.server-deps#722a83aa",
+      "rung": "example"
+    },
+    {
+      "item": "k.server-deps#974399e0",
       "rung": "example"
     },
     {
@@ -7388,6 +8814,50 @@
       "rung": "example"
     },
     {
+      "item": "k.serverlog#4cde4143",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#45a67ce0",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#bb0d1901",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#5e1677ee",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#005f6403",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#fadc2851",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#18f3b4b0",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#2d1a9a85",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#b769a43c",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#489f0592",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#8057b810",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.services#2223cfa9",
       "rung": "probabilistic"
     },
@@ -7453,6 +8923,42 @@
     },
     {
       "item": "k.services#51d7d135",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#ef90dc29",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#01488229",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#dd92d294",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#54eeb541",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#06d71013",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#a638d42a",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#2b2c6e3e",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#a4bcfd6e",
+      "rung": "example"
+    },
+    {
+      "item": "k.shared#fcd91e9f",
       "rung": "example"
     },
     {
@@ -7684,6 +9190,58 @@
       "rung": "example"
     },
     {
+      "item": "k.store#04ad037b",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#a1b57066",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#bcf3f6ef",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#d98b73d4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.supervise#635b526d",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#339b7f0f",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#cfe76ea6",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#7c3de0a8",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#4529b15a",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#8379eaf8",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#53c6d47f",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#d562aaa5",
+      "rung": "example"
+    },
+    {
+      "item": "k.supervise#4a856ea0",
+      "rung": "example"
+    },
+    {
       "item": "k.sync#e0bca94b",
       "rung": "probabilistic"
     },
@@ -7773,6 +9331,10 @@
     },
     {
       "item": "k.test-run#fb972008",
+      "rung": "example"
+    },
+    {
+      "item": "k.test-run#9dc1e939",
       "rung": "example"
     },
     {
@@ -7892,6 +9454,54 @@
       "rung": "example"
     },
     {
+      "item": "k.testing#ca17f507",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#9daccf53",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.themes#fb1737ae",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#024cf1d4",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#14de2622",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#55121ac7",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#2ded09c9",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#3e9ea50d",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#5e99f596",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#a1b3d145",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#65b94cc1",
+      "rung": "example"
+    },
+    {
+      "item": "k.themes#2bc31ee7",
+      "rung": "example"
+    },
+    {
       "item": "k.topology#41a5d6a2",
       "rung": "example"
     },
@@ -7957,6 +9567,38 @@
     },
     {
       "item": "k.topology#1c21e75b",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#8a59ebfc",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#d4cdb549",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#4227f8ef",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#2255e822",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#9d75dfd8",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#0d04856c",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#4403e85a",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#a67b8519",
       "rung": "example"
     },
     {
@@ -8068,6 +9710,14 @@
       "rung": "proven"
     },
     {
+      "item": "k.ui#6f0927d4",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#61026efb",
+      "rung": "example"
+    },
+    {
       "item": "k.unsafe#69ddc28e",
       "rung": "example"
     },
@@ -8101,6 +9751,26 @@
     },
     {
       "item": "k.unsafe#6be68741",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#8db91971",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#e2cecf74",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#17b24e43",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#9b673c1d",
+      "rung": "example"
+    },
+    {
+      "item": "k.unsafe#377a0bae",
       "rung": "example"
     },
     {
@@ -8166,6 +9836,54 @@
     {
       "item": "k.user#c54380af",
       "rung": "example"
+    },
+    {
+      "item": "k.values#6b105347",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#e2ff705c",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#ad86b29e",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#77e365ab",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#14dec614",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#2f016dcd",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#863f1ea9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#25f0014a",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#893a9074",
+      "rung": "example"
+    },
+    {
+      "item": "k.values#8bc1acb8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#0652c486",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.values#2ebac48c",
+      "rung": "probabilistic"
     },
     {
       "item": "std.brands#d54b9d13",
@@ -8376,6 +10094,10 @@
       "rung": "example"
     },
     {
+      "item": "std.conflicts#f8161d75",
+      "rung": "example"
+    },
+    {
       "item": "std.conflicts#f866e279",
       "rung": "example"
     },
@@ -8442,6 +10164,10 @@
     {
       "item": "std.db#46f175c5",
       "rung": "example"
+    },
+    {
+      "item": "std.db#cb802f14",
+      "rung": "none"
     },
     {
       "item": "std.db#32d6d02f",
@@ -8992,11 +10718,11 @@
       "rung": "probabilistic"
     },
     {
-      "item": "std.outbox-owner#b306a564",
+      "item": "std.outbox-owner#69b08541",
       "rung": "example"
     },
     {
-      "item": "std.outbox-owner#03c904c7",
+      "item": "std.outbox-owner#6a7de641",
       "rung": "example"
     },
     {
@@ -9080,6 +10806,38 @@
       "rung": "example"
     },
     {
+      "item": "std.postgres-changes#5bb9533e",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#6f14a9b0",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#29e20b0f",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#7e7de244",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#d42cffa2",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#9e20609b",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#3ea1d36e",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-errors#98c54a66",
+      "rung": "example"
+    },
+    {
       "item": "std.postgres#d8b8ac91",
       "rung": "probabilistic"
     },
@@ -9088,7 +10846,7 @@
       "rung": "example"
     },
     {
-      "item": "std.postgres#8bdd070f",
+      "item": "std.postgres#a59ca116",
       "rung": "example"
     },
     {
@@ -9158,6 +10916,14 @@
     {
       "item": "std.postgres#c92778e3",
       "rung": "probabilistic"
+    },
+    {
+      "item": "std.postgres#8f133c3f",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#62a63eb3",
+      "rung": "example"
     },
     {
       "item": "std.report#9cda3196",
@@ -12504,6 +14270,11 @@
       "unsafe": 0,
       "hostElements": 1
     },
+    "@example/library-looks": {
+      "version": "0.1.0",
+      "unsafe": 0,
+      "hostElements": 0
+    },
     "@keel-libs/charts": {
       "version": "0.1.0",
       "unsafe": 0,
@@ -12516,37 +14287,37 @@
     },
     "@keel/std-headless": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-jobs": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-live": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-offline": {
       "version": "0.0.0",
-      "unsafe": 5,
+      "unsafe": 1,
       "hostElements": 0
     },
     "@keel/std-postgres": {
       "version": "0.0.0",
-      "unsafe": 2,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-schedules": {
       "version": "0.0.0",
-      "unsafe": 1,
+      "unsafe": 0,
       "hostElements": 0
     },
     "@keel/std-statecharts": {
       "version": "0.0.0",
-      "unsafe": 4,
+      "unsafe": 2,
       "hostElements": 0
     },
     "@keel/std-workflows": {

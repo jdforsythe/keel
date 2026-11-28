@@ -8,13 +8,15 @@ const DOM = JSON.stringify("@keel/server/internal/dom");
 const START = JSON.stringify("@keel/server/internal/start");
 const PRERENDER = JSON.stringify("@keel/server/internal/prerender");
 const ROUTER = JSON.stringify("@keel/router");
+const FAILED = JSON.stringify("@keel/server/internal/startFailed");
 
 /**
  * The generated production entry of `node` deployable `name` (k.deploy Build), a virtual module never written as a
  * source file: it installs the server DOM (`@keel/server/internal/dom`, before any component module builds its templates), then
  * imports `topology.ts`, each of `modules`' bindings (an app module's `routes.ts` under `root`, a stdlib module's
  * package `./routes` export: `stdRoutes`), unioned by `routeTable` (`@keel/router`) in `modules` order, `runners.server.ts` and the project's `identity.server.ts` (k.user) that
- * exist, and calls `start`
+ * exist, and calls `start`, all inside one `try` whose `catch` hands the throw to `startFailed` (a coded refusal's
+ * own `diag`, else one E1577 record, then exit 1)
  * (`@keel/server/internal/start`) with them and its own folder, which it first sets as `KEEL_APP_DIR` when that is unset
  * (k.data Files); for `storage` `'sqlite'` or `'postgres'` (k.deploy
  * Storage), `open` imports the `@keel/std-db` driver named when `start` first calls it, so `start` checks the Node
@@ -23,8 +25,9 @@ const ROUTER = JSON.stringify("@keel/router");
  * origin the runtime value of `topology.ts` adds.
  *
  * For a `static` deployable (k.hosting Static) the entry is the build's, never shipped: it imports no runners and no
- * driver, sets no `KEEL_APP_DIR`, and exports `render(dir, std)`, which calls `prerender` (`@keel/server/internal/prerender`)
- * with the same inputs, `dir`, the deployable's client build, and `std`, the path of `.keel/std.json` or undefined.
+ * driver, sets no `KEEL_APP_DIR`, and exports `render(dir, std, artifacts)`, which calls `prerender`
+ * (`@keel/server/internal/prerender`) with the same inputs, `dir`, the deployable's client build, `std`, the path of
+ * `.keel/std.json` or undefined, and `artifacts`, the folder of the artifacts a server render reads.
  */
 export function serverEntryCode(
   root: string,
@@ -63,7 +66,7 @@ export function serverEntryCode(
   if (id !== "") lines.push(`const { default: identity } = await import(${abs("identity.server.ts")});`);
   if (built) {
     lines.push(
-      `export const render = (dir, std) => prerender({ topology, origins: ${JSON.stringify(origins)}, deployable: ${JSON.stringify(name)}, routes: routeTable(${routes.join(", ")})${id}, dir, std });`,
+      `export const render = (dir, std, artifacts) => prerender({ topology, origins: ${JSON.stringify(origins)}, deployable: ${JSON.stringify(name)}, routes: routeTable(${routes.join(", ")})${id}, dir, std, artifacts });`,
     );
     return `${lines.join("\n")}\n`;
   }
@@ -75,5 +78,7 @@ export function serverEntryCode(
   lines.push(
     `await start({ topology, origins: ${JSON.stringify(origins)}, deployable: ${JSON.stringify(name)}, routes: routeTable(${routes.join(", ")}), runners: { ${runners.join(", ")} }${open}${id}, dir: import.meta.dirname });`,
   );
-  return `${lines.join("\n")}\n`;
+  // A throw while the modules are evaluated, before `start` runs, goes to `startFailed` (k.deploy Refusals at start).
+  const [dom, install, ...rest] = lines;
+  return `${[dom, `import { startFailed } from ${FAILED};`, install, "try {", ...rest, "} catch (e) {", "  await startFailed(e, import.meta.dirname);", "}"].join("\n")}\n`;
 }

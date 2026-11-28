@@ -1,9 +1,9 @@
+import { isHref } from "../../unsafe/isHref.ts";
 import type { Href } from "../types/Href.ts";
 import type { EntryShape } from "./EntryShape.ts";
 import type { Rec } from "./Rec.ts";
 import { codedError } from "./codedError.ts";
 import { flattenJson } from "./flattenJson.ts";
-import { isHref } from "./isHref.ts";
 import { prefixOf } from "./prefixOf.ts";
 import { stripUndefined } from "./stripUndefined.ts";
 import { toRecord } from "./toRecord.ts";

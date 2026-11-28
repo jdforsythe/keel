@@ -5,6 +5,7 @@ import type { Channel } from "./Channel.type.ts";
 import type { ChannelEvent } from "./ChannelEvent.ts";
 import type { ChannelStatus } from "./ChannelStatus.ts";
 import type { Subscription } from "./Subscription.ts";
+import { Rejected } from "./internal/Rejected.schema.ts";
 import { apiOf } from "./internal/apiOf.ts";
 
 const FIRST_MS = 1000;
@@ -55,7 +56,10 @@ export function subscribe<P, M>(
     if (life.signal.aborted || back) return;
     await (ms === undefined
       ? new Promise<void>((r) => w.signal.addEventListener("abort", () => r()))
-      : attempt(() => ctx.clock.after(ms, w.signal)));
+      : attempt(
+          () => ctx.clock.after(ms, w.signal),
+          (x) => (x === w.signal.reason ? Rejected.make({}) : undefined),
+        ));
   };
   const run = async (): Promise<void> => {
     let delay = FIRST_MS;

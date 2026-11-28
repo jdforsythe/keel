@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { parseSync } from "oxc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -50,14 +52,14 @@ export const routes = manifest(todos, {
 `;
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-project-"));
+  root = tempDir(".tmp-project-", import.meta.dirname);
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))
       fs.symlinkSync(path.join(packages, p), path.join(root, "node_modules", "@keel", p));
   write(
     "tokens.ts",
-    `import { defineTokens } from "@keel/ui";
+    `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: { fg: { light: "#111", dark: "#eee" }, bg: { light: "#fff", dark: "#111" }, accent: "#0a5" },
   space: { 1: "4px", 2: "8px", 3: "16px" },
@@ -86,7 +88,7 @@ afterEach(() => {
 });
 
 describe("@keel/compiler/vite project inputs", () => {
-  it("emits routes.json, styles.json, keel.css and the client entry", { timeout: 30000 }, async () => {
+  it("emits routes.json, styles.json, keel.css and the client entry", { timeout: fixedTime(30000) }, async () => {
     const warnings: string[] = [];
     const p = keel();
     p.configResolved({ root, command: "build" });
@@ -102,6 +104,7 @@ describe("@keel/compiler/vite project inputs", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "schemes.json",
       "std.json",
       "styles.json",
     ]);
@@ -138,13 +141,20 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(await p.load("/@keel/entry.ts")).toContain("resume(document.body, components");
   });
 
-  it("warns about unknown tokens and still emits the CSS of the known ones", { timeout: 30000 }, async () => {
-    write("modules/todos/Bad.tsx", `import { Box } from "@keel/ui";\nexport default () => <Box bg="nope" p="1" />;\n`);
-    const warnings: string[] = [];
-    const p = keel();
-    p.configResolved({ root, command: "build" });
-    await p.buildStart.call({ warn: (m: string) => void warnings.push(m) });
-    expect(warnings.some((w) => /E1801/.test(w) && w.includes("nope"))).toBe(true);
-    expect((await p.load("/__keel.css")) ?? "").toContain(".k-p-1{");
-  });
+  it(
+    "warns about unknown tokens and still emits the CSS of the known ones",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write(
+        "modules/todos/Bad.tsx",
+        `import { Box } from "@keel/ui";\nexport default () => <Box bg="nope" p="1" />;\n`,
+      );
+      const warnings: string[] = [];
+      const p = keel();
+      p.configResolved({ root, command: "build" });
+      await p.buildStart.call({ warn: (m: string) => void warnings.push(m) });
+      expect(warnings.some((w) => /E1801/.test(w) && w.includes("nope"))).toBe(true);
+      expect((await p.load("/__keel.css")) ?? "").toContain(".k-p-1{");
+    },
+  );
 });

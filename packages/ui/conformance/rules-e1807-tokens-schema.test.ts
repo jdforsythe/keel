@@ -1,5 +1,5 @@
 // k.ui Rule E1807. Property seed: 1337.
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, tokens } from "./fixtures.ts";

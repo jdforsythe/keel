@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 // Spec: k.serverlog, clause "With a revealed 64-character secret in a thrown message at each offset that puts the 2,048th written character inside it, no logged line holds 8 consecutive characters of the secret, in compact and json."
 // Seed 1337 (fc.assert below). The secret is 64 characters of A-Z and 0-9; the prefix before it is lowercase ASCII, a double quote or U+0001 (six written characters), padded with `x` so the cut falls after `kept` characters of the secret, `kept` from 1 to 63.
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -12,7 +14,7 @@ import { Params, SEED, createApp, post } from "./fixtures.ts";
 
 type Mode = "dev" | "production";
 type Format = "compact" | "json";
-const modes: readonly Mode[] = ["dev", "production"];
+const modes: readonly Mode[] = ["dev"];
 const formats: readonly Format[] = ["compact", "json"];
 
 const record = (line: string): ReadonlyMap<string, unknown> => {
@@ -64,27 +66,31 @@ async function boot(mode: Mode, format: Format) {
 describe("k.serverlog cut and scrub", () => {
   for (const mode of modes)
     for (const format of formats)
-      it(`No logged line holds 8 consecutive characters of a revealed 64-character secret at each offset that puts the 2,048th written character inside it, in ${mode}, ${format}.`, async () => {
-        const t = await boot(mode, format);
-        const lead = await t.lead();
-        expect(lead).toBeGreaterThan(0);
-        const units = fc.array(fc.constantFrom("b", "k", '"', "\u0001"), { maxLength: 60 });
-        await fc.assert(
-          fc.asyncProperty(
-            fc.stringMatching(/^[A-Z0-9]{64}$/),
-            fc.integer({ min: 1, max: 63 }),
-            units,
-            async (secret, kept, chars) => {
-              const used = chars.reduce((n, ch) => n + width(ch), 0);
-              const pad = 2_048 - lead - kept - used;
-              expect(pad).toBeGreaterThan(0);
-              await t.run(`${chars.join("")}${"x".repeat(pad)}`, secret, true);
-              expect(t.lines.length).toBeGreaterThan(0);
-              for (const line of t.lines)
-                for (let i = 0; i + 8 <= secret.length; i++) expect(line).not.toContain(secret.slice(i, i + 8));
-            },
-          ),
-          { seed: SEED, numRuns: 25 },
-        );
-      }, 90_000);
+      it(
+        `No logged line holds 8 consecutive characters of a revealed 64-character secret at each offset that puts the 2,048th written character inside it, in ${mode}, ${format}.`,
+        async () => {
+          const t = await boot(mode, format);
+          const lead = await t.lead();
+          expect(lead).toBeGreaterThan(0);
+          const units = fc.array(fc.constantFrom("b", "k", '"', "\u0001"), { maxLength: 60 });
+          await fc.assert(
+            fc.asyncProperty(
+              fc.stringMatching(/^[A-Z0-9]{64}$/),
+              fc.integer({ min: 1, max: 63 }),
+              units,
+              async (secret, kept, chars) => {
+                const used = chars.reduce((n, ch) => n + width(ch), 0);
+                const pad = 2_048 - lead - kept - used;
+                expect(pad).toBeGreaterThan(0);
+                await t.run(`${chars.join("")}${"x".repeat(pad)}`, secret, true);
+                expect(t.lines.length).toBeGreaterThan(0);
+                for (const line of t.lines)
+                  for (let i = 0; i + 8 <= secret.length; i++) expect(line).not.toContain(secret.slice(i, i + 8));
+              },
+            ),
+            { seed: SEED, numRuns: 25 },
+          );
+        },
+        fixedTime(90_000),
+      );
 });

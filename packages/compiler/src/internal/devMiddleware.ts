@@ -1,6 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-type App = { fetch(req: Request): Promise<Response> };
+/** The connection a request came over, as `@keel/server`'s `fetch` takes it (k.contract Local routes). */
+type Connection = { readonly incoming: IncomingMessage };
+type App = { fetch(req: Request, connection?: Connection): Promise<Response> };
 type Served = { readonly app: App; served(path: string): boolean; readonly mount: string | undefined };
 
 /** Whether `app` answers `path` as its built server does: a route of it matches, or it is at or under its identity mount (k.user). */
@@ -10,7 +12,7 @@ const answers = (app: Served, path: string): boolean =>
 /**
  * The `keel dev` middleware (k.topology Local topology): a request whose path a `node` or `static` deployable's route matches, or
  * that is at or under its identity source's `handle.path`, is answered by that deployable's dev app, streaming its body
- * (event streams too); anything else goes on to Vite.
+ * (event streams too), handed the request's connection; anything else goes on to Vite.
  * `load` gives the dev apps (`DEV_ENTRY`), loaded once and again after `reset`; `apps` is that load, started when
  * nothing has asked for it yet.
  */
@@ -38,7 +40,7 @@ export function devMiddleware(load: () => Promise<readonly Served[]>): {
       for await (const c of req) if (c instanceof Uint8Array) chunks.push(c);
     const body = chunks.length === 0 ? null : Buffer.concat(chunks);
     const request = new Request(url, { method: req.method ?? "GET", headers, signal: ac.signal, body });
-    const answer = await pick.app.fetch(request);
+    const answer = await pick.app.fetch(request, { incoming: req });
     const out: Record<string, string | string[]> = {};
     answer.headers.forEach((v, k) => {
       if (k !== "set-cookie") out[k] = v;

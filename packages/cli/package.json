@@ -20,6 +20,10 @@
       "types": "./src/docs/index.ts",
       "default": "./src/docs/index.ts"
     },
+    "./e2e": {
+      "types": "./src/e2e/index.ts",
+      "default": "./src/e2e/index.ts"
+    },
     "./review": {
       "types": "./src/review/index.ts",
       "default": "./src/review/index.ts"
@@ -27,6 +31,10 @@
     "./shell": {
       "types": "./src/shell/index.ts",
       "default": "./src/shell/index.ts"
+    },
+    "./tokens": {
+      "types": "./src/tokens/index.ts",
+      "default": "./src/tokens/index.ts"
     }
   },
   "bin": {
@@ -53,6 +61,10 @@
         "types": "./dist/src/docs/index.d.ts",
         "default": "./dist/src/docs/index.js"
       },
+      "./e2e": {
+        "types": "./dist/src/e2e/index.d.ts",
+        "default": "./dist/src/e2e/index.js"
+      },
       "./review": {
         "types": "./dist/src/review/index.d.ts",
         "default": "./dist/src/review/index.js"
@@ -60,6 +72,10 @@
       "./shell": {
         "types": "./dist/src/shell/index.d.ts",
         "default": "./dist/src/shell/index.js"
+      },
+      "./tokens": {
+        "types": "./dist/src/tokens/index.d.ts",
+        "default": "./dist/src/tokens/index.js"
       }
     }
   },

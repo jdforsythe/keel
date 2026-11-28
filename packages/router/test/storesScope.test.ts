@@ -43,7 +43,7 @@ describe("the stores of a direct call", () => {
       w.log.push("answer");
       return ok({ n: stores.n });
     });
-    const outer = scope(() => undefined);
+    const outer = scope(() => undefined, { detached: true });
     const answer = outer.run(() => l.run(args, sim()));
     await turns();
     outer.dispose();
@@ -69,7 +69,7 @@ describe("the stores of a direct call", () => {
       w.log.push("answer");
       return ok({ n: body.n + at.stores.n });
     });
-    const outer = scope(() => undefined);
+    const outer = scope(() => undefined, { detached: true });
     const answer = outer.run(() => a.run({ n: 1 }, args, sim()));
     await turns();
     outer.dispose();
@@ -87,7 +87,7 @@ describe("the stores of a direct call", () => {
       w.log.push("second");
       yield ok({ n: stores.n + 1 });
     });
-    const outer = scope(() => undefined);
+    const outer = scope(() => undefined, { detached: true });
     const stream = l.live({ ...args, signal: new AbortController().signal }, sim())[Symbol.asyncIterator]();
     const first = outer.run(() => stream.next());
     expect(await first).toEqual({ done: false, value: ok({ n: 7 }) });

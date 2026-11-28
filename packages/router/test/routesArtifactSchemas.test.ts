@@ -1,27 +1,31 @@
 // k.compiler Artifacts: `routes.json` gives each route's params and search as JSON Schema with sorted keys, for
 // every kind of schema a search or query can hold, and lists a page's bound verbs and an API entry's method.
-import { ok, s } from "@keel/schema";
+import type { s } from "@keel/schema";
 import { blankPattern } from "@keel/schema/internal";
 import { describe, expect, it, vi } from "vitest";
 
-const Slug = s.format("slug", s.string({ min: 1 }), {
-  check: (v) => /^[a-z-]+$/.test(v),
-  gen: { from: s.int({ min: 0, max: 9 }), map: (n) => `s-${"a".repeat(n)}` },
-});
-const Search = s.object({
-  slug: Slug.optional(),
-  any: s.json().optional(),
-  closed: s.object({ a: s.int(), b: s.boolean().optional() }, { closed: true }).optional(),
-  open: s.object({ z: s.number(), a: s.string() }).optional(),
-  either: s.union([s.string({ max: 3 }), s.int()]).optional(),
-  tagged: s
-    .union("kind", [s.object({ kind: s.literal("a") }), s.object({ kind: s.literal("b"), n: s.int() })])
-    .optional(),
-  list: s.array(s.literal(7)).optional(),
-  map: s.record(s.boolean()).optional(),
-  maybe: s.string().nullable().optional(),
-  token: s.secret(s.string({ min: 2 })).optional(),
-});
+/** The `search` schema of the first case, built by the `s` of one evaluation of `@keel/schema`. */
+const searchOf = (fs: typeof s) => {
+  const Slug = fs.format("slug", fs.string({ min: 1 }), {
+    check: (v) => /^[a-z-]+$/.test(v),
+    gen: { from: fs.int({ min: 0, max: 9 }), map: (n) => `s-${"a".repeat(n)}` },
+  });
+  const Search = fs.object({
+    slug: Slug.optional(),
+    any: fs.json().optional(),
+    closed: fs.object({ a: fs.int(), b: fs.boolean().optional() }, { closed: true }).optional(),
+    open: fs.object({ z: fs.number(), a: fs.string() }).optional(),
+    either: fs.union([fs.string({ max: 3 }), fs.int()]).optional(),
+    tagged: fs
+      .union("kind", [fs.object({ kind: fs.literal("a") }), fs.object({ kind: fs.literal("b"), n: fs.int() })])
+      .optional(),
+    list: fs.array(fs.literal(7)).optional(),
+    map: fs.record(fs.boolean()).optional(),
+    maybe: fs.string().nullable().optional(),
+    token: fs.secret(fs.string({ min: 2 })).optional(),
+  });
+  return Search;
+};
 const expected = {
   properties: {
     any: {},
@@ -61,10 +65,11 @@ const view = (): Node => {
 describe("routesArtifact, the router loaded afresh", () => {
   it("writes each schema kind as JSON Schema, keys sorted at every level", async () => {
     vi.resetModules();
+    const { s: fs } = await import("@keel/schema");
     const { contract } = await import("../src/contract/contract.ts");
     const { manifest } = await import("../src/manifest.ts");
     const { routesArtifact } = await import("../src/routesArtifact.ts");
-    const c = contract("r", { "r.page": { path: "/r", search: Search } });
+    const c = contract("r", { "r.page": { path: "/r", search: searchOf(fs) } });
     const art = routesArtifact(manifest(c, { "r.page": { component: view } }));
     expect(art["r.page"]?.search).toEqual(expected);
     expect(JSON.stringify(art["r.page"]?.search)).toBe(JSON.stringify(expected));
@@ -73,14 +78,15 @@ describe("routesArtifact, the router loaded afresh", () => {
 
   it("lists a page's bound verbs sorted, and an API entry's api, method, query and action", async () => {
     vi.resetModules();
+    const { ok, s: fs } = await import("@keel/schema");
     const { contract } = await import("../src/contract/contract.ts");
     const { manifest } = await import("../src/manifest.ts");
     const { routesArtifact } = await import("../src/routesArtifact.ts");
     const { action } = await import("../src/action.ts");
     const { loader } = await import("../src/loader.ts");
-    const Out = s.object({});
-    const In = s.object({});
-    const Query = s.object({ q: s.string().optional() });
+    const Out = fs.object({});
+    const In = fs.object({});
+    const Query = fs.object({ q: fs.string().optional() });
     const c = contract("v", {
       "v.page": { path: "/v", search: Query },
       "v.read": { method: "GET", path: "/api/v", query: Query, output: Out },

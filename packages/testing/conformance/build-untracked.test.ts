@@ -6,7 +6,7 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
-import { scope, signal as newSignal } from "@keel/reactive";
+import { signal as newSignal, scope } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { createRouter, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -23,7 +23,7 @@ const simCtx = () => createCtx({ mode: "sim", seed: SEED });
 afterEach(() => document.body.replaceChildren());
 
 /** Signals are created in a scope (k.reactive E1203). */
-const owner = scope(() => undefined);
+const owner = scope(() => undefined, { detached: true });
 const signal = <T>(v: T): Signal<T> => owner.run(() => newSignal(v));
 
 const hops = async (n = 50): Promise<void> => {

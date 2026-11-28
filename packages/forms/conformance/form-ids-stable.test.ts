@@ -10,9 +10,12 @@ const S = s.object({ note: s.string() });
 
 function ids(id: string | undefined, count: number): string[] {
   const out: string[] = [];
-  const root = scope(() => {
-    for (let i = 0; i < count; i++) out.push(form(S, id === undefined ? {} : { id }).field("note").id);
-  });
+  const root = scope(
+    () => {
+      for (let i = 0; i < count; i++) out.push(form(S, id === undefined ? {} : { id }).field("note").id);
+    },
+    { detached: true },
+  );
   root.dispose();
   return out;
 }

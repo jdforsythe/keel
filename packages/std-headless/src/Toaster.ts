@@ -1,12 +1,14 @@
 import type { Ctx } from "@keel/ctx";
 import { computed, owner } from "@keel/reactive";
 import { For } from "@keel/runtime-dom";
+import { attempt } from "@keel/schema";
 import { instance } from "@keel/std-statecharts";
-import { tx } from "@keel/store";
 import { Box } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
 import type { ToastItem } from "./ToastItem.ts";
+import { Cancelled } from "./internal/Cancelled.schema.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
+import { send } from "./internal/send.ts";
 import { toastKey } from "./internal/toastKey.ts";
 import { stableRows } from "./stableRows.ts";
 import { toastChart } from "./toastChart.ts";
@@ -68,13 +70,16 @@ export function Toaster(
       if (tone !== "status" || props.duration === undefined) return;
       const run = new AbortController();
       timer = run;
-      ctx.clock.after(Math.max(LEAST, props.duration), run.signal).then(
-        () => {
-          void tx(c.events.expire, {});
-          after();
-        },
-        () => undefined,
-      );
+      const duration = props.duration;
+      const waiting = ctx.clock.after(Math.max(LEAST, duration), run.signal);
+      void attempt(
+        () => waiting,
+        (x) => (x === run.signal.reason ? Cancelled.make({}) : undefined),
+      ).then((waited) => {
+        if (!waited.ok) return;
+        send(c.events.expire, {});
+        after();
+      });
     };
     start();
     owner()?.onDispose(() => timer?.abort());
@@ -92,14 +97,14 @@ export function Toaster(
           controls: part,
           onFocus: () => {
             timer?.abort();
-            void tx(c.events.pause, {});
+            send(c.events.pause, {});
           },
           onBlur: () => {
-            void tx(c.events.resume, {});
+            send(c.events.resume, {});
             if (c.store.get("state") === "showing") start();
           },
           onClick: () => {
-            void tx(c.events.dismiss, {});
+            send(c.events.dismiss, {});
             after();
           },
           children: () => computed(() => props.dismiss),

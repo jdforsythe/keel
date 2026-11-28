@@ -15,9 +15,20 @@ import { resolveImport } from "./resolveImport.ts";
 import { sortedKeys } from "./sortedKeys.ts";
 
 /**
- * Compute and commit a rename's edit set. Files in the declaring folder, the renamed files, and files
- * importing a renamed file are in scope (identifiers and name-shaped strings follow); every other source
- * file only has its dotted id tokens and import specifiers updated. Generated locations are never touched.
+ * Whether `path` is the `module.ts` of a folder holding `dir`: the manifest whose `public.exports` may name what
+ * `dir` declares (a library's root `module.ts` over `src/`, k.library-pack).
+ */
+const owns = (path: string, dir: string): boolean => {
+  if (!/(^|\/)module\.ts$/.test(path)) return false;
+  const base = dirOf(path);
+  return base === "" || dir === base || dir.startsWith(`${base}/`);
+};
+
+/**
+ * Compute and commit a rename's edit set. Files in the declaring folder, the renamed files, files importing a
+ * renamed file, and each `module.ts` over the declaring folder are in scope (identifiers and name-shaped strings
+ * follow); every other source file only has its dotted id tokens and import specifiers updated. Generated locations
+ * are never touched.
  */
 export function applyRename(
   files: ReadonlyMap<string, string>,
@@ -40,7 +51,7 @@ export function applyRename(
           const t = resolveImport(files, path, r.spec);
           return t !== null && spec.paths.has(t);
         });
-      const inScope = dirOf(path) === dir || spec.paths.has(path) || importsRenamed;
+      const inScope = dirOf(path) === dir || spec.paths.has(path) || importsRenamed || owns(path, dir);
       out = renameSource(files, path, next, src, spec, inScope);
     }
     if (next !== path) {

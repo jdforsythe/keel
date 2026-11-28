@@ -6,11 +6,13 @@ import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { noteRequestSecrets } from "../src/internal/noteRequestSecrets.ts";
 import { pastCap } from "../src/internal/pastCap.ts";
 import { requestSecrets } from "../src/internal/requestSecrets.ts";
+import { textRecords } from "./textRecords.ts";
 
 // One array of 1,000,000 items is 1,000,001 values: the read is cut at its last item. Every item is one value, so the
 // set itself stays small.
@@ -19,10 +21,10 @@ const Huge = s.secret(s.array(s.int()));
 // Each value a parse reads is judged, copied, frozen and read for the scope's set: about 0.25 us here, so 5 us a value
 // bounds the work with a margin of twenty. A parse of `huge()` reads 1,000,001 values.
 const VALUE_MS = 0.005;
-const PARSE_MS = 1_000_001 * VALUE_MS;
+const PARSE_MS = fixedTime(1_000_001 * VALUE_MS);
 // An app made on a sim ctx and one POST through `app.fetch`, beside the parse: about 50 ms here, 1,000 ms with the
 // same margin.
-const APP_MS = 1_000;
+const APP_MS = fixedTime(1_000);
 
 describe("a secret whose read is cut", () => {
   it("puts the scope's set past its cap", { timeout: 2 * PARSE_MS }, () => {
@@ -51,7 +53,7 @@ describe("a secret whose read is cut", () => {
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
       routes,
       ctx: createCtx({ mode: "sim", seed: 1337 }),
-      mode: "production",
+      mode: "dev",
       log: { format: "json", write: (l) => lines.push(l) },
     });
     const res = await app.fetch(
@@ -62,7 +64,7 @@ describe("a secret whose read is cut", () => {
       }),
     );
     await res.text();
-    const messages = lines
+    const messages = textRecords(lines)
       .map((l): { code: string; message: string } => JSON.parse(l))
       .filter((d) => d.code === "keel.unexpected")
       .map((d) => d.message);

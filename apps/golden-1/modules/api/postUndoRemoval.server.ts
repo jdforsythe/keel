@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
 import { removalStores } from "./removalStores.server.ts";
@@ -15,8 +15,7 @@ export const postUndoRemoval = action(
   (_input, { params, caller, stores }) => {
     const { flow } = params;
     const at = stores.removal.store.get("instances")[flow];
-    if (at?.state !== "hidden")
-      return err({ code: "keel.notFound", message: `No removal ${flow} to undo`, data: { flow } });
+    if (at?.state !== "hidden") return err(keelError.notFound.make({}));
     const r = tx(stores.removal.events.undo, { id: flow, payload: {} }, { meta: { caller } });
     return r.ok ? ok({}) : err(r.error);
   },

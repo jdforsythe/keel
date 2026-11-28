@@ -110,7 +110,15 @@ for (const [what, body] of CASES)
       const app = judged(body, "app");
       const lib = judged(body, "library");
       expect(app.check.length + (app.render === "none" ? 0 : 1)).toBeGreaterThan(0);
-      expect(lib).toEqual(app);
+      // A library with no `./tokens` entry writes no token name: each literal is also an E1811 there (k.looks Needs).
+      const literals = [...body.matchAll(/\b(?:fg|bg|p)="/g)].length;
+      expect(lib.check.filter((c) => c.startsWith("E1811:"))).toHaveLength(literals);
+      // A library file's failing pair is reported in the app's `tokens.ts`, not at the element (k.looks Library contrast).
+      const moved = (c: string): boolean => c.startsWith("E1811:") || c.startsWith("E1804:");
+      expect({ ...lib, check: lib.check.filter((c) => !moved(c)) }).toEqual({
+        ...app,
+        check: app.check.filter((c) => !c.startsWith("E1804:")),
+      });
     },
     SLOW,
   );
@@ -118,14 +126,25 @@ for (const [what, body] of CASES)
 test(
   "the .keel/ artifacts hold a library's files, and keel check after keel build finds them fresh (no E1005)",
   () => {
+    // The library ships `chartsTokens` (k.looks), so its Badge's `p` names one of its own tokens.
+    const shipped = library({
+      exports: { "./tokens": { keel: "./src/chartsTokens.ts", default: "./index.js" } },
+      files: {
+        "src/chartsTokens.ts":
+          "import { defineTokens } from '@keel/ui/tokens'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n",
+        "src/Badge.tsx":
+          "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`} p=\"charts.2\" />\n}\n",
+      },
+    });
     const dir = materialize({
-      ...project({ adapter: "static", home: true }),
-      "tokens.ts": "import { brandTokens } from '@keel/ui/brand'\nexport const tokens = brandTokens\n",
+      ...project({ adapter: "static", home: true, libraries: [shipped] }),
+      "tokens.ts":
+        "import { defineTokens } from '@keel/ui/tokens'\nimport { brandTokens } from '@keel/ui/brand'\nimport { chartsTokens } from '@acme/charts/tokens'\nexport const tokens = defineTokens({ ...brandTokens, space: { ...brandTokens.space, ...chartsTokens.space } })\n",
     });
     try {
       expect(keel(dir, ["build"]).status).toBe(0);
       const styles = readFileSync(join(dir, ".keel/styles.json"), "utf8");
-      expect(styles).toContain('"p":"2"');
+      expect(styles).toContain('"p":"charts.2"');
       const after = keel(dir, ["check"]);
       expect(after.records.filter((r) => r.kind === "diag")).toEqual([]);
     } finally {

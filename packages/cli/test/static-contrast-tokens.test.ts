@@ -1,10 +1,10 @@
 // k.a11y-static Tokens and Build: every command that runs the check pipeline reads the project's `tokens.ts`, fresh
 // on every run; a broken one is E1807 at tokens.ts 1:1; `keel build` refuses a static a11y error.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { lsp, mcp } from "../src/index.ts";
 import { a11yFindings } from "../src/internal/a11yFindings.ts";
@@ -25,12 +25,12 @@ const comp = (body: string): string =>
   `import { Box, Text } from "@keel/ui";\nexport function C() {\n  return (\n${body}\n  );\n}\n`;
 const PAIR = comp(`    <Box fg="divider" bg="card">\n      <Text>x</Text>\n    </Box>`);
 const grays = (low: string): string =>
-  `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
+  `import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = defineTokens({ color: { low: "${low}", bg: "#ffffff" } });\n`;
 const LOW = comp(`    <Box bg="bg">\n      <Text fg="low">x</Text>\n    </Box>`);
 
 /** A temp project with every `@keel/*` package linked under its `node_modules`. */
 function project(files: Readonly<Record<string, string>>): string {
-  const dir = mkdtempSync(join(tmpdir(), "keel-static-tokens-"));
+  const dir = tempDir("keel-static-tokens-");
   created.push(dir);
   const all = { "package.json": '{"name":"p","private":true,"type":"module"}\n', "topology.ts": TOPOLOGY, ...files };
   for (const [rel, text] of Object.entries(all)) {
@@ -130,18 +130,26 @@ describe("k.a11y-static Build: keel build refuses a static a11y error", () => {
 
 describe("k.a11y-static: a tokens.ts that gives no tokens is E1807", () => {
   it.each([
-    ["exports no tokens", "export const other = {};\n"],
-    ["throws", 'throw new Error("boom");\nexport const tokens = {};\n'],
-    ["fails TokenSchema", 'import { defineTokens } from "@keel/ui";\nexport const tokens = { color: { fg: 5 } };\n'],
-  ])("a tokens.ts that %s is one E1807 at tokens.ts 1:1, with no E1804", (_, source) => {
-    const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": LOW, "tokens.ts": source });
-    const r = keel(dir, ["check"]);
-    const d = r.records.filter((x) => x.kind === "diag" && x.code === "E1807");
-    expect(d).toEqual([expect.objectContaining({ path: "tokens.ts", line: 1, col: 1 })]);
-    expect(String(d[0]?.message).length).toBeLessThanOrEqual(89);
-    expect(coded(r.records, "E1804")).toEqual([]);
-    expect(r.status).toBe(1);
-  });
+    ["exports no tokens", "export const other = {};\n", 1, 1],
+    ["throws", 'throw new Error("boom");\nexport const tokens = {};\n', 1, 1],
+    [
+      "fails TokenSchema",
+      'import { defineTokens } from "@keel/ui/tokens";\nexport const tokens = { color: { fg: 5 } };\n',
+      2,
+      34,
+    ],
+  ])(
+    "a tokens.ts that %s is one E1807 at tokens.ts, at 1:1 or the refused key, with no E1804",
+    (_, source, line, col) => {
+      const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": LOW, "tokens.ts": source });
+      const r = keel(dir, ["check"]);
+      const d = r.records.filter((x) => x.kind === "diag" && x.code === "E1807");
+      expect(d).toEqual([expect.objectContaining({ path: "tokens.ts", line, col })]);
+      expect(String(d[0]?.message).length).toBeLessThanOrEqual(89);
+      expect(coded(r.records, "E1804")).toEqual([]);
+      expect(r.status).toBe(1);
+    },
+  );
 
   it("no tokens.ts is neither E1807 nor E1804", () => {
     const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": LOW });
@@ -168,7 +176,7 @@ describe("k.a11y-static: a changed token is judged by the next check, cache or n
       "modules/m/module.ts": MODULE,
       "modules/m/C.tsx": LOW,
       "palette.ts": 'export const low = "#111111";\n',
-      "tokens.ts": `import { defineTokens } from "@keel/ui";\nimport { low } from "./palette.ts";\nexport const tokens = defineTokens({ color: { low, bg: "#ffffff" } });\n`,
+      "tokens.ts": `import { defineTokens } from "@keel/ui/tokens";\nimport { low } from "./palette.ts";\nexport const tokens = defineTokens({ color: { low, bg: "#ffffff" } });\n`,
     });
     const server = mcp(() => io(dir));
     const call = () =>

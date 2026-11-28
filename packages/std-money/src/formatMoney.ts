@@ -1,14 +1,8 @@
 import { type Locale, numberParts } from "@keel/std-i18n";
-import { noDecimalForm } from "../unsafe/noDecimalForm.ts";
+import { defect } from "@keel/schema";
+import { asDecimal } from "../unsafe/asDecimal.ts";
 import type { Money } from "./Money.schema.ts";
 import { EXPONENT } from "./internal/EXPONENT.ts";
-
-const DECIMAL = /^-?\d+(?:\.\d+)?$/;
-
-/** Whether `s` is a plain decimal literal (`-0.05`, `1800`), the string form `Intl.NumberFormat` formats exactly. */
-function isDecimal(s: string): s is `${number}` {
-  return DECIMAL.test(s);
-}
 
 /** The exact decimal string of `amount` at exponent `e` (`-5`, 2 gives `-0.05`): string arithmetic, no float. */
 function decimal(amount: number, e: number): string {
@@ -26,9 +20,8 @@ function decimal(amount: number, e: number): string {
  * `en-US` and `12,50 €` in `de-DE`. Reads no host locale.
  */
 export function formatMoney(m: Money, locale: Locale): string {
-  if (!Number.isSafeInteger(m.amount) || Math.abs(m.amount) > 1e15) return noDecimalForm(m.amount);
-  const d = decimal(m.amount, EXPONENT[m.currency]);
-  if (!isDecimal(d)) return noDecimalForm(m.amount);
+  const d = Number.isSafeInteger(m.amount) && Math.abs(m.amount) <= 1e15 ? asDecimal(decimal(m.amount, EXPONENT[m.currency])) : undefined;
+  if (d === undefined) return defect("money amount has no decimal form", { data: { amount: String(m.amount) } });
   return numberParts(d, locale, m.currency)
     .map((p) => p.value)
     .join("");

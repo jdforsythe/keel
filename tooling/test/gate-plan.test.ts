@@ -4,6 +4,19 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   JOBS,
+  SLOW,
+  SLOW_JOB,
+  bindMounts,
+  dockerProblem,
+  slowContainer,
+  slowEnv,
+  slowExecArgs,
+  slowParallel,
+  slowRunArgs,
+  slowSetupScript,
+  slowBrowserDepsScript,
+  slowShards,
+  slowSteps,
   applyRewrites,
   badWith,
   downloadPatterns,
@@ -16,7 +29,8 @@ import {
   nodeMajor,
   planJobs,
   resultPath,
-  runsAfterFailure,
+  parseOutputs,
+  stepRuns,
   stepName,
   verdict,
   versionCheck,
@@ -153,11 +167,68 @@ describe("expr", () => {
   });
 });
 
-describe("runsAfterFailure", () => {
-  it("is true for always(), false with no if, and throws on any other condition", () => {
-    expect(runsAfterFailure({ run: "x", if: "always()" })).toBe(true);
-    expect(runsAfterFailure({ run: "x" })).toBe(false);
-    expect(() => runsAfterFailure({ run: "x", if: "failure()" })).toThrow('unknown step condition "failure()"');
+describe("step outputs and conditions", () => {
+  it("answers steps.<id>.outputs.<name> from what the step wrote, empty when it wrote nothing", () => {
+    const ctx = { steps: { browser: { browser: "true", playwright: "1.50.0" } } };
+    expect(expr("pw-${{ steps.browser.outputs.playwright }}", ctx)).toBe("pw-1.50.0");
+    expect(expr("${{ steps.browser.outputs.other }}|${{ steps.none.outputs.x }}", ctx)).toBe("|");
+    expect(expr("${{ steps.browser.outputs.playwright }}", {})).toBe("");
+  });
+  it("reads name=value lines and name<<DELIMITER blocks of a GITHUB_OUTPUT file", () => {
+    expect(parseOutputs("browser=true\nplaywright=1.50.0\n")).toEqual({ browser: "true", playwright: "1.50.0" });
+    expect(parseOutputs("a=1\nlog<<EOF\nx=y\nz\nEOF\nb=a=b\na=2\n")).toEqual({ a: "2", log: "x=y\nz", b: "a=b" });
+    expect(parseOutputs("")).toEqual({});
+  });
+  it("runs a step by its condition: always() after a failure, an output test only while passing, else only while passing", () => {
+    const out = { browser: { browser: "true" } };
+    expect(stepRuns({ run: "x" }, false)).toBe(true);
+    expect(stepRuns({ run: "x" }, true)).toBe(false);
+    expect(stepRuns({ run: "x", if: "always()" }, true)).toBe(true);
+    const yes = { run: "x", if: "steps.browser.outputs.browser == 'true'" };
+    expect(stepRuns(yes, false, out)).toBe(true);
+    expect(stepRuns(yes, false, { browser: { browser: "false" } })).toBe(false);
+    expect(stepRuns(yes, false, {})).toBe(false);
+    expect(stepRuns(yes, true, out)).toBe(false);
+    expect(stepRuns({ run: "x", if: "steps.t.outputs.cache-hit != 'true'" }, false, {})).toBe(true);
+    expect(() => stepRuns({ run: "x", if: "failure()" }, false)).toThrow('unknown step condition "failure()"');
+  });
+  it("carries the id and condition of a shard's steps into the container run", () => {
+    const { steps } = slowSteps(realSource, 2);
+    const probe = steps.find((s) => s.id === "browser");
+    expect(probe?.run).toContain("ci-shards.mjs --browser 2");
+    expect(steps.filter((s) => s.if === "steps.browser.outputs.browser == 'true'").length).toBeGreaterThan(0);
+  });
+  it("runs the browser step as the user, its libraries installed as root only when a shard drives a browser", () => {
+    const { steps } = slowSteps(realSource, 1);
+    const install = steps.find((st) => /playwright-core install/.test(st.run));
+    expect(install?.run).toBe("pnpm exec playwright-core install chromium");
+    expect(install?.if).toBe("steps.browser.outputs.browser == 'true'");
+    const script = slowBrowserDepsScript([1, 2, 3]);
+    expect(script).toContain("for n in 1 2 3;");
+    expect(script).toContain("ci-shards.mjs --browser");
+    expect(script).toContain("install-deps chromium");
+    expect(script).toMatch(/if \[ -n "\$\{need:-\}" \]/);
+    const args = slowRunArgs({ name: "n", image: "i" });
+    expect(args.join(" ")).toContain("--security-opt seccomp=unconfined");
+    expect(args).not.toContain("--no-sandbox");
+    expect(args.slice(args.indexOf("--user"), args.indexOf("--user") + 2)).toEqual(["--user", SLOW.user]);
+  });
+  it("runs no step with sudo in the slow container: a sysctl is not set from inside it", () => {
+    for (const shard of slowShards(realSource)) {
+      const { install, steps } = slowSteps(realSource, shard);
+      for (const step of [...install, ...steps]) expect(step.run).not.toMatch(/\bsudo\b/);
+    }
+  });
+  it("gives every job's steps only expressions and conditions the gate answers", () => {
+    const names = Object.keys(realSource.jobs).filter((n) => JOBS[n]?.run === true);
+    const ctx = { matrix: { shard: 1 }, workspace: "/w", runnerOs: "macOS", runnerArch: "ARM64", needs: {}, steps: {} };
+    for (const n of names)
+      for (const step of expandSteps(realSource, n)) {
+        if (typeof step !== "object") continue;
+        if (step.run !== undefined)
+          expr(step.run, { ...ctx, needs: Object.fromEntries(names.map((m) => [m, "success"])) });
+        stepRuns(step, false, {});
+      }
   });
 });
 
@@ -194,6 +265,17 @@ describe("applyRewrites", () => {
     expect(text).not.toContain("127.0.0.1:5432/");
     expect(text).not.toContain("--name pg-tls");
     expect(text).not.toContain("docker exec pg-tls");
+  });
+  it("matches the real built-smokes job of the CI source: its postgres service has a container and port", () => {
+    const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
+    const rule = JOBS["built-smokes"];
+    expect(rule.services?.postgres).toEqual({ container: "keel-gate-pg-smokes", port: "pg-smokes" });
+    expect(Object.keys(source.jobs["built-smokes"].services)).toEqual(Object.keys(rule.services ?? {}));
+    const out = applyRewrites(source.jobs["built-smokes"], expandSteps(source, "built-smokes"), rule.rewrites, {
+      "pg-smokes": 41002,
+    });
+    expect(out.env.KEEL_TEST_POSTGRES_URL).toContain("127.0.0.1:41002/");
+    expect(JSON.stringify(out)).not.toContain("sudo sysctl");
   });
   it("runs the ledger job's own steps, its artifact unpacking included", () => {
     const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
@@ -327,5 +409,102 @@ describe("verdict, stepName and resultPath", () => {
     ]);
     const real = fs.readFileSync(path.join(import.meta.dirname, "..", "..", "pnpm-workspace.yaml"), "utf8");
     expect(workspaceGlobs(real)).toContain("packages/*");
+  });
+});
+
+const realSource = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "../ci.source.json"), "utf8"));
+
+describe("the slow-machine job", () => {
+  it("is ordered after every fast job, and is not planned unless asked for", () => {
+    const names = planJobs(realSource, { slow: { skip: false } }).jobs.map((j) => j.name);
+    expect(names.at(-1)).toBe(SLOW_JOB);
+    expect(names.indexOf(SLOW_JOB)).toBe(names.length - 1);
+    expect(planJobs(realSource).jobs.map((j) => j.name)).not.toContain(SLOW_JOB);
+    const slow = planJobs(realSource, { slow: { skip: false } }).jobs.at(-1);
+    expect(slow?.decision).toBe("run");
+    expect(slow?.rule?.requires).toBe("docker");
+  });
+
+  it("records an explicit skip, and --only another job skips it without calling it explicit", () => {
+    const skipped = planJobs(realSource, { slow: { skip: true } }).jobs.at(-1);
+    expect(skipped).toMatchObject({ decision: "skip", explicit: true });
+    const other = planJobs(realSource, { slow: { skip: false }, only: new Set(["check"]) }).jobs.at(-1);
+    expect(other?.decision).toBe("skip");
+    expect(other?.explicit).toBeUndefined();
+    expect(planJobs(realSource, { slow: { skip: false }, only: new Set([SLOW_JOB]) }).jobs.at(-1)?.decision).toBe(
+      "run",
+    );
+  });
+
+  it("names its container keel-gate- and mounts only a named volume, never a host path", () => {
+    const name = slowContainer("0123456789ab");
+    expect(name).toBe("keel-gate-slow-0123456789ab");
+    const args = slowRunArgs({ name, image: "node:22" });
+    expect(args.slice(args.indexOf("--name"), args.indexOf("--name") + 2)).toEqual(["--name", name]);
+    expect(args).toContain("--cpus");
+    expect(args[args.indexOf("--cpus") + 1]).toBe(String(SLOW.cpus));
+    expect(args[args.indexOf("--memory") + 1]).toBe(SLOW.memory);
+    expect(args).toContain(`${SLOW.volume}:/pnpm-store`);
+    expect(bindMounts(args)).toEqual([]);
+    expect(args.some((a) => a.startsWith("--mount"))).toBe(false);
+  });
+
+  it("runs as a non-root user under an init, as a hosted runner does", () => {
+    const args = slowRunArgs({ name: "keel-gate-slow-x", image: "node:22" });
+    expect(args).toContain("--init");
+    expect(args[args.indexOf("--user") + 1]).toBe(SLOW.user);
+    expect(SLOW.user).not.toBe("root");
+    expect(slowSetupScript).toContain("lsof");
+    expect(slowSetupScript).toContain("corepack enable");
+    expect(slowSetupScript).toContain(`chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`);
+  });
+
+  it("names a shard's container after the commit and the shard", () => {
+    expect(slowContainer("0123456789ab", 3)).toBe("keel-gate-slow-0123456789ab-3");
+  });
+
+  it("runs as many shards at once as the docker machine holds, no more than asked", () => {
+    const gb = 1024 ** 3;
+    const machine = { machineCpus: 10, machineMemory: 25 * gb, cpus: 2, memory: "7700m" };
+    expect(slowParallel(machine)).toBe(3);
+    expect(slowParallel({ ...machine, want: 2 })).toBe(2);
+    expect(slowParallel({ ...machine, machineMemory: 12 * gb })).toBe(1);
+    expect(slowParallel({ ...machine, machineCpus: 4 })).toBe(2);
+    expect(slowParallel({ ...machine, machineCpus: 1 })).toBe(1);
+    expect(slowParallel({ ...machine, cpus: 1, machineMemory: 100 * gb, want: 6 })).toBe(6);
+  });
+
+  it("finds a bind mount in any spelling", () => {
+    expect(bindMounts(["run", "-v", "/srv/repo:/work"])).toEqual(["/srv/repo"]);
+    expect(bindMounts(["run", "--volume=./here:/work"])).toEqual(["./here"]);
+    expect(bindMounts(["run", "--mount", "type=bind,src=/a,dst=/b"])).toHaveLength(1);
+    expect(bindMounts(["run", "-v", "named:/work"])).toEqual([]);
+  });
+
+  it("runs the source's shard commands at time scale 1 with CI's environment", () => {
+    expect(slowShards(realSource)).toEqual([1, 2, 3, 4, 5, 6]);
+    const { install, steps } = slowSteps(realSource, 4);
+    expect(install.map((s) => s.run)).toEqual(["pnpm install --frozen-lockfile"]);
+    expect(steps.map((s) => s.run)).toContain("node tooling/ci-shards.mjs 4");
+    expect(steps.map((s) => s.name)).toContain("node tooling/ci-shards.mjs 4");
+    const env = slowEnv(realSource);
+    expect(env).toMatchObject({ CI: "true", GITHUB_ACTIONS: "true", KEEL_TEST_TIME_SCALE: "1", KEEL_AGENT: "1" });
+    const exec = slowExecArgs("keel-gate-slow-x", { CI: "true" }, "node tooling/ci-shards.mjs 1");
+    expect(exec.slice(0, 3)).toEqual(["exec", "-e", "CI=true"]);
+    expect(exec.at(-1)).toBe("node tooling/ci-shards.mjs 1");
+  });
+
+  it("reports a hung or failed docker command by name", () => {
+    const cp = ["cp", "/tmp/tree/.", "keel-gate-slow-x:/work"];
+    expect(dockerProblem(cp, { status: 0 }, 1000)).toBeUndefined();
+    const hung = dockerProblem(
+      cp,
+      { status: null, signal: "SIGKILL", error: { code: "ETIMEDOUT", message: "x" } },
+      900_000,
+    );
+    expect(hung).toBe("docker cp /tmp/tree/. hung: no answer in 900s");
+    expect(dockerProblem(["pull", "node:22"], { status: 1, stderr: "denied\n" }, 1000)).toBe(
+      "docker pull node:22 failed (exit 1): denied",
+    );
   });
 });

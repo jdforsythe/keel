@@ -4,8 +4,23 @@ import fs from "node:fs";
 import path from "node:path";
 import type { check } from "@keel/check";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { defineTokens } from "@keel/ui/tokens";
+import { brandTokens } from "@keel/ui/brand";
 import { BASE, sharedRoot } from "./E1013-support.ts";
-import type { Files } from "./support.ts";
+import {
+  PACKAGE_JSON as ACME_PACKAGE_JSON,
+  ROOT as ACME_ROOT,
+  SHIPPED as ACME_SHIPPED,
+  BRAND_ONLY,
+  app as acmeApp,
+  badgeSource,
+  composed,
+  fixedTokens,
+  optsFor,
+  packageJson,
+  shippedSource,
+} from "./library-looks-support.ts";
+import { type Files, looseTokens } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
 
@@ -14,10 +29,19 @@ export interface CodeFixture {
   opts?: Options;
   badOpts?: Options;
   cleanOpts?: Options;
+  /** Options for the re-check of the bad files a fix patched, when the fix changes what an artifact evaluates to. */
+  fixedOpts?: Options;
   bad: Files;
   clean: Files;
 }
 
+const E1817_TOKENS = (over: string[]) =>
+  looseTokens({
+    color: { card: "#FFFFFF", text: "#1a191e", on: "#FFFFFF" },
+    overlay: { scrim: { value: "rgb(0 0 0 / 0.9)", over } },
+  });
+const E1817_SOURCE =
+  "import { defineTokens } from '@keel/ui/tokens'\nexport const tokens = defineTokens({\n  color: { card: '#FFFFFF', text: '#1a191e', on: '#FFFFFF' },\n  overlay: { scrim: { value: 'rgb(0 0 0 / 0.9)', over: ['card'] } },\n})\n";
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const HOST_HEAD = "import { Host } from '@keel/ui'\nimport { In } from './In.schema.ts'\n";
 const UI = "import { Box, Text, Button } from '@keel/ui'\n";
@@ -79,6 +103,7 @@ const library = (id: string, deps: string[], ledger = true): Files[number][] => 
     "node_modules/@acme/charts/module.ts",
     `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [${deps.map((d) => `'${d}'`).join(", ")}], capabilities: [], public: { exports: [] } })\n`,
   ),
+  f("node_modules/@acme/charts/src/index.ts", "export {}\n"),
   ...(ledger
     ? [
         f(
@@ -416,7 +441,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ...library("charts", []),
       f(
         "node_modules/@acme/charts/src/Badge.tsx",
-        `${UI}export default function Badge(props: { id: string }) { return <Box p="2" /> }\n`,
+        `${UI}export default function Badge(props: { id: string }) { return <Box /> }\n`,
       ),
     ],
     clean: [
@@ -424,7 +449,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ...library("charts", []),
       f(
         "node_modules/@acme/charts/src/Badge.tsx",
-        `${UI}export default function Badge(props: { id: string }) { return <Box id={\`\${props.id}.box\`} p="2" /> }\n`,
+        `${UI}export default function Badge(props: { id: string }) { return <Box id={\`\${props.id}.box\`} /> }\n`,
       ),
     ],
   },
@@ -493,6 +518,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1203: {
+    bad: [
+      f(
+        "src/x.ts",
+        "import { signal } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  await g()\n  return signal(0)\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/x.ts",
+        "import { signal } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  const v = signal(0)\n  await g()\n  return v\n}\n",
+      ),
+    ],
+  },
   E1204: {
     opts: NO_TYPES,
     bad: [
@@ -522,6 +561,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f(
         "modules/app/Work.ts",
         "import { scope } from '@keel/reactive'\nexport const Work = scope(() => {}, { onError: () => {} })\n",
+      ),
+    ],
+  },
+  E1208: {
+    bad: [
+      f(
+        "src/x.ts",
+        "import { scope } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  await g()\n  return scope(() => undefined)\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/x.ts",
+        "import { scope } from '@keel/reactive'\ndeclare function g(): Promise<void>\nexport async function x() {\n  const v = scope(() => undefined)\n  await g()\n  return v\n}\n",
       ),
     ],
   },
@@ -649,24 +702,46 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     ],
   },
   E1451: {
-    bad: [f("src/f.ts", "export function f(n: number) {\n  if (n < 0) throw new Error('neg')\n  return n\n}\n")],
-    clean: [f("src/f.ts", "export function f(n: number) {\n  return n\n}\n")],
-  },
-  E1452: {
-    bad: [f("src/f.ts", "export const f = (p: Promise<number>) => p.catch(() => 0)\n")],
-    clean: [f("src/f.ts", "export const f = (p: Promise<number>) => p\n")],
-  },
-  E1453: {
+    // a `throw` of a KeelError in a function whose return type takes the Result: the one E1451 that carries a fix (k.fixes)
     bad: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nsave()\n",
+        "import { ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) throw locked\n  return ok(1)\n}\n",
       ),
     ],
     clean: [
       f(
         "src/f.ts",
-        "import { ok, type Result } from '@keel/schema'\nconst save = (): Result<number, string> => ok(1)\nconst r = save()\nvoid r\n",
+        "import { err, ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ntype Locked = KeelError<'m.locked', Record<string, never>>\ndeclare const locked: Locked\nexport function f(bad: boolean): Result<number, Locked> {\n  if (bad) return err(locked)\n  return ok(1)\n}\n",
+      ),
+    ],
+  },
+  E1452: {
+    // cleanup and rethrow: the one E1452 that carries a fix (k.fixes)
+    bad: [
+      f(
+        "src/f.ts",
+        "declare function work(): Promise<void>\ndeclare function rollback(): Promise<void>\nexport async function f(): Promise<void> {\n  try { await work() } catch (e) { await rollback(); throw e }\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "declare function work(): Promise<void>\ndeclare function rollback(): Promise<void>\nexport async function f(): Promise<void> {\n  let done = false\n  try { await work(); done = true } finally { if (!done) { await rollback() } }\n}\n",
+      ),
+    ],
+  },
+  E1453: {
+    bad: [
+      f(
+        "src/f.ts",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.locked', null>> => ok(1)\nsave()\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { ok, type KeelError, type Result } from '@keel/schema'\nconst save = (): Result<number, KeelError<'m.locked', null>> => ok(1)\nconst r = save()\nvoid r\n",
       ),
     ],
   },
@@ -678,6 +753,121 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [
       f("src/a.schema.ts", `${SCHEMA}export const a = s.error('orders.locked', s.object({}))\n`),
       f("src/b.schema.ts", `${SCHEMA}export const b = s.error('orders.closed', s.object({}))\n`),
+    ],
+  },
+  E1455: {
+    // a defect on a failed Result with no cause: the one E1455 that carries a fix (k.fixes)
+    bad: [
+      f(
+        "src/f.ts",
+        "import { defect } from '@keel/schema'\nimport type { Result } from '@keel/schema'\ndeclare const r: Result<number, { code: 'm.x'; message: string; data: null }>\nexport function f(): void {\n  if (!r.ok) defect('x')\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { defect } from '@keel/schema'\nimport type { Result } from '@keel/schema'\ndeclare const r: Result<number, { code: 'm.x'; message: string; data: null }>\nexport function f(): void {\n  if (!r.ok) defect('x', { cause: r.error })\n}\n",
+      ),
+    ],
+  },
+  E1457: {
+    bad: [f("src/f.ts", "export const f = (t: string): unknown => JSON.parse(t)\n")],
+    clean: [f("src/f.ts", "export const f = (): unknown => JSON.parse('{}')\n")],
+  },
+  E1458: {
+    bad: [f("src/f.ts", "import { err } from '@keel/schema'\nexport const f = () => err('x')\n")],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { err, keelError } from '@keel/schema'\nexport const f = () => err(keelError.denied.make({}))\n",
+      ),
+    ],
+  },
+  E1459: {
+    bad: [
+      f(
+        "src/f.ts",
+        "import { ok } from '@keel/schema'\nimport type { KeelError, Result } from '@keel/schema'\ndeclare const r: Result<number, KeelError<'m.e', null>>\nexport const f = () => ok(r)\n",
+      ),
+    ],
+    clean: [f("src/f.ts", "import { ok } from '@keel/schema'\nexport const f = () => ok(1)\n")],
+  },
+  E1460: {
+    bad: [
+      f(
+        "src/Msg.schema.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\ndeclare const text: string\nexport const Msg = E.make({}, text)\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/Msg.schema.ts",
+        "import { s } from '@keel/schema'\nconst E = s.error('m.e', s.object({}))\nexport const Msg = E.make({}, 'sign in')\n",
+      ),
+    ],
+  },
+  E1461: {
+    bad: [
+      mod("m", [], []),
+      f(
+        "modules/m/a.ts",
+        "import { supervise } from '@keel/ctx'\nimport type { Ctx } from '@keel/ctx'\nimport type { KeelError } from '@keel/schema'\ndeclare const ctx: Ctx\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const a = supervise(ctx, 'm.run', f, T)\n",
+      ),
+    ],
+    clean: [
+      mod("m", [], []),
+      f(
+        "modules/m/a.ts",
+        "import { attempt } from '@keel/schema'\nimport type { KeelError } from '@keel/schema'\ndeclare const f: () => number\ndeclare const T: KeelError<'m.t', null>\nexport const a = attempt(f, (x) => (x instanceof RangeError ? T : undefined))\n",
+      ),
+    ],
+  },
+  E1765: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "package.json",
+        JSON.stringify({ name: "app", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0", dep: "1.0.0" } }),
+      ),
+      f("node_modules/@keel/schema/package.json", JSON.stringify({ name: "@keel/schema", version: "1.0.0" })),
+      f(
+        "node_modules/dep/package.json",
+        JSON.stringify({ name: "dep", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0" } }),
+      ),
+      f(
+        "node_modules/dep/node_modules/@keel/schema/package.json",
+        JSON.stringify({ name: "@keel/schema", version: "1.0.0" }),
+      ),
+    ],
+    clean: [
+      f(
+        "package.json",
+        JSON.stringify({ name: "app", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0", dep: "1.0.0" } }),
+      ),
+      f("node_modules/@keel/schema/package.json", JSON.stringify({ name: "@keel/schema", version: "1.0.0" })),
+      f(
+        "node_modules/dep/package.json",
+        JSON.stringify({ name: "dep", version: "1.0.0", dependencies: { "@keel/schema": "1.0.0" } }),
+      ),
+    ],
+  },
+  E1766: {
+    bad: [mod("m", [], []), f("modules/m/a.ts", "export const a = Symbol.for('keel.kernel')\n")],
+    clean: [mod("m", [], []), f("modules/m/a.ts", "export const a = Symbol.for('app.key')\n")],
+  },
+  E1256: {
+    bad: [
+      mod("p", [], []),
+      f("modules/p/last.ts", "import { signal } from '@keel/reactive'\nexport const last = signal('')\n"),
+      f(
+        "modules/p/load.server.ts",
+        "import { last } from './last.ts'\nexport function load(x: string) { last.set(x) }\n",
+      ),
+    ],
+    clean: [
+      mod("p", [], []),
+      f("modules/p/last.ts", "import { signal } from '@keel/reactive'\nexport const last = signal('')\n"),
+      f("modules/p/load.server.ts", "import { last } from './last.ts'\nexport function load() { return last.get() }\n"),
     ],
   },
   E1501: {
@@ -1067,18 +1257,15 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("api.server.ts", "import { notes } from './lib/notes.server.ts'\nexport const api = notes\n"),
     ],
   },
-  // The bad page reaches `notes` through the symlink `node_modules/linked-notes` and `app` lists no dep, so only E1013 reports (`#notes/...` is also E1576).
+  // k.bundle Aliases: `modules/app/sub/Deep.tsx` reaches its own module's `Page.tsx` through the symlink `node_modules/linked-app`; the fix `'../Page.tsx'` stays inside `app`, so no E1152 follows it, and `app` lists no dep, so no E1165.
   E1013: {
     opts: { root: sharedRoot() },
     bad: [
       mod("app", [], []),
-      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx" && b.path !== "modules/app/module.ts"),
-      f("modules/app/Page.tsx", "import { lib } from 'linked-notes/lib.ts'\nexport const Page = lib\n"),
+      ...BASE.filter((b) => b.path !== "modules/app/module.ts"),
+      f("modules/app/sub/Deep.tsx", "import { Page } from 'linked-app/Page.tsx'\nexport const Deep = Page\n"),
     ],
-    clean: [
-      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx"),
-      f("modules/app/Page.tsx", "import { lib } from '../notes/lib.ts'\nexport const Page = lib\n"),
-    ],
+    clean: [...BASE, f("modules/app/sub/Deep.tsx", "import { Page } from '../Page.tsx'\nexport const Deep = Page\n")],
   },
   // E1015 (k.boundary Following): `../../../shared/x.ts` from `modules/a/Page.tsx` resolves outside the project root.
   E1015: {
@@ -1425,6 +1612,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("modules/m/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
     clean: [f("modules/m/test/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
   },
+  E1762: {
+    bad: [
+      f(
+        "src/isRunner.ts",
+        "export const isRunner = (x: unknown): x is { run(n: number): string } => typeof x === 'object' && x !== null\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/isRow.ts",
+        "export const isRow = (x: unknown): x is { id: string } => typeof x === 'object' && x !== null && typeof Reflect.get(x, 'id') === 'string'\n",
+      ),
+    ],
+  },
   E1755: {
     bad: [],
     clean: [],
@@ -1644,6 +1845,143 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "modules/notes/mongoNotes.server.ts",
         "import { register } from '@keel/ctx'\nconst impl = () => ({})\nexport const mongoNotes = register('notes.mongo', { real: impl, shell: impl, sim: impl })\n",
       ),
+    ],
+  },
+  // E1810 (rfc:0243): the `@acme/ui` the app lists ships tokens its `tokens.ts` does not compose; its fix writes the import and the spreads, and the clean counterpart is the file the fix writes.
+  E1810: {
+    badOpts: optsFor(brandTokens),
+    fixedOpts: optsFor(composed()),
+    cleanOpts: optsFor(composed()),
+    bad: acmeApp(BRAND_ONLY),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1811 (rfc:0243): a library file's `p="2"` its shipped tokens lack; the clean counterpart names a shipped token.
+  E1811: {
+    opts: optsFor(composed()),
+    bad: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' p="2"'))]),
+    clean: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' fg="acme.ink"'))]),
+  },
+  // E1812 (rfc:0243): a spread in the shipped tokens file, at the spread; the clean counterpart is the literal.
+  E1812: {
+    opts: optsFor(composed()),
+    bad: acmeApp(fixedTokens(), [
+      f(ACME_SHIPPED, shippedSource("...other, 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF'")),
+    ]),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1813 (rfc:0243): an override key `'zed.x'` no listed library ships; the clean counterpart overrides a shipped token.
+  E1813: {
+    badOpts: optsFor(composed({ "zed.x": "#000000" })),
+    cleanOpts: optsFor(composed({ "acme.accent": "#b8420d" })),
+    bad: acmeApp(fixedTokens(", 'zed.x': '#000000'")),
+    clean: acmeApp(fixedTokens(", 'acme.accent': '#b8420d'")),
+  },
+  // E1815 (rfc:0243): the `@acme/ui` the app lists writes `default` before `keel` in its `./tokens` entry; the clean counterpart holds `keel` first.
+  E1815: {
+    opts: optsFor(composed()),
+    bad: acmeApp(fixedTokens(), [
+      f(ACME_PACKAGE_JSON, packageJson({ default: "./evil.js", keel: "./src/acmeTokens.ts" })),
+    ]),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1814 (rfc:0243): a `SchemeSelect` where the tokens have light only; the clean counterpart's tokens hold a color pair of their own.
+  E1814: {
+    opts: { types: false, artifacts: { tokens: brandTokens } },
+    cleanOpts: {
+      types: false,
+      artifacts: {
+        tokens: defineTokens({
+          ...brandTokens,
+          color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } },
+        }),
+      },
+    },
+    bad: [
+      f(
+        "C.tsx",
+        "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
+      ),
+      f(
+        "D.tsx",
+        'import { Box } from \'@keel/ui\'\nexport default function D() { return <Box id="side" scheme="dark" /> }\n',
+      ),
+      f("tokens.ts", BRAND_ONLY),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
+      ),
+      f(
+        "D.tsx",
+        'import { Box } from \'@keel/ui\'\nexport default function D() { return <Box id="side" scheme="dark" /> }\n',
+      ),
+      f(
+        "tokens.ts",
+        'import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } } });\n',
+      ),
+    ],
+  },
+  // E1816 (rfc:0249): a `ThemeSelect` where the tokens have no `choice` theme; the clean counterpart's tokens hold `slate` and its labels name it.
+  E1816: {
+    badOpts: { types: false, artifacts: { tokens: brandTokens } },
+    cleanOpts: {
+      types: false,
+      artifacts: { tokens: looseTokens({ ...brandTokens, themes: { slate: { color: { surface: "#F4F7FB" } } } }) },
+    },
+    bad: [
+      f(
+        "C.tsx",
+        "import { ThemeSelect } from '@keel/ui'\nexport default function C() { return <ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel' }} /> }\n",
+      ),
+      f("tokens.ts", BRAND_ONLY),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { ThemeSelect } from '@keel/ui'\nexport default function C() { return <ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel', slate: 'Slate' }} /> }\n",
+      ),
+      f(
+        "tokens.ts",
+        'import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, themes: { slate: { color: { surface: "#F4F7FB" } } } });\n',
+      ),
+    ],
+  },
+  // E1817 (rfc:0249): a `bg` overlay on a parent `bg` its `over` does not list; the clean counterpart sits it on `card`, which it lists. The fix adds the backdrop to the array literal `over` in `tokens.ts`; `fixedOpts` hold the tokens the patched file evaluates to.
+  E1817: {
+    opts: { types: false, artifacts: { tokens: E1817_TOKENS(["card"]) } },
+    fixedOpts: { types: false, artifacts: { tokens: E1817_TOKENS(["card", "text"]) } },
+    bad: [
+      f(
+        "C.tsx",
+        'import { Box, Text } from \'@keel/ui\'\nexport default function C() { return <Box bg="text"><Text fg="on" bg="scrim">x</Text></Box> }\n',
+      ),
+      f("tokens.ts", E1817_SOURCE),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        'import { Box, Text } from \'@keel/ui\'\nexport default function C() { return <Box bg="card"><Text fg="on" bg="scrim">x</Text></Box> }\n',
+      ),
+      f("tokens.ts", E1817_SOURCE),
+    ],
+  },
+  // E1818 (rfc:0249): a value import of `@keel/ui/tokens` in a code file; the clean counterpart's is `import type`, which is free. Fix: none.
+  E1818: {
+    opts: { types: false, artifacts: { tokens: brandTokens } },
+    bad: [
+      f(
+        "C.tsx",
+        "import { Box } from '@keel/ui'\nimport { defineTokens } from '@keel/ui/tokens'\nexport default function C() { return <Box>{Object.keys(defineTokens({})).length}</Box> }\n",
+      ),
+      f("tokens.ts", BRAND_ONLY),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { Box } from '@keel/ui'\nimport type { Tokens } from '@keel/ui/tokens'\nexport default function C(p: { tokens?: Tokens }) { return <Box>{p.tokens === undefined ? 0 : 1}</Box> }\n",
+      ),
+      f("tokens.ts", BRAND_ONLY),
     ],
   },
 };

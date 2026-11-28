@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@example/library-charts": "workspace:*",
+    "@example/library-looks": "workspace:*",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
@@ -23,10 +24,12 @@
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
+    "@keel/check": "workspace:*",
     "@keel/cli": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
+    "playwright-core": "1.65.0",
     "vite": "^8.3.6"
   }
 }

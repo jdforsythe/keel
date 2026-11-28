@@ -1,10 +1,12 @@
 // surfaceRun (k.compat Surface): `keel build`'s `.keel/surface.json`, written read-only as `{ data, hash }`, from the
 // contracts and route tables a Vite SSR evaluation of the project reads; E1006 for a contract or route file that throws. Each
 // case evaluates a project in a temp directory under the package's test directory. Seed 1337.
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sourceHash } from "@keel/compiler/internal";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { hashOf } from "../src/internal/hashOf.ts";
@@ -16,7 +18,7 @@ afterAll(() => {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 });
 const project = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(here, ".tmp-surfaceRun-"));
+  const dir = tempDir(".tmp-surfaceRun-", here);
   dirs.push(dir);
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -24,7 +26,7 @@ const project = (files: Record<string, string>): string => {
   }
   return dir;
 };
-const SLOW = 120_000;
+const SLOW = fixedTime(120_000);
 const contractTs = (path: string): string =>
   `import { contract } from "@keel/router/contract";\nimport { s } from "@keel/schema";\nexport const m = contract("m", {\n  "m.home": { path: "/home" },\n  "m.feed": { method: "GET", path: ${JSON.stringify(path)}, output: s.json() },\n});\n`;
 const ROUTES = `import { loader, manifest } from "@keel/router";
@@ -163,6 +165,18 @@ describe("surfaceRun", () => {
         "modules/m/routes.ts": 'throw Object.assign(new Error("guard m.home has no route"), { code: "E1502" });\n',
       });
       expect(await surfaceRun(dir)).toEqual({ code: 1, notes: ["E1502 guard m.home has no route\n"] });
+    },
+    SLOW,
+  );
+
+  test(
+    "a routes.ts throwing a value whose message starts with its own E code writes the code once",
+    async () => {
+      const dir = project({
+        "modules/m/m.contract.ts": contractTs("/api/feed"),
+        "modules/m/routes.ts": 'throw Object.assign(new Error("E1765 two copies"), { code: "E1765" });\n',
+      });
+      expect(await surfaceRun(dir)).toEqual({ code: 1, notes: ["E1765 two copies\n"] });
     },
     SLOW,
   );

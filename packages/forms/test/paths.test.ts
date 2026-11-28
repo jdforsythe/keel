@@ -36,53 +36,59 @@ it("FieldPath is the union of dotted paths; PathValue resolves each", () => {
 });
 
 it("field() is typed by literal path; a computed string is accepted and checked at runtime", () => {
-  scope(() => {
-    const f = form(Order);
-    expectTypeOf(f.field("address.city")).toEqualTypeOf<Field<string>>();
-    expectTypeOf(f.field("lines.0.n")).toEqualTypeOf<Field<number>>();
-    // A literal path outside FieldPath<Order> resolves the parameter to never (compile error); runtime is E1902.
-    expectTypeOf<"address.street">().not.toMatchTypeOf<FieldPath<Order>>();
-    const street: string = "address.street";
-    expect(() => f.field(street)).toThrow(/E1902/);
-    const dynamic: string = "note";
-    expectTypeOf(f.field(dynamic)).toEqualTypeOf<Field<unknown>>();
-  }).dispose();
+  scope(
+    () => {
+      const f = form(Order);
+      expectTypeOf(f.field("address.city")).toEqualTypeOf<Field<string>>();
+      expectTypeOf(f.field("lines.0.n")).toEqualTypeOf<Field<number>>();
+      // A literal path outside FieldPath<Order> resolves the parameter to never (compile error); runtime is E1902.
+      expectTypeOf<"address.street">().not.toMatchTypeOf<FieldPath<Order>>();
+      const street: string = "address.street";
+      expect(() => f.field(street)).toThrow(/E1902/);
+      const dynamic: string = "note";
+      expectTypeOf(f.field(dynamic)).toEqualTypeOf<Field<unknown>>();
+    },
+    { detached: true },
+  ).dispose();
 });
 
 it("E1902 for every generated path not in the schema; none for paths that are", () => {
-  scope(() => {
-    const f = form(Order);
-    const loose: (path: string) => unknown = f.field;
-    const good = [
-      "note",
-      "qty",
-      "address",
-      "address.city",
-      "address.zip",
-      "tags",
-      "tags.0",
-      "lines.2.sku",
-      "lines.10.n",
-    ];
-    for (const p of good) expect(() => loose(p)).not.toThrow();
-    fc.assert(
-      fc.property(
-        fc.oneof(
-          fc.stringMatching(/^[a-z]{1,8}(\.[a-z0-9]{1,8}){0,2}$/),
-          fc.constantFrom("", "tags.x", "tags.-1", "tags.01", "lines.0", "lines.0.qty", "note.x", "address."),
+  scope(
+    () => {
+      const f = form(Order);
+      const loose: (path: string) => unknown = f.field;
+      const good = [
+        "note",
+        "qty",
+        "address",
+        "address.city",
+        "address.zip",
+        "tags",
+        "tags.0",
+        "lines.2.sku",
+        "lines.10.n",
+      ];
+      for (const p of good) expect(() => loose(p)).not.toThrow();
+      fc.assert(
+        fc.property(
+          fc.oneof(
+            fc.stringMatching(/^[a-z]{1,8}(\.[a-z0-9]{1,8}){0,2}$/),
+            fc.constantFrom("", "tags.x", "tags.-1", "tags.01", "lines.0", "lines.0.qty", "note.x", "address."),
+          ),
+          (p) => {
+            fc.pre(!good.includes(p) && p !== "lines.0");
+            let code: unknown;
+            try {
+              loose(p);
+            } catch (e) {
+              code = typeof e === "object" && e !== null && "code" in e ? e.code : undefined;
+            }
+            expect(code).toBe("E1902");
+          },
         ),
-        (p) => {
-          fc.pre(!good.includes(p) && p !== "lines.0");
-          let code: unknown;
-          try {
-            loose(p);
-          } catch (e) {
-            code = typeof e === "object" && e !== null && "code" in e ? e.code : undefined;
-          }
-          expect(code).toBe("E1902");
-        },
-      ),
-      { seed: 1337, numRuns: 200 },
-    );
-  }).dispose();
+        { seed: 1337, numRuns: 200 },
+      );
+    },
+    { detached: true },
+  ).dispose();
 });

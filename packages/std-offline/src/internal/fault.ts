@@ -1,4 +1,3 @@
-import type { KeelError } from "@keel/schema";
 import type { Config } from "./Config.ts";
 
 /**
@@ -8,6 +7,6 @@ import type { Config } from "./Config.ts";
 export function fault<C extends "offline.storage" | "offline.owner">(
   c: Config,
   code: C,
-): KeelError<C, Readonly<Record<string, never>>> {
+): { readonly code: C; readonly message: string; readonly data: Readonly<Record<string, never>> } {
   return { code, message: c.id, data: {} };
 }

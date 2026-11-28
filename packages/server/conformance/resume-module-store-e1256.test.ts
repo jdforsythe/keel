@@ -1,14 +1,16 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 // @vitest-environment happy-dom
 // Spec: k.resume, clause "A loader, guard or component writing a module store fails its level with a throw starting `E1256`, the store unchanged; such an action answers 500. Two requests in turn never see each other's request stores."
+// Spec: k.shared, clause "With `mode: 'dev'`, a GET of a page whose loader runs `tx` on a module store with id `shop.cart` answers 500 with a page that holds `E1256 write to module state during a request` and `shop.cart`; the thrown value is `isDefect(v, 'E1256')` with `data` deep-equal to `{ node: 'shop.cart', kind: 'store' }`; in production mode the body holds neither `E1256` nor `shop.cart`."
 // k.resume, Rules "E1256 a write to a module store during a request (k.leave)."
 // k.resume, Stores "During a request `createApp` serves (guards, loaders, action, renders, across `await`s), `tx` on a module store (k.store Registries) throws E1256, changing nothing: a level fails as a throw does; an action answers 500."
 // Property seed: 1337 (fc.assert seed below). Real createApp over a module store defined in this test graph; the store sits in the module registry.
 import type { KeelError } from "@keel/schema";
-import { ok, s } from "@keel/schema";
+import { isDefect, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
@@ -39,6 +41,7 @@ const write = (rows: string): void => void tx(setRows, { rows });
 const rmContract = contract("rm", {
   "rm.login": { path: "/login" },
   "rm.after": { path: "/after" },
+  "rm.caught": { path: "/caught" },
   "rm.before": { path: "/before" },
   "rm.afterEl": { path: "/after-el" },
   "rm.guarded": { path: "/guarded" },
@@ -69,7 +72,23 @@ const writing = (late: boolean, c: typeof rmContract | typeof rrContract, id: st
     },
   ]);
 
+const caught: { value: unknown } = { value: undefined };
 const afterAwait = writing(true, rmContract, "rm.after");
+const catching = Reflect.apply(loader, undefined, [
+  rmContract,
+  "rm.caught",
+  { output: Data },
+  async () => {
+    await Promise.resolve();
+    try {
+      write("leak");
+    } catch (e) {
+      caught.value = e;
+      throw e;
+    }
+    return ok({ title: "t" });
+  },
+]);
 const afterAwaitEl = writing(true, rmContract, "rm.afterEl");
 const afterAwaitRr = writing(true, rrContract, "rr.page");
 const beforeAwait = writing(false, rmContract, "rm.before");
@@ -156,6 +175,7 @@ const routes = manifest(rmContract, {
   "rm.login": { component: () => el("main", {}, "login") },
   "rm.after": { component: shown, loader: afterAwait },
   "rm.before": { component: shown, loader: beforeAwait },
+  "rm.caught": { component: shown, loader: catching },
   "rm.afterEl": { component: shown, loader: afterAwaitEl, errorElement: errorElement },
   "rm.guarded": { component: () => el("main", { "data-page": "1" }, "guarded"), guard: guarded },
   "rm.restore": { component: shown, loader: operating("restore", "rm.restore") },
@@ -231,10 +251,11 @@ describe("k.resume: E1256 a write to a module store during a request", () => {
     unchanged();
   });
 
-  it("the error is an Error whose message starts with E1256 and names the store", async () => {
-    const doc = await serveRoutes(routes, MODULES, "/after", { mode: "dev" });
-    expect(doc.text).toMatch(/E1256/);
-    expect(doc.text).toContain("rm.board");
+  it("the throw's message starts with E1256: dev's full-text diag reads `Defect: E1256`", async () => {
+    const log: Lines = { lines: [] };
+    const doc = await serveRoutes(routes, MODULES, "/after", { mode: "dev", log });
+    expect(doc.status).toBe(500);
+    expect(log.lines.some((l) => /threw: Defect: E1256/.test(l))).toBe(true);
   });
 
   it("a route with an errorElement shows it when its loader writes a module store", async () => {
@@ -346,33 +367,37 @@ describe("k.resume: two requests in turn never see each other's request stores",
     maxLength: 2,
   });
 
-  it("property: rows returned as loader data, and a store a render creates, belong to their own request", async () => {
-    await fc.assert(
-      fc.asyncProperty(names, async ([a, b]) => {
-        if (a === undefined || b === undefined) throw new Error("fixture: two names");
-        const app = await appOf(routes, MODULES, { mode: "production" });
-        const get = async (path: string): Promise<{ status: number; text: string }> => {
-          const res = await app.fetch(new Request(`http://localhost${path}`, { headers: { accept: "text/html" } }));
-          return { status: res.status, text: await res.text() };
-        };
-        for (const prefix of ["/data/", "/request-store/"]) {
-          const first = await get(`${prefix}${a}`);
-          const second = await get(`${prefix}${b}`);
-          const again = await get(`${prefix}${a}`);
-          expect(first.status).toBe(200);
-          expect(second.status).toBe(200);
-          expect(again.status).toBe(200);
-          expect(first.text).toContain(a);
-          expect(first.text).not.toContain(b);
-          expect(second.text).toContain(b);
-          expect(second.text).not.toContain(a);
-          expect(again.text).toContain(a);
-          expect(again.text).not.toContain(b);
-        }
-      }),
-      { seed: 1337, numRuns: 10 },
-    );
-  }, 120_000);
+  it(
+    "property: rows returned as loader data, and a store a render creates, belong to their own request",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(names, async ([a, b]) => {
+          if (a === undefined || b === undefined) throw new Error("fixture: two names");
+          const app = await appOf(routes, MODULES, { mode: "production" });
+          const get = async (path: string): Promise<{ status: number; text: string }> => {
+            const res = await app.fetch(new Request(`http://localhost${path}`, { headers: { accept: "text/html" } }));
+            return { status: res.status, text: await res.text() };
+          };
+          for (const prefix of ["/data/", "/request-store/"]) {
+            const first = await get(`${prefix}${a}`);
+            const second = await get(`${prefix}${b}`);
+            const again = await get(`${prefix}${a}`);
+            expect(first.status).toBe(200);
+            expect(second.status).toBe(200);
+            expect(again.status).toBe(200);
+            expect(first.text).toContain(a);
+            expect(first.text).not.toContain(b);
+            expect(second.text).toContain(b);
+            expect(second.text).not.toContain(a);
+            expect(again.text).toContain(a);
+            expect(again.text).not.toContain(b);
+          }
+        }),
+        { seed: 1337, numRuns: 10 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
   it("with the loader written as a module store write, both requests fail with E1256 and neither shows the other's rows", async () => {
     const log: Lines = { lines: [] };
@@ -389,5 +414,34 @@ describe("k.resume: two requests in turn never see each other's request stores",
     expect(first.text).not.toContain("bravo");
     expect(second.text).not.toContain("alpha");
     unchanged();
+  });
+});
+
+describe("k.shared: the dev page names the module store a request wrote", () => {
+  it("with `mode: 'dev'`, a GET of a page whose loader runs `tx` on a module store with id `rm.board` answers 500 with a page that holds `E1256 write to module state during a request` and `rm.board`", async () => {
+    const doc = await serveRoutes(routes, MODULES, "/caught", { mode: "dev", log: { lines: [] } });
+    expect(doc.status).toBe(500);
+    expect(doc.text).toContain("E1256 write to module state during a request");
+    expect(doc.text).toContain("rm.board");
+    unchanged();
+  });
+
+  it("the thrown value is `isDefect(v, 'E1256')` with `data` deep-equal to `{ node: 'rm.board', kind: 'store' }`", async () => {
+    caught.value = undefined;
+    await serveRoutes(routes, MODULES, "/caught", { mode: "dev", log: { lines: [] } });
+    expect(isDefect(caught.value, "E1256")).toBe(true);
+    expect(
+      typeof caught.value === "object" && caught.value !== null ? Reflect.get(caught.value, "data") : undefined,
+    ).toEqual({
+      node: "rm.board",
+      kind: "store",
+    });
+  });
+
+  it("in production mode the body holds neither `E1256` nor `rm.board`", async () => {
+    const doc = await serveRoutes(routes, MODULES, "/caught", { mode: "production", log: { lines: [] } });
+    expect(doc.status).toBe(500);
+    expect(doc.text).not.toContain("E1256");
+    expect(doc.text).not.toContain("rm.board");
   });
 });

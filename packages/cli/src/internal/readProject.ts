@@ -4,6 +4,8 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
 
 const SKIP = new Set(["node_modules", "dist", "coverage", "reports", ".turbo", ".git", ".worktrees"]);
+/** The host project `serve({ page })` writes in a library's folder (k.e2e Libraries): generated, never the library's source. */
+const E2E_HOST = /(?:^|\/)\.keel\/e2e-host-[^/]+$/;
 const TEXT = /\.(?:[cm]?[jt]sx?|json|md|ya?ml|css|html|txt|rs|toml)$|(?:^|\/)Dockerfile$/;
 const MAX_BYTES = 1_000_000;
 /** Build configuration is tooling, type-checked by the project's own tsc, not app code for `keel check`. */
@@ -41,7 +43,7 @@ const TO_A11Y = /(?:^|\/)reports$/;
 
 /**
  * Binary only: read the project under `cwd` into engine files. `query` (check, spec, test): code, each module's
- * `migrations/*.sql`, spec markdown, `.keel` artifacts, generated deploy files and the `package.json` and `index.html` (W1012) beside each `topology.ts` of every project under `cwd`, and the ledger. `ledger`: `query` plus, per project (k.ledger-items Projects), its `package.json`, `reports/mutation/mutation.json`, `reports/tests/*.json` and `mutation-justified.json`, and each project's `reports/a11y.json`.
+ * `migrations/*.sql`, spec markdown, `.keel` artifacts, generated deploy files, the `package.json` and `index.html` (W1012) beside each `topology.ts` of every project under `cwd`, each `package.json` beside a `module.ts` (a library of the tree, k.library Kind), and the ledger. `ledger`: `query` plus, per project (k.ledger-items Projects), its `package.json`, `reports/mutation/mutation.json`, `reports/tests/*.json` and `mutation-justified.json`, and each project's `reports/a11y.json`.
  * `tree` (scaffold, codemod, build): every text file under 1 MB,
  * since structural operations read manifests, `package.json`, `turbo.json` and CI files too.
  */
@@ -52,13 +54,15 @@ export function readProject(cwd: string, scope: "query" | "ledger" | "tree"): { 
       ? TEXT.test(rel) && statSync(abs).size <= MAX_BYTES
       : QUERY(rel) ||
         (/(?:^|\/)(?:package\.json|index\.html)$/.test(rel) && existsSync(join(abs, "..", "topology.ts"))) ||
+        (/(?:^|\/)package\.json$/.test(rel) && existsSync(join(abs, "..", "module.ts"))) ||
         (scope === "ledger" && (PROJECT_REPORT.test(rel) || PROJECT_FILE.test(rel) || A11Y_REPORT.test(rel)));
   const walk = (dir: string, rel: string): void => {
     for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
       const r = rel === "" ? e.name : `${rel}/${e.name}`;
       const abs = join(dir, e.name);
       if (e.isDirectory()) {
-        if (!SKIP.has(e.name) || (scope === "ledger" && (TO_REPORT.test(r) || TO_A11Y.test(r)))) walk(abs, r);
+        if ((!SKIP.has(e.name) && !E2E_HOST.test(r)) || (scope === "ledger" && (TO_REPORT.test(r) || TO_A11Y.test(r))))
+          walk(abs, r);
       } else if (e.isFile() && want(r, abs)) out.push({ path: r, source: readFileSync(abs, "utf8") });
     }
   };

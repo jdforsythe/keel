@@ -2,7 +2,7 @@
 
 You are building Keel. The repo is the memory; your context is a cache. Anything that exists only in your context is already lost.
 
-**Read order on every fresh start:** `docs/HANDOFF.md` -> `docs/PRINCIPLES.md` -> `docs/GLOSSARY.md` -> `docs/ARCHITECTURE.md`. Load the `keel-architecture` skill. Run `/resume`. Do not read `spec/` or `docs/adr/` wholesale; retrieve sections with `pnpm spec <topic>`.
+**Read order on every fresh start:** `docs/HANDOFF.md` -> `docs/PRINCIPLES.md` -> `docs/GLOSSARY.md` -> `docs/ARCHITECTURE.md`. Load the `keel-architecture` skill. Run `/resume`. Do not read `spec/` or `docs/adr/` wholesale; `pnpm spec` lists the areas, `pnpm spec <area>` an area, `pnpm spec <id>` a section, `pnpm spec --for <code, name or term>` finds one.
 
 **Commands:** `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec <topic>` · `pnpm gate [<sha>]` (CI's jobs on this machine, before a push; `docs/GATE.md`). All emit compact structured output by default (see `docs/OUTPUT.md`); use `--format=pretty` only for a human.
 
@@ -20,3 +20,4 @@ You are building Keel. The repo is the memory; your context is a cache. Anything
 
 **Definition of done:** spec section cited · conformance green · property tests present · mutation score at threshold (`docs/TESTING.md`) · ledger not regressed · docs, spec status, changeset updated · budgets met · `unsafe` count unchanged or justified · `PLAN.md` closed · `tasks/BACKLOG.md` updated.
 11. Documentation describes what exists now. No history in docs, READMEs, spec text or code comments ("used to", "since rfc:NNNN", "(backlog NNNN)"): the git log and `docs/rfc/` hold the story; task and RFC references belong in commit messages. Migration notes are the one exception. At the first public release the RFC and ADR sets are reset to describe 1.0 (`tasks/BACKLOG.md` 0229).
+12. A reply to the operator is at most two sentences per event: what finished and what, if anything, needs them. Findings, lane detail and decisions go in `PLAN.md`, never in the reply; a direct question gets a direct answer of the length it needs.

@@ -3,11 +3,10 @@
 // client entry into `dist/<name>/` and its build entry (exporting `render`) outside `dist/`; a build error with no
 // deployable to serve names the fix.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { resumeEntry } from "../src/entry/resumeEntry.ts";
-import { indexHtml } from "../src/internal/indexHtml.ts";
 import { noDeployable } from "../src/internal/noDeployable.ts";
 import keel from "../src/vite.ts";
 
@@ -19,7 +18,7 @@ afterEach(() => {
   else process.env.KEEL_DEPLOYABLE = saved;
 });
 const project = (top: string | undefined): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-static-"));
+  const d = tempDir("keel-static-");
   made.push(d);
   if (top !== undefined) fs.writeFileSync(path.join(d, "topology.ts"), `export default topology(${top})\n`);
   return d;
@@ -54,7 +53,7 @@ describe("a static deployable's build", () => {
     expect(c).toContain('"outDir":"node_modules/.keel/prerender/web"');
     p.configResolved({ root, command: "build" });
     const code = String(await p.load("\0virtual:keel/server"));
-    expect(code).toContain("export const render = (dir, std) => prerender(");
+    expect(code).toContain("export const render = (dir, std, artifacts) => prerender(");
     expect(code).toContain('deployable: "web"');
     expect(code).not.toContain("start(");
     expect(code).not.toContain("KEEL_APP_DIR");

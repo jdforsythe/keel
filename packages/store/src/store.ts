@@ -20,6 +20,7 @@ import { logSchema } from "./internal/logSchema.ts";
 import { metaSchema } from "./internal/metaSchema.ts";
 import { moduleWrites } from "./internal/moduleWrites.ts";
 import { persisted } from "./internal/persisted.ts";
+import { records } from "./internal/records.ts";
 import { registries } from "./internal/registries.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
@@ -397,7 +398,8 @@ export function store<T extends object>(
           [coreKey]: (raw, options) => run(t, bind(raw), options),
         };
         declaredSources.set(t, { fn, guards });
-        return t;
+        records.transaction.add(t);
+        return Object.freeze(t);
       },
       guard(check) {
         guards.push(check);
@@ -405,6 +407,7 @@ export function store<T extends object>(
     },
   };
   // signal() above already threw E1203 outside a scope, so an owner exists here.
+  records.store.add(Object.freeze(self));
   registry.set(id, self);
   statePiiOf.set(self, () => statePii);
   storePayloads.set(self, payloads);

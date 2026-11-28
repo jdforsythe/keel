@@ -13,6 +13,7 @@ import { createApp, topology } from "../src/index.ts";
 import { appFrames } from "../src/internal/appFrames.ts";
 import { caught } from "../src/internal/caught.ts";
 import { keepRunning } from "../src/internal/keepRunning.ts";
+import { thrownText } from "../src/internal/thrownText.ts";
 
 const SEED = 1337;
 const Secretly = s.secret(s.string());
@@ -224,7 +225,7 @@ describe("hostile thrown values", () => {
         },
         ctx,
         stop.signal,
-        (message) => void seen.push(message),
+        (thrown) => void seen.push(thrownText(thrown)),
         appFrames(process.cwd(), () => undefined),
       );
       for (let i = 0; i < 3; i++) {

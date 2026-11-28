@@ -18,9 +18,12 @@ function make() {
 }
 
 let made: ReturnType<typeof make> | undefined;
-scope(() => {
-  made = make();
-});
+scope(
+  () => {
+    made = make();
+  },
+  { detached: true },
+);
 if (made === undefined) throw new Error("fixture: store scope did not run");
 export const { count, inc } = made;
 

@@ -9,6 +9,7 @@ import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { Box, Button, Text } from "@keel/ui";
 import { describe, expect, test } from "vitest";
 import { record } from "../src/index.ts";
@@ -45,9 +46,12 @@ function build() {
 }
 
 const made: ReturnType<typeof build>[] = [];
-scope(() => {
-  made.push(build());
-});
+scope(
+  () => {
+    made.push(build());
+  },
+  { detached: true },
+);
 const fixture = (): ReturnType<typeof build> => {
   const f = made[0];
   if (f === undefined) throw new Error("fixture: build failed");
@@ -67,21 +71,29 @@ async function recorded() {
 }
 
 describe("replay of a Form submit", () => {
-  test("the click's submit and navigation apply once", async () => {
-    const { session, live } = await recorded();
-    expect(live["follow.count"]).toEqual({ n: 1 });
-    const r = await replay(session, { routes: fixture().routes });
-    expect(r.unapplied).toBeNull();
-    expect(r.reproduced).toBe(true);
-    expect(r.state["follow.count"]).toEqual({ n: 1 });
-  }, 60_000);
+  test(
+    "the click's submit and navigation apply once",
+    async () => {
+      const { session, live } = await recorded();
+      expect(live["follow.count"]).toEqual({ n: 1 });
+      const r = await replay(session, { routes: fixture().routes });
+      expect(r.unapplied).toBeNull();
+      expect(r.reproduced).toBe(true);
+      expect(r.state["follow.count"]).toEqual({ n: 1 });
+    },
+    fixedTime(60_000),
+  );
 
-  test("an input that cannot apply is not reproduced", async () => {
-    const { session } = await recorded();
-    const events = [{ at: 0, kind: "fire" as const, id: "no.such.id", event: { type: "click" as const } }];
-    const r = await replay({ ...session, events }, { routes: fixture().routes });
-    expect(r.unapplied).toBe(0);
-    expect(r.reproduced).toBe(false);
-    expect(r.error?.code).toBe("E2003");
-  }, 60_000);
+  test(
+    "an input that cannot apply is not reproduced",
+    async () => {
+      const { session } = await recorded();
+      const events = [{ at: 0, kind: "fire" as const, id: "no.such.id", event: { type: "click" as const } }];
+      const r = await replay({ ...session, events }, { routes: fixture().routes });
+      expect(r.unapplied).toBe(0);
+      expect(r.reproduced).toBe(false);
+      expect(r.error?.code).toBe("E2003");
+    },
+    fixedTime(60_000),
+  );
 });

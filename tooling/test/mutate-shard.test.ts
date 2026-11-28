@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -65,7 +65,7 @@ describe("globToRegExp and mutatedFiles", () => {
     expect(globToRegExp("src/*.ts").test("src/x/a.ts")).toBe(false);
   });
   it("lists the files a positive glob names and no ! glob excludes", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-shard-"));
+    const dir = tempDir("keel-shard-");
     for (const f of ["src/index.ts", "src/a.ts", "src/types/t.ts", "src/x/b.ts", "src/x/DATA.ts", "test/a.test.ts"]) {
       fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
       fs.writeFileSync(path.join(dir, f), "");
@@ -130,7 +130,7 @@ describe("mergeReports", () => {
   });
 
   it("reads parts from <name>-shard-<i>-of-<N>/mutation.json", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-merge-"));
+    const dir = tempDir("keel-merge-");
     const p = part(2, ["x"]);
     fs.mkdirSync(path.join(dir, "mutation-check-shard-2-of-2"));
     fs.writeFileSync(path.join(dir, "mutation-check-shard-2-of-2", "mutation.json"), JSON.stringify(p.report));

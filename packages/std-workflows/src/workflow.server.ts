@@ -1,9 +1,9 @@
-import type { Schema } from "@keel/schema";
+import { type Schema, defect } from "@keel/schema";
 import type { Job } from "@keel/std-jobs";
 import type { StateSpec } from "@keel/std-statecharts";
 import { asEvents } from "../unsafe/asEvents.ts";
 import { looseChart } from "../unsafe/looseChart.ts";
-import { refuse } from "../unsafe/refuse.ts";
+import { stateNames } from "../unsafe/stateNames.ts";
 import type { StepSpec } from "./StepSpec.ts";
 import type { WaitSpec } from "./WaitSpec.ts";
 import type { Workflow } from "./Workflow.type.ts";
@@ -33,14 +33,17 @@ export function workflow<
 >(id: string, spec: WorkflowSpec<D, Ev, S, G, A>): Workflow<D, Ev, S> {
   const { chart } = spec;
   const states: Readonly<Record<string, StateSpec<string, string, string, string> | undefined>> = chart.states;
-  const names = Object.keys(states).filter((n): n is S => n in states);
+  const names = stateNames<S>(chart.states);
   const [first, ...rest] = names;
   const finals = new Set<string>(names.filter((n) => states[n]?.final === true));
   const own = (part: string, state: string, events: readonly string[]): void => {
     const on = states[state]?.on;
     for (const e of events)
       if (on === undefined || finals.has(state) || !Object.hasOwn(on, e))
-        refuse(`E2352 workflow ${id}: ${part} ${state} needs a non-final state whose on has ${e}`);
+        defect("a workflow step or wait needs a non-final state whose on has the event", {
+          code: "E2352",
+          data: { workflow: id, part, state, event: e },
+        });
   };
   const steps = new Map<string, StepSpec<D, Readonly<Record<string, Schema<unknown>>>>>();
   const waits = new Map<string, WaitSpec<string>>();
@@ -57,10 +60,13 @@ export function workflow<
       own("wait", state, [wait.event]);
       waits.set(state, wait);
     }
-  if (first === undefined) refuse(`E2352 workflow ${id}: the chart has no states`);
+  if (first === undefined) defect("the workflow chart has no states", { code: "E2352", data: { workflow: id } });
   for (const e of Object.keys(chart.events))
     if (e === "start" || e === "attempt" || e === "forget")
-      refuse(`E2355 workflow ${id}: chart event ${e} takes the name of a workflow transaction; rename it`);
+      defect("a chart event takes the name of a workflow transaction; rename it", {
+        code: "E2355",
+        data: { workflow: id, event: e },
+      });
   const events = new Map<string, Schema<unknown>>();
   for (const [e, t] of Object.entries(chart.events)) events.set(e, t.schema);
   const open = compileStores(

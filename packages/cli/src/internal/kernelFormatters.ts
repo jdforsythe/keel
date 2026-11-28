@@ -1,10 +1,14 @@
 import { EvidenceRecord } from "../evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./A11ySchema.ts";
 import { DiagSchema } from "./DiagSchema.ts";
+import { DocsAreaSchema } from "./DocsAreaSchema.ts";
 import { DocsCiteSchema } from "./DocsCiteSchema.ts";
+import { DocsCodeSchema } from "./DocsCodeSchema.ts";
 import { DocsEntrySchema } from "./DocsEntrySchema.ts";
+import { DocsHitSchema } from "./DocsHitSchema.ts";
 import { DocsSectionSchema } from "./DocsSectionSchema.ts";
 import { DocsSkillSchema } from "./DocsSkillSchema.ts";
+import { DocsTermSchema } from "./DocsTermSchema.ts";
 import { EditSchema } from "./EditSchema.ts";
 import type { Entry } from "./Entry.ts";
 import { ExplainSchema } from "./ExplainSchema.ts";
@@ -12,6 +16,7 @@ import { InspectSectionSchema } from "./InspectSectionSchema.ts";
 import { InspectStoreSchema } from "./InspectStoreSchema.ts";
 import { LedgerMutationSchema } from "./LedgerMutationSchema.ts";
 import { LedgerSchema } from "./LedgerSchema.ts";
+import { NoteSchema } from "./NoteSchema.ts";
 import { ReqSchema } from "./ReqSchema.ts";
 import { ReviewSchema } from "./ReviewSchema.ts";
 import { SummarySchema } from "./SummarySchema.ts";
@@ -39,7 +44,7 @@ const clip = (s: string): string => (s.length > VALUE_MAX ? `${s.slice(0, VALUE_
 /**
  * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, a11y, evidence, and k.ledger's ledger and
  * ledger.mutation.
- * The cli's own record kinds (docs.entry, docs.section, docs.skill, docs.cite, explain.text, scaffold.edit, inspect.store, inspect.section) go through the same extension point.
+ * The cli's own record kinds (docs.area, docs.entry, docs.section, docs.skill, docs.cite, docs.code, docs.term, docs.hit, explain.text, scaffold.edit, scaffold.note, inspect.store, inspect.section) go through the same extension point.
  */
 export const kernelFormatters: readonly (readonly [string, Entry])[] = [
   ["diag", entryOf({ schema: DiagSchema, compact: diagCompact, pretty: diagPretty })],
@@ -110,8 +115,42 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
     "docs.entry",
     entryOf({
       schema: DocsEntrySchema,
-      compact: (r) => `${r.id} ${r.title} ${r.package}${r.installed ? "" : " not installed"}`,
-      pretty: (r) => `${r.id.padEnd(16)} ${r.title} (${r.package}${r.installed ? "" : ", not installed"})`,
+      compact: (r) =>
+        `${r.id} ${r.title} ${r.package}${r.installed ? "" : " not installed"}${r.holds ? `: ${r.holds}` : ""}`,
+      pretty: (r) =>
+        `${r.id.padEnd(16)} ${r.title} (${r.package}${r.installed ? "" : ", not installed"})${r.holds ? `\n  ${r.holds}` : ""}`,
+    }),
+  ],
+  [
+    "docs.area",
+    entryOf({
+      schema: DocsAreaSchema,
+      compact: (r) => `${r.id} ${r.title}, ${r.sections} ${r.sections === 1 ? "section" : "sections"}`,
+      pretty: (r) => `${r.id.padEnd(10)} ${r.title} (${r.sections} ${r.sections === 1 ? "section" : "sections"})`,
+    }),
+  ],
+  [
+    "docs.code",
+    entryOf({
+      schema: DocsCodeSchema,
+      compact: (r) => [r.code, ...r.ids.slice(0, 3), ...(r.ids.length > 3 ? [`+${r.ids.length - 3}`] : [])].join(" "),
+      pretty: (r) => `${r.code}: ${r.ids.join(", ")}`,
+    }),
+  ],
+  [
+    "docs.term",
+    entryOf({
+      schema: DocsTermSchema,
+      compact: (r) => `${r.term}: ${r.text}`,
+      pretty: (r) => `${r.term}\n  ${r.text}`,
+    }),
+  ],
+  [
+    "docs.hit",
+    entryOf({
+      schema: DocsHitSchema,
+      compact: (r) => `${r.id} ${r.title} ${r.count}`,
+      pretty: (r) => `${r.id.padEnd(16)} ${r.title} (${r.count} ${r.count === 1 ? "span" : "spans"})`,
     }),
   ],
   [
@@ -162,6 +201,14 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
       schema: EditSchema,
       compact: (r) => r.diff ?? `${r.action} ${r.path}`,
       pretty: (r) => (r.diff === undefined ? `${r.action.padEnd(6)} ${r.path}` : `${r.action} ${r.path}\n${r.diff}`),
+    }),
+  ],
+  [
+    "scaffold.note",
+    entryOf({
+      schema: NoteSchema,
+      compact: (r) => `note ${r.path} ${r.note}`,
+      pretty: (r) => `note   ${r.path}: ${r.note}`,
     }),
   ],
 ];

@@ -3,6 +3,9 @@
 // Observed from the public API through `keel build` output: the JS files under dist/. A locale's entry text is a marker string unique
 // to that locale file, so "holds the entry" is "contains the marker". `keel build` builds a client-only topology with the project's
 // own Vite build (k.server Build), so the fixture carries an index.html whose entry script imports the routes, and the output is dist/.
+// The module `app` has its `modules/app/module.ts` (k.module Manifest; k.topology: a module with none is unknown), its `deps` listing
+// `@keel/std-messages`, the package it imports from.
+import { fixedTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -81,6 +84,11 @@ beforeAll(() => {
   );
   write(
     fx,
+    "modules/app/module.ts",
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: ["@keel/std-messages"], capabilities: [], public: { exports: [] } });\n',
+  );
+  write(
+    fx,
     "modules/app/AppLocale.schema.ts",
     'import { s } from "@keel/schema";\nexport const AppLocale = s.enum(["en-US", "de-DE"]);\n',
   );
@@ -147,10 +155,9 @@ export const routes = manifest(app, {
     encoding: "utf8",
     env: { ...process.env, KEEL_AGENT: "1" },
   });
-  if (r.status !== 0)
-    throw new Error(`keel build failed (status ${String(r.status)})\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
+  if (r.status !== 0) throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   dist = path.join(fx, "dist");
-}, 120_000);
+}, fixedTime(120_000));
 
 afterAll(() => {
   for (const dir of roots) fs.rmSync(dir, { recursive: true, force: true });
@@ -166,3 +173,14 @@ test("A `client` build of a fixture route whose loader loads a set holds each lo
   expect(de).toHaveLength(1);
   expect(en[0]).not.toBe(de[0]);
 });
+
+/** A failed child's diagnostics on one line: the non-empty lines of stdout and of stderr, each joined with ` | ` and cut to its last 440 characters, the two joined with ` | `. */
+function childOutput(r: { stdout: string; stderr: string }): string {
+  const tail = (s: string): string =>
+    s
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .join(" | ")
+      .slice(-440);
+  return `${tail(r.stdout)} | ${tail(r.stderr)}`;
+}

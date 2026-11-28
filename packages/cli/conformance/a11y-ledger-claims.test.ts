@@ -4,6 +4,7 @@
 // The real `keel` binary over temp projects (OS tmpdir). Assumed: route ids carry the module prefix (`m.r`, `m.r2`; the clause's `r` is `m.r`),
 // `keel build` (node-only topology) writes `.keel/routes.json`, `keel ledger` finds every project under its directory by its `.keel/routes.json`,
 // and tokens reach `renderRoute` as `artifacts: { tokens }`.
+import { fixedTime } from "@keel/tooling/test-time";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
@@ -176,60 +177,68 @@ describe("k.a11y: the project is in the item", () => {
     }
   });
 
-  it("a project with no `reports/a11y.json` has its items `none` whatever its own committed item holds, with one W1733 at its own `reports/a11y.json`", () => {
-    const dir = track(
-      keelProject("a11y-ledger-kept-two", {
-        "apps/a/.keel/routes.json": routesJson(["m.r"]),
-        "apps/b/.keel/routes.json": routesJson(["m.r"]),
-      }),
-    );
-    expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
-    const led: unknown = JSON.parse(readFileSync(join(dir, COMMITTED), "utf8"));
-    if (typeof led !== "object" || led === null) throw new Error("ledger is not an object");
-    const a11y = [
-      { item: "a11y:apps/a:m.r#1.4.3", rung: "example" },
-      { item: "a11y:apps/b:m.r#1.4.3", rung: "none" },
-    ];
-    writeFiles(dir, { [COMMITTED]: `${JSON.stringify({ ...led, a11y }, null, 2)}\n` });
-    const run = keel(dir, ["ledger", "--write", COMMITTED]);
-    expect(run.status).toBe(0);
-    const written = collect(JSON.parse(readFileSync(join(dir, COMMITTED), "utf8")), ["item", "rung"]);
-    expect(written.find((x) => x.item === "a11y:apps/a:m.r#1.4.3")?.rung).toBe("none");
-    expect(
-      run.records
-        .filter((r) => r.code === "W1733")
-        .map((r) => r.path)
-        .sort(),
-    ).toEqual(["apps/a/reports/a11y.json", "apps/b/reports/a11y.json"]);
-    expect(written.find((x) => x.item === "a11y:apps/b:m.r#1.4.3")?.rung).toBe("none");
-  }, 60_000);
+  it(
+    "a project with no `reports/a11y.json` has its items `none` whatever its own committed item holds, with one W1733 at its own `reports/a11y.json`",
+    () => {
+      const dir = track(
+        keelProject("a11y-ledger-kept-two", {
+          "apps/a/.keel/routes.json": routesJson(["m.r"]),
+          "apps/b/.keel/routes.json": routesJson(["m.r"]),
+        }),
+      );
+      expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+      const led: unknown = JSON.parse(readFileSync(join(dir, COMMITTED), "utf8"));
+      if (typeof led !== "object" || led === null) throw new Error("ledger is not an object");
+      const a11y = [
+        { item: "a11y:apps/a:m.r#1.4.3", rung: "example" },
+        { item: "a11y:apps/b:m.r#1.4.3", rung: "none" },
+      ];
+      writeFiles(dir, { [COMMITTED]: `${JSON.stringify({ ...led, a11y }, null, 2)}\n` });
+      const run = keel(dir, ["ledger", "--write", COMMITTED]);
+      expect(run.status).toBe(0);
+      const written = collect(JSON.parse(readFileSync(join(dir, COMMITTED), "utf8")), ["item", "rung"]);
+      expect(written.find((x) => x.item === "a11y:apps/a:m.r#1.4.3")?.rung).toBe("none");
+      expect(
+        run.records
+          .filter((r) => r.code === "W1733")
+          .map((r) => r.path)
+          .sort(),
+      ).toEqual(["apps/a/reports/a11y.json", "apps/b/reports/a11y.json"]);
+      expect(written.find((x) => x.item === "a11y:apps/b:m.r#1.4.3")?.rung).toBe("none");
+    },
+    fixedTime(60_000),
+  );
 
-  it("the key is injective: two different (project, route id) pairs never give one key (property, seed 1337)", () => {
-    const name = fc.stringMatching(/^[a-z][a-z0-9-]{0,5}$/);
-    const projectDir = fc.tuple(fc.constantFrom("apps", "examples"), name).map(([top, leaf]) => `${top}/${leaf}`);
-    const pool = ["m.r", "m.s", "x.y", "m.r2"];
-    const tree = fc.uniqueArray(
-      fc.tuple(projectDir, fc.uniqueArray(fc.constantFrom(...pool), { minLength: 1, maxLength: 3 })),
-      { selector: ([dir]) => dir, minLength: 1, maxLength: 3 },
-    );
-    // the 25 sampled trees are projects of one directory (`t00/`, `t01/`, ...), read by one `keel ledger`
-    const trees = fc.sample(tree, { seed: 1337, numRuns: 25 });
-    const files: Record<string, string> = {};
-    trees.forEach((projects, i) => {
-      for (const [dir, ids] of projects)
-        files[`t${String(i).padStart(2, "0")}/${dir}/.keel/routes.json`] = routesJson(ids);
-    });
-    const items = a11yItems(keel(track(keelProject("a11y-ledger-inj", files)), ["ledger"]));
-    const wanted = trees.flatMap((projects, i) =>
-      projects.flatMap(([project, ids]) =>
-        ids.map((id) => `a11y:t${String(i).padStart(2, "0")}/${project}:${id}#1.4.3`),
-      ),
-    );
-    // every pair has a key of its own
-    expect(new Set(wanted).size).toBe(wanted.length);
-    // no emitted key is emitted twice
-    expect(new Set(items).size).toBe(items.length);
-    // the keys of one criterion are exactly the (project, page route) pairs
-    expect(items.filter((i) => i.endsWith("#1.4.3")).sort()).toEqual([...wanted].sort());
-  }, 120_000);
+  it(
+    "the key is injective: two different (project, route id) pairs never give one key (property, seed 1337)",
+    () => {
+      const name = fc.stringMatching(/^[a-z][a-z0-9-]{0,5}$/);
+      const projectDir = fc.tuple(fc.constantFrom("apps", "examples"), name).map(([top, leaf]) => `${top}/${leaf}`);
+      const pool = ["m.r", "m.s", "x.y", "m.r2"];
+      const tree = fc.uniqueArray(
+        fc.tuple(projectDir, fc.uniqueArray(fc.constantFrom(...pool), { minLength: 1, maxLength: 3 })),
+        { selector: ([dir]) => dir, minLength: 1, maxLength: 3 },
+      );
+      // the 25 sampled trees are projects of one directory (`t00/`, `t01/`, ...), read by one `keel ledger`
+      const trees = fc.sample(tree, { seed: 1337, numRuns: 25 });
+      const files: Record<string, string> = {};
+      trees.forEach((projects, i) => {
+        for (const [dir, ids] of projects)
+          files[`t${String(i).padStart(2, "0")}/${dir}/.keel/routes.json`] = routesJson(ids);
+      });
+      const items = a11yItems(keel(track(keelProject("a11y-ledger-inj", files)), ["ledger"]));
+      const wanted = trees.flatMap((projects, i) =>
+        projects.flatMap(([project, ids]) =>
+          ids.map((id) => `a11y:t${String(i).padStart(2, "0")}/${project}:${id}#1.4.3`),
+        ),
+      );
+      // every pair has a key of its own
+      expect(new Set(wanted).size).toBe(wanted.length);
+      // no emitted key is emitted twice
+      expect(new Set(items).size).toBe(items.length);
+      // the keys of one criterion are exactly the (project, page route) pairs
+      expect(items.filter((i) => i.endsWith("#1.4.3")).sort()).toEqual([...wanted].sort());
+    },
+    fixedTime(120_000),
+  );
 });

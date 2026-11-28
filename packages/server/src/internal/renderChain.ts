@@ -4,12 +4,12 @@ import type { JsonValue, KeelError } from "@keel/schema";
 import { storeReads } from "@keel/store/internal";
 import type { ChainInput } from "./ChainInput.ts";
 import type { Rendered } from "./Rendered.ts";
-import { attempted } from "./attempted.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { htmlToNode } from "./htmlToNode.ts";
 import { islandIn } from "./islandIn.ts";
 import { renderUnit } from "./renderUnit.ts";
 import { toHtml } from "./toHtml.ts";
+import { unexpectedOf } from "./unexpectedOf.ts";
 
 /** The default alert: the error's message, or for `keel.notFound` the heading `Not found`. */
 const defaultError = (e: KeelError<string, unknown>): string =>
@@ -23,7 +23,7 @@ const defaultError = (e: KeelError<string, unknown>): string =>
  * receiving the next level, rendered before it and led by a `<!--k-->` comment, as `children` (a thunk whose string form is the child HTML, so string
  * components can interpolate it; a second call throws E1255, k.resume). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
- * rendering it shows the errorElement with `keel.unexpected`. A component returning an element with a bound
+ * rendering it shows the errorElement with `keel.unexpected`, and the first such value is kept as `thrown`. A component returning an element with a bound
  * (`data-k`) element outside nested levels' islands, however it was built (template or base element), is an island: it gets
  * `data-k-island="<routeId>"` and its props go to `islands` (k.runtime resume markup). `eager` is whether a level's
  * render placed an element made before the op placing it (E1257, k.claim Server). `touched` holds the ids of the stores
@@ -34,6 +34,7 @@ export function renderChain(input: ChainInput): Rendered {
   const islands: Record<string, JsonValue> = {};
   const touched = new Set<string>();
   let caught: KeelError<string, unknown> | null = null;
+  let thrown: { readonly value: unknown } | null = null;
   const seen = { eager: false, nothing: false };
 
   const errorAt = (i: number, error: KeelError<string, unknown>): string => {
@@ -83,9 +84,15 @@ export function renderChain(input: ChainInput): Rendered {
     if (lvl === undefined) return "";
     if (failure !== null && failure.level === i) return errorAt(i, failure.error);
     if (lvl.def.errorElement === undefined) return componentAt(i, lvl);
-    const r = attempted(() => componentAt(i, lvl));
-    if (r.ok) return r.value;
-    const e = input.publicize(r.error);
+    // The value itself is kept beside the first caught error, so the log writes it by its form (k.serverlog).
+    let value: unknown;
+    try {
+      return componentAt(i, lvl);
+    } catch (x) {
+      value = x;
+    }
+    const e = input.publicize(unexpectedOf(value));
+    if (caught === null) thrown = { value };
     caught ??= e;
     return errorAt(i, e);
   };
@@ -96,5 +103,5 @@ export function renderChain(input: ChainInput): Rendered {
       : failure?.bare === true
         ? errorAt(failure.level, failure.error)
         : levelAt(0);
-  return { html, islands, touched, caught, eager: seen.eager, nothing: seen.nothing };
+  return { html, islands, touched, caught, thrown, eager: seen.eager, nothing: seen.nothing };
 }

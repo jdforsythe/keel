@@ -48,7 +48,7 @@ test("each save reported on the server ctx reaches every open sink once, in repo
 test("a shared read reads ctx.storage once per key per save", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   await ctx.storage.set("keel.store.m.s", "1");
-  const reads: Promise<string | null>[] = [];
+  const reads: Promise<string | null | undefined>[] = [];
   const leave = join(ctx, hubOf(ctx), {
     key: "k",
     caller: "",
@@ -65,7 +65,7 @@ test("a shared read reads ctx.storage once per key per save", async () => {
 test("reread restores each store from its stored snapshot, and is false for one that does not restore", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const N = s.object({ n: s.int() });
-  const { saved, never, other, copy } = scope(() => undefined).run(() => ({
+  const { saved, never, other, copy } = scope(() => undefined, { detached: true }).run(() => ({
     saved: store(N, { n: 0 }, { id: "m.saved" }),
     never: store(N, { n: 5 }, { id: "m.never" }),
     other: store(N, { n: 9 }, { id: "m.other" }),

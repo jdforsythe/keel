@@ -1,6 +1,7 @@
 // Spec: std.outbox, clause "With owners `a` and `b`, after `send` with `a` offline and then `send` with `b`, `a`'s entry `error` is `{ code: 'offline.owner', message: <id>, data: {} }`."
 // Spec: std.outbox, clause "Online, with the flush's `sending` `set` for owner `a`'s entry held, `drain` with owner `b` and then the write released, the entry is not posted and `a`'s `send` resolves `failed` with `offline.owner`."
 // Seed 1337
+import { fixedTime } from "@keel/tooling/test-time";
 import { send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -37,37 +38,41 @@ test("With owners `a` and `b`, after `send` with `a` offline and then `send` wit
   );
 });
 
-test("Online, with the flush's `sending` `set` for owner `a`'s entry held, `drain` with owner `b` and then the write released, the entry is not posted and `a`'s `send` resolves `failed` with `offline.owner`.", async () => {
-  const ctx = simCtx();
-  const server = createServer();
-  server.attach(ctx);
-  const c = makeClient();
-  const real = ctx.storage.set.bind(ctx.storage);
-  let calls = 0;
-  let land: (() => Promise<void>) | undefined;
-  const set = (key: string, value: string): Promise<void> => {
-    calls += 1;
-    if (calls !== 2) return real(key, value);
-    return new Promise<void>((done) => {
-      land = async () => {
-        await real(key, value);
-        done();
-      };
-    });
-  };
-  Object.defineProperty(ctx.storage, "set", { value: set, configurable: true, writable: true });
-  const sent = send(ctx, c.o, "editTodo", edit("t1", "from a"), { base: 0, owner: "a" });
-  await settle();
-  expect(land).toBeDefined();
-  const stop = startDrain(ctx, c.o, "b");
-  await settle();
-  await land?.();
-  const r = await sent;
-  await settle();
-  expect(server.posts).toHaveLength(0);
-  expect(r.state).toBe("failed");
-  const err: unknown = Reflect.get(r, "error");
-  expect(typeof err === "object" && err !== null ? Reflect.get(err, "code") : undefined).toBe("offline.owner");
-  stop();
-  c.dispose();
-}, 10_000);
+test(
+  "Online, with the flush's `sending` `set` for owner `a`'s entry held, `drain` with owner `b` and then the write released, the entry is not posted and `a`'s `send` resolves `failed` with `offline.owner`.",
+  async () => {
+    const ctx = simCtx();
+    const server = createServer();
+    server.attach(ctx);
+    const c = makeClient();
+    const real = ctx.storage.set.bind(ctx.storage);
+    let calls = 0;
+    let land: (() => Promise<void>) | undefined;
+    const set = (key: string, value: string): Promise<void> => {
+      calls += 1;
+      if (calls !== 2) return real(key, value);
+      return new Promise<void>((done) => {
+        land = async () => {
+          await real(key, value);
+          done();
+        };
+      });
+    };
+    Object.defineProperty(ctx.storage, "set", { value: set, configurable: true, writable: true });
+    const sent = send(ctx, c.o, "editTodo", edit("t1", "from a"), { base: 0, owner: "a" });
+    await settle();
+    expect(land).toBeDefined();
+    const stop = startDrain(ctx, c.o, "b");
+    await settle();
+    await land?.();
+    const r = await sent;
+    await settle();
+    expect(server.posts).toHaveLength(0);
+    expect(r.state).toBe("failed");
+    const err: unknown = Reflect.get(r, "error");
+    expect(typeof err === "object" && err !== null ? Reflect.get(err, "code") : undefined).toBe("offline.owner");
+    stop();
+    c.dispose();
+  },
+  fixedTime(10_000),
+);

@@ -1,20 +1,27 @@
 import { type RouteTable, routeTable } from "@keel/router";
 import { pageHref } from "@keel/router/match";
+import { attempt, defect } from "@keel/schema";
 import { identity } from "@keel/server";
 import mount from "./identity.ts";
+import { BadCookie } from "./modules/api/BadCookie.schema.ts";
 import { routes as web } from "./modules/notes/routes.ts";
 
 // A stand-in for an auth library, so the example runs alone: the name typed on the sign-in page becomes the user.
 // A real app hands `identify` and `handle` to its library (keel-server, Identity).
 const COOKIE = "demo-user";
 
-/** The name the `demo-user` cookie holds, `''` for none. */
+/** The name the `demo-user` cookie holds, `''` for none or for a value that is no URI-encoded text. */
 function identify(args: { readonly request: Request }): Promise<string> {
   const pair = (args.request.headers.get("cookie") ?? "")
     .split(";")
     .map((c) => c.trim())
     .find((c) => c.startsWith(`${COOKIE}=`));
-  return Promise.resolve(pair === undefined ? "" : decodeURIComponent(pair.slice(COOKIE.length + 1)));
+  if (pair === undefined) return Promise.resolve("");
+  const name = attempt(
+    () => decodeURIComponent(pair.slice(COOKIE.length + 1)),
+    (x) => (x instanceof URIError ? BadCookie.make({}) : undefined),
+  );
+  return Promise.resolve(name.ok ? name.value : "");
 }
 
 let joined: { readonly of: RouteTable; readonly table: RouteTable } | undefined;
@@ -27,7 +34,7 @@ function joinedTable(at: RouteTable): RouteTable {
 
 /** `POST /api/auth/sign-in/email`: sets the cookie to the posted name and answers 303 to the page the `next` search key names (`pageHref`), else `/`. */
 async function handle(request: Request, _ctx: unknown, at: { readonly routes: RouteTable }): Promise<Response> {
-  const url = new URL(request.url);
+  const url = URL.parse(request.url) ?? defect("a request has an address");
   if (request.method !== "POST" || url.pathname !== `${mount.path}/sign-in/email`) {
     return new Response(null, { status: 404 });
   }

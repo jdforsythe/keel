@@ -15,9 +15,12 @@ import { SEED, simCtx } from "./fixtures.ts";
 const Total = s.object({ total: s.int() });
 const made = (() => {
   let out: ReturnType<typeof mk> | undefined;
-  scope(() => {
-    out = mk();
-  });
+  scope(
+    () => {
+      out = mk();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();

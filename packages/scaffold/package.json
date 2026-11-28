@@ -11,6 +11,14 @@
     "./agents": {
       "types": "./src/agents/index.ts",
       "default": "./src/agents/index.ts"
+    },
+    "./create": {
+      "types": "./src/create/index.ts",
+      "default": "./src/create/index.ts"
+    },
+    "./links": {
+      "types": "./src/links/index.ts",
+      "default": "./src/links/index.ts"
     }
   },
   "publishConfig": {
@@ -22,6 +30,14 @@
       "./agents": {
         "types": "./dist/src/agents/index.d.ts",
         "default": "./dist/src/agents/index.js"
+      },
+      "./create": {
+        "types": "./dist/src/create/index.d.ts",
+        "default": "./dist/src/create/index.js"
+      },
+      "./links": {
+        "types": "./dist/src/links/index.d.ts",
+        "default": "./dist/src/links/index.js"
       }
     }
   },

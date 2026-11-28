@@ -27,9 +27,12 @@ const Typed = s.object({ q: s.string() });
 
 function made<T>(make: () => Store<T>): Store<T> {
   let out: Store<T> | undefined;
-  scope(() => {
-    out = make();
-  });
+  scope(
+    () => {
+      out = make();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: store scope did not run");
   return out;
 }

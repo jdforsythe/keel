@@ -1,4 +1,4 @@
-// Spec: k.cli, clause "The served `graph` equals `inspect()` taken outside the request."
+// Spec: k.inspect, clause "The served `graph` equals `inspect()` taken outside the request."
 // @vitest-environment happy-dom
 // No generated inputs; the per-request server scope must not appear in the served graph.
 import { inspect } from "@keel/reactive";

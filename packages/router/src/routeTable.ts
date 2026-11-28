@@ -1,3 +1,4 @@
+import { madeFrozen } from "./internal/madeFrozen.ts";
 import { tables } from "./internal/tables.ts";
 import { unionTables } from "./internal/unionTables.ts";
 import type { RouteTable } from "./types/RouteTable.ts";
@@ -10,7 +11,7 @@ import type { RouteTable } from "./types/RouteTable.ts";
  */
 export function routeTable(...parts: readonly RouteTable[]): RouteTable {
   const { contracts, ...compiled } = unionTables(parts);
-  const t: RouteTable = Object.freeze({ kind: "keel.routeTable", contracts: Object.freeze(contracts) });
+  const t: RouteTable = madeFrozen({ kind: "keel.routeTable", contracts: Object.freeze(contracts) }, "routeTable");
   tables.set(t, compiled);
   return t;
 }

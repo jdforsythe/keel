@@ -30,16 +30,19 @@ function bindAll(type: string, typed: string) {
   const again = input(type);
   const pin = input("password");
   scopes.push(
-    scope(() => {
-      const f = form(Login, { initial: { user: "ada", pin: "" } });
-      f.field("token").bind(first);
-      first.value = typed;
-      first.dispatchEvent(new Event("input"));
-      f.field("pin").set(typed);
-      // A second control bound later (a re-render) starts from the field's current value.
-      f.field("token").bind(again);
-      f.field("pin").bind(pin);
-    }),
+    scope(
+      () => {
+        const f = form(Login, { initial: { user: "ada", pin: "" } });
+        f.field("token").bind(first);
+        first.value = typed;
+        first.dispatchEvent(new Event("input"));
+        f.field("pin").set(typed);
+        // A second control bound later (a re-render) starts from the field's current value.
+        f.field("token").bind(again);
+        f.field("pin").bind(pin);
+      },
+      { detached: true },
+    ),
   );
   return { first, again, pin };
 }

@@ -1,10 +1,11 @@
 // @vitest-environment node
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 
 const app = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -30,7 +31,7 @@ afterEach(() => {
  * `Recipe.schema.ts` and `deps` left as the app's manifest lists them or with `@keel/std-brands` taken out.
  */
 function kitchenCopy(edit: (source: string) => string, brands: boolean): string {
-  const root = mkdtempSync(join(tmpdir(), "golden-2-brands-"));
+  const root = tempDir("golden-2-brands-");
   made.push(root);
   mkdirSync(join(root, "modules"));
   cpSync(join(app, "modules", "kitchen"), join(root, "modules", "kitchen"), { recursive: true });
@@ -61,7 +62,7 @@ function brandFindings(root: string) {
 const lowercase = (source: string): string => source.replace('s.id("Recipe")', 's.id("recipe")');
 
 /** Each case runs the `keel check` binary on a copy of the module, which takes seconds on a busy machine. */
-describe("id brand case in the kitchen module", { timeout: 60_000 }, () => {
+describe("id brand case in the kitchen module", { timeout: fixedTime(60_000) }, () => {
   it("reports a lowercase recipe brand at its line, with the fix that restores Recipe", () => {
     const found = brandFindings(kitchenCopy(lowercase, true));
     expect(found.map((d) => [d.path, d.line, d.message])).toEqual([

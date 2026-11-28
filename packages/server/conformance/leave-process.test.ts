@@ -24,7 +24,7 @@ let fixture = "";
 const started: Server[] = [];
 beforeAll(() => {
   fixture = buildLeaveFixture();
-}, 120_000);
+}, fixedTime(120_000));
 afterAll(() => fs.rmSync(fixture, { recursive: true, force: true }));
 afterEach(() => {
   for (const server of started.splice(0)) server.stop();

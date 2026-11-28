@@ -1,5 +1,5 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { api } from "./api.contract.ts";
@@ -16,8 +16,7 @@ export const postTodo = action(
   { stores: boardStores },
   (input, { params, caller, stores }, ctx) => {
     const { listId } = params;
-    if (!stores.board.get("lists").some((l) => l.id === listId))
-      return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
+    if (!stores.board.get("lists").some((l) => l.id === listId)) return err(keelError.notFound.make({}));
     const { write, ...draft } = input;
     const w = writeFor(write, "");
     if (!w.ok) return err(w.error);

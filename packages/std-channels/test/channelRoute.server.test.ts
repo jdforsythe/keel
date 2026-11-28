@@ -1,5 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
@@ -10,6 +9,7 @@ import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store } from "@keel/store";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
 import { channelRoute } from "../src/server/channelRoute.server.ts";
@@ -47,7 +47,7 @@ async function serve(
   const routes = manifest(t, { "t.room": { loader: route.loader }, "t.publish": { action: route.action } });
   let std: string | undefined;
   if (maxStreams !== undefined) {
-    const dir = mkdtempSync(join(tmpdir(), "keel-channels-unit-"));
+    const dir = tempDir("keel-channels-unit-");
     dirs.push(dir);
     std = join(dir, "std.json");
     const source = `import { module } from "@keel/compiler"\nexport default module({ id: "t", deps: ["@keel/std-channels"], capabilities: ["clock", "net", "observe"], std: { "@keel/std-channels": { maxStreams: ${maxStreams} } } })\n`;
@@ -99,7 +99,7 @@ test("member is re-checked against the stores as saved when the server ctx repor
   const h = await serve(({ stores }) => stores.flag.get("on"));
   const st = await h.open("?room=a");
   await until(() => st.lines.length === 1);
-  const copy = scope(() => undefined).run(() => store(Flag, { on: true }, { id: "t.copy" }));
+  const copy = scope(() => undefined, { detached: true }).run(() => store(Flag, { on: true }, { id: "t.copy" }));
   await h.ctx.storage.set("keel.store.t.flag", JSON.stringify(copy.snapshot({ meta: true })));
   report(h.ctx, { kind: "save", store: "t.other", head: 1, from: 0 });
   report(h.ctx, { kind: "save", store: "t.flag", head: 1, from: 0 });
@@ -119,7 +119,7 @@ test("a store whose head restarts lower gives the stream a reset, then its saves
   const h = await serve(() => true);
   const st = await h.open("?room=a");
   await until(() => st.lines.length === 1);
-  const copy = scope(() => undefined).run(() => store(Flag, { on: true }, { id: "t.copy2" }));
+  const copy = scope(() => undefined, { detached: true }).run(() => store(Flag, { on: true }, { id: "t.copy2" }));
   await h.ctx.storage.set("keel.store.t.flag", JSON.stringify(copy.snapshot({ meta: true })));
   report(h.ctx, { kind: "save", store: "t.flag", head: 5, from: 4 });
   report(h.ctx, { kind: "save", store: "t.flag", head: 5, from: 4 });

@@ -12,9 +12,16 @@ const KEEP = 4;
 /** The largest entry written, as JSON text: 16 MiB. */
 const MAX_BYTES = 16 * 1024 * 1024;
 
-const KINDS = new Set(["r", "f", "d", "p", "l", "x"]);
-const isProbe = (v: unknown): v is Probe =>
-  Array.isArray(v) && v.length === 3 && KINDS.has(v[0]) && typeof v[1] === "string" && typeof v[2] === "string";
+const KINDS: readonly Probe[0][] = ["r", "f", "d", "p", "l", "x"];
+/** `v` as a probe, or `undefined` when it has another shape. */
+const probeOf = (v: unknown): Probe | undefined => {
+  if (!Array.isArray(v) || v.length !== 3) return undefined;
+  const [k, question, answer]: unknown[] = v;
+  const kind = KINDS.find((x) => x === k);
+  return kind !== undefined && typeof question === "string" && typeof answer === "string"
+    ? [kind, question, answer]
+    : undefined;
+};
 
 const isDiagnostic = (v: unknown): v is Diagnostic =>
   isRecord(v) &&
@@ -39,16 +46,20 @@ const isSite = (v: unknown): v is FormatSite =>
   (v.owner === null || typeof v.owner === "string") &&
   (v.pkg === null || typeof v.pkg === "string");
 
-const isDates = (v: unknown): v is [string, number[]][] =>
-  Array.isArray(v) &&
-  v.every(
-    (d) =>
-      Array.isArray(d) &&
-      d.length === 2 &&
-      typeof d[0] === "string" &&
-      Array.isArray(d[1]) &&
-      d[1].every((n) => typeof n === "number"),
-  );
+/** `v` as the offsets by path a cache entry keeps (`[path, offsets][]`), or `undefined` when it has another shape. */
+const datesOf = (v: unknown): [string, number[]][] | undefined => {
+  if (!Array.isArray(v)) return undefined;
+  const out: [string, number[]][] = [];
+  for (const d of v) {
+    if (!Array.isArray(d) || d.length !== 2) return undefined;
+    const [p, ns]: unknown[] = d;
+    if (typeof p !== "string" || !Array.isArray(ns)) return undefined;
+    const offsets = ns.flatMap((n: unknown) => (typeof n === "number" ? [n] : []));
+    if (offsets.length !== ns.length) return undefined;
+    out.push([p, offsets]);
+  }
+  return out;
+};
 
 function parseEntry(text: string): TypeEntry | undefined {
   const v: unknown = JSON.parse(text);
@@ -57,14 +68,39 @@ function parseEntry(text: string): TypeEntry | undefined {
     v.format !== CACHE_FORMAT ||
     typeof v.key !== "string" ||
     !Array.isArray(v.probes) ||
-    !Array.isArray(v.items) ||
-    !isDates(v.dates)
+    !Array.isArray(v.items)
   )
     return undefined;
-  const probes = v.probes.filter(isProbe);
+  const dates = datesOf(v.dates);
+  const schemeSelects = datesOf(v.schemeSelects);
+  const themeSelects = datesOf(v.themeSelects);
+  const boxes = datesOf(v.boxes);
+  const keelThrows = datesOf(v.keelThrows);
+  if (
+    dates === undefined ||
+    schemeSelects === undefined ||
+    themeSelects === undefined ||
+    boxes === undefined ||
+    keelThrows === undefined
+  )
+    return undefined;
+  const probes = v.probes.flatMap((p: unknown) => {
+    const probe = probeOf(p);
+    return probe === undefined ? [] : [probe];
+  });
   const items = v.items.filter((i): i is Diagnostic | FormatSite => isDiagnostic(i) || isSite(i));
   if (probes.length !== v.probes.length || items.length !== v.items.length) return undefined;
-  return { key: v.key, probes, items, dates: new Map(v.dates.map(([p, ns]) => [p, new Set(ns)])) };
+  const sets = (list: [string, number[]][]) => new Map(list.map(([p, ns]) => [p, new Set(ns)]));
+  return {
+    key: v.key,
+    probes,
+    items,
+    dates: sets(dates),
+    schemeSelects: sets(schemeSelects),
+    themeSelects: sets(themeSelects),
+    boxes: sets(boxes),
+    keelThrows: sets(keelThrows),
+  };
 }
 
 /**
@@ -87,12 +123,20 @@ export function typeCache(dir: string, name: string) {
     save(entry: TypeEntry): void {
       try {
         const dates = [...entry.dates].map(([p, s]) => [p, [...s]]);
+        const schemeSelects = [...entry.schemeSelects].map(([p, s]) => [p, [...s]]);
+        const keelThrows = [...entry.keelThrows].map(([p, s]) => [p, [...s]]);
+        const themeSelects = [...entry.themeSelects].map(([p, s]) => [p, [...s]]);
+        const boxes = [...entry.boxes].map(([p, s]) => [p, [...s]]);
         const text = JSON.stringify({
           format: CACHE_FORMAT,
           key: entry.key,
           probes: entry.probes,
           items: entry.items,
           dates,
+          schemeSelects,
+          themeSelects,
+          boxes,
+          keelThrows,
         });
         if (Buffer.byteLength(text) > MAX_BYTES) return;
         fs.mkdirSync(dir, { recursive: true });

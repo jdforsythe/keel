@@ -2,7 +2,7 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { contract } from "@keel/router/contract";
-import { s } from "@keel/schema";
+import { isDefect, s } from "@keel/schema";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, resolve, send } from "../src/index.ts";
 
@@ -17,13 +17,16 @@ const settle = async (): Promise<void> => {
 let n = 0;
 function declare(opts: { maxBytes?: number; id?: string } = {}) {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox(
-      opts.id ?? `unit${++n}.outbox`,
-      Api,
-      opts.maxBytes === undefined ? {} : { maxBytes: opts.maxBytes },
-    );
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(
+        opts.id ?? `unit${++n}.outbox`,
+        Api,
+        opts.maxBytes === undefined ? {} : { maxBytes: opts.maxBytes },
+      );
+    },
+    { detached: true },
+  );
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc };
 }
@@ -61,9 +64,12 @@ test("drain loads a stored sending entry as queued", async () => {
     JSON.stringify({ entries: [{ ...entry, at: 0, state: "sending" }] }),
   );
   const { o, sc } = declare({ id: "load.outbox" });
-  scope(() => {
-    void drain(ctx, o, { owner: OWNER });
-  });
+  scope(
+    () => {
+      void drain(ctx, o, { owner: OWNER });
+    },
+    { detached: true },
+  );
   await settle();
   expect(o.get("entries").map((e) => [e.key, e.state])).toEqual([[entry.key, "queued"]]);
   sc.dispose();
@@ -84,11 +90,21 @@ test("outbox throws E2651 with code and path for a secret in a body", () => {
       output: s.object({}),
     },
   });
-  scope(() => {
-    expect(() => outbox("sec.outbox", Secret)).toThrow(
-      /^E2651 outbox sec\.outbox endpoint add body holds s\.secret at pin/,
-    );
-  }).dispose();
+  scope(
+    () => {
+      const caught = (() => {
+        try {
+          outbox("sec.outbox", Secret);
+        } catch (e) {
+          return e;
+        }
+        return undefined;
+      })();
+      expect(isDefect(caught, "E2651")).toBe(true);
+      expect(Reflect.get(Object(caught), "data")).toEqual({ outbox: "sec.outbox", endpoint: "add", at: "pin" });
+    },
+    { detached: true },
+  ).dispose();
 });
 
 test("send takes no bearer: a secret in the input is refused before the outbox stores anything", async () => {

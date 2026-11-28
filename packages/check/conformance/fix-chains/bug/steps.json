@@ -1,0 +1,10 @@
+{
+  "module": "m",
+  "steps": [
+    {
+      "code": "E1451",
+      "fix": false,
+      "message": "throw in app code: return err(E.make(data)) if a caller handles it, else defect('text')"
+    }
+  ]
+}

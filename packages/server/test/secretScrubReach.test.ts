@@ -10,6 +10,7 @@ import { ok } from "@keel/schema";
 import { reveal, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
+import { textRecords } from "./textRecords.ts";
 
 const TOKEN = "tok-7f3a9c";
 const ROOT = "/keel-scrub-root";
@@ -42,7 +43,7 @@ async function send(
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: 1337 }),
-    mode: "production",
+    mode: "dev",
     artifacts: `${ROOT}/.keel`,
     log: { format: "json", write: (l) => lines.push(l) },
   });
@@ -53,7 +54,9 @@ async function send(
       headers: { "content-type": "application/json", accept: load === undefined ? "application/json" : "text/html" },
     }),
   );
-  const diags: Diag[] = lines.map((l) => JSON.parse(l)).filter((d: Diag) => d.code === "keel.unexpected");
+  const diags: Diag[] = textRecords(lines)
+    .map((l) => JSON.parse(l))
+    .filter((d: Diag) => d.code === "keel.unexpected");
   return { diags, lines };
 }
 
@@ -70,7 +73,9 @@ describe("[secret] in a diag frame", () => {
     );
     expect(diags).toHaveLength(1);
     expect(diags[0]?.message).toBe("action app.a threw: Error: key [secret]");
-    expect(diags[0]?.frames).toEqual(["modules/[secret]/a.server.ts:3:7"]);
+    const form = lines.map((l): Diag => JSON.parse(l)).find((d) => d.frames !== undefined);
+    expect(form?.message).toMatch(/^action app\.a threw: Error #[0-9a-f]{8} at modules\/\[secret\]\/a\.server\.ts:3$/);
+    expect(form?.frames).toEqual(["modules/[secret]/a.server.ts:3:7"]);
     for (const l of lines) expect(l).not.toContain(TOKEN);
   });
 });
@@ -146,7 +151,7 @@ async function appOf(
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: 1337 }),
-    mode: "production",
+    mode: "dev",
     log: { format: "json", write: (l) => lines.push(l) },
   });
   return { app, lines };
@@ -158,7 +163,7 @@ const postNote = (note: string): Request =>
     headers: { "content-type": "application/json", accept: "application/json" },
   });
 const messages = (lines: readonly string[]): string[] =>
-  lines
+  textRecords(lines)
     .map((l): Diag => JSON.parse(l))
     .filter((d) => d.code === "keel.unexpected")
     .map((d) => d.message);
@@ -228,7 +233,7 @@ describe("a live stream", () => {
       topology: topology({ web: { modules: ["api"], adapter: "node" } }),
       routes,
       ctx: createCtx({ mode: "sim", seed: 1337 }),
-      mode: "production",
+      mode: "dev",
       log: { format: "json", write: (l) => lines.push(l) },
     });
     const res = await app.fetch(new Request("http://localhost/api/live", { headers: { accept: "text/event-stream" } }));

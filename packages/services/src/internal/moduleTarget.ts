@@ -1,9 +1,9 @@
 import type { Ctx } from "@keel/ctx";
+import { fetcherOf } from "../../unsafe/fetcherOf.ts";
+import { signerOf } from "../../unsafe/signerOf.ts";
 import { MODULES_KEY } from "./MODULES_KEY.ts";
 import type { Target } from "./Target.ts";
 import { USERS_KEY } from "./USERS_KEY.ts";
-import { isFetcher } from "./isFetcher.ts";
-import { isSigner } from "./isSigner.ts";
 
 /**
  * Resolve `service({ module })` for one call (k.topology Calls and peers, k.hosting Peers): on a ctx a `createApp` or
@@ -14,6 +14,8 @@ import { isSigner } from "./isSigner.ts";
  * Over the net a redirect is not followed (`redirect: "manual"`): a 3xx is `api.status` as it is in process.
  * A `createApp`'s binding also gives the target its `x-keel-user` signer (k.user Across deployables), and with it the
  * user a call naming none carries, when a `renderRoute` harness signed in on `ctx` is open (`USERS_KEY`, k.user Testing).
+ * With that signer the call is a server's, so its request carries `x-keel-forwarded: 1`, in process or by URL, and a
+ * `local` route refuses it (k.topology Calls and peers).
  */
 export function moduleTarget(ctx: Ctx, module: string): Target {
   const loc: unknown = Reflect.get(globalThis, "location");
@@ -21,13 +23,13 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   const origin = typeof found === "string" && /^https?:\/\//.test(found) ? found : undefined;
   const table: unknown = Reflect.get(globalThis, MODULES_KEY);
   const bound: unknown = table instanceof WeakMap ? table.get(ctx) : undefined;
-  const signer = bound instanceof Map ? bound.get("keel.user") : undefined;
-  const sign: Target["sign"] = isSigner(signer)
-    ? (method, url, user, body) => signer(module, method, url, user, body)
-    : undefined;
+  const signer = signerOf(bound instanceof Map ? bound.get("keel.user") : undefined);
+  const sign: Target["sign"] =
+    signer === undefined ? undefined : (method, url, user, body) => signer(module, method, url, user, body);
   const users: unknown = Reflect.get(globalThis, USERS_KEY);
   const given: unknown = sign !== undefined && users instanceof WeakMap ? users.get(ctx) : undefined;
   const user = typeof given === "string" ? given : undefined;
+  const server = sign === undefined ? {} : { server: true as const };
   const net = (base: string): Target => {
     const cross = origin !== undefined && base !== origin && !base.startsWith(`${origin}/`);
     return {
@@ -36,6 +38,7 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
       keel: true,
       sign,
       user,
+      ...server,
       send: (req) =>
         ctx.net.fetch(
           new Request(req, cross ? { redirect: "manual", credentials: "include" } : { redirect: "manual" }),
@@ -44,14 +47,16 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   };
   const at: unknown = bound instanceof Map ? bound.get(module) : undefined;
   if (typeof at === "string") return net(at);
-  if (isFetcher(at))
+  const app = fetcherOf(at);
+  if (app !== undefined)
     return {
       base: `http://${module}.keel.invalid`,
       module: true,
       keel: true,
       sign,
       user,
-      send: (req) => at.fetch(req),
+      ...server,
+      send: (req) => app.fetch(req),
     };
   if (bound === undefined && origin !== undefined) return net(origin);
   return net(`http://${module}.keel.invalid`);

@@ -703,9 +703,12 @@ describe("form wiring", () => {
   };
   const within = <R>(fn: () => R): R => {
     let out: { v: R } | undefined;
-    const sc = scope(() => {
-      out = { v: fn() };
-    });
+    const sc = scope(
+      () => {
+        out = { v: fn() };
+      },
+      { detached: true },
+    );
     // Disposal happens in afterEach through the DOM teardown; keep the scope alive for the test body.
     scopes.push(sc);
     if (out === undefined) throw new Error("within");
@@ -1058,9 +1061,12 @@ describe("form wiring", () => {
   it("disposing the binding scope detaches blur and input listeners", () => {
     const f = within(() => form(Flat));
     const el = mk();
-    const sc = scope(() => {
-      f.field("title").bind(el);
-    });
+    const sc = scope(
+      () => {
+        f.field("title").bind(el);
+      },
+      { detached: true },
+    );
     typeInto(el, "");
     el.dispatchEvent(new Event("blur"));
     expect(f.field("title").touched()).toBe(true);

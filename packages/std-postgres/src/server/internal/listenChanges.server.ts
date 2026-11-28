@@ -1,16 +1,18 @@
 import { pid } from "node:process";
 import { attempt } from "@keel/schema";
 import pg from "pg";
-import { raise } from "../../../unsafe/raise.ts";
 import type { FollowEvent } from "../FollowEvent.ts";
 import type { Changes } from "./Changes.ts";
+import { errors } from "./errors.server.ts";
+import { isAnswer } from "./isAnswer.server.ts";
 import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
 const CHANNEL = "keel_changes";
 
 type Follow = { readonly on: (e: FollowEvent) => void; listening: boolean };
 type Listener = {
-  readonly ready: Promise<void>;
+  /** Whether it is listening: `false` when the connection or `listen` failed, by the database's answer or the network's. */
+  readonly ready: Promise<boolean>;
   readonly follows: Map<string, Set<Follow>>;
   readonly end: () => void;
   done: boolean;
@@ -20,7 +22,7 @@ type Listener = {
  * Shared by every evaluation of this module in the process (a `keel dev` reload evaluates it again): one listening
  * connection per URL.
  */
-const KEY = Symbol.for("keel.postgres.listeners");
+const KEY = Symbol.for("@keel/std-postgres:listeners");
 
 function sharedListeners(): Map<string, Listener> {
   const shared: unknown = Reflect.get(globalThis, KEY);
@@ -54,7 +56,7 @@ function open(url: string): Listener {
     const all = [...follows.values()].flatMap((set) => [...set]);
     follows.clear();
     for (const f of all) if (f.listening) f.on({ kind: "lost" });
-    void attempt(() => client.end());
+    void client.end();
   };
   client.on("error", lost);
   client.on("end", lost);
@@ -62,21 +64,32 @@ function open(url: string): Listener {
     if (m.channel !== CHANNEL || m.payload === undefined) return;
     for (const f of [...(follows.get(m.payload) ?? [])]) if (f.listening) f.on({ kind: "changed" });
   });
+  const listening = async (): Promise<boolean> => {
+    let up = false;
+    try {
+      const r = await attempt(
+        async () => {
+          await client.connect();
+          await client.query(`listen ${CHANNEL}`);
+        },
+        (x) => (!isAnswer(x, "thrown") ? errors.unreachable : undefined),
+      );
+      up = r.ok;
+      return up;
+    } finally {
+      if (!up) lost();
+    }
+  };
   const l: Listener = {
-    ready: client.connect().then(async () => {
-      await client.query(`listen ${CHANNEL}`);
-    }),
+    ready: listening(),
     follows,
     done: false,
     end: () => {
       l.done = true;
       if (listeners.get(url) === l) listeners.delete(url);
-      void attempt(() => client.end());
+      void client.end();
     },
   };
-  void attempt(() => l.ready).then((r) => {
-    if (!r.ok) lost();
-  });
   return l;
 }
 
@@ -99,12 +112,12 @@ export function listenChanges(url: string): Changes {
         if (set.size === 0 && at.follows.get(text) === set) at.follows.delete(text);
         if (!at.done && count(at) === 0) at.end();
       };
-      const opened = await attempt(() => at.ready);
-      if (!opened.ok) {
+      const opened = await at.ready;
+      if (!opened || at.done) {
         stop();
-        return raise(new Error("std.postgres: the listening connection did not open"));
+        on({ kind: "lost" });
+        return stop;
       }
-      if (at.done) return raise(new Error("std.postgres: the listening connection closed"));
       f.listening = true;
       return stop;
     },
