@@ -11,6 +11,8 @@ import type { EvaluateResult } from "./types/EvaluateResult.ts";
 import type { EvaluatorAnswer } from "./types/EvaluatorAnswer.ts";
 
 const DEADLINE = 30_000;
+/** The longest line the command buffers from an evaluator: 64 MiB. */
+const LINE_LIMIT = 64 * 1024 * 1024;
 /** The command's environment names an evaluator keeps (k.evaluator Start). */
 const KEPT = /^(?:TZ|LANG|LC_[A-Z_]+)$/;
 const REFUSED: EvaluatorAnswer = {
@@ -19,6 +21,9 @@ const REFUSED: EvaluatorAnswer = {
 
 const isRecord = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
+/** `text` with each control character removed, a run of tabs and line breaks becoming one space (k.evaluator Placing). */
+const clean = (text: string): string =>
+  text.replace(/[\t\n\r]+/g, " ").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
 const pair = (line: number, col: number): readonly [number, number] => [line, col];
 const frameList = (x: unknown): (readonly [number, number])[] =>
   Array.isArray(x)
@@ -38,7 +43,8 @@ function evaluatorEnv(): Record<string, string> {
  * Node and its arguments for an evaluator of `entry` (k.evaluator Start). Where a POSIX shell exists the child is
  * started through it with a processor-time limit of twice the deadline and a second (`ulimit -t`, then `exec`, so the
  * child is Node itself): a loop that never yields ends at that limit even when the command was killed outright and
- * can no longer end it.
+ * can no longer end it. A shell that refuses the limit (a lower hard limit already set) still starts Node, under the
+ * limit it has.
  */
 function command(entry: string, deadlineMs: number): { file: string; args: string[] } {
   const node = [
@@ -53,7 +59,7 @@ function command(entry: string, deadlineMs: number): { file: string; args: strin
   ];
   if (process.platform === "win32" || !fs.existsSync("/bin/sh")) return { file: process.execPath, args: node };
   const cpu = String(Math.ceil((2 * deadlineMs) / 1000) + 1);
-  return { file: "/bin/sh", args: ["-c", `ulimit -t ${cpu} && exec "$0" "$@"`, process.execPath, ...node] };
+  return { file: "/bin/sh", args: ["-c", `ulimit -t ${cpu} 2>/dev/null; exec "$0" "$@"`, process.execPath, ...node] };
 }
 
 /**
@@ -63,8 +69,10 @@ function command(entry: string, deadlineMs: number): { file: string; args: strin
  * entry's result ends the child (`SIGKILL`), and the call resolves once the child has closed: to the entry's exports
  * as JSON, or to one `EvaluateFailure`: the throw that ended the entry, as the child recorded it; E1048 when no result
  * came within `deadlineMs` (or the child reached its processor-time limit) or Node ended it on a top-level await that
- * can never settle (exit 13); E1049 for any other end. `file` in those messages is the entry file the child last named
- * (`at`), else the entry's own name. An aborted `signal` ends the child and rejects with its reason.
+ * can never settle (exit 13 after its loop emptied, which the child reports as `idle`); E1049 for any other end, a
+ * result line that is no JSON, and a line past 64 MiB. Every text that crosses from the child loses its control
+ * characters. `file` in those messages is the entry file the child last named (`at`), else the entry's own name. An
+ * aborted `signal` ends the child and rejects with its reason.
  */
 export function evaluate(input: EvaluateInput): Promise<EvaluateResult> {
   const deadlineMs = input.deadlineMs ?? DEADLINE;
@@ -84,6 +92,7 @@ export function evaluate(input: EvaluateInput): Promise<EvaluateResult> {
     let file: string | undefined;
     let ended: EvaluateResult | undefined;
     let late = false;
+    let idle = false;
     let aborted = false;
     const end = (): void => {
       child.kill("SIGKILL");
@@ -101,7 +110,9 @@ export function evaluate(input: EvaluateInput): Promise<EvaluateResult> {
     const a4 = child.stdio[4];
     const questions = q3 instanceof Readable ? q3 : undefined;
     const answers = a4 instanceof Writable ? a4 : undefined;
-    let pending = "";
+    let parts: Buffer[] = [];
+    let size = 0;
+    let dropped = false;
     const onRecord = (m: Readonly<Record<string, unknown>>): void => {
       if (m.t === "ask") {
         let a: EvaluatorAnswer;
@@ -111,35 +122,63 @@ export function evaluate(input: EvaluateInput): Promise<EvaluateResult> {
           a = { err: { code: "E1049", message: e instanceof Error ? e.message : String(e) } };
         }
         answers?.write(`${JSON.stringify(a)}\n`);
-      } else if (m.t === "at" && typeof m.file === "string") file = m.file;
+      } else if (m.t === "at" && typeof m.file === "string") file = clean(m.file);
+      else if (m.t === "idle") idle = true;
       else if (m.t === "result" && ended === undefined) {
-        const v: unknown = typeof m.json === "string" ? JSON.parse(m.json) : undefined;
-        ended = isRecord(v) ? v : new EvaluateFailure("E1049", `${name()}: the entry's exports are not an object`);
+        let v: unknown;
+        let json = true;
+        try {
+          v = typeof m.json === "string" ? JSON.parse(m.json) : undefined;
+        } catch {
+          json = false;
+        }
+        const why = json ? "the entry's exports are not an object" : "the entry's result is not JSON";
+        ended = isRecord(v) ? v : new EvaluateFailure("E1049", `${name()}: ${why}`);
         end();
       } else if (m.t === "failure" && ended === undefined) {
         ended = new EvaluateFailure(
-          typeof m.code === "string" ? m.code : "E1049",
-          typeof m.message === "string" ? m.message : `${name()}: the evaluation failed`,
-          { what: typeof m.what === "string" ? m.what : undefined, frames: frameList(m.frames), file },
+          typeof m.code === "string" && /^[EW][0-9]{4}$/.test(m.code) ? m.code : "E1049",
+          typeof m.message === "string" ? clean(m.message) : `${name()}: the evaluation failed`,
+          { what: typeof m.what === "string" ? clean(m.what) : undefined, frames: frameList(m.frames), file },
         );
         end();
       }
     };
     const name = (): string => file ?? path.basename(entry);
-    questions?.setEncoding("utf8");
-    questions?.on("data", (chunk: string) => {
-      pending += chunk;
-      for (let i = pending.indexOf("\n"); i >= 0; i = pending.indexOf("\n")) {
-        const line = pending.slice(0, i);
-        pending = pending.slice(i + 1);
-        let m: unknown;
-        try {
-          m = JSON.parse(line);
-        } catch {
-          m = undefined;
-        }
-        if (isRecord(m)) onRecord(m);
+    /** A line past `LINE_LIMIT` ends the evaluation: nothing of it is parsed or kept. */
+    const tooLong = (): void => {
+      dropped = true;
+      parts = [];
+      size = 0;
+      ended ??= new EvaluateFailure("E1049", `${name()}: the evaluator sent a line past 64 MiB`, { file });
+      end();
+    };
+    const onLine = (line: string): void => {
+      let m: unknown;
+      try {
+        m = JSON.parse(line);
+      } catch {
+        ended ??= new EvaluateFailure("E1049", `${name()}: the evaluator sent a line that is not JSON`, { file });
+        end();
+        return;
       }
+      if (isRecord(m)) onRecord(m);
+    };
+    questions?.on("data", (chunk: Buffer) => {
+      if (dropped) return;
+      let from = 0;
+      for (let i = chunk.indexOf(10, from); i >= 0; i = chunk.indexOf(10, from)) {
+        if (size + i - from > LINE_LIMIT) return tooLong();
+        parts.push(chunk.subarray(from, i));
+        const line = Buffer.concat(parts).toString("utf8");
+        parts = [];
+        size = 0;
+        from = i + 1;
+        onLine(line);
+      }
+      if (size + chunk.length - from > LINE_LIMIT) return tooLong();
+      parts.push(chunk.subarray(from));
+      size += chunk.length - from;
     });
     // A write to a child that has ended fails; its end is what decides the result.
     answers?.on("error", () => undefined);
@@ -160,7 +199,7 @@ export function evaluate(input: EvaluateInput): Promise<EvaluateResult> {
       if (ended !== undefined) resolve(ended);
       else if (late || signal === "SIGXCPU")
         resolve(new EvaluateFailure("E1048", `${name()} did not finish evaluating in ${String(deadlineMs)} ms`, at));
-      else if (code === 13)
+      else if (code === 13 && idle)
         resolve(
           new EvaluateFailure("E1048", `${name()} did not finish evaluating: a top-level await never settles`, at),
         );

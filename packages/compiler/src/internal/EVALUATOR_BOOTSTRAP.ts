@@ -9,6 +9,8 @@
  * - imports the entry and writes `{ t: 'result', json }`, its exports as JSON, or `{ t: 'failure', ... }`, the throw
  *   that ended it as a record: a banner refusal's `keelRefusal` (`what`, `frames`), Node's `ERR_ACCESS_DENIED` and `ERR_DLOPEN_DISABLED` and V8's
  *   code-generation `EvalError` as E1050 with their bundle positions, a thrown E code as it is, any other as E1049.
+ * - writes `{ t: 'idle' }` when Node's loop empties (`beforeExit`), which tells Node's exit 13 for a top-level await
+ *   that can never settle from a `process.exit(13)` the code called.
  * The command ends the evaluator when the record arrives. Written as one raw string: the code holds no template
  * literal and no backslash escape but the line feed of `send`, written as a character code.
  */
@@ -69,6 +71,7 @@ const ask = (q) => {
     rest = Reflect.apply(concat, Buffer, [[rest, b.subarray(0, n)]]);
   }
 };
+process.on('beforeExit', () => send({ t: 'idle' }));
 Reflect.defineProperty(globalThis, Symbol.for('keel.evaluator'), {
   value: Object.freeze({ ask, at: (file) => send({ t: 'at', file: String(file) }) }),
   configurable: true,
