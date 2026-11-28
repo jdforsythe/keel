@@ -3,4 +3,3 @@
 export { pulse } from "./pulse.ts";
 export { lastResource } from "./lastResource.ts";
 export { reaction } from "./reaction.ts";
-export { holdOwner } from "./holdOwner.ts";

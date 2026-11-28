@@ -413,11 +413,6 @@ export default function (): {
   let loading: Promise<DevApp[]> | undefined;
   /** Whether a load has evaluated the server graph since it was last invalidated whole: an edit then has one to reload. */
   let evaluated = false;
-  /**
-   * The disposal of each load's root scope (the dev module's `root`), which owns what the app's modules made at their
-   * top level: ended once that load's apps have closed, before the next load, so a module-level store's id is free.
-   */
-  const roots: (() => void)[] = [];
   /** Under `keel dev`: the stack each capability was registered on, by name, as `register` records it (k.data Dev). */
   const registrations = new Map<string, string>();
   /** Invalidate the server graph whole, so the next load starts with an empty registry (k.data Dev). */
@@ -432,9 +427,6 @@ export default function (): {
       await closed;
       evaluated = true;
       const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
-      const root: unknown = mod?.root;
-      const end: unknown = typeof root === "object" && root !== null ? Reflect.get(root, "dispose") : undefined;
-      if (typeof end === "function") roots.push(() => Reflect.apply(end, root, []));
       const apps: unknown = mod?.apps;
       return (Array.isArray(apps) ? apps : [])
         .filter(isDevApp)
@@ -474,10 +466,7 @@ export default function (): {
       return { ids: artifacts["ids.json"], a11y: artifacts["a11y.json"], routes };
     },
   );
-  /**
-   * Close the dev apps (their runners and streams) and end their load's root scope, so the next request loads the
-   * server graph again whole, once they have closed.
-   */
+  /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
     const old = devApps;
     // A load in flight may have read the files before the edit: its apps close too, what it evaluated is invalidated
@@ -493,17 +482,7 @@ export default function (): {
         ? []
         : [overtaken.then((apps) => Promise.allSettled(apps.map((a) => a.app.close())))]),
     ]);
-    // The closed loads' module-level state ends with their roots, so every module evaluates again on the next load.
-    closed = closing.then(() => {
-      for (const end of roots.splice(0)) {
-        try {
-          end();
-        } catch {
-          // A dispose hook's error belongs to the closed load; the next load starts whole either way.
-        }
-      }
-      invalidateWhole();
-    });
+    closed = overtaken === undefined ? closing : closing.then(invalidateWhole);
     const mod = server?.moduleGraph.getModuleById(`\0${DEV_ENTRY}`);
     if (mod !== undefined) server?.moduleGraph.invalidateModule?.(mod);
   };

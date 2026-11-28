@@ -10,6 +10,7 @@ export { serverState } from "./serverState.ts";
 export { sourcesOf } from "./sourcesOf.ts";
 export { storeIdClashes } from "./storeIdClashes.ts";
 export { storeShapes } from "./storeShapes.ts";
+export { storesReload } from "./storesReload.ts";
 export type { Factory } from "./types/Factory.ts";
 export type { Held } from "./types/Held.ts";
 export type { Opened } from "./types/Opened.ts";

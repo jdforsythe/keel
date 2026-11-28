@@ -6,6 +6,7 @@ import { LOG_LIMIT } from "./internal/LOG_LIMIT.ts";
 import type { Row } from "./internal/Row.ts";
 import type { TxError } from "./internal/TxError.ts";
 import { baseSchema } from "./internal/baseSchema.ts";
+import { carriedIds } from "./internal/carriedIds.ts";
 import { conflict } from "./internal/conflict.ts";
 import { copy } from "./internal/copy.ts";
 import { coreKey } from "./internal/coreKey.ts";
@@ -65,7 +66,9 @@ export function store<T extends object>(
   const id = options?.id ?? `store.${++counter.next}`;
   secretGuard(id, schema);
   const registry = registryOf(owner());
-  if (registry.has(id)) throw new Error(`store ${id}: id already in use by a live store`);
+  // A carried id (`storesReload`) is taken over once: the earlier load's store leaves the module registry.
+  const carried = registry === registries.shared && carriedIds.delete(id);
+  if (registry.has(id) && !carried) throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
   const limit = options?.logLimit ?? LOG_LIMIT;
   if (!Number.isInteger(limit) || limit < 0)
