@@ -39,7 +39,7 @@ const readText = (file: string): string | undefined => {
 
 /**
  * `keel check [paths]`: k.check diagnostics over the code files and `.keel/*.json` files under `paths`
- * (stdlib `deps` imported first, E1159, rfc:0066), then a summary that counts every code (`--code` filters display only).
+ * (stdlib `deps` imported first, E1159), then a summary that counts every code (`--code` filters display only).
  * Run over the disk (`Io.load`), it takes each project's derivation (k.derived Readers): the evaluated views
  * (`deriveEvaluated`, cached; its problems are diagnostics) reach the check, and the views are not read from disk.
  * Not frozen (`frozenRun`), it then writes each view and deploy file whose bytes differ (`refreshViews`; W1018 when one

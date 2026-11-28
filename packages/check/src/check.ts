@@ -80,7 +80,7 @@ function compatTopology(dir: string, all: readonly SourceFile[], opts: CheckOpti
  * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
  * for a `.keel/` view that differs from its derivation (k.derived In process), E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
  * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
- * W1564, W1568 over the current surface: `derived`'s, else `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
+ * W1564, W1568 over the current surface: `derived`'s, else `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`). Pure and deterministic for equal inputs.
  *
  * A library's files among the files (k.library In an app, `libraryFolders`) are read by every step at
  * `modules/<id>/<f>` but the type pass, the k.module pass and E1013, which read them where they lie; each diagnostic in
