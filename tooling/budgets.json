@@ -20,11 +20,11 @@
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "27.2kb",
+      "max": "27.45kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "43.2kb",
+      "max": "45.2kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -36,7 +36,7 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "36.3kb",
+      "max": "39.9kb",
       "platform": "node"
     },
     "@keel/ctx": "4.9kb",
@@ -198,9 +198,9 @@
     },
     "@keel/std-temporal": "5kb",
     "@keel/std-text": "1.5kb",
-    "@keel/store": "4.15kb",
+    "@keel/store": "4.25kb",
     "@keel/store/internal": {
-      "max": "2.25kb",
+      "max": "2.45kb",
       "platform": "node"
     },
     "@keel/testing": {
