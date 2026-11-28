@@ -6,7 +6,7 @@
 | k.explain | `explain(code)`, explanation table, agent file text |
 | k.host | app reads of host zone, locale, Node globals: E1758, E1759 |
 | k.cli | operations, commands, formatters, output |
-| k.inspect | `keel inspect` and inspector hooks |
+| k.inspect | `keel inspect` and its hooks |
 | k.design-tokens | `keel tokens import` (design tokens files) and `set`, E1071, W1072 |
 | k.docs | `keel docs` over installed packages: files, areas, forms, resolution |
 | k.scaffold | generators, codemods, edit sets, the clean check guarantee |
