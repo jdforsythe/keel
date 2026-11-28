@@ -45,8 +45,10 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   }
   // By package name, so of two libraries holding one id the first by name is read under it (E1166's order).
   const found = files
-    .map((f) => ({ f, m: PACKAGE.exec(f.path) }))
-    .filter((x): x is { f: SourceFile; m: RegExpExecArray } => x.m !== null)
+    .flatMap((f) => {
+      const m = PACKAGE.exec(f.path);
+      return m === null ? [] : [{ f, m }];
+    })
     .sort((a, b) => (a.f.path < b.f.path ? -1 : a.f.path > b.f.path ? 1 : 0));
   for (const { f, m } of found) {
     const [, prefix = "", name = ""] = m;

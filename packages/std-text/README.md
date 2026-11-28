@@ -15,4 +15,4 @@ Uses the **schema type registry** (k.schema `s.register`). It registers the form
 
 ## Unsafe
 
-count: 1. `unsafe/boundFault.ts`: the `RangeError` std.text specifies for a `line`, `para` or `truncate` bound out of range, a throw in a library's code.
+count: 0

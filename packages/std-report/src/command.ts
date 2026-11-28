@@ -2,6 +2,7 @@ import type { OutRecord, Outcome, StdOperation } from "@keel/cli";
 import { attempt, s } from "@keel/schema";
 import { Tally } from "./Tally.schema.ts";
 import { callerCookie } from "./callerCookie.ts";
+import { Failed } from "./internal/Failed.schema.ts";
 import { InspectDoc } from "./internal/InspectDoc.schema.ts";
 import { LoaderAnswer } from "./internal/LoaderAnswer.schema.ts";
 import { OkResult } from "./internal/OkResult.schema.ts";
@@ -46,7 +47,7 @@ const shown = (url: string): string => {
 
 /** The parsed `url` when it names a route of the app: a path beyond `/` or a query. */
 const routeOf = (url: string): URL | undefined => {
-  const parsed = URL.canParse(url) ? new URL(url) : undefined;
+  const parsed = URL.parse(url) ?? undefined;
   return parsed === undefined || (/^\/*$/.test(parsed.pathname) && parsed.search === "") ? undefined : parsed;
 };
 
@@ -93,11 +94,15 @@ export const command: StdOperation = {
         route === undefined
           ? get(`${url}/__keel/inspect`)
           : get(url, { headers: cookie === undefined ? JSON_ONLY : { ...JSON_ONLY, cookie } }),
+      (x) => (x instanceof Error ? Failed.make({ step: "fetch" }) : undefined),
     );
     if (!sent.ok) return fail("report target unreachable");
     const res = sent.value;
     if (!res.ok) return fail(`report target answered ${res.status}`);
-    const read = await attempt((): Promise<unknown> => res.json());
+    const read = await attempt(
+      (): Promise<unknown> => res.json(),
+      (x) => (x instanceof Error ? Failed.make({ step: "json" }) : undefined),
+    );
     const body: unknown = read.ok ? read.value : undefined;
     if (route !== undefined) {
       const tallies = talliesOf(body) ?? talliesOf(loaded(body));

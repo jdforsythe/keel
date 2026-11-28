@@ -1,8 +1,13 @@
 import { attempt } from "@keel/schema";
-import { refuse } from "../../unsafe/refuse.ts";
+import { IntlRefused } from "./IntlRefused.schema.ts";
 
-/** The text `run()` writes, or the `RangeError` `refuse` throws for `fn` naming what `run` threw (an input `Intl` refuses). */
-export function refusing(fn: string, run: () => string): string {
-  const r = attempt(run);
-  return r.ok ? r.value : refuse(fn, r.error.data.cause);
+/** What `run()` returns, or `IntlRefused` when `Intl` throws a `RangeError` or `TypeError` there (an input it refuses). */
+export function refusing<T>(run: () => T) {
+  return attempt(run, (x) =>
+    x instanceof RangeError
+      ? IntlRefused.make({ thrown: "RangeError" })
+      : x instanceof TypeError
+        ? IntlRefused.make({ thrown: "TypeError" })
+        : undefined,
+  );
 }

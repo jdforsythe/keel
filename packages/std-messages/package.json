@@ -45,6 +45,7 @@
   "peerDependencies": {
     "@keel/check": "workspace:*",
     "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/std-i18n": "workspace:*"
   },

@@ -1,6 +1,7 @@
 import { type Result, err, ok } from "@keel/schema";
 import { Instant } from "./Instant.schema.ts";
 import type { TemporalError } from "./TemporalError.ts";
+import { OutOfRange } from "./internal/OutOfRange.schema.ts";
 import { iso } from "./internal/iso.ts";
 
 /**
@@ -10,5 +11,5 @@ import { iso } from "./internal/iso.ts";
 export function instantOf(ms: number): Result<Instant, TemporalError> {
   const r = Instant.parse(iso(Math.floor(ms)));
   if (r.ok) return ok(r.value);
-  return err({ code: "temporal.outOfRange", message: `${ms} ms is outside years 0001 to 9999`, data: { value: ms } });
+  return err(OutOfRange.make({ value: ms }, "the instant is outside years 0001 to 9999"));
 }

@@ -32,12 +32,14 @@
   "peerDependencies": {
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",

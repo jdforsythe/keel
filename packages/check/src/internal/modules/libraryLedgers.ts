@@ -21,14 +21,31 @@ const parse = (text: string): unknown => {
   }
 };
 
-/** Whether the library folder `root` (project-relative, `/`-ended) of the project at `cwd` lies in a `node_modules` folder by its real path. */
-function installed(cwd: string, root: string): boolean {
+/** The real path of `at`, or undefined when nothing is there. */
+const realOf = (at: string): string | undefined => {
   try {
-    return fs.realpathSync(path.resolve(cwd, root)).split(path.sep).includes("node_modules");
+    return fs.realpathSync(at);
   } catch {
-    // Not on disk (files given in memory): it lies where it is given, under `node_modules/`.
-    return true;
+    return undefined;
   }
+};
+
+/**
+ * Whether library `name`, at `root` (project-relative, `/`-ended) of the project at `cwd`, lies in a `node_modules`
+ * folder by its real path. A library a library lists is read at `node_modules/<name>/` but found as Node finds it from
+ * the listing manifest `from` (project-relative): in a `node_modules/<name>` of a folder at or above its real folder.
+ */
+function installed(cwd: string, root: string, from: string, name: string): boolean {
+  const listed = realOf(path.dirname(path.resolve(cwd, from)));
+  const found = [path.resolve(cwd, root)];
+  for (let dir = listed; dir !== undefined && dir !== path.dirname(dir); dir = path.dirname(dir))
+    found.push(path.join(dir, "node_modules", name));
+  for (const at of found) {
+    const real = realOf(at);
+    if (real !== undefined) return real.split(path.sep).includes("node_modules");
+  }
+  // Not on disk (files given in memory): it lies where it is given, under `node_modules/`.
+  return true;
 }
 
 /** The E1162 messages for library `lib` (k.library Rules), from its files among `files`; none when it holds. */
@@ -79,11 +96,14 @@ export function libraryLedgers(checked: readonly Checked[], files: readonly Sour
   const modules = discoverModules(checked, files);
   const byKey = new Map(modules.map((m) => [m.key, m]));
   const faults = new Map<string, readonly string[]>();
-  const faultsOf = (lib: ModuleInfo): readonly string[] => {
+  const faultsOf = (lib: ModuleInfo, from: string): readonly string[] => {
     const known = faults.get(lib.key);
     if (known !== undefined) return known;
     const pkg = parse(files.find((f) => f.path === `${lib.root}package.json`)?.source ?? "");
-    const found = libraryKind(pkg, lib.key) === "library" && installed(cwd, lib.root) ? ledgerFaults(lib, files) : [];
+    const found =
+      libraryKind(pkg, lib.key) === "library" && installed(cwd, lib.root, from, lib.key)
+        ? ledgerFaults(lib, files)
+        : [];
     faults.set(lib.key, found);
     return found;
   };
@@ -93,7 +113,7 @@ export function libraryLedgers(checked: readonly Checked[], files: readonly Sour
       const lib = e.value.startsWith("@") ? byKey.get(e.value) : undefined;
       if (lib === undefined || !lib.library) continue;
       // The `hostElements` fault one column after the opening quote, so the canonical order puts `unsafe` first.
-      for (const msg of faultsOf(lib)) {
+      for (const msg of faultsOf(lib, m.file.path)) {
         const at = msg.includes(" ships hostElements ") ? e.start + 1 : e.start;
         out.push(moduleDiag("E1162", m.file, at, msg, undefined, "k.library"));
       }

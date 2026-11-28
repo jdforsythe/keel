@@ -1,11 +1,12 @@
 // Seed 1337 (no generated input: fixed fixtures). k.check E1753: two libraries whose `./tools` register one rule code
 // are one E1753 naming both packages, at the `deps` entry of the one that registers second, whichever order `deps`
 // lists them in; neither is E1159, which says a `./tools` does not import.
+import { testTime } from "@keel/tooling/test-time";
 import { afterAll, expect, test } from "vitest";
 import { cleanup, keel, materialize } from "../conformance/compat-support.ts";
 import { library, project } from "../conformance/library-support.ts";
 
-const SLOW = 120_000;
+const SLOW = testTime(120_000);
 const made: string[] = [];
 afterAll(() => {
   for (const d of made) cleanup(d);

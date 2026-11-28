@@ -1,9 +1,9 @@
 // Helpers the std.messages tests share: a clean module tree, the codes `check` reports over it, and a fix applied with `git apply`.
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { check } from "@keel/check";
+import { tempDir } from "@keel/tooling/test-tmp";
 
 export type Files = Parameters<typeof check>[0];
 
@@ -54,7 +54,7 @@ export function codesOf(files: Files, code: string) {
 }
 
 export function applyFix(files: Files, fix: string): Files {
-  const dir = mkdtempSync(join(tmpdir(), "keel-fix-"));
+  const dir = tempDir("keel-fix-");
   try {
     for (const f of files) {
       mkdirSync(dirname(join(dir, f.path)), { recursive: true });

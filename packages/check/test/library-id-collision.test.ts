@@ -17,7 +17,7 @@ const library = (name: string, id: string) => {
         version: "1.0.0",
         type: "module",
         keel: "library",
-        exports: { ".": "./src/index.ts" },
+        exports: { ".": { keel: "./src/index.ts" } },
       }),
     },
     { path: `${root}/module.ts`, source: manifest(id, [], ["Badge"]) },

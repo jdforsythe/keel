@@ -1,9 +1,9 @@
 import { computed, effect } from "@keel/reactive";
 import { For, If } from "@keel/runtime-dom";
+import { defect } from "@keel/schema";
 import { formatNumber } from "@keel/std-i18n";
 import { Box, type Child, Link } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
-import { tableFault } from "../unsafe/tableFault.ts";
 import type { DataTableProps } from "./DataTableProps.ts";
 import type { Field } from "./Field.ts";
 import type { TablePage } from "./TablePage.type.ts";
@@ -35,7 +35,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   const styles: TableStyles = props.styles ?? {};
   for (const key of Object.keys(styles))
     if (key.startsWith("column.") && !cols.show.some((c) => c === key.slice(7)))
-      tableFault("E2851", `styles key ${JSON.stringify(key.slice(0, 40))} names no shown column`);
+      defect("a styles key names no shown column", { code: "E2851", data: { key: key.slice(0, 40) } });
   const columnStyle = (col: string): PartStyle => styles[`column.${col}`] ?? {};
   const text = () => props.text;
   const view = computed(

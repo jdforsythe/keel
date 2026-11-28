@@ -70,6 +70,7 @@
   "peerDependencies": {
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/ui": "workspace:*"
@@ -79,6 +80,7 @@
     "@keel/cli": "workspace:*",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",

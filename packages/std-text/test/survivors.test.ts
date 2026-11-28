@@ -1,4 +1,5 @@
 // Seed 1337
+import { isDefect } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -13,22 +14,34 @@ import { truncate } from "../src/truncate.ts";
 const SEED = 1337;
 const sample = <T>(arb: fc.Arbitrary<T>, n = 4000): T[] => fc.sample(arb, { seed: SEED, numRuns: n });
 
-test("textCheck accepts equal bounds and rejects bounds outside 1..10000 with a message naming them", () => {
+/** The `data` of the defect `run` raises, or `undefined` when it raises none. */
+const defectData = (run: () => unknown): unknown => {
+  try {
+    run();
+  } catch (e) {
+    return isDefect(e) ? Reflect.get(e, "data") : undefined;
+  }
+  return undefined;
+};
+
+test("textCheck accepts equal bounds and raises a defect naming them for bounds outside 1..10000", () => {
   expect(textCheck(3, 3, false)("abc")).toBe(true);
   expect(textCheck(3, 3, false)("ab")).toBe(false);
   expect(textCheck(0, 10000, false)("")).toBe(true);
   expect(() => textCheck(0, 10001, false)).toThrow(
-    "text bounds must be integers with 0 <= min <= max and 1 <= max <= 10000, got 0..10001",
+    "text bounds must be integers with 0 <= min <= max and 1 <= max <= 10000",
   );
-  expect(() => textCheck(4, 3, false)).toThrow(RangeError);
-  expect(() => textCheck(0, 0, false)).toThrow("got 0..0");
-  expect(() => textCheck(-1, 3, false)).toThrow("got -1..3");
-  expect(() => textCheck(0.5, 3, false)).toThrow("got 0.5..3");
+  expect(defectData(() => textCheck(0, 10001, false))).toEqual({ min: "0", max: "10001" });
+  expect(defectData(() => textCheck(4, 3, false))).toEqual({ min: "4", max: "3" });
+  expect(defectData(() => textCheck(0, 0, false))).toEqual({ min: "0", max: "0" });
+  expect(defectData(() => textCheck(-1, 3, false))).toEqual({ min: "-1", max: "3" });
+  expect(defectData(() => textCheck(0.5, 3, false))).toEqual({ min: "0.5", max: "3" });
 });
 
-test("truncate rejects a max below 1 with a message naming it", () => {
-  expect(() => truncate("abc", 0)).toThrow("truncate: max must be an integer of at least 1, got 0");
-  expect(() => truncate("abc", 1.5)).toThrow("got 1.5");
+test("truncate raises a defect naming a max below 1", () => {
+  expect(() => truncate("abc", 0)).toThrow("truncate: max must be an integer of at least 1");
+  expect(defectData(() => truncate("abc", 0))).toEqual({ max: "0" });
+  expect(defectData(() => truncate("abc", 1.5))).toEqual({ max: "1.5" });
 });
 
 test("para is named para(<min>..<max>), min defaulting to 1", () => {

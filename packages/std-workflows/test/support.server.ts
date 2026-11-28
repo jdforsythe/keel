@@ -13,10 +13,10 @@ import { flows, workflow } from "@keel/std-workflows";
 import { tx } from "@keel/store";
 import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
-import { jobsOf } from "./modules/api/jobs.server.ts";
-import { runnersOf } from "./modules/api/runners.server.ts";
 import { expect } from "vitest";
 import { afterAll } from "vitest";
+import { jobsOf } from "./modules/api/jobs.server.ts";
+import { runnersOf } from "./modules/api/runners.server.ts";
 
 /** A root a test file makes (`scope(fn, { detached: true })`): the charts and workflows it builds live in it and it is disposed when the file's tests end. */
 const root = scope(() => undefined, { detached: true });

@@ -1,7 +1,6 @@
-import { type Schema, s } from "@keel/schema";
+import { type Schema, defect, s } from "@keel/schema";
 import type { Locale } from "@keel/std-i18n";
 import { asEntry } from "../unsafe/asEntry.ts";
-import { setFault } from "../unsafe/setFault.ts";
 import type { MessageSet } from "./MessageSet.ts";
 import type { Keys } from "./internal/Keys.ts";
 import { PARTS } from "./internal/PARTS.schema.ts";
@@ -44,14 +43,15 @@ export function messages<L extends Locale, const K extends Keys>(
   keys: K,
   load: (locale: L) => Promise<unknown>,
 ): MessageSet<L, K> {
-  if (locales.node.kind !== "enum") return setFault("messages: locales not an s.enum");
+  if (locales.node.kind !== "enum") return defect("messages: locales not an s.enum");
   const shape: Record<string, Schema<unknown>> = {};
   for (const [key, params] of Object.entries(keys)) {
-    if (!IDENT.test(key)) return setFault(`messages: bad key '${key}'`);
+    if (!IDENT.test(key)) return defect("messages: a key is no identifier", { data: { key } });
     const kinds = new Map<string, ParamKind>();
     for (const [name, schema] of Object.entries(params)) {
       const kind = IDENT.test(name) ? kindOf(schema) : undefined;
-      if (kind === undefined) return setFault(`messages: bad param '${name}' of '${key}'`);
+      if (kind === undefined)
+        return defect("messages: a param is no identifier or of no kind", { data: { key, param: name } });
       kinds.set(name, kind);
     }
     shape[key] = messageType(kinds);

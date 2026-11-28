@@ -1,13 +1,13 @@
-// std.i18n: an input a function refuses throws a RangeError whose message begins with the function's name, as
-// std.temporal's durationOf does: a string that is no plain decimal, a time zone that is no string, and each input
+// std.i18n: an input a function refuses raises a defect (k.defects) whose message begins with the function's name: a string that is no plain decimal, a time zone that is no string, and each input
 // Intl refuses (a currency, a unit, a time, options).
+import { isDefect } from "@keel/schema";
 import { expect, test } from "vitest";
 import { formatDateTime } from "../src/formatDateTime.ts";
 import { formatList } from "../src/formatList.ts";
 import { formatUnit } from "../src/formatUnit.ts";
 import { numberParts } from "../src/numberParts.ts";
 
-/** The RangeError `run` throws, as `<name>: ...`; fails when it returns or throws anything else. */
+/** The defect `run` raises, as `<name>: ...`; fails when it returns or throws anything else. */
 const refused = (name: string, run: () => unknown): void => {
   let thrown: unknown;
   try {
@@ -15,7 +15,7 @@ const refused = (name: string, run: () => unknown): void => {
   } catch (e) {
     thrown = e;
   }
-  expect(thrown).toBeInstanceOf(RangeError);
+  expect(isDefect(thrown)).toBe(true);
   expect(thrown instanceof Error ? thrown.message.startsWith(`${name}: `) : false).toBe(true);
 };
 const joined = (n: number | `${number}`) =>
@@ -31,7 +31,7 @@ test("numberParts takes a plain decimal string and refuses every other string", 
     refused("numberParts", () => Reflect.apply(numberParts, undefined, [s, "en-US"]));
 });
 
-test("an invalid currency or unit, a time Date does not hold, and options Intl refuses throw a RangeError", () => {
+test("an invalid currency or unit, a time Date does not hold, and options Intl refuses raise a defect", () => {
   refused("numberParts", () => numberParts("1", "en-US", "US"));
   refused("formatUnit", () => formatUnit(1, "en-US", "furlong", "long"));
   refused("formatDateTime", () => formatDateTime(Number.NaN, "en-US", { timeZone: "UTC" }));

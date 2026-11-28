@@ -1,11 +1,12 @@
 // Seed 1337 (no generated input: fixed fixtures). k.module E1170: an app's folder (one holding a `modules/<id>/module.ts`
 // or `topology.ts`) whose `package.json` says `"keel": "library"` is no library's own folder: `keel check` reports E1170
 // at the key and checks the folder as the app it is, and `keel pack` stops with that E1170 alone.
+import { testTime } from "@keel/tooling/test-time";
 import { afterAll, expect, test } from "vitest";
 import { type Rec, type Tree, cleanup, keel, materialize } from "../conformance/compat-support.ts";
 import { library, project } from "../conformance/library-support.ts";
 
-const SLOW = 120_000;
+const SLOW = testTime(120_000);
 const made: string[] = [];
 afterAll(() => {
   for (const d of made) cleanup(d);

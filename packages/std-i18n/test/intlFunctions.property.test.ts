@@ -81,7 +81,7 @@ test("numberParts takes every plain decimal string and refuses one with anything
           .join(""),
       ).not.toBe("NaN");
       const bad = before ? `${j}${d}` : `${d}${j}`;
-      expect(() => Reflect.apply(numberParts, undefined, [bad, "en-US"])).toThrow(RangeError);
+      expect(() => Reflect.apply(numberParts, undefined, [bad, "en-US"])).toThrow(/^numberParts: /);
     }),
     { seed: 1337, numRuns: 200 },
   );

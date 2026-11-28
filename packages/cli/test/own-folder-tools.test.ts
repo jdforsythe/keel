@@ -5,11 +5,12 @@
 // `package.json`.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { testTime } from "@keel/tooling/test-time";
 import { afterAll, expect, test } from "vitest";
 import { type Tree, cleanup, diags, keel, materialize } from "../conformance/compat-support.ts";
 import { library, project, toolsRule } from "../conformance/library-support.ts";
 
-const SLOW = 120_000;
+const SLOW = testTime(120_000);
 const made: string[] = [];
 afterAll(() => {
   for (const d of made) cleanup(d);
@@ -98,15 +99,17 @@ test(
         library({
           name: NAME,
           id: "ownfix",
-          exports: { "./tools": "./tools.js" },
-          files: { "tools.js": toolsRule("E2999") },
+          exports: { "./tools": { keel: "./src/tools.ts", default: "./tools.js" } },
+          files: { "tools.js": toolsRule("E2999"), "src/tools.ts": "export {};\n" },
         }),
       ],
       deps: [NAME],
     });
     const dir = materialize(app);
     made.push(dir);
-    expect(diags(keel(dir, ["check"]), "E2999").length).toBeGreaterThan(0);
+    const run = keel(dir, ["check"]);
+    expect(diags(run, "E1815")).toEqual([]);
+    expect(diags(run, "E2999").length).toBeGreaterThan(0);
   },
   SLOW,
 );

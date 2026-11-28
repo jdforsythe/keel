@@ -1,7 +1,6 @@
-import type { SchemaError } from "@keel/schema";
-import { setFault } from "../../unsafe/setFault.ts";
+import { type SchemaError, defect } from "@keel/schema";
 
-/** Throws `load`'s rejection (std.messages): the schema issues as JSON, with no locale text and no file path. */
+/** Raises `load`'s rejection (std.messages): a defect whose `cause` holds the schema issues, with no locale text and no file path. */
 export function refused(e: SchemaError): never {
-  return setFault(`messages: ${JSON.stringify(e.data.issues)}`);
+  return defect("messages: the entry fails the set", { cause: e });
 }

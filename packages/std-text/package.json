@@ -30,9 +30,9 @@
       }
     }
   },
-  "files": ["module.ts", "src", "unsafe", "dist", ".keel/ledger.json", "docs", "README.md"],
+  "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src unsafe test && keel check",
+    "check": "tsc --noEmit && biome check src test && keel check",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
@@ -41,6 +41,7 @@
   },
   "peerDependencies": {
     "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/std-i18n": "workspace:*",
     "fast-check": "^3"
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@keel/cli": "workspace:*",
     "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/std-i18n": "workspace:*",
     "@keel/std-temporal": "workspace:*",

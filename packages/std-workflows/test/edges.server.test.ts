@@ -68,7 +68,12 @@ test("A chart event named start, attempt or forget is refused with a diagnostic 
       const id = nextId("reserved");
       const caught = (() => {
         try {
-          inRoot(() => workflow(id, { chart: named[name]() }));
+          const declare = {
+            start: (): unknown => workflow(id, { chart: named.start() }),
+            attempt: (): unknown => workflow(id, { chart: named.attempt() }),
+            forget: (): unknown => workflow(id, { chart: named.forget() }),
+          }[name];
+          inRoot(declare);
         } catch (e) {
           return e;
         }
