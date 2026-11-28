@@ -3,7 +3,7 @@
 // Seed: 1337 (recorded; no generated input: the fixture is the clause's one project, built once per adapter and shared by the cases).
 // Method: the real `keel` binary over temp projects (static-support.ts's `staticTree`, `@keel/*` linked as compat-support.ts does); the page of module `s` renders a `ThemeSelect` beside its island button, on routes `/` and `/about`.
 // The resume half runs through `keel test --e2e` over a `test/resume.e2e.ts` of the project, which uses `@keel/testing/e2e` `serve` of the build: it needs Chromium and `playwright-core` (as e2e-command.test.ts has them); none skips.
-// Reading of "the first client render's": the held document (`open` with `hold: true`, no script run) and the same page after `resume()` describe the same elements: `find` of the page's three ids is equal before and after, the select's options included.
+// Reading of "the first client render's": the held document (`open` with `hold: true`, no script run) and the same page after `resume()` describe the same elements: `find` of the page's shown ids (text and button) is equal before and after. The `ThemeSelect` is not shown while held (k.schemes Choice: "It renders with `hidden` on the element it returns, the wrapper holding its label and its select, which the runtime removes at mount and at resume." and "`ThemeSelect` is the same control for a theme"), and `find` waits for a shown element (k.e2e-page: "once the element is shown"), so it is asserted not shown before `resume()` (`until` with `gone: true`, `findAll`) and found after it, value `default`, its options' texts in order.
 // Reading of "a `node` deployable's request render": the same project with adapter `node`, `node dist/site/server.mjs` answering `GET /`, lists the options `default`, `slate` in that order, equal to the static document's.
 import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
@@ -29,7 +29,7 @@ const PAGE =
 const RESUME_E2E = `import { expect, it } from "vitest";
 import { serve } from "@keel/testing/e2e";
 
-const IDS = ["s.page.text", "s.page.theme", "s.page.more"];
+const IDS = ["s.page.text", "s.page.more"];
 for (const path of ["/", "/about"]) {
   it(\`resuming \${path} raises no E1253\`, async () => {
     const served = await serve();
@@ -47,9 +47,17 @@ for (const path of ["/", "/about"]) {
     try {
       const page = await served.open(path, { hold: true });
       const before = await Promise.all(IDS.map((id) => page.find(id)));
+      await page.until("s.page.theme", { gone: true });
+      const heldIds = (await page.findAll("s.page")).map((e) => e.id);
+      expect(heldIds).not.toContain("s.page.theme");
+      for (const id of IDS) expect(heldIds).toContain(id);
       await page.resume();
       const after = await Promise.all(IDS.map((id) => page.find(id)));
       expect(JSON.stringify(after)).toBe(JSON.stringify(before));
+      const theme = await page.find("s.page.theme");
+      expect(theme.value).toBe("default");
+      expect(theme.text).toMatch(/^Keel\s*Slate$/);
+      expect((await page.findAll("s.page")).map((e) => e.id)).toContain("s.page.theme");
       expect(page.problems().filter((p) => p.text.includes("E1253"))).toEqual([]);
     } finally {
       await served.dispose();
@@ -203,7 +211,7 @@ describe("k.hosting Static: a prerendered document lists the themes the client's
     () => {
       const { dir, build } = built("e2e");
       expect(build.status, build.stdout.slice(-2500)).toBe(0);
-      // Cases 1 and 3 hold the page before `resume()` against the page after it, for `/` and `/about`.
+      // Cases 1 and 3 hold the page before `resume()` against the page after it, for `/` and `/about`: the shown ids equal, the `ThemeSelect` hidden while held and shown after.
       const states = e2eStates(dir);
       expect([states[1], states[3]]).toEqual(["passed", "passed"]);
       const html = readFileSync(join(dir, "dist", "site", "index.html"), "utf8");
