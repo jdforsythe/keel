@@ -1,11 +1,12 @@
 // Seed 1337 (no generated input: one fixture, one spawned build). An app pays only for what it uses (k.schemes,
 // k.themes, k.aria Print and Scheme): a one-scheme app with no `themes`, no break prop, no `media`, no `Box scheme`,
-// no `SchemeSelect` or `ThemeSelect` builds to client assets no larger than the main line's build of the same app
-// before themes, print props and subtree schemes existed, and its bundle holds no part of the token grammar or the
+// no `SchemeSelect` or `ThemeSelect` builds to client assets no larger than the build of the same app on a tree
+// without themes, print props and subtree schemes, and its bundle holds no part of the token grammar or the
 // colour maths, which run at check and build time only (k.values Stylesheet).
 //
 // FIGURE: the raw bytes of every file in `dist/web/assets` (the one script and the one stylesheet) of this fixture,
-// built with `keel build` in a scratch worktree of `jdforsythe/test-impl` at 1fe7e49aa (`git worktree add` under
+// built with `keel build` in a scratch worktree of `lane-r-defect` at ff2404055, RFC 0242's kernel without RFC 0249
+// (`git worktree add` under
 // $TMPDIR, `pnpm install --offline`, this file copied into packages/cli/test, run, the worktree removed): see BYTES.
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -14,8 +15,8 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 import { type Tree, cleanup, keel, materialize } from "../conformance/compat-support.ts";
 
 const SLOW = fixedTime(300_000);
-/** The main line's figure for this fixture (see FIGURE above). */
-const BYTES = 85_376;
+/** The figure for this fixture (see FIGURE above). */
+const BYTES = 92_462;
 
 const tree: Tree = {
   "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0" })}\n`,

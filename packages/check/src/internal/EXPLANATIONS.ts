@@ -1740,8 +1740,8 @@ const ROWS: readonly Row[] = [
   [
     "E1819",
     "keel build: the built output holds Keel's CSS other than as compiled and judged, or outside .css files",
-    "Each --k-* declaration keeps its rule and at-rules, a color one its value: even #000000 as #000 is refused. All are found, P3 after sRGB, none in JS or HTML: Keel's CSS ships as CSS files. No dist/<name>/ is left.",
-    "a minifier or PostCSS plugin rewrote it, or a plugin moved Keel's CSS out of its file: unset that cssMinify, css.transformer or plugin",
+    "Each --k-* declaration keeps its rule and at-rules, a color one its value (#000000 as #000 is refused). All are found, P3 after sRGB; Keel's CSS ships in .css files, not JS or HTML. No dist/<name>/ is left.",
+    "a minifier or PostCSS plugin rewrote it, or a plugin moved it out of its file: unset that cssMinify, css.transformer or plugin",
     "k.gamut",
   ],
   [
