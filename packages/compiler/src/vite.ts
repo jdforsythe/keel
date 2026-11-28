@@ -425,6 +425,10 @@ export default function (): {
   const dev: ReturnType<typeof devMiddleware> = devMiddleware(() => {
     const run = (async (): Promise<DevApp[]> => {
       await closed;
+      // A server graph whose build-time evaluation never finished (E1048) would never finish loading here either: the
+      // request is answered with that problem, and the next change evaluates again.
+      const unfinished = problems.find((p) => p.startsWith("E1048 "));
+      if (unfinished !== undefined) throw new Error(unfinished);
       evaluated = true;
       const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
       const apps: unknown = mod?.apps;
@@ -868,12 +872,23 @@ export default function (): {
   const refresh = async (): Promise<void> => {
     stale = false;
     const usages = mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts["styles.json"].usages;
-    const r = await evaluateProject({
-      root,
-      tokensFile: exists("tokens.ts") ? "tokens.ts" : undefined,
-      routesFiles: routesFiles(),
-      usages,
-    });
+    let r: Awaited<ReturnType<typeof evaluateProject>>;
+    try {
+      r = await evaluateProject({
+        root,
+        tokensFile: exists("tokens.ts") ? "tokens.ts" : undefined,
+        routesFiles: routesFiles(),
+        usages,
+      });
+    } catch (e) {
+      // An evaluation that gave no result (E1048, E1049, a refusal that ended it) is one problem as any other: dev
+      // prints it and keeps serving, and a build fails at render start (k.evaluator Placing).
+      const code: unknown = e instanceof Error ? Reflect.get(e, "code") : undefined;
+      if (!(e instanceof Error) || typeof code !== "string" || !e.message.startsWith(code)) throw e;
+      warn(`keel: ${e.message}`);
+      problems = [e.message];
+      return;
+    }
     for (const p of r.problems) warn(`keel: ${p}`);
     problems = r.problems;
     const files = [...(r.inputs ?? []), ...(r.observe?.().reads ?? [])].map(onDisk);
