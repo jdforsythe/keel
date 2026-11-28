@@ -1,3 +1,4 @@
+import { realPaths } from "../realPaths.ts";
 import type { CacheProbe } from "./CacheProbe.ts";
 import type { Evaluation } from "./Evaluation.ts";
 import { hashFile } from "./hashFile.ts";
@@ -15,7 +16,8 @@ export function cacheProbes(e: Evaluation): CacheProbe[] {
   const add = (kind: CacheProbe["kind"], path: string, answer: string | null): void => {
     if (!out.has(`${kind}\0${path}`)) out.set(`${kind}\0${path}`, { kind, path, answer });
   };
-  for (const [kind, path] of e.probes) add(kind, path, probeAnswer(kind, path));
+  const realOf = realPaths();
+  for (const [kind, path] of e.probes) add(kind, path, probeAnswer(kind, path, realOf));
   for (const file of e.reads) if (hashFile(file) === undefined) add("exists", file, probeAnswer("exists", file));
   for (const [name, value] of e.env) add("env", name, value);
   if (e.envListed) add("env-names", "", probeAnswer("env-names", ""));

@@ -1,6 +1,7 @@
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { isRecord } from "../isRecord.ts";
+import { realPaths } from "../realPaths.ts";
 import type { CacheInput } from "./CacheInput.ts";
 import { hashFile } from "./hashFile.ts";
 
@@ -47,6 +48,7 @@ function packageOf(file: string, seen: Map<string, Pkg>): Pkg {
 export function cacheInputs(root: string, loaded: readonly string[], reads: readonly string[] = []): CacheInput[] {
   const out = new Map<string, CacheInput>();
   const packages = new Map<string, Pkg>();
+  const realOf = realPaths();
   const add = (path: string, file: string): void => {
     if (out.has(path)) return;
     const sha256 = hashFile(file);
@@ -70,22 +72,12 @@ export function cacheInputs(root: string, loaded: readonly string[], reads: read
   };
   if (existsSync(join(root, "topology.ts"))) add("topology.ts", join(root, "topology.ts"));
   for (const abs of loaded) {
-    let file: string;
-    try {
-      file = realpathSync(abs);
-    } catch {
-      continue;
-    }
-    named(file, file, false);
+    const file = realOf(abs);
+    if (file !== undefined) named(file, file, false);
   }
   for (const file of reads) {
-    let real: string;
-    try {
-      real = realpathSync(file);
-    } catch {
-      continue;
-    }
-    named(real, file, true);
+    const real = realOf(file);
+    if (real !== undefined) named(real, file, true);
   }
   return [...out.values()].sort((a, b) => (a.path < b.path ? -1 : 1));
 }

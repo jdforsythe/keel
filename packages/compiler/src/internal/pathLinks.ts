@@ -3,6 +3,7 @@ import path from "node:path";
 import type { Metafile } from "esbuild";
 import { isNodeBuiltin } from "./isNodeBuiltin.ts";
 import { jsonc } from "./jsonc.ts";
+import { realPaths } from "./realPaths.ts";
 
 /** The file extensions and index files a specifier without one may name, as the bundle resolves them. */
 const EXTS = [".tsx", ".ts", ".jsx", ".js", ".mts", ".cts", ".mjs", ".cjs", ".css", ".json"];
@@ -92,12 +93,12 @@ export function pathLinks(
     if (!out.has(`${kind}\0${p}`)) out.set(`${kind}\0${p}`, [kind, p]);
   };
   const isLink = new Map<string, boolean>();
-  const real = new Map<string, string | undefined>();
+  const realOf = realPaths();
   const linkAt = (p: string): boolean => {
     let v = isLink.get(p);
     if (v === undefined) {
       try {
-        v = fs.lstatSync(p).isSymbolicLink();
+        v = fs.lstatSync(p, { throwIfNoEntry: false })?.isSymbolicLink() === true;
       } catch {
         v = false;
       }
@@ -105,20 +106,9 @@ export function pathLinks(
     }
     return v;
   };
-  const realOf = (p: string): string | undefined => {
-    if (real.has(p)) return real.get(p);
-    let v: string | undefined;
-    try {
-      v = fs.realpathSync(p);
-    } catch {
-      v = undefined;
-    }
-    real.set(p, v);
-    return v;
-  };
   const isFile = (p: string): boolean => {
     try {
-      return fs.statSync(p).isFile();
+      return fs.statSync(p, { throwIfNoEntry: false })?.isFile() === true;
     } catch {
       return false;
     }

@@ -1,4 +1,5 @@
 import { isAbsolute, sep } from "node:path";
+import { realPaths } from "../realPaths.ts";
 import type { CacheInput } from "./CacheInput.ts";
 import type { CacheProbe } from "./CacheProbe.ts";
 import { hashFile } from "./hashFile.ts";
@@ -19,8 +20,9 @@ const own = (i: CacheInput): boolean =>
  * own inputs are read first, so an entry an edit made stale is told after those alone.
  */
 export function cacheHeld(inputs: readonly CacheInput[], probes: readonly CacheProbe[]): boolean {
+  const realOf = realPaths();
   return (
     [...inputs.filter(own), ...inputs.filter((i) => !own(i))].every((i) => hashFile(i.file) === i.sha256) &&
-    probes.every((p) => probeAnswer(p.kind, p.path) === p.answer)
+    probes.every((p) => probeAnswer(p.kind, p.path, realOf) === p.answer)
   );
 }

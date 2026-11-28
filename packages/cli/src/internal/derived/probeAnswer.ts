@@ -64,14 +64,24 @@ function fact(name: string): string | null {
 
 /**
  * The answer `kind`'s question about `path` gets now (`CacheProbe`), asked of the file system, the process and
- * `process.env`.
+ * `process.env`; a `realpath` question goes to `realOf`, a pass's lookup (`realPaths`), when one is given.
  */
-export function probeAnswer(kind: CacheProbe["kind"], path: string): string | null {
+export function probeAnswer(
+  kind: CacheProbe["kind"],
+  path: string,
+  realOf?: (file: string) => string | undefined,
+): string | null {
   try {
     if (kind === "exists") return existsSync(path) ? "yes" : "no";
-    if (kind === "stat") return kindOf(statSync(path));
-    if (kind === "lstat") return kindOf(lstatSync(path));
-    if (kind === "realpath") return realpathSync(path);
+    if (kind === "stat") {
+      const s = statSync(path, { throwIfNoEntry: false });
+      return s === undefined ? "no" : kindOf(s);
+    }
+    if (kind === "lstat") {
+      const s = lstatSync(path, { throwIfNoEntry: false });
+      return s === undefined ? "no" : kindOf(s);
+    }
+    if (kind === "realpath") return realOf === undefined ? realpathSync(path) : (realOf(path) ?? null);
     if (kind === "list")
       return hash(
         readdirSync(path, { withFileTypes: true }).map(
