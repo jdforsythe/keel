@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "The main window's core, store and link permissions.",
+  "windows": ["main"],
+  "permissions": ["core:default", "store:default", "deep-link:default"]
+}

@@ -4,5 +4,5 @@ export default module({
   id: "inspector",
   deps: [],
   capabilities: ["net"],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
 });

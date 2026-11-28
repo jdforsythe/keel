@@ -54,17 +54,17 @@ export async function lspHandle(body: string, state: LspState, provide: () => Io
         const d = textDocument(msg.params);
         if (d.uri === "" || d.text === undefined) return [];
         state.docs.set(d.uri, d.text);
-        return publishAll(state, await provide());
+        return await publishAll(state, await provide());
       }
       case "textDocument/didClose": {
         const d = textDocument(msg.params);
         state.docs.delete(d.uri);
-        return publishAll(state, await provide(), [d.uri]);
+        return await publishAll(state, await provide(), [d.uri]);
       }
       case "textDocument/codeAction":
         return reply(lspCodeActions(state, state.root ?? (await provide()).cwd, msg.params));
       case "textDocument/hover":
-        return reply(lspHover(state, msg.params));
+        return reply(await lspHover(state, msg.params));
       default:
         return id === undefined
           ? []

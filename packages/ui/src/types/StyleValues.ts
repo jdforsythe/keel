@@ -4,7 +4,7 @@ import type { TokenName } from "./TokenName.ts";
 
 type Token<D> = Responsive<TokenName, D>;
 
-/** The style prop vocabulary (k.ui). Values are token names (see `TokenName`); `direction align justify wrap` take keywords and imply flex. */
+/** The style prop vocabulary (k.ui). Values are token names (see `TokenName`); `direction align justify wrap` take keywords and imply flex; `textAlign` takes `start center end` and does not; `breakBefore`, `breakAfter` and `breakInside` take page-break keywords. A responsive value may key `print` beside its breakpoints (k.aria Print). */
 export type StyleValues<D = Computed<string>> = {
   readonly p?: Token<D>;
   readonly px?: Token<D>;
@@ -27,4 +27,9 @@ export type StyleValues<D = Computed<string>> = {
   readonly align?: Responsive<"start" | "center" | "end" | "stretch" | "baseline", D>;
   readonly justify?: Responsive<"start" | "center" | "end" | "between" | "around" | "evenly", D>;
   readonly wrap?: Responsive<"wrap" | "nowrap" | "reverse", D>;
+  readonly textAlign?: Responsive<"start" | "center" | "end", D>;
+  /** Page breaks when printing (k.aria Print). */
+  readonly breakBefore?: Responsive<"page" | "avoid", D>;
+  readonly breakAfter?: Responsive<"page" | "avoid", D>;
+  readonly breakInside?: Responsive<"avoid", D>;
 };

@@ -1,6 +1,6 @@
 # RFC 0048: a production node deployable serves its built client
 
-Status: accepted (ADR-0037)
+Status: implemented (ADR-0037)
 
 ## Problem
 - **Backlog 0116.** RFC 0046 gave node documents with islands a module script, `/@keel/entry.ts`, and made `createApp` answer it. The answer is the entry's source text, with bare specifiers (`@keel/runtime-dom/ops`) and `/@keel/islands.ts`. Only a Vite dev server in front can resolve them. Run with `node server.ts` in production, the browser cannot load that script, so `resume` never runs.

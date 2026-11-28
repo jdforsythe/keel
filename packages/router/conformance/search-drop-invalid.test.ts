@@ -10,7 +10,7 @@ describe("k.router search parsing", () => {
     const app = await start("/");
     app.history.external("/orders/7?tab=bogus&x=1");
     await settle();
-    expect(now(app.router)).toMatchObject({ id: "orders.show", params: { id: "7" } });
+    expect(now(app.router)).toMatchObject({ id: "app.ordersShow", params: { id: "7" } });
     expect(now(app.router).search).toEqual({});
     expect(now(app.router).pending).toBe(false);
     app.stop();
@@ -24,7 +24,7 @@ describe("k.router search parsing", () => {
         async (bad, key) => {
           app.history.external(`/orders/7?tab=${bad}&${key}=1`);
           await settle();
-          expect(now(app.router)).toMatchObject({ id: "orders.show" });
+          expect(now(app.router)).toMatchObject({ id: "app.ordersShow" });
           expect(now(app.router).search).toEqual({});
         },
       ),
@@ -36,7 +36,7 @@ describe("k.router search parsing", () => {
     const app = await start("/");
     app.history.external("/orders?page=abc&q=hi&sort=asc&zzz=1");
     await settle();
-    expect(now(app.router)).toMatchObject({ id: "orders.list", search: { q: "hi", sort: "asc" } });
+    expect(now(app.router)).toMatchObject({ id: "app.ordersList", search: { q: "hi", sort: "asc" } });
     expect(Object.keys(now(app.router).search)).toEqual(expect.not.arrayContaining(["page", "zzz"]));
     app.stop();
   });

@@ -1,3 +1,4 @@
+import type { EnvEntry } from "./EnvEntry.ts";
 import type { ManifestList } from "./ManifestList.ts";
 import type { StdEntry } from "./StdEntry.ts";
 
@@ -7,7 +8,12 @@ export type Manifest = {
   readonly deps: ManifestList;
   readonly capabilities: ManifestList;
   readonly exports: ManifestList;
-  readonly routes: ManifestList;
+  /** The `.pii()` classes its client-reachable stores may hold (k.leave Snapshots). */
+  readonly clientPii: ManifestList;
+  /** The `env` entries, the environment variables its server code reads (k.server-deps Environment); empty when absent. */
+  readonly env: readonly EnvEntry[];
+  /** The end of the manifest object's last property, where a fix adds an absent list. */
+  readonly tail: number;
   /** `std` config entries in source order (RFC 0047); empty when absent. */
   readonly std: readonly StdEntry[];
 };

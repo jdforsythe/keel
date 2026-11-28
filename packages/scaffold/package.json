@@ -1,27 +1,63 @@
 {
   "name": "@keel/scaffold",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./agents": {
+      "types": "./src/agents/index.ts",
+      "default": "./src/agents/index.ts"
+    },
+    "./create": {
+      "types": "./src/create/index.ts",
+      "default": "./src/create/index.ts"
+    },
+    "./links": {
+      "types": "./src/links/index.ts",
+      "default": "./src/links/index.ts"
     }
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./agents": {
+        "types": "./dist/src/agents/index.d.ts",
+        "default": "./dist/src/agents/index.js"
+      },
+      "./create": {
+        "types": "./dist/src/create/index.d.ts",
+        "default": "./dist/src/create/index.js"
+      },
+      "./links": {
+        "types": "./dist/src/links/index.d.ts",
+        "default": "./dist/src/links/index.js"
+      }
+    }
+  },
+  "files": ["dist", "docs"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test unsafe",
+    "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
+    "@keel/compiler": "workspace:*",
     "@keel/schema": "workspace:*",
     "magic-string": "^1.4.5",
     "oxc-parser": "^0.157.0"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/tooling": "workspace:*",
     "fast-check": "^3"
   }

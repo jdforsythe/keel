@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "check": "tsc --noEmit && biome check modules test",
-    "test": "vitest run"
+    "build": "keel build",
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
+    "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs"
   },
   "dependencies": {
     "@keel/compiler": "workspace:*",
@@ -22,8 +23,11 @@
     "@keel/ui": "workspace:*"
   },
   "devDependencies": {
+    "@keel/cli": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "playwright-core": "1.65.0",
     "vite": "^8.3.6"
   }
 }

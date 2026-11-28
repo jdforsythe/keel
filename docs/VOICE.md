@@ -1,6 +1,6 @@
 # Voice guide
 
-Every piece of prose Keel ships follows this: documentation, code comments, commit messages, web copy, README files, skill text, diagnostics, and the words inside the example apps. The brand guide (`docs/BRAND.md`) owns color, type, and layout; this file owns the sentences. The mechanical rules are enforced by `tooling/voice-lint.mjs` (V0003) in `pnpm check`.
+Every piece of prose Keel ships follows this: documentation, code comments, commit messages, web copy, README files, skill text, diagnostics, and the words inside the example apps. The brand guide (`docs/BRAND.md`) owns color, type, and layout; this file owns the sentences. The mechanical rules are enforced by `tooling/voice-lint.mjs` (V0003) in `pnpm check`: banned words (every "just", "landscape" and the hedging adverbs included), em dashes (and ` -- `), "here's the thing", "the whole story" and "it's not X, it's Y" reversals. It reads prose only: code spans and fenced code are skipped, as are this file and the brand guide; it covers `docs/`, `spec/`, README files, skill text, the copy and comments of the example apps' modules and the comments of `packages/*/src`. The other rules, "navigate" as a metaphor among them, are review judgment.
 
 ## Stance
 
@@ -26,9 +26,9 @@ End a paragraph on its strongest concrete point, not on a sentence that sums it 
 
 ## Banned words
 
-From the brand guide: seamless, powerful, blazing, magic, revolutionary, effortless, simply, just (as an intensifier), leverage, robust, cutting-edge, AI-powered, supercharge.
+Enforced by `tooling/voice-lint.mjs` (V0003): seamless, powerful, blazing, magic, revolutionary, effortless, simply, just (as an intensifier), leverage, robust, cutting-edge, AI-powered, supercharge.
 
-From this guide: crucially, fundamentally, importantly, delve, navigate (as a metaphor), landscape (as a metaphor), game-changer, paradigm, rapidly evolving.
+Also banned: crucially, fundamentally, importantly, delve, navigate (as a metaphor), landscape (as a metaphor), game-changer, paradigm, rapidly evolving.
 
 The only nautical word is Keel.
 
@@ -38,7 +38,7 @@ The only nautical word is Keel.
 | --- | --- |
 | `docs/`, `spec/`, README files | Reference docs may use the OUTPUT.md run-in label style; everything else is narrative prose. |
 | Code comments | Same rules. A comment states what the code guarantees and why, in one or two sentences. |
-| Diagnostics | Message under 90 chars, imperative fix, no adjectives (OUTPUT.md). |
+| Diagnostics | Message under 90 chars, optional fix as a unified diff hunk (OUTPUT.md). |
 | Example apps and the inspector | Page copy, empty states, labels, and errors. The copy is part of the product. |
 | Skills | The agent reads these as instructions; plain and specific, no sales language. |
 | Commit messages, RFCs, ADRs | Same rules; numbers and file names over adjectives. |
@@ -50,3 +50,6 @@ To: "Keel compiles JSX to DOM operations and keeps every state change in a named
 
 Rewrite: "It's not the framework that's slow, it's the reasoning."
 To: "The framework is fast enough; the agent's reasoning about invisible rules is what costs tokens."
+
+subject: tooling/voice-lint.mjs
+verified: 58518a6665330f253ba46d8d456f7bc45dde1128

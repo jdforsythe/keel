@@ -8,5 +8,7 @@ export { mount } from "./mount.ts";
 export type { CaseNode } from "./types/CaseNode.ts";
 export type { Component } from "./types/Component.ts";
 export type { MountOptions } from "./types/MountOptions.ts";
-export type { Slots } from "./types/Slots.ts";
+export type { RenderArtifacts } from "./types/RenderArtifacts.ts";
+export type { CaughtError } from "./types/CaughtError.ts";
+export type { InvalidValueError } from "./types/InvalidValueError.ts";
 export type { UnexpectedError } from "./types/UnexpectedError.ts";

@@ -1,15 +1,20 @@
+import { clipMessage } from "@keel/schema/internal";
 import { Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
-import { clip } from "./clip.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { lineCol } from "./lineCol.ts";
 
 /**
  * E1753 (k.check) on source: a `defineRule({ code })` literal outside E2xxx/W2xxx, or a code already defined
- * by another `defineRule` in the checked files (path order).
+ * by another `defineRule` in the checked files (path order) of the same package: the app's files, or one library's
+ * (`library` names the folder of a library's file, k.library In an app). A code two packages define is the
+ * registry's E1753 at the later one's `deps` entry (k.library), not this one.
  */
-export function ruleCodeDeclarations(files: readonly Checked[]): Diagnostic[] {
+export function ruleCodeDeclarations(
+  files: readonly Checked[],
+  library: (path: string) => string | undefined = () => undefined,
+): Diagnostic[] {
   const first = new Map<string, string>();
   const out: Diagnostic[] = [];
   const ordered = [...files].sort((a, b) => (a.file.path < b.file.path ? -1 : a.file.path > b.file.path ? 1 : 0));
@@ -30,12 +35,13 @@ export function ruleCodeDeclarations(files: readonly Checked[]): Diagnostic[] {
     }).visit(parsed.program);
     for (const h of hits.sort((x, y) => x.at - y.at)) {
       const { line, col } = lineCol(file.source, h.at);
-      const prior = first.get(h.code);
-      const code = clip(h.code, 20);
+      const key = `${library(file.path) ?? ""}\u0000${h.code}`;
+      const prior = first.get(key);
+      const code = clipMessage(h.code, 20);
       let message: string | null = null;
       if (!/^[EW]2\d{3}$/.test(h.code)) message = `rule code ${code} is outside E2xxx/W2xxx`;
       else if (prior !== undefined) message = `rule code ${code} already defined at ${prior.slice(-40)}`;
-      if (prior === undefined) first.set(h.code, `${file.path}:${line}`);
+      if (prior === undefined) first.set(key, `${file.path}:${line}`);
       if (message !== null)
         out.push({ kind: "diag", code: "E1753", path: file.path, line, col, message, see: "k.check" });
     }

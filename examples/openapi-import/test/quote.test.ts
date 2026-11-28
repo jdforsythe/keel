@@ -1,0 +1,29 @@
+import { createCtx } from "@keel/ctx";
+import { createApp } from "@keel/server";
+import { renderRoute } from "@keel/testing";
+import { expect, it } from "vitest";
+import { routes } from "../modules/app/routes.ts";
+import topology from "../topology.ts";
+
+const QUOTES = "http://localhost:4417/quotes/*";
+
+it("shows the quote the imported client fetched", async () => {
+  const ctx = createCtx({ mode: "sim", seed: 1 });
+  ctx.net.route(QUOTES, () => Response.json({ id: "q1", text: "Small is fast.", author: "Ada" }));
+  const app = await createApp({ topology, routes, ctx });
+  const page = await renderRoute("app.home", { routes, params: {}, ctx, app });
+  expect(page.find("app.home").role).toBe("main");
+  expect(page.a11y("app.home.title").role).toBe("heading");
+  expect(page.find("app.home.quote").text).toBe("Small is fast.");
+  expect(page.find("app.home.author").text).toBe("Ada");
+  page.dispose();
+});
+
+it("shows the error code when the service answers 404", async () => {
+  const ctx = createCtx({ mode: "sim", seed: 1 });
+  ctx.net.route(QUOTES, () => Response.json({ message: "gone" }, { status: 404 }));
+  const app = await createApp({ topology, routes, ctx });
+  const page = await renderRoute("app.home", { routes, params: {}, ctx, app });
+  expect(page.find("app.home.author").text).toBe("api.status");
+  page.dispose();
+});

@@ -1,7 +1,7 @@
 {
   "name": "@keel/services",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -13,20 +13,44 @@
       "default": "./src/openapi/index.ts"
     }
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./openapi": {
+        "types": "./dist/src/openapi/index.d.ts",
+        "default": "./dist/src/openapi/index.js"
+      }
+    }
+  },
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
+    "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
     "@keel/check": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/forms": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "fast-check": "^3"
+    "@keel/ui": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3",
+    "happy-dom": "^21"
   }
 }

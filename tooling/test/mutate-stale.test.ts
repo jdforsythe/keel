@@ -1,0 +1,278 @@
+import fs from "node:fs";
+import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import {
+  chunkPlan,
+  endLine,
+  leftLine,
+  listLine,
+  partialFiles,
+  positive,
+  reportClaims,
+  staleFiles,
+} from "../mutate-stale-plan.mjs";
+import { mutationUnits, unitDir } from "../mutate-units.mjs";
+
+const shas = new Map([
+  ["packages/a/src/x.ts", "1"],
+  ["packages/a/src/y.ts", "2"],
+  ["packages/a/src/index.ts", "9"],
+  ["packages/a/src/types/t.ts", "9"],
+  ["packages/b/src/z.ts", "3"],
+  ["packages/b/src/deep/w.ts", "4"],
+]);
+
+describe("staleFiles", () => {
+  it("splits files into stale (another sha) and missing (no claim), leaving fresh ones out", () => {
+    const claims = [
+      { file: "packages/a/src/x.ts", sha: "1" },
+      { file: "packages/a/src/y.ts", sha: "old" },
+      { file: "packages/b/src/z.ts", sha: "3" },
+    ];
+    expect(staleFiles(claims, shas, ["a", "b"])).toEqual([
+      { pkg: "a", stale: ["src/y.ts"], missing: [] },
+      { pkg: "b", stale: [], missing: ["src/deep/w.ts"] },
+    ]);
+  });
+  it("skips index.ts, types/ and packages not asked for", () => {
+    expect(staleFiles([], shas, ["a"])).toEqual([{ pkg: "a", stale: [], missing: ["src/x.ts", "src/y.ts"] }]);
+  });
+  it("ignores claims of files no longer on disk", () => {
+    expect(staleFiles([{ file: "packages/a/src/gone.ts", sha: "1" }], new Map(), ["a"])).toEqual([]);
+  });
+});
+
+describe("staleFiles with inert files", () => {
+  it("leaves out a file with no mutant to run, missing or stale", () => {
+    const claims = [{ file: "packages/a/src/y.ts", sha: "old" }];
+    expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts", "packages/a/src/y.ts"]))).toEqual([]);
+    expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts"]))).toEqual([
+      { pkg: "a", stale: ["src/y.ts"], missing: [] },
+    ]);
+  });
+});
+
+describe("partialFiles", () => {
+  // The instrumenter counts lines and columns from 0, a report from 1.
+  const at = (line: number, column: number, d: number) => ({
+    start: { line: line + d, column: column + d },
+    end: { line: line + d, column: column + d + 4 },
+  });
+  const found = (line: number, mutatorName: string, replacement: string) => ({
+    mutatorName,
+    replacement,
+    location: at(line, 2, 0),
+  });
+  const held = (line: number, mutatorName: string, replacement: string, status: string) => ({
+    mutatorName,
+    replacement,
+    status,
+    location: at(line, 2, 1),
+  });
+  const three = [
+    found(1, "BooleanLiteral", "false"),
+    found(2, "StringLiteral", '""'),
+    found(3, "BlockStatement", "{}"),
+  ];
+  const whole = [
+    held(3, "BlockStatement", "{}", "Killed"),
+    held(1, "BooleanLiteral", "false", "NoCoverage"),
+    held(2, "StringLiteral", '""', "Ignored"),
+  ];
+  it("lists a file whose report entry holds fewer mutants than the file has", () => {
+    const report = {
+      files: {
+        "src/cut.ts": { source: "C", mutants: [whole[1]] },
+        "src/whole.ts": { source: "W", mutants: whole },
+      },
+    };
+    const mutants = new Map([
+      ["packages/a/src/cut.ts", three],
+      ["packages/a/src/whole.ts", three],
+    ]);
+    expect(partialFiles("packages/a", report, mutants)).toEqual(["packages/a/src/cut.ts"]);
+  });
+  it("lists a file cut down to its ignored mutants, and one whose entry holds other mutants than the file has", () => {
+    const report = {
+      files: {
+        "src/ignored.ts": { source: "I", mutants: [whole[2]] },
+        "src/other.ts": { source: "O", mutants: [whole[0], whole[1], held(9, "StringLiteral", '""', "Killed")] },
+        "src/more.ts": { source: "M", mutants: [...whole, held(9, "StringLiteral", '""', "Killed")] },
+      },
+    };
+    const mutants = new Map(["ignored", "other", "more"].map((n) => [`packages/a/src/${n}.ts`, three]));
+    expect(partialFiles("packages/a", report, mutants)).toEqual([
+      "packages/a/src/ignored.ts",
+      "packages/a/src/other.ts",
+      "packages/a/src/more.ts",
+    ]);
+  });
+  it("leaves out a file nothing was found for, and reads a report without files as holding nothing", () => {
+    const report = { files: { "src/changed.ts": { source: "C", mutants: [] }, "src/bad.ts": { source: "B" } } };
+    expect(partialFiles("packages/a", report, new Map([["packages/a/src/bad.ts", three]]))).toEqual([
+      "packages/a/src/bad.ts",
+    ]);
+    expect(partialFiles("packages/a", {}, new Map())).toEqual([]);
+    expect(partialFiles("packages/a", null, new Map())).toEqual([]);
+  });
+});
+
+describe("staleFiles with partial files", () => {
+  it("lists a claimed file whose report entry is partial as stale, though its sha holds or it reads inert", () => {
+    const claims = [
+      { file: "packages/a/src/x.ts", sha: "1" },
+      { file: "packages/a/src/y.ts", sha: "2" },
+    ];
+    const partial = new Set(["packages/a/src/x.ts", "packages/b/src/z.ts"]);
+    expect(staleFiles(claims, shas, ["a", "b"], new Set(["packages/b/src/z.ts"]), partial)).toEqual([
+      { pkg: "a", stale: ["src/x.ts"], missing: [] },
+      { pkg: "b", stale: ["src/z.ts"], missing: ["src/deep/w.ts"] },
+    ]);
+  });
+});
+
+describe("reportClaims", () => {
+  const hash = (text: string) => `h:${text}`;
+  const report = {
+    files: {
+      "src/x.ts": { source: "X", mutants: [{ status: "Ignored" }, { status: "Killed" }] },
+      "src/y.ts": { source: "Y", mutants: [{ status: "Ignored" }] },
+      "src/z.ts": { source: "Z", mutants: [] },
+      "src/bad.ts": { mutants: [{ status: "Killed" }] },
+    },
+  };
+  it("claims a file with a scored mutant by the sha of the source the report holds, and sets the others aside", () => {
+    expect(reportClaims("packages/a", report, hash)).toEqual({
+      claims: [{ file: "packages/a/src/x.ts", sha: "h:X" }],
+      inert: [
+        { file: "packages/a/src/y.ts", sha: "h:Y" },
+        { file: "packages/a/src/z.ts", sha: "h:Z" },
+      ],
+    });
+  });
+  it("reads a report without files as holding nothing", () => {
+    expect(reportClaims("packages/a", {}, hash)).toEqual({ claims: [], inert: [] });
+    expect(reportClaims("packages/a", undefined, hash)).toEqual({ claims: [], inert: [] });
+  });
+});
+
+describe("staleFiles for an app", () => {
+  const appShas = new Map([
+    ["apps/g/modules/todos/a.ts", "1"],
+    ["apps/g/modules/index.ts", "9"],
+    ["apps/g/modules/types/t.ts", "9"],
+    ["apps/g/src/b.ts", "2"],
+    ["packages/a/src/x.ts", "3"],
+  ]);
+  it("reads an app's modules folder under `apps/`, and a package's src beside it", () => {
+    expect(staleFiles([{ file: "apps/g/modules/todos/a.ts", sha: "old" }], appShas, ["a", "apps/g"])).toEqual([
+      { pkg: "a", stale: [], missing: ["src/x.ts"] },
+      { pkg: "apps/g", stale: ["modules/todos/a.ts"], missing: [] },
+    ]);
+  });
+});
+
+describe("mutationUnits", () => {
+  it("lists packages by name and apps as apps/<name>, those with a Stryker config", () => {
+    const dir = tempDir("keel-units-");
+    try {
+      for (const d of ["packages/p", "packages/q", "apps/g", "apps/h"])
+        fs.mkdirSync(path.join(dir, d), { recursive: true });
+      for (const d of ["packages/p", "apps/g"]) fs.writeFileSync(path.join(dir, d, "stryker.config.mjs"), "");
+      expect(mutationUnits(dir)).toEqual(["p", "apps/g"]);
+      expect(unitDir("p")).toBe("packages/p");
+      expect(unitDir("apps/g")).toBe("apps/g");
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("chunkPlan", () => {
+  const entries = [
+    { pkg: "a", stale: ["1", "2", "3"], missing: ["m"] },
+    { pkg: "b", stale: [], missing: ["n"] },
+  ];
+  it("cuts each package's stale files into chunks and leaves missing ones out by default", () => {
+    expect(chunkPlan(entries, 2)).toEqual([
+      { pkg: "a", files: ["1", "2"] },
+      { pkg: "a", files: ["3"] },
+    ]);
+  });
+  it("adds the missing files on request", () => {
+    expect(chunkPlan(entries, 4, { missing: true })).toEqual([
+      { pkg: "a", files: ["1", "2", "3", "m"] },
+      { pkg: "b", files: ["n"] },
+    ]);
+  });
+  it("treats a size below one as one", () => {
+    expect(chunkPlan(entries, 0)).toHaveLength(3);
+  });
+  it("keeps every file once, in order, in chunks no larger than the size", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.array(fc.string(), { maxLength: 12 }), { maxLength: 5 }),
+        fc.integer({ min: 1, max: 6 }),
+        (lists, size) => {
+          const entries = lists.map((stale, i) => ({ pkg: `p${i}`, stale, missing: [] }));
+          const chunks = chunkPlan(entries, size);
+          expect(chunks.every((c) => c.files.length >= 1 && c.files.length <= size)).toBe(true);
+          expect(chunks.flatMap((c) => c.files.map((f) => `${c.pkg}:${f}`))).toEqual(
+            entries.flatMap((e) => e.stale.map((f) => `${e.pkg}:${f}`)),
+          );
+        },
+      ),
+      { seed: 1337 },
+    );
+  });
+});
+
+describe("lines", () => {
+  const chunks = [
+    { pkg: "a", files: ["1", "2"] },
+    { pkg: "a", files: ["3"] },
+    { pkg: "b", files: ["4"] },
+  ];
+  it("says what is left", () => {
+    expect(leftLine(chunks)).toBe("4 files left in 2 packages");
+    expect(leftLine(chunks.slice(2))).toBe("1 file left in 1 package");
+    expect(leftLine([])).toBe("0 files left in 0 packages");
+  });
+  it("lists files and chunks per package", () => {
+    expect(listLine(chunks)).toBe("a(3 files, 2 chunks),b(1 files, 1 chunks)");
+    expect(listLine([])).toBe("none");
+  });
+});
+
+describe("positive", () => {
+  it("takes a positive integer, else the fallback", () => {
+    expect(positive("5", 3)).toBe(5);
+    for (const bad of [undefined, "0", "-1", "x", "1.5"]) expect(positive(bad, 3)).toBe(3);
+  });
+});
+
+describe("endLine", () => {
+  const left = [{ pkg: "a", files: ["src/x.ts"] }];
+  it("ends ok on a clean run", () => {
+    expect(endLine({ exit: 0, signalled: false, left })).toEqual({
+      exit: 0,
+      line: "ok mutate-stale 1 file left in 1 package; run again to resume",
+    });
+  });
+  it("exits 130 and does not read ok after a signal", () => {
+    const end = endLine({ exit: 0, signalled: true, left });
+    expect(end.exit).toBe(130);
+    expect(end.line.startsWith("stopped ")).toBe(true);
+  });
+  it("exits 130 with stopped when a stop file was seen between chunks", () => {
+    const end = endLine({ exit: 0, signalled: false, stopped: true, left });
+    expect(end.exit).toBe(130);
+    expect(end.line.startsWith("stopped ")).toBe(true);
+  });
+  it("reports fail for another non-zero exit, and stopped for a runner's 130", () => {
+    expect(endLine({ exit: 1, signalled: false, left }).line.startsWith("fail ")).toBe(true);
+    expect(endLine({ exit: 130, signalled: false, left }).line.startsWith("stopped ")).toBe(true);
+  });
+});

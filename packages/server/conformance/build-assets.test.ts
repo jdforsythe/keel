@@ -1,7 +1,10 @@
 // @vitest-environment happy-dom
-// Spec: k.server, clause "`createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555." (RFC 0048)
-// Spec: k.server Rules E1555
+// Spec: k.deploy, clause "`createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555." (RFC 0048)
+// k.deploy Rules E1555
+// k.head, Server "a `<link rel=\"stylesheet\">` for each `.css` file under `/assets/` that the build manifest's entry chunk names"
 // Seed: 1337 (no generated inputs; the fixture is built once through the real CLI). In-process createApp, no listening server.
+import { fixedTime } from "@keel/tooling/test-time";
+import type { Ctx } from "@keel/ctx";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -11,11 +14,13 @@ import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { childOutput } from "./topology-build-fixture.ts";
 
-type Component = (props: RouteProps) => Node;
+type Component = (props: RouteProps, ctx: Ctx) => Node;
 type Fetcher = { fetch(req: Request): Promise<Response> };
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -27,6 +32,15 @@ export default function Counter() {
 }
 `;
 
+/** The file the fixture build compiles: the same counter from \`@keel/ui\` primitives, so the project passes \`keel check\`. */
+const BUILT_COUNTER = `import { signal } from "@keel/reactive";
+import { Box, Button, Text } from "@keel/ui";
+export default function Counter() {
+  const n = signal(0);
+  return <Box p="4"><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
+}
+`;
+
 function compileComponent(source: string): Component {
   const r = compile([{ path: "Counter.tsx", source }]);
   expect(r.diagnostics).toEqual([]);
@@ -34,8 +48,8 @@ function compileComponent(source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -65,7 +79,7 @@ let emptyDir = "";
 beforeAll(() => {
   fixture = tmp("keel-build-");
   emptyDir = tmp("keel-noassets-");
-  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server"]) {
+  for (const p of ["compiler", "ctx", "reactive", "router", "runtime-dom", "schema", "store", "server", "ui"]) {
     link(path.join(REPO, "packages", p), path.join(fixture, "node_modules", "@keel", p));
   }
   link(path.join(REPO, "node_modules", "vite"), path.join(fixture, "node_modules", "vite"));
@@ -94,11 +108,26 @@ beforeAll(() => {
       },
     }),
   );
-  write(fixture, "modules/app/Counter.tsx", COUNTER);
+  write(fixture, "modules/app/Counter.tsx", BUILT_COUNTER);
+  write(
+    fixture,
+    "modules/app/module.ts",
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
+  );
+  write(
+    fixture,
+    "tokens.ts",
+    'import { defineTokens } from "@keel/ui/tokens";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n',
+  );
   write(
     fixture,
     "modules/app/routes.ts",
-    'import { manifest } from "@keel/router";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest({ "app.home": { path: "/", component: Counter } });\n',
+    'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest(app, { "app.home": { component: Counter } });\n',
+  );
+  write(
+    fixture,
+    "modules/app/app.contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
   );
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {
     cwd: fixture,
@@ -106,18 +135,19 @@ beforeAll(() => {
     env: { ...process.env, KEEL_AGENT: "1" },
   });
   if (r.status !== 0) {
-    throw new Error(`keel build failed (status ${String(r.status)})\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    throw new Error(`keel build failed (status ${String(r.status)}): ${childOutput(r)}`);
   }
-}, 90_000);
+}, fixedTime(90_000));
 
 afterAll(() => {
   for (const dir of tmpRoots) fs.rmSync(dir, { recursive: true, force: true });
 });
 
 async function appFor(assets: string, mode?: "dev" | "production"): Promise<Fetcher> {
+  const appContract = contract("app", { "app.home": { path: "/" } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: compileComponent(COUNTER) } }),
+    routes: manifest(appContract, { "app.home": { component: compileComponent(COUNTER) } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     assets,
     ...(mode === undefined ? {} : { mode }),
@@ -135,7 +165,7 @@ async function moduleSrc(app: Fetcher): Promise<string> {
   return src;
 }
 
-describe("k.server: createApp({ assets }) on a keel build node fixture", () => {
+describe("k.deploy: createApp({ assets }) on a keel build node fixture", () => {
   it("createApp({ assets }) on a keel build node fixture scripts a 200 JavaScript resume entry, immutable", async () => {
     expect(fs.existsSync(path.join(fixture, "dist", "web", ".vite", "manifest.json"))).toBe(true);
     const app = await appFor(path.join(fixture, "dist", "web"));
@@ -163,5 +193,20 @@ describe("k.server: createApp({ assets }) on a keel build node fixture", () => {
   it("in dev mode assets is ignored and the document script is /@keel/entry.ts", async () => {
     const app = await appFor(emptyDir, "dev");
     expect(await moduleSrc(app)).toBe("/@keel/entry.ts");
+  });
+
+  it("a built node-only deployable (a node deployable and no client one) links a stylesheet under /assets/ that the manifest's entry chunk names, and it serves as 200 CSS", async () => {
+    const app = await appFor(path.join(fixture, "dist", "web"));
+    const res = await app.fetch(new Request("http://localhost/"));
+    const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+    const hrefs = Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).map((l) => l.getAttribute("href") ?? "");
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      expect(href.startsWith("/assets/") && href.endsWith(".css")).toBe(true);
+      const css = await app.fetch(new Request(new URL(href, "http://localhost")));
+      expect(css.status).toBe(200);
+      expect(css.headers.get("content-type") ?? "").toContain("css");
+      expect((await css.text()).length).toBeGreaterThan(0);
+    }
   });
 });

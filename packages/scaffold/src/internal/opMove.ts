@@ -13,12 +13,15 @@ import { inputs } from "./inputs.ts";
 import { isCode } from "./isCode.ts";
 import { isGenerated } from "./isGenerated.ts";
 import { isLowerCamel } from "./isLowerCamel.ts";
+import { isTestPath } from "./isTestPath.ts";
 import { joinSpec } from "./joinSpec.ts";
 import { moduleOf } from "./moduleOf.ts";
+import { moduleUses } from "./moduleUses.ts";
 import { parseSource } from "./parseSource.ts";
 import { resolveImport } from "./resolveImport.ts";
 import { restyleSpec } from "./restyleSpec.ts";
 import { sortedKeys } from "./sortedKeys.ts";
+import { withWrites } from "./withWrites.ts";
 
 const KINDS = ["", ".store", ".schema", ".server", ".transaction"];
 
@@ -28,12 +31,16 @@ function candidates(files: ReadonlyMap<string, string>, name: string): string[] 
   return sortedKeys(files.keys()).filter((p) => bases.has(p.split("/").pop() ?? ""));
 }
 
+/** A contract file: importing it needs `deps` only, never `public.exports` (k.contract). */
+const isContract = (p: string): boolean => p.endsWith(".contract.ts");
+
 const stemOf = (p: string): string => (p.split("/").pop() ?? "").split(".")[0] ?? "";
 
 /**
  * `codemod move <name> --to <module>`: relocate the file, rewrite its relative imports and every import
  * of it, and update both manifests: the moved export becomes public in the target when another module
- * imports it, importers gain the target in `deps`, and the target gains every module the file imports from.
+ * imports it, importers gain the target in `deps`, the target gains every module the file imports from, and each module
+ * loses the `deps` entry the move leaves unused (k.module E1165).
  */
 export function opMove(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.move.parse(input);
@@ -55,7 +62,12 @@ export function opMove(input: unknown, files: ReadonlyMap<string, string>): Resu
 
   const changes = new Map<string, ManifestChange>();
   const change = (mod: string): ManifestChange => {
-    const c = changes.get(mod) ?? { addDeps: new Set(), addExports: new Set(), removeExports: new Set() };
+    const c = changes.get(mod) ?? {
+      addDeps: new Set(),
+      removeDeps: new Set(),
+      addExports: new Set(),
+      removeExports: new Set(),
+    };
     changes.set(mod, c);
     return c;
   };
@@ -79,14 +91,14 @@ export function opMove(input: unknown, files: ReadonlyMap<string, string>): Resu
         if (next !== ref.spec) ms.overwrite(ref.start + 1, ref.end - 1, next);
         const tm = moduleOf(t);
         if (target !== null && tm !== null && tm !== to) {
-          change(to).addDeps.add(tm);
-          change(tm).addExports.add(stemOf(t));
+          if (!isTestPath(path)) change(to).addDeps.add(tm);
+          if (!isContract(t)) change(tm).addExports.add(stemOf(t));
         }
       } else if (target === src) {
         ms.overwrite(ref.start + 1, ref.end - 1, restyleSpec(ref.spec, src, path, dest));
         if (mine !== null && mine !== to) {
           change(to).addExports.add(stemOf(src));
-          change(mine).addDeps.add(to);
+          if (!isTestPath(path)) change(mine).addDeps.add(to);
         }
       }
     }
@@ -96,6 +108,10 @@ export function opMove(input: unknown, files: ReadonlyMap<string, string>): Resu
       writes.set(dest, out);
     } else if (out !== text) writes.set(path, out);
   }
+  const before = moduleUses(files);
+  const after = moduleUses(withWrites(files, writes));
+  for (const [mod, used] of before)
+    for (const dep of used) if (after.get(mod)?.has(dep) !== true) change(mod).removeDeps.add(dep);
   for (const mod of sortedKeys(changes.keys())) {
     const p = `modules/${mod}/module.ts`;
     const text = writes.get(p) ?? files.get(p);

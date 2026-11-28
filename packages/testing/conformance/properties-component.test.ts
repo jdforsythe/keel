@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Properties "`properties(target, { runs = 100, seed? })` asserts, for a component: renders without throwing, matches `a11y.json`, no axe violations, two renders with one seed are equal."
+// k.testing, Properties "`properties(target, { runs = 100, seed? })` asserts, for a component: renders without throwing, matches `a11y.json`, no axe violations, two renders with one seed are equal."
 // Seed: 1337.
 import { properties } from "@keel/testing";
 import { describe, expect, it } from "vitest";

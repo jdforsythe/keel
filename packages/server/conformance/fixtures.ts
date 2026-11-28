@@ -6,8 +6,9 @@
 // A runtime (JSON) request is a request with `accept: application/json`.
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
-import { err, ok, s } from "@keel/schema";
+import { contract } from "@keel/router/contract";
 import type { Href, RouteProps } from "@keel/router";
+import { err, ok, s } from "@keel/schema";
 import type { KeelError, Result } from "@keel/schema";
 import * as server from "@keel/server";
 import { topology } from "@keel/server";
@@ -27,6 +28,7 @@ export interface AppOptions {
   guards?: unknown;
   log?: { format: "compact" | "json"; write(line: string): void };
   maxBodyBytes?: number;
+  artifacts?: string;
 }
 export type CreateApp = (o: AppOptions) => App | Promise<App>;
 
@@ -94,55 +96,61 @@ function el(tag: string, attrs: Record<string, string>, ...kids: (Node | string)
 
 export async function build(b: Behavior, mode: Mode = "production", extra: Partial<AppOptions> = {}) {
   const n: Counts = { show: 0, shell: 0, root: 0, act: 0, component: 0 };
-  const rootLoader = loader({ output: Page }, () => {
+  const ordersContract = contract("orders", {
+    "orders.root": { layout: true },
+    "orders.shell": { layout: true },
+    "orders.show": { path: "/orders/:kind", params: Params, search: Search },
+    "orders.login": { path: "/login" },
+  });
+  const rootLoader = loader(ordersContract, "orders.root", { output: Page }, () => {
     n.root++;
     return erase((b.root ?? okPage)());
   });
-  const shellLoader = loader({ output: Page }, () => {
+  const shellLoader = loader(ordersContract, "orders.shell", { output: Page }, () => {
     n.shell++;
     return erase((b.shell ?? okPage)());
   });
-  const showLoader = loader({ output: Page, params: Params, search: Search }, (a) => {
+  const showLoader = loader(ordersContract, "orders.show", { output: Page }, (a) => {
     n.show++;
     return erase((b.show ?? okPage)(a));
   });
-  const act = action({ input: Edit }, (input: { kind: string; note: string }) => {
+  const act = action(ordersContract, "orders.show", { input: Edit }, (input: { kind: string; note: string }) => {
     n.act++;
     return Promise.resolve((b.act ?? (() => ok(null)))(input));
   });
-  const auth = guard({ redirect: "app.login" }, () =>
+  const auth = guard({ redirect: "orders.login" }, () =>
     Promise.resolve(b.deny ? err(s.error("keel.denied", s.object({})).make({})) : ok(null)),
   );
-  const routes = manifest({
-    "app.shell": { component: (p: RouteProps) => el("div", { id: "app" }, p.children?.() ?? ""), loader: rootLoader },
+  const routes = manifest(ordersContract, {
+    "orders.root": {
+      component: (p: RouteProps) => el("div", { id: "app" }, p.children?.() ?? ""),
+      loader: rootLoader,
+    },
     "orders.shell": {
       component: (p: RouteProps) => el("div", { id: "orders" }, p.children?.() ?? ""),
-      layout: "app.shell",
+      layout: "orders.root",
       loader: shellLoader,
     },
     "orders.show": {
-      path: "/orders/:kind",
-      params: Params,
-      search: Search,
       loader: showLoader,
-      actions: { POST: act },
       component: (p: RouteProps) =>
         el("main", { "data-page": "show" }, `page ${String(Reflect.get(Object(p.params), "kind"))}`),
       layout: "orders.shell",
       guard: auth,
       errorElement: (p: { readonly error: KeelError<string, unknown> }) =>
         el("section", { "data-error-element": "1" }, p.error.code),
+      POST: act,
     },
-    "app.login": { path: "/login", component: () => el("main", {}, "login") },
+    "orders.login": { component: () => el("main", {}, "login") },
   });
   const app = await createApp({
-    topology: topology({ web: { modules: ["app", "orders"], adapter: "node" } }),
+    topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,
     ...extra,
   });
-  return { app, n, routes, href: routes.href };
+  return { app, n, routes, href: ordersContract.href };
 }
 
 export const get = (path: string, headers: Record<string, string> = {}) => new Request(`${BASE}${path}`, { headers });

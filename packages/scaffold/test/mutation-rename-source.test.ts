@@ -126,13 +126,13 @@ describe("renameSource: strings and templates", () => {
     expect(out).toContain("import('./basket.store.ts')");
   });
 
-  it("route rename: path literal segments follow only in the manifest entry's path", () => {
+  it("route rename: path literal segments follow only in the contract entry's path", () => {
     let f: Files = apply("project", { name: "shop" }, new Map());
     f = apply("module", { id: "orders" }, f);
     f = apply("route", { id: "orders.show", path: "/show/:id/show" }, f);
     f = apply("route", { id: "orders.keep", path: "/show/keep" }, f);
     const out = apply("rename", { kind: "route", from: "orders.show", to: "orders.view" }, f).get(
-      "modules/orders/routes.ts",
+      "modules/orders/orders.contract.ts",
     );
     expect(out).toContain('path: "/view/:id/view"');
     expect(out).toContain('path: "/show/keep"');

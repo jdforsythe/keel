@@ -1,3 +1,4 @@
+import type { Format } from "./Format.ts";
 import type { Id } from "./Id.ts";
 import type { Infer } from "./Infer.ts";
 import type { JsonValue } from "./JsonValue.ts";
@@ -5,14 +6,21 @@ import type { KeelError } from "./KeelError.ts";
 import type { ObjectSchema } from "./ObjectSchema.ts";
 import type { Result } from "./Result.ts";
 import type { Schema } from "./Schema.ts";
+import type { SchemaError } from "./SchemaError.ts";
 import type { Secret } from "./Secret.ts";
 import type { StringInput } from "./StringInput.ts";
+import { err } from "./err.ts";
 import type { Node } from "./internal/Node.ts";
 import { clip } from "./internal/clip.ts";
+import { declaredCodes } from "./internal/declaredCodes.ts";
+import { formats } from "./internal/formats.ts";
 import { fromStrings } from "./internal/fromStrings.ts";
 import { invalid } from "./internal/invalid.ts";
 import { make } from "./internal/make.ts";
+import { mark } from "./internal/mark.ts";
+import { marked } from "./internal/marked.ts";
 import { protoPaths } from "./internal/protoPaths.ts";
+import { records } from "./internal/records.ts";
 import { registry } from "./internal/registry.ts";
 import { stringEntries } from "./internal/stringEntries.ts";
 
@@ -24,8 +32,72 @@ type ObjectOf<S extends Shape> = Flat<
 >;
 type ErrorSchema<C extends string, D> = Schema<KeelError<C, D>> & {
   make(data: D, message?: string): KeelError<C, D>;
+  /** One of this error whose `cause` is `cause` (k.attempt). */
+  causedBy(cause: KeelError<string, unknown>, data: D, message?: string): KeelError<C, D>;
+  /** The first error with this code on `e`'s cause chain, `e` first, at most 8 steps down; else `undefined`. */
+  in(e: KeelError<string, unknown>): KeelError<C, D> | undefined;
 };
+/** Steps `in` follows down a cause chain (k.attempt). */
+const CAUSE_STEPS = 8;
+const jsonSchema = (): Schema<JsonValue> => make({ kind: "json" }, false);
+/** `s.json()`, and `s.json.parseJson(text)`, which takes any JSON text (k.attempt). */
+const json: typeof jsonSchema & { parseJson(text: string): Result<JsonValue, SchemaError> } = Object.assign(
+  jsonSchema,
+  {
+    parseJson: (text: string): Result<JsonValue, SchemaError> => jsonSchema().parseJson(text),
+  },
+);
 type Variant<K extends string> = Schema<{ readonly [P in K]: string | number | boolean }>;
+
+type FormatOptions<T, F> = {
+  /** Pure predicate over a value `base` accepts; false or a throw fails with rule `format`. */
+  readonly check: (value: T) => boolean;
+  /** The generator: `gen(from)` mapped through `map`; values `parse` refuses are dropped. */
+  readonly gen: { readonly from: Schema<F, boolean>; readonly map: (value: F) => T };
+};
+
+/** `base` narrowed by `check` and branded `name` (k.schema Format types). */
+function format<const N extends string, T, F>(
+  name: N,
+  base: Schema<T>,
+  opts: FormatOptions<T, F>,
+): Schema<Format<T, N>> {
+  const node: Node = { kind: "format", name, base: base.node };
+  const { from } = opts.gen;
+  formats.set(node, {
+    test: (x) => {
+      const value = base.parse(x);
+      if (!value.ok) return false;
+      try {
+        return opts.check(value.value) === true;
+      } catch {
+        return false;
+      }
+    },
+    from: from.node,
+    map: (x) => {
+      const seed = from.parse(x);
+      return seed.ok ? opts.gen.map(seed.value) : x;
+    },
+  });
+  return make(node, false);
+}
+
+/** The object schema of an object node: `make` plus `decodeStrings`, and `.pii` keeping both. */
+function objectOf<T>(node: Node): ObjectSchema<T> {
+  const base = make<T, false>(node, false);
+  const schema: ObjectSchema<T> = {
+    ...base,
+    decodeStrings: (input: StringInput) => {
+      const entries = stringEntries(input);
+      const bad = protoPaths(entries.keys());
+      return bad.length > 0 ? err(invalid(bad)) : base.parse(fromStrings(node, "", entries));
+    },
+    pii: (cls) => objectOf<T>(mark(node, cls)),
+  };
+  records.objectSchema.add(schema);
+  return marked(schema);
+}
 
 type NumberBounds = { readonly min?: number; readonly max?: number };
 
@@ -59,8 +131,8 @@ function union(keyOrMembers: string | readonly Schema<unknown>[], variants: read
   return make<unknown, false>({ kind: "union", key, variants: nodes }, false);
 }
 
-/** The schema namespace. One builder per primitive; modifiers are `.optional()` and `.nullable()`. */
-export const s = {
+/** The schema namespace, frozen. One builder per primitive; modifiers are `.optional()` and `.nullable()`. */
+export const s = Object.freeze({
   string: (opts: { readonly min?: number; readonly max?: number } = {}): Schema<string> => {
     const min = opts.min ?? 0;
     if (opts.max !== undefined && min > opts.max) throw new Error(`string min ${min} exceeds max ${opts.max}`);
@@ -70,9 +142,16 @@ export const s = {
   int: (opts: NumberBounds = {}): Schema<number> => make({ kind: "int", ...bounds("int", opts) }, false),
   boolean: (): Schema<boolean> => make({ kind: "boolean" }, false),
   literal: <const L extends string | number | boolean>(value: L): Schema<L> => make({ kind: "literal", value }, false),
-  enum: <const E extends readonly [string, ...string[]]>(values: E): Schema<E[number]> =>
-    make({ kind: "enum", values }, false),
-  json: (): Schema<JsonValue> => make({ kind: "json" }, false),
+  enum: <const E extends readonly [string, ...string[]]>(
+    values: E,
+    opts: { readonly pathDefault?: string } = {},
+  ): Schema<E[number]> => {
+    const d = opts.pathDefault;
+    if (d === undefined) return make({ kind: "enum", values: [...values] }, false);
+    if (!values.includes(d)) throw new Error(`enum pathDefault ${clip(d)} is not one of its values`);
+    return make({ kind: "enum", values: [...values], pathDefault: d }, false);
+  },
+  json,
   secret: <S extends Schema<unknown>>(inner: S): Schema<Secret<Infer<S>>> =>
     make({ kind: "secret", inner: inner.node }, false),
   id: <B extends string>(brand: B): Schema<Id<B>> => make({ kind: "id", brand }, false),
@@ -82,21 +161,15 @@ export const s = {
       fields: Object.fromEntries(Object.entries(shape).map(([k, v]) => [k, v.node])),
       ...(opts.closed === true ? { closed: true } : {}),
     };
-    const base = make<ObjectOf<S>, false>(node, false);
-    return {
-      ...base,
-      decodeStrings: (input: StringInput) => {
-        const entries = stringEntries(input);
-        const bad = protoPaths(entries.keys());
-        return bad.length > 0 ? { ok: false, error: invalid(bad) } : base.parse(fromStrings(node, "", entries));
-      },
-    };
+    return objectOf<ObjectOf<S>>(node);
   },
   array: <S extends Schema<unknown>>(item: S): Schema<Infer<S>[]> => make({ kind: "array", item: item.node }, false),
   record: <S extends Schema<unknown>>(value: S): Schema<Record<string, Infer<S>>> =>
     make({ kind: "record", value: value.node }, false),
   union,
+  format,
   error: <C extends string, D extends Schema<unknown>>(code: C, data: D): ErrorSchema<C, Infer<D>> => {
+    declaredCodes().add(code);
     const node: Node = {
       kind: "object",
       fields: {
@@ -106,9 +179,26 @@ export const s = {
       },
     };
     const make_ = (value: Infer<D>, message: string = code): KeelError<C, Infer<D>> => ({ code, message, data: value });
-    return { ...make<KeelError<C, Infer<D>>, false>(node, false), make: make_ };
+    const causedBy = (
+      cause: KeelError<string, unknown>,
+      value: Infer<D>,
+      message: string = code,
+    ): KeelError<C, Infer<D>> => ({ code, message, data: value, cause });
+    const own = make<KeelError<C, Infer<D>>, false>(node, false);
+    const in_ = (e: KeelError<string, unknown>): KeelError<C, Infer<D>> | undefined => {
+      let at: KeelError<string, unknown> | undefined = e;
+      for (let step = 0; step <= CAUSE_STEPS && at !== undefined; step++) {
+        if (at.code === code) {
+          const read = own.parse(at);
+          if (read.ok) return read.value;
+        }
+        at = at.cause;
+      }
+      return undefined;
+    };
+    return marked({ ...own, make: make_, causedBy, in: in_ });
   },
-  result: <T extends Schema<unknown>, E extends Schema<unknown>>(
+  result: <T extends Schema<unknown>, E extends Schema<KeelError<string, unknown>>>(
     value: T,
     error: E,
   ): Schema<Result<Infer<T>, Infer<E>>> =>
@@ -129,7 +219,7 @@ export const s = {
     registry.set(name, schema);
   },
   registry: (): ReadonlyMap<string, Schema<unknown, boolean>> => new Map(registry),
-};
+});
 
 /** Type-level members of the namespace: `s.infer<typeof X>`. */
 export declare namespace s {

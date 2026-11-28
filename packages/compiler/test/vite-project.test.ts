@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { parseSync } from "oxc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -32,25 +34,32 @@ export default function ListsPage() {
   </Box>;
 }
 `;
-const ROUTES = `import { manifest } from "@keel/router";
+const CONTRACT = `import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
+export const todos = contract("todos", {
+  "todos.index": { path: "/" },
+  "todos.list": { path: "/lists/:listId", params: s.object({ listId: s.string() }) },
+});
+`;
+const ROUTES = `import { manifest } from "@keel/router";
 import ListsPage from "./ListsPage.tsx";
 import { loadList } from "./loadList.server.ts";
-export const routes = manifest({
-  "todos.index": { path: "/", component: ListsPage },
-  "todos.list": { path: "/lists/:listId", params: s.object({ listId: s.string() }), loader: loadList, component: ListsPage },
+import { todos } from "./todos.contract.ts";
+export const routes = manifest(todos, {
+  "todos.index": { component: ListsPage },
+  "todos.list": { loader: loadList, component: ListsPage },
 });
 `;
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-project-"));
+  root = tempDir(".tmp-project-", import.meta.dirname);
   fs.mkdirSync(path.join(root, "node_modules", "@keel"), { recursive: true });
   for (const p of fs.readdirSync(packages))
     if (fs.existsSync(path.join(packages, p, "package.json")))
       fs.symlinkSync(path.join(packages, p), path.join(root, "node_modules", "@keel", p));
   write(
     "tokens.ts",
-    `import { defineTokens } from "@keel/ui";
+    `import { defineTokens } from "@keel/ui/tokens";
 export const tokens = defineTokens({
   color: { fg: { light: "#111", dark: "#eee" }, bg: { light: "#fff", dark: "#111" }, accent: "#0a5" },
   space: { 1: "4px", 2: "8px", 3: "16px" },
@@ -69,8 +78,9 @@ export const tokens = defineTokens({
   write("modules/todos/ListsPage.tsx", PAGE);
   write(
     "modules/todos/loadList.server.ts",
-    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const loadList = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n`,
+    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nimport { todos } from "./todos.contract.ts";\nexport const loadList = loader(todos, "todos.list", { output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n`,
   );
+  write("modules/todos/todos.contract.ts", CONTRACT);
   write("modules/todos/routes.ts", ROUTES);
 });
 afterEach(() => {
@@ -78,7 +88,7 @@ afterEach(() => {
 });
 
 describe("@keel/compiler/vite project inputs", () => {
-  it("emits routes.json, styles.json, keel.css and the client entry", { timeout: 30000 }, async () => {
+  it("emits routes.json, styles.json, keel.css and the client entry", { timeout: fixedTime(30000) }, async () => {
     const warnings: string[] = [];
     const p = keel();
     p.configResolved({ root, command: "build" });
@@ -94,12 +104,14 @@ describe("@keel/compiler/vite project inputs", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "schemes.json",
+      "std.json",
       "styles.json",
     ]);
 
     const cssId = p.resolveId("virtual:keel.css");
     expect(cssId).not.toBeNull();
-    const css = (await p.load(cssId ?? "")) ?? "";
+    const css = (await p.load(typeof cssId === "string" ? cssId : "")) ?? "";
     expect(css).toContain(":root{");
     expect(css).toContain("@media (min-width: 768px)");
     const page = p.transform(PAGE, path.join(root, "modules/todos/ListsPage.tsx"))?.code ?? "";
@@ -112,12 +124,12 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(entry).toContain('import "virtual:keel.css";');
     expect(entry).toContain('from "/modules/todos/routes.ts"');
     expect(entry).toContain('createCtx({ mode: "real" })');
-    expect(entry).toContain("createRouter(__keelRoutes0, { ctx, history: browserHistory() })");
-    expect(entry).toContain("mount(router.App, el, { ctx })");
+    expect(entry).toContain("createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode })");
+    expect(entry).toContain("mount(router.App, el, { ctx, mode })");
     expect(parseSync("entry.js", entry, { sourceType: "module" }).errors).toEqual([]);
   });
 
-  it("exempts client deployables from E1004 and reports it again after topology.ts changes", async () => {
+  it("leaves E1004 to keel check and E1007 under any topology, and reads topology.ts again when it changes", async () => {
     const p = keel();
     p.configResolved({ root });
     const file = path.join(root, "modules/todos/routes.ts");
@@ -125,17 +137,24 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(p.transform(ROUTES, file)?.code).toContain("manifest(");
     const topo = write("topology.ts", `export default topology({ web: { modules: ["todos"], adapter: "static" } });\n`);
     p.watchChange(topo, { event: "update" });
-    expect(() => p.transform(ROUTES, file)).toThrow(/^E1004 modules\/todos\/routes.ts/);
-    await expect(p.load("/@keel/entry.ts")).rejects.toThrow(/needs a client deployable/);
+    expect(p.transform(ROUTES, file)?.code).toContain("manifest(");
+    expect(await p.load("/@keel/entry.ts")).toContain("resume(document.body, components");
   });
 
-  it("warns about unknown tokens and still emits the CSS of the known ones", { timeout: 30000 }, async () => {
-    write("modules/todos/Bad.tsx", `import { Box } from "@keel/ui";\nexport default () => <Box bg="nope" p="1" />;\n`);
-    const warnings: string[] = [];
-    const p = keel();
-    p.configResolved({ root, command: "build" });
-    await p.buildStart.call({ warn: (m: string) => void warnings.push(m) });
-    expect(warnings.some((w) => /E1801/.test(w) && w.includes("nope"))).toBe(true);
-    expect((await p.load("/__keel.css")) ?? "").toContain(".k-p-1{");
-  });
+  it(
+    "warns about unknown tokens and still emits the CSS of the known ones",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write(
+        "modules/todos/Bad.tsx",
+        `import { Box } from "@keel/ui";\nexport default () => <Box bg="nope" p="1" />;\n`,
+      );
+      const warnings: string[] = [];
+      const p = keel();
+      p.configResolved({ root, command: "build" });
+      await p.buildStart.call({ warn: (m: string) => void warnings.push(m) });
+      expect(warnings.some((w) => /E1801/.test(w) && w.includes("nope"))).toBe(true);
+      expect((await p.load("/__keel.css")) ?? "").toContain(".k-p-1{");
+    },
+  );
 });

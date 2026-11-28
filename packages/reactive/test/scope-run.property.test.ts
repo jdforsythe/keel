@@ -21,10 +21,13 @@ describe("Scope.run properties", () => {
           const runs = Array.from({ length: n }, () => 0);
           const handles: Scope[] = [];
           const box: { s: Signal<number> | null; attach: Signal<number> | null } = { s: null, attach: null };
-          const root = scope(() => {
-            box.s = signal(Number.NaN);
-            box.attach = signal(0);
-          });
+          const root = scope(
+            () => {
+              box.s = signal(Number.NaN);
+              box.attach = signal(0);
+            },
+            { detached: true },
+          );
           const s = box.s;
           const attach = box.attach;
           if (s === null || attach === null) throw new Error("unreachable");
@@ -82,10 +85,13 @@ describe("Scope.run properties", () => {
         (reads, pick) => {
           const sigs: Signal<number>[] = [];
           let runs = 0;
-          const root = scope(() => {
-            for (let i = 0; i < reads.length; i++) sigs.push(signal(0));
-          });
-          const other = scope(() => {});
+          const root = scope(
+            () => {
+              for (let i = 0; i < reads.length; i++) sigs.push(signal(0));
+            },
+            { detached: true },
+          );
+          const other = scope(() => {}, { detached: true });
           root.run(() =>
             effect(() => {
               runs++;

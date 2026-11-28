@@ -1,7 +1,8 @@
-// Spec: k.scaffold, clause "`--dry-run` writes nothing and prints exactly the diff a following apply writes."
+// Spec: k.scaffold, clause "`--dry-run` writes nothing and prints the diff a following apply writes."
 // In-process: a dry run (scaffold, nothing written) == the following apply. Printed form: the real `keel` binary prints unified diffs; an independent applier
 // (unified-diff.ts) applies them to the before-tree and the result must equal what the following real apply writes.
 // Both forms cover every generator and codemod, transaction and service included (RFC 0039).
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import {
   type Files,
@@ -15,6 +16,7 @@ import {
   withSchema,
   withStoreCart,
 } from "./fixtures.ts";
+import { freshNode } from "./service-base-support.ts";
 import { type CliRecord, cleanup, keel, materialize, readTree } from "./keel-cli.ts";
 import { type PrintedEdit, applyEdits } from "./unified-diff.ts";
 
@@ -28,7 +30,9 @@ const calls: [Parameters<typeof apply>[0], Record<string, unknown>, () => Files]
   ["move", { name: "OrderCard", to: "catalog" }, withOrders],
   ["add-field", { schema: "Order", field: "note", type: "string.optional" }, () => withSchema(true)],
   ["transaction", { id: "orders.cart.addItem" }, withStoreCart],
-  ["service", SERVICE_INPUT, fresh],
+  ["service", SERVICE_INPUT, freshNode],
+  ["service", { id: "orders", base: "https://api.example.com" }, freshNode],
+  ["service", { id: "orders", base: "https://api.example.com", reason: "order list" }, fresh],
 ];
 
 describe("scaffold (dry run)", () => {
@@ -81,36 +85,45 @@ const cli: [string, string[], () => Files][] = [
   ],
   ["scaffold transaction orders.cart.addItem", ["scaffold", "transaction", "orders.cart.addItem"], withStoreCart],
   [
-    "scaffold service orders --openapi openapi.json",
-    ["scaffold", "service", "orders", "--openapi", "openapi.json"],
+    "scaffold service orders --openapi openapi.json --reason order-list",
+    ["scaffold", "service", "orders", "--openapi", "openapi.json", "--reason", "order-list"],
     withOpenApi,
+  ],
+  [
+    "scaffold service orders --base https://api.example.com --reason order-list",
+    ["scaffold", "service", "orders", "--base", "https://api.example.com", "--reason", "order-list"],
+    fresh,
   ],
 ];
 
 describe("keel --dry-run printed form", () => {
   for (const [name, args, mk] of cli) {
-    it(`${name} --dry-run writes nothing and prints exactly the diff the following apply writes`, () => {
-      const dir = materialize(mk());
-      try {
-        const before = readTree(dir);
-        const dry = keel(dir, [...args, "--dry-run"]);
-        expect(dry.status, JSON.stringify(dry.records)).toBe(0);
-        expect(readTree(dir)).toEqual(before);
-        const edits = printedEdits(dry.records);
-        expect(edits.length).toBeGreaterThan(0);
-        const patched = applyEdits(before, edits);
-        const real = keel(dir, args);
-        expect(real.status, JSON.stringify(real.records)).toBe(0);
-        const after = readTree(dir);
-        expect([...after.keys()].sort()).toEqual([...patched.keys()].sort());
-        for (const [p, content] of after) expect(patched.get(p), p).toBe(content);
-        // the apply reports the same paths and actions the dry run printed
-        expect(real.records.filter((r) => r.kind === "scaffold.edit").map((r) => `${r.action} ${r.path}`)).toEqual(
-          edits.map((e) => `${e.action} ${e.path}`),
-        );
-      } finally {
-        cleanup(dir);
-      }
-    }, 60000);
+    it(
+      `${name} --dry-run writes nothing and prints exactly the diff the following apply writes`,
+      () => {
+        const dir = materialize(mk());
+        try {
+          const before = readTree(dir);
+          const dry = keel(dir, [...args, "--dry-run"]);
+          expect(dry.status, JSON.stringify(dry.records)).toBe(0);
+          expect(readTree(dir)).toEqual(before);
+          const edits = printedEdits(dry.records);
+          expect(edits.length).toBeGreaterThan(0);
+          const patched = applyEdits(before, edits);
+          const real = keel(dir, args);
+          expect(real.status, JSON.stringify(real.records)).toBe(0);
+          const after = readTree(dir);
+          expect([...after.keys()].sort()).toEqual([...patched.keys()].sort());
+          for (const [p, content] of after) expect(patched.get(p), p).toBe(content);
+          // the apply reports the same paths and actions the dry run printed
+          expect(real.records.filter((r) => r.kind === "scaffold.edit").map((r) => `${r.action} ${r.path}`)).toEqual(
+            edits.map((e) => `${e.action} ${e.path}`),
+          );
+        } finally {
+          cleanup(dir);
+        }
+      },
+      fixedTime(60000),
+    );
   }
 });

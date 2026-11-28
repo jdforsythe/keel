@@ -1,31 +1,47 @@
 import { For, If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
+import { formatMessage } from "@keel/std-messages";
+import { formatMoney } from "@keel/std-money";
+import { durationOf, formatDate, formatDuration } from "@keel/std-temporal";
 import { Box, Heading, Link, Text } from "@keel/ui";
-import { Recipe } from "./Recipe.schema.ts";
+import { IndexData } from "./IndexData.schema.ts";
+import { LocaleParams } from "./LocaleParams.schema.ts";
 import { RecipeSearch } from "./RecipeSearch.schema.ts";
-import { routes } from "./routes.ts";
+import { idPart } from "./idPart.ts";
+import { recipes } from "./recipes.contract.ts";
 
-export const Props = s.object({ search: RecipeSearch, data: s.object({ recipes: s.array(Recipe) }) });
+export const Props = s.object({ params: LocaleParams, search: RecipeSearch, data: IndexData });
 
-/** Route `recipes.index`: the recipes (or only favorites) with filter links. */
+/** Route `recipes.index`: the recipes (or only favorites) with count, price, date and time, and filter links. */
 export default function RecipeList(props: Infer<typeof Props>) {
   return (
     <Box as="section" id="recipes.list" direction="column" gap="5">
-      <Heading id="recipes.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
-        Recipes
+      <Heading id="recipes.list.title" level={1} fontSize="2xl" m="0">
+        {props.data.text.listTitle}
       </Heading>
-      <Box as="nav" id="recipes.filters" direction="row" gap="4" font="mono" fontSize="sm">
-        <Link id="recipes.filter.all" to={routes.href("recipes.index", {}, { only: "all" })} fg="text">
-          All
-        </Link>
-        <Link id="recipes.filter.favorites" to={routes.href("recipes.index", {}, { only: "favorites" })} fg="text">
-          Favorites
-        </Link>
+      <Box direction="row" align="baseline" justify="between" gap="4" font="mono" fontSize="sm">
+        <Box as="nav" id="recipes.filters" label={props.data.text.filtersLabel} direction="row" gap="4">
+          <Link
+            id="recipes.filter.all"
+            to={recipes.href("recipes.index", { locale: props.params.locale }, { only: "all" })}
+          >
+            {props.data.text.filterAll}
+          </Link>
+          <Link
+            id="recipes.filter.favorites"
+            to={recipes.href("recipes.index", { locale: props.params.locale }, { only: "favorites" })}
+          >
+            {props.data.text.filterFavorites}
+          </Link>
+        </Box>
+        <Text id="recipes.count" fg="textSecondary">
+          {formatMessage(props.data.text.count, { n: props.data.recipes.length }, props.params.locale)}
+        </Text>
       </Box>
       <If when={props.data.recipes.length === 0}>
         {() => (
           <Text id="recipes.empty" font="mono" fontSize="sm" fg="textSecondary">
-            No recipes
+            {props.data.text.empty}
           </Text>
         )}
       </If>
@@ -34,24 +50,28 @@ export default function RecipeList(props: Infer<typeof Props>) {
           {(r) => (
             <Box
               as="li"
-              id={`recipes.item.${r.id}`}
-              direction="row"
-              align="baseline"
+              id={`recipes.item.${idPart(r.id)}`}
+              direction={{ base: "column", md: "row" }}
+              align={{ base: "start", md: "baseline" }}
               justify="between"
               gap="3"
               px="3"
               py="3"
               bg="card"
             >
-              <Link id={`recipes.link.${r.id}`} to={routes.href("recipes.show", { recipeId: r.id })} fg="text">
+              <Link
+                id={`recipes.link.${idPart(r.id)}`}
+                to={recipes.href("recipes.show", { locale: props.params.locale, recipeId: r.id })}
+              >
                 {r.title}
               </Link>
-              <Text
-                id={`recipes.minutes.${r.id}`}
-                font="mono"
-                fontSize="sm"
-                fg="textSecondary"
-              >{`${r.minutes} min`}</Text>
+              <Box direction="row" gap="4" font="mono" fontSize="sm" fg="textSecondary">
+                <Text id={`recipes.price.${idPart(r.id)}`}>{formatMoney(r.price, props.params.locale)}</Text>
+                <Text id={`recipes.minutes.${idPart(r.id)}`}>
+                  {formatDuration(durationOf(r.minutes * 60_000), props.params.locale, "short")}
+                </Text>
+                <Text id={`recipes.added.${idPart(r.id)}`}>{formatDate(r.addedOn, props.params.locale, "long")}</Text>
+              </Box>
             </Box>
           )}
         </For>

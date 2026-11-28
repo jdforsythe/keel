@@ -39,12 +39,14 @@ function biomeClean(path: string, text: string): string | null {
 
 function build(workspace: boolean): Files {
   let files: Files = new Map();
-  files = apply("project", { name: "shop", workspace }, files);
+  // A `node` project: an API route needs a node deployable (k.scaffold-needs).
+  files = apply("project", { name: "shop", adapter: "node", workspace }, files);
   files = apply("module", { id: "todos" }, files);
-  files = apply("route", { id: "todos.list", path: "/lists/:listId" }, files);
-  files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit" }, files);
-  files = apply("route", { id: "todos.item", path: "/items/:id" }, files);
-  files = apply("route", { id: "todos.tagged", path: "/tags/:slug" }, files);
+  files = apply("route", { id: "todos.list", path: "/lists/:listId", loader: true }, files);
+  files = apply("route", { id: "todos.edit", path: "/lists/:listId/todos/:todoId/edit", loader: true }, files);
+  files = apply("route", { id: "todos.item", path: "/items/:id", loader: true }, files);
+  files = apply("route", { id: "todos.tagged", path: "/tags/:slug", loader: true }, files);
+  files = apply("route", { id: "todos.feed", path: "/api/feed/:slug", api: true }, files);
   files = apply("component", { id: "todos/TodoRow" }, files);
   files = apply("store", { id: "todos.board" }, files);
   files = apply("transaction", { id: "todos.board.addCard" }, files);
@@ -87,20 +89,21 @@ describe("file naming (one export per file, E1752)", () => {
 });
 
 describe("route params", () => {
-  const routes = (): string => build(true).get("modules/todos/routes.ts") ?? "";
+  const contract = (): string => build(true).get("modules/todos/todos.contract.ts") ?? "";
 
   it("`*Id` params are s.id of the entity, `id` is s.id of the module's entity, others stay strings", () => {
-    const text = routes();
+    const text = contract();
     expect(text).toContain(`params: s.object({ listId: s.id("List") }),`);
     expect(text).toContain(`params: s.object({ listId: s.id("List"), todoId: s.id("Todo") }),`);
     expect(text).toContain(`params: s.object({ id: s.id("Todos") }),`);
     expect(text).toContain("params: s.object({ slug: s.string() }),");
   });
 
-  it("imports in routes.ts are sorted", () => {
-    const imports = (routes().match(/^import .*$/gm) ?? []).map((l) => /from "([^"]+)"/.exec(l)?.[1] ?? "");
-    expect(imports.slice(0, 2)).toEqual(["@keel/router", "@keel/schema"]);
-    const rel = imports.slice(2);
+  it("imports in the contract file and routes.ts are sorted", () => {
+    const imports = (src: string): string[] =>
+      (src.match(/^import .*$/gm) ?? []).map((l) => /from "([^"]+)"/.exec(l)?.[1] ?? "");
+    expect(imports(contract())).toEqual(["@keel/router/contract", "@keel/schema"]);
+    const rel = imports(build(true).get("modules/todos/routes.ts") ?? "").slice(1);
     expect(rel).toEqual([...rel].sort());
   });
 });
@@ -108,20 +111,25 @@ describe("route params", () => {
 describe("project --workspace", () => {
   const files = (): Files => apply("project", { name: "shop", workspace: true }, new Map());
 
-  it("emits index.html and vitest.config.ts, and no turbo, CI or .keel", () => {
+  it("emits vitest.config.ts, and no index.html, turbo, CI or .keel", () => {
     const f = files();
-    expect(f.get("vitest.config.ts")).toContain(`import { KeelReporter } from "@keel/tooling/vitest-reporter";`);
+    expect(f.get("vitest.config.ts")).toContain(`import { keelConfig } from "@keel/tooling/vitest-config";`);
     expect(f.get("vitest.config.ts")).toContain(`environment: "happy-dom"`);
     expect(f.get("vitest.config.ts")).toContain("plugins: [keel()]");
-    expect(f.get("index.html")).toContain("/@keel/entry.ts");
+    expect(f.has("index.html")).toBe(false);
     expect([...f.keys()].filter((p) => p === "turbo.json" || p.startsWith(".github") || p.startsWith(".keel"))).toEqual(
       [],
     );
   });
 
-  it("package.json has only check/test/build scripts; tsconfig extends the strict profile", () => {
+  it("package.json has the keel scripts; tsconfig extends the strict profile", () => {
     const f = files();
-    expect(Object.keys(JSON.parse(f.get("package.json") ?? "{}").scripts).sort()).toEqual(["build", "check", "test"]);
+    expect(Object.keys(JSON.parse(f.get("package.json") ?? "{}").scripts).sort()).toEqual([
+      "build",
+      "check",
+      "dev",
+      "test",
+    ]);
     expect(JSON.parse(f.get("tsconfig.json") ?? "{}").extends).toBe("@keel/compiler/tsconfig.strict.json");
   });
 

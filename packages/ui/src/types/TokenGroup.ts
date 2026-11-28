@@ -1,4 +1,4 @@
 import type { Tokens } from "./Tokens.ts";
 
-/** One of the closed token group names. */
-export type TokenGroup = keyof Tokens;
+/** One of the closed token group names that hold values (every group but the style sets `base` and `look`, `schemes` and `themes`). */
+export type TokenGroup = Exclude<keyof Tokens, "base" | "look" | "schemes" | "themes">;

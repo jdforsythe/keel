@@ -1,14 +1,15 @@
-// Spec: k.reactive Conformance, "an effect that throws inside a scope with onError delivers the error to that
-// scope's onError and no outer scope's; the throwing effect does not run again; sibling effects still run;
-// without onError the error rethrows from batch".
+// Spec: k.reactive, clause "An effect that throws inside a scope with onError delivers the error to that scope's onError and no outer scope's; the throwing effect does not run again; sibling effects still run; without onError the error rethrows from batch."
 import { describe, expect, it } from "vitest";
 import { batch, computed, effect, scope, signal } from "@keel/reactive";
 
 function mk() {
   let s: ReturnType<typeof signal<number>> | undefined;
-  scope(() => {
-    s = signal(0);
-  });
+  scope(
+    () => {
+      s = signal(0);
+    },
+    { detached: true },
+  );
   if (!s) throw new Error("unreachable");
   return s;
 }
@@ -23,7 +24,7 @@ describe("k.reactive: scope onError", () => {
           if (s.get() === 1) throw new Error("boom");
         });
       },
-      { onError: (e) => errors.push(e) },
+      { onError: (e) => errors.push(e), detached: true },
     );
     expect(() => s.set(1)).not.toThrow();
     expect(errors).toHaveLength(1);
@@ -47,7 +48,7 @@ describe("k.reactive: scope onError", () => {
           { onError: (e) => inner.push(e) },
         );
       },
-      { onError: (e) => outer.push(e) },
+      { onError: (e) => outer.push(e), detached: true },
     );
     s.set(1);
     expect(inner).toHaveLength(1);
@@ -65,7 +66,7 @@ describe("k.reactive: scope onError", () => {
           });
         });
       },
-      { onError: (e) => outer.push(e) },
+      { onError: (e) => outer.push(e), detached: true },
     );
     s.set(1);
     expect(outer).toHaveLength(1);
@@ -87,7 +88,7 @@ describe("k.reactive: scope onError", () => {
           sibling++;
         });
       },
-      { onError: (e) => errors.push(e) },
+      { onError: (e) => errors.push(e), detached: true },
     );
     s.set(1);
     s.set(2);
@@ -110,7 +111,7 @@ describe("k.reactive: scope onError", () => {
           c.get();
         });
       },
-      { onError: (e) => errors.push(e) },
+      { onError: (e) => errors.push(e), detached: true },
     );
     expect(() => s.set(1)).not.toThrow();
     expect(errors).toHaveLength(1);
@@ -136,6 +137,7 @@ describe("k.reactive: scope onError", () => {
           order.push("onError");
           s.get();
         },
+        detached: true,
       },
     );
     s.set(1);
@@ -145,15 +147,18 @@ describe("k.reactive: scope onError", () => {
   it("without onError the error rethrows from batch, after the other effects ran", () => {
     const s = mk();
     let sibling = 0;
-    scope(() => {
-      effect(() => {
-        if (s.get() === 1) throw new Error("plain");
-      });
-      effect(() => {
-        s.get();
-        sibling++;
-      });
-    });
+    scope(
+      () => {
+        effect(() => {
+          if (s.get() === 1) throw new Error("plain");
+        });
+        effect(() => {
+          s.get();
+          sibling++;
+        });
+      },
+      { detached: true },
+    );
     expect(() => batch(() => s.set(1))).toThrow("plain");
     expect(sibling).toBe(2);
   });
@@ -170,6 +175,7 @@ describe("k.reactive: scope onError", () => {
         onError: () => {
           throw new Error("from handler");
         },
+        detached: true,
       },
     );
     expect(() => s.set(1)).toThrow("from handler");
@@ -187,7 +193,7 @@ describe("k.reactive: scope onError", () => {
           throw new Error("at creation");
         });
       },
-      { onError: (e) => errors.push(e) },
+      { onError: (e) => errors.push(e), detached: true },
     );
     s.set(1);
     expect(errors).toHaveLength(1);

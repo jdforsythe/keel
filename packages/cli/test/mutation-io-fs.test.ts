@@ -4,7 +4,6 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -14,6 +13,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyWrites } from "../src/internal/applyWrites.ts";
 import { hostIo } from "../src/internal/hostIo.ts";
@@ -22,7 +22,7 @@ import { viteRun } from "../src/internal/viteRun.ts";
 
 const made: string[] = [];
 const tmp = (): string => {
-  const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-mut-io-")));
+  const d = realpathSync(tempDir("keel-mut-io-"));
   made.push(d);
   return d;
 };
@@ -64,7 +64,9 @@ describe("readProject", () => {
     put(d, "spec.md", "w");
     put(d, ".keel/a.json", "KA");
     put(d, ".keel/a.txt", "x");
-    put(d, "other/.keel/b.json", "x");
+    put(d, "other/.keel/b.json", "OB");
+    put(d, "other/.keel/b.txt", "x");
+    put(d, "other/a.keel/b.json", "x");
     put(d, "keel/c.json", "x");
     put(d, "tooling/ledger/ledger.json", "L");
     put(d, "tooling/ledger/other.json", "x");
@@ -72,6 +74,7 @@ describe("readProject", () => {
     put(d, "package.json", "{}");
     expect(readProject(d, "query")).toEqual([
       { path: ".keel/a.json", source: "KA" },
+      { path: "other/.keel/b.json", source: "OB" },
       { path: "spec/sub/y.md", source: "SY" },
       { path: "spec/x.md", source: "SX" },
       { path: "src/a.ts", source: "A" },
@@ -276,8 +279,11 @@ describe("hostIo", () => {
       expect(Object.values(io.env ?? {}).every((v) => typeof v === "string")).toBe(true);
       expect(Object.keys(io.env ?? {}).length).toBeGreaterThan(1);
       expect(io.load?.("none")).toEqual([]);
-      expect(io.load?.("query")).toEqual([{ path: "src/a.ts", source: "A" }]);
-      expect(io.load?.("tree")).toEqual([
+      // Past the project's files, a scope carries the running @keel/cli's docs and skills (hostDocs).
+      const own = (scope: "query" | "tree") =>
+        (io.load?.(scope) ?? []).filter((f) => !f.path.startsWith("node_modules/@keel/cli/"));
+      expect(own("query")).toEqual([{ path: "src/a.ts", source: "A" }]);
+      expect(own("tree")).toEqual([
         { path: "notes.txt", source: "N" },
         { path: "src/a.ts", source: "A" },
       ]);
@@ -354,58 +360,107 @@ describe("viteRun", () => {
     chmodSync(join(d, "node_modules/.bin/vite"), 0o755);
   };
 
-  it("is undefined without vite.config.ts, in both modes", () => {
+  it("is undefined without vite.config.ts", () => {
     const d = tmp();
-    expect(viteRun(d, "build")).toBeUndefined();
-    expect(viteRun(d, "dev")).toBeUndefined();
+    expect(viteRun(d)).toBeUndefined();
   });
 
   it("build runs `vite build` in cwd; success is silent", () => {
     const d = tmp();
     fakeVite(d, 'echo "$@" > args.txt\npwd > cwd.txt\necho noisy\necho noisy-err >&2');
-    expect(viteRun(d, "build")).toEqual({ code: 0, tail: "" });
+    expect(viteRun(d)).toEqual({ code: 0, tail: "", notes: [] });
     expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("build\n");
+    // A build keeps the plugin's Keel-coded lines (stdout and stderr), failed or not.
+    fakeVite(d, 'echo "[plugin keel] keel: W1005 .keel/routes.json differed; rewritten"\necho "keel: E1006 x" >&2');
+    expect(viteRun(d)?.notes).toEqual(["W1005 .keel/routes.json differed; rewritten\n", "E1006 x\n"]);
+    fakeVite(d, 'echo "keel: W1005 y"\nexit 3');
+    expect(viteRun(d)).toEqual({ code: 3, tail: "keel: W1005 y\n", notes: ["W1005 y\n"] });
+    // A failure a Keel-coded error explains returns that record alone, not Vite's printout of the throw.
+    fakeVite(
+      d,
+      `printf 'error during build:\\nError: keel: E1819 --k-color-a is #00857f in the built CSS, expected rgb(0 133 127)\\n  code: PLUGIN_ERROR\\n' >&2\nexit 1`,
+    );
+    expect(viteRun(d)).toEqual({
+      code: 1,
+      tail: "",
+      notes: ["E1819 --k-color-a is #00857f in the built CSS, expected rgb(0 133 127)\n"],
+    });
     expect(realpathSync(readFileSync(join(d, "cwd.txt"), "utf8").trim())).toBe(d);
   });
 
   it("build with a deployable sets KEEL_DEPLOYABLE for that run only", () => {
     const d = tmp();
     fakeVite(d, 'echo "${KEEL_DEPLOYABLE-unset}" >> env.txt');
-    expect(viteRun(d, "build", "api")).toEqual({ code: 0, tail: "" });
-    expect(viteRun(d, "build")).toEqual({ code: 0, tail: "" });
+    expect(viteRun(d, "api")).toEqual({ code: 0, tail: "", notes: [] });
+    expect(viteRun(d)).toEqual({ code: 0, tail: "", notes: [] });
     expect(readFileSync(join(d, "env.txt"), "utf8")).toBe(`api\n${process.env.KEEL_DEPLOYABLE ?? "unset"}\n`);
   });
 
-  it("dev runs plain `vite`, hands over the terminal and returns its code with no tail", () => {
+  it("build runs Vite with NODE_ENV=production whatever the shell sets, with or without a deployable", () => {
     const d = tmp();
-    fakeVite(d, 'echo "args=$#" > args.txt\nexit 4');
-    expect(viteRun(d, "dev")).toEqual({ code: 4, tail: "" });
-    expect(readFileSync(join(d, "args.txt"), "utf8")).toBe("args=0\n");
+    fakeVite(d, 'echo "${NODE_ENV-unset}" >> env.txt');
+    vi.stubEnv("NODE_ENV", "staging");
+    try {
+      expect(viteRun(d)).toEqual({ code: 0, tail: "", notes: [] });
+      expect(viteRun(d, "api")).toEqual({ code: 0, tail: "", notes: [] });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(readFileSync(join(d, "env.txt"), "utf8")).toBe("production\nproduction\n");
   });
 
-  it("build failure returns the last five lines of stderr, trimmed, with a trailing newline", () => {
+  it("build failure returns the last twelve lines of stderr under a count of the rest, with a trailing newline", () => {
     const d = tmp();
-    fakeVite(d, 'echo out-ignored\nfor i in 1 2 3 4 5 6 7; do echo "err$i" >&2; done\necho >&2\nexit 2');
-    expect(viteRun(d, "build")).toEqual({ code: 2, tail: "err3\nerr4\nerr5\nerr6\nerr7\n" });
+    const seq = (n: number): string => Array.from({ length: n }, (_, i) => i + 1).join(" ");
+    fakeVite(d, `echo out-ignored\nfor i in ${seq(12)}; do echo "err$i" >&2; done\necho >&2\nexit 2`);
+    const twelve = Array.from({ length: 12 }, (_, i) => `err${i + 1}\n`).join("");
+    expect(viteRun(d)).toEqual({ code: 2, tail: twelve, notes: [] });
+    fakeVite(d, `for i in ${seq(15)}; do echo "err$i" >&2; done\nexit 2`);
+    const last = Array.from({ length: 12 }, (_, i) => `err${i + 4}\n`).join("");
+    expect(viteRun(d)).toEqual({ code: 2, tail: `... +3 more\n${last}`, notes: [] });
+  });
+
+  it("build failure keeps the bundler's message and drops the stack under it", () => {
+    const d = tmp();
+    const err = [
+      "error during build:",
+      "Build failed with 1 error:",
+      'modules/a/load.server.ts:1:7: ERROR: Could not resolve "does-not-exist-xyz"',
+      "    at failureErrorWithLog (/x/node_modules/esbuild/lib/main.js:1752:15)",
+      "    at async CAC.<anonymous> (file:///x/node_modules/vite/dist/node/cli.js:789:3) {",
+      "  errors: [Getter/Setter]",
+      "}",
+    ];
+    put(d, "err.txt", `${err.join("\n")}\n`);
+    fakeVite(d, "cat err.txt >&2\nexit 1");
+    expect(viteRun(d)).toEqual({ code: 1, tail: `${err.slice(0, 3).join("\n")}\n`, notes: [] });
+    // Frames do not count toward the twelve lines: fourteen frames above one message leave the message alone.
+    const deep = [...Array.from({ length: 14 }, (_, i) => `    at f${i} (/x/y.js:1:1)`), "E1007 a.tsx server code"];
+    put(d, "err.txt", `${deep.join("\n")}\n`);
+    expect(viteRun(d)).toEqual({ code: 1, tail: "E1007 a.tsx server code\n", notes: [] });
   });
 
   it("build failure falls back to stdout when stderr is empty, and to a bare newline when both are", () => {
     const d = tmp();
     fakeVite(d, 'echo "  only stdout  "\nexit 1');
-    expect(viteRun(d, "build")).toEqual({ code: 1, tail: "only stdout\n" });
+    expect(viteRun(d)).toEqual({ code: 1, tail: "only stdout\n", notes: [] });
     fakeVite(d, "exit 9");
-    expect(viteRun(d, "build")).toEqual({ code: 9, tail: "\n" });
+    expect(viteRun(d)).toEqual({ code: 9, tail: "\n", notes: [] });
   });
 
-  it("build failure keeps fewer than five lines whole", () => {
+  it("build failure keeps fewer than twelve lines whole", () => {
     const d = tmp();
     fakeVite(d, 'printf "a\\nb\\n" >&2\nexit 1');
-    expect(viteRun(d, "build")).toEqual({ code: 1, tail: "a\nb\n" });
+    expect(viteRun(d)).toEqual({ code: 1, tail: "a\nb\n", notes: [] });
   });
 
   it("a vite killed by a signal has no status and counts as code 1", () => {
+    // An installed `vite` runs as Node on its own path, with no shell between, so the signal reaches `spawnSync`
+    // unchanged (a shell launcher, as `npx` uses, would turn it into an exit status of 128 + n on some systems).
     const d = tmp();
-    fakeVite(d, "kill -9 $$");
-    expect(viteRun(d, "build")).toEqual({ code: 1, tail: "\n" });
+    put(d, "vite.config.ts", "export default {}\n");
+    put(d, "node_modules/vite/package.json", JSON.stringify({ name: "vite", bin: { vite: "bin/vite.js" } }));
+    put(d, "node_modules/vite/bin/vite.js", 'process.kill(process.pid, "SIGKILL");\n');
+    expect(viteRun(d)).toEqual({ code: 1, tail: "\n", notes: [] });
   });
 });

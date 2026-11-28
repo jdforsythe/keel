@@ -1,5 +1,5 @@
 import { transaction } from "@keel/store";
-import { BoardView } from "./BoardView.schema.ts";
+import { BoardView } from "../api/BoardView.schema.ts";
 import { view } from "./view.ts";
 
 /** Replace the client's copy of the board with what the `api` deployable served. */

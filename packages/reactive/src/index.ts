@@ -11,4 +11,5 @@ export type { Effect } from "./types/Effect.ts";
 export type { Resource } from "./types/Resource.ts";
 export type { ResourceState } from "./types/ResourceState.ts";
 export type { Scope } from "./types/Scope.ts";
+export type { Settled } from "./types/Settled.ts";
 export type { Signal } from "./types/Signal.ts";

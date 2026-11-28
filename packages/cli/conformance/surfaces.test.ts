@@ -1,12 +1,15 @@
-// Spec: k.cli "One engine": `keel mcp` and `keel lsp` serve the same engine (RFC 0020). Public API only:
+// k.cli "One engine": `keel mcp` and `keel lsp` serve the same engine (RFC 0020). Public API only:
 // `run`, `mcp`, `lsp`, `operations` from '@keel/cli'. Seed 1337.
 // Spec: k.cli, clause "For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message)."
+// Spec: k.cli, clause "Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052."
+// The flags all commands take are `format`, `quiet`, `limit` and `verbose` (k.cli names them). A tool accepts one when it validates its value: an undeclared key is ignored by an open object, a flag of a bad value is E1052.
 import { lsp, mcp, operations, run } from "@keel/cli";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, cleanFile, dirtyFile, keel } from "./fixtures";
 
 const CWD = "/work/app";
+const SHARED = ["format", "quiet", "limit", "verbose"];
 const rpc = (id: number, method: string, params: unknown): string =>
   JSON.stringify({ jsonrpc: "2.0", id, method, params });
 const frame = (m: unknown): string => {
@@ -103,7 +106,7 @@ describe("k.cli surfaces", () => {
     );
   });
 
-  it("each MCP tool's input schema describes its operation's input: object, same fields, required exactly the non-optional ones, same field types", async () => {
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: object, the fields but the shared flags, required exactly the non-optional ones, same field types", async () => {
     const out = await mcp(() => ({ cwd: CWD })).receive(`${rpc(1, "tools/list", {})}\n`);
     const list = field(records(out)[0]?.result, "tools");
     const tools = Array.isArray(list) ? list : [];
@@ -119,16 +122,19 @@ describe("k.cli surfaces", () => {
       expect(field(schema, "type")).toBe("object");
       const props = field(schema, "properties");
       expect(Object.keys(typeof props === "object" && props !== null ? props : {}).sort()).toEqual(
-        Object.keys(node.fields).sort(),
+        Object.keys(node.fields)
+          .filter((k) => !SHARED.includes(k))
+          .sort(),
       );
       const required = field(schema, "required");
       expect((Array.isArray(required) ? required : []).sort()).toEqual(
         Object.entries(node.fields)
-          .filter(([, f]) => f.kind !== "optional")
+          .filter(([k, f]) => f.kind !== "optional" && !SHARED.includes(k))
           .map(([k]) => k)
           .sort(),
       );
       for (const [k, f] of Object.entries(node.fields)) {
+        if (SHARED.includes(k)) continue;
         const inner = f.kind === "optional" ? f.inner : f;
         const want = jsonType[inner.kind];
         if (want !== undefined) expect(field(field(props, k), "type"), `${op.name}.${k}`).toBe(want);
@@ -144,5 +150,22 @@ describe("k.cli surfaces", () => {
     expect(bad).toContain("E1052");
     expect(unknown).toContain("E1051");
     for (const r of [bad, unknown]) expect(r).toContain('"isError":true');
+  });
+
+  it("Each MCP tool's input schema is its operation's input's JSON Schema without `format`, `quiet`, `limit` and `verbose`, which `initialize` states once; each tool takes them, a refused value E1052: `initialize` instructions name every shared flag, and every tool still validates each of them", async () => {
+    const server = mcp(() => ({ cwd: CWD, files: [] }));
+    const init = records(await server.receive(`${rpc(1, "initialize", {})}\n`))[0];
+    const text = field(field(init, "result"), "instructions");
+    for (const flag of SHARED) expect(String(text), flag).toContain(flag);
+    for (const op of operations) {
+      for (const flag of SHARED) {
+        const out = await server.receive(
+          `${rpc(2, "tools/call", { name: op.name, arguments: { [flag]: { not: "a flag value" } } })}\n`,
+        );
+        const result = records(out)[0]?.result;
+        expect(JSON.stringify(result), `${op.name} ${flag}`).toContain("E1052");
+        expect(field(result, "isError"), `${op.name} ${flag}`).toBe(true);
+      }
+    }
   });
 });

@@ -3,3 +3,4 @@ dist
 node_modules
 .api.storage
 .api.storage*
+.api.sqlite*

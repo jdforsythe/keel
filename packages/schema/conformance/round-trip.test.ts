@@ -1,6 +1,6 @@
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
-// Spec: k.schema round-trip over the shared fixture types (json and member unions are covered in their own files): parse(encode(v)) round-trips. Seed 1337, 100 runs.
+// k.schema round-trip over the shared fixture types (json and member unions are covered in their own files): parse(encode(v)) round-trips. Seed 1337, 100 runs.
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED, allTypes, norm } from "./fixtures";
 

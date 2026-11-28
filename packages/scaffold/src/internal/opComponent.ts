@@ -13,11 +13,11 @@ import { isLowerCamel } from "./isLowerCamel.ts";
 import { isPascal } from "./isPascal.ts";
 import { targetsGenerated } from "./targetsGenerated.ts";
 
-/** `scaffold component <module>/<Name>`: `<Name>.tsx` with a `Props` schema, and its property test. */
+/** `scaffold component <module>/<Name> [--ctx]`: `<Name>.tsx` with a `Props` schema (and `ctx: Ctx` with `ctx`), and its property test. */
 export function opComponent(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.component.parse(input);
   if (!r.ok) return badInput("component", r.error);
-  const { id } = r.value;
+  const { id, ctx = false } = r.value;
   if (targetsGenerated(id)) return fail("E1005", id, `${id} is a generated location`);
   const cut = id.lastIndexOf("/");
   const mod = id.slice(0, cut);
@@ -32,7 +32,7 @@ export function opComponent(input: unknown, files: ReadonlyMap<string, string>):
   if (existing[0] !== undefined)
     return fail("E1351", existing[0], `component ${name} already exists; use codemod rename or move`);
   const writes: Writes = new Map([
-    [file, componentTsx(name)],
+    [file, componentTsx(name, ctx)],
     [test, componentTest(name, inTestDir ? `../modules/${mod}` : ".")],
   ]);
   return commit(files, writes);

@@ -5,6 +5,7 @@ import { bench, describe } from "vitest";
 import { mount } from "../src/index.ts";
 import { clone, list, template, text } from "../src/ops/index.ts";
 import { rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 type Item = { readonly id: number; readonly v: number };
 
@@ -18,22 +19,26 @@ const rows = (n: number, v = 0): Item[] => Array.from({ length: n }, (_, id) => 
 /** A mounted list of `N` rows over a root signal; each row binds `id:v@index`. */
 function setup(): { items: ReturnType<typeof rootSignal<readonly Item[]>> } {
   const items = rootSignal<readonly Item[]>(rows(N));
-  mount(() => {
-    const ul = clone(UL);
-    const anchor = ul.lastChild;
-    if (anchor === null) throw new Error("no anchor");
-    list(
-      anchor,
-      () => items.get(),
-      (i) => i.id,
-      (item, index) => {
-        const li = clone(LI);
-        text(li, () => `${item().id}:${item().v}@${index()}`);
-        return li;
-      },
-    );
-    return ul;
-  }, document.createElement("div"));
+  mount(
+    () => {
+      const ul = clone(UL);
+      const anchor = ul.lastChild;
+      if (anchor === null) throw new Error("no anchor");
+      list(
+        anchor,
+        () => items.get(),
+        (i) => i.id,
+        (item, index) => {
+          const li = clone(LI);
+          text(li, () => `${item().id}:${item().v}@${index()}`);
+          return li;
+        },
+      );
+      return ul;
+    },
+    document.createElement("div"),
+    { ctx: testCtx },
+  );
   return { items };
 }
 
@@ -88,22 +93,26 @@ describe(`list of ${N} rows`, () => {
     "mount and dispose",
     () => {
       const items = rootSignal<readonly Item[]>(rows(N));
-      const dispose = mount(() => {
-        const ul = clone(UL);
-        const anchor = ul.lastChild;
-        if (anchor === null) throw new Error("no anchor");
-        list(
-          anchor,
-          () => items.get(),
-          (i) => i.id,
-          (item) => {
-            const li = clone(LI);
-            text(li, () => String(item().id));
-            return li;
-          },
-        );
-        return ul;
-      }, document.createElement("div"));
+      const dispose = mount(
+        () => {
+          const ul = clone(UL);
+          const anchor = ul.lastChild;
+          if (anchor === null) throw new Error("no anchor");
+          list(
+            anchor,
+            () => items.get(),
+            (i) => i.id,
+            (item) => {
+              const li = clone(LI);
+              text(li, () => String(item().id));
+              return li;
+            },
+          );
+          return ul;
+        },
+        document.createElement("div"),
+        { ctx: testCtx },
+      );
       dispose();
     },
     OPTS,

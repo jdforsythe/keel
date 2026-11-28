@@ -70,9 +70,31 @@ describe("testResults", () => {
     expect(r.diagnostics.map((d) => [d.path, d.line, d.col, d.message])).toEqual([
       ["a.ts", 2, 4, "t: m"],
       ["../other/b.test.ts", 1, 1, "Cannot find module"],
-      [undefined, undefined, undefined, "boom"],
+      [undefined, undefined, undefined, "uncaught: boom"],
     ]);
     expect([r.failed, r.errors]).toEqual([2, 1]);
+  });
+
+  it("a file that failed outside any test is one failed test: `failed` never exceeds `tests`", () => {
+    fc.assert(
+      fc.property(fc.array(fc.tuple(fc.boolean(), fc.nat(3)), { maxLength: 8 }), (shape) => {
+        const files = shape.map(([broken, n], i) => ({
+          filepath: `/repo/pkg/f${i}.test.ts`,
+          tasks: Array.from({ length: broken ? 0 : n }, (_, j) => ({
+            type: "test",
+            name: `t${j}`,
+            result: { state: "pass" },
+          })),
+          ...(broken ? { result: { state: "fail", errors: [{ message: "did not load" }] } } : {}),
+        }));
+        const r = testResults(files, [], CWD);
+        const brokenFiles = shape.filter(([b]) => b).length;
+        expect(r.failed).toBe(brokenFiles);
+        expect(r.tests).toBe(brokenFiles + shape.filter(([b]) => !b).reduce((t, [, n]) => t + n, 0));
+        expect(r.failed).toBeLessThanOrEqual(r.tests);
+      }),
+      { seed: SEED, numRuns: 100 },
+    );
   });
 
   it("counts: every test node counted once; failures, skips and passes partition them; output is deterministic", () => {
@@ -94,5 +116,100 @@ describe("testResults", () => {
       }),
       { seed: SEED, numRuns: 100 },
     );
+  });
+});
+
+describe("testResults: harness failures", () => {
+  it("a failure carrying E1708 or E1704 is that code at the test file's frame, its first line before the test name", () => {
+    const coded = (code: string, message: string) => ({
+      type: "test",
+      name: "explores",
+      result: {
+        state: "fail",
+        errors: [
+          {
+            code,
+            message,
+            stack: [
+              `Error: ${message}`,
+              "    at /repo/pkg/src/internal/modelError.ts:7:24",
+              "    at /repo/pkg/src/explore.ts:100:19",
+              "    at /repo/pkg/test/a.test.ts:13:24",
+            ].join("\n"),
+          },
+        ],
+      },
+    });
+    const file = {
+      file: { filepath: "/repo/pkg/test/a.test.ts" },
+      tasks: [
+        coded("E1708", "explore todos.board: todos.addTodo broke an invariant after 2 steps (5 states)"),
+        coded("E1704", 'E1704 simulate: response 0 was lost (seed 1337, run 3, shrunk)\n{"seed":0}'),
+        coded("keel.unexpected", "fire did not settle"),
+      ],
+    };
+    const r = testResults([file], [], CWD);
+    expect(r.diagnostics.map((d) => [d.code, d.path, d.line, d.message])).toEqual([
+      [
+        "E1708",
+        "test/a.test.ts",
+        13,
+        "explore todos.board: todos.addTodo broke an invariant after 2 steps (5 states) (explores)",
+      ],
+      ["E1704", "test/a.test.ts", 13, "simulate: response 0 was lost (seed 1337, run 3, shrunk) (explores)"],
+      ["T0001", "src/internal/modelError.ts", 7, "explores: fire did not settle"],
+    ]);
+    expect(r.diagnostics[0]?.fix).toBe("at src/internal/modelError.ts:7:24\nat src/explore.ts:100:19");
+  });
+});
+
+describe("testResults: a failure the message cannot hold", () => {
+  const LONG =
+    "renders the list page and the list for any copy and any items, each with an id as the server mints them";
+  const one = (message: string) => {
+    const t = { type: "test", name: LONG, result: { state: "fail", errors: [{ message }] } };
+    const [d] = testResults([{ filepath: "/repo/pkg/a.test.ts", tasks: [t] }], [], CWD).diagnostics;
+    return d;
+  };
+
+  it("a timeout under a long test name: the message is clipped, the fix holds the line it cut", () => {
+    const d = one("Test timed out in 5000ms.\nIf this is a long-running test, pass a timeout value.");
+    expect(d?.message).toBe(`${LONG.slice(0, 86)}...`);
+    expect(d?.fix).toBe("Test timed out in 5000ms.");
+  });
+
+  it("a fast-check failure: the fix holds its seed and path, counterexample, shrink count and error, never its stack", () => {
+    const message = [
+      "Property failed after 3 tests",
+      '{ seed: 7, path: "2:3:4", endOnFailure: true }',
+      'Counterexample: ["    "]',
+      "Shrunk 4 time(s)",
+      "Got error: too long",
+      "    at /repo/pkg/test/a.test.ts:3:9",
+      "",
+      "Hint: Enable verbose mode in order to have the list of all failing values encountered during the run",
+    ].join("\n");
+    expect(one(message)?.fix).toBe(
+      [
+        "Property failed after 3 tests",
+        '{ seed: 7, path: "2:3:4", endOnFailure: true }',
+        'Counterexample: ["    "]',
+        "Shrunk 4 time(s)",
+        "Got error: too long",
+      ].join("\n"),
+    );
+  });
+
+  it("each detail line is at most 512 UTF-16 code units, and a message that fits adds no detail", () => {
+    fc.assert(
+      fc.property(fc.string({ minLength: 0, maxLength: 2000 }), (counter) => {
+        const d = one(`Property failed after 1 tests\n{ seed: 1, path: "0" }\nCounterexample: [${counter}]`);
+        for (const l of (d?.fix ?? "").split("\n")) expect(l.length).toBeLessThanOrEqual(512);
+      }),
+      { seed: SEED, numRuns: 100 },
+    );
+    const t = { type: "test", name: "t", result: { state: "fail", errors: [{ message: "boom\nmore" }] } };
+    const [d] = testResults([{ filepath: "/repo/pkg/a.test.ts", tasks: [t] }], [], CWD).diagnostics;
+    expect(d?.fix).toBeUndefined();
   });
 });

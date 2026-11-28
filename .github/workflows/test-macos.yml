@@ -1,0 +1,41 @@
+# _generated: edit tooling/test-macos.source.json and run pnpm generate. Do not edit by hand.
+name: test-macos
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: "test-macos-${{ github.ref }}"
+  cancel-in-progress: true
+env:
+  KEEL_AGENT: "1"
+jobs:
+  test-macos:
+    if: "github.event.repository.private == false"
+    runs-on: macos-26
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: "node tooling/ci-shards.mjs ${{ matrix.shard }}"

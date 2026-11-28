@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
 // Spec: k.compiler, clause "A dynamic `href` whose value is `javascript:alert(1)` renders as `about:blank`."
 // Seed 1337 (fc.assert seed below).
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const src = `
 import { signal } from '@keel/reactive'
@@ -20,7 +23,7 @@ function render(url: string): string | null {
   const L = load("L", src);
   sigOf(L, "u").set(url);
   const host = document.createElement("div");
-  const dispose = mount(L, host);
+  const dispose = mount(L, host, { ctx: simCtx });
   const out = host.querySelector("a")?.getAttribute("href") ?? null;
   dispose();
   return out;

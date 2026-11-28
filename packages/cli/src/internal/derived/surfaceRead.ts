@@ -1,0 +1,70 @@
+import { isRecord } from "../isRecord.ts";
+import { surfaceOf } from "../surfaceOf.ts";
+
+type Level = { readonly route: string; readonly name: string; readonly factory: unknown };
+
+/** The `stores` factory a binding's `loader` names, else none. */
+const factoryOf = (binding: Readonly<Record<string, unknown>> | undefined): unknown => {
+  const l = binding?.loader;
+  return isRecord(l) && typeof l.stores === "function" ? l.stores : undefined;
+};
+
+/** Each bound route's chain of loaders naming `stores` (k.server E1550), outermost first, following `layout`. */
+function chainsOf(byId: ReadonlyMap<string, Readonly<Record<string, unknown>>>): Level[][] {
+  return [...byId.keys()].map((id) => {
+    const levels: Level[] = [];
+    const seen = new Set<string>();
+    for (let at: string | undefined = id; at !== undefined && !seen.has(at); ) {
+      seen.add(at);
+      const binding = byId.get(at);
+      const factory = factoryOf(binding);
+      if (typeof factory === "function") levels.unshift({ route: at, name: factory.name, factory });
+      const up = binding?.layout;
+      at = typeof up === "string" ? up : undefined;
+    }
+    return levels;
+  });
+}
+
+/**
+ * Runs inside the evaluator, bundled into the evaluation's entry (k.derived Derivations, k.evaluator): the surface's
+ * data (k.compat Surface, each contract's `callers` empty: they are read statically) from the live values the entry
+ * imported: `contracts` (each contract a contract file holds), `tables` (each route table, whose contracts join
+ * them), and the evaluated `@keel/router/internal` (`bindingsOf`) and `@keel/store/internal` (`storeShapes`, each
+ * `stores` factory run once on a sim ctx; `storeIdClashes`, whose messages are `problems`, each an E1550).
+ */
+export function surfaceRead(live: {
+  readonly contracts: readonly unknown[];
+  readonly tables: readonly unknown[];
+  readonly router: unknown;
+  readonly store: unknown;
+}): { surface: unknown; problems: string[] } {
+  const contracts: unknown[] = [...live.contracts];
+  const router = isRecord(live.router) ? live.router : {};
+  const store = isRecord(live.store) ? live.store : {};
+  const bindings: unknown[] = [];
+  const byId = new Map<string, Readonly<Record<string, unknown>>>();
+  for (const t of live.tables) {
+    if (isRecord(t) && Array.isArray(t.contracts)) contracts.push(...t.contracts);
+    if (typeof router.bindingsOf !== "function") continue;
+    let bound: unknown;
+    try {
+      bound = router.bindingsOf(t);
+    } catch {
+      bound = undefined;
+    }
+    if (bound instanceof Map)
+      for (const [id, b] of bound)
+        if (isRecord(b)) {
+          bindings.push(b.binding);
+          if (typeof id === "string" && isRecord(b.binding)) byId.set(id, b.binding);
+        }
+  }
+  const problems: string[] = [];
+  const clashes = store.storeIdClashes;
+  if (typeof clashes === "function")
+    for (const m of clashes(chainsOf(byId))) if (typeof m === "string") problems.push(m);
+  const shapes = store.storeShapes;
+  const storesOf = (factory: unknown): unknown => (typeof shapes === "function" ? shapes(factory) : undefined);
+  return { surface: surfaceOf({ contracts, bindings, callers: {}, storesOf }), problems };
+}

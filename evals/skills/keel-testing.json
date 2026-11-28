@@ -1,6 +1,18 @@
 {
   "skill": "keel-testing",
-  "maxTokens": 600,
-  "prompt": "How do I test a route that loads data over the network in Keel, fire a click, and what error do I get for a selector-shaped id?",
-  "expect": ["renderRoute", "fire", "settle", "ctx.net.route", "E1701"]
+  "maxTokens": 2000,
+  "prompt": "In Keel, how do I test a route that loads data over the network and fire a click, check every reachable state of a store, run a scenario under network faults, and which ledger rung does each tool earn? Which code do I get for a selector-shaped id?",
+  "expect": [
+    "renderRoute",
+    "fire",
+    "settle",
+    "ctx.net.route",
+    "E1701",
+    "explore(",
+    "simulate(",
+    "properties(",
+    "proven",
+    "exhaustive",
+    "probabilistic"
+  ]
 }

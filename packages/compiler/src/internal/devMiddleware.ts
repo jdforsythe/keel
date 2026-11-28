@@ -1,0 +1,62 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
+
+/** The connection a request came over, as `@keel/server`'s `fetch` takes it (k.contract Local routes). */
+type Connection = { readonly incoming: IncomingMessage };
+type App = { fetch(req: Request, connection?: Connection): Promise<Response> };
+type Served = { readonly app: App; served(path: string): boolean; readonly mount: string | undefined };
+
+/** Whether `app` answers `path` as its built server does: a route of it matches, or it is at or under its identity mount (k.user). */
+const answers = (app: Served, path: string): boolean =>
+  app.served(path) || (app.mount !== undefined && `${path}/`.startsWith(`${app.mount}/`));
+
+/**
+ * The `keel dev` middleware (k.topology Local topology): a request whose path a `node` or `static` deployable's route matches, or
+ * that is at or under its identity source's `handle.path`, is answered by that deployable's dev app, streaming its body
+ * (event streams too), handed the request's connection; anything else goes on to Vite.
+ * `load` gives the dev apps (`DEV_ENTRY`), loaded once and again after `reset`; `apps` is that load, started when
+ * nothing has asked for it yet.
+ */
+export function devMiddleware(load: () => Promise<readonly Served[]>): {
+  handle(req: IncomingMessage, res: ServerResponse, next: (e?: unknown) => void): void;
+  reset(): void;
+  apps(): Promise<readonly Served[]>;
+} {
+  let loaded: Promise<readonly Served[]> | undefined;
+  const apps = (): Promise<readonly Served[]> => {
+    loaded ??= load();
+    return loaded;
+  };
+  const handle = async (req: IncomingMessage, res: ServerResponse, next: (e?: unknown) => void): Promise<void> => {
+    const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+    const pick = (await apps()).find((a) => answers(a, url.pathname));
+    if (pick === undefined) return next();
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(req.headers))
+      for (const one of Array.isArray(v) ? v : v === undefined ? [] : [v]) headers.append(k, one);
+    const ac = new AbortController();
+    res.on("close", () => ac.abort());
+    const chunks: Uint8Array[] = [];
+    if (req.method !== "GET" && req.method !== "HEAD")
+      for await (const c of req) if (c instanceof Uint8Array) chunks.push(c);
+    const body = chunks.length === 0 ? null : Buffer.concat(chunks);
+    const request = new Request(url, { method: req.method ?? "GET", headers, signal: ac.signal, body });
+    const answer = await pick.app.fetch(request, { incoming: req });
+    const out: Record<string, string | string[]> = {};
+    answer.headers.forEach((v, k) => {
+      if (k !== "set-cookie") out[k] = v;
+    });
+    const cookies = answer.headers.getSetCookie();
+    if (cookies.length > 0) out["set-cookie"] = cookies;
+    res.writeHead(answer.status, out);
+    if (answer.body === null) return void res.end();
+    for await (const chunk of answer.body) res.write(chunk);
+    res.end();
+  };
+  return {
+    handle: (req, res, next) => void handle(req, res, next).catch(next),
+    reset: () => {
+      loaded = undefined;
+    },
+    apps,
+  };
+}

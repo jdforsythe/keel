@@ -1,7 +1,8 @@
 import { s } from "@keel/schema";
 import { transaction, tx } from "@keel/store";
 import fc from "fast-check";
-// Spec: k.errors Conformance, "A throwing transaction leaves snapshot() and log() equal to their values before the call". Seed 1337.
+// Spec: k.errors, clause "A throwing transaction leaves `snapshot()` and `log()` equal to their values before the call."
+// k.errors Seed 1337.
 import { describe, expect, it } from "vitest";
 import { applyOp, inScope, makeCart, opArb, opts } from "./fixtures";
 

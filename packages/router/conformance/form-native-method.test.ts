@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router Form prose (not a Conformance sentence): without JS the form posts natively; PUT/PATCH/DELETE via a hidden _method. Exhaustive over the 4 verbs.
+// k.router Form prose (not a Conformance sentence): without JS the form posts natively; PUT/PATCH/DELETE via a hidden _method. Exhaustive over the 4 verbs.
 import { beforeEach, describe, expect, it } from "vitest";
 import { VERBS, control, resetObservations, start } from "./fixtures.ts";
 

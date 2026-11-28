@@ -2,7 +2,7 @@
 import { check, format } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { FIXTURES, one, SEED, synth } from "./support.ts";
+import { FIXTURES, SEED, one, synth } from "./support.ts";
 
 const ESC = String.fromCharCode(27);
 

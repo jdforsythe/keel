@@ -71,10 +71,10 @@ describe("diagCompact", () => {
     expect(diagCompact(makeDiag("E1000", "msg", { path: "a.ts" }))).toBe("E1000 a.ts msg");
     expect(diagCompact(makeDiag("E1000", "msg", { path: "a.ts", line: 3 }))).toBe("E1000 a.ts:3:1 msg");
     expect(diagCompact(makeDiag("E1000", "msg", { path: "a.ts", line: 3, col: 4 }))).toBe("E1000 a.ts:3:4 msg");
-    expect(diagCompact(makeDiag("E1000", "msg", { see: "k.x" }))).toBe("E1000 msg\n  see: k.x");
+    expect(diagCompact(makeDiag("E1000", "msg", { see: "k.x" }))).toBe("E1000 msg\n  see: keel docs k.x");
     expect(diagCompact(makeDiag("E1000", "msg", { fix: "one" }))).toBe("E1000 msg\n  fix: one");
     expect(diagCompact(makeDiag("E1000", "msg", { fix: "one\ntwo\nthree", see: "k.x" }))).toBe(
-      "E1000 msg\n  fix: one\n       two\n       three\n  see: k.x",
+      "E1000 msg\n  fix: one\n       two\n       three\n  see: keel docs k.x",
     );
     expect(diagCompact(makeDiag("E1000", "msg", { fix: "" }))).toBe("E1000 msg\n  fix: ");
   });
@@ -85,10 +85,10 @@ describe("diagPretty", () => {
     expect(diagPretty(makeDiag("E1000", "msg"))).toBe("E1000\n  msg");
     expect(diagPretty(makeDiag("E1000", "msg", { path: "a.ts" }))).toBe("E1000  a.ts\n  msg");
     expect(diagPretty(makeDiag("E1000", "msg", { path: "a.ts", line: 3, col: 4 }))).toBe("E1000  a.ts:3:4\n  msg");
-    expect(diagPretty(makeDiag("E1000", "msg", { see: "k.x" }))).toBe("E1000\n  msg\n  see: keel spec k.x");
+    expect(diagPretty(makeDiag("E1000", "msg", { see: "k.x" }))).toBe("E1000\n  msg\n  see: keel docs k.x");
     expect(diagPretty(makeDiag("E1000", "msg", { fix: "one" }))).toBe("E1000\n  msg\n  fix:\n    one");
     expect(diagPretty(makeDiag("E1000", "msg", { fix: "one\ntwo", see: "k.x" }))).toBe(
-      "E1000\n  msg\n  fix:\n    one\n    two\n  see: keel spec k.x",
+      "E1000\n  msg\n  fix:\n    one\n    two\n  see: keel docs k.x",
     );
     expect(diagPretty(makeDiag("E1000", "msg", { fix: "" }))).toBe("E1000\n  msg\n  fix:\n    ");
   });
@@ -271,7 +271,9 @@ describe("usageResult", () => {
     const r = usageResult("check", diags, { cwd: "/w" }, "compact");
     expect(r.code).toBe(2);
     expect(r.stderr).toBe("");
-    expect(r.stdout).toBe("E1052 unknown flag --x\n  see: k.cli\nE1052 second\n  see: k.cli\nfail check 2 errors\n");
+    expect(r.stdout).toBe(
+      "E1052 unknown flag --x\n  see: keel docs k.cli\nE1052 second\n  see: keel docs k.cli\nfail check 2 errors\n",
+    );
     expect(r.records).toStrictEqual([...diags, { kind: "summary", ok: false, name: "check", counts: { errors: 2 } }]);
     const j = usageResult("check", [diags[0] ?? makeDiag("E1052", "")], { cwd: "/w", tty: true }, "json");
     expect(j.stdout.split("\n")[0]?.startsWith("{")).toBe(true);
@@ -283,10 +285,10 @@ describe("usageResult", () => {
   it("without a format the default mode applies", () => {
     const d = makeDiag("E1051", "no command given", { see: "k.cli" });
     expect(usageResult("keel", [d], { cwd: "/w" }, undefined).stdout).toBe(
-      "E1051 no command given\n  see: k.cli\nfail keel 1 errors\n",
+      "E1051 no command given\n  see: keel docs k.cli\nfail keel 1 errors\n",
     );
     expect(usageResult("keel", [d], { cwd: "/w", tty: true }, undefined).stdout).toBe(
-      "E1051\n  no command given\n  see: keel spec k.cli\nkeel: failed (1 errors)\n",
+      "E1051\n  no command given\n  see: keel docs k.cli\nkeel: failed (1 errors)\n",
     );
   });
 });

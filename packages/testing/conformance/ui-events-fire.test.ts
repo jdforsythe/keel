@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance, "`fire(id, 'click')` on a Button with `onClick` calls the handler once; `fire(id, 'change')` on a Checkbox with `onChange` passes the new checked state". Seed: 1337.
+// Spec: k.ui, clause "`fire(id, 'click')` on a Button with `onClick` calls the handler once; `fire(id, 'change')` on a Checkbox with `onChange` passes the new checked state."
+// k.ui Seed: 1337.
 // Real harness `fire`; the handlers are registered by the base elements through the runtime's delegated `on`.
 import { render } from "@keel/testing";
 import { Box, Button, Checkbox, Input, Select, TextArea } from "@keel/ui";

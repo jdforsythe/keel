@@ -26,7 +26,7 @@ export function ledgerDiff(
       before: b.rung,
       after: a,
       message: `ledger rung lowered: ${b.item} ${b.rung} -> ${a}`,
-      see: "k.testing",
+      see: "k.ledger",
     });
   }
   return out;

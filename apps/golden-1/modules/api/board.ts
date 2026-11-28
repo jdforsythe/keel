@@ -1,5 +1,5 @@
 import { invariant, store } from "@keel/store";
-import { Board } from "../todos/Board.schema.ts";
+import { Board } from "./Board.schema.ts";
 
 /**
  * A fresh `api.board` (all lists and todos) with its invariant: ids unique, every todo in a known list. Call inside a

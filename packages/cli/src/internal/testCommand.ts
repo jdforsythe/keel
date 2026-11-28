@@ -1,56 +1,54 @@
-import { Writable } from "node:stream";
-import { type TestReport, testResults } from "@keel/testing";
-import { startVitest } from "vitest/node";
+import { existsSync, readdirSync } from "node:fs";
+import type { TestRunReport } from "@keel/testing";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import { EMPTY_REPORT } from "./EMPTY_REPORT.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
+import type { Work } from "./derived/Work.ts";
+import { frozenRun } from "./derived/frozenRun.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { ownLibrary } from "./ownLibrary.ts";
 import { projectFiles } from "./projectFiles.ts";
+import { vitestRun } from "./vitestRun.ts";
 
-const sink = (): Writable => new Writable({ write: (_chunk, _enc, done) => done() });
 const VITEST_CONFIG = /(^|\/)vitest\.config\.[cm]?[jt]s$/;
 
-const EMPTY: TestReport = { diagnostics: [], tests: 0, failed: 0, skipped: 0, errors: 0 };
-
-async function vitestRun(root: string, filters: readonly string[]): Promise<TestReport> {
-  let report = EMPTY;
-  const collector = {
-    onFinished: (files: readonly unknown[] = [], errors: readonly unknown[] = []): void => {
-      report = testResults(files, errors, root);
-    },
-  };
-  const exitCode = process.exitCode;
-  const previous = process.env.KEEL_TEST;
-  process.env.KEEL_TEST = "1";
-  try {
-    const vitest = await startVitest(
-      "test",
-      [...filters],
-      { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1" } },
-      {},
-      { stdout: sink(), stderr: sink() },
-    );
-    await vitest?.close();
-  } finally {
-    if (previous === undefined) Reflect.deleteProperty(process.env, "KEEL_TEST");
-    else process.env.KEEL_TEST = previous;
-    process.exitCode = exitCode;
-  }
-  return report;
-}
-
 /**
- * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim);
+ * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim) and
+ * `UV_THREADPOOL_SIZE=1` over any value set (k.drive-law Order), and `@keel/testing/setup` after the project's setup
+ * files, so a render given no `artifacts` takes the project's (k.a11y Artifacts);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
- * test failed). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
- * project never touches disk.
+ * test failed); the run report goes to `reports/tests/run.json` (`writeTestReport`, with vitest's `includeTaskLocation`
+ * set) and every render check the harness recorded to `reports/a11y.json` (`writeA11yReport`), but in a
+ * library's own folder (`ownLibrary`), which then writes no `reports/a11y.json`. With `report` a function (`keel pack`'s
+ * test step, which writes no file) the run report (`testRunReport`) is handed to it and not written. Skipped (the
+ * empty run) when `io.files` holds no test file and `io.cwd` no vitest config, so an in-memory project never touches disk.
  */
-export async function testCommand(input: Input, io: Io): Promise<OutRecord[]> {
-  const runnable = projectFiles(io).some((f) => TEST_FILE.test(f.path) || VITEST_CONFIG.test(f.path));
-  const r = runnable ? await vitestRun(io.cwd, input.paths ?? []) : EMPTY;
-  const diags = r.diagnostics.map((d) => makeDiag(d.code, d.message, d));
+export async function testCommand(
+  input: Input,
+  io: Io,
+  report: true | ((run: TestRunReport) => void) = true,
+): Promise<OutRecord[]> {
+  // Behind its own entry, loaded only for `--e2e` (`@keel/cli` size budget).
+  if (input.e2e === true) return (await import("@keel/cli/e2e")).e2eCommand(input, io);
+  const configured = existsSync(io.cwd) && readdirSync(io.cwd).some((n) => VITEST_CONFIG.test(n));
+  const runnable = configured || projectFiles(io).some((f) => TEST_FILE.test(f.path));
+  // A library holds no page route, so its own folder keeps no render claims (k.library-pack Own folder).
+  const own = ownLibrary(io.cwd) === undefined;
+  // Over the disk, the derivation of the tree under test (k.derived Readers): `a11y.json` is handed to each test
+  // process, and, not frozen, the views are refreshed first.
+  const frozen = frozenRun(input.frozen, io.env);
+  const work: Work = { evaluated: 0, cached: 0, refreshed: 0 };
+  const derived =
+    runnable && own && io.load !== undefined
+      ? await (await import("@keel/cli/derive")).testViews(io.cwd, projectFiles(io), frozen, work)
+      : undefined;
+  const r = runnable
+    ? await vitestRun(io.cwd, input.paths ?? [], own, report, undefined, { a11y: derived?.a11y, frozen })
+    : EMPTY_REPORT;
+  const diags = [...(derived?.diags ?? []), ...r.diagnostics.map((d) => makeDiag(d.code, d.message, d))];
   const counts = { tests: r.tests, failed: r.failed, skipped: r.skipped };
   return [...diags, { kind: "summary", ok: r.failed === 0 && r.errors === 0, name: "test", counts }];
 }

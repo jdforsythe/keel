@@ -1,7 +1,12 @@
 import * as fc from "fast-check";
+import { parsedAs } from "../unsafe/parsedAs.ts";
 import type { Schema } from "./Schema.ts";
-import { Secret } from "./Secret.ts";
 import type { Node } from "./internal/Node.ts";
+import { fits } from "./internal/fits.ts";
+import { formats } from "./internal/formats.ts";
+import { freeze } from "./internal/freeze.ts";
+import { isBlank } from "./internal/isBlank.ts";
+import { secretAccess } from "./internal/secretAccess.ts";
 
 const limits = (node: { readonly min?: number; readonly max?: number }): { min?: number; max?: number } => ({
   ...(node.min === undefined ? {} : { min: node.min }),
@@ -11,8 +16,12 @@ const limits = (node: { readonly min?: number; readonly max?: number }): { min?:
 /** Arbitrary producing values that satisfy `node`. Optional keys are sometimes absent, never undefined. */
 function arbitrary(node: Node): fc.Arbitrary<unknown> {
   switch (node.kind) {
-    case "string":
-      return fc.string(node.max === undefined ? { minLength: node.min } : { minLength: node.min, maxLength: node.max });
+    case "string": {
+      const text = fc.string(
+        node.max === undefined ? { minLength: node.min } : { minLength: node.min, maxLength: node.max },
+      );
+      return node.min >= 1 ? text.filter((v) => !isBlank(v)) : text;
+    }
     case "number":
       return fc.double({ noNaN: true, noDefaultInfinity: true, ...limits(node) });
     case "int":
@@ -29,13 +38,20 @@ function arbitrary(node: Node): fc.Arbitrary<unknown> {
     case "json":
       return fc.jsonValue();
     case "id":
-      return fc.string({ minLength: 1 });
+      return fc.uuid({ version: 4 });
     case "nullable":
       return fc.option(arbitrary(node.inner), { nil: null });
     case "optional":
       return arbitrary(node.inner);
     case "secret":
-      return arbitrary(node.inner).map((v) => Secret.of(v));
+      return arbitrary(node.inner).map((v) => secretAccess.of(freeze(v), node.inner));
+    case "format": {
+      const impl = formats.get(node);
+      if (impl === undefined) return arbitrary(node.base);
+      return arbitrary(impl.from)
+        .map(impl.map)
+        .filter((x) => fits(node, x));
+    }
     case "array":
       return fc.array(arbitrary(node.item));
     case "record":
@@ -57,5 +73,5 @@ type Out<S> = S extends Schema<infer T, boolean> ? T : never;
 
 /** fast-check arbitrary yielding only values the schema accepts. Lives on `@keel/schema/gen` so apps do not bundle fast-check. */
 export function gen<S extends Schema<unknown, boolean>>(schema: S): fc.Arbitrary<Out<S>> {
-  return arbitrary(schema.node).filter((x): x is Out<S> => schema.parse(x).ok);
+  return arbitrary(schema.node).filter(parsedAs(schema));
 }

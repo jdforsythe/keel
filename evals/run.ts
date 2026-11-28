@@ -3,15 +3,25 @@
 // otherwise `tasks/<task>/task.json` { "skill" } or `keel-package-dev`).
 import { execFile } from "node:child_process";
 import { access, appendFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { emit, mode } from "../tooling/output.ts";
 import type { Diag, Summary } from "../tooling/output.ts";
+import { verdict } from "./verdict.ts";
+import { publicTask, runPublic } from "./public/mode.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 type Runner = "claude" | "none";
-type Args = { task?: string; model?: string; runner: Runner; maxIter: number; skill?: string; strict: boolean };
+type Args = {
+  task?: string;
+  model?: string;
+  runner: Runner;
+  maxIter: number;
+  skill?: string;
+  strict: boolean;
+  keelKit?: string;
+};
 type Exec = { code: number; stdout: string };
 type Usage = { input: number; output: number; costUsd: number; turns: number; durationMs: number; text: string };
 
@@ -49,6 +59,8 @@ function parseArgs(argv: string[]): Args | string {
   if (task !== undefined) out.task = task;
   if (model !== undefined) out.model = model;
   if (skill !== undefined) out.skill = skill;
+  const kit = vals.get("keel-kit");
+  if (kit !== undefined) out.keelKit = resolve(kit);
   return out;
 }
 
@@ -127,12 +139,73 @@ function print(diags: Diag[], trailer: string, ok: boolean, ms: number): void {
   console.log(trailer);
 }
 
+/** A task with `"docs": "public"`: see evals/public/mode.ts. The prompt is TASK.md alone; the skill comes from the project. */
+async function runPublicTask(
+  a: Args,
+  task: string,
+  cfg: unknown,
+  skillName: string,
+  now: Date,
+  t0: number,
+): Promise<boolean> {
+  const dir = join(root, "evals", "tasks", task);
+  const passMod: unknown = await import(pathToFileURL(join(dir, "pass.ts")).href);
+  const passFn = isRecord(passMod) ? passMod["default"] : undefined;
+  if (typeof passFn !== "function") throw new Error(`${task}/pass.ts has no default export`);
+  const r = await runPublic(
+    publicTask(task, cfg),
+    { runner: a.runner, model: a.model, maxIter: a.maxIter, kit: a.keelKit, pass: () => passFn() },
+    dir,
+  );
+  const unsafeCount = await countUnsafe();
+  const durationMs = Math.round(performance.now() - t0);
+  const modelName = a.runner === "none" ? "none" : (a.model ?? "default");
+  await writeResult(`${dateStamp(now)}-${task}-${modelName}.json`, {
+    task,
+    skill: skillName,
+    specSections: [],
+    model: modelName,
+    runner: a.runner,
+    docs: "public",
+    converged: r.converged,
+    iterations: r.iterations,
+    tokens: { input: r.input, output: r.output },
+    costUsd: r.costUsd,
+    unsafeCount,
+    checkTrailer: r.checkTrailer,
+    testTrailer: r.testTrailer,
+    checkExit: r.checkExit,
+    testExit: r.testExit,
+    probe: r.probe,
+    audit: r.audit,
+    packed: r.packed,
+    durationMs,
+    startedAt: now.toISOString(),
+  });
+  const diags: Diag[] = r.findings.map((f) => ({ kind: "diag", code: f.code, path: f.where, message: f.message }));
+  if (r.findings.length === 0 && !r.converged)
+    diags.push({
+      kind: "diag",
+      code: "V0001",
+      path: `evals/tasks/${task}`,
+      message: `not converged after ${r.iterations} iteration(s)`,
+    });
+  print(
+    diags,
+    `ok eval ${task} docs=public converged=${r.converged} iter=${r.iterations} probe=${r.probe} audit=${r.audit} tokens=${r.input}/${r.output} unsafe=${unsafeCount} (${(durationMs / 1000).toFixed(1)}s)`,
+    r.converged,
+    durationMs,
+  );
+  return r.converged;
+}
+
 async function runTask(a: Args, task: string, now: Date, t0: number): Promise<boolean> {
   const dir = join(root, "evals", "tasks", task);
   const cfgPath = join(dir, "task.json");
   const cfgJson: unknown = (await exists(cfgPath)) ? JSON.parse(await readFile(cfgPath, "utf8")) : {};
   const cfgSkill = isRecord(cfgJson) && typeof cfgJson["skill"] === "string" ? cfgJson["skill"] : undefined;
   const skillName = a.skill ?? cfgSkill ?? "keel-package-dev";
+  if (isRecord(cfgJson) && cfgJson["docs"] === "public") return runPublicTask(a, task, cfgJson, skillName, now, t0);
   const taskMd = await readFile(join(dir, "TASK.md"), "utf8");
   const slice = await readFile(join(dir, "spec-slice.txt"), "utf8");
   const skillMd = await readFile(join(root, ".claude", "skills", skillName, "SKILL.md"), "utf8");
@@ -149,6 +222,8 @@ async function runTask(a: Args, task: string, now: Date, t0: number): Promise<bo
   let iterations = 0;
   let converged = false;
   let checkTrailer = "";
+  let checkExit = 0;
+  let testExit = 0;
   let testTrailer = "";
   const maxIter = a.runner === "none" ? 1 : a.maxIter;
 
@@ -166,7 +241,9 @@ async function runTask(a: Args, task: string, now: Date, t0: number): Promise<bo
     checkTrailer = lastLine(check.stdout);
     testTrailer = lastLine(test.stdout);
     const passed: unknown = await Promise.resolve(passFn()).catch(() => false);
-    converged = passed === true;
+    checkExit = check.code;
+    testExit = test.code;
+    converged = verdict({ checkExit, testExit, passed });
     if (!converged && iterations < maxIter) {
       const c = await run("pnpm", ["check"]);
       const t = await run("pnpm", ["test"]);
@@ -190,6 +267,8 @@ async function runTask(a: Args, task: string, now: Date, t0: number): Promise<bo
     unsafeCount,
     checkTrailer,
     testTrailer,
+    checkExit,
+    testExit,
     durationMs,
     startedAt: now.toISOString(),
   });

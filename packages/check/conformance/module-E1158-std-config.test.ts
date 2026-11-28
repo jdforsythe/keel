@@ -1,11 +1,11 @@
 // Spec: k.module, clause "A `std` key absent from `deps`, or naming an app module, reports E1158, and listing it in `deps` clears it. A `std` value that fails its package's registered schema reports E1158 naming the issue's path; a value that parses is clean."
-// Spec: k.module, Rules, "E1158 `std` key that is not a stdlib package (`@keel/std-*`) in `deps`, a `std` value that is not literal JSON, or one that fails the schema registered under its package name (message names the issue's path and rule)."
+// k.module, Rules, "E1158 `std` key that is not a stdlib package (`@keel/std-*`) in `deps`, a `std` value that is not literal JSON, or one that fails the schema registered under its package name (message names the issue's path and rule)."
 // Seed 1337
 import { check } from "@keel/check";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { type Files, lowerId, SEED } from "./module-support.ts";
+import { type Files, SEED, lowerId } from "./module-support.ts";
 
 const NO_TYPES = { types: false } as const;
 
@@ -17,7 +17,7 @@ export default module({
   id: '${id}',
   deps: [${deps.map((d) => `'${d}'`).join(", ")}],
   capabilities: [],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
   std: ${std},
 })
 `,
@@ -49,7 +49,7 @@ test("a `std` key naming an app module reports E1158 even when the module is in 
         {
           path: "modules/other/module.ts",
           source:
-            "import { module } from '@keel/compiler'\nexport default module({ id: 'other', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n",
+            "import { module } from '@keel/compiler'\nexport default module({ id: 'other', deps: [], capabilities: [], public: { exports: [] } })\n",
         },
       ];
       expect(e1158(files).length).toBe(1);

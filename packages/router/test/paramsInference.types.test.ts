@@ -1,88 +1,98 @@
-// Examples: a loader's and action's `params`/`search` are `Infer` of the schemas they declare, which are the route's
-// own values (k.server API, RFC 0027); an undeclared schema leaves `unknown`, and a route fitting the loader's types
-// (RouteFit) with another schema value still throws E1507 at `manifest`.
+// Examples: a loader's and action's `params` and `search` are `Infer` of the schemas of the entry they name (k.contract
+// Handlers); an entry without the schema gives `{}`, a layout's are the matched route's (`unknown`), and a handler
+// bound at an entry it was not declared for fails at `manifest` (E1515).
 import { createCtx } from "@keel/ctx";
 import { type Id, ok, s } from "@keel/schema";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { action } from "../src/action.ts";
+import { contract } from "../src/contract/contract.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
-import type { RouteDef } from "../src/types/RouteDef.ts";
 
 const TodoParams = s.object({ todoId: s.id("Todo") });
 const Filter = s.object({ filter: s.enum(["all", "done"]).optional() });
 const Out = s.object({ id: s.id("Todo") });
+const Plain = s.object({ n: s.int() });
 const page = (): Node => document.createTextNode("");
 
-const load = loader({ output: Out, params: TodoParams, search: Filter }, async ({ params }) =>
-  ok({ id: params.todoId }),
-);
-const save = action({ input: s.object({}), params: TodoParams }, (_input, { params }) =>
-  ok(params.todoId === "" ? null : null),
-);
-const unread = loader({ output: Out }, async () => ok({ id: "t1" }));
-// A hand annotation narrower than the declared (or absent) schema does not fit `Run`; asserted below through the
-// `unknown` params of `unread` and the type of `save` (suppression comments are not allowed outside unsafe/).
+const t = contract("t", {
+  "t.shell": { layout: true },
+  "t.show": { path: "/t/:todoId", params: TodoParams, search: Filter },
+  "t.plain": { path: "/plain" },
+  "t.other": { path: "/other" },
+});
 
-const good = { "t.show": { path: "/t/:todoId", params: TodoParams, search: Filter, loader: load, component: page } };
-const acts = { "t.edit": { path: "/t/:todoId", params: TodoParams, actions: { POST: save }, component: page } };
-const unreadRoute = { "t.any": { path: "/t/:todoId", params: TodoParams, loader: unread, component: page } };
-const Narrower = s.object({ id: s.string() });
-const narrow = { "t.bad": { path: "/t/:id", params: Narrower, loader: load, component: page } };
-/** What `manifest` accepts for routes `M`: `M` itself when every loader/action fits, else not. */
-type Arg<M extends Readonly<Record<string, RouteDef>>> = Parameters<typeof manifest<M>>[0];
+const load = loader(t, "t.show", { output: Out }, async ({ params, search }) => {
+  expectTypeOf(params).toEqualTypeOf<{ todoId: Id<"Todo"> }>();
+  expectTypeOf(search).toEqualTypeOf<{ filter?: "all" | "done" | undefined }>();
+  return ok({ id: params.todoId });
+});
+const save = action(t, "t.show", { input: s.object({}) }, (_input, { params, url }) => {
+  expectTypeOf(params).toEqualTypeOf<{ todoId: Id<"Todo"> }>();
+  expectTypeOf(url).toEqualTypeOf<string>();
+  return ok(params.todoId === "" ? null : null);
+});
+const plain = loader(t, "t.plain", { output: Plain }, async ({ params, search }) => {
+  expectTypeOf(params).toEqualTypeOf<Record<string, never>>();
+  expectTypeOf(search).toEqualTypeOf<Record<string, never>>();
+  return ok({ n: 1 });
+});
+const shell = loader(t, "t.shell", { output: Plain }, async ({ params, search }) => {
+  expectTypeOf(params).toEqualTypeOf<unknown>();
+  expectTypeOf(search).toEqualTypeOf<unknown>();
+  return ok({ n: 1 });
+});
+const forOther = loader(t, "t.other", { output: Plain }, async () => ok({ n: 1 }));
+
+const bind = () =>
+  manifest(t, {
+    "t.shell": { component: page, loader: shell },
+    "t.show": { component: page, loader: load, POST: save },
+    "t.plain": { component: page, loader: plain },
+    "t.other": { component: page },
+  });
 
 describe("loader and action params/search", () => {
-  it("are the Infer of the declared schemas, plus the absolute url: branded ids, no re-parse", () => {
-    expectTypeOf(load.run).parameter(0).toEqualTypeOf<{
-      readonly params: { todoId: Id<"Todo"> };
-      readonly search: { filter?: "all" | "done" | undefined };
-      readonly url: string;
-      readonly caller: string;
-      readonly stores: undefined;
-    }>();
-    expectTypeOf(save.run).parameter(1).toEqualTypeOf<{
-      readonly params: { todoId: Id<"Todo"> };
-      readonly url: string;
-      readonly caller: string;
-      readonly stores: undefined;
-    }>();
-    expectTypeOf(unread.run).parameter(0).toEqualTypeOf<{
-      readonly params: unknown;
-      readonly search: unknown;
-      readonly url: string;
-      readonly caller: string;
-      readonly stores: undefined;
-    }>();
+  it("name the entry: the loader and action carry its id, so a binding at another key does not fit", () => {
+    expectTypeOf(load.id).toEqualTypeOf<"t.show">();
+    expectTypeOf(save.id).toEqualTypeOf<"t.show">();
+    expect(bind).not.toThrow();
   });
 
-  it("manifest accepts the declared schemas' routes and unread loaders; a route whose params do not fit fails", () => {
-    expectTypeOf(good).toMatchTypeOf<Arg<typeof good>>();
-    expectTypeOf(acts).toMatchTypeOf<Arg<typeof acts>>();
-    expectTypeOf(unreadRoute).toMatchTypeOf<Arg<typeof unreadRoute>>();
-    expectTypeOf(narrow).not.toMatchTypeOf<Arg<typeof narrow>>();
+  it("a loader bound at an entry it was not declared for fails at manifest with E1515", () => {
+    const bad = () =>
+      // The type error is in negativeTypes.test-d.ts; called untyped here.
+      Reflect.apply(manifest, undefined, [
+        t,
+        {
+          "t.shell": { component: page },
+          "t.show": { component: page, loader: forOther },
+          "t.plain": { component: page },
+          "t.other": { component: page },
+        },
+      ]);
+    expect(bad).toThrow(/^E1515 t\.show/);
   });
 
-  it("manifest throws E1507 for a route whose schema value is not the declared one; unread loaders pass", () => {
-    const Same = s.object({ todoId: s.id("Todo") });
-    expect(() =>
-      manifest({ "t.x": { path: "/t/:todoId", params: Same, search: Filter, loader: load, component: page } }),
-    ).toThrow(/^E1507 t\.x: loader params/);
-    expect(() =>
-      manifest({ "t.y": { path: "/t/:todoId", params: TodoParams, loader: load, component: page } }),
-    ).toThrow(/^E1507 t\.y: loader search/);
-    expect(() =>
-      manifest({ "t.z": { path: "/t/:todoId", params: Same, actions: { PUT: save }, component: page } }),
-    ).toThrow(/^E1507 t\.z: PUT action params/);
-    expect(() => manifest(unreadRoute)).not.toThrow();
+  it("an action bound at another page fails at manifest with E1515", () => {
+    const bad = () =>
+      Reflect.apply(manifest, undefined, [
+        t,
+        {
+          "t.shell": { component: page },
+          "t.show": { component: page },
+          "t.plain": { component: page },
+          "t.other": { component: page, PUT: save },
+        },
+      ]);
+    expect(bad).toThrow(/^E1515 t\.other/);
   });
 
   it("a loader runs with the router's parsed params and the url", async () => {
-    const routes = manifest(good);
     const params = TodoParams.parse({ todoId: "t9" });
     expect(params.ok).toBe(true);
     if (!params.ok) return;
-    const r = await routes.routes["t.show"].loader.run(
+    const r = await load.run(
       { params: params.value, search: {}, url: "http://localhost/t/t9", caller: "", stores: undefined },
       createCtx({ mode: "sim" }),
     );

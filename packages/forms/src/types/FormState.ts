@@ -4,6 +4,7 @@ import type { DeepPartial } from "./DeepPartial.ts";
 import type { Field } from "./Field.ts";
 import type { FieldPath } from "./FieldPath.ts";
 import type { PathValue } from "./PathValue.ts";
+import type { Unbranded } from "./Unbranded.ts";
 
 /** The handle `form(schema)` returns (k.forms). Reads are reactive. */
 export interface FormState<T> {
@@ -13,7 +14,7 @@ export interface FormState<T> {
    */
   field<P extends FieldPath<T> | (string & {})>(
     path: string extends P ? P : P & FieldPath<T>,
-  ): Field<string extends P ? unknown : PathValue<T, P & string>>;
+  ): Field<string extends P ? unknown : Unbranded<PathValue<T, P & string>>>;
   values(): DeepPartial<T>;
   /** Field path -> message. */
   errors(): Readonly<Record<string, string>>;
@@ -30,6 +31,14 @@ export interface FormState<T> {
      * under the root path `''`); focus the first invalid bound element in document order.
      */
     validate(): Result<T, SchemaError>;
+    /**
+     * Take a rejected post the page re-renders (k.forms Submit): each submitted text read for its field as an input
+     * would read it, then exactly the `keel.fields` errors.
+     */
+    restore(
+      values: Readonly<Record<string, string | readonly string[]>>,
+      errors: Readonly<Record<string, string>>,
+    ): void;
     /** Apply the action's Result (ok resets; keel.fields sets exactly those errors; other err: no change). */
     onResult(result: Result<unknown, KeelError<string, unknown>>): void;
   };

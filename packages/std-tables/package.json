@@ -1,0 +1,61 @@
+{
+  "name": "@keel/std-tables",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "keel": "library",
+  "exports": {
+    ".": {
+      "keel": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "keel": "./src/index.ts",
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      }
+    }
+  },
+  "files": ["module.ts", "src", "unsafe", "dist", ".keel/ledger.json", "docs", "README.md"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe && keel check",
+    "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "tsc -p tsconfig.build.json && node ../../tooling/docs-pack.mjs && keel pack"
+  },
+  "peerDependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/std-i18n": "workspace:*",
+    "@keel/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/std-i18n": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "@types/node": "^22",
+    "axe-core": "4.14.0",
+    "fast-check": "^3",
+    "happy-dom": "^21"
+  }
+}

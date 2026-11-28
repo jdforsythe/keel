@@ -46,14 +46,13 @@ function endpointsOf(g: Gen, paths: Readonly<Record<string, unknown>>): [string,
 /**
  * Generate the k.services declaration and client for an OpenAPI 3 JSON document (k.services OpenAPI, rfc:0034):
  * `schema` is `<Name>Api.schema.ts` (`<Name>Api = endpoints({...})`, one endpoint per operation keyed by `operationId`;
- * the filename equals its one export, rfc:0039) and `service` is `api.ts` (`api = service({ base: servers[0].url,
+ * the filename equals its one export, rfc:0039) and `service` is `api.server.ts` (`api = service({ base: servers[0].url,
  * schema })`, importing `./<Name>Api.schema.ts`). A document outside the supported
  * subset is `err` `schema.invalid` with one issue per problem, its path into the doc. Throws only on an invalid `name`.
  */
 export function openapi(doc: unknown, opts: OpenApiOptions): Result<OpenApiFiles, SchemaError> {
   const name = `${pascal(opts.name)}Api`;
-  if (!/^[a-z]/i.test(opts.name) || !IDENT.test(name))
-    throw new RangeError(`openapi name is not a module id: ${opts.name}`);
+  if (!/^[a-z][A-Za-z0-9]*$/.test(opts.name)) throw new RangeError(`openapi name is not lowerCamel: ${opts.name}`);
   if (!isRecord(doc)) return err(invalid([{ path: [], rule: "type" }]));
   const g: Gen = { doc, issues: [], named: new Map(), reserved: new Set([...RESERVED, name]) };
   if (typeof doc.openapi !== "string" || !doc.openapi.startsWith("3.")) {

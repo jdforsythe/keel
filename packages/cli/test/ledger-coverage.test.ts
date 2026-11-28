@@ -1,8 +1,9 @@
 // E1707 (rfc:0049): `keel ledger --diff` reports every clause of a conformance-covered or frozen section at `none`.
 import { describe, expect, it } from "vitest";
-import { run } from "../src/index.ts";
+import { clauseKey } from "../src/internal/clauseKey.ts";
 import { coverageGaps } from "../src/internal/coverageGaps.ts";
 import { specStatus } from "../src/internal/specStatus.ts";
+import { ledgerRun as run } from "./ledgerRun.ts";
 
 const CWD = "/work/app";
 const file = (path: string, source: string) => ({ path, source });
@@ -37,7 +38,12 @@ describe("coverageGaps", () => {
       file("spec/std/std.f.md", section("std.f", "frozen", ["Only."])),
       file("spec/kernel/k.i.md", section("k.i", "implemented", ["Untested."])),
     ];
-    const records = [rec("k.a#1", "example"), rec("k.a#2", "none"), rec("std.f#1", "none"), rec("k.i#1", "none")];
+    const records = [
+      rec(`k.a#${clauseKey("One.")}`, "example"),
+      rec(`k.a#${clauseKey("Two.")}`, "none"),
+      rec(`std.f#${clauseKey("Only.")}`, "none"),
+      rec(`k.i#${clauseKey("Untested.")}`, "none"),
+    ];
     expect(coverageGaps(files, records, "")).toEqual([
       {
         kind: "diag",
@@ -45,8 +51,8 @@ describe("coverageGaps", () => {
         path: "spec/kernel/k.a.md",
         line: 6,
         col: 1,
-        message: "section k.a is conformance-covered but clause 2 has no evidence",
-        see: "k.testing",
+        message: "section k.a is conformance-covered but clause k.a#2 has no evidence",
+        see: "k.ledger",
       },
       {
         kind: "diag",
@@ -54,8 +60,8 @@ describe("coverageGaps", () => {
         path: "spec/std/std.f.md",
         line: 5,
         col: 1,
-        message: "section std.f is frozen but clause 1 has no evidence",
-        see: "k.testing",
+        message: "section std.f is frozen but clause std.f#1 has no evidence",
+        see: "k.ledger",
       },
     ]);
   });
@@ -72,7 +78,7 @@ describe("coverageGaps", () => {
         line: 1,
         col: 1,
         message: "section k.p is conformance-covered but has no Conformance clause",
-        see: "k.testing",
+        see: "k.ledger",
       },
     ]);
     expect(coverageGaps(files, [], "k.p")).toEqual([]);
@@ -93,14 +99,14 @@ describe("keel ledger --diff with E1707", () => {
     const gap = await run(["ledger", "--diff"], { cwd: CWD, files: [spec, one] });
     expect(gap.code).toBe(1);
     expect(lines(gap.stdout)).toEqual([
-      "E1707 spec/kernel/k.a.md:6:1 section k.a is conformance-covered but clause 2 has no evidence",
-      "  see: k.testing",
-      "fail ledger --diff 2 items, 1 verified, 0 unsafe, 0 warnings, 0 lowered, 1 uncovered",
+      "E1707 spec/kernel/k.a.md:6:1 section k.a is conformance-covered but clause k.a#2 has no evidence",
+      "  see: keel docs k.ledger",
+      "fail ledger --diff 2 items, 1 verified, 0 unsafe, 0 warnings, 1 example, 0 lowered, 1 uncovered",
     ]);
     const ok = await run(["ledger", "--diff"], { cwd: CWD, files: [spec, one, two] });
     expect(ok.code).toBe(0);
     expect(lines(ok.stdout)).toEqual([
-      "ok ledger --diff 2 items, 2 verified, 0 unsafe, 0 warnings, 0 lowered, 0 uncovered",
+      "ok ledger --diff 2 items, 2 verified, 0 unsafe, 0 warnings, 2 example, 0 lowered, 0 uncovered",
     ]);
   });
 

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "conformance"],
+  "exclude": ["conformance/fixtures/cart-bug.fix", "conformance/.tmp-*"]
+}

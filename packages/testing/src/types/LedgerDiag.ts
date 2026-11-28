@@ -6,5 +6,5 @@ export interface LedgerDiag {
   readonly before: string;
   readonly after: string;
   readonly message: string;
-  readonly see: "k.testing";
+  readonly see: "k.ledger";
 }

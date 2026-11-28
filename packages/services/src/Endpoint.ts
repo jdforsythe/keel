@@ -3,8 +3,9 @@ import type { Method } from "./Method.ts";
 
 /**
  * One declared HTTP operation (k.services). `path` names params as `:name`; `params`, `query` and `body`
- * type the input, `output` the 2xx body, `errors` the body of each declared non-2xx status.
- * `timeout` (ms) overrides the service timeout.
+ * type the input, `output` the 2xx body (each event of an `events` endpoint), `errors` the body of each declared
+ * non-2xx status. `timeout` (ms) overrides the service timeout. `events: true` on a GET reads a k.server live loader's
+ * event stream.
  */
 export interface Endpoint {
   readonly method: Method;
@@ -15,4 +16,5 @@ export interface Endpoint {
   readonly output: Schema<unknown, boolean>;
   readonly errors?: Readonly<Record<number, Schema<unknown, boolean>>>;
   readonly timeout?: number;
+  readonly events?: boolean;
 }

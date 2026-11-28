@@ -1,18 +1,14 @@
 import type { Expression, ObjectExpression, ObjectProperty, Program } from "oxc-parser";
+import { keyName } from "../keyName.ts";
 import type { Entry } from "./Entry.ts";
+import type { EnvEntry } from "./EnvEntry.ts";
 import type { Manifest } from "./Manifest.ts";
 import type { ManifestList } from "./ManifestList.ts";
 import type { StdEntry } from "./StdEntry.ts";
 import { literalJson } from "./literalJson.ts";
 
 /** The static key of an object property (identifier or string literal), or `null` when computed. */
-function keyOf(p: ObjectProperty): string | null {
-  if (p.computed) return null;
-  if (p.key.type === "Identifier") return p.key.name;
-  if (p.key.type !== "Literal") return null;
-  const v = p.key.value;
-  return typeof v === "string" ? v : null;
-}
+const keyOf = keyName;
 
 /** `x as T`, `x satisfies T`, and `(x)` unwrapped. */
 function unwrap(e: Expression): Expression {
@@ -46,6 +42,20 @@ function listOf(e: Expression | undefined): ManifestList | null {
     entries.push({ value: v, start: el.start, end: el.end });
   }
   return { entries, span: { start: e.start, end: e.end } };
+}
+
+/**
+ * `env` entries (k.server-deps Environment), each judged alone: a string literal's value, any other element (a spread
+ * among them) as null at its start; an `env` that is no array literal is one null entry at its value. Absent: none.
+ */
+function envOf(e: Expression | undefined): EnvEntry[] {
+  if (e === undefined) return [];
+  if (e.type !== "ArrayExpression") return [{ value: null, start: e.start }];
+  return e.elements.flatMap((el) =>
+    el === null
+      ? []
+      : [{ value: el.type === "Literal" && typeof el.value === "string" ? el.value : null, start: el.start }],
+  );
 }
 
 /** `std` entries (RFC 0047): an absent `std` is empty; `null` when it is not a literal object with static keys. */
@@ -99,8 +109,19 @@ export function readManifest(program: Program): Manifest | null {
   const deps = listOf(props.get("deps"));
   const capabilities = listOf(props.get("capabilities"));
   const exports = listOf(pubProps.get("exports"));
-  const routes = listOf(pubProps.get("routes"));
   const std = stdOf(props.get("std"));
-  if (deps === null || capabilities === null || exports === null || routes === null || std === null) return null;
-  return { id: typeof idValue === "string" ? idValue : null, deps, capabilities, exports, routes, std };
+  const clientPii = listOf(props.get("clientPii"));
+  if (deps === null || capabilities === null || exports === null || std === null) return null;
+  if (clientPii === null) return null;
+  const tail = obj.properties[obj.properties.length - 1]?.end ?? obj.start + 1;
+  return {
+    id: typeof idValue === "string" ? idValue : null,
+    deps,
+    capabilities,
+    exports,
+    std,
+    clientPii,
+    env: envOf(props.get("env")),
+    tail,
+  };
 }

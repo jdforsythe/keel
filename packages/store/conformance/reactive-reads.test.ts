@@ -1,6 +1,6 @@
 import { computed, effect, scope } from "@keel/reactive";
 import fc from "fast-check";
-// Spec: k.store API, "Reads: cart.get('items'), cart.select(fn) as computeds". Seed 1337.
+// k.store API, "Reads: cart.get('items'), cart.select(fn) as computeds". Seed 1337.
 import { describe, expect, it } from "vitest";
 import { applyOp, inScope, makeCart, opArb, opts } from "./fixtures";
 
@@ -11,12 +11,15 @@ describe("k.store: reactive reads", () => {
         const k = makeCart();
         let runs = 0;
         const seen: unknown[] = [];
-        scope(() => {
-          effect(() => {
-            seen.push(k.cart.get("items"));
-            runs++;
-          });
-        });
+        scope(
+          () => {
+            effect(() => {
+              seen.push(k.cart.get("items"));
+              runs++;
+            });
+          },
+          { detached: true },
+        );
         expect(runs).toBe(1);
         for (const [i, op] of ops.entries()) {
           applyOp(k, op);

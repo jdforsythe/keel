@@ -1,12 +1,15 @@
 // @vitest-environment happy-dom
-// Spec: k.component Conformance. JSX children arrive as `props.children`; base elements render them.
+// k.component Conformance. JSX children arrive as `props.children`; base elements render them.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { expect, test } from "vitest";
 import { load } from "./support.ts";
 
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
 function render(name: string, source: string): HTMLElement {
   const el = document.createElement("div");
-  mount(load(name, source), el);
+  mount(load(name, source), el, { ctx: simCtx });
   return el;
 }
 

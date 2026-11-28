@@ -57,32 +57,47 @@ describe("logSchema", () => {
 
 describe("store construction", () => {
   it("a live duplicate id throws naming the store and the reason", () => {
-    const sc = scope(() => {
-      store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.one" });
-    });
-    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.one" }))).toThrow(
+    const sc = scope(
+      () => {
+        store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.one" });
+      },
+      { detached: true },
+    );
+    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.one" }), { detached: true })).toThrow(
       "store dup.one: id already in use by a live store",
     );
     sc.dispose();
-    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.one" }))).not.toThrow();
+    expect(() =>
+      scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.one" }), { detached: true }),
+    ).not.toThrow();
   });
 
   it("a disposed scope frees its id, but a replacement store keeps its own registration", () => {
-    const first = scope(() => {
-      store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.two" });
-    });
+    const first = scope(
+      () => {
+        store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.two" });
+      },
+      { detached: true },
+    );
     first.dispose();
-    const second = scope(() => {
-      store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.two" });
-    });
+    const second = scope(
+      () => {
+        store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.two" });
+      },
+      { detached: true },
+    );
     first.dispose();
-    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.two" }))).toThrow(/already in use/);
+    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "dup.two" }), { detached: true })).toThrow(
+      /already in use/,
+    );
     second.dispose();
   });
 
   it("creation outside a scope throws E1203 and registers nothing", () => {
     expect(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "outside.one" })).toThrow(/E1203/);
-    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "outside.one" }))).not.toThrow();
+    expect(() =>
+      scope(() => store(s.object({ n: s.int() }), { n: 0 }, { id: "outside.one" }), { detached: true }),
+    ).not.toThrow();
   });
 
   it("uses outside a scope throws the full E1203 message", () => {
@@ -92,7 +107,7 @@ describe("store construction", () => {
 
   it("duplicate transaction name message names store and name", () => {
     const k = makeCounter();
-    expect(() => scope(() => transaction(k.c, "counter.add", s.object({}), (st) => st))).toThrow(
+    expect(() => scope(() => transaction(k.c, "counter.add", s.object({}), (st) => st), { detached: true })).toThrow(
       `store ${k.c.id}: transaction name "counter.add" empty or taken`,
     );
   });
@@ -100,15 +115,18 @@ describe("store construction", () => {
   it("supports a non-object root schema: any key read tracks the whole state", () => {
     const box: { push?: () => unknown } = {};
     let runs = 0;
-    scope(() => {
-      const c = store(s.array(s.int()), [1]);
-      const add = transaction(c, "arr.add", s.object({ v: s.int() }), (st, { v }) => [...st, v]);
-      box.push = () => tx(add, { v: 2 });
-      effect(() => {
-        c.get(0);
-        runs++;
-      });
-    });
+    scope(
+      () => {
+        const c = store(s.array(s.int()), [1]);
+        const add = transaction(c, "arr.add", s.object({ v: s.int() }), (st, { v }) => [...st, v]);
+        box.push = () => tx(add, { v: 2 });
+        effect(() => {
+          c.get(0);
+          runs++;
+        });
+      },
+      { detached: true },
+    );
     expect(runs).toBe(1);
     box.push?.();
     expect(runs).toBe(2);
@@ -118,20 +136,23 @@ describe("store construction", () => {
 describe("tx error details", () => {
   it("undeclared carries the transaction name and a message", () => {
     const k = makeCounter();
-    scope(() => {
-      k.c.uses([k.add]);
-      const r = tx(k.reset, {});
-      expect(r.ok).toBe(false);
-      if (r.ok) return;
-      expect(r.error.code).toBe("store.undeclared");
-      expect(r.error.message).toBe("counter.reset is not in this scope's uses");
-      expect(r.error).toMatchObject({ data: { transaction: "counter.reset" } });
-    });
+    scope(
+      () => {
+        k.c.uses([k.add]);
+        const r = tx(k.reset, {});
+        expect(r.ok).toBe(false);
+        if (r.ok) return;
+        expect(r.error.code).toBe("store.undeclared");
+        expect(r.error.message).toBe("counter.reset is not in this scope's uses");
+        expect(r.error).toMatchObject({ data: { transaction: "counter.reset" } });
+      },
+      { detached: true },
+    );
   });
 
   it("invariant violation carries the transaction name and a message", () => {
     const k = makeCounter();
-    scope(() => invariant(k.c, (st) => st.n < 5));
+    scope(() => invariant(k.c, (st) => st.n < 5), { detached: true });
     const r = tx(k.add, { by: 9 });
     expect(r.ok).toBe(false);
     if (r.ok) return;
@@ -144,7 +165,7 @@ describe("tx error details", () => {
 
   it("check reports rejected schema and invariant failures with messages and empty transaction", () => {
     const k = makeCounter();
-    scope(() => invariant(k.c, (st) => st.n < 5));
+    scope(() => invariant(k.c, (st) => st.n < 5), { detached: true });
     const bad = k.c.check({ n: 1.5, tags: [] });
     expect(bad.ok).toBe(false);
     if (!bad.ok) {
@@ -181,7 +202,7 @@ describe("restore", () => {
     expect(last?.at).toBe(3);
   });
 
-  it("restore keeps seq/tick at least their prior maximum", () => {
+  it("restore sets the head from the snapshot and keeps the tick at least its prior maximum", () => {
     const k = makeCounter();
     tx(k.add, { by: 1 });
     tx(k.add, { by: 1 });
@@ -189,20 +210,34 @@ describe("restore", () => {
     const empty = makeCounter().c.snapshot();
     expect(k.c.restore(empty).ok).toBe(true);
     tx(k.add, { by: 1 });
-    expect(k.c.log()[0]?.id).toBe(4);
+    expect(k.c.log()[0]?.id).toBe(1);
+    expect(k.c.head()).toBe(1);
     expect(k.c.log()[0]?.at).toBe(4);
   });
 
-  it("an entry whose payload fails its schema is rejected as schema.invalid", () => {
+  it("an entry whose payload fails its schema folds: state and head kept, no entry, state as initial (k.persist)", () => {
     const k = makeCounter();
     const r = k.c.restore({
       state: { n: 1, tags: [] },
       initial: { n: 0, tags: [] },
       log: [{ id: 1, name: "counter.tag", payload: { tag: 5 }, at: 1 }],
+      head: 3,
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.code).toBe("schema.invalid");
+    expect(r.ok).toBe(true);
     expect(k.c.log()).toHaveLength(0);
+    expect(k.c.head()).toBe(3);
+    expect(k.c.snapshot().initial).toEqual({ n: 1, tags: [] });
+  });
+
+  it("an entry whose shape is wrong (an id that is not an int) stays schema.invalid", () => {
+    const k = makeCounter();
+    const r = k.c.restore({
+      state: { n: 1, tags: [] },
+      initial: { n: 0, tags: [] },
+      log: [{ id: "1", name: "counter.gone", payload: {}, at: 1 }],
+    });
+    expect(r.ok ? undefined : r.error.code).toBe("schema.invalid");
+    expect(k.c.get("n")).toBe(0);
   });
 });
 
@@ -219,11 +254,14 @@ describe("undo", () => {
   it("log() is reactive: commit and undo both notify", () => {
     const k = makeCounter();
     let seen = -1;
-    scope(() => {
-      effect(() => {
-        seen = k.c.log().length;
-      });
-    });
+    scope(
+      () => {
+        effect(() => {
+          seen = k.c.log().length;
+        });
+      },
+      { detached: true },
+    );
     tx(k.add, { by: 1 });
     expect(seen).toBe(1);
     k.c.undo();

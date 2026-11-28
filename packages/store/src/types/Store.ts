@@ -11,19 +11,30 @@ export interface Store<T> {
   readonly id: string;
   /** The schema the state is validated against; parses every state the store accepts. */
   readonly schema: Schema<T>;
+  /** Each declared transaction's payload schema by name (rfc:0070); schemas only, never the `Transaction` objects. */
+  readonly payloads: ReadonlyMap<string, Schema<unknown>>;
   /** Parse `state` with `schema` and run every `invariant`, without committing or logging; `store.invariant` on failure. */
   check(state: unknown): Result<T, KeelError<"store.invariant", { transaction: string }>>;
   /** Reactive read of one top-level key; an effect reading it reruns only when that key changes. */
   get<K extends keyof T>(key: K): T[K];
   /** A computed over the committed state. Call inside a scope. */
   select<R>(fn: (state: T) => R): Computed<R>;
+  /** The count of the store's changes: 0 when new, one more per commit and per undo that undoes. Reactive. */
+  head(): number;
   /** Committed entries, oldest first. Reactive. */
   log(): readonly LogEntry[];
-  /** JSON-safe copy of state, log and `initial`; log entries carry `meta` only with `{ meta: true }` (never for clients). */
+  /**
+   * JSON-safe copy of state, log, `initial`, `head` and `keys`; log entries carry `meta` only with `{ meta: true }`
+   * (never for clients).
+   */
   snapshot(options?: { readonly meta?: boolean }): Snapshot<T>;
-  /** Decode a snapshot and replace state and log; `schema.invalid` leaves the store unchanged. */
+  /**
+   * Decode a snapshot and replace state, log, head (without `head`: the latest entry's `id`, else 0) and `keys`
+   * (without `keys`: its log entries' keys);
+   * `schema.invalid` leaves the store unchanged.
+   */
   restore(snapshot: unknown): Result<T, SchemaError>;
-  /** Drop the last log entry and restore the state before it; false when the log is empty. */
+  /** Drop the last log entry and restore the state before it, raising the head; false when the log is empty. */
   undo(): boolean;
   /**
    * Undo the latest entry only when `pred(entry)` holds for it; true when it did. An older matching entry is never

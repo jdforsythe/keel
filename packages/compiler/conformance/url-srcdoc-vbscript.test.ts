@@ -1,12 +1,15 @@
 // Spec: k.compiler, clause "Any `srcdoc`, and a `vbscript:` URL in any URL attribute, is E1003 as a literal and `about:blank` when bound."
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below).
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { codes, isMountable, load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const hosts: readonly (readonly [string, string])[] = [
   ["href", "a"],
@@ -40,7 +43,7 @@ export default B
   const B = attr === "srcdoc" ? loadIgnoringDiagnostics(src) : load("B", src);
   sigOf(B, "u").set(value);
   const host = document.createElement("div");
-  const dispose = mount(B, host);
+  const dispose = mount(B, host, { ctx: simCtx });
   const out = host.querySelector(tag)?.getAttribute(attr) ?? null;
   dispose();
   return out;

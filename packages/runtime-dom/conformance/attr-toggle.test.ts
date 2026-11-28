@@ -1,12 +1,15 @@
+import { createCtx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { attr, clone, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
-// Spec: k.runtime, clause "`attr(el, 'x', fn)` removes `x` when `fn` returns `false` and restores it when `fn` returns a string again."
+// Spec: k.runtime, clause "`attr(el, 'x', fn)` removes `x` when `fn` returns `false` and restores it on a string."
 // Also Ops: null/false remove, true sets empty. Property seed: 1337.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, flush, inScope } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const T = template('<p id="p"></p>');
 type V = string | boolean | null;
@@ -18,11 +21,15 @@ const setup = (initial: V) => {
   } = inScope(() => {
     const s = signal<V>(initial);
     const el = document.createElement("div");
-    const unmount = mount(() => {
-      const r = clone(T);
-      attr(r, "x", () => s.get());
-      return r;
-    }, el);
+    const unmount = mount(
+      () => {
+        const r = clone(T);
+        attr(r, "x", () => s.get());
+        return r;
+      },
+      el,
+      { ctx: simCtx },
+    );
     return { s, el, dispose: unmount };
   });
   const p = el.querySelector("#p");

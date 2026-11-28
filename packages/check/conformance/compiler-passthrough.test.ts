@@ -3,7 +3,7 @@ import { check, format } from "@keel/check";
 import { compile } from "@keel/compiler";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { FIXTURES, lines, one, SEED } from "./support.ts";
+import { FIXTURES, SEED, lines, one } from "./support.ts";
 
 const COMPILER_CODES = ["E1001", "E1003", "E1401", "E1403", "E1404"];
 const compilerFixtures = FIXTURES.filter((f) => COMPILER_CODES.includes(f.code));

@@ -9,6 +9,9 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "a11y": {
+        "useSemanticElements": "off"
+      },
       "correctness": {
         "useJsxKeyInIterable": "off"
       },
@@ -26,10 +29,19 @@
       "turbo.json",
       ".github/**",
       "dist/**",
+      ".worktrees/**",
       "coverage/**",
       "tooling/ledger/ledger.json",
       "**/test/.tmp-*/**",
-      "**/conformance/.tmp-*/**"
+      "**/conformance/.tmp-*/**",
+      ".fixtures/**",
+      "**/.keel/**",
+      "packages/*/reports/**",
+      "packages/*/docs/**",
+      "apps/*/reports/**",
+      "tooling/reports/**",
+      "**/.stryker-tmp/**",
+      "**/.turbo/**"
     ]
   }
 }

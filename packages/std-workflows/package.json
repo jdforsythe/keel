@@ -1,0 +1,72 @@
+{
+  "name": "@keel/std-workflows",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "keel": "library",
+  "exports": {
+    ".": {
+      "keel": "./src/index.server.ts",
+      "types": "./src/index.server.ts",
+      "default": "./src/index.server.ts"
+    },
+    "./tools": {
+      "keel": "./src/tools/index.ts",
+      "types": "./src/tools/index.ts",
+      "default": "./src/tools/index.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "keel": "./src/index.server.ts",
+        "types": "./dist/src/index.server.d.ts",
+        "default": "./dist/src/index.server.js"
+      },
+      "./tools": {
+        "keel": "./src/tools/index.ts",
+        "types": "./dist/src/tools/index.d.ts",
+        "default": "./dist/src/tools/index.js"
+      }
+    }
+  },
+  "files": ["module.ts", "src", "unsafe", "dist", ".keel/ledger.json", "docs", "README.md"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src unsafe test && keel check",
+    "test": "keel ledger --write .keel/ledger.json && vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "tsc -p tsconfig.build.json && node ../../tooling/docs-pack.mjs && keel pack"
+  },
+  "dependencies": {
+    "oxc-parser": "^0.157.0"
+  },
+  "peerDependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/std-jobs": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
+    "@keel/store": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/std-jobs": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  }
+}

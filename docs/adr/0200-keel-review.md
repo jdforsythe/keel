@@ -1,0 +1,11 @@
+# ADR-0200: k.review, k.escapes: `keel review` lists every escape from the framework's protections, ranked by danger and novelty (RFC 0178)
+
+**Status:** accepted (the owner accepted `keel review` for 1.0; the design decisions are the orchestrator's).
+
+**Context.** Agents write most Keel apps, often with no person reading the diff. The framework sanctions some escapes by name (`unsafe`, declared origins, `reveal`, a mounted handle, `KEEL_ALLOW_ORIGINS`), and TypeScript lets code take shapes `keel check` does not read. Of 43 ways out counted in RFC 0178, 11 are caught or listed for an app today, 3 partly, 5 only in this repository's tooling and 24 by nothing; three of the four evasions seen in this repository's own agent work are among the 24.
+
+**Decision.** A new command, `keel review [<base>..<head> | --all]`, in `@keel/cli`, stated in two new kernel sections: k.review (command, finding model, danger, novelty, loudness, baseline, CI job) and k.escapes (the R codes). Findings take a new letter, R; loudness is danger by novelty, an opt-in one step quieter, exit 1 on `fail`. Accepted escapes live in `keel-review.json`, read at `<base>`, so a change cannot accept its own escapes. Assembled directives, computed specifiers and globals, unparsable files, and changes to review, check, type, lint, test, install and CI configuration are findings at `critical`. The generated CI workflow gains a `review` job. An app-facing skill, `keel-escapes`, does the reading a rule cannot and never approves or accepts.
+
+**Alternatives.** More `keel check` E codes (no history, punishes sanctioned paths, fails existing apps under the freeze); W codes (a new evasion must fail); E and W letters with a flag-decided exit (the letter means failure everywhere else); a shipped linter (its suppression comment is the first workaround); the baseline in the ledger (generated) or read at `<head>` (self-acceptance); a skill without a command (reads what it chooses).
+
+**Consequences.** `keel review` runs in every generated CI workflow, so a new evasion fails a pull request. A kernel change that also edits an app in one range fails review until a person reads it. `keel check`, its exit and its codes are unchanged. The docs tools learn the R letter in the build. Seventeen clauses enter the ledger at `none`.

@@ -1,0 +1,125 @@
+import { type SimCtx, createCtx } from "@keel/ctx";
+import { s } from "@keel/schema";
+import { createApp } from "@keel/server";
+import { sql } from "@keel/std-postgres";
+import source from "../identity.server.ts";
+import mount from "../identity.ts";
+import { runners as appRunners } from "../modules/app/runners.server.ts";
+import { membersApi } from "../modules/members/membersApi.ts";
+import { membersDb } from "../modules/members/membersDb.server.ts";
+import { runners } from "../modules/shopping/runners.server.ts";
+import topology from "../topology.ts";
+import { routes } from "./webRoutes.ts";
+
+/** The `web` deployable's route table, as its generated entry joins it. */
+export const webRoutes = routes;
+
+export const NAME = "Ada Lovelace";
+export const EMAIL = "ada@example.com";
+export const PASSWORD = "analytical engine";
+
+const UserRow = s.object({ userId: s.string() });
+
+export type Fetch = (r: Request) => Promise<Response>;
+
+/** The cookie pairs a response sets, as a `cookie` header sends them back. */
+const cookiesOf = (res: Response): string =>
+  res.headers
+    .getSetCookie()
+    .map((c) => c.split(";")[0] ?? "")
+    .filter((c) => !c.endsWith("="))
+    .join("; ");
+
+/** A native form post of `fields` to `path`, same-origin, as a page's `<Form>` sends it. */
+export const formPost = (path: string, fields: Record<string, string>, cookie = ""): Request =>
+  new Request(`http://localhost${path}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      "sec-fetch-site": "same-origin",
+      ...(cookie === "" ? {} : { cookie }),
+    },
+    body: new URLSearchParams(fields).toString(),
+  });
+
+/** Sign up and sign in `email` through the identity mount; resolves the session cookie, `''` when refused. */
+export async function signIn(fetch: Fetch, email = EMAIL, name = NAME): Promise<string> {
+  await fetch(formPost(mount.href("/sign-up/email"), { name, email, password: PASSWORD }));
+  return cookiesOf(await fetch(formPost(mount.href("/sign-in/email"), { email, password: PASSWORD })));
+}
+
+/**
+ * The `web` deployable on `ctx`, as its generated entry makes it: the route table, the identity source and the
+ * shopping module's runners (the job queue, the weekly runs and their schedule). Every log line goes to `lines`.
+ */
+export const webApp = (ctx: SimCtx, lines: string[] = []) =>
+  createApp({
+    topology,
+    routes: webRoutes,
+    ctx,
+    deployable: "web",
+    identity: source,
+    runners: { app: appRunners, shopping: runners },
+    log: { format: "json", write: (line: string) => lines.push(line) },
+  });
+
+/**
+ * The `web` deployable served over a sim ctx, so a page under `renderRoute` and the API share one `ctx.storage` and one
+ * database. Unless `signedIn` is false, one member has signed up and signed in through the identity mount, and minted
+ * an API token through the members API: `fetch` sends that token with every request that carries no `cookie` or
+ * `authorization` of its own, for tests that call the API directly, and `user` is the member's id. `app` is the
+ * `createApp` result, as `renderRoute`'s `app`: with `user` the page and every request it sends are the member's
+ * (k.user Testing); `cookie` is the session cookie the member's sign-in set (`''` when not signed in). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged. With
+ * `using` (a `simulate` run's ctx) the server runs on that ctx, whose clock the run drives; otherwise on a ctx of its
+ * own from `seed`, whose clock the test moves.
+ */
+export async function served(
+  seed = 1,
+  signedIn = true,
+  using?: SimCtx,
+): Promise<{
+  ctx: SimCtx;
+  sent: string[];
+  lines: string[];
+  fetch: Fetch;
+  raw: Fetch;
+  user: string;
+  cookie: string;
+  token: string;
+  app: Awaited<ReturnType<typeof createApp>>;
+}> {
+  const ctx = using ?? createCtx({ mode: "sim", seed });
+  const lines: string[] = [];
+  const web = await webApp(ctx, lines);
+  const raw: Fetch = (req) => web.fetch(req);
+  const cookie = signedIn ? await signIn(raw) : "";
+  const rows = await membersDb(ctx).query(sql(UserRow)`select user_id as "userId" from members`);
+  const user = rows.ok ? (rows.value[0]?.userId ?? "") : "";
+  const minted = user === "" ? null : await membersApi.mint({ body: { days: 30 }, user }, ctx);
+  const token = minted?.ok === true ? minted.value.token : "";
+  const sent: string[] = [];
+  const fetch: Fetch = (req) => {
+    sent.push(`${req.method} ${new URL(req.url).pathname}`);
+    if (token === "" || req.headers.has("cookie") || req.headers.has("authorization")) return web.fetch(req);
+    const headers = new Headers(req.headers);
+    headers.set("authorization", `Bearer ${token}`);
+    return web.fetch(new Request(req, { headers }));
+  };
+  return { ctx, sent, lines, fetch, raw, user, cookie, token, app: web };
+}
+
+/**
+ * The time bound of a test that signs members up and in: `hashes` password hashes at the sign-in library's own scrypt
+ * cost (a sign-up, a sign-in and a submitted sign-in form are one each: `served` makes two, `household` four), about
+ * 45 ms each here, and `pages` list or member pages rendered and driven, about 100 ms each here, each twenty times
+ * over, beside the 20 s default of this app's page tests (vitest.config.ts) for the rest of the test.
+ */
+export const boundFor = (hashes: number, pages: number): number => 20_000 + 20 * (45 * hashes + 100 * pages);
+
+/** A JSON request as a services client sends it. */
+export const asJson = (method: string, path: string, body?: unknown, headers: Record<string, string> = {}): Request =>
+  new Request(`http://localhost${path}`, {
+    method,
+    headers: { accept: "application/json", "content-type": "application/json", "x-keel": "1", ...headers },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });

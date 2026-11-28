@@ -1,5 +1,5 @@
 // Shared fixtures for k.testing conformance. Property seed: 1337.
-// Assumptions (spec leaves open): a component is `(props, slots, ctx) => Node` carrying a static `Props` schema;
+// Assumptions (spec leaves open): a component is `(props, ctx) => Node` (RFC 0162) carrying a static `Props` schema;
 // `transaction(store, name, payloadSchema, fn)` binds a transaction to its store.
 import type { Ctx } from "@keel/ctx";
 import { createCtx } from "@keel/ctx";
@@ -45,13 +45,11 @@ const need = (root: Node, sel: string): Element => {
   return found;
 };
 
-type Slots = Record<string, unknown> | undefined;
-
 // <Button disabled>Save</Button> (its text arrives as the `label` prop of this hand-compiled fixture)
 export const ButtonProps = s.object({ label: s.string(), disabled: s.boolean() });
 const ButtonT = template('<button id="save" data-k="save"></button>');
 export const Button = Object.assign(
-  (props: { readonly label: string; readonly disabled: boolean }, _slots?: Slots, _ctx?: Ctx): Node => {
+  (props: { readonly label: string; readonly disabled: boolean }): Node => {
     const root = clone(ButtonT);
     const b = need(root, "#save");
     text(b, () => props.label);
@@ -64,7 +62,7 @@ export const Button = Object.assign(
 // Counts how many times a component body ran (for "rejects before rendering").
 export const bodyRuns = { n: 0 };
 export const Counted = Object.assign(
-  (_props: { readonly n: number }, _slots?: Slots, _ctx?: Ctx): Node => {
+  (_props: { readonly n: number }): Node => {
     bodyRuns.n++;
     return clone(template('<p id="counted"></p>'));
   },
@@ -76,8 +74,7 @@ const ClockT = template(
   '<div><p id="clock.now"></p><p id="rand"></p><button id="clock.read" data-k="clock.read">read</button></div>',
 );
 export const ClockView = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, ctx?: Ctx): Node => {
-    if (ctx === undefined) throw new Error("fixture: ctx not passed to component");
+  (_props: Record<string, never>, ctx: Ctx): Node => {
     const root = clone(ClockT);
     const now = signal(ctx.clock.now());
     const r = ctx.random.float();
@@ -122,9 +119,12 @@ const makeStores = () => {
 };
 
 let made: ReturnType<typeof makeStores> | undefined;
-scope(() => {
-  made = makeStores();
-});
+scope(
+  () => {
+    made = makeStores();
+  },
+  { detached: true },
+);
 if (made === undefined) throw new Error("fixture: store scope did not run");
 export const { cart, addItem, badCart, addAny, goodCart, addClamped } = made;
 
@@ -133,7 +133,7 @@ const CartT = template(
   '<div><button id="cart.add" data-k="cart.add">Add</button><p id="cart.total"></p><p id="settled"></p></div>',
 );
 export const CartView = Object.assign(
-  (props: { readonly compact: boolean }, _slots?: Slots, _ctx?: Ctx): Node => {
+  (props: { readonly compact: boolean }): Node => {
     cart.uses([addItem]);
     const root = clone(CartT);
     const settled = signal(0);
@@ -160,6 +160,6 @@ export const CartView = Object.assign(
 
 // A component that violates axe: an image without alt text.
 export const BadImg = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => clone(template('<img id="pic" src="x.png">')),
+  (_props: Record<string, never>): Node => clone(template('<img id="pic" src="x.png">')),
   { Props: s.object({}) },
 );

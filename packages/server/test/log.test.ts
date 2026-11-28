@@ -2,7 +2,8 @@
 // Examples and properties (seed 1337): the dev log stream writes exactly one `req` record per request (after any
 // `diag`); json lines parse. Requests cover every branch of the flow (308, 404s, 405s, guards, actions).
 import { createCtx } from "@keel/ctx";
-import { type Href, action, guard, loader, manifest } from "@keel/router";
+import { action, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -18,33 +19,35 @@ async function build(format: LogSink["format"], lines: string[]) {
     Promise.resolve(err({ code: "keel.denied", message: "no", data: {} })),
   );
   const broken = guard({ redirect: "orders.list" }, () => Promise.reject(new Error("down")));
-  const routes = manifest({
-    "orders.list": { path: "/orders", component: () => document.createElement("p") },
+  const c = contract("orders", {
+    "orders.list": { path: "/orders" },
+    "orders.show": { path: "/orders/:id", params: s.object({ id: s.int({ min: 1 }) }) },
+    "orders.bad": { path: "/bad" },
+    "orders.deny": { path: "/deny" },
+    "orders.broken": { path: "/broken" },
+  });
+  const show = loader(c, "orders.show", { output: Page }, () => Promise.resolve(ok({ title: "T" })));
+  const bad = loader(c, "orders.bad", { output: Page }, () => Promise.resolve(ok(JSON.parse('{"title":1}'))));
+  const post = action(c, "orders.show", { input: Note }, () => ok(c.href("orders.list")));
+  const put = action(c, "orders.show", { input: Note }, () =>
+    err({ code: "orders.locked", message: "locked", data: {} }),
+  );
+  const routes = manifest(c, {
+    "orders.list": { component: () => document.createElement("p") },
     "orders.show": {
-      path: "/orders/:id",
-      params: s.object({ id: s.int({ min: 1 }) }),
-      loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "T" }))),
-      actions: {
-        POST: action({ input: Note }, () => {
-          const to: Href = routes.href("orders.list");
-          return ok(to);
-        }),
-        PUT: action({ input: Note }, () => err({ code: "orders.locked", message: "locked", data: {} })),
-      },
+      loader: show,
       component: () => document.createElement("p"),
       errorElement: ({ error }) => {
         const e = document.createElement("em");
         e.textContent = error.code;
         return e;
       },
+      POST: post,
+      PUT: put,
     },
-    "orders.bad": {
-      path: "/bad",
-      loader: loader({ output: Page }, () => Promise.resolve(ok(JSON.parse('{"title":1}')))),
-      component: () => document.createElement("p"),
-    },
-    "orders.deny": { path: "/deny", guard: deny, component: () => document.createElement("p") },
-    "orders.broken": { path: "/broken", guard: broken, component: () => document.createElement("p") },
+    "orders.bad": { loader: bad, component: () => document.createElement("p") },
+    "orders.deny": { guard: deny, component: () => document.createElement("p") },
+    "orders.broken": { guard: broken, component: () => document.createElement("p") },
   });
   return createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
@@ -87,7 +90,7 @@ const writes: fc.Arbitrary<Call> = fc.record({
 });
 
 describe("dev log stream", () => {
-  it("one req record per request, nothing else but E1554 diags; in json mode every line parses", async () => {
+  it("one req record per request, nothing else but E1554 and guard-throw diags; in json mode every line parses", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(fc.oneof(calls, writes), { minLength: 1, maxLength: 8 }), async (cs) => {
         const lines: string[] = [];
@@ -98,7 +101,10 @@ describe("dev log stream", () => {
         const kind = (r: unknown): unknown => (typeof r === "object" && r !== null && "kind" in r ? r.kind : null);
         const reqs = records.filter((r) => kind(r) === "req");
         const diags = records.filter((r) => kind(r) === "diag");
-        const bad = cs.filter((c) => c.path === "/bad" && c.method !== "OPTIONS").length;
+        // E1554 for `/bad`'s loader, and two `keel.unexpected` diags for `/broken`'s throwing guard in dev, its form
+        // and its text (k.serverlog Thrown values).
+        const sent = (path: string) => cs.filter((c) => c.path === path && c.method !== "OPTIONS").length;
+        const bad = sent("/bad") + 2 * sent("/broken");
         expect(reqs.length).toBe(cs.length);
         expect(diags.length).toBe(bad);
         expect(records.length).toBe(cs.length + bad);
@@ -162,7 +168,8 @@ describe("dev log stream", () => {
     expect(nope.status).toBe(405);
     expect(nope.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const opt = await app.fetch(req({ method: "OPTIONS", path: "/orders/7" }));
-    expect(opt.headers.get("allow")).toBe("GET, HEAD");
+    expect(opt.status).toBe(405);
+    expect(opt.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const noBody = await app.fetch(new Request(`${BASE}/orders/7`, { method: "POST" }));
     expect(noBody.status).toBe(422);
   });

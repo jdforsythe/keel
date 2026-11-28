@@ -2,45 +2,219 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 1500,
-    "spec.map": 1200,
+    "spec.section": 3100,
+    "spec.map": 400,
+    "spec.area": 500,
     "explain": 300,
-    "spec.for": 400,
-    "mcp.tools-list": 1500
+    "mcp.tools-list": 2150,
+    "docs.map": 900,
+    "docs.area": 500,
+    "docs.section": 3100,
+    "docs.skill": 3700,
+    "docs.for": 400,
+    "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "27kb",
+      "max": "129.15kb",
+      "platform": "node"
+    },
+    "@keel/check/explain": {
+      "max": "27.7kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "22kb",
+      "max": "45.5kb",
+      "platform": "node"
+    },
+    "@keel/cli/docs": {
+      "max": "4.5kb",
+      "platform": "node"
+    },
+    "@keel/cli/shell": {
+      "max": "4.5kb",
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "21kb",
+      "max": "39.9kb",
       "platform": "node"
     },
-    "@keel/ctx": "3kb",
+    "@keel/ctx": "4.9kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "8kb",
+    "@keel/router": "15.6kb",
+    "@keel/router/contract": "3.35kb",
+    "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
+    "@keel/runtime-dom/ops": "11.1kb",
     "@keel/scaffold": {
-      "max": "16kb",
+      "max": "26.5kb",
       "platform": "node"
     },
-    "@keel/schema": "5kb",
+    "@keel/scaffold/agents": {
+      "max": "2.35kb",
+      "platform": "node"
+    },
+    "@keel/schema": "8.1kb",
     "@keel/server": {
-      "max": "11kb",
+      "max": "32.9kb",
       "platform": "node"
     },
-    "@keel/services": "3kb",
-    "@keel/store": "3kb",
+    "@keel/server/internal/dom": "4.75kb",
+    "@keel/server/internal/start": {
+      "max": "4.4kb",
+      "platform": "node"
+    },
+    "@keel/services": "4.65kb",
+    "@keel/std-channels": "1.5kb",
+    "@keel/std-channels/server": {
+      "max": "3.35kb",
+      "platform": "node"
+    },
+    "@keel/std-channels/tools": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-brands/tools": {
+      "max": "1.25kb",
+      "platform": "node"
+    },
+    "@keel/std-conflicts": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-conflicts/tools": {
+      "max": "1.25kb",
+      "platform": "node"
+    },
+    "@keel/std-i18n": "1.2kb",
+    "@keel/std-i18n/tools": {
+      "max": "4kb",
+      "platform": "node"
+    },
+    "@keel/std-jobs": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-jobs/tools": {
+      "max": "3.5kb",
+      "platform": "node"
+    },
+    "@keel/std-live": "1kb",
+    "@keel/std-messages": "1.6kb",
+    "@keel/std-messages/tools": {
+      "max": "7kb",
+      "platform": "node"
+    },
+    "@keel/std-money": "1.75kb",
+    "@keel/std-offline": "4.25kb",
+    "@keel/std-offline/tools": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-schedules": {
+      "max": "2.5kb",
+      "platform": "node"
+    },
+    "@keel/std-schedules/tools": {
+      "max": "2.5kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions": "7.5kb",
+    "@keel/std-sessions/action": {
+      "max": "4.5kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/commandJob": {
+      "max": "9.5kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/group": {
+      "max": "6kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/monitor": {
+      "max": "2kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/routes": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-sessions/tools": {
+      "max": "11.5kb",
+      "platform": "node"
+    },
+    "@keel/std-headless": "6kb",
+    "@keel/std-statecharts": "2kb",
+    "@keel/std-statecharts/tools": {
+      "max": "4kb",
+      "platform": "node"
+    },
+    "@keel/std-tables": "4.35kb",
+    "@keel/std-db/sqlite": {
+      "max": "1.9kb",
+      "platform": "node"
+    },
+    "@keel/std-db/postgres": {
+      "max": "3.1kb",
+      "platform": "node"
+    },
+    "@keel/std-db/tools": {
+      "max": "1.5kb",
+      "platform": "node"
+    },
+    "@keel/std-postgres": "1.15kb",
+    "@keel/std-postgres/server": {
+      "max": "9.5kb",
+      "platform": "node"
+    },
+    "@keel/std-postgres/testing": {
+      "max": "1.9kb",
+      "platform": "node"
+    },
+    "@keel/std-postgres/tools": {
+      "max": "3.25kb",
+      "platform": "node"
+    },
+    "@keel/std-workflows": {
+      "max": "3kb",
+      "platform": "node"
+    },
+    "@keel/std-workflows/tools": {
+      "max": "3.75kb",
+      "platform": "node"
+    },
+    "@keel/std-capacitor": "2kb",
+    "@keel/std-tauri": "2.25kb",
+    "@keel/std-tokens": "1kb",
+    "@keel/std-tokens/server": {
+      "max": "1.75kb",
+      "platform": "node"
+    },
+    "@keel/std-tokens/tools": {
+      "max": "1.8kb",
+      "platform": "node"
+    },
+    "@keel/std-temporal": "5kb",
+    "@keel/std-text": "1.5kb",
+    "@keel/store": "4.25kb",
+    "@keel/store/internal": {
+      "max": "2.45kb",
+      "platform": "node"
+    },
     "@keel/testing": {
-      "max": "9kb",
+      "max": "23.55kb",
       "platform": "node"
     },
-    "@keel/ui": "4kb"
+    "@keel/testing/prove": {
+      "max": "8.25kb",
+      "platform": "node"
+    },
+    "@keel/ui": "8kb",
+    "@keel/ui/aria": "3.75kb"
+  },
+  "mutate": {
+    "default": 30
   }
 }

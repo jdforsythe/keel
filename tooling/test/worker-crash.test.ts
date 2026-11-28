@@ -1,0 +1,188 @@
+// A vitest fork worker that dies mid-test, run for real: a child vitest over fixtures that SIGKILL or abort their own
+// worker. The reporter prints one T0001 line per dead worker at its file, naming the test and what ended it.
+import { type ChildProcess, type SpawnSyncReturns, fork, spawnSync } from "node:child_process";
+import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
+import { describe, expect, it } from "vitest";
+import { fixedTime, testTime } from "../test-time.ts";
+import { crashDiags, endDiags, isCrash } from "../vitest-reporter.ts";
+import { describeExit, lastSaid, requestFiles, watchWorkerExits, workerExits } from "../worker-exits.ts";
+
+const root = path.join(import.meta.dirname, "..", "..");
+const fixtures = path.join(import.meta.dirname, "..", "fixtures", "crash");
+const vitest = path.join(root, "node_modules", "vitest", "vitest.mjs");
+// A killed child run leaves its own temp root and vitest's spool behind: they go in a folder of this file's.
+const childTmp = tempDir("keel-crash-tmp-");
+
+/**
+ * An assertion's message: how the child ended, its T0001 and trailer lines and what its stderr said last, on one
+ * line (the reporter prints a message's first line, up to 512 characters).
+ */
+function said(r: SpawnSyncReturns<string>): string {
+  const lines = r.stdout.split("\n").filter((l) => /^(T0001 |fail |ok )/.test(l));
+  return `child exit ${r.status} signal ${r.signal}: ${lines.join(" | ")} | stderr: ${lastSaid(r.stderr.split("\n"))}`;
+}
+
+describe("a worker that dies mid-run", () => {
+  it(
+    "is one T0001 line per file naming the test and the signal, and the run fails",
+    () => {
+      const r = spawnSync(process.execPath, [vitest, "run"], {
+        cwd: fixtures,
+        env: { ...process.env, KEEL_AGENT: "1", TMPDIR: childTmp },
+        encoding: "utf8",
+        timeout: testTime(60_000),
+      });
+      expect(r.status, said(r)).toBe(1);
+      const lines = r.stdout.split("\n").filter((l) => l.startsWith("T0001 "));
+      expect(lines, said(r)).toContain("T0001 kill.fixture.ts:1:1 is killed: worker killed by SIGKILL");
+      expect(lines, said(r)).toContain(
+        "T0001 abort.fixture.ts:1:1 aborts: worker killed by SIGABRT: FATAL ERROR: Reached heap limit Allocation failed",
+      );
+      expect(
+        lines.filter((l) => l.startsWith("T0001 plain.fixture.ts:")),
+        said(r),
+      ).toHaveLength(1);
+      expect(
+        lines.some((l) => l.includes("[vitest-pool]")),
+        said(r),
+      ).toBe(false);
+      expect(r.stdout, said(r)).toMatch(/^fail 3 tests, 3 failed, 0 skipped/m);
+    },
+    fixedTime(90_000),
+  );
+});
+
+describe("a run vitest fails with no failed test", () => {
+  it(
+    "is a T0001 line and a fail trailer, never an ok trailer over exit 1",
+    () => {
+      const r = spawnSync(process.execPath, [vitest, "run", "matches-no-file"], {
+        cwd: fixtures,
+        env: { ...process.env, KEEL_AGENT: "1", TMPDIR: childTmp },
+        encoding: "utf8",
+        timeout: testTime(60_000),
+      });
+      expect(r.status, said(r)).toBe(1);
+      expect(r.stdout, said(r)).toMatch(/^T0001 no test ran: vitest ended the run as failed$/m);
+      expect(r.stdout, said(r)).toMatch(/^fail 0 tests, 0 failed, 0 skipped/m);
+    },
+    fixedTime(90_000),
+  );
+});
+
+describe("endDiags", () => {
+  const open = [{ file: "/r/a.test.ts", test: "a > one" }];
+  it("is nothing for a passed run", () => {
+    expect(endDiags("passed", false, open, 3, "/r")).toEqual([]);
+  });
+  it("names each file an interrupted run left unfinished, failures or not", () => {
+    const at = (failing: boolean) =>
+      endDiags("interrupted", failing, open, 3, "/r").map((d) => `${d.path} ${d.message}`);
+    expect(at(false)).toEqual(["a.test.ts a > one: vitest ended the run as interrupted"]);
+    expect(at(true)).toEqual(at(false));
+  });
+  it("is one unlocated line for a failed run with no failure of its own", () => {
+    expect(endDiags("failed", false, [], 0, "/r")).toEqual([
+      { kind: "diag", code: "T0001", message: "no test ran: vitest ended the run as failed" },
+    ]);
+    expect(endDiags("failed", false, [], 2, "/r")[0]?.message).toBe("no test failed: vitest ended the run as failed");
+    expect(endDiags("failed", true, [], 2, "/r")).toEqual([]);
+  });
+});
+
+describe("crashDiags", () => {
+  const exit = (files: string[], said = "") => ({ pid: 1, code: null, signal: "SIGKILL", files, said });
+  it("pairs each exit with the unfinished files vitest sent that worker", () => {
+    const d = crashDiags(
+      2,
+      [
+        { file: "/r/a.test.ts", test: "a > one" },
+        { file: "/r/b.test.ts", test: undefined },
+      ],
+      [exit(["/r/b.test.ts"]), exit(["/r/a.test.ts"], "out of memory")],
+      "/r",
+    );
+    expect(d.map((x) => `${x.path}:${x.line} ${x.message}`)).toEqual([
+      "b.test.ts:1 collecting the file: worker killed by SIGKILL",
+      "a.test.ts:1 a > one: worker killed by SIGKILL: out of memory",
+    ]);
+  });
+  it("prints no second line for a worker whose last word is its own diagnostic", () => {
+    const own = 'T0001 a.test.ts:1:1 watchdog killed "x" after 9.0s (bound 8.0s)';
+    expect(crashDiags(1, [{ file: "/r/a.test.ts", test: "x" }], [exit(["/r/a.test.ts"], own)], "/r")).toEqual([]);
+  });
+  it("still names a death with no exit recorded and no file left", () => {
+    expect(crashDiags(1, [], [], "/r")).toEqual([
+      { kind: "diag", code: "T0001", message: "worker exited unexpectedly" },
+    ]);
+  });
+  it("is nothing without a crash", () => {
+    expect(crashDiags(0, [{ file: "/r/a.test.ts", test: undefined }], [], "/r")).toEqual([]);
+  });
+  it("knows vitest's crash error", () => {
+    expect(isCrash(new Error("[vitest-pool]: Worker forks emitted error."))).toBe(true);
+    expect(isCrash(new Error("expected 1 to be 2"))).toBe(false);
+  });
+});
+
+describe("worker exits", () => {
+  it("say the signal or the exit code, then what the worker said", () => {
+    expect(describeExit({ pid: 1, code: null, signal: "SIGSEGV", files: [], said: "" })).toBe(
+      "worker killed by SIGSEGV",
+    );
+    expect(describeExit({ pid: 1, code: 7, signal: null, files: [], said: "boom" })).toBe("worker exited 7: boom");
+    expect(describeExit(undefined)).toBe("worker exited unexpectedly");
+  });
+  it("take the last fatal line over Node's native stack", () => {
+    expect(
+      lastSaid([
+        "",
+        "FATAL ERROR: heap limit",
+        " 1: 0x1047d87d8 node::Start()",
+        "----- JavaScript stack trace -----",
+        "",
+      ]),
+    ).toBe("FATAL ERROR: heap limit");
+    expect(lastSaid(["one", "two", ""])).toBe("two");
+    expect(lastSaid([])).toBe("");
+  });
+  it("read the files of a vitest worker request", () => {
+    expect(requestFiles({ type: "run", context: { files: [{ filepath: "/r/a.test.ts" }, { x: 1 }] } })).toEqual([
+      "/r/a.test.ts",
+    ]);
+    expect(requestFiles({ type: "stop" })).toBeUndefined();
+    expect(requestFiles("x")).toBeUndefined();
+  });
+  // A stand-in at `workers/forks.js`, the path that marks vitest's fork worker; no vitest listens for its exit, as
+  // after vitest force-stops a worker whose channel failed as it died.
+  const standIn = path.join(import.meta.dirname, "..", "fixtures", "worker-exits", "workers", "forks.js");
+  const exited = (c: ChildProcess) => new Promise((resolve) => c.once("exit", resolve));
+  it(
+    "record a fork worker that dies with no exit listener and no stop request",
+    async () => {
+      watchWorkerExits();
+      const c = fork(standIn, [], { stdio: "pipe" });
+      await new Promise((resolve) => c.once("spawn", resolve));
+      c.kill("SIGKILL");
+      await exited(c);
+      expect(workerExits().filter((e) => e.pid === c.pid)).toEqual([
+        { pid: c.pid, code: null, signal: "SIGKILL", files: [], said: "" },
+      ]);
+    },
+    testTime(10_000),
+  );
+  it(
+    "do not record a fork worker vitest sent a stop request",
+    async () => {
+      watchWorkerExits();
+      const c = fork(standIn, [], { stdio: "pipe" });
+      await new Promise((resolve) => c.once("spawn", resolve));
+      c.send({ type: "stop", __vitest_worker_request__: true });
+      c.kill();
+      await exited(c);
+      expect(workerExits().filter((e) => e.pid === c.pid)).toEqual([]);
+    },
+    testTime(10_000),
+  );
+});

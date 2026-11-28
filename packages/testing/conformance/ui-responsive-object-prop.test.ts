@@ -1,4 +1,4 @@
-// Spec: k.ui Conformance, "`p={{ base: '2', md: '3' }}` yields the `2` rule unconditioned and the `3` rule inside `@media (min-width: 768px)`".
+// Spec: k.ui, clause "`p={{ base: '2', md: '3' }}` yields the `2` rule unconditioned and the `3` rule inside `@media (min-width: 768px)`."
 // The object prop goes through the real compiler (its `styles.json` usages), then `compileStyles`.
 import { compile } from "@keel/compiler";
 import { compileStyles } from "@keel/ui/css";

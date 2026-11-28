@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "After a resource resolves, `await settle()` makes its ready state visible without any event."
+// Spec: k.testing, clause "After a resource resolves, `settle()` shows its ready state without an event."
 // Seed: 1337.
 import type { Ctx } from "@keel/ctx";
 import { resource } from "@keel/reactive";
@@ -8,8 +8,6 @@ import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { simCtx } from "./fixtures.ts";
-
-type Slots = Record<string, unknown> | undefined;
 
 const T = template('<p id="late"></p>');
 
@@ -20,7 +18,7 @@ const makeLate = () => {
     release = r;
   });
   const Late = Object.assign(
-    (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+    (_props: Record<string, never>): Node => {
       const res = resource(() => gate);
       const root = clone(T);
       text(root, () => {

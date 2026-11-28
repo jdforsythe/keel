@@ -1,4 +1,4 @@
-// Spec: k.store Conformance, "`transaction.schema` parses every payload `tx` accepts" (valid generated payloads). Seed 1337.
+// Spec: k.store, clause "`store.schema` parses every state the store accepts and `transaction.schema` parses every payload `tx` accepts."
 import { gen } from "@keel/schema/gen";
 import { tx } from "@keel/store";
 import fc from "fast-check";

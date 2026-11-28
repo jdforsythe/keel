@@ -1,0 +1,11 @@
+# ADR-0197: k.data, std.postgres: migrations found by module, a build that fails on E1006, retried migration passes, dev and compose defaults (RFC 0175)
+
+**Status:** accepted (orchestrator, under the RFC defaults).
+
+**Context.** Golden-2 on `@keel/std-postgres` found five gaps. The build evaluation cannot load a graph reaching `pg`, and its E1006 leaves the build green with routes missing from `routes.json`. Migrations reach `database` through Vite's `import.meta.glob`. A refused connection at the first query is a 500, and a failed migration pass poisons the ctx, so a server's process. `keel dev` and `compose.yaml` have no `KEEL_POSTGRES_URL`. A loader's `run` needs `stores: {}` in tests.
+
+**Decision.** The evaluation bundles as the server build does (`require` defined) and every problem it reports fails `keel build` and `vite build`. A module's migrations are `modules/<id>/migrations/*.sql` of the app folder (`KEEL_APP_DIR`, else the working directory); `keel build` copies them beside `server.mjs`, which sets `KEEL_APP_DIR`; `database(name)` reads them at its first call, and an optional `migrations` map replaces them. A failed pass keeps nothing: a refused connection is `keel.unreachable`, the next call tries again. `keel dev` sets `KEEL_DEV_DIR`; std.postgres defaults to `pglite:<KEEL_DEV_DIR>/postgres` there. Compose passes `KEEL_POSTGRES_URL` from the environment. `run`'s `stores` is optional.
+
+**Alternatives.** Stubbing packages or `*.server.ts` files in the evaluation (changes `routes.json`); static routes (schemas need evaluation); evaluating `import.meta.glob` (keeps bundler code in the app); a compiler transform or `std.json` for migrations (kernel names a stdlib API; sim tests read nothing); reading files when `database` runs (I/O at import); keeping the poisoned ctx; `keel dev` setting `KEEL_POSTGRES_URL` (kernel names a stdlib variable); a Postgres service in compose (a secret in a generated file).
+
+**Consequences.** An app's database file is two lines with no glob. A build with an evaluation problem exits 1. Two generic kernel variables. k.compiler, k.data, k.deploy, k.server and std.postgres read `implemented` until eleven `none` clauses are covered. No new codes.

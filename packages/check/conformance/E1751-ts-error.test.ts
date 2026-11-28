@@ -2,7 +2,7 @@
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { one, SEED } from "./support.ts";
+import { SEED, one } from "./support.ts";
 
 test("E1751: a TS type error with no Keel rule code is reported with a message that starts with the TS code", () => {
   fc.assert(

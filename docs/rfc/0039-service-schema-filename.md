@@ -1,6 +1,6 @@
 # RFC 0039: Service schema filename equals its export; k.scaffold conformance-covered
 
-Status: accepted (ADR-0028)
+Status: implemented (ADR-0028)
 
 ## Problem
 Backlog 0108; rfc:0036 Remaining 2. k.services named the endpoint declaration file `modules/<m>/api.schema.ts` and exported `<M>Api` from it. `@keel/services/openapi` (rfc:0034) generated that file, and `keel scaffold service` placed it. k.check E1752 (principle 3: one export per file, filename equals export) reports it: the stem `api` is not `OrdersApi`. So every generated service tree failed `keel check`, the k.scaffold clause 1 service case was `it.skip`, and k.scaffold stayed `implemented`. Clause 4's printed `--dry-run` replay also lacked `transaction` and `service`; commit d1c3012 wired both through the cli, but the test table never added them.

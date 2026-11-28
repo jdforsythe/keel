@@ -1,0 +1,75 @@
+// Spec: k.privacy, clause "An action throwing an `Error` whose message or a stack frame's file path holds a marked input value logs a `diag` record with `[pii]` in its place, in dev and production."
+// Seed: 1337.
+// @vitest-environment happy-dom
+// ASSUMED shape (k.server Log): `frames` is an array of strings in json mode. The stack is generated: an app frame whose
+// file name holds the marked `note` value, which is lowercase letters (so no unmarked text can mimic it).
+// k.serverlog: a thrown value's text is in the log only in dev mode (its second `diag`); these cases read that record. Production holds none of it: privacy-production-absence.test.ts asserts it.
+import { fixedTime } from "@keel/tooling/test-time";
+import { createCtx } from "@keel/ctx";
+import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
+import { s } from "@keel/schema";
+import { topology } from "@keel/server";
+import fs from "node:fs";
+import path from "node:path";
+import fc from "fast-check";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { Kind, Params, SEED, createApp, post } from "./fixtures.ts";
+
+// Frames are relative to the folder holding `artifacts`: a scratch `artifacts` folder in the working directory.
+let artifacts = "";
+beforeAll(() => {
+  artifacts = fs.mkdtempSync(path.join(process.cwd(), ".keel-privacy-artifacts-"));
+});
+afterAll(() => fs.rmSync(artifacts, { recursive: true, force: true }));
+
+const Input = s.object({ kind: Kind, note: s.string().pii("content") });
+const words = fc.stringMatching(/^[a-z]{12,20}$/);
+
+async function framesFor(note: string, mode: "dev" | "production"): Promise<unknown> {
+  const thrown = new Error("cannot save");
+  thrown.stack = `Error: cannot save\n    at save (${process.cwd()}/modules/orders/${note}.server.ts:10:4)\n    at next (${process.cwd()}/modules/orders/other.ts:3:1)`;
+  const orders = contract("orders", {
+    "orders.show": { path: "/orders/:kind", params: Params },
+  });
+
+  const save = action(orders, "orders.show", { input: Input }, () => Promise.reject(thrown));
+  const routes = manifest(orders, {
+    "orders.show": { component: () => document.createElement("main"), POST: save },
+  });
+  const lines: string[] = [];
+  const app = await createApp({
+    topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
+    routes,
+    ctx: createCtx({ mode: "sim", seed: SEED }),
+    mode,
+    artifacts,
+    log: { format: "json", write: (l: string) => void lines.push(l) },
+  });
+  await app.fetch(post("/orders/open", { kind: "open", note }, { accept: "application/json" }));
+  const diags = lines
+    .map((l): unknown => JSON.parse(l))
+    .filter((r) => typeof r === "object" && r !== null && Reflect.get(r, "kind") === "diag");
+  expect(diags.length).toBeGreaterThan(0);
+  const first = diags[0];
+  return typeof first === "object" && first !== null ? Reflect.get(first, "frames") : undefined;
+}
+
+describe("k.privacy: scrubbed diag frames", () => {
+  for (const mode of ["dev"] as const) {
+    test(
+      `an action throwing an Error whose stack names a file path holding a marked input value logs that frame with [pii] in place of the value, in ${mode}`,
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(words, async (note) => {
+            const frames = await framesFor(note, mode);
+            expect(frames).toEqual(["modules/orders/[pii].server.ts:10:4", "modules/orders/other.ts:3:1"]);
+            expect(JSON.stringify(frames)).not.toContain(note);
+          }),
+          { seed: SEED, numRuns: 25 },
+        );
+      },
+      fixedTime(120_000),
+    );
+  }
+});

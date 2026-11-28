@@ -1,6 +1,9 @@
 // _generated: edit tooling/turbo.source.json and run pnpm generate. Do not edit by hand.
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "KEEL_TEST_WORKERS"
+  ],
   "tasks": {
     "check": {
       "dependsOn": [
@@ -13,7 +16,8 @@
         "^build"
       ],
       "outputs": [
-        "coverage/**"
+        "coverage/**",
+        "reports/tests/**"
       ]
     },
     "build": {
@@ -23,6 +27,15 @@
       "outputs": [
         "dist/**"
       ]
+    },
+    "coverage": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "cache": false
     },
     "mutate": {
       "dependsOn": [

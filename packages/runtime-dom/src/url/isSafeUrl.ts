@@ -18,17 +18,25 @@ const allowed = (value: string): boolean => {
   return m === null || ALLOWED.has((m[1] ?? "").toLowerCase());
 };
 
+/** List attributes and the separators between their items (rfc:0056). A `srcset` URL holding a comma is split too: conservative. */
+const LISTS: ReadonlyMap<string, RegExp> = new Map([
+  ["ping", /[\t\n\f\r ,]/],
+  ["srcset", /[\t\n\f\r ,]/],
+  ["imagesrcset", /[\t\n\f\r ,]/],
+  ["values", /;/],
+]);
+
 /**
  * k.compiler URL rule as a predicate: true when attribute `name` (any case) may hold `value` unchanged.
- * For a URL attribute (`URL_ATTRS`; each space-separated URL of `ping`), the scheme must be http, https,
- * mailto, or tel, or absent (relative, `//host`, `#fragment`, `?query`). A raw-HTML attribute (`srcdoc`)
- * is never safe. Every other attribute is safe. The runtime renders an unsafe value as `about:blank`
- * (`safeUrl`); the compiler reports a literal one as E1003.
+ * For a URL attribute (`URL_ATTRS`; each item of a list attribute, `LISTS`), the scheme must be http, https,
+ * mailto, or tel, or absent (relative, `//host`, `#fragment`, `?query`). One bad item makes the whole value
+ * unsafe. A raw-HTML attribute (`srcdoc`) is never safe. Every other attribute is safe. The runtime renders an
+ * unsafe value as `about:blank` (`safeUrl`); the compiler reports a literal one as E1003.
  */
 export function isSafeUrl(name: string, value: string): boolean {
   const n = name.toLowerCase();
   if (RAW_HTML_ATTRS.has(n)) return false;
   if (!URL_ATTRS.has(n)) return true;
-  const urls = n === "ping" ? value.split(/[\t\n\f\r ]+/).filter((u) => u !== "") : [value];
-  return urls.every(allowed);
+  const sep = LISTS.get(n);
+  return (sep === undefined ? [value] : value.split(sep)).every(allowed);
 }

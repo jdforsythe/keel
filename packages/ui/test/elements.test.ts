@@ -7,6 +7,7 @@ import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const SEED = 1337;
 const flush = async (): Promise<void> => {
@@ -15,15 +16,18 @@ const flush = async (): Promise<void> => {
 };
 const scoped = <T>(make: () => T): { value: T; dispose: () => void } => {
   const box: { value?: T } = {};
-  const sc = scope(() => {
-    box.value = make();
-  });
+  const sc = scope(
+    () => {
+      box.value = make();
+    },
+    { detached: true },
+  );
   if (box.value === undefined) throw new Error("scoped: no value");
   return { value: box.value, dispose: () => sc.dispose() };
 };
 const render = (make: () => Node): { host: HTMLElement; dispose: () => void } => {
   const host = document.createElement("div");
-  return { host, dispose: mount(make, host) };
+  return { host, dispose: mount(make, host, { ctx: testCtx }) };
 };
 const first = (host: Element): Element => {
   const e = host.firstElementChild;
@@ -150,7 +154,9 @@ describe("base elements", () => {
       await flush();
       const host = document.createElement("div");
       document.body.append(host);
-      const dispose = mount(() => Box({ children: [Input({ label: "Email" }), Input({ label: "Email" })] }), host);
+      const dispose = mount(() => Box({ children: [Input({ label: "Email" }), Input({ label: "Email" })] }), host, {
+        ctx: testCtx,
+      });
       const ids = Array.from(host.querySelectorAll("input")).map((e) => e.id);
       dispose();
       host.remove();
@@ -193,10 +199,10 @@ describe("base elements", () => {
 
   it("Button: children are the text; a stray label is ignored; type defaults to button", () => {
     const a = render(() => Button({ children: "Close" }));
-    expect(first(a.host).outerHTML).toBe('<button type="button">Close</button>');
+    expect(first(a.host).outerHTML).toBe('<button type="button" class="k-button">Close</button>');
     const loose: Readonly<Record<string, unknown>> = { type: "submit", children: "Save", label: "x" };
     const b = render(() => Reflect.apply(Button, undefined, [loose]));
-    expect(first(b.host).outerHTML).toBe('<button type="submit">Save</button>');
+    expect(first(b.host).outerHTML).toBe('<button type="submit" class="k-button">Save</button>');
     a.dispose();
     b.dispose();
   });
@@ -242,6 +248,16 @@ describe("base elements", () => {
     dispose();
   });
 
+  it("a Link whose `to` slipped past the type and is no Href renders about:blank", () => {
+    const slipped = (x: string): x is Href => x.length > 0;
+    for (const bad of ["//evil.example/x", "/\\evil.example", "https://evil.example/", "/a\u0001b", "/a\u0085b"]) {
+      if (!slipped(bad)) throw new Error("unreachable");
+      const { host, dispose } = render(() => Link({ to: bad, children: "l" }));
+      expect(host.querySelector("a")?.getAttribute("href"), JSON.stringify(bad)).toBe("about:blank");
+      dispose();
+    }
+  });
+
   it("text children become text nodes, never markup", () => {
     const { host, dispose } = render(() => Text({ children: ['<img src=x onerror="1">', 2] }));
     expect(host.querySelector("img")).toBeNull();
@@ -256,5 +272,31 @@ describe("children as a thunk (RFC 0008)", () => {
     expect(r.host.textContent).toBe("hi");
     expect(render(() => Button({ children: () => "Go" })).host.textContent).toBe("Go");
     expect(render(() => Heading({ level: 2, children: () => "T" })).host.textContent).toBe("T");
+  });
+});
+
+describe("Checkbox label", () => {
+  it("a click on the label text toggles the box and calls onChange once, as a click on the box does", () => {
+    const seen: boolean[] = [];
+    const { host, dispose } = render(() => Checkbox({ label: "Done: Bread", onChange: (c) => seen.push(c) }));
+    document.body.appendChild(host);
+    const box = host.querySelector<HTMLInputElement>("input[type=checkbox]");
+    const label = host.querySelector("label");
+    if (box === null || label === null) throw new Error("no checkbox");
+    expect(label.getAttribute("for")).toBe(box.id);
+    expect(label.textContent).toBe("Done: Bread");
+    label.click();
+    box.click();
+    label.click();
+    expect(seen).toEqual([true, false, true]);
+    dispose();
+    host.remove();
+  });
+
+  it("the label is a direct child of the wrapper, after the box, with no node between them", () => {
+    const { host, dispose } = render(() => Checkbox({ label: "Done: Bread" }));
+    const wrap = first(host);
+    expect(Array.from(wrap.childNodes).map((n) => n.nodeName.toLowerCase())).toEqual(["input", "label"]);
+    dispose();
   });
 });

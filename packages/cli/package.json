@@ -1,7 +1,7 @@
 {
   "name": "@keel/cli",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -11,34 +11,111 @@
     "./testing": {
       "types": "./src/testing/respond.ts",
       "default": "./src/testing/respond.ts"
+    },
+    "./evidence": {
+      "types": "./src/evidence/index.ts",
+      "default": "./src/evidence/index.ts"
+    },
+    "./docs": {
+      "types": "./src/docs/index.ts",
+      "default": "./src/docs/index.ts"
+    },
+    "./e2e": {
+      "types": "./src/e2e/index.ts",
+      "default": "./src/e2e/index.ts"
+    },
+    "./review": {
+      "types": "./src/review/index.ts",
+      "default": "./src/review/index.ts"
+    },
+    "./shell": {
+      "types": "./src/shell/index.ts",
+      "default": "./src/shell/index.ts"
+    },
+    "./derive": {
+      "types": "./src/derive/index.ts",
+      "default": "./src/derive/index.ts"
+    },
+    "./tokens": {
+      "types": "./src/tokens/index.ts",
+      "default": "./src/tokens/index.ts"
     }
   },
   "bin": {
-    "keel": "./dist/src/bin.js"
+    "keel": "./src/bin.ts"
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "bin": {
+      "keel": "./dist/src/bin.js"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./testing": {
+        "types": "./dist/src/testing/respond.d.ts",
+        "default": "./dist/src/testing/respond.js"
+      },
+      "./evidence": {
+        "types": "./dist/src/evidence/index.d.ts",
+        "default": "./dist/src/evidence/index.js"
+      },
+      "./docs": {
+        "types": "./dist/src/docs/index.d.ts",
+        "default": "./dist/src/docs/index.js"
+      },
+      "./e2e": {
+        "types": "./dist/src/e2e/index.d.ts",
+        "default": "./dist/src/e2e/index.js"
+      },
+      "./review": {
+        "types": "./dist/src/review/index.d.ts",
+        "default": "./dist/src/review/index.js"
+      },
+      "./shell": {
+        "types": "./dist/src/shell/index.d.ts",
+        "default": "./dist/src/shell/index.js"
+      },
+      "./derive": {
+        "types": "./dist/src/derive/index.d.ts",
+        "default": "./dist/src/derive/index.js"
+      },
+      "./tokens": {
+        "types": "./dist/src/tokens/index.d.ts",
+        "default": "./dist/src/tokens/index.js"
+      }
+    }
+  },
+  "files": ["dist", "docs", "skills"],
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
-    "check": "tsc --noEmit && biome check src test unsafe",
+    "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/check": "workspace:*",
     "@keel/compiler": "workspace:*",
-    "@keel/schema": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/router": "workspace:*",
     "@keel/scaffold": "workspace:*",
+    "@keel/schema": "workspace:*",
     "@keel/services": "workspace:*",
+    "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
-    "vitest": "^2",
-    "typescript": "^5.6"
+    "typescript": "^5.6",
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12"
   },
   "devDependencies": {
-    "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
-    "@keel/router": "workspace:*",
     "@keel/server": "workspace:*",
-    "@keel/store": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3"

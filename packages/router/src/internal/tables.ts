@@ -1,4 +1,5 @@
-import type { Table } from "./Table.ts";
+import { heldMap } from "@keel/schema/internal";
+import type { Compiled } from "./Compiled.ts";
 
-/** The compiled table of each manifest object `manifest()` returned. */
-export const tables = new WeakMap<object, Table>();
+/** The compiled form of each route table `manifest` or `routeTable` made. */
+export const tables = heldMap<object, Compiled>();

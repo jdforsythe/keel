@@ -1,22 +1,44 @@
 {
   "name": "@keel/reactive",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./internal": {
+      "types": "./src/internal/index.ts",
+      "default": "./src/internal/index.ts"
     }
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./internal": {
+        "types": "./dist/src/internal/index.d.ts",
+        "default": "./dist/src/internal/index.js"
+      }
+    }
+  },
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "devDependencies": {
-    "@keel/tooling": "workspace:*"
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22"
+  },
+  "dependencies": {
+    "@keel/schema": "workspace:*"
   }
 }

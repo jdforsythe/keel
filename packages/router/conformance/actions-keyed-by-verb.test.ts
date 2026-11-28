@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router Keys/Form prose (not a Conformance sentence): actions are keyed by POST/PUT/PATCH/DELETE; <Form method> runs the action of that verb. Exhaustive over the 4 verbs.
+// k.router Keys/Form prose (not a Conformance sentence): actions are keyed by POST/PUT/PATCH/DELETE; <Form method> runs the action of that verb. Exhaustive over the 4 verbs.
 import { beforeEach, describe, expect, it } from "vitest";
 import { VERBS, control, count, resetObservations, start, submit } from "./fixtures.ts";
 

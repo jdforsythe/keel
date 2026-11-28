@@ -1,6 +1,6 @@
 # RFC 0035: Conformance completion k.check, k.cli, k.module
 
-Status: accepted (ADR-0024)
+Status: implemented (ADR-0024)
 
 ## Problem
 docs/freeze-review.md §1 and backlog 0060. k.check: the fix-diff clause names "the top 30 codes", an undefined set, and the suite asserted 5 fixes; the 600-token budget was asserted over `format()` of synthetic diagnostics, not the real `keel check` on golden app 1. k.cli: `GET /__keel/inspect` on a dev `createApp` and the production 404 had unit tests only. k.module: the stdlib fixture used `id: '@keel/std-auth'`, which `ModuleSchema` rejects, and only E1151, E1152, E1154 were asserted on a stdlib module. Three `test.skip` stubs (E1753 stdlib range, E1754, E1755) remained in check, already covered by fixtures; "W-only exits 0" and `--code` were asserted below the CLI only.

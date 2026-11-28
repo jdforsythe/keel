@@ -1,0 +1,1 @@
+{"data":{"contracts":{"api":{"callers":[],"entries":{"api.me":{"body":null,"errors":{},"method":"GET","output":{"properties":{"name":{"type":"string","x-keel-pii":"name"}},"required":["name"],"type":"object"},"params":null,"path":"/api/me","query":null}},"module":"api"}},"stores":{},"version":3},"hash":"fnv1a:75e183ac"}

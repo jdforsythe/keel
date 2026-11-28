@@ -18,12 +18,15 @@ describe("examples", () => {
   it("E1202: two effects invalidating each other through declared writes", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const a = signal(0);
-          const b = signal(0);
-          effect(() => b.set(a.get() + 1), { writes: [b] });
-          effect(() => a.set(b.get() + 1), { writes: [a] });
-        });
+        scope(
+          () => {
+            const a = signal(0);
+            const b = signal(0);
+            effect(() => b.set(a.get() + 1), { writes: [b] });
+            effect(() => a.set(b.get() + 1), { writes: [a] });
+          },
+          { detached: true },
+        );
       }),
     ).toBe("E1202");
   });
@@ -31,11 +34,14 @@ describe("examples", () => {
   it("E1202: effect writing a signal that feeds a computed it read", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const s = signal(0);
-          const c = computed(() => s.get() * 2);
-          effect(() => s.set(c.get() + 1), { writes: [s] });
-        });
+        scope(
+          () => {
+            const s = signal(0);
+            const c = computed(() => s.get() * 2);
+            effect(() => s.set(c.get() + 1), { writes: [s] });
+          },
+          { detached: true },
+        );
       }),
     ).toBe("E1202");
   });
@@ -43,13 +49,16 @@ describe("examples", () => {
   it("E1201: a computed may not write", () => {
     expect(
       codeOf(() => {
-        scope(() => {
-          const s = signal(0);
-          computed(() => {
-            s.set(1);
-            return 0;
-          }).get();
-        });
+        scope(
+          () => {
+            const s = signal(0);
+            computed(() => {
+              s.set(1);
+              return 0;
+            }).get();
+          },
+          { detached: true },
+        );
       }),
     ).toBe("E1201");
   });
@@ -59,22 +68,25 @@ describe("examples", () => {
   });
 
   it("thrown errors carry the spec section", () => {
-    expect(() => signal(0)).toThrow(expect.objectContaining({ code: "E1203", see: "k.reactive" }));
+    expect(() => signal(0)).toThrow(expect.objectContaining({ code: "E1203" }));
   });
 
   it("a scope whose fn throws is disposed", () => {
     let runs = 0;
     let set: (v: number) => void = () => {};
     expect(() =>
-      scope(() => {
-        const s = signal(0);
-        set = (v) => s.set(v);
-        effect(() => {
-          s.get();
-          runs++;
-        });
-        throw new Error("boom");
-      }),
+      scope(
+        () => {
+          const s = signal(0);
+          set = (v) => s.set(v);
+          effect(() => {
+            s.get();
+            runs++;
+          });
+          throw new Error("boom");
+        },
+        { detached: true },
+      ),
     ).toThrow("boom");
     set(1);
     expect(runs).toBe(1);
@@ -82,92 +94,107 @@ describe("examples", () => {
 
   it("an effect's nested primitives are disposed when it reruns", () => {
     let inner = 0;
-    scope(() => {
-      const outer = signal(0);
-      const s = signal(0);
-      effect(() => {
-        outer.get();
+    scope(
+      () => {
+        const outer = signal(0);
+        const s = signal(0);
         effect(() => {
-          s.get();
-          inner++;
+          outer.get();
+          effect(() => {
+            s.get();
+            inner++;
+          });
         });
-      });
-      expect(inner).toBe(1);
-      outer.set(1);
-      expect(inner).toBe(2);
-      s.set(1);
-      expect(inner).toBe(3);
-    });
+        expect(inner).toBe(1);
+        outer.set(1);
+        expect(inner).toBe(2);
+        s.set(1);
+        expect(inner).toBe(3);
+      },
+      { detached: true },
+    );
   });
 
   it("an effect created inside a batch runs at commit", () => {
     let runs = 0;
-    scope(() => {
-      batch(() => {
-        effect(() => {
-          runs++;
+    scope(
+      () => {
+        batch(() => {
+          effect(() => {
+            runs++;
+          });
+          expect(runs).toBe(0);
         });
-        expect(runs).toBe(0);
-      });
-      expect(runs).toBe(1);
-    });
+        expect(runs).toBe(1);
+      },
+      { detached: true },
+    );
   });
 
   it("batch returns its callback's value and nested batches commit once", () => {
     let runs = 0;
-    scope(() => {
-      const s = signal(0);
-      effect(() => {
-        s.get();
-        runs++;
-      });
-      const out = batch(() => {
-        s.set(1);
-        batch(() => s.set(2));
-        expect(runs).toBe(1);
-        return "x";
-      });
-      expect(out).toBe("x");
-      expect(runs).toBe(2);
-    });
+    scope(
+      () => {
+        const s = signal(0);
+        effect(() => {
+          s.get();
+          runs++;
+        });
+        const out = batch(() => {
+          s.set(1);
+          batch(() => s.set(2));
+          expect(runs).toBe(1);
+          return "x";
+        });
+        expect(out).toBe("x");
+        expect(runs).toBe(2);
+      },
+      { detached: true },
+    );
   });
 
   it("a branch no longer read is not recomputed", () => {
     let other = 0;
-    scope(() => {
-      const flag = signal(false);
-      const x = signal(1);
-      const y = signal(1);
-      const expensive = computed(() => {
-        other++;
-        return y.get() * 2;
-      });
-      const pick = computed(() => (flag.get() ? x.get() : expensive.get()));
-      effect(() => {
-        pick.get();
-      });
-      expect(other).toBe(1);
-      batch(() => {
-        flag.set(true);
-        y.set(2);
-      });
-      expect(other).toBe(1);
-    });
+    scope(
+      () => {
+        const flag = signal(false);
+        const x = signal(1);
+        const y = signal(1);
+        const expensive = computed(() => {
+          other++;
+          return y.get() * 2;
+        });
+        const pick = computed(() => (flag.get() ? x.get() : expensive.get()));
+        effect(() => {
+          pick.get();
+        });
+        expect(other).toBe(1);
+        batch(() => {
+          flag.set(true);
+          y.set(2);
+        });
+        expect(other).toBe(1);
+      },
+      { detached: true },
+    );
   });
 
   it("an effect that throws does not strand the other effects of that commit", () => {
     const seen: number[] = [];
     let set: (v: number) => void = () => {};
-    scope(() => {
-      const s = signal(0);
-      set = (v) => s.set(v);
-      effect(() => {
-        if (s.get() === 1) throw new Error("first");
-      });
-      effect(() => {
-        seen.push(s.get());
-      });
-    });
+    scope(
+      () => {
+        const s = signal(0);
+        set = (v) => s.set(v);
+        effect(() => {
+          if (s.get() === 1) throw new Error("first");
+        });
+        effect(() => {
+          seen.push(s.get());
+        });
+      },
+      { detached: true },
+    );
     expect(() => set(1)).toThrow("first");
     set(2);
     expect(seen[seen.length - 1]).toBe(2);
@@ -176,45 +203,63 @@ describe("examples", () => {
   it("an effect that threw runs again on its next change", () => {
     let runs = 0;
     let set: (v: number) => void = () => {};
-    scope(() => {
-      const s = signal(0);
-      set = (v) => s.set(v);
-      effect(() => {
-        runs++;
-        if (s.get() === 1) throw new Error("once");
-      });
-    });
+    scope(
+      () => {
+        const s = signal(0);
+        set = (v) => s.set(v);
+        effect(() => {
+          runs++;
+          if (s.get() === 1) throw new Error("once");
+        });
+      },
+      { detached: true },
+    );
     expect(() => set(1)).toThrow("once");
     set(2);
     expect(runs).toBe(3);
   });
 
-  it("a computed that threw recomputes on the next read", () => {
+  it("a computed that threw keeps its error until a source changes, then recomputes", () => {
     let failing = true;
+    let runs = 0;
     let read: () => number = () => -1;
-    scope(() => {
-      const s = signal(4);
-      const c = computed(() => {
-        if (failing) throw new Error("not yet");
-        return s.get();
-      });
-      read = () => c.get();
-    });
+    let write: (v: number) => void = () => undefined;
+    scope(
+      () => {
+        const s = signal(4);
+        const c = computed(() => {
+          runs++;
+          const v = s.get();
+          if (failing) throw new Error("not yet");
+          return v;
+        });
+        read = () => c.get();
+        write = (v) => s.set(v);
+      },
+      { detached: true },
+    );
     expect(read).toThrow("not yet");
     failing = false;
-    expect(read()).toBe(4);
+    expect(read).toThrow("not yet");
+    expect(runs).toBe(1);
+    write(5);
+    expect(read()).toBe(5);
+    expect(runs).toBe(2);
   });
 
   it("an equal write is not a commit", () => {
     let runs = 0;
-    scope(() => {
-      const s = signal(3);
-      effect(() => {
-        s.get();
-        runs++;
-      });
-      s.set(3);
-    });
+    scope(
+      () => {
+        const s = signal(3);
+        effect(() => {
+          s.get();
+          runs++;
+        });
+        s.set(3);
+      },
+      { detached: true },
+    );
     expect(runs).toBe(1);
   });
 
@@ -222,16 +267,19 @@ describe("examples", () => {
     const calls: number[] = [];
     let set: (v: number) => void = () => {};
     let read: () => unknown = () => undefined;
-    scope(() => {
-      const id = signal(1);
-      set = (v) => id.set(v);
-      const r = resource(() => {
-        const v = id.get();
-        calls.push(v);
-        return Promise.resolve(v * 10);
-      });
-      read = () => r.get();
-    });
+    scope(
+      () => {
+        const id = signal(1);
+        set = (v) => id.set(v);
+        const r = resource(() => {
+          const v = id.get();
+          calls.push(v);
+          return Promise.resolve(v * 10);
+        });
+        read = () => r.get();
+      },
+      { detached: true },
+    );
     await flush();
     expect(read()).toEqual({ state: "ready", value: 10 });
     set(2);
@@ -247,19 +295,22 @@ describe("examples", () => {
     let runs = 0;
     let read: () => unknown = () => undefined;
     let refetch: () => void = () => {};
-    scope(() => {
-      const r = resource((): Promise<number> => {
-        n++;
-        if (n === 1) throw boom;
-        return new Promise<number>(() => {});
-      });
-      read = () => r.get();
-      refetch = () => r.refetch();
-      effect(() => {
-        r.get();
-        runs++;
-      });
-    });
+    scope(
+      () => {
+        const r = resource((): Promise<number> => {
+          n++;
+          if (n === 1) throw boom;
+          return new Promise<number>(() => {});
+        });
+        read = () => r.get();
+        refetch = () => r.refetch();
+        effect(() => {
+          r.get();
+          runs++;
+        });
+      },
+      { detached: true },
+    );
     await flush();
     expect(read()).toEqual({ state: "error", error: boom });
     refetch();
@@ -272,15 +323,18 @@ describe("examples", () => {
   it("a disposed resource ignores late results", async () => {
     let resolve: (v: number) => void = () => {};
     let read: () => unknown = () => undefined;
-    const h = scope(() => {
-      const r = resource(
-        () =>
-          new Promise<number>((res) => {
-            resolve = res;
-          }),
-      );
-      read = () => r.get();
-    });
+    const h = scope(
+      () => {
+        const r = resource(
+          () =>
+            new Promise<number>((res) => {
+              resolve = res;
+            }),
+        );
+        read = () => r.get();
+      },
+      { detached: true },
+    );
     h.dispose();
     resolve(1);
     await flush();

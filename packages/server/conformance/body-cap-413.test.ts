@@ -3,6 +3,7 @@
 // Seed 1337 (fc.assert seed below).
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
@@ -11,18 +12,16 @@ import { BASE, Edit, Params, Search } from "./fixtures.ts";
 
 async function setup(maxBodyBytes: number | undefined) {
   const n = { act: 0 };
-  const act = action({ input: Edit }, () => {
+  const orders = contract("orders", {
+    "orders.show": { path: "/orders/:kind", params: Params, search: Search },
+  });
+
+  const act = action(orders, "orders.show", { input: Edit }, () => {
     n.act++;
     return Promise.resolve(ok(null));
   });
-  const routes = manifest({
-    "orders.show": {
-      path: "/orders/:kind",
-      params: Params,
-      search: Search,
-      actions: { POST: act },
-      component: () => document.createElement("main"),
-    },
+  const routes = manifest(orders, {
+    "orders.show": { component: () => document.createElement("main"), POST: act },
   });
   const base = {
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),

@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Rules "E1352 id violates naming: route, store, and transaction ids are dotted lowerCamel segments prefixed by the module id; components PascalCase"
+// k.scaffold, Rules "E1352 id violates naming: route, store and transaction ids are dotted lowerCamel, prefixed by the module id; components PascalCase; deployable names as k.topology E1552"
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED, errText, fresh, lowerName, pascalName, scaffoldRaw, snap } from "./fixtures.ts";

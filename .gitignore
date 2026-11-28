@@ -9,3 +9,26 @@ evals/results/*.tmp
 .stryker-tmp
 packages/*/test/.tmp-*
 packages/*/conformance/.tmp-*
+.fixtures
+.keel/sessions/
+# The derived views every keel command rewrites from the tree (k.derived Version control); surface.json is committed.
+**/.keel/a11y.json
+**/.keel/deps.json
+**/.keel/ids.json
+**/.keel/routes.json
+**/.keel/schemes.json
+**/.keel/std.json
+**/.keel/styles.json
+packages/*/.keel/
+.keel-dev/
+**/.keel/e2e-host-*/
+.DS_Store
+.env*
+!.env.example
+*.pem
+*.log
+!evals/results/*.log
+.cargo-target/
+.claude/settings.local.json
+packages/*/docs
+.keel-gate/

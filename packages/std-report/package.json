@@ -1,26 +1,62 @@
 {
   "name": "@keel/std-report",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
+  "keel": "library",
   "exports": {
     ".": {
+      "keel": "./src/index.ts",
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./tools": {
+      "keel": "./src/tools.ts",
+      "types": "./src/tools.ts",
+      "default": "./src/tools.ts"
     }
   },
-  "files": ["dist"],
-  "scripts": {
-    "check": "tsc --noEmit && biome check src test unsafe",
-    "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "keel": "./src/index.ts",
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./tools": {
+        "keel": "./src/tools.ts",
+        "types": "./dist/src/tools.d.ts",
+        "default": "./dist/src/tools.js"
+      }
+    }
   },
-  "dependencies": {
+  "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test && keel check",
+    "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "tsc -p tsconfig.build.json && node ../../tooling/docs-pack.mjs && keel pack"
+  },
+  "peerDependencies": {
     "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "fast-check": "^3"
+    "@types/node": "^22",
+    "esbuild": "^0.28.2",
+    "fast-check": "^3",
+    "happy-dom": "^21"
   }
 }

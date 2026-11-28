@@ -1,55 +1,68 @@
+import { canonicalJson } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
-import { canonicalJson } from "./canonicalJson.ts";
-import { hashOf } from "./hashOf.ts";
+import { artifactDir } from "./artifactDir.ts";
+import { surfaceDiffers } from "./compat/surfaceDiffers.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 const GENERATED = /(?:^|\/)\.keel\/([^/]+\.json)$/;
+/** `.keel/` files k.ledger reads that no derivation writes: an app's committed ledger and production tallies. */
+const LEDGER_FILES = new Set(["ledger.json", "monitored.json"]);
+/** The evaluated views (k.derived Derivations): compared only with a derivation the caller passes. */
+const EVALUATED = new Set(["routes.json", "surface.json"]);
 
-function parse(text: string): { ok: true; value: unknown } | { ok: false } {
+function parse(text: string): unknown {
   try {
-    return { ok: true, value: JSON.parse(text) };
+    return JSON.parse(text);
   } catch {
-    return { ok: false };
+    return undefined;
   }
 }
 
+const dataOf = (v: unknown): unknown => (typeof v === "object" && v !== null ? Reflect.get(v, "data") : undefined);
+
 /**
- * E1005 (k.compiler): a `.keel/<name>.json` among the checked files that is not exactly what the compiler
- * writes: `{ data, hash }` in canonical JSON plus a newline, `hash` equal to the content hash of `data`, and
- * equal to `artifacts.hashes[name]` when the caller passes the compiler's hashes. A file with no `data` key
- * (for example `{"hash":"abc"}`) is malformed: reported, never hashed, no diff. When only the bytes differ
- * (data and hash intact) the fix restores them; otherwise the file must be regenerated (no diff).
+ * E1005 (k.compiler, k.derived Frozen) for each `<dir>/.keel/<name>.json` among the checked files but the ledger's
+ * `ledger.json` and `monitored.json` (k.ledger). A name no derivation writes is E1005 (remove it). A compiled view
+ * (`compiled(dir)`, `null` for an evaluated `routes.json`) and an evaluated one (`derived[dir]`, when the caller passes
+ * it) are compared byte for byte with the derivation: a differing view is E1005, naming for `surface.json` the first
+ * store, contract or entry that differs; when only the bytes differ (the same data), the fix restores them. A view
+ * with no derivation to compare (an evaluated one without `derived`, `schemes.json` without the project's tokens) is
+ * not judged.
  */
 export function generatedEdits(
   files: readonly SourceFile[],
-  artifacts: Readonly<Record<string, unknown>>,
+  compiled: (dir: string) => Readonly<Record<string, string | null>>,
+  derived: Readonly<Record<string, Readonly<Record<string, string>>>> | undefined,
 ): Diagnostic[] {
-  const known = artifacts.hashes;
   const out: Diagnostic[] = [];
+  const memo = new Map<string, Readonly<Record<string, string | null>>>();
   for (const file of files) {
     const name = GENERATED.exec(file.path)?.[1];
-    if (name === undefined) continue;
-    const parsed = parse(file.source);
-    const value = parsed.ok ? parsed.value : null;
-    const data: unknown = typeof value === "object" && value !== null ? Reflect.get(value, "data") : undefined;
-    const hash: unknown = typeof value === "object" && value !== null ? Reflect.get(value, "hash") : undefined;
-    const expected = typeof known === "object" && known !== null ? Reflect.get(known, name) : undefined;
-    const hasData = typeof value === "object" && value !== null && Object.hasOwn(value, "data");
-    const intact =
-      hasData && typeof hash === "string" && hash === hashOf(data) && (expected === undefined || expected === hash);
-    const canonical = `${canonicalJson({ data, hash })}\n`;
-    if (intact && file.source === canonical) continue;
-    const base: Diagnostic = {
-      kind: "diag",
-      code: "E1005",
-      path: file.path,
-      line: 1,
-      col: 1,
-      message: `hand edit to generated .keel/${name.slice(0, 30)}; revert and regenerate`,
-      see: "k.compiler",
-    };
-    out.push(intact ? { ...base, fix: unifiedDiff(file.path, file.source, canonical) } : base);
+    if (name === undefined || LEDGER_FILES.has(name)) continue;
+    const dir = artifactDir(file.path) ?? "";
+    const views = memo.get(dir) ?? compiled(dir);
+    memo.set(dir, views);
+    const shown = `.keel/${name.slice(0, 30)}`;
+    const at = { path: file.path, line: 1, col: 1, see: "k.compiler" };
+    const known = Object.hasOwn(views, name) || EVALUATED.has(name) || name === "schemes.json";
+    if (!known) {
+      out.push({ kind: "diag", code: "E1005", ...at, message: `${shown} is no derived file; remove it` });
+      continue;
+    }
+    const own = EVALUATED.has(name) ? undefined : views[name];
+    const want = typeof own === "string" ? own : derived?.[dir]?.[name];
+    if (want === undefined || want === file.source) continue;
+    const have = parse(file.source);
+    const same = have !== undefined && canonicalJson(dataOf(have)) === canonicalJson(dataOf(parse(want)));
+    const first = name === "surface.json" && !same ? surfaceDiffers(dataOf(have), dataOf(parse(want))) : undefined;
+    const message = same
+      ? `${shown} differs from its derivation in bytes only`
+      : first !== undefined
+        ? `${shown} differs from the tree at ${first.slice(0, 30)}; keel check rewrites it`
+        : `${shown} differs from the tree; keel check rewrites it`;
+    const base: Diagnostic = { kind: "diag", code: "E1005", ...at, message };
+    out.push(same ? { ...base, fix: unifiedDiff(file.path, file.source, want) } : base);
   }
   return out;
 }

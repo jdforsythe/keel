@@ -1,4 +1,5 @@
-// Spec: k.store API + Conformance "store.schema parses every state the store accepts and transaction.schema parses every payload tx accepts". Seed 1337.
+// Spec: k.store, clause "`store.schema` parses every state the store accepts and `transaction.schema` parses every payload `tx` accepts."
+// k.store API + Conformance . Seed 1337.
 import { tx } from "@keel/store";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

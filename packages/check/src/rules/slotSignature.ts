@@ -40,7 +40,6 @@ function mismatch(a: JSXAttribute, max: number): number | null {
 export const slotSignature: RuleDef = {
   code: "E1806",
   message: (f) => `slot ${str(f.data, "slot")} must be ${str(f.data, "sig")}`,
-  explain: "loading, empty, and error are standard slots everywhere: () => JSX, () => JSX, (e: KeelError) => JSX.",
   see: "k.ui",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path) || !/x$/.test(file.path)) return [];

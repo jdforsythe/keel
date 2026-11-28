@@ -1,13 +1,21 @@
 import { s } from "@keel/schema";
+import { EvidenceRecord } from "./evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./internal/A11ySchema.ts";
-import { CiteSchema } from "./internal/CiteSchema.ts";
+import { DocsAreaSchema } from "./internal/DocsAreaSchema.ts";
+import { DocsCiteSchema } from "./internal/DocsCiteSchema.ts";
+import { DocsCodeSchema } from "./internal/DocsCodeSchema.ts";
+import { DocsEntrySchema } from "./internal/DocsEntrySchema.ts";
+import { DocsHitSchema } from "./internal/DocsHitSchema.ts";
+import { DocsSectionSchema } from "./internal/DocsSectionSchema.ts";
+import { DocsSkillSchema } from "./internal/DocsSkillSchema.ts";
+import { DocsTermSchema } from "./internal/DocsTermSchema.ts";
 import { EditSchema } from "./internal/EditSchema.ts";
 import { ExplainSchema } from "./internal/ExplainSchema.ts";
 import { InspectSectionSchema } from "./internal/InspectSectionSchema.ts";
 import { InspectStoreSchema } from "./internal/InspectStoreSchema.ts";
 import { LedgerSchema } from "./internal/LedgerSchema.ts";
 import { ReqSchema } from "./internal/ReqSchema.ts";
-import { SectionSchema } from "./internal/SectionSchema.ts";
+import { ReviewSchema } from "./internal/ReviewSchema.ts";
 import { outputOf } from "./internal/outputOf.ts";
 import type { Operation } from "./types/Operation.ts";
 
@@ -32,8 +40,16 @@ const structural = {
   workspace: s.boolean().optional(),
   path: s.string().optional(),
   file: s.string().optional(),
+  api: s.boolean().optional(),
+  method: s.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
+  loader: s.boolean().optional(),
+  "no-loader": s.boolean().optional(),
   openapi: s.string().optional(),
+  base: s.string().optional(),
+  reason: s.string().optional(),
   to: s.string().optional(),
+  id: s.string().optional(),
+  name: s.string().optional(),
   default: s.string().optional(),
 };
 
@@ -41,47 +57,75 @@ const structural = {
 export const operations: readonly Operation[] = [
   {
     name: "check",
-    description: "Run the k.check pipeline over the project, or the given paths.",
-    input: s.object({ paths, ...diagnostic }),
+    description: "k.check over the project or given paths.",
+    input: s.object({ paths, base: s.string().optional(), frozen: s.boolean().optional(), ...diagnostic }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",
   },
   {
     name: "test",
-    description: "Run the test harness under a sim ctx (k.testing).",
-    input: s.object({ paths, ...diagnostic }),
+    description: "The test harness under a sim ctx (k.testing).",
+    input: s.object({
+      paths,
+      frozen: s.boolean().optional(),
+      e2e: s.boolean().optional(),
+      engine: s.enum(["chromium", "firefox", "webkit"]).optional(),
+      "no-sandbox": s.boolean().optional(),
+      ...diagnostic,
+    }),
     output: outputOf(),
     positional: ["paths"],
     scope: "query",
   },
   {
     name: "build",
-    description: "Compile the project and write the .keel artifacts; vite build when vite.config.ts exists.",
-    input: s.object(diagnostic),
+    description: "Compile, write .keel views, vite build.",
+    input: s.object({
+      target: s.enum(["capacitor", "tauri"]).optional(),
+      platform: s.string().optional(),
+      release: s.boolean().optional(),
+      frozen: s.boolean().optional(),
+      ...diagnostic,
+    }),
     output: outputOf(),
     positional: [],
     scope: "query",
   },
   {
     name: "dev",
-    description: "Dev server and log stream (k.server).",
-    input: s.object(diagnostic),
+    description: "Dev server and logs (k.server).",
+    input: s.object({
+      port: s.int({ min: 1, max: 65535 }).optional(),
+      host: s.string().optional(),
+      frozen: s.boolean().optional(),
+      ...diagnostic,
+    }),
     output: outputOf(ReqSchema),
     positional: [],
     scope: "none",
   },
   {
-    name: "spec",
-    description: "Print one spec section, every spec line citing a code (for), or the map.",
-    input: s.object({ id: s.string().optional(), for: s.string().optional(), map: s.boolean().optional(), ...common }),
-    output: outputOf(SectionSchema, CiteSchema),
+    name: "docs",
+    description: "Installed docs: areas, an area, section or skill; --for a code, block, name or term; --sync.",
+    input: s.object({ id: s.string().optional(), for: s.string().optional(), sync: s.boolean().optional(), ...common }),
+    output: outputOf(
+      DocsAreaSchema,
+      DocsEntrySchema,
+      DocsSectionSchema,
+      DocsSkillSchema,
+      DocsCiteSchema,
+      DocsCodeSchema,
+      DocsTermSchema,
+      DocsHitSchema,
+      EditSchema,
+    ),
     positional: ["id"],
-    scope: "query",
+    scope: "docs",
   },
   {
     name: "explain",
-    description: "Meaning and fix pattern of one diagnostic code, at most 120 tokens.",
+    description: "Meaning and fix of one diagnostic code.",
     input: s.object({ code: s.string().optional(), ...common }),
     output: outputOf(ExplainSchema),
     positional: ["code"],
@@ -89,7 +133,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "inspect",
-    description: "Summarize GET /__keel/inspect of a running dev app (default http://localhost:5173).",
+    description: "Summarize a dev app's /__keel/inspect (default http://localhost:5173).",
     input: s.object({ url: s.string().optional(), ...common }),
     output: outputOf(InspectStoreSchema, InspectSectionSchema),
     positional: ["url"],
@@ -97,7 +141,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "render",
-    description: "The a11y tree of one render of a route or component.",
+    description: "A11y tree of one route or component render.",
     input: s.object({ target: s.string().optional(), props: s.string().optional(), ...common }),
     output: outputOf(A11ySchema),
     positional: ["target"],
@@ -105,7 +149,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "scaffold",
-    description: "Structural generator: project, module, route, component, store (k.scaffold).",
+    description: "Generate a project, module, route, component, store or shell (k.scaffold).",
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],
@@ -113,15 +157,23 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "codemod",
-    description: "Structural codemod: rename, move, add-field (k.scaffold).",
+    description: "Codemods: rename, move, add-field, place (k.scaffold).",
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],
     scope: "tree",
   },
   {
+    name: "tokens",
+    description: "Import design tokens or set one (k.design-tokens).",
+    input: s.object({ op: s.string().optional(), args: s.array(s.string()).optional(), ...diagnostic }),
+    output: outputOf(),
+    positional: ["op", "args"],
+    scope: "none",
+  },
+  {
     name: "ledger",
-    description: "Emit the verification ledger (or --write it to a file), or diff it against the committed one.",
+    description: "Emit the ledger, --write it, or diff it with the committed one.",
     input: s.object({
       diff: s.boolean().optional(),
       write: s.string().optional(),
@@ -131,5 +183,43 @@ export const operations: readonly Operation[] = [
     output: outputOf(LedgerSchema),
     positional: [],
     scope: "ledger",
+  },
+  {
+    name: "pack",
+    description: "A library's gate: check, test, write .keel/ledger.json; --frozen writes nothing (k.library-pack).",
+    input: s.object({ frozen: s.boolean().optional(), ...diagnostic }),
+    output: outputOf(),
+    positional: [],
+    scope: "ledger",
+  },
+  {
+    name: "evidence",
+    description: "A signed evidence bundle, or --verify one by --key <keyId>.",
+    input: s.object({
+      out: s.string().optional(),
+      audit: s.string().optional(),
+      verify: s.string().optional(),
+      key: s.string().optional(),
+      ...common,
+    }),
+    output: outputOf(EvidenceRecord),
+    positional: [],
+    scope: "ledger",
+  },
+  {
+    name: "review",
+    description: "Escapes from Keel's protections by danger, novelty: a git range or --all.",
+    input: s.object({
+      paths,
+      all: s.boolean().optional(),
+      list: s.boolean().optional(),
+      "fail-on": s.enum(["warn"]).optional(),
+      accept: s.string().optional(),
+      reason: s.string().optional(),
+      ...diagnostic,
+    }),
+    output: outputOf(ReviewSchema, EditSchema),
+    positional: ["paths"],
+    scope: "none",
   },
 ];

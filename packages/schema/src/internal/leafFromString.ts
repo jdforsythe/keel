@@ -12,6 +12,8 @@ export function leafFromString(node: Node, text: string): unknown {
       return NUMERIC.test(text) ? Number(text) : text;
     case "boolean":
       return TRUE.includes(text) ? true : FALSE.includes(text) ? false : text;
+    case "format":
+      return leafFromString(node.base, text);
     case "literal":
       return String(node.value) === text ? node.value : text;
     default:

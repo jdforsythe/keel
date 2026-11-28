@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "Inside a harness render, `ctx.clock.now()` returns the sim clock's value, and two runs with one seed produce equal `state()`."
+// Spec: k.testing, clause "In a harness render `ctx.clock.now()` is the sim clock's, and two runs with one seed give equal `state()`."
 // Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";

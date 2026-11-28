@@ -1,7 +1,7 @@
 import type { RouterHistory } from "@keel/router";
 
-/** In-memory `RouterHistory` starting at `start` (the router's own tests use the same pattern); never pops. */
-export function memoryHistory(start: string): RouterHistory {
+/** In-memory `RouterHistory` starting at `start`, with `length()` its entry count; never pops. */
+export function memoryHistory(start: string): RouterHistory & { length(): number } {
   const entries = [start];
   return {
     push: (url) => {
@@ -12,5 +12,6 @@ export function memoryHistory(start: string): RouterHistory {
     },
     current: () => entries[entries.length - 1] ?? start,
     onPop: () => undefined,
+    length: () => entries.length,
   };
 }

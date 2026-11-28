@@ -1,0 +1,8 @@
+node_modules
+dist
+.turbo
+coverage
+reports
+.keel/e2e-host-*/
+.keel/*.json
+!.keel/ledger.json

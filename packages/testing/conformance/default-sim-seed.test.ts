@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "Inside a harness render, `ctx.clock.now()` returns the sim clock's value, and two runs with one seed produce equal `state()`."
+// Spec: k.testing, clause "In a harness render `ctx.clock.now()` is the sim clock's, and two runs with one seed give equal `state()`."
 // Seed: 1337.
-// Spec: k.testing, Harness "**ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
+// k.testing, Harness "**ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
 // Default sim: `render` without a `ctx` builds a sim ctx from KEEL_SEED (default 1337); state that depends on the seed is equal for one seed.
 import { type Ctx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
@@ -14,7 +14,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ClockView, SEED } from "./fixtures.ts";
 
 const RollSchema = s.object({ r: s.number(), at: s.number() });
-type Slots = Record<string, unknown> | undefined;
 
 const build = () => {
   const roll = store(RollSchema, { r: 0, at: 0 }, { id: "sim.roll" });
@@ -25,9 +24,12 @@ const build = () => {
 // The store and transaction live in one never-disposed root scope (E1203).
 const made = (() => {
   let out: ReturnType<typeof build> | undefined;
-  scope(() => {
-    out = build();
-  });
+  scope(
+    () => {
+      out = build();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();
@@ -35,8 +37,7 @@ const { roll, setRoll } = made;
 
 const T = template('<div><button id="sim.roll" data-k="sim.roll">roll</button><p id="sim.r"></p></div>');
 const RollView = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, ctx?: Ctx): Node => {
-    if (ctx === undefined) throw new Error("fixture: ctx not passed to component");
+  (_props: Record<string, never>, ctx: Ctx): Node => {
     roll.uses([setRoll]);
     const root = clone(T);
     const p = root instanceof Element ? root.querySelector("[id='sim.r']") : null;
@@ -119,8 +120,7 @@ describe("k.testing: a render without a ctx runs under the default sim", () => {
 const seen: { ctx: Ctx | undefined; at: number; draws: number[] } = { ctx: undefined, at: -1, draws: [] };
 const ProbeT = template("<p></p>");
 const Probe = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, ctx?: Ctx): Node => {
-    if (ctx === undefined) throw new Error("fixture: ctx not passed to component");
+  (_props: Record<string, never>, ctx: Ctx): Node => {
     seen.ctx = ctx;
     seen.at = ctx.clock.now();
     seen.draws = [ctx.random.float(), ctx.random.float(), ctx.random.float()];

@@ -16,7 +16,6 @@ const INPUTS: readonly string[] = ["Input", "TextArea", "Select", "Checkbox"];
 export const fieldInForm: RuleDef = {
   code: "E1901",
   message: (f) => `${str(f.data, "name")} inside a <Form> without field; bind it with field={f.field(path)}`,
-  explain: "Inside a Form every input binds to a schema path, so values, errors and FormData agree.",
   see: "k.forms",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

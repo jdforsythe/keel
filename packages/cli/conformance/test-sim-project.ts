@@ -6,6 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeRunReports } from "./ledger-run-report.ts";
 
 export const root = fileURLToPath(new URL("../../../", import.meta.url));
 const BIN = join(root, "packages", "cli", "src", "bin.ts");
@@ -14,7 +15,7 @@ const KEEL_PACKAGES = ["ctx", "schema", "testing"];
 const EXTERNAL = ["vitest", "vite", "fast-check", "happy-dom", "typescript"];
 
 export type CliRecord = { kind: string; [key: string]: unknown };
-export type Run = { status: number | null; records: CliRecord[]; stdout: string };
+export type Run = { status: number | null; records: CliRecord[]; stdout: string; stderr?: string };
 
 const isRecord = (v: unknown): v is CliRecord =>
   typeof v === "object" && v !== null && "kind" in v && typeof v.kind === "string";
@@ -66,14 +67,19 @@ const parse = (stdout: string): CliRecord[] => {
   return out;
 };
 
-/** The real `keel` binary (`node packages/cli/src/bin.ts`) in `dir`, `--format=json`. */
-export function keel(dir: string, args: readonly string[]): Run {
+/**
+ * The real `keel` binary (`node packages/cli/src/bin.ts`) in `dir`, `--format=json`.
+ * Before a `ledger` run each project of `dir` gets the run report of its test files as they are
+ * (ledger-run-report.ts), so a fixture's rung stands on a run; `reports: "none"` leaves `dir` as the case made it.
+ */
+export function keel(dir: string, args: readonly string[], opts: { reports?: "auto" | "none" } = {}): Run {
+  if (args[0] === "ledger" && opts.reports !== "none") writeRunReports(dir);
   const r = spawnSync(process.execPath, [BIN, ...args, "--format=json"], {
     cwd: dir,
     encoding: "utf8",
     env: cleanEnv(),
   });
-  return { status: r.status, records: parse(r.stdout), stdout: r.stdout };
+  return { status: r.status, records: parse(r.stdout), stdout: r.stdout, stderr: r.stderr };
 }
 
 /** Control: vitest itself in `dir`, with the same clean env and no `keel` in between. */
@@ -87,3 +93,14 @@ export function plainVitest(dir: string): { status: number | null } {
 }
 
 export const summaryOf = (run: Run): CliRecord | undefined => run.records.filter((r) => r.kind === "summary").at(-1);
+
+/** A failed child's diagnostics on one line: the non-empty lines of stdout and of stderr, each joined with ` | ` and cut to its last 440 characters, the two joined with ` | `. */
+export function childOutput(r: { stdout: string; stderr?: string }): string {
+  const tail = (s: string | undefined): string =>
+    (s ?? "")
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .join(" | ")
+      .slice(-440);
+  return `${tail(r.stdout)} | ${tail(r.stderr)}`;
+}

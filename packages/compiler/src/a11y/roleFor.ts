@@ -6,7 +6,8 @@ import { INPUT_ROLES } from "./INPUT_ROLES.ts";
  * The ARIA role of an element (k.compiler Artifacts, WAI-ARIA 1.2 / HTML-AAM): the first token of an explicit
  * `role`, else the implicit role of `tag`. `undefined` when the table has no role for the tag or an attribute the
  * role depends on is not known statically; the compiler records that as `null`, the harness as `generic`.
- * `img` with `alt=""` is `presentation`; `section` is `region` only with `aria-label` or `aria-labelledby`.
+ * `img` with `alt=""` is `presentation`; `section` is `region` only with `aria-label` or `aria-labelledby`; `th` is
+ * `rowheader` with `scope` `row` or `rowgroup`, else `columnheader`.
  */
 export function roleFor(tag: string, attr: AttrLookup): string | undefined {
   const role = attr("role");
@@ -30,6 +31,12 @@ export function roleFor(tag: string, attr: AttrLookup): string | undefined {
       if (multiple !== null) return "listbox";
       if (size === undefined) return undefined;
       return Number(size ?? "1") > 1 ? "listbox" : "combobox";
+    }
+    case "th": {
+      const scope = attr("scope");
+      if (scope === undefined) return undefined;
+      const s = (scope ?? "").trim().toLowerCase();
+      return s === "row" || s === "rowgroup" ? "rowheader" : "columnheader";
     }
     case "section":
       return attr("aria-label") === null && attr("aria-labelledby") === null ? "generic" : "region";

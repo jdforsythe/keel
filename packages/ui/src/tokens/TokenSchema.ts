@@ -1,0 +1,152 @@
+import { err, s } from "@keel/schema";
+import type { Schema } from "@keel/schema";
+import { focusProblem } from "../internal/focusProblem.ts";
+import { shapeWhat } from "../internal/shapeWhat.ts";
+import { valueForms } from "../internal/valueForms.ts";
+import type { Tokens } from "../types/Tokens.ts";
+
+const scale = s.record(s.string()).optional();
+const pair = s.object({ light: s.string(), dark: s.string() }, { closed: true });
+const value = s.union([s.string(), s.record(s.string())]).optional();
+const values = {
+  p: value,
+  px: value,
+  py: value,
+  m: value,
+  mx: value,
+  my: value,
+  gap: value,
+  w: value,
+  h: value,
+  bg: value,
+  fg: value,
+  radius: value,
+  font: value,
+  fontSize: value,
+  weight: value,
+  shadow: value,
+  border: value,
+  direction: value,
+  align: value,
+  justify: value,
+  wrap: value,
+};
+const stateSet = s.object(values, { closed: true }).optional();
+const styleSet = s.object(
+  {
+    ...values,
+    states: s
+      .object(
+        {
+          selected: stateSet,
+          checked: stateSet,
+          pressed: stateSet,
+          expanded: stateSet,
+          current: stateSet,
+          highlighted: stateSet,
+          hover: stateSet,
+          focusVisible: stateSet,
+          active: stateSet,
+          disabled: stateSet,
+        },
+        { closed: true },
+      )
+      .optional(),
+  },
+  { closed: true },
+);
+const set = styleSet.optional();
+
+/** The three scheme lists `schemes` may be (k.schemes). */
+const SCHEMES = ["light", "dark", "light,dark"];
+
+const colors = s.record(s.union([s.string(), pair])).optional();
+const theme = s.object(
+  {
+    when: s.enum(["choice", "contrast", "print"]).optional(),
+    color: colors,
+    overlay: colors,
+    space: scale,
+    size: scale,
+    radius: scale,
+    font: scale,
+    fontSize: scale,
+    weight: scale,
+    shadow: scale,
+    border: scale,
+  },
+  { closed: true },
+);
+
+const shape = s.object(
+  {
+    color: colors,
+    overlay: s
+      .record(s.object({ value: s.union([s.string(), pair]), over: s.array(s.string()) }, { closed: true }))
+      .optional(),
+    space: scale,
+    size: scale,
+    radius: scale,
+    font: scale,
+    fontSize: scale,
+    weight: scale,
+    shadow: scale,
+    border: scale,
+    breakpoint: scale,
+    motion: scale,
+    base: s
+      .object(
+        {
+          page: set,
+          heading: set,
+          link: set,
+          button: set,
+          control: set,
+          label: set,
+          fieldError: set,
+          summary: set,
+          focus: s.string().optional(),
+        },
+        { closed: true },
+      )
+      .optional(),
+    look: s.record(styleSet).optional(),
+    schemes: s.array(s.string()).optional(),
+    themes: s.record(theme).optional(),
+  },
+  { closed: true },
+);
+
+/**
+ * Validates `tokens.ts` (E1807): only the closed groups (an unknown group fails with rule `unknown-key`),
+ * token values each in its group's form (k.values; rule `format` at the value's path), colors a value or a closed
+ * `{ light, dark }` pair, `base` the closed role sets and
+ * `focus`, `look` named style sets, overlays and `themes` as k.values Overlays and k.themes Themes give them, `schemes` one of `["light"]`, `["dark"]`, `["light", "dark"]` (rule `format`), and a `base.focus` color at 3:1 or more against `base.page`'s `bg` in each screen combination
+ * (rule `format` at `base.focus`). The message is the first issue's `<path>: <what>` (k.themes Token errors).
+ */
+export const TokenSchema: Schema<Tokens> = {
+  ...shape,
+  parse: (input) => {
+    const r = shape.parse(input);
+    if (!r.ok) {
+      const first = r.error.data.issues[0];
+      const what = first === undefined ? "is no token file" : shapeWhat(first.path, first.rule);
+      return err({ ...r.error, message: `${first?.path.join(".") ?? ""}: ${what}` });
+    }
+    const schemes = r.value.schemes?.join();
+    if (schemes !== undefined && !SCHEMES.includes(schemes)) {
+      const issues = [{ path: ["schemes"], rule: "format" as const }];
+      return err({ code: "schema.invalid", message: `schemes: ${shapeWhat(["schemes"], "format")}`, data: { issues } });
+    }
+    const refused = valueForms(r.value);
+    const first = refused[0];
+    if (first !== undefined) {
+      const issues = refused.map((x) => ({ path: [...x.path], rule: "format" as const }));
+      return err({ code: "schema.invalid", message: `${first.path.join(".")}: ${first.what}`, data: { issues } });
+    }
+    const focus = focusProblem(r.value);
+    if (focus === null) return r;
+    const issues = [{ path: ["base", "focus"], rule: "format" as const }];
+    return err({ code: "schema.invalid", message: `base.focus: ${focus}`, data: { issues } });
+  },
+};

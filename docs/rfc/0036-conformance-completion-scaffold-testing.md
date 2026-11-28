@@ -1,6 +1,6 @@
 # RFC 0036: Conformance completion k.scaffold, k.testing
 
-Status: accepted (ADR-0025)
+Status: implemented (ADR-0025)
 
 ## Problem
 docs/freeze-review.md §1 and backlog 0061, 0104. k.scaffold had three partial clauses. The check after every generator was a proxy: relative imports resolve, and `transaction` and `service` had no generator at all. The dry run compared edit sets, not the printed diff. `turbo.json` was compared with a second run of the same generator. All twelve scaffold headers used `// Clause:` (W1706), so the ledger held k.scaffold#1-7 at `none`. k.testing: `fire-resource` capped the promise chain at 24 hops, because `settle` gave up after 32 quiet microtask hops, so the clause was asserted only below the implementation's limit. The harness restored stores from `snapshot()`, which drops log `meta` (rfc:0028), so `properties()` and `dispose()` erased it. The `a11y()` and `settle()` headers did not quote their clause, so the ledger counted neither.

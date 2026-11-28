@@ -1,8 +1,15 @@
+import { createHash } from "node:crypto";
 // Mutation-killing tests for the ledger: item discovery (buildLedger) and its rendering, file and diff (ledgerCommand).
 import { describe, expect, it } from "vitest";
-import { run } from "../src/index.ts";
-import { buildLedger } from "../src/internal/buildLedger.ts";
+import { buildLedger as buildOver } from "../src/internal/buildLedger.ts";
+import { clauseKey } from "../src/internal/clauseKey.ts";
+import type { SourceFile } from "../src/types/SourceFile.ts";
 import type { Write } from "../src/types/Write.ts";
+import { ledgerRun as run } from "./ledgerRun.ts";
+import { runReported } from "./runReported.ts";
+
+/** `buildLedger` over `files` with the run report of a run in which every test passed. */
+const buildLedger = (files: readonly SourceFile[], z3?: string, own?: string) => buildOver(runReported(files), z3, own);
 
 const CWD = "/work/app";
 const lines = (out: string): string[] => out.split("\n").filter((l) => l !== "");
@@ -18,9 +25,11 @@ const prop = (runs: number, seed?: number) => ({
 const test = (path: string, body: string, head = "") =>
   file(path, `${head}import { it } from "vitest";\nit("t", () => {\n  ${body}\n});\n`);
 const FC = 'import fc from "fast-check";\n';
+/** sha256 of the source "a" a test report holds. */
+const SHA_A = createHash("sha256").update("a").digest("hex");
 
 describe("buildLedger", () => {
-  it("lists exported functions sorted by path, with evidence from the same package's tests only", () => {
+  it("lists every export sorted by path, with evidence from the same package's tests only", () => {
     const { items, unsafe } = buildLedger([
       file("packages/a/src/zeta.ts", "export function zeta() {}\n"),
       file("packages/a/src/mid.ts", "export const mid = async () => 1\n"),
@@ -45,6 +54,7 @@ describe("buildLedger", () => {
       "packages/a/src/arrow.ts#arrow",
       "packages/a/src/mid.ts#mid",
       "packages/a/src/ty.ts#ty",
+      "packages/a/src/val.ts#val",
       "packages/a/src/zeta.ts#zeta",
     ]);
     const ev = (name: string) => items.find((i) => i.item.endsWith(`#${name}`))?.evidence;
@@ -175,19 +185,30 @@ describe("buildLedger", () => {
     ]);
     expect(items).toEqual([
       {
-        item: "k.a.b#1",
-        evidence: [
-          { ev: prop(100, 1), path: "packages/a/conformance/yes.test.ts" },
-          { ev: EX, path: "packages/a/conformance/split.test.ts" },
-        ],
+        item: `k.a.b#${clauseKey("One works.")}`,
+        n: 1,
+        evidence: [{ ev: prop(100, 1), path: "packages/a/conformance/yes.test.ts" }],
       },
-      { item: "k.a.b#2", evidence: [{ ev: EX, path: "packages/a/conformance/two.test.ts" }] },
-      { item: "s.c#1", evidence: [{ ev: EX, path: "packages/a/conformance/std.test.ts" }] },
+      {
+        item: `k.a.b#${clauseKey("Two works.")}`,
+        n: 2,
+        evidence: [{ ev: EX, path: "packages/a/conformance/two.test.ts" }],
+      },
+      {
+        item: `s.c#${clauseKey("Std clause.")}`,
+        n: 1,
+        evidence: [{ ev: EX, path: "packages/a/conformance/std.test.ts" }],
+      },
     ]);
-    expect(diags).toEqual([]);
+    // An unknown section, and a `// Spec:` line whose quote is on the next line, cite nothing: E1732 at the line.
+    expect(diags.map((d) => [d.code, d.path, d.line])).toEqual([
+      ["E1732", "packages/a/conformance/lookalike.test.ts", 1],
+      ["E1732", "packages/a/conformance/longer.test.ts", 1],
+      ["E1732", "packages/a/conformance/split.test.ts", 1],
+    ]);
   });
 
-  it("a clause is cited by its quoted text: backticks, quote style, spacing, case and final period aside (rfc:0049)", () => {
+  it("a clause is cited by one formed `// Spec:` line whose quote has its normal form; any other `// Spec:` line is E1732", () => {
     const spec = file(
       "spec/kernel/k.x.md",
       [
@@ -202,7 +223,7 @@ describe("buildLedger", () => {
     );
     const body = 'import { it } from "vitest";\nit("t", () => {});\n';
     const at = (path: string, head: string) => file(`packages/${path}`, `${head}\n${body}`);
-    const { items } = buildLedger([
+    const { items, diags } = buildLedger([
       spec,
       file("spec/kernel/k.y.md", "# k.y\n**Conformance.**\n- A tree attaches N listeners.\n"),
       at("a/conformance/bare.test.ts", '// Spec: k.x, clause "mount then dispose leaves zero listeners"'),
@@ -214,14 +235,27 @@ describe("buildLedger", () => {
       at("a/conformance/unquoted.test.ts", "// Spec: k.x Conformance: A tree attaches N listeners."),
       at("a/conformance/other.test.ts", '// Spec: k.y\n// Spec: k.z, clause "A tree attaches N listeners."'),
       at("b/conformance/cross.test.ts", '// Spec: k.x, clause "`caller` is `""` when absent."'),
+      at("b/conformance/escaped.test.ts", '// Spec: k.x, clause "`caller` is `\\"\\"` when absent."'),
       at("a/conformance/notx.test.ts", '// Spec: k.xy, clause "A tree attaches N listeners."'),
     ]);
     const paths = (item: string) => items.find((i) => i.item === item)?.evidence.map((e) => e.path);
-    expect(paths("k.x#1")).toEqual(["packages/a/conformance/bare.test.ts", "packages/a/conformance/curly.test.ts"]);
-    expect(paths("k.x#2")).toEqual([]);
-    expect(paths("k.x#3")).toEqual(["packages/a/conformance/wrap.test.ts"]);
-    expect(paths("k.x#4")).toEqual(["packages/b/conformance/cross.test.ts"]);
-    expect(paths("k.y#1")).toEqual([]);
+    const x = (text: string) => `k.x#${clauseKey(text)}`;
+    expect(paths(x("`mount` then `dispose` leaves zero listeners."))).toEqual(["packages/a/conformance/bare.test.ts"]);
+    expect(paths(x("A tree attaches N listeners."))).toEqual([]);
+    expect(paths(x("A tree attaches N listeners to its root."))).toEqual(["packages/a/conformance/wrap.test.ts"]);
+    expect(paths(x('`caller` is `""` when absent.'))).toEqual(["packages/b/conformance/escaped.test.ts"]);
+    expect(paths(`k.y#${clauseKey("A tree attaches N listeners.")}`)).toEqual([]);
+    expect(diags.filter((d) => d.code === "E1732").map((d) => (d.path ?? "").split("/").pop())).toEqual([
+      "curly.test.ts",
+      "gap.test.ts",
+      "cut.test.ts",
+      "number.test.ts",
+      "unquoted.test.ts",
+      "other.test.ts",
+      "other.test.ts",
+      "cross.test.ts",
+      "notx.test.ts",
+    ]);
   });
 
   it("a // Clause: header is not evidence; it is W1706 with the // Spec: rewrite as fix", () => {
@@ -234,7 +268,7 @@ describe("buildLedger", () => {
       file("packages/b/conformance/two.test.ts", 'import { it } from "vitest";\n// Clause: Two.\nit("t", () => {});\n'),
       file("packages/b/conformance/late.test.ts", 'it("t", () => {});\n// Clause: Late.\n'),
     ]);
-    expect(items).toEqual([{ item: "k.a#1", evidence: [] }]);
+    expect(items).toEqual([{ item: `k.a#${clauseKey("One works.")}`, n: 1, evidence: [] }]);
     expect(diags).toEqual([
       {
         kind: "diag",
@@ -244,7 +278,7 @@ describe("buildLedger", () => {
         col: 1,
         message: "clause header not counted by the ledger; name it with // Spec:",
         fix: '-// Clause: One works.\n+// Spec: k.a, clause "One works."',
-        see: "k.testing",
+        see: "k.ledger",
       },
       {
         kind: "diag",
@@ -254,7 +288,7 @@ describe("buildLedger", () => {
         col: 1,
         message: "clause header not counted by the ledger; name it with // Spec:",
         fix: '-// Clause: Two.\n+// Spec: <section>, clause "Two."',
-        see: "k.testing",
+        see: "k.ledger",
       },
     ]);
   });
@@ -279,7 +313,7 @@ describe("ledger command", () => {
       "packages/a/src/bar.ts#bar none none",
       "packages/a/src/baz.ts#baz example property runs 100 packages/a/test/baz2.test.ts +1",
       "packages/a/src/foo.ts#foo probabilistic property runs 100 seed 1337 packages/a/test/foo.test.ts +2",
-      "ok ledger 3 items, 2 verified, 1 unsafe, 0 warnings",
+      "ok ledger 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic",
     ]);
   });
 
@@ -305,16 +339,20 @@ describe("ledger command", () => {
     const files = [...base, file("packages/a/conformance/c.test.ts", '// Clause: One.\nit("t", () => {});\n')];
     const r = await run(["ledger", "--quiet"], { cwd: CWD, files });
     expect(r.code).toBe(0);
-    expect(lines(r.stdout)).toEqual(["ok ledger 3 items, 2 verified, 1 unsafe, 1 warnings"]);
+    expect(lines(r.stdout)).toEqual([
+      "ok ledger 3 items, 2 verified, 1 unsafe, 1 warnings, 2 example, 1 probabilistic",
+    ]);
     const json = await run(["ledger", "--format=json"], { cwd: CWD, files });
     expect(JSON.parse(lines(json.stdout)[0] ?? "")).toMatchObject({ code: "W1706" });
   });
 
-  it("--write <file> writes the ledger file: unsafe, mutation scores, exports, clauses", async () => {
+  it("--write <file> writes the ledger file: unsafe, rungs, mutation claims, exports, clauses", async () => {
     const writes: Write[] = [];
     const report = JSON.stringify({
+      thresholds: { high: 80, low: 60, break: 50 },
       files: {
         "src/a.ts": {
+          source: "a",
           mutants: [{ status: "Killed" }, { status: "Timeout" }, { status: "Survived" }, { status: "Ignored" }],
         },
       },
@@ -323,6 +361,7 @@ describe("ledger command", () => {
       ...base,
       file("spec/kernel/k.a.md", "# k.a\n**Conformance.**\n- One works.\n"),
       file("packages/a/reports/mutation/mutation.json", report),
+      file("packages/a/src/a.ts", "a"),
     ];
     const r = await run(["ledger", "--write", "tooling/ledger/ledger.json"], {
       cwd: CWD,
@@ -330,18 +369,48 @@ describe("ledger command", () => {
       apply: (w) => void writes.push(...w),
     });
     expect(r.code).toBe(0);
-    expect(lines(r.stdout)).toEqual(["ok ledger 4 items, 2 verified, 1 unsafe, 0 warnings"]);
+    expect(lines(r.stdout)).toEqual([
+      "ok ledger 4 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic",
+    ]);
     expect(writes.map((w) => [w.path, w.readonly])).toEqual([["tooling/ledger/ledger.json", false]]);
     expect(JSON.parse(writes[0]?.content ?? "")).toEqual({
       version: 1,
       unsafe: 1,
-      mutationScore: { a: 66.7 },
+      hostElements: 0,
+      negativeTypes: 0,
+      rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
+      mutation: {
+        projects: {
+          "packages/a": {
+            score: 66.67,
+            scoreJustified: 66.67,
+            threshold: 50,
+            killed: 2,
+            survived: 1,
+            noCoverage: 0,
+            justified: 0,
+          },
+        },
+        claims: [
+          {
+            file: "packages/a/src/a.ts",
+            sha: SHA_A,
+            killed: 2,
+            survived: 1,
+            noCoverage: 0,
+            justified: 0,
+            score: 66.67,
+          },
+        ],
+      },
       exports: [
         { pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "none" },
         { pkg: "a", name: "baz", file: "packages/a/src/baz.ts", rung: "example" },
         { pkg: "a", name: "foo", file: "packages/a/src/foo.ts", rung: "probabilistic" },
       ],
-      clauses: [{ item: "k.a#1", rung: "none" }],
+      clauses: [{ item: `k.a#${clauseKey("One works.")}`, rung: "none" }],
+      a11y: [],
+      libraries: {},
     });
     expect(writes[0]?.content?.endsWith("}\n")).toBe(true);
     const none: Write[] = [];
@@ -349,7 +418,7 @@ describe("ledger command", () => {
     expect(none).toEqual([]);
     const plain: Write[] = [];
     await run(["ledger", "--write", "l.json"], { cwd: CWD, files: base, apply: (w) => void plain.push(...w) });
-    expect(JSON.parse(plain[0]?.content ?? "")).not.toHaveProperty("mutationScore");
+    expect(JSON.parse(plain[0]?.content ?? "")).not.toHaveProperty("mutation");
   });
 
   const committed = (rung: string, path = "tooling/ledger/ledger.json", unsafe = 1) =>
@@ -358,6 +427,7 @@ describe("ledger command", () => {
       JSON.stringify({
         version: 1,
         unsafe,
+        hostElements: 0,
         exports: [{ pkg: "a", name: "foo", file: "packages/a/src/foo.ts", rung }],
       }),
     );
@@ -373,8 +443,8 @@ describe("ledger command", () => {
     expect(writes).toEqual([]);
     expect(lines(r.stdout)).toEqual([
       "E1706 packages/a/src/foo.ts:1:1 ledger rung lowered: packages/a/src/foo.ts#foo exhaustive -> probabilistic",
-      "  see: k.testing",
-      "fail ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 1 lowered, 0 uncovered",
+      "  see: keel docs k.ledger",
+      "fail ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic, 1 lowered, 0 uncovered",
     ]);
     const json = await run(["ledger", "--diff", "--format=json"], {
       cwd: CWD,
@@ -395,10 +465,11 @@ describe("ledger command", () => {
       JSON.stringify({
         version: 1,
         unsafe: 0,
+        hostElements: 0,
         exports: [{ pkg: "g", name: "add", file: "g:todos/add.ts", rung: "example" }],
         clauses: [
-          { item: "k.a#1", rung: "example" },
-          { item: "std.s#1", rung: "example" },
+          { item: `k.a#${clauseKey("One works.")}`, rung: "example" },
+          { item: `std.s#${clauseKey("One works.")}`, rung: "example" },
         ],
       }),
     );
@@ -456,7 +527,7 @@ describe("ledger command", () => {
     const r = await run(["ledger", "--diff"], { cwd: CWD, files: reversed });
     expect(r.code).toBe(0);
     expect(lines(r.stdout)).toEqual([
-      "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered, 0 uncovered",
+      "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic, 0 lowered, 0 uncovered",
     ]);
   });
 
@@ -469,7 +540,7 @@ describe("ledger command", () => {
       const r = await run(["ledger", "--diff"], { cwd: CWD, files });
       expect(r.code).toBe(0);
       expect(lines(r.stdout)).toEqual([
-        "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 0 lowered, 0 uncovered",
+        "ok ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic, 0 lowered, 0 uncovered",
       ]);
     }
   });

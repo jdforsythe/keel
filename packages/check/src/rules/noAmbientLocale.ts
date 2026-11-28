@@ -1,0 +1,170 @@
+import { globalRefs, unwrapExpression } from "@keel/compiler/internal";
+import { type Argument, type Expression, Visitor } from "oxc-parser";
+import { findingAt } from "../internal/findingAt.ts";
+import { isAppPath } from "../internal/isAppPath.ts";
+import { memberName } from "../internal/memberName.ts";
+import { str } from "../internal/str.ts";
+import type { Finding } from "../types/Finding.ts";
+import type { RuleDef } from "../types/RuleDef.ts";
+
+/** `Intl` constructors that take a locale first. */
+const INTL: ReadonlySet<string> = new Set([
+  "NumberFormat",
+  "DateTimeFormat",
+  "PluralRules",
+  "Collator",
+  "ListFormat",
+  "RelativeTimeFormat",
+  "DisplayNames",
+  "Segmenter",
+]);
+/** Date methods that format in a locale and a zone. */
+const DATE_LOCALE: ReadonlySet<string> = new Set(["toLocaleDateString", "toLocaleTimeString"]);
+/** Date getters that read the host time zone. */
+const LOCAL_GETTERS: ReadonlySet<string> = new Set([
+  "getHours",
+  "getMinutes",
+  "getSeconds",
+  "getMilliseconds",
+  "getDate",
+  "getDay",
+  "getMonth",
+  "getFullYear",
+  "getYear",
+  "getTimezoneOffset",
+]);
+
+/** Date methods that render the date as a string in the host time zone. */
+const DATE_STRING: ReadonlySet<string> = new Set(["toString", "toDateString", "toTimeString"]);
+/** String methods that case-map in a locale. */
+const CASE_LOCALE: ReadonlySet<string> = new Set(["toLocaleUpperCase", "toLocaleLowerCase"]);
+/** A date-only ISO string (parsed as UTC) or a string ending in an explicit zone. */
+const DATE_ONLY = /^[+-]?\d{4,6}(-\d{2}(-\d{2})?)?$/;
+const ZONED = /(Z|[+-]\d{2}:?\d{2}|GMT|UTC)$/i;
+
+/** True when `Date.parse` or `new Date` reads the string `s` in the host time zone. */
+const localText = (s: string): boolean => !DATE_ONLY.test(s.trim()) && !ZONED.test(s.trim());
+
+/** True when argument `i` is given and is not `undefined`, `void 0` or `[]` (each means the host locale). */
+const given = (args: readonly Argument[], i: number): boolean => {
+  const a = args[i];
+  if (a === undefined) return false;
+  if (a.type === "Identifier") return a.name !== "undefined";
+  if (a.type === "UnaryExpression") return a.operator !== "void";
+  return !(a.type === "ArrayExpression" && a.elements.length === 0);
+};
+
+/** False only when the options argument is missing or an object literal (without spread) lacking `timeZone`. */
+function hasZone(args: readonly Argument[], i: number): boolean {
+  const o = args[i];
+  if (o === undefined) return false;
+  if (o.type !== "ObjectExpression") return true;
+  return o.properties.some(
+    (p) =>
+      p.type === "SpreadElement" ||
+      p.computed ||
+      (p.key.type === "Identifier" && p.key.name === "timeZone") ||
+      (p.key.type === "Literal" && p.key.value === "timeZone"),
+  );
+}
+
+/**
+ * E1758 (k.check): an ambient locale or time zone read in app code: `navigator.language`/`languages`; an `Intl`
+ * constructor without a locale (`Intl.DateTimeFormat` also without `timeZone`); `toLocaleString` or
+ * `localeCompare` or `toLocaleUpperCase`/`toLocaleLowerCase` without a locale (`undefined`, `void 0` and `[]` give
+ * none), also through `.call`; `toLocaleDateString`/`toLocaleTimeString` without a locale or `timeZone`; a local-time
+ * getter, `toString`, `toDateString` or `toTimeString` on a date, `String` of one or a template holding one, where a
+ * date is an expression typed `Date` (the type pass's `dates`), else a `new Date(...)` expression or a `const` bound
+ * to one; `new Date` of local date parts; `new Date` or
+ * `Date.parse` of a constant date-time string without an offset. Names resolve as for E1601 (`globalRefs`). No fix: the locale
+ * or zone is an argument the caller holds.
+ */
+export const noAmbientLocale: RuleDef = {
+  code: "E1758",
+  message: (f) => `${str(f.data, "what")} reads the host ${str(f.data, "reads")}; pass it as an argument`,
+  see: "k.host",
+  check: ({ file, ast, dates }) => {
+    if (!isAppPath(file.path)) return [];
+    const g = globalRefs(ast);
+    const out: Finding[] = [];
+    const report = (at: number, what: string, reads: string): void => {
+      out.push(findingAt(file, at, { what, reads }));
+    };
+    /** By type with the type pass on; else a `new Date(...)` expression or a `const` bound to one. */
+    const isDate = (e: Expression): boolean => {
+      if (dates !== undefined) return dates.has(unwrapExpression(e).start);
+      const made = g.initOf(e);
+      return made.type === "NewExpression" && g.resolve(made.callee)?.join(".") === "Date";
+    };
+    const intl = (at: number, callee: Expression, args: readonly Argument[]): void => {
+      const p = g.resolve(callee);
+      const ctor = p?.length === 2 && p[0] === "Intl" ? p[1] : undefined;
+      if (ctor === undefined || !INTL.has(ctor)) return;
+      if (!given(args, 0)) report(at, `Intl.${ctor} without a locale`, "locale");
+      else if (ctor === "DateTimeFormat" && !hasZone(args, 1))
+        report(at, "Intl.DateTimeFormat without timeZone", "zone");
+    };
+    /** `new Date(y, m, ...)`, and `new Date(text)` or `Date.parse(text)` of a date-time string without a zone. */
+    const localTime = (at: number, what: string, args: readonly Argument[], parts: boolean): void => {
+      const a = args[0];
+      if (parts && args.length > 1) report(at, `${what} of local date parts`, "zone");
+      else if (args.length === 1 && a !== undefined && a.type !== "SpreadElement") {
+        const text = g.constString(a);
+        if (text !== null && localText(text)) report(at, `${what} of a date-time without an offset`, "zone");
+      }
+    };
+    const method = (at: number, name: string, receiver: Expression | undefined, args: readonly Argument[]): void => {
+      if (name === "toLocaleString" || name === "localeCompare") {
+        if (!given(args, name === "localeCompare" ? 1 : 0)) report(at, `${name} without a locale`, "locale");
+      } else if (CASE_LOCALE.has(name)) {
+        if (!given(args, 0)) report(at, `${name} without a locale`, "locale");
+      } else if (DATE_LOCALE.has(name)) {
+        if (!given(args, 0)) report(at, `${name} without a locale`, "locale");
+        else if (!hasZone(args, 1)) report(at, `${name} without timeZone`, "zone");
+      } else if ((LOCAL_GETTERS.has(name) || DATE_STRING.has(name)) && receiver !== undefined && isDate(receiver))
+        report(at, `Date ${name}`, "zone");
+    };
+    /** Template literals that are a tag's argument: the tag receives the values, not their strings. */
+    const tagged = new Set<number>();
+    new Visitor({
+      NewExpression: (n) => {
+        intl(n.start, n.callee, n.arguments);
+        if (g.resolve(n.callee)?.join(".") === "Date") localTime(n.start, "new Date", n.arguments, true);
+      },
+      CallExpression: (n) => {
+        intl(n.start, n.callee, n.arguments);
+        const fnPath = g.resolve(n.callee)?.join(".");
+        if (fnPath === "Date.parse") localTime(n.start, "Date.parse", n.arguments, false);
+        const first = n.arguments[0];
+        if (fnPath === "String" && first !== undefined && first.type !== "SpreadElement" && isDate(first))
+          report(n.start, "String of a Date", "zone");
+        const c = unwrapExpression(n.callee);
+        const name = memberName(c);
+        if (name === null || c.type !== "MemberExpression") return;
+        const inner = unwrapExpression(c.object);
+        const called = name === "call" ? memberName(inner) : null;
+        if (called !== null && inner.type === "MemberExpression") {
+          const self = n.arguments[0];
+          method(inner.start, called, self?.type === "SpreadElement" ? undefined : self, n.arguments.slice(1));
+        } else method(c.start, name, c.object, n.arguments);
+      },
+      TaggedTemplateExpression: (n) => void tagged.add(n.quasi.start),
+      TemplateLiteral: (n) => {
+        if (tagged.has(n.start)) return;
+        for (const e of n.expressions) if (isDate(e)) report(e.start, "a Date in a template", "zone");
+      },
+      MemberExpression: (n) => {
+        if (g.isAliasInit(n.start, n.end)) return;
+        const p = g.resolve(n)?.join(".");
+        if (p === "navigator.language" || p === "navigator.languages") report(n.start, p, "locale");
+      },
+    }).visit(ast);
+    // A bare alias of a locale read (`const l = navigator.language` used as `l`) is reported at its uses.
+    for (const r of g.refs) {
+      if (g.isAliasInit(r.start, r.end)) continue;
+      const p = g.resolveName(r.name, r.start)?.join(".");
+      if (p === "navigator.language" || p === "navigator.languages") report(r.start, p, "locale");
+    }
+    return out;
+  },
+};

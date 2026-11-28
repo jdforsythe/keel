@@ -1,0 +1,45 @@
+{
+  "$comment": "Not part of ci: the audit needs the registry and an advisory published overnight must not fail an unrelated change. A red run here means a production dependency has a high or critical advisory.",
+  "name": "audit",
+  "on": {
+    "schedule": [
+      {
+        "cron": "0 6 * * 1"
+      }
+    ],
+    "workflow_dispatch": {}
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "concurrency": {
+    "group": "audit",
+    "cancel-in-progress": true
+  },
+  "jobs": {
+    "audit": {
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 10,
+      "steps": [
+        {
+          "uses": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
+          "with": {
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1"
+        },
+        {
+          "uses": "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0",
+          "with": {
+            "node-version-file": "package.json"
+          }
+        },
+        {
+          "run": "pnpm audit --prod --audit-level=high"
+        }
+      ]
+    }
+  }
+}

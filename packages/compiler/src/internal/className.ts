@@ -2,9 +2,17 @@
 // state segments). The compiler may not import @keel/ui (later in tooling/deps.json); keep both in step:
 // test/className.test.ts asserts they agree.
 
-type State = "hover" | "focusVisible" | "active" | "disabled";
+import type { StyleUsage } from "../types/StyleUsage.ts";
+
+type State = NonNullable<StyleUsage["state"]>;
 
 const SEGMENTS: readonly { readonly key: State; readonly segment: string }[] = [
+  { key: "selected", segment: "selected" },
+  { key: "checked", segment: "checked" },
+  { key: "pressed", segment: "pressed" },
+  { key: "expanded", segment: "expanded" },
+  { key: "current", segment: "current" },
+  { key: "highlighted", segment: "highlighted" },
   { key: "hover", segment: "hover" },
   { key: "focusVisible", segment: "focus" },
   { key: "active", segment: "active" },
@@ -34,7 +42,7 @@ function ident(parts: readonly string[], key: string, readable: boolean): string
  */
 export function className(prop: string, token: string, breakpoint?: string, state?: State): string {
   const seg = SEGMENTS.find((s) => s.key === state)?.segment;
-  const parts = [breakpoint, seg, prop, token].filter((p): p is string => p !== undefined);
+  const parts = [breakpoint, seg, prop, token].filter((p): p is string => typeof p === "string");
   const readable = breakpoint === undefined || !SEGMENTS.some((s) => s.segment === breakpoint);
   return `k-${ident(parts, JSON.stringify([prop, token, breakpoint ?? null, state ?? null]), readable)}`;
 }

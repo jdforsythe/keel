@@ -1,0 +1,1 @@
+{"data":{"contracts":{"greet":{"callers":["front"],"entries":{"greet.hello":{"body":null,"errors":{},"method":"GET","output":{"properties":{"text":{"type":"string"}},"required":["text"],"type":"object"},"params":null,"path":"/api/hello","query":null}},"module":"greet"}},"stores":{},"version":3},"hash":"fnv1a:a9f3a870"}

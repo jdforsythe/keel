@@ -1,0 +1,31 @@
+{
+  "name": "compose-peers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "keel build",
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/services": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/cli": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "playwright-core": "1.65.0",
+    "vite": "^8.3.6"
+  }
+}

@@ -1,4 +1,5 @@
-import type { StyleState } from "../types/StyleState.ts";
+import type { PartState } from "../aria/PartState.ts";
+import { USES_MEDIA } from "./USES_MEDIA.ts";
 import { className } from "./className.ts";
 import { isReadable } from "./isReadable.ts";
 import { isRecord } from "./isRecord.ts";
@@ -12,7 +13,7 @@ const ATOMIC = /^k-[A-Za-z0-9_-]+$/;
 const breakpointsOf = (v: Readonly<Record<string, unknown>>): string[] =>
   Object.keys(v).sort((a, b) => (a === "base" ? -1 : b === "base" ? 1 : a < b ? -1 : a > b ? 1 : 0));
 
-function collect(src: Readonly<Record<string, unknown>>, state: StyleState | undefined, out: string[]): void {
+function collect(src: Readonly<Record<string, unknown>>, state: PartState | undefined, out: string[]): void {
   for (const prop of styleProps) {
     const v = src[prop];
     if (v === undefined) continue;
@@ -29,7 +30,7 @@ function collect(src: Readonly<Record<string, unknown>>, state: StyleState | und
 }
 
 /**
- * The atomic classes for an element's style props, then its `states`, then the classes the compiler lowered its
+ * The atomic classes for an element's style props, then its `states`, its `media` class (`k-media-screen`), then the classes the compiler lowered its
  * static style props to (k.compiler: `class: "k-p-2 ..."`, the props themselves dropped). That lowered `class` is in no
  * element's type (rfc:0043), and only atomic `k-` classes are kept from it, so it is no way around tokens. Reads
  * signals (tracked).
@@ -43,6 +44,10 @@ export function classesOf(props: Readonly<Record<string, unknown>>): string[] {
       const nested = st[s.key];
       if (isRecord(nested) && !isReadable(nested)) collect(nested, s.key, out);
     }
+  if (USES_MEDIA) {
+    const media = props.media;
+    if (media === "screen" || media === "print") out.push(`k-media-${media}`);
+  }
   const lowered = props.class;
   if (typeof lowered === "string")
     for (const c of lowered.split(/\s+/)) if (ATOMIC.test(c) && !out.includes(c)) out.push(c);

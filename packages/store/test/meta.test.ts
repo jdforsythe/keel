@@ -74,11 +74,14 @@ describe("@keel/store log meta", () => {
       "by",
     ]);
     let code: string | undefined;
-    scope(() => {
-      k.c.uses([k.tag]);
-      const r = tx(k.add, { by: 1 }, { meta: { x: Number.NaN } });
-      code = r.ok ? undefined : r.error.code;
-    });
+    scope(
+      () => {
+        k.c.uses([k.tag]);
+        const r = tx(k.add, { by: 1 }, { meta: { x: Number.NaN } });
+        code = r.ok ? undefined : r.error.code;
+      },
+      { detached: true },
+    );
     expect(code).toBe("schema.invalid");
     expect(k.c.log()).toEqual([]);
   });

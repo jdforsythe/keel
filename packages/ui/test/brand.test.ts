@@ -1,9 +1,9 @@
 // @keel/ui/brand and @keel/ui/fonts (docs/BRAND.md 2-4, 6). Seed 1337.
 import fs from "node:fs";
 import path from "node:path";
-import { TokenSchema } from "@keel/ui";
 import { brandTokens } from "@keel/ui/brand";
 import { compileStyles, contrast } from "@keel/ui/css";
+import { TokenSchema } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -13,7 +13,7 @@ type ColorName = keyof typeof color;
 const names = Object.keys(color).filter((n): n is ColorName => n in color);
 /** Text colors the brand sets on its surfaces (fg on bg); every pair must pass E1804's 4.5:1. */
 const TEXT: readonly ColorName[] = ["text", "textSecondary", "accent", "verified", "error"];
-const SURFACES: readonly ColorName[] = ["surface", "card"];
+const SURFACES: readonly ColorName[] = ["surface", "surfaceLow", "card"];
 
 describe("brandTokens", () => {
   it("passes TokenSchema", () => {
@@ -25,9 +25,9 @@ describe("brandTokens", () => {
       surface: "#F9F9F9",
       surfaceLow: "#F3F3F3",
       card: "#FFFFFF",
-      text: "#18181B",
-      textSecondary: "#71717A",
-      accent: "#C2410C",
+      text: "#1a191e",
+      textSecondary: "#6B6B74",
+      accent: "#b8420d",
       verified: "#15803D",
       error: "#B91C1C",
       divider: "#E4E4E7",

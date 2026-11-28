@@ -21,8 +21,16 @@ describe("scaffold transaction / service input", () => {
     expect(scaffoldInput("transaction", {})).toEqual({});
   });
 
+  it("route passes --api through", () => {
+    expect(scaffoldInput("route", { args: ["orders.feed"], path: "/api/feed", api: true })).toEqual({
+      id: "orders.feed",
+      path: "/api/feed",
+      api: true,
+    });
+  });
+
   it("service passes id with the generated schema and service texts", () => {
-    const r = openapiInput("orders", { openapi: "openapi.json" }, CWD, new Map(files.map((f) => [f.path, f.source])));
+    const r = openapiInput("orders", "openapi.json", CWD, new Map(files.map((f) => [f.path, f.source])));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.schema).toContain("listPets");
@@ -32,20 +40,16 @@ describe("scaffold transaction / service input", () => {
   });
 
   it("service resolves --openapi against cwd (absolute path)", () => {
-    const r = openapiInput(
-      "orders",
-      { openapi: `${CWD}/openapi.json` },
-      CWD,
-      new Map([["openapi.json", JSON.stringify(doc)]]),
-    );
+    const r = openapiInput("orders", `${CWD}/openapi.json`, CWD, new Map([["openapi.json", JSON.stringify(doc)]]));
     expect(r.ok).toBe(true);
   });
 
-  it("missing --openapi is E1052 naming the flag", async () => {
+  it("neither --openapi nor --base is E1052 naming both flags", async () => {
     const r = await runEngine(["scaffold", "service", "orders"], { cwd: CWD, files });
     expect(r.result.code).toBe(2);
     expect(r.result.stdout).toContain("E1052");
     expect(r.result.stdout).toContain("--openapi");
+    expect(r.result.stdout).toContain("--base");
     expect(r.writes).toEqual([]);
   });
 

@@ -1,8 +1,10 @@
 // Voice lint (docs/BRAND.md section 5, docs/VOICE.md): banned words, hedges, em dashes, stock phrases and reversals
 // in docs, READMEs, skills, specs, app copy and code comments. V0003 <path>:<line>:<col> <rule>.
-// Code spans, fenced code, BRAND.md and VOICE.md themselves are excluded.
+// Code spans, fenced code, BRAND.md and VOICE.md themselves are excluded. The scaffold's `AGENTS.md` and `CLAUDE.md`
+// templates are linted as rendered with the published skills, each hit at the template's source file.
 import fs from "node:fs";
 import path from "node:path";
+import { agentFiles } from "../packages/scaffold/src/agents/index.ts";
 import { run } from "./output.ts";
 import { walk } from "./scan.mjs";
 
@@ -127,16 +129,50 @@ function commentLines(src) {
   return out;
 }
 
+/** Source files of the scaffold templates, by the path the scaffold writes. */
+const TEMPLATE_SOURCES = {
+  "AGENTS.md": "packages/scaffold/src/templates/agentsBlock.ts",
+  "CLAUDE.md": "packages/scaffold/src/agents/agentFiles.ts",
+};
+
+/** The rendered templates as markdown lines, `[source, lines]`, each line numbered at its source line (else 1). */
+function templateLines() {
+  const dir = path.join(root, "packages/cli/skills");
+  const skills = (fs.existsSync(dir) ? fs.readdirSync(dir).sort() : [])
+    .filter((n) => fs.existsSync(path.join(dir, n, "SKILL.md")))
+    .map((n) => ({ name: n, description: "", text: fs.readFileSync(path.join(dir, n, "SKILL.md"), "utf8") }));
+  const rendered = agentFiles(new Map(), skills);
+  if (!rendered.ok) return [];
+  return Object.entries(TEMPLATE_SOURCES).flatMap(([file, source]) => {
+    const text = rendered.value.find((f) => f.path === file)?.want;
+    if (typeof text !== "string") return [];
+    const src = fs.readFileSync(path.join(root, source), "utf8").split("\n");
+    const lines = markdownLines(text).map(([line, t]) => {
+      const want = text.split("\n")[line - 1]?.trim() ?? "";
+      const hit = want ? src.findIndex((l) => l.includes(want)) : -1;
+      return [hit === -1 ? 1 : hit + 1, t];
+    });
+    return [[source, lines]];
+  });
+}
+
 await run("voice-lint", () => {
   const targets = [
     ...["README.md"].filter((f) => fs.existsSync(path.join(root, f))).map((f) => [path.join(root, f), "md"]),
     ...under("docs", (r) => r.endsWith(".md") && r !== "docs/BRAND.md" && r !== "docs/VOICE.md").map((p) => [p, "md"]),
     ...under("packages", (r) => /^packages\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
     ...under("apps", (r) => /^apps\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
+    ...under("examples", (r) => /^examples\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
+    ...under("libraries", (r) => /^libraries\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
     ...under(".claude/skills", (r) => r.endsWith("/SKILL.md")).map((p) => [p, "md"]),
+    ...under("packages/cli/skills", (r) => r.endsWith("/SKILL.md")).map((p) => [p, "md"]),
     ...under("spec", (r) => r.endsWith(".md")).map((p) => [p, "md"]),
     ...under("apps", (r) => /^apps\/[^/]+\/modules\/.*\.tsx$/.test(r)).map((p) => [p, "tsx"]),
     ...under("apps", (r) => /^apps\/[^/]+\/modules\/.*\.tsx?$/.test(r)).map((p) => [p, "comment"]),
+    ...under("examples", (r) => /^examples\/[^/]+\/modules\/.*\.tsx$/.test(r)).map((p) => [p, "tsx"]),
+    ...under("examples", (r) => /^examples\/[^/]+\/modules\/.*\.tsx?$/.test(r)).map((p) => [p, "comment"]),
+    ...under("libraries", (r) => /^libraries\/[^/]+\/src\/.*\.tsx$/.test(r)).map((p) => [p, "tsx"]),
+    ...under("libraries", (r) => /^libraries\/[^/]+\/src\/.*\.tsx?$/.test(r)).map((p) => [p, "comment"]),
     ...under("packages", (r) => /^packages\/[^/]+\/src\/.*\.ts$/.test(r)).map((p) => [p, "comment"]),
   ];
   const diags = [];
@@ -154,9 +190,16 @@ await run("voice-lint", () => {
             message: msg(m[0]),
           });
   }
+  const rendered = templateLines();
+  for (const [source, lines] of rendered)
+    for (const [line, text] of lines)
+      for (const [re, msg] of RULES)
+        for (const m of text.matchAll(re))
+          diags.push({ kind: "diag", code: "V0003", path: source, line, col: (m.index ?? 0) + 1, message: msg(m[0]) });
+  const files = targets.length + rendered.length;
   return {
     diags,
-    counts: { files: targets.length, hits: diags.length },
-    line: `ok voice-lint ${targets.length} files`,
+    counts: { files, hits: diags.length },
+    line: `ok voice-lint ${files} files`,
   };
 });

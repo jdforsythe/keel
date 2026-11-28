@@ -1,10 +1,10 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
-// Spec: k.check, Rules, E1753 (stdlib rule outside E2xxx/W2xxx), E1754 (`unsafe` without a justification string), E1755 (budget exceeded).
+// k.check, Rules, E1753 (stdlib rule outside E2xxx/W2xxx), E1754 (`unsafe` without a justification string), E1755 (budget exceeded).
 // Duplicate-code E1753 is covered in define-rule.test.ts.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { one, SEED } from "./support.ts";
+import { SEED, one } from "./support.ts";
 
 const UNSAFE = "unsafe"; // built so this file's own source holds no literal call; fixture text does
 const NO_TYPES = { types: false } as const;

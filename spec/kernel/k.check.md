@@ -1,41 +1,44 @@
 # k.check: Checker and diagnostics
 status: implemented
-
-**Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are `keel test`, k.testing; rfc:0023).
-1. Parse (oxc) and TS strict type check.
-2. Compiler diagnostics (k.compiler transform of every file). They flow through unchanged: same code, location, message, and fix.
-3. Rule registry: kernel structure rules plus rules from stdlib modules in the project's `deps` (k.module), run on each file with read-only project artifacts (`.keel/*.json`, manifests).
-4. Formatter: dedupe, sort by path, line, and col, group by code, cap, render per `--format` (k.cli).
+**Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are k.testing).
+1. Parse (oxc) and TS strict type check. Ambient types: Node's when `@types/node` resolves from the project root, and k.bundle's Types.
+2. Compiler diagnostics (k.compiler transform of every file). They flow through unchanged.
+3. Rule registry: kernel structure rules plus rules from stdlib modules in the project's `deps` (k.module), run on each file with the project's derived artifacts (k.derived) and manifests, and `project`: the project's code files and its `topology.ts`, one shared array.
+4. Formatter: dedupe, sort by path, line, col (E1005 last), group by code, cap, render per `--format` (k.cli).
 
 Changing one file re-runs steps 1-3 for that file and its dependents only.
 
-**Diagnostics.** Exactly the OUTPUT.md model: `{ kind: 'diag', code, path, line, col, message, fix?, see? }`. `code` is E (error), W (warning), or I (info) plus four digits, never renumbered; `message` is one line under 90 chars; `fix` is a unified diff hunk that applies to the checked tree; `see` is the spec section id. Only E codes affect the exit code (k.cli). A TS error that encodes a Keel rule (a missing a11y prop, an unknown field path, a string for `Href`) is reported under that rule's code; any other TS error is E1751.
+**Diagnostics.** Exactly the OUTPUT.md model: `{ kind: 'diag', code, path, line, col, message, fix?, see? }`. `code` is E (error), W (warning), or I (info) plus four digits, never renumbered; `message` is one line of at most 89 characters, counted in UTF-16 code units (a JavaScript string's `length`): each run of whitespace holding a line feed becomes one space and the ends are trimmed (`String.prototype.trim`), and a longer message keeps its first 86 code units, or 85 when the 86th is the first half of a surrogate pair, followed by `...`. Every `diag` record a command emits is clipped so before it is rendered, so compact, pretty and json, and the MCP and LSP surfaces, carry the same message. The clip is a safety net: each message is written to fit its fixtures' inputs, an edit it suggests goes in `fix`, other advice in `keel explain`, and a path past the bound drops leading segments behind one `.../` (`a/b/c.ts`, `.../b/c.ts`, `.../c.ts`) until it fits or one is left; `fix` is a unified diff hunk that applies to the checked tree; `see` is the spec section id. Only E codes affect the exit code (k.cli). A TS error that encodes a Keel rule (a missing a11y prop, an unknown field path, a string for `Href`) is reported under that rule's code; any other TS error is E1751.
 
-**Codes.** `keel check` produces every code in the kernel sections' **Rules**, except codes produced by another command: dev and runtime (E1253, E1554, E1555), cli usage (E105x), scaffold operations (E135x), and harness results (E1702-E1707 from `keel test`, `keel ledger`). Those share this model, `explain`, and `spec --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
+**Codes.** `reportedCodes()` lists every code `keel check` produces: the pipeline's and each registered rule's. The other kernel **Rules** codes come from another command (build, cli, dev and runtime, scaffold, and harness results E1702-E1707 from `keel test`, `keel ledger`) and share this model, `explain`, and `docs --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
 
 **Registry** (extension point).
 ```ts
 import { defineRule } from '@keel/check'
 export const noRawMoney = defineRule({
   code: 'E2101', message: 'money as number; use Money', see: 'std.money',
-  explain: 'Amounts are Money values. Replace number fields with s.money().',
-  check: ({ file, ast, artifacts }) => findings,            // { path, line, col, data? }[]
-  fix: (finding, { file }) => edits,                         // rendered as a unified diff
+  explain: 'Amounts are Money values, not numbers.',
+  check: ({ file, ast, artifacts, project }) => findings, // { path, line, col, data? }[]
+  fix: (finding, { file }) => edits, // rendered as a unified diff
 })
 ```
-Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule that throws is reported as E1756 and the other rules still run.
+An optional `sql: (file) => findings` reads each module migration, `modules/<id>/migrations/*.sql` (path and text, no fix); `check` sees code files only. Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule that throws is reported as E1756 and the other rules still run.
 
-**explain and spec.** `keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`. `keel spec --for <code>` prints every spec line citing the code.
+**explain and docs.** `keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`. `keel docs --for <code>` prints every installed spec line citing the code (k.docs).
 
 **Flags.** `--code <code>` keeps only that code (the summary still counts all) · `--limit N` sets the per-code cap (default 5), followed by `... +K more <code> (keel check --code <code>)` · `--quiet` prints the trailer only · `--format=compact|json|pretty`.
 
-**Budgets.** Enforced from `budgets.json` (output tokens, gzip size per package or route). In the Keel repo: `keel check` on golden app 1 with 10 injected errors <= 600 tokens; `keel spec <id>` <= 1,500; spec map <= 1,200. A breach is E1755.
+**Trailer.** The summary's `files` counts every file `keel check` checked: each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`) and `.keel/*.json` artifact under `paths`, in every project there, tests and declarations among them and tool configs other than `vite.config.*`, `vitest.config.*` and `stryker.config.*` (those three are not read: the project's own `tsc` checks them). `keel build` counts its own (k.deploy Build).
 
-**Rules.** E1751 TS type error with no Keel rule code (message starts with the TS code) · E1752 file with more than one export, filename not equal to its export, or a re-export outside `index.*` and `types/` (principle 3) · E1753 rule code registered twice, or a stdlib rule outside E2xxx/W2xxx · E1754 `unsafe` without a justification string · E1755 budget exceeded · E1756 rule threw · E1757 cast, non-null assertion, `any`, or ts-suppression outside `unsafe/`.
+**Budgets.** Enforced from `budgets.json` (output tokens, gzip size per package or route). A breach is E1755.
+
+**App code.** The rules "in app code" read a project's code files (`.d.ts` aside) that are not test code (`*.test.*`, `*.spec.*`, or under `test/`, `tests/`, `conformance/` or `__tests__/`), not `*.config.*` and not under `.keel/` or `node_modules/`. A file under `unsafe/` is app code but for its lifted ranges. A lifted range is the arrow function or function expression written as the second argument of an `unsafe(` call (callee the identifier `unsafe`) whose first argument is a justification string, a string literal or a template without substitutions holding a non-space character, in a file under `unsafe/`: the function from its first character to its last, parameters, return type, comments and nested functions included. A second argument of another form (a name, a call), a call without a justification string (E1754) and a call in a file outside `unsafe/` give no range. Inside a lifted range E1252, E1601, E1603, E1651, E1757, E1758, E1759, E1762 and W1608 are not reported; every other code reads the range as it reads the rest of the file. Outside its lifted ranges an `unsafe/` file's imports, type declarations, signatures and helpers are checked as `modules/<id>/a.ts` is. A cast, `!` or suppression is written inside the function; a type that holds `any` is declared there too (`() => { type L = Chart<any>; return c as L }`), and a signature takes `unknown` or a type parameter. A stdlib rule that reads app code reads an `unsafe/` file whole: `unsafe` lifts the kernel codes above only.
+
+**Rules.** E1751 TS type error with no Keel rule code (message starts with the TS code) · E1752 file with more than one export, filename not equal to its export, or a re-export outside `index.*` and `types/` (principle 3) · E1753 rule code registered twice, or a stdlib rule outside E2xxx/W2xxx · E1754 `unsafe` without a justification string (App code) · E1755 budget exceeded · E1756 rule threw · E1757 cast, non-null assertion, `any`, or ts-suppression in a code file outside `.keel/`, `node_modules/`, lifted ranges (App code) and a negative type test's expectations (k.unsafe); outside `unsafe/` the message ends `outside unsafe/; use a guard or move it to unsafe/`, in an `unsafe/` file `outside an unsafe() call; use a guard or move it into the call` · E1758 ambient locale or time zone in app code: `navigator.language` or `languages`; an `Intl` constructor, `toLocale*String` or `localeCompare` without a locale; an `Intl.DateTimeFormat` or a date's `toLocale*String` without `timeZone`; a local-time getter (`getHours`, ...) on a `new Date(...)` expression. Names resolve as for E1601; no fix.
 
 **Conformance.**
-- Every E code in a kernel section's Rules has an `explain` entry of at most 120 tokens and a fixture that triggers exactly that code.
-- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot.
+- Every E code in a kernel section's Rules or in `reportedCodes()` has an `explain` entry of at most 120 tokens. Each one `check()` reports (`reportedCodes()`) has a fixture that triggers exactly that code (E1756: a registered rule that throws); each other Rules code comes from another command and a conformance test of its own package asserts it (outside comments and test titles).
+- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, E1808 and E1810 carry one; RFC 0035 lists why the others cannot.
 - The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits.
 - `check()` never evaluates app code: a module that throws at top level yields only static diagnostics.
 - Two runs on an unchanged tree produce identical output.
@@ -43,3 +46,17 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 - `--code E1501` emits only E1501 diagnostics while the summary counts every code.
 - Registering one code twice reports E1753; a rule that throws reports E1756 and other rules' diagnostics still appear.
 - A tree with only W diagnostics exits 0.
+- A base element given `children: Input(...)`, also through an aliased import, in an array, or held by a `const`, reports E1808; a thunk, a string or `props.children` does not.
+- A rule receives, as read-only `project`, every code file of its file's project and that project's `topology.ts`, the same array for each file it checks.
+- A file reading `process.env` and importing `node:path` checks clean in a project whose root resolves `@types/node` and reports E1751 in one whose root does not.
+- `n.toLocaleString()`, `new Intl.DateTimeFormat('de-DE').format(d)`, `navigator.language` and `new Date(0).getHours()` are each one E1758; `a.localeCompare(b, 'de-DE')` and `new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC' })` none.
+- In `modules/m/unsafe/a.ts`, `c as T`, `c!` and a TypeScript expect-error directive inside the arrow function given as the second argument of `unsafe('r', () => ...)`, and `any` as that function's return type, are no E1757; each of the four in a function declared at the file's top level is one E1757, the cast's message `type cast outside an unsafe() call; use a guard or move it into the call`.
+- In `modules/m/unsafe/a.ts`, `type L = any` and the parameter type of `export function f(v: any) {}`, both at the top level, are one E1757 each, and the same `type L = any` declared inside the arrow function given to `unsafe('r', () => ...)` is none.
+- In a project with no `topology.ts`, `Date.now()` (E1601), `document.title` (E1252), `eval(s)` (E1603), `ctx.net.fetch(r)` (E1651), `n.toLocaleString()` (E1758) and `Buffer.from(s)` (E1759) are each no diagnostic inside the arrow function given to `unsafe('r', () => ...)` in `modules/m/unsafe/a.ts`, and each one diagnostic of its code in a function declared at that file's top level; `throw e` (E1451) and `try { f() } catch { g() }` (E1452) are one diagnostic of their code in both places.
+- In `modules/m/unsafe/a.ts`, `c as T` stays one E1757 when the arrow function holding it is the second argument of `unsafe('', ...)` (also one E1754), of `unsafe(reason, ...)` with `reason` a parameter (also one E1754), or is `const g = () => c as T` at the top level with `unsafe('r', g)` beside it.
+- `unsafe('r', () => c as T)` in `modules/m/a.ts` is one E1757 at the cast, its message `type cast outside unsafe/; use a guard or move it to unsafe/`.
+- In `modules/m/unsafe/a.ts`, a second top-level export is one E1752, and `scope(fn, { detached: true })` inside the arrow function given to `unsafe('r', () => ...)` is one E1207.
+- A rule registered with `defineRule` that reports every call expression reports the calls inside the arrow function given to `unsafe('r', () => ...)` in `modules/m/unsafe/a.ts`.
+- In a project `keel build` ran in, whose files besides `package.json` and those `keel build` wrote are `topology.ts`, `vite.config.ts`, `modules/a/module.ts`, `modules/a/A.tsx`, `modules/a/A.test.tsx` and `test/a.test.ts`, the json summary's `counts.files` is 5 plus the number of `.keel/*.json` files for `keel check`, and 3 for `keel check modules/a`; with a nested project `apps/b/` added (its own `package.json`, `topology.ts`, `modules/b/module.ts` and `modules/b/B.tsx`, and the files its `keel build` wrote), `keel check` at the root counts 8 plus the number of `.keel/*.json` files under the root, `apps/b/` included.
+- `respond` from `@keel/cli/testing` of the one record `{ kind: 'diag', code: 'E1751', message: m }` gives the same message with `format` `compact`, `pretty` and `json` (the text after `E1751 ` on the compact line, pretty's second line after its two spaces, the json line's `message`): `m` itself for 89 `a`s; 86 `a`s and `...` for 90 `a`s; `x y` for `'x \n\n  y '`; 85 `a`s and `...` for 85 `a`s, `'\u{1F600}'` and 10 `b`s.
+- For each code `reportedCodes()` lists, every diagnostic of that code its fixture reports has a message of at most 89 UTF-16 code units that does not end in `...`.

@@ -9,12 +9,15 @@ describe("@keel/store examples", () => {
   it("get(key) reruns an effect only when that key changes", () => {
     const k = makeCounter();
     let runs = 0;
-    scope(() => {
-      effect(() => {
-        k.c.get("tags");
-        runs++;
-      });
-    });
+    scope(
+      () => {
+        effect(() => {
+          k.c.get("tags");
+          runs++;
+        });
+      },
+      { detached: true },
+    );
     tx(k.add, { by: 1 });
     expect(runs).toBe(1);
     tx(k.tag, { tag: "x" });
@@ -37,50 +40,71 @@ describe("@keel/store examples", () => {
     const k = makeCounter();
     tx(k.add, { by: 2 });
     const before = JSON.stringify([k.c.snapshot(), k.c.log()]);
-    for (const bad of [null, {}, { state: { n: 1, tags: [] }, log: [{ id: 1, name: "nope", payload: {}, at: 1 }] }]) {
+    for (const bad of [null, {}, { state: { n: "1", tags: [] }, log: [] }, { state: { n: 1, tags: [] } }]) {
       const r = k.c.restore(bad);
       expect(r.ok ? undefined : r.error.code).toBe("schema.invalid");
     }
-    const wrongPayload = {
-      state: { n: 1, tags: [] },
-      log: [{ id: 1, name: "counter.add", payload: { by: "x" }, at: 1 }],
-    };
-    expect(k.c.restore(wrongPayload).ok).toBe(false);
     expect(JSON.stringify([k.c.snapshot(), k.c.log()])).toBe(before);
+  });
+
+  it("restore folds a log naming an undeclared transaction or a refused payload into state (k.persist)", () => {
+    for (const log of [
+      [{ id: 1, name: "nope", payload: {}, at: 1 }],
+      [{ id: 1, name: "counter.add", payload: { by: "x" }, at: 1 }],
+    ]) {
+      const k = makeCounter();
+      expect(k.c.restore({ state: { n: 1, tags: [] }, log }).ok).toBe(true);
+      expect(k.c.get("n")).toBe(1);
+      expect(k.c.head()).toBe(1);
+      expect(k.c.log()).toEqual([]);
+      expect(k.c.snapshot().initial).toEqual({ n: 1, tags: [] });
+    }
   });
 
   it("a uses declaration is dropped once its scope is disposed", () => {
     const k = makeCounter();
     let denied = false;
-    const declaring = scope(() => {
-      k.c.uses([k.add]);
-      denied = !tx(k.reset, {}).ok;
-    });
+    const declaring = scope(
+      () => {
+        k.c.uses([k.add]);
+        denied = !tx(k.reset, {}).ok;
+      },
+      { detached: true },
+    );
     expect(denied).toBe(true);
     // A descendant scope inherits the restriction; after disposal nothing restricts.
     let nested = true;
-    scope(() => {
-      nested = tx(k.reset, {}).ok;
-    });
+    scope(
+      () => {
+        nested = tx(k.reset, {}).ok;
+      },
+      { detached: true },
+    );
     expect(nested).toBe(true);
     declaring.dispose();
-    scope(() => {
-      expect(tx(k.reset, {}).ok).toBe(true);
-    });
+    scope(
+      () => {
+        expect(tx(k.reset, {}).ok).toBe(true);
+      },
+      { detached: true },
+    );
   });
 
   it("a descendant scope is restricted by an ancestor's declaration", () => {
     const k = makeCounter();
     let code: string | undefined;
     let allowed: boolean | undefined;
-    scope(() => {
-      k.c.uses([k.add]);
-      scope(() => {
-        const r = tx(k.reset, {});
-        code = r.ok ? undefined : r.error.code;
-        allowed = tx(k.add, { by: 1 }).ok;
-      });
-    });
+    scope(
+      () => {
+        k.c.uses([k.add]);
+        scope(() => {
+          const r = tx(k.reset, {});
+          code = r.ok ? undefined : r.error.code;
+          allowed = tx(k.add, { by: 1 }).ok;
+        });
+      },
+      { detached: true },
+    );
     expect(code).toBe("store.undeclared");
     expect(allowed).toBe(true);
   });
@@ -118,23 +142,26 @@ describe("@keel/store examples", () => {
 
   it("duplicate or empty transaction names throw", () => {
     const k = makeCounter();
-    expect(() => scope(() => transaction(k.c, "counter.add", s.object({}), (st) => st))).toThrow();
-    expect(() => scope(() => transaction(k.c, "", s.object({}), (st) => st))).toThrow();
+    expect(() => scope(() => transaction(k.c, "counter.add", s.object({}), (st) => st), { detached: true })).toThrow();
+    expect(() => scope(() => transaction(k.c, "", s.object({}), (st) => st), { detached: true })).toThrow();
   });
 
   it("a transaction returning state outside the schema throws and commits nothing", () => {
     const box: { run?: () => unknown; size?: () => number } = {};
-    scope(() => {
-      const c = store(s.object({ n: s.int() }), { n: 0 });
-      const bad = transaction(c, "n.half", s.object({}), (st) => ({ n: st.n + 0.5 }));
-      box.run = () => tx(bad, {});
-      box.size = () => c.log().length + c.snapshot().state.n;
-    });
+    scope(
+      () => {
+        const c = store(s.object({ n: s.int() }), { n: 0 });
+        const bad = transaction(c, "n.half", s.object({}), (st) => ({ n: st.n + 0.5 }));
+        box.run = () => tx(bad, {});
+        box.size = () => c.log().length + c.snapshot().state.n;
+      },
+      { detached: true },
+    );
     expect(() => box.run?.()).toThrow(/n.half/);
     expect(box.size?.()).toBe(0);
   });
 
   it("an invalid initial state throws at creation", () => {
-    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 1.5 }))).toThrow(/initial/);
+    expect(() => scope(() => store(s.object({ n: s.int() }), { n: 1.5 }), { detached: true })).toThrow(/initial/);
   });
 });

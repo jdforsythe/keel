@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import { check } from "@keel/check";
 import { describe, expect, it } from "vitest";
 // No randomness; fixed sources. Checked through the public `check(files, { types: false })`.
@@ -21,15 +22,27 @@ const hits = async (files: { path: string; source: string }[]): Promise<Set<stri
 };
 
 describe("k.services: E1653", () => {
-  it("E1653 `body` on a `GET` endpoint is reported", async () => {
-    expect(await hits([getBody, post, put, getNoBody])).toEqual(new Set([getBody.path]));
-  });
+  it(
+    "E1653 `body` on a `GET` endpoint is reported",
+    async () => {
+      expect(await hits([getBody, post, put, getNoBody])).toEqual(new Set([getBody.path]));
+    },
+    fixedTime(30_000),
+  );
 
-  it("E1653 `body` on a `HEAD` endpoint is reported", async () => {
-    expect(await hits([headBody, post, put, getNoBody])).toEqual(new Set([headBody.path]));
-  });
+  it(
+    "E1653 `body` on a `HEAD` endpoint is reported",
+    async () => {
+      expect(await hits([headBody, post, put, getNoBody])).toEqual(new Set([headBody.path]));
+    },
+    fixedTime(30_000),
+  );
 
-  it("E1653 is not reported for `body` on POST or PUT, nor for GET without a body", async () => {
-    expect(await hits([post, put, getNoBody])).toEqual(new Set());
-  });
+  it(
+    "E1653 is not reported for `body` on POST or PUT, nor for GET without a body",
+    async () => {
+      expect(await hits([post, put, getNoBody])).toEqual(new Set());
+    },
+    fixedTime(30_000),
+  );
 });

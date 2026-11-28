@@ -4,8 +4,8 @@ import { CODE_FILE } from "./CODE_FILE.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { relPath } from "./relPath.ts";
 
-/** A compiler artifact `keel check` verifies (E1005, k.compiler): `.keel/<name>.json` at the project root. */
-const ARTIFACT = /^\.keel\/[^/]+\.json$/;
+/** A compiler artifact `keel check` verifies (E1005, k.compiler): `<dir>/.keel/<name>.json`, any project (rfc:0055). */
+const ARTIFACT = /(?:^|\/)\.keel\/[^/]+\.json$/;
 
 /**
  * Code files of the project, restricted to `paths` (files or directories) when any are given; with

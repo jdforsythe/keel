@@ -1,6 +1,7 @@
 // Mutation-killing tests for listSources, entryCode and mergeArtifacts.
 import fs from "node:fs";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { entryCode } from "../src/internal/entryCode.ts";
 import { listSources } from "../src/internal/listSources.ts";
@@ -12,7 +13,7 @@ import type { RouteEntry } from "../src/types/RouteEntry.ts";
 
 let root = "";
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-mproj-"));
+  root = tempDir(".tmp-mproj-", import.meta.dirname);
 });
 afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
@@ -54,6 +55,10 @@ describe("listSources (mutation)", () => {
       "src/node_modules/q.ts",
       "src/tests/q.ts",
       "notest.ts",
+      "vite.config.ts",
+      "src/x.config.tsx",
+      "src/y.configs.ts",
+      "types.d.mts",
     ])
       touch(f);
     expect(listSources(root)).toEqual([
@@ -68,6 +73,7 @@ describe("listSources (mutation)", () => {
       "notest.ts",
       "src/deep/y.ts",
       "src/deep/z.ts",
+      "src/y.configs.ts",
     ]);
   });
 
@@ -86,18 +92,18 @@ describe("entryCode (mutation)", () => {
   const head = [
     'import "virtual:css";',
     'import { createCtx } from "@keel/ctx";',
-    'import { browserHistory, createRouter, manifest } from "@keel/router";',
+    'import { browserHistory, createRouter, routeTable } from "@keel/router";',
     'import { mount } from "@keel/runtime-dom";',
     'import { inspect } from "@keel/reactive";',
     'import { stores } from "@keel/store";',
     'import { inspectorSections } from "@keel/compiler/inspect/inspectorSections";',
   ];
-  const tail = ['const ctx = createCtx({ mode: "real" });'];
+  const tail = ['const ctx = createCtx({ mode: "real" });', 'const mode = "production";'];
   const rest = [
     'const el = document.getElementById("app");',
     'if (el === null) throw new Error("keel: index.html has no #app element");',
-    "mount(router.App, el, { ctx });",
-    "if (import.meta.env.DEV) {",
+    "mount(router.App, el, { ctx, mode });",
+    'if (mode === "dev") {',
     '  let last = "";',
     "  const report = () => {",
     "    const live = {};",
@@ -123,28 +129,37 @@ describe("entryCode (mutation)", () => {
         ...head,
         'import { routes as __keelRoutes0 } from "/modules/a/routes.ts";',
         ...tail,
-        "const router = createRouter(__keelRoutes0, { ctx, history: browserHistory() });",
+        "const router = createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode });",
         ...rest,
       ].join("\n"),
     );
   });
 
-  it("merges several routes files into one manifest", () => {
+  it("unions several routes files with routeTable", () => {
     expect(entryCode(["/a.ts", "/b.ts"], "virtual:css")).toBe(
       [
         ...head,
         'import { routes as __keelRoutes0 } from "/a.ts";',
         'import { routes as __keelRoutes1 } from "/b.ts";',
         ...tail,
-        "const router = createRouter(manifest({ ...__keelRoutes0.routes, ...__keelRoutes1.routes }), { ctx, history: browserHistory() });",
+        "const router = createRouter(routeTable(__keelRoutes0, __keelRoutes1), { ctx, history: browserHistory(), mode });",
         ...rest,
       ].join("\n"),
     );
   });
 
-  it("falls back to an empty manifest table for no routes files", () => {
+  it("writes the mode it is given as a literal, production by default", () => {
+    const dev = entryCode(["/modules/a/routes.ts"], "virtual:css", {}, {}, undefined, "dev");
+    expect(dev.split("\n")).toContain('const mode = "dev";');
+    expect(dev.replace('const mode = "dev";', 'const mode = "production";')).toBe(
+      entryCode(["/modules/a/routes.ts"], "virtual:css"),
+    );
+    expect(dev).not.toContain("import.meta.env");
+  });
+
+  it("falls back to an empty route table for no routes files", () => {
     const code = entryCode([], "virtual:css");
-    expect(code).toContain("const router = createRouter(manifest({  }), { ctx, history: browserHistory() });");
+    expect(code).toContain("const router = createRouter(routeTable(), { ctx, history: browserHistory(), mode });");
   });
 });
 

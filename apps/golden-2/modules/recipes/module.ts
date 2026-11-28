@@ -2,10 +2,21 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "recipes",
-  deps: [],
-  capabilities: ["net", "storage"],
+  deps: [
+    "kitchen",
+    "@keel/std-brands",
+    "@keel/std-geo",
+    "@keel/std-headless",
+    "@keel/std-i18n",
+    "@keel/std-money",
+    "@keel/std-temporal",
+    "@keel/std-text",
+    "@keel/std-messages",
+    "@keel/std-tables",
+    "@keel/std-timings",
+  ],
+  capabilities: ["geo.position", "net", "storage"],
   public: {
-    exports: ["Recipe", "Box", "RecipeDraft", "RecipeParams", "RecipeSearch", "Nothing", "BoxReply"],
-    routes: [],
+    exports: ["RecipeParams", "RecipeSearch"],
   },
 });

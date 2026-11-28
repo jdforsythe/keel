@@ -1,0 +1,22 @@
+# Tests that reach the cli's uncovered code in process (2026-11-17)
+
+Repository: the Keel worktree you were started in. Read `tasks/0338-s8-reach/briefs/common.md` first (machine and code rules, hard), then `docs/TESTING.md` (Mutation; property tests; no clock), `packages/cli/vitest.mutate.config.ts` and `packages/cli/stryker.config.mjs`.
+
+## The problem
+The 2026-11-17 mutation run of `@keel/cli` scored 67.7% against a threshold of 70% (8,355 mutants: 5,117 killed, 93 timed out, 894 survived, 1,596 with no covering test, 655 ignored). The threshold does not move. 180 more kills pass it.
+
+1,240 of the uncovered mutants sit in 24 source files that no test reaches in process: the suite reaches them only by spawning `keel` as a child process, and a mutation run sees coverage only inside the test process. The report is `packages/cli/reports/mutation/mutation.json` (Stryker's JSON: `files[path].mutants[]` with `status`, `location`, `mutatorName`, `replacement`). The largest, by uncovered mutants: `src/internal/bundleWrite.ts` 181, `src/internal/depsReport.ts` 162, `src/internal/surfaceRun.ts` 160, `src/shell/shellPlan.ts` 76, `src/internal/piiReport.ts` 67, `src/internal/securityReport.ts` 60, `src/internal/a11yReport.ts` 58, `src/internal/gitSource.ts` 52, `src/internal/auditAdvisories.ts` 50, `src/internal/a11yRuleMap.ts` 40. Partly covered with many survivors: `src/internal/isSchemaNode.ts` (56 uncovered, 20 survived), `src/internal/ledgerCommand.ts` (37, 80), `src/internal/bundleVerify.ts` (22, 49).
+
+## What to do
+Write tests in `packages/cli/test/` that import these functions and call them in process, asserting on what they return or write. Take the files in the order above and stop when your estimate of new kills passes 350 (a margin over 180), or at the time limit. For each file:
+1. Read it and the spec section that states its behaviour (`pnpm spec --for <code>` or `pnpm spec <id>`; the evidence bundle is k.evidence, `keel deps` and `keel surface` are k.cli and k.compat, shells are k.shell). Test the stated behaviour, not the code's shape: a test that only repeats the implementation kills mutants and proves nothing.
+2. One test file per source file, named for it (`test/bundleWrite.test.ts`). Header comment: what it covers and "Seed 1337." where it has properties. Use the helpers the existing tests use for temp directories (see how `packages/cli/test/*.test.ts` make and remove them: under the package's `test/.tmp-*`, removed after) and for the clock and randomness (no bare `Date`, `Math.random`, `fetch`). At least one fast-check property per file where the function has a real input space (seed 1337, `numRuns` no more than 50). Name the function under test in a test name so the ledger credits it.
+3. If a function cannot be called in process without spawning or without the network (`gitSource.ts`, `auditAdvisories.ts` may be so), skip that file and say why; do not mock the world to reach it.
+4. Check your kills without a mutation run: for a sample of 10 mutants of the file from the report (pick ones with different `mutatorName`), say for each which of your assertions fails under it. If you find a mutant no honest test can kill (an equivalent mutant), note it.
+
+You may NOT run `pnpm mutate` or any Stryker process: the orchestrator runs the cli mutation afterwards. You own only new files under `packages/cli/test/`. You may not edit `packages/cli/src/**`, `conformance/**`, any config, `tooling/**`, `spec/**`, `docs/**`, `tasks/**`. If the source has a bug your test exposes, leave the failing test out of the tree, and report the bug with the input and the spec sentence it breaks.
+
+Verify each new file alone: `perl -e 'alarm 400; exec @ARGV' pnpm --filter @keel/cli exec vitest run test/<file> --reporter=dot 2>&1 | tail -20`; then once at the end `pnpm --filter @keel/cli check 2>&1 | tail -8` and `node tooling/structure-lint.mjs 2>&1 | tail -3`. Another agent is working in `packages/server` at the same time: run one vitest file at a time and nothing wider. Report by 04:15 local (`date`); stop where you are then.
+
+## Report (plain text, under 350 words)
+Per source file: the test file, the number of tests, its result line, your estimate of mutants now covered and killed, the sample of 10 in one line each. Then: files skipped and why; bugs found; `check` and structure lint result lines; leftover processes (`pnpm orphans 2>&1 | tail -1`).

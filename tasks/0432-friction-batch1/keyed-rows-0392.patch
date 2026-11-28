@@ -1,0 +1,316 @@
+diff --git a/packages/reactive/src/internal/index.ts b/packages/reactive/src/internal/index.ts
+index ef92156..e55414f 100644
+--- a/packages/reactive/src/internal/index.ts
++++ b/packages/reactive/src/internal/index.ts
+@@ -2,3 +2,4 @@
+ // re-exports only (one export per file lives in its own file)
+ export { pulse } from "./pulse.ts";
+ export { lastResource } from "./lastResource.ts";
++export { reaction } from "./reaction.ts";
+diff --git a/packages/reactive/src/internal/reaction.ts b/packages/reactive/src/internal/reaction.ts
+new file mode 100644
+index 0000000..b136173
+--- /dev/null
++++ b/packages/reactive/src/internal/reaction.ts
+@@ -0,0 +1,6 @@
++import { rt } from "./rt.ts";
++
++/** The computation whose reads subscribe right now (an identity to compare, never to call), or null. */
++export function reaction(): object | null {
++  return rt.reaction;
++}
+diff --git a/packages/runtime-dom/src/intrinsics/For.ts b/packages/runtime-dom/src/intrinsics/For.ts
+index 93e0dcb..fde5422 100644
+--- a/packages/runtime-dom/src/intrinsics/For.ts
++++ b/packages/runtime-dom/src/intrinsics/For.ts
+@@ -1,10 +1,12 @@
++import { computed } from "@keel/reactive";
+ import { anchored } from "../internal/anchored.ts";
+ import { list } from "../ops/list.ts";
+ 
+ /**
+  * `<For each={xs} key="id">{(item, index) => ...}</For>` (k.component). Compiler intrinsic: compiled code
+- * calls the `list` op with live accessors. At runtime (hand-built trees) a row re-renders when its item
+- * object changes; a move keeps the row (and its `index` argument is the index when it rendered).
++ * calls the `list` op with live accessors, so a row whose key stays keeps its nodes. At runtime (hand-built trees)
++ * the row receives plain values, so it re-renders when its item object changes; a move keeps the row (and its
++ * `index` argument is the index when it rendered).
+  */
+ export function For<T extends object>(props: {
+   readonly each: readonly T[];
+@@ -30,7 +32,8 @@ export function For<T extends object>(props: {
+       each,
+       keyOf,
+       (item) => {
+-        const value = item();
++        // Through a computed: a top-level read of `item()` is untracked in a row, and this row must track it.
++        const value = computed(item).get();
+         return props.children(value, indexOf.get(keyOf(value)) ?? 0);
+       },
+       props.empty,
+diff --git a/packages/runtime-dom/src/ops/list.ts b/packages/runtime-dom/src/ops/list.ts
+index 313c9b5..866e82b 100644
+--- a/packages/runtime-dom/src/ops/list.ts
++++ b/packages/runtime-dom/src/ops/list.ts
+@@ -1,4 +1,6 @@
+ import { computed, effect, scope } from "@keel/reactive";
++import type { Computed } from "@keel/reactive";
++import { reaction } from "@keel/reactive/internal";
+ import type { Unit } from "../internal/Unit.ts";
+ import { consumed } from "../internal/consumed.ts";
+ import { current } from "../internal/current.ts";
+@@ -13,8 +15,10 @@ type Row = { unit: Unit | null; rendered: boolean };
+ /**
+  * `For`: one row per distinct `key(item)` of `each()`, in order, before `anchor`. Rows are keyed: when
+  * the order changes rows move (node identity kept); a row is created only for a new key and disposed
+- * when its key leaves. `item()`/`index()` track the row's current item and position
+- * (read them inside bindings: a top-level read in the row body re-renders the row when it changes). First key wins.
++ * when its key leaves, so a row whose key stays keeps its nodes (and focus, selection and input state) whatever
++ * its item object. `item()`/`index()` give the row's current item and position: a binding reading them updates
++ * in place; a read at the top level of the row body is the value at render and never re-renders the row (other
++ * top-level reads still do, as in any unit). First key wins.
+  * Rows live in the op's own `home` scope (`home.run`), so reruns of the reconcile effect never dispose them.
+  * `empty`, when given, renders (in its own scope) while `each()` has no rows and is removed when rows arrive.
+  */
+@@ -43,18 +47,19 @@ export function list<T>(
+   let pending = 0;
+   let hydrate = claim;
+   let emptyUnit: Unit | null = null;
++  // Rows' nodes are the contiguous run before `end`. One forward pass from its first node: a node already in place
++  // stays, any other is moved before it, so new rows (rendered before `end`) move into place and do not displace
++  // the rows they precede.
+   const place = (): void => {
+     const p = end.parentNode;
+     if (pending > 0 || p === null) return;
+-    let cursor: Node = end;
+-    for (let i = order.length - 1; i >= 0; i--) {
+-      const ns = rows.get(order[i])?.unit?.nodes() ?? [];
+-      for (let j = ns.length - 1; j >= 0; j--) {
+-        const n = ns[j];
+-        if (n === undefined) continue;
+-        if (n.nextSibling !== cursor) p.insertBefore(n, cursor);
+-        cursor = n;
+-      }
++    const want = order.flatMap((k) => rows.get(k)?.unit?.nodes() ?? []);
++    let cursor: Node | null = end;
++    for (let i = 0; i < want.length && cursor !== null; i++) cursor = cursor.previousSibling;
++    cursor ??= p.firstChild;
++    for (const n of want) {
++      if (n === cursor) cursor = n.nextSibling;
++      else p.insertBefore(n, cursor);
+     }
+   };
+   effect(
+@@ -99,6 +104,7 @@ export function list<T>(
+             parent.catcher,
+             end,
+             () => {
++              const top = reaction();
+               // Separate computeds: a move (index change) never invalidates readers of item(), and vice versa.
+               const itemC = computed(() => {
+                 item = byKey.get().get(k)?.item ?? item;
+@@ -108,9 +114,11 @@ export function list<T>(
+                 index = byKey.get().get(k)?.index ?? index;
+                 return index;
+               });
++              // Read from the row body itself (not from a binding or computed inside it): untracked.
++              const read = <V>(c: Computed<V>): V => (reaction() === top ? home.run(() => c.get()) : c.get());
+               return render(
+-                () => itemC.get(),
+-                () => indexC.get(),
++                () => read(itemC),
++                () => read(indexC),
+               );
+             },
+             h,
+diff --git a/packages/runtime-dom/test/keyed-rows.test.ts b/packages/runtime-dom/test/keyed-rows.test.ts
+new file mode 100644
+index 0000000..31f86ee
+--- /dev/null
++++ b/packages/runtime-dom/test/keyed-rows.test.ts
+@@ -0,0 +1,185 @@
++// @vitest-environment happy-dom
++// Property seed: 1337. A keyed row whose key survives a replacement of `each` keeps its element (and so focus);
++// its bindings update from the new item object. Rows are written the way the compiler emits them: a component
++// receives the item through a getter prop and reads it at top level (its id) and in bindings (its text).
++import * as fc from "fast-check";
++import { afterEach, describe, expect, it } from "vitest";
++import { For, mount } from "../src/index.ts";
++import { clone, list, template, text } from "../src/ops/index.ts";
++import { SEED, rootSignal } from "./support.ts";
++
++type Todo = { readonly id: string; readonly title: string };
++
++const UL = template("<ul><!----></ul>");
++const LI = template("<li><button></button></li>");
++
++/** A row component: `id` read once at top level, the title bound to the button's text. */
++function Row(props: { readonly todo: Todo }): Node {
++  const li = clone(LI);
++  if (!(li instanceof HTMLElement)) throw new Error("no li");
++  li.id = `row.${props.todo.id}`;
++  const button = li.firstChild;
++  if (button === null) throw new Error("no button");
++  text(button, () => props.todo.title);
++  return li;
++}
++
++function render(items: () => readonly Todo[], host: Element): () => void {
++  return mount(() => {
++    const ul = clone(UL);
++    const anchor = ul.lastChild;
++    if (anchor === null) throw new Error("no anchor");
++    list(
++      anchor,
++      items,
++      (t) => t.id,
++      (todo) =>
++        Row({
++          get todo() {
++            return todo();
++          },
++        }),
++    );
++    return ul;
++  }, host);
++}
++
++const rowOf = (host: Element, id: string): HTMLElement => {
++  const el = host.querySelector(`[id="row.${id}"]`);
++  if (!(el instanceof HTMLElement)) throw new Error(`no row ${id}`);
++  return el;
++};
++const buttonOf = (host: Element, id: string): HTMLElement => {
++  const b = rowOf(host, id).querySelector("button");
++  if (b === null) throw new Error(`no button ${id}`);
++  return b;
++};
++const titles = (host: Element): string[] => [...host.querySelectorAll("button")].map((b) => b.textContent ?? "");
++const todos = (spec: string): Todo[] => [...spec].map((id) => ({ id, title: `${id}0` }));
++
++let host: HTMLElement = document.createElement("div");
++afterEach(() => host.remove());
++const setup = (initial: Todo[]): { items: ReturnType<typeof rootSignal<Todo[]>>; dispose: () => void } => {
++  host = document.createElement("div");
++  document.body.appendChild(host);
++  const items = rootSignal<Todo[]>(initial);
++  return { items, dispose: render(() => items.get(), host) };
++};
++
++describe("keyed list: a surviving key keeps its element", () => {
++  it("new objects with the same keys: row B keeps its element and focus, row A's text updates", () => {
++    const { items, dispose } = setup(todos("ab"));
++    const a = rowOf(host, "a");
++    const b = rowOf(host, "b");
++    const focused = buttonOf(host, "b");
++    focused.focus();
++    expect(document.activeElement).toBe(focused);
++    items.set([
++      { id: "a", title: "a1" },
++      { id: "b", title: "b0" },
++    ]);
++    expect(rowOf(host, "a")).toBe(a);
++    expect(rowOf(host, "b")).toBe(b);
++    expect(buttonOf(host, "b")).toBe(focused);
++    expect(document.activeElement).toBe(focused);
++    expect(titles(host)).toEqual(["a1", "b0"]);
++    dispose();
++  });
++
++  it("reorder, insert and remove keep every surviving row's element; insert and remove keep the focus", () => {
++    const { items, dispose } = setup(todos("abc"));
++    const b = rowOf(host, "b");
++    const c = rowOf(host, "c");
++    const focused = buttonOf(host, "b");
++    items.set([...todos("cb").map((t) => ({ ...t, title: `${t.id}2` }))]);
++    expect(rowOf(host, "c")).toBe(c);
++    expect(rowOf(host, "b")).toBe(b);
++    expect(host.querySelector('[id="row.a"]')).toBeNull();
++    expect(titles(host)).toEqual(["c2", "b2"]);
++    focused.focus();
++    items.set(todos("cdb"));
++    expect(rowOf(host, "c")).toBe(c);
++    expect(rowOf(host, "b")).toBe(b);
++    expect(titles(host)).toEqual(["c0", "d0", "b0"]);
++    expect(document.activeElement).toBe(focused);
++    items.set(todos("db"));
++    expect(rowOf(host, "b")).toBe(b);
++    expect(document.activeElement).toBe(focused);
++    dispose();
++  });
++
++  it("a key that leaves and comes back renders a new element", () => {
++    const { items, dispose } = setup(todos("ab"));
++    const a = rowOf(host, "a");
++    items.set(todos("b"));
++    items.set(todos("ab"));
++    expect(rowOf(host, "a")).not.toBe(a);
++    dispose();
++  });
++
++  it("over any sequence of keyed replacements, an element whose key survives is the same node", () => {
++    const step = fc.tuple(fc.uniqueArray(fc.constantFrom(..."abcdef"), { maxLength: 6 }), fc.nat(9));
++    fc.assert(
++      fc.property(fc.array(step, { minLength: 1, maxLength: 10 }), (steps) => {
++        const { items, dispose } = setup([]);
++        let prev = new Map<string, Element>();
++        for (const [ks, v] of steps) {
++          items.set(ks.map((id) => ({ id, title: `${id}${v}` })));
++          expect(titles(host)).toEqual(ks.map((id) => `${id}${v}`));
++          const next = new Map<string, Element>();
++          for (const k of ks) {
++            const el = rowOf(host, k);
++            if (prev.has(k)) expect(el).toBe(prev.get(k));
++            next.set(k, el);
++          }
++          prev = next;
++        }
++        dispose();
++        host.remove();
++      }),
++      { seed: SEED, numRuns: 100 },
++    );
++  });
++
++  it("unkeyed (identity key): a new object is a new row", () => {
++    host = document.createElement("div");
++    document.body.appendChild(host);
++    const items = rootSignal<Todo[]>(todos("a"));
++    const dispose = mount(() => {
++      const ul = clone(UL);
++      const anchor = ul.lastChild;
++      if (anchor === null) throw new Error("no anchor");
++      list(
++        anchor,
++        () => items.get(),
++        (t) => t,
++        (todo) =>
++          Row({
++            get todo() {
++              return todo();
++            },
++          }),
++      );
++      return ul;
++    }, host);
++    const a = rowOf(host, "a");
++    items.set(todos("a"));
++    expect(rowOf(host, "a")).not.toBe(a);
++    dispose();
++  });
++
++  it("For (hand-built, plain values) re-renders a row for a new item object", () => {
++    host = document.createElement("div");
++    document.body.appendChild(host);
++    const items = rootSignal<Todo[]>(todos("a"));
++    const dispose = mount(() => {
++      const ul = clone(UL);
++      ul.appendChild(For({ each: items.get(), key: "id", children: (todo) => Row({ todo }) }));
++      return ul;
++    }, host);
++    expect(titles(host)).toEqual(["a0"]);
++    items.set([{ id: "a", title: "a1" }]);
++    expect(titles(host)).toEqual(["a1"]);
++    dispose();
++  });
++});

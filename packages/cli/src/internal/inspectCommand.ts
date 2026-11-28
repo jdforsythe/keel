@@ -11,15 +11,16 @@ const URL_MAX = 48;
 
 const fail = (why: string, url: string): OutRecord[] => {
   const d = makeDiag("E1056", `${why}: ${url.length > URL_MAX ? `${url.slice(0, URL_MAX - 3)}...` : url}`, {
-    see: "k.cli",
+    see: "k.inspect",
   });
   return [d, summary("inspect", [d], {})];
 };
 
 /**
- * `keel inspect [url]` (k.cli Inspect): fetch `<url>/__keel/inspect` from a running dev app and summarize it, one
+ * `keel inspect [url]` (k.inspect): fetch `<url>/__keel/inspect` from a running dev app and summarize it, one
  * `inspect.store` record per store, then per inspector section (both sorted by id) an `inspect.section` record, or
- * E1057 for a section the target failed to read or validate, then counts. Unreachable, non-2xx, or a body that is not
+ * E1057 for a section the target failed to read or validate, then counts. A document with `deployables` gives one
+ * record per deployable (by name) and section, carrying `deployable`. Unreachable, non-2xx, or a body that is not
  * an inspect document is E1056. Without `io.fetch` (an in-process engine with no network) it is I1055.
  */
 export async function inspectCommand(input: Input, io: Io): Promise<OutRecord[]> {
@@ -48,16 +49,26 @@ export async function inspectCommand(input: Input, io: Io): Promise<OutRecord[]>
     const last = log[log.length - 1]?.name;
     return { kind: "inspect.store", id, entries: log.length, ...(last === undefined ? {} : { last }) };
   });
-  const sections = d.sections ?? {};
-  const sectionIds = Object.keys(sections).sort();
-  for (const id of sectionIds) {
-    const sec = sections[id];
-    if (sec === undefined) continue;
-    records.push(
-      "error" in sec
-        ? makeDiag("E1057", sec.error.replace(/^E1057 /, ""), { see: "k.cli" })
-        : { kind: "inspect.section", id, doc: sec.doc, value: sec.value },
-    );
+  // Each deployable's own sections when the document holds them (`keel dev`), else the one set.
+  const sets: readonly (readonly [string | undefined, NonNullable<typeof d.sections>])[] =
+    d.deployables === undefined
+      ? [[undefined, d.sections ?? {}]]
+      : Object.keys(d.deployables)
+          .sort()
+          .map((name) => [name, d.deployables?.[name]?.sections ?? {}] as const);
+  let sectionCount = 0;
+  for (const [deployable, sections] of sets) {
+    for (const id of Object.keys(sections).sort()) {
+      const sec = sections[id];
+      if (sec === undefined) continue;
+      sectionCount += 1;
+      const at = deployable === undefined ? {} : { deployable };
+      records.push(
+        "error" in sec
+          ? makeDiag("E1057", sec.error.replace(/^E1057 /, ""), { see: "k.inspect" })
+          : { kind: "inspect.section", id, ...at, doc: sec.doc, value: sec.value },
+      );
+    }
   }
   const counts = {
     nodes: d.graph.nodes.length,
@@ -66,7 +77,7 @@ export async function inspectCommand(input: Input, io: Io): Promise<OutRecord[]>
     ids: Object.keys(d.ids).length,
     a11y: Object.keys(d.a11y).length,
     routes: Object.keys(d.routes).length,
-    sections: sectionIds.length,
+    sections: sectionCount,
   };
   return [...records, summary(d.live ? "inspect live" : "inspect (no live page)", records, counts)];
 }

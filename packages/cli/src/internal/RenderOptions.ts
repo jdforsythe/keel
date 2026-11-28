@@ -8,4 +8,6 @@ export type RenderOptions = {
   readonly verbose: boolean;
   readonly code: string | undefined;
   readonly command: string;
+  /** How the reader runs `keel` (`pnpm keel`), which compact and pretty print in place of a bare `keel <command>`. */
+  readonly keel?: string | undefined;
 };

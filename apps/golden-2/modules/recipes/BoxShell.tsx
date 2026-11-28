@@ -1,13 +1,32 @@
+import type { Ctx } from "@keel/ctx";
+import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
+import { Toaster } from "@keel/std-headless";
+import { localeName } from "@keel/std-i18n";
+import { tx } from "@keel/store";
 import { Box, Image, Link, Text } from "@keel/ui";
-import { routes } from "./routes.ts";
+import { LocaleParams } from "./LocaleParams.schema.ts";
+import { TextData } from "./TextData.schema.ts";
+import { dismissToast } from "./dismissToast.ts";
+import { idPart } from "./idPart.ts";
+import { recipes } from "./recipes.contract.ts";
+import { servedLocales } from "./servedLocales.ts";
+import { toasts } from "./toasts.ts";
 
-export const Props = s.object({});
+export const Props = s.object({ params: LocaleParams, data: TextData });
 
-/** Layout `recipes.shell`: navigation links and the page in `main`. */
-export default function BoxShell(props: Infer<typeof Props> & { readonly children?: () => Node }) {
+export const uses = [dismissToast];
+
+const served = servedLocales.map((id) => ({ id }));
+
+/** Layout `recipes.shell`: the page region in its locale, navigation, the locale switcher, the page in `main`, and the toasts. */
+export default function BoxShell(props: Infer<typeof Props> & { readonly children?: () => Node }, ctx: Ctx) {
+  const dismiss = (id: string): void => {
+    const removed = tx(dismissToast, { id });
+    if (!removed.ok) return;
+  };
   return (
-    <Box id="recipes.shell" direction="column" bg="surface" fg="text" font="serif" fontSize="md">
+    <Box id="recipes.shell" lang={props.params.locale} direction="column">
       <Box
         as="header"
         direction={{ base: "column", md: "row" }}
@@ -18,26 +37,64 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
         py="4"
       >
         <Box direction="row" align="center" gap="3">
-          <Image src="/keel-mark.svg" decorative w="mark" h="mark" />
+          <Image src="/keel-mark.svg" decorative h="mark" />
           <Text fontSize="lg" weight="semibold">
-            Keel
+            {props.data.text.mark}
           </Text>
           <Text font="mono" fontSize="xs" fg="textSecondary">
-            golden-2 / recipes
+            {props.data.text.tagline}
           </Text>
         </Box>
-        <Box as="nav" id="recipes.nav" direction="row" align="center" gap="4">
-          <Link id="recipes.home" to={routes.href("recipes.index")} fg="text">
-            Recipes
+        <Box as="nav" id="recipes.nav" label={props.data.text.navLabel} direction="row" align="center" gap="4">
+          <Link id="recipes.home" to={recipes.href("recipes.index", { locale: props.params.locale })}>
+            {props.data.text.home}
           </Link>
-          <Link id="recipes.newLink" to={routes.href("recipes.new")} fg="text">
-            New recipe
+          <Link id="recipes.newLink" to={recipes.href("recipes.new", { locale: props.params.locale })}>
+            {props.data.text.newLink}
           </Link>
+          <Link id="recipes.catalogLink" to={recipes.href("recipes.catalog", { locale: props.params.locale })}>
+            {props.data.text.catalogLink}
+          </Link>
+        </Box>
+        <Box
+          as="section"
+          id="recipes.locales"
+          label={props.data.text.localesLabel}
+          direction="row"
+          align="center"
+          gap="3"
+          font="mono"
+          fontSize="xs"
+        >
+          <For each={served} key="id">
+            {(l) => (
+              <Link
+                id={`recipes.locale.${idPart(l.id)}`}
+                lang={l.id}
+                to={recipes.href("recipes.index", { locale: l.id })}
+                fg="textSecondary"
+              >
+                {localeName(l.id)}
+              </Link>
+            )}
+          </For>
         </Box>
       </Box>
       <Box h="hairline" bg="divider" />
       <Box as="main" id="recipes.main" w={{ md: "measure" }} mx={{ md: "auto" }} px={{ base: "3", md: "4" }} py="6">
         {props.children?.()}
+      </Box>
+      <Box px={{ base: "3", md: "6" }} py="4">
+        <Toaster
+          id="recipes.toaster"
+          styles={{
+            toast: { bg: "card", border: "hairline", px: "3", py: "2", font: "mono", fontSize: "sm" },
+            dismiss: { look: "secondary", px: "2", py: "1" },
+          }}
+          items={() => toasts.get("items")}
+          onDismiss={dismiss}
+          dismiss={props.data.text.dismiss}
+        />
       </Box>
     </Box>
   );

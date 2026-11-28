@@ -1,7 +1,16 @@
-// Generates turbo.json and .github/workflows/ci.yml from tooling/*.source.json.
+// Generates turbo.json and the .github/workflows/*.yml files from tooling/*.source.json, and the deploy files
+// (k.topology) of each app in tooling/deploy.source.json with the @keel/scaffold generator `keel build` uses, and the
+// kernel ledger's sink rungs @keel/cli ships (k.evidence `pii.json`) from tooling/ledger/ledger.json, and the
+// std.temporal zone list from tooling/tzdata.source.zi, and the app packages of each native shell @keel/scaffold writes
+// (k.scaffold-shell) from packages/std-tauri/package.json and packages/std-capacitor/package.json.
 // Usage: node tooling/generate.mjs [--check]   (--check exits 2 with S0007 on drift)
 import fs from "node:fs";
 import path from "node:path";
+import { PII_SINKS } from "../packages/cli/src/internal/PII_SINKS.ts";
+import { libraryFiles } from "../packages/compiler/src/std/libraryFiles.ts";
+import { deployDrift } from "../packages/scaffold/src/deployDrift.ts";
+import { capacitorTarget } from "../packages/std-capacitor/src/tools/capacitorTarget.ts";
+import { tauriTarget } from "../packages/std-tauri/src/tools/tauriTarget.ts";
 import { parseArgs, run } from "./output.ts";
 
 const here = import.meta.dirname;
@@ -10,7 +19,10 @@ const readJson = (f) => JSON.parse(fs.readFileSync(path.join(here, f), "utf8"));
 
 const PLAIN = /^[A-Za-z_./][A-Za-z0-9_./@ -]*$/;
 const RESERVED = /^(?:true|false|null|yes|no|on|off|y|n|~)$/i;
+// An action pinned by commit SHA keeps its version as a trailing comment: `owner/repo@<sha> # v1.2.3`.
+const PINNED = /^[A-Za-z0-9_.\/-]+@[0-9a-f]{40} # v\d+(?:\.\d+)*$/;
 const scalar = (v) => {
+  if (typeof v === "string" && PINNED.test(v)) return v;
   if (typeof v === "string") return PLAIN.test(v) && !RESERVED.test(v) && !v.endsWith(" ") ? v : JSON.stringify(v);
   return JSON.stringify(v);
 };
@@ -46,16 +58,163 @@ function turbo() {
   return `// _generated: edit tooling/turbo.source.json and run pnpm generate. Do not edit by hand.\n${JSON.stringify({ ...($schema ? { $schema } : {}), ...rest }, null, 2)}\n`;
 }
 
-function ci() {
-  const { setup, jobs, ...rest } = readJson("ci.source.json");
+/**
+ * A workflow from `tooling/<source>`: each `"$setup"` step expands to the source's `setup` steps; a top-level
+ * `$comment` documents the source and is not emitted.
+ */
+function workflow(source) {
+  const { setup = [], jobs, $comment: _comment, ...rest } = readJson(source);
   const expanded = {};
   for (const [name, job] of Object.entries(jobs)) {
     expanded[name] = { ...job, steps: job.steps.flatMap((s) => (s === "$setup" ? setup : [s])) };
   }
-  return `# _generated: edit tooling/ci.source.json and run pnpm generate. Do not edit by hand.\n${yaml({ ...rest, jobs: expanded })}\n`;
+  return `# _generated: edit tooling/${source} and run pnpm generate. Do not edit by hand.\n${yaml({ ...rest, jobs: expanded })}\n`;
 }
 
-const outputs = { "turbo.json": turbo(), ".github/workflows/ci.yml": ci() };
+/** The files under `dir` that decide its deploy files, and the deploy files it holds: path relative to `dir` -> text. */
+function deployTree(dir) {
+  const tree = new Map();
+  const add = (rel) => {
+    const p = path.join(root, dir, rel);
+    if (fs.existsSync(p)) tree.set(rel, fs.readFileSync(p, "utf8"));
+  };
+  for (const rel of ["topology.ts", "package.json", "turbo.json", ".github/workflows/ci.yml", "deploy/compose.yaml"])
+    add(rel);
+  const deploy = path.join(root, dir, "deploy");
+  if (fs.existsSync(deploy)) for (const name of fs.readdirSync(deploy).sort()) add(`deploy/${name}/Dockerfile`);
+  // Module manifests and the manifests of the libraries they reach: their `env` decide a deployable's environment
+  // (k.server-deps Environment), and their `deps` its CI job's paths.
+  const modules = path.join(root, dir, "modules");
+  if (fs.existsSync(modules)) for (const id of fs.readdirSync(modules).sort()) add(`modules/${id}/module.ts`);
+  const manifests = [...tree].filter(([rel]) => rel.startsWith("modules/")).map(([p, source]) => ({ path: p, source }));
+  for (const lib of libraryFiles(path.join(root, dir), manifests))
+    if (lib.manifest !== undefined) tree.set(`node_modules/${lib.name}/module.ts`, lib.manifest);
+  return tree;
+}
+
+/** Deploy files of each app in `tooling/deploy.source.json`: repo path -> text, or null for one to remove. */
+function deployOutputs() {
+  const out = {};
+  for (const dir of readJson("deploy.source.json").apps)
+    for (const d of deployDrift(deployTree(dir), true)) out[`${dir}/${d.path}`] = d.want;
+  return out;
+}
+
+/** `KERNEL_SINK_RUNGS.ts`: the kernel ledger's rung of each clause `PII_SINKS` names (`none` when it holds none). */
+function sinkRungs() {
+  const rungs = new Map(readJson("ledger/ledger.json").clauses.map((c) => [c.item, c.rung]));
+  const rows = PII_SINKS.map(
+    (s) => `  ${JSON.stringify(s.clause)}: ${JSON.stringify(rungs.get(s.clause) ?? "none")},\n`,
+  );
+  return [
+    "// Generated by tooling/generate.mjs from tooling/ledger/ledger.json; run pnpm generate after the ledger changes.\n",
+    'type Rung = "none" | "monitored" | "example" | "probabilistic" | "exhaustive" | "proven";\n\n',
+    "/** The kernel ledger's rung of each sink clause (`PII_SINKS`), shipped with `@keel/cli` (k.evidence `pii.json`). */\n",
+    "export const KERNEL_SINK_RUNGS: Readonly<Record<string, Rung>> = {\n",
+    ...rows,
+    "};\n",
+  ].join("");
+}
+
+/**
+ * `zoneNames.ts`: the Zone and Link names of the pinned IANA tz release in `tooling/tzdata.source.zi`, less `Factory`.
+ * The source is `grep -E '^(# version|[ZL] )' tzdata.zi` of that release. One string: Zone names, `|`, Link names;
+ * each half is `area:name,name;area:name` with areas and names sorted, so the list costs little gzip.
+ */
+function zoneNames() {
+  const lines = fs.readFileSync(path.join(here, "tzdata.source.zi"), "utf8").split("\n");
+  const version = /^# version (\d{4}[a-z])/.exec(lines[0] ?? "");
+  if (!version) throw new Error("tooling/tzdata.source.zi: the first line must be `# version <release>`");
+  const zones = [];
+  const links = [];
+  for (const line of lines) {
+    const f = line.split(" ");
+    if (f[0] === "Z" && f[1] !== "Factory") zones.push(f[1]);
+    if (f[0] === "L") links.push(f[2]);
+  }
+  const pack = (names) => {
+    const areas = new Map();
+    for (const n of names) {
+      const i = n.lastIndexOf("/");
+      const area = n.slice(0, Math.max(i, 0));
+      areas.set(area, [...(areas.get(area) ?? []), n.slice(i + 1)]);
+    }
+    return [...areas.keys()]
+      .sort()
+      .map((a) => `${a}:${areas.get(a).sort().join(",")}`)
+      .join(";");
+  };
+  return [
+    `// IANA tz database ${version[1]}: generated by tooling/generate.mjs from tooling/tzdata.source.zi; run pnpm generate after replacing the source.\n`,
+    `/** The pinned Zone names (${zones.length}), \`|\`, then the Link names (${links.length}), each half \`area:name,name;area:name\` (std.temporal \`TimeZone\`). */\n`,
+    `export const zoneNames =\n  "${pack(zones)}|${pack(links)}";\n`,
+  ].join("");
+}
+
+/**
+ * `SHELL_PACKAGES.ts`: what an app declaring each shell lists beside its std package (std.tauri, std.capacitor App
+ * packages), at the versions the std package's own `package.json` declares. `dependencies`: the std package's
+ * `dependencies` an app lists that are not plugins (`@capacitor/core`, which the Capacitor CLI reads from the app);
+ * `plugins`: the target's `plugins` with `identity` false; `identity`: those it adds with `identity` true;
+ * `devDependencies`: the std package's `peerDependencies`.
+ */
+function shellPackages() {
+  const shells = [
+    ["capacitor", "std-capacitor", capacitorTarget, ["@capacitor/core"]],
+    ["tauri", "std-tauri", tauriTarget, []],
+  ];
+  const app = { deployable: "web", id: "dev.keel.app", name: "App", version: "0.0.0", pkg: "app", policy: undefined };
+  const obj = (entries, ind) =>
+    entries.length === 0
+      ? "{}"
+      : `{\n${entries.map(([k, v]) => `${ind}  ${JSON.stringify(k)}: ${JSON.stringify(v)},\n`).join("")}${ind}}`;
+  const blocks = shells.map(([shell, dir, target, listed]) => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, "packages", dir, "package.json"), "utf8"));
+    const version = (field, name) => {
+      const v = pkg[field]?.[name];
+      if (typeof v !== "string") throw new Error(`packages/${dir}/package.json: no ${name} in ${field}`);
+      return v;
+    };
+    const plugins = (identity) =>
+      target.plugins({ ...app, identity }).map((p) => [p.plugin, version("dependencies", p.plugin)]);
+    const plain = plugins(false);
+    const names = new Set(plain.map(([n]) => n));
+    const fields = [
+      ["dependencies", listed.map((n) => [n, version("dependencies", n)])],
+      ["plugins", plain],
+      ["identity", plugins(true).filter(([n]) => !names.has(n))],
+      ["devDependencies", Object.keys(pkg.peerDependencies ?? {}).map((n) => [n, version("peerDependencies", n)])],
+    ];
+    const sorted = (entries) => [...entries].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `  ${shell}: {\n${fields.map(([f, e]) => `    ${f}: ${obj(sorted(e), "    ")},\n`).join("")}  },\n`;
+  });
+  return [
+    "// _generated: from packages/std-tauri/package.json and packages/std-capacitor/package.json; run pnpm generate.\n",
+    "type Versions = Readonly<Record<string, string>>;\n",
+    "type Packages = { dependencies: Versions; plugins: Versions; identity: Versions; devDependencies: Versions };\n\n",
+    "/**\n",
+    " * What an app declaring each native shell lists beside the shell's std package (std.tauri, std.capacitor App packages),\n",
+    " * at the versions the std package declares: `dependencies` kept as an app writes them, `plugins` (k.shell Plugins) and,\n",
+    " * with `identity.ts`, `identity` in `dependencies` at exactly these versions, `devDependencies` the CLI and platforms.\n",
+    " */\n",
+    'export const SHELL_PACKAGES: Readonly<Record<"capacitor" | "tauri", Packages>> = {\n',
+    ...blocks,
+    "};\n",
+  ].join("");
+}
+
+const outputs = {
+  "packages/scaffold/src/internal/SHELL_PACKAGES.ts": shellPackages(),
+  "packages/std-temporal/src/internal/zoneNames.ts": zoneNames(),
+  "packages/cli/src/internal/KERNEL_SINK_RUNGS.ts": sinkRungs(),
+  "turbo.json": turbo(),
+  ".github/workflows/ci.yml": workflow("ci.source.json"),
+  ".github/workflows/audit.yml": workflow("audit.source.json"),
+  ".github/workflows/sessions-nightly.yml": workflow("sessions-nightly.source.json"),
+  ".github/workflows/mutate-nightly.yml": workflow("mutate-nightly.source.json"),
+  ".github/workflows/test-macos.yml": workflow("test-macos.source.json"),
+  ...deployOutputs(),
+};
 const check = parseArgs().flags.has("check");
 
 await run("generate", () => {
@@ -74,10 +233,16 @@ await run("generate", () => {
         message: "generated file differs from source; run pnpm generate",
         see: "tooling/generate.mjs",
       });
+    else if (content === null) fs.rmSync(p, { force: true });
     else {
       fs.mkdirSync(path.dirname(p), { recursive: true });
+      // `keel build` leaves shell files read-only (k.shell); the mode is kept across the rewrite.
+      const mode = current === null ? null : fs.statSync(p).mode;
+      if (mode !== null) fs.chmodSync(p, mode | 0o200);
       fs.writeFileSync(p, content);
+      if (mode !== null) fs.chmodSync(p, mode);
     }
   }
-  return { diags, counts: { files: Object.keys(outputs).length }, ...(diags.length ? { exit: 2 } : {}) };
+  const apps = readJson("deploy.source.json").apps.length;
+  return { diags, counts: { files: Object.keys(outputs).length, apps }, ...(diags.length ? { exit: 2 } : {}) };
 });

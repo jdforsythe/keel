@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "`fire` resolves only after every effect and resource it triggered has settled."
+// Spec: k.testing, clause "`fire` resolves only once every effect and resource it triggered has settled."
 // Seed: 1337.
 // The event starts a resource whose promise needs many microtask hops (no cap: up to 2000); no timer, no `settle()` call.
 import type { Ctx } from "@keel/ctx";
@@ -12,8 +12,6 @@ import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, simCtx } from "./fixtures.ts";
 
-type Slots = Record<string, unknown> | undefined;
-
 const hops = async (n: number): Promise<void> => {
   for (let i = 0; i < n; i++) await Promise.resolve();
 };
@@ -23,7 +21,7 @@ const T = template('<div><button id="load" data-k="load">load</button><p id="res
 // Clicking #load bumps `want`; the resource re-fetches for the new value after `depth` microtask hops.
 const makeLoader = (depth: number) =>
   Object.assign(
-    (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+    (_props: Record<string, never>): Node => {
       const want = signal(0);
       const res = resource(async () => {
         const n = want.get();
@@ -74,9 +72,12 @@ describe("k.testing: fire resolves only after every resource it triggered has se
 const DoneStore = s.object({ done: s.string() });
 const made = (() => {
   let out: { done: ReturnType<typeof mk>["done"]; setDone: ReturnType<typeof mk>["setDone"] } | undefined;
-  scope(() => {
-    out = mk();
-  });
+  scope(
+    () => {
+      out = mk();
+    },
+    { detached: true },
+  );
   if (out === undefined) throw new Error("fixture: scope did not run");
   return out;
 })();
@@ -94,7 +95,7 @@ const T2 = template(
 // Click -> resource A (depth hops) -> resource B, which reads A and awaits depthB hops -> effect writes the store.
 const makeChain = (depthA: number, depthB: number) =>
   Object.assign(
-    (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+    (_props: Record<string, never>): Node => {
       done.uses([setDone]);
       const want = signal(0);
       const a = resource(async () => {

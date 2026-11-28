@@ -1,9 +1,10 @@
-// The dev inspect endpoint of the Vite plugin (k.cli Inspect, RFC 0017) and the dev entry's live reporter.
+// The dev inspect endpoint of the Vite plugin (k.inspect, RFC 0017) and the dev entry's live reporter.
 import fs from "node:fs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { parseSync } from "oxc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { entryCode } from "../src/internal/entryCode.ts";
@@ -49,7 +50,7 @@ const REPORT = {
 };
 
 beforeEach(async () => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-inspect-"));
+  root = tempDir(".tmp-inspect-", import.meta.dirname);
   await listen();
 });
 afterEach(async () => {
@@ -191,8 +192,9 @@ describe("plugin wiring and dev entry", () => {
       middlewares,
     });
     p.configurePreviewServer({ middlewares });
-    expect(used).toHaveLength(2);
-    expect(used[0]).toBe(used[1]);
+    // dev: the inspect endpoint, the dev stylesheet, then the generated client document; preview: the inspect endpoint.
+    expect(used).toHaveLength(4);
+    expect(used[0]).toBe(used[3]);
   });
 
   it("the entry reports graph and stores to /__keel/inspect in dev builds only, and parses as JS", () => {
@@ -200,13 +202,33 @@ describe("plugin wiring and dev entry", () => {
     expect(code).toContain('import { inspect } from "@keel/reactive";');
     expect(code).toContain('import { stores } from "@keel/store";');
     expect(code).toContain('import { inspectorSections } from "@keel/compiler/inspect/inspectorSections";');
-    expect(code).toContain("if (import.meta.env.DEV) {");
+    expect(code).toContain('if (mode === "dev") {');
+    expect(code).toContain('const mode = "production";');
+    expect(code).not.toContain("import.meta.env");
     expect(code).toContain('fetch("/__keel/inspect", { method: "POST"');
     expect(code).toContain(
       "JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections })",
     );
     expect(code).toContain("setInterval(report, 1000);");
     expect(code.indexOf("mount(router.App")).toBeLessThan(code.indexOf("report();"));
+    expect(parseSync("entry.js", code, { sourceType: "module" }).errors).toEqual([]);
+  });
+
+  it("with its deployable's name the entry posts it as deployable beside the sections", () => {
+    const code = entryCode(
+      ["/modules/todos/routes.ts"],
+      "virtual:keel.css",
+      {},
+      {},
+      undefined,
+      "dev",
+      false,
+      true,
+      "web",
+    );
+    expect(code).toContain(
+      'JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections, deployable: "web" })',
+    );
     expect(parseSync("entry.js", code, { sourceType: "module" }).errors).toEqual([]);
   });
 });

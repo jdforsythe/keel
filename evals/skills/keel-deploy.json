@@ -1,0 +1,16 @@
+{
+  "skill": "keel-deploy",
+  "maxTokens": 1500,
+  "prompt": "How do I build a Keel app with a client and a node deployable, have the server serve the client, and host the client on a static host instead? Then package the client as a Tauri desktop app.",
+  "expect": [
+    "keel build",
+    "server.mjs",
+    "servedBy:",
+    "KEEL_SECRET",
+    "KEEL_PEER_",
+    "KEEL_ALLOW_ORIGINS",
+    "shells",
+    "--target tauri",
+    "KEEL_ORIGIN"
+  ]
+}

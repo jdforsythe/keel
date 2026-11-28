@@ -1,6 +1,6 @@
 # RFC 0041: Guards by reference, manifest-typed `routes.href`, scroll keyed by history entry, `Image src` as an asset
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Backlog 0044 (router PLAN D19, D20, D23; freeze review rows 1-2) and 0103.
@@ -39,3 +39,6 @@ Router, migrated: `fixtures.ts` (guards by value; `routes.href`; an in-memory hi
 
 ## Token impact
 k.router 1449 -> 1477; k.ui 1068 -> 1117. Both are within 1,500.
+
+## Amendment
+RFC 0063 (ADR-0052, backlog 0114) replaces the `const to: Href` binding. Actions attach with `routes.actions({...})` after the manifest, and an action returns `ok(routes.href(...))`.

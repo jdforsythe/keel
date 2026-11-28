@@ -1,6 +1,6 @@
 # RFC 0027: Loaders and actions declare their route schemas; `url` replaces `location`
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Backlog 0100 (k.server and k.router parts, from red-team 0082 and 0086). Commit d29117a added `RouteFit`, so a hand-typed `params` that does not fit the route fails at `manifest`, but `fn` still had to be annotated: `loader(output, fn)` is declared before its route, so nothing can infer `params`/`search`, and the spec example `loader(Order, async ({ params, search }) => ...)` cannot be typed. Two ways to type them exist (annotation or `unknown`), against principle 1, and the schema is restated as a TS type against principle 4. Server code also read `location` (inspector), which does not exist on a server. d29117a's `undoOwn`/`canUndoOwn` and the `keel-caller` cookie are unspecified.

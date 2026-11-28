@@ -2,7 +2,7 @@
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { codesOf, has, lowerId, manifestFile, SEED } from "./module-support.ts";
+import { SEED, codesOf, has, lowerId, manifestFile } from "./module-support.ts";
 
 const ids2 = fc.tuple(lowerId, lowerId).filter(([a, b]) => a !== b);
 const ids3 = fc.tuple(lowerId, lowerId, lowerId).filter(([a, b, c]) => a !== b && b !== c && a !== c);

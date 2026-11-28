@@ -1,12 +1,13 @@
 // @vitest-environment happy-dom
 // Match/Case: the discriminant is never inferred by reading `on` in the caller's scope (D25), and the
-// JSX types narrow a Case's value by its tag (D26, checked by tsc over unsafe/jsx-match.tsx).
+// JSX types narrow a Case's value by its tag (D26, checked by tsc over the negative type test match.test-d.tsx).
 import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { Case, Match, mount } from "../src/index.ts";
 import { clone, template } from "../src/ops/index.ts";
 import { rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 type State = { state: "loading" } | { state: "ready"; value: number };
 
@@ -15,22 +16,26 @@ describe("Match without a key", () => {
     const on = rootSignal<State>({ state: "loading" });
     const host = document.createElement("div");
     let renders = 0;
-    const dispose = mount(() => {
-      renders++;
-      const d = document.createElement("div");
-      d.appendChild(
-        Match({
-          get on() {
-            return on.get();
-          },
-          children: [
-            Case<State>({ tag: "loading", children: () => clone(template("<i>l</i>")) }),
-            Case<State>({ tag: "ready", children: (v) => document.createTextNode(String(v.value)) }),
-          ],
-        }),
-      );
-      return d;
-    }, host);
+    const dispose = mount(
+      () => {
+        renders++;
+        const d = document.createElement("div");
+        d.appendChild(
+          Match({
+            get on() {
+              return on.get();
+            },
+            children: [
+              Case<State>({ tag: "loading", children: () => clone(template("<i>l</i>")) }),
+              Case<State>({ tag: "ready", children: (v) => document.createTextNode(String(v.value)) }),
+            ],
+          }),
+        );
+        return d;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(renders).toBe(1);
     expect(host.textContent).toBe("l");
     on.set({ state: "ready", value: 7 });
@@ -43,31 +48,68 @@ describe("Match without a key", () => {
 
   it("defaults the key to `state` for loading|error|ready cases, else `tag`", () => {
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const d = document.createElement("div");
-      d.appendChild(
-        Match({
-          on: { tag: "b" },
-          children: [
-            Case<{ tag: "a" | "b" }>({ tag: "a", children: () => document.createTextNode("A") }),
-            Case<{ tag: "a" | "b" }>({ tag: "b", children: () => document.createTextNode("B") }),
-          ],
-        }),
-      );
-      return d;
-    }, host);
+    const dispose = mount(
+      () => {
+        const d = document.createElement("div");
+        d.appendChild(
+          Match({
+            on: { tag: "b" },
+            children: [
+              Case<{ tag: "a" | "b" }>({ tag: "a", children: () => document.createTextNode("A") }),
+              Case<{ tag: "a" | "b" }>({ tag: "b", children: () => document.createTextNode("B") }),
+            ],
+          }),
+        );
+        return d;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(host.textContent).toBe("B");
     dispose();
   });
 });
 
+describe("Match/Case narrowing", () => {
+  type Loaded = { state: "loading" } | { state: "error"; error: string } | { state: "ready"; value: number[] };
+
+  it("renders the variant a tag selects, its value narrowed to that variant", () => {
+    const on = rootSignal<Loaded>({ state: "error", error: "e" });
+    const host = document.createElement("div");
+    const dispose = mount(
+      () =>
+        Match({
+          get on() {
+            return on.get();
+          },
+          children: [
+            Case<Loaded>({ tag: "loading", children: () => document.createTextNode("l") }),
+            Case<Loaded>({ tag: "error", children: (v) => document.createTextNode(v.error) }),
+            Case<Loaded>({ tag: "ready", children: (v) => document.createTextNode(String(v.value.length)) }),
+          ],
+        }),
+      host,
+      { ctx: testCtx },
+    );
+    expect(host.textContent).toBe("e");
+    on.set({ state: "ready", value: [1, 2] });
+    expect(host.textContent).toBe("2");
+    dispose();
+  });
+
+  it("a Case is a Node: it mounts on its own", () => {
+    const node: Node = Case({ tag: "x", children: () => document.createElement("i") });
+    expect(node).toBeInstanceOf(Node);
+  });
+});
+
 describe("Match/Case JSX types", () => {
-  it("the fixture type-checks, including its expected-error lines", () => {
+  it("the negative type test type-checks, including its expected-error lines", () => {
     const dir = path.resolve(import.meta.dirname, "..");
     const cfgPath = path.join(dir, "tsconfig.json");
     const cfg = ts.readConfigFile(cfgPath, ts.sys.readFile);
     const parsed = ts.parseJsonConfigFileContent(cfg.config, ts.sys, dir);
-    const file = path.join(dir, "unsafe/jsx-match.tsx");
+    const file = path.join(dir, "test/match.test-d.tsx");
     const program = ts.createProgram([file], parsed.options);
     const diags = ts.getPreEmitDiagnostics(program, program.getSourceFile(file));
     expect(diags.map((d) => ts.flattenDiagnosticMessageText(d.messageText, "\n"))).toEqual([]);

@@ -1,39 +1,69 @@
 import { loader } from "@keel/router";
-import { err, ok } from "@keel/schema";
-import { type ApiError, service } from "@keel/services";
-import { InspectSearch } from "./InspectSearch.schema.ts";
+import { defect, err, ok } from "@keel/schema";
+import { service } from "@keel/services";
 import { Inspection } from "./Inspection.schema.ts";
+import { Unreachable } from "./Unreachable.schema.ts";
 import { inspectApi } from "./inspectApi.service.ts";
+import { inspector } from "./inspector.contract.ts";
 
-const reason = (e: ApiError): string =>
-  e.code === "api.status"
-    ? `answered ${e.data.status}`
-    : e.code === "api.decode"
-      ? "did not return an inspect document"
-      : e.code === "api.timeout"
-        ? "timed out"
-        : "is unreachable";
+/** The host names of this machine, as `new URL(...).hostname` writes them. */
+const LOOPBACK: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /**
- * Fetch the inspect document of `search.url` (default: the origin of the request `url`, the inspector itself) and
- * shape it for the views (values as JSON text; absent `sections` is none). An unreachable target or a bad document is
- * `inspector.unreachable`.
+ * The origin `target` names when it is an origin and nothing more: http or https, a loopback host, no user name or
+ * password, no path but `/`, no query and no fragment (`?` or `#` alone count). Anything else is undefined.
  */
-export const loadInspect = loader({ output: Inspection, search: InspectSearch }, async ({ search, url: at }, ctx) => {
-  const url = (search.url ?? new URL(at).origin).replace(/\/+$/, "");
-  const r = await service({ base: url, schema: inspectApi }).get({}, ctx);
-  if (!r.ok) return err({ code: "inspector.unreachable", message: `${url} ${reason(r.error)}`, data: { url } });
-  const d = r.value;
-  const stores = Object.fromEntries(
-    Object.entries(d.stores).map(([id, st]) => [id, { state: JSON.stringify(st.state), log: st.log }]),
-  );
-  const sections = Object.fromEntries(
-    Object.entries(d.sections ?? {}).map(([id, sec]) => [
-      id,
-      "error" in sec
-        ? { doc: sec.doc, text: sec.error, failed: true }
-        : { doc: sec.doc, text: JSON.stringify(sec.value), failed: false },
-    ]),
-  );
-  return ok({ url, live: d.live, graph: d.graph, stores, ids: d.ids, a11y: d.a11y, routes: d.routes, sections });
-});
+const originOf = (target: string): string | undefined => {
+  const u = URL.parse(target);
+  if (u === null) return undefined;
+  const { protocol, username, password, hostname, pathname, search, hash } = u;
+  const bare = !/[?#]/.test(target);
+  return (protocol === "http:" || protocol === "https:") &&
+    username === "" &&
+    password === "" &&
+    LOOPBACK.has(hostname) &&
+    pathname === "/" &&
+    search === "" &&
+    hash === "" &&
+    bare
+    ? u.origin
+    : undefined;
+};
+
+/**
+ * Fetch the inspect document of the origin `search.url` names (default: the inspector's own) on the server and shape
+ * it for the views (values as JSON text; absent `sections` is none). Since the server fetches what a visitor names:
+ * - the page is `local: true` (k.contract Local routes), so the server runs this only for a loopback connection with a
+ *   loopback `Host` and `Sec-Fetch-Site` `same-origin` or `none`; any other request is 403 `keel.denied` first;
+ * - it takes `?url=` only when that is an origin on this machine (`originOf`), and requests
+ *   `<origin>/__keel/inspect` built from the parsed origin alone, so nothing else of the caller's string is sent;
+ * - every failure of the fetch (refused, a status, a redirect, a timeout, a body that is no inspect document) is one
+ *   answer, `inspector.unreachable` `no inspect document at <origin>`, which says nothing of what listens there.
+ * The fetch goes through `ctx.net` and follows no redirect.
+ */
+export const loadInspect = loader(
+  inspector,
+  "inspector.index",
+  { output: Inspection },
+  async ({ search, url: at }, ctx) => {
+    const target = search.url ?? (URL.parse(at) ?? defect("a request has an address")).origin;
+    const origin = originOf(target);
+    if (origin === undefined) return err(Unreachable.make({ url: "", why: "origin" }));
+    const r = await service({ base: origin, schema: inspectApi }).get({}, ctx);
+    if (!r.ok) return err(Unreachable.make({ url: origin, why: "document" }));
+    const url = origin;
+    const d = r.value;
+    const stores = Object.fromEntries(
+      Object.entries(d.stores).map(([id, st]) => [id, { state: JSON.stringify(st.state), log: st.log }]),
+    );
+    const sections = Object.fromEntries(
+      Object.entries(d.sections ?? {}).map(([id, sec]) => [
+        id,
+        "error" in sec
+          ? { doc: sec.doc, text: sec.error, failed: true }
+          : { doc: sec.doc, text: JSON.stringify(sec.value), failed: false },
+      ]),
+    );
+    return ok({ url, live: d.live, graph: d.graph, stores, ids: d.ids, a11y: d.a11y, routes: d.routes, sections });
+  },
+);

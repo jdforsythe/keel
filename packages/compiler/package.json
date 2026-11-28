@@ -1,7 +1,7 @@
 {
   "name": "@keel/compiler",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -12,11 +12,22 @@
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
     },
+    "./client": {
+      "types": "./src/client.d.ts"
+    },
+    "./routes": {
+      "types": "./src/evaluateViews.ts",
+      "default": "./src/evaluateViews.ts"
+    },
+    "./internal": {
+      "types": "./src/globals/index.ts",
+      "default": "./src/globals/index.ts"
+    },
     "./a11y": {
       "types": "./src/a11y/index.ts",
       "default": "./src/a11y/index.ts"
     },
-    "./entry/*": {
+    "./internal/entry/*": {
       "types": "./src/entry/*.ts",
       "default": "./src/entry/*.ts"
     },
@@ -24,18 +35,76 @@
       "types": "./src/inspect/*.ts",
       "default": "./src/inspect/*.ts"
     },
+    "./std/*": {
+      "types": "./src/std/*.ts",
+      "default": "./src/std/*.ts"
+    },
+    "./hosting/*": {
+      "types": "./src/hosting/*.ts",
+      "default": "./src/hosting/*.ts"
+    },
     "./testing": {
       "types": "./src/testing/evaluate.ts",
       "default": "./src/testing/evaluate.ts"
     },
     "./tsconfig.strict.json": "./tsconfig.strict.json"
   },
-  "files": ["dist", "tsconfig.strict.json"],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./vite": {
+        "types": "./dist/src/vite.d.ts",
+        "default": "./dist/src/vite.js"
+      },
+      "./client": {
+        "types": "./src/client.d.ts"
+      },
+      "./routes": {
+        "types": "./dist/src/evaluateViews.d.ts",
+        "default": "./dist/src/evaluateViews.js"
+      },
+      "./internal": {
+        "types": "./dist/src/globals/index.d.ts",
+        "default": "./dist/src/globals/index.js"
+      },
+      "./a11y": {
+        "types": "./dist/src/a11y/index.d.ts",
+        "default": "./dist/src/a11y/index.js"
+      },
+      "./internal/entry/*": {
+        "types": "./dist/src/entry/*.d.ts",
+        "default": "./dist/src/entry/*.js"
+      },
+      "./inspect/*": {
+        "types": "./dist/src/inspect/*.d.ts",
+        "default": "./dist/src/inspect/*.js"
+      },
+      "./std/*": {
+        "types": "./dist/src/std/*.d.ts",
+        "default": "./dist/src/std/*.js"
+      },
+      "./hosting/*": {
+        "types": "./dist/src/hosting/*.d.ts",
+        "default": "./dist/src/hosting/*.js"
+      },
+      "./testing": null,
+      "./tsconfig.strict.json": "./tsconfig.strict.json"
+    }
+  },
+  "files": ["dist", "src/client.d.ts", "tsconfig.strict.json", "docs"],
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
@@ -43,21 +112,13 @@
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
+    "esbuild": "^0.28.2",
     "magic-string": "^1.4.5",
     "oxc-parser": "^0.157.0"
-  },
-  "peerDependencies": {
-    "esbuild": "^0.28.2"
-  },
-  "peerDependenciesMeta": {
-    "esbuild": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
-    "esbuild": "^0.28.2",
     "fast-check": "^3",
     "happy-dom": "^21.0.4"
   }

@@ -1,12 +1,15 @@
 // @vitest-environment happy-dom
 // Spec: k.compiler, clause "A component with no dynamic expressions compiles to a single cloned template and no bindings."
 // Seed 1337 (fc.assert seed below).
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { isMountable } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const count = (code: string, re: RegExp) => (code.match(re) ?? []).length;
 
@@ -84,7 +87,7 @@ test("A component with no dynamic expressions compiles to one cloned template, n
       const c = evaluate(code);
       if (!isMountable(c)) throw new Error("default export is not a component");
       const host = document.createElement("div");
-      const dispose = mount(c, host);
+      const dispose = mount(c, host, { ctx: simCtx });
       expect(Array.from(host.childNodes).map(dom).join("")).toBe(markup);
       dispose();
     }),

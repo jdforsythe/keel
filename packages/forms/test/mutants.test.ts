@@ -703,9 +703,12 @@ describe("form wiring", () => {
   };
   const within = <R>(fn: () => R): R => {
     let out: { v: R } | undefined;
-    const sc = scope(() => {
-      out = { v: fn() };
-    });
+    const sc = scope(
+      () => {
+        out = { v: fn() };
+      },
+      { detached: true },
+    );
     // Disposal happens in afterEach through the DOM teardown; keep the scope alive for the test body.
     scopes.push(sc);
     if (out === undefined) throw new Error("within");
@@ -765,7 +768,7 @@ describe("form wiring", () => {
     typeInto(el, "");
     expect(Object.keys(f.errors())).toEqual([]);
     el.dispatchEvent(new Event("blur"));
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
     typeInto(el, "again");
     expect(Object.keys(f.errors())).toEqual([]);
   });
@@ -854,7 +857,7 @@ describe("form wiring", () => {
     expect(f.errors()).toEqual({});
     f.field("title").set("");
     expect(f[formHandle].validate().ok).toBe(false);
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
     f.field("title").set("z");
     expect(f[formHandle].validate().ok).toBe(true);
     expect(Object.keys(f.errors())).toEqual([]);
@@ -1058,9 +1061,12 @@ describe("form wiring", () => {
   it("disposing the binding scope detaches blur and input listeners", () => {
     const f = within(() => form(Flat));
     const el = mk();
-    const sc = scope(() => {
-      f.field("title").bind(el);
-    });
+    const sc = scope(
+      () => {
+        f.field("title").bind(el);
+      },
+      { detached: true },
+    );
     typeInto(el, "");
     el.dispatchEvent(new Event("blur"));
     expect(f.field("title").touched()).toBe(true);
@@ -1116,7 +1122,7 @@ describe("form wiring", () => {
     const title = f.field("title");
     f[formHandle].onResult(err({ code: "keel.fields", message: "m", data: { title: "taken" } }));
     title.set("");
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
   });
 
   it("reset forgets which errors had shown", () => {
@@ -1124,7 +1130,7 @@ describe("form wiring", () => {
     const title = f.field("title");
     title.set("");
     title.blur();
-    expect(f.errors().title).toBe("Must be at least 1 character");
+    expect(f.errors().title).toBe("Required");
     f.reset();
     title.set("");
     expect(Object.keys(f.errors())).toEqual([]);

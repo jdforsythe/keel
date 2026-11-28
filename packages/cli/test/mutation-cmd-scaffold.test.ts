@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // Mutation-killing tests for `keel scaffold` / `keel codemod`: exact records, labels, refusals and dry-run diffs.
 import { beforeAll, describe, expect, it } from "vitest";
 import { runEngine } from "../src/internal/runEngine.ts";
@@ -30,10 +31,28 @@ beforeAll(async () => {
     ["scaffold", "store", "orders.cart"],
     ["scaffold", "route", "orders.list", "--path", "/orders"],
   ])
-    files = applied(files, (await runEngine(argv, { cwd: CWD, files })).writes);
+    files = applied(
+      files,
+      // `scaffold project shop` writes under `shop/` (rfc:0068); the other ops run inside it.
+      argv[1] === "project"
+        ? (await runEngine(argv, { cwd: "/work", files })).writes.map((w) => ({
+            ...w,
+            path: w.path.replace(/^shop\//, ""),
+          }))
+        : (await runEngine(argv, { cwd: CWD, files })).writes,
+    );
   tree = files;
   cyclic = applied(files, [
-    { path: "modules/orders/module.ts", content: manifest("orders", [], ["OrderCard"]) },
+    { path: "modules/orders/module.ts", content: manifest("orders", [], ["OrderCard", "Other"]) },
+    { path: "modules/orders/Other.ts", content: "export const Other = 1\n" },
+    {
+      path: "modules/orders/OrdersUse.ts",
+      content: "import OrderCard from './OrderCard.tsx'\nexport const OrdersUse = OrderCard\n",
+    },
+    {
+      path: "modules/catalog/CatalogOther.ts",
+      content: "import { Other } from '../orders/Other.ts'\nexport const CatalogOther = Other\n",
+    },
     { path: "modules/catalog/module.ts", content: manifest("catalog", ["orders"], []) },
     {
       path: "modules/catalog/CatalogRow.tsx",
@@ -41,7 +60,7 @@ beforeAll(async () => {
         "import OrderCard from '../orders/OrderCard.tsx'\nexport default function CatalogRow() {\n  return OrderCard\n}\n",
     },
   ]);
-}, 60_000);
+}, fixedTime(60_000));
 
 describe("scaffold command routing", () => {
   it("no operation is an empty ok run with its own name", async () => {
@@ -59,7 +78,7 @@ describe("scaffold command routing", () => {
     const c = await go(["codemod", "transaction", "x"]);
     expect(c.result.code).toBe(2);
     expect(c.result.stdout).toBe(
-      'E1052 unknown codemod operation "transaction"; it is keel scaffold transaction\n  see: k.scaffold\nfail codemod\n',
+      'E1052 unknown codemod operation "transaction"; it is keel scaffold transaction\n  see: keel docs k.scaffold\nfail codemod\n',
     );
   });
 
@@ -67,7 +86,8 @@ describe("scaffold command routing", () => {
     const r = await go(["scaffold", "bogusbogusbogusbogusbogusbogus"]);
     expect(r.result).toEqual({
       code: 2,
-      stdout: 'E1052 unknown scaffold operation "bogusbogusbogusbogusbogu"\n  see: k.scaffold\nfail scaffold\n',
+      stdout:
+        'E1052 unknown scaffold operation "bogusbogusbogusbogusbogu"\n  see: keel docs k.scaffold\nfail scaffold\n',
       stderr: "",
     });
     expect(r.records[0]).toEqual({
@@ -79,14 +99,14 @@ describe("scaffold command routing", () => {
     expect(r.writes).toEqual([]);
     for (const op of ["rename", "move", "add-field"])
       expect((await go(["scaffold", op, "a", "b"])).result.stdout).toBe(
-        `E1052 unknown scaffold operation "${op}"; it is keel codemod ${op}\n  see: k.scaffold\nfail scaffold\n`,
+        `E1052 unknown scaffold operation "${op}"; it is keel codemod ${op}\n  see: keel docs k.scaffold\nfail scaffold\n`,
       );
     for (const op of ["project", "module", "route", "component", "store"])
       expect((await go(["codemod", op, "a"])).result.stdout).toBe(
-        `E1052 unknown codemod operation "${op}"; it is keel scaffold ${op}\n  see: k.scaffold\nfail codemod\n`,
+        `E1052 unknown codemod operation "${op}"; it is keel scaffold ${op}\n  see: keel docs k.scaffold\nfail codemod\n`,
       );
     expect((await go(["codemod", "zzz"])).result.stdout).toBe(
-      'E1052 unknown codemod operation "zzz"\n  see: k.scaffold\nfail codemod\n',
+      'E1052 unknown codemod operation "zzz"\n  see: keel docs k.scaffold\nfail codemod\n',
     );
   });
 });
@@ -111,7 +131,7 @@ describe("scaffold edits", () => {
     const mod = await go(["scaffold", "module", "billing", "--dry-run"]);
     expect(mod.writes).toEqual([]);
     const edits = mod.records.filter((r) => r.kind === "scaffold.edit");
-    expect(edits.map((r) => r.action)).toEqual(["create", "create", "change", "change"]);
+    expect(edits.map((r) => r.action)).toEqual(["create", "create", "create", "change", "change", "change"]);
     const diffOf = (p: string): string => {
       const rec = edits.find((r) => r.path === p);
       return typeof rec?.diff === "string" ? rec.diff : "";
@@ -122,7 +142,7 @@ describe("scaffold edits", () => {
     const topo = diffOf("topology.ts");
     expect(topo.startsWith("--- a/topology.ts\n+++ b/topology.ts\n@@")).toBe(true);
     expect(topo).toContain("billing");
-    expect(mod.result.stdout.split("\n").at(-2)).toBe("ok scaffold module --dry-run 2 created, 2 changed, 0 removed");
+    expect(mod.result.stdout.split("\n").at(-2)).toBe("ok scaffold module --dry-run 3 created, 3 changed, 0 removed");
 
     const ren = await go(["codemod", "rename", "OrderCard", "OrderTile", "--dry-run"]);
     const gone = ren.records.filter((r) => r.kind === "scaffold.edit" && r.action === "remove");
@@ -174,10 +194,10 @@ describe("codemod rename kind inference", () => {
 
   it("the last refusal is reported when no kind finds `from`", async () => {
     expect((await go(["codemod", "rename", "Nope", "Nada"])).result.stdout).toBe(
-      "E1052 Nope:1:1 no schema named Nope\n  see: k.scaffold\nfail codemod rename\n",
+      "E1052 Nope:1:1 no schema named Nope\n  see: keel docs k.scaffold\nfail codemod rename\n",
     );
     expect((await go(["codemod", "rename", "nope.x", "nope.y"])).result.stdout).toBe(
-      "E1052 nope.x:1:1 no route nope.x\n  see: k.scaffold\nfail codemod rename\n",
+      "E1052 nope.x:1:1 no route nope.x\n  see: keel docs k.scaffold\nfail codemod rename\n",
     );
   });
 
@@ -192,7 +212,7 @@ describe("codemod rename kind inference", () => {
   it("an explicit --kind is the only kind tried", async () => {
     const r = await go(["codemod", "rename", "OrderCard", "OrderTile", "--kind", "schema"]);
     expect(r.result.stdout).toBe(
-      "E1052 OrderCard:1:1 no schema named OrderCard\n  see: k.scaffold\nfail codemod rename\n",
+      "E1052 OrderCard:1:1 no schema named OrderCard\n  see: keel docs k.scaffold\nfail codemod rename\n",
     );
     expect((await go(["codemod", "rename", "OrderCard", "OrderTile", "--kind", "component"])).result.code).toBe(0);
   });
@@ -219,6 +239,11 @@ describe("refusals", () => {
 
   it("an edit that would break check carries its cause diagnostic at line 1 col 1 under k.check", async () => {
     const r = await go(["codemod", "move", "OrderCard", "--to", "catalog"], cyclic);
+    console.error(
+      "DBG",
+      JSON.stringify(r.writes.map((w) => [w.path, w.content?.slice(0, 300)])),
+      [...cyclic.map((f) => f.path)].join(","),
+    );
     expect(r.result.code).toBe(1);
     expect(r.writes).toEqual([]);
     expect(r.records).toEqual([

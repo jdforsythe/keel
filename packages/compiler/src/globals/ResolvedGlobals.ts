@@ -1,0 +1,27 @@
+import type { Expression, Function as FunctionNode } from "oxc-parser";
+import type { Ref } from "./Ref.ts";
+
+/**
+ * Global-name resolution of one file (rfc:0053): which reads are the global they spell, through aliases,
+ * literal keys and destructuring, with names bound by lexical scope.
+ */
+export type ResolvedGlobals = {
+  /** Identifier reads of the file, sorted by start (as `references`). */
+  readonly refs: readonly Ref[];
+  /** Names bound by `export` declarations, at their identifier; `destructured` when bound by a pattern. */
+  readonly exported: readonly { readonly name: string; readonly at: number; readonly destructured: boolean }[];
+  /** The global path `e` denotes (`globalThis`/`window`/`self` prefix dropped), or null: local or not static. */
+  readonly resolve: (e: Expression) => string[] | null;
+  /** The global path of the name `name` read at offset `at`, or null when a local binding is not an alias. */
+  readonly resolveName: (name: string, at: number) => string[] | null;
+  /** Whether the span `start..end` is the initializer of an unexported alias (reported at its uses instead). */
+  readonly isAliasInit: (start: number, end: number) => boolean;
+  /** The string `e` folds to: literals, templates and `+` of constant parts, `const` strings; else null. */
+  readonly constString: (e: Expression) => string | null;
+  /** `e` unwrapped, or the initializer its same-file alias chain ends at: `f` after `const f = new X()` is `new X()`. */
+  readonly initOf: (e: Expression) => Expression;
+  /** The function declaration (or named function expression) the name `name` read at `at` binds, else null. */
+  readonly functionOf: (name: string, at: number) => FunctionNode | null;
+  /** Whether `name` at offsets `a` and `b` binds the same declaration, or the global at both (rfc:0065). */
+  readonly sameBinding: (name: string, a: number, b: number) => boolean;
+};

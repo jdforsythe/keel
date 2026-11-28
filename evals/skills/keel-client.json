@@ -1,0 +1,24 @@
+{
+  "skill": "keel-client",
+  "maxTokens": 2000,
+  "prompt": "Build a Keel page for a recipe catalog: a validated form that posts to a route action and shows a server-side field error, a sortable, searchable, paged table with a row menu, and translated text with a route title and a money value formatted for the route's locale.",
+  "expect": [
+    "form(",
+    "field(",
+    "Form",
+    "routes.href",
+    "pending()",
+    "keel.fields",
+    "E1901",
+    "columns(",
+    "tableSearch",
+    "applyQuery",
+    "DataTable",
+    "<Menu",
+    ".load(",
+    "formatMessage",
+    "title",
+    "formatMoney",
+    "plural("
+  ]
+}

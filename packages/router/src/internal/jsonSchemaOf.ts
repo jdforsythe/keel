@@ -1,4 +1,5 @@
 import type { JsonValue } from "@keel/schema";
+import { blankPattern } from "@keel/schema/internal";
 import type { SchemaNode } from "./SchemaNode.ts";
 
 const sorted = (o: Readonly<Record<string, JsonValue>>): JsonValue =>
@@ -13,12 +14,18 @@ export function jsonSchemaOf(node: SchemaNode): JsonValue {
   switch (node.kind) {
     case "secret":
       return jsonSchemaOf(node.inner);
+    case "format": {
+      const base = jsonSchemaOf(node.base);
+      if (typeof base !== "object" || base === null || Array.isArray(base)) return base;
+      return sorted({ ...Object.fromEntries(Object.entries(base)), format: node.name });
+    }
     case "string":
-      return sorted(
-        node.max === undefined
-          ? { type: "string", minLength: node.min }
-          : { type: "string", minLength: node.min, maxLength: node.max },
-      );
+      return sorted({
+        type: "string",
+        minLength: node.min,
+        ...(node.max === undefined ? {} : { maxLength: node.max }),
+        ...(node.min >= 1 ? { pattern: blankPattern } : {}),
+      });
     case "number":
       return sorted({ type: "number" });
     case "int":

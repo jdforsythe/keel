@@ -1,0 +1,20 @@
+/** The token groups a style prop's value is looked up in, in order (k.ui Style props); keyword props have none. */
+export const STYLE_GROUPS: Readonly<Record<string, readonly string[]>> = {
+  p: ["space"],
+  px: ["space"],
+  py: ["space"],
+  m: ["space"],
+  mx: ["space"],
+  my: ["space"],
+  gap: ["space"],
+  w: ["size", "space"],
+  h: ["size", "space"],
+  bg: ["color"],
+  fg: ["color"],
+  radius: ["radius"],
+  font: ["font"],
+  fontSize: ["fontSize"],
+  weight: ["weight"],
+  shadow: ["shadow"],
+  border: ["border"],
+};

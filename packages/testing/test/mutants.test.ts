@@ -5,7 +5,6 @@ import { s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { testResults } from "../src/index.ts";
-import { assertAccessible } from "../src/internal/assertAccessible.ts";
 import { assertArtifacts } from "../src/internal/assertArtifacts.ts";
 import { axe } from "../src/internal/axe.ts";
 import { clip } from "../src/internal/clip.ts";
@@ -18,6 +17,7 @@ import { jsonOf } from "../src/internal/jsonOf.ts";
 import { labelText } from "../src/internal/labelText.ts";
 import { levenshtein } from "../src/internal/levenshtein.ts";
 import { memoryHistory } from "../src/internal/memoryHistory.ts";
+import { moveFocus } from "../src/internal/moveFocus.ts";
 import { nameAndSource } from "../src/internal/nameAndSource.ts";
 import { nearest } from "../src/internal/nearest.ts";
 import { propertyFailure } from "../src/internal/propertyFailure.ts";
@@ -28,6 +28,7 @@ import { rungOf } from "../src/internal/rungOf.ts";
 import { seedFrom } from "../src/internal/seedFrom.ts";
 import { stateOf } from "../src/internal/stateOf.ts";
 import { treeOf } from "../src/internal/treeOf.ts";
+import { violationError } from "../src/internal/violationError.ts";
 
 fc.configureGlobal({ seed: 1337, numRuns: 100 });
 
@@ -136,11 +137,11 @@ describe("stateOf", () => {
     expect(st('<button aria-disabled="true"></button>')).toEqual({ disabled: true });
   });
 
-  it("checked only for checkable roles: aria-checked first, else the live property", () => {
+  it("checked only for checkable roles: aria-checked first (mixed is 'mixed'), else the live property", () => {
     for (const role of ["checkbox", "radio", "switch", "menuitemcheckbox", "menuitemradio"]) {
       expect(st('<div aria-checked="true"></div>', role)).toEqual({ checked: true });
       expect(st('<div aria-checked="false"></div>', role)).toEqual({ checked: false });
-      expect(st('<div aria-checked="mixed"></div>', role)).toEqual({ checked: false });
+      expect(st('<div aria-checked="mixed"></div>', role)).toEqual({ checked: "mixed" });
       expect(st("<div></div>", role)).toEqual({ checked: false });
     }
     expect(st('<div aria-checked="true"></div>', "button")).toEqual({});
@@ -360,8 +361,8 @@ describe("nameAndSource", () => {
   });
 });
 
-describe("axe", () => {
-  const rules = (html: string): { rule: string; at: string; help: string }[] => axe(dom(html));
+describe("axe (axe-core)", () => {
+  const rules = (html: string): string[] => axe(dom(html), false).violations.map((v) => v.rule);
 
   it("is clean for named controls and decorative images", () => {
     expect(
@@ -372,97 +373,60 @@ describe("axe", () => {
     expect(rules("<div>text</div><p>more</p>")).toEqual([]);
   });
 
-  it("reports each rule with element location and help text", () => {
-    expect(rules("<img>")).toEqual([
-      { rule: "image-alt", at: "<img>", help: 'has no alt text; add alt, or alt="" if decorative' },
+  it("names the rule and the element of each violation", () => {
+    expect(axe(dom('<img id="i" src="a.png">'), false).violations).toEqual([
+      expect.objectContaining({ rule: "image-alt", element: "i", at: '<img id="i">' }),
     ]);
-    expect(rules('<button id="b"></button>')).toEqual([
-      { rule: "button-name", at: '<button id="b">', help: "has no accessible name; add text or aria-label" },
-    ]);
-    expect(rules('<a href="/x" id="l"></a>')).toEqual([
-      { rule: "link-name", at: '<a id="l">', help: "has no accessible name; add text or aria-label" },
-    ]);
-    expect(rules("<input>")).toEqual([
-      { rule: "label", at: "<input>", help: "has no label; add <label for> or aria-label" },
-    ]);
-    expect(rules("<select></select>").map((v) => v.rule)).toEqual(["label"]);
-    expect(rules("<textarea></textarea>").map((v) => v.rule)).toEqual(["label"]);
-    expect(rules('<div role="button"></div>').map((v) => v.rule)).toEqual(["button-name"]);
-    expect(rules('<div role="link"></div>').map((v) => v.rule)).toEqual(["link-name"]);
-    expect(rules('<input type="checkbox">').map((v) => v.rule)).toEqual(["label"]);
-    expect(rules('<input type="TEXT">').map((v) => v.rule)).toEqual(["label"]);
+    expect(rules('<button id="b"></button>')).toEqual(["button-name"]);
+    expect(rules('<a href="/x" id="l"></a>')).toEqual(["link-name"]);
+    expect(rules("<input>")).toEqual(["label"]);
+    expect(rules("<select></select>")).toEqual(["select-name"]);
+    expect(rules('<div role="button"></div>')).toEqual(["aria-command-name"]);
   });
 
-  it("an img without alt but with another name is fine; a link without href is not a link", () => {
-    expect(rules('<img aria-label="named">')).toEqual([]);
-    expect(rules('<img title="named">')).toEqual([]);
-    expect(rules("<a></a>")).toEqual([]);
-    expect(rules('<img alt="" id="x">')).toEqual([]);
+  it("runs element rules only for a component, and lists what ran", () => {
+    const { ran } = axe(dom("<p>x</p>"), false);
+    expect(ran).toContain("image-alt");
+    expect(ran).toContain("landmark-unique");
+    for (const rule of ["document-title", "html-has-lang", "landmark-one-main", "region", "bypass", "color-contrast"])
+      expect(ran).not.toContain(rule);
   });
 
-  it("skips hidden subtrees and presentation roles but not the root", () => {
-    expect(rules("<div hidden><img><button></button></div>")).toEqual([]);
-    expect(rules('<div aria-hidden="true"><div><img></div></div>')).toEqual([]);
-    expect(rules('<div aria-hidden="false"><img></div>').map((v) => v.rule)).toEqual(["image-alt"]);
-    expect(rules('<button hidden></button><button aria-hidden="true"></button>')).toEqual([]);
-    expect(rules('<button role="presentation"></button><button role="none"></button>')).toEqual([]);
-    const root = document.createElement("div");
-    root.hidden = true;
-    root.innerHTML = "<img>";
-    expect(axe(root).map((v) => v.rule)).toEqual(["image-alt"]);
-  });
-
-  it("reports in document order, one violation per element", () => {
-    expect(rules('<button></button><img><a href="/x"></a><input>').map((v) => v.rule)).toEqual([
-      "button-name",
-      "image-alt",
-      "link-name",
-      "label",
-    ]);
+  it("runs the document rules for a page", () => {
+    document.title = "";
+    const { ran, violations } = axe(dom("<p>x</p>"), true);
+    expect(ran).toContain("document-title");
+    expect(ran).not.toContain("color-contrast");
+    expect(violations.map((v) => v.rule)).toContain("document-title");
   });
 });
 
-describe("assertAccessible", () => {
-  const bad = (n: number): HTMLElement => dom("<button></button>".repeat(n));
-
-  it("passes silently when clean", () => {
-    expect(() => assertAccessible(dom("<button>ok</button>"))).not.toThrow();
-  });
+describe("violationError", () => {
+  const v = (n: number) =>
+    Array.from({ length: n }, () => ({ rule: "button-name", element: "", at: "<button>", help: "has no name" }));
 
   it("names the first violation and up to four more", () => {
-    const line = "button-name: <button> has no accessible name; add text or aria-label";
-    const more = "\n  E1703 button-name: <button> has no accessible name; add text or aria-label";
-    expect(() => assertAccessible(bad(1))).toThrow(new RegExp(`^E1703 ${line}$`));
-    expect(() => assertAccessible(bad(2))).toThrow(`E1703 ${line}${more}`);
+    const line = "button-name: <button> has no name";
+    expect(violationError("E1703", v(1)).message).toBe(`E1703 ${line}`);
+    expect(violationError("E1703", v(2)).message).toBe(`E1703 ${line}\n  E1703 ${line}`);
     for (const n of [3, 4, 5]) {
-      try {
-        assertAccessible(bad(n));
-        expect.unreachable("should throw");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "";
-        expect(msg.split("\n")).toHaveLength(n);
-        expect(msg).not.toContain("more E1703");
-        expect(Reflect.get(e instanceof Error ? e : {}, "code")).toBe("E1703");
-      }
+      const e = violationError("E1703", v(n));
+      expect(e.message.split("\n")).toHaveLength(n);
+      expect(e.message).not.toContain("more E1703");
+      expect(Reflect.get(e, "code")).toBe("E1703");
     }
   });
 
   it("summarises the overflow past five", () => {
-    try {
-      assertAccessible(bad(8));
-      expect.unreachable("should throw");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "";
-      expect(msg.split("\n")).toHaveLength(6);
-      expect(msg.endsWith("\n  ... +3 more E1703")).toBe(true);
-      expect(msg.startsWith("E1703 button-name: ")).toBe(true);
-    }
-    try {
-      assertAccessible(bad(6));
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e instanceof Error ? e.message : "").toContain("\n  ... +1 more E1703");
-    }
+    const msg = violationError("E1703", v(8)).message;
+    expect(msg.split("\n")).toHaveLength(6);
+    expect(msg.endsWith("\n  ... +3 more E1703")).toBe(true);
+    expect(violationError("E1703", v(6)).message).toContain("\n  ... +1 more E1703");
+  });
+
+  it("starts a rule that is its own code at the element", () => {
+    const e = violationError("E1804", [{ rule: "E1804", element: "t", at: '<p id="t">', help: "is 4.40:1" }]);
+    expect(e.message).toBe('E1804 <p id="t"> is 4.40:1');
   });
 });
 
@@ -654,11 +618,13 @@ describe("small helpers", () => {
     expect(key instanceof KeyboardEvent && key.key).toBe("Enter");
     const submit = eventFor(input, { type: "submit" });
     expect([submit.type, submit.bubbles, submit.cancelable]).toEqual(["submit", true, true]);
-    for (const type of ["focus", "blur"] as const) {
-      const ev = eventFor(input, { type });
-      expect(ev).toBeInstanceOf(FocusEvent);
-      expect([ev.type, ev.bubbles, ev.cancelable]).toEqual([type, false, false]);
-    }
+  });
+
+  it("moveFocus names the element and the event in E1719", () => {
+    const div = document.createElement("div");
+    div.id = "d";
+    expect(() => moveFocus(div, "focus")).toThrow("E1719 d is not focusable");
+    expect(() => moveFocus(div, "blur")).toThrow("E1719 d does not have focus");
   });
 
   it("isSelector flags selector-shaped strings and bare tag names", () => {
@@ -848,11 +814,11 @@ describe("testResults details", () => {
     expect(one(T({}, [{ message: "a\u001b[0Kb" }])).message).toBe("t: a\u001b[0Kb");
   });
 
-  it("clips messages at 90 characters", () => {
+  it("clips messages at 89 characters", () => {
     const prefix = "t: ";
-    expect(one(T({}, [{ message: "x".repeat(87) }])).message).toBe(`${prefix}${"x".repeat(87)}`);
-    expect(one(T({}, [{ message: "x".repeat(88) }])).message).toBe(`${prefix}${"x".repeat(84)}...`);
-    expect(one(T({}, [{ message: "x".repeat(200) }])).message.length).toBe(90);
+    expect(one(T({}, [{ message: "x".repeat(86) }])).message).toBe(`${prefix}${"x".repeat(86)}`);
+    expect(one(T({}, [{ message: "x".repeat(87) }])).message).toBe(`${prefix}${"x".repeat(83)}...`);
+    expect(one(T({}, [{ message: "x".repeat(200) }])).message.length).toBe(89);
   });
 
   it("locates a failure at the first app frame of parsed stacks, with defaults for missing line and column", () => {
@@ -990,13 +956,13 @@ describe("testResults details", () => {
     expect(path({})).toBe("");
   });
 
-  it("a file that failed outside any test is one T0001 at line 1; failed tests suppress it", () => {
+  it("a file that failed outside any test is one T0001 at line 1 and one failed test of one; failed tests suppress it", () => {
     const failedFile = (extra: Record<string, unknown>, tasks: unknown[] = []) =>
       testResults([{ file: { filepath: "/repo/pkg/test/x.test.ts" }, tasks, ...extra }], [], CWD);
     const r = failedFile({ result: { state: "fail", errors: [{ message: "import broke\nstack" }] } });
     expect(r).toStrictEqual({
       diagnostics: [{ kind: "diag", code: "T0001", path: "test/x.test.ts", line: 1, col: 1, message: "import broke" }],
-      tests: 0,
+      tests: 1,
       failed: 1,
       skipped: 0,
       errors: 0,
@@ -1006,7 +972,7 @@ describe("testResults details", () => {
     expect(failedFile({ result: { state: "fail", errors: [5] } }).diagnostics[0]?.message).toBe("file failed to run");
     expect(
       failedFile({ result: { state: "fail", errors: [{ message: "x".repeat(100) }] } }).diagnostics[0]?.message,
-    ).toBe(`${"x".repeat(87)}...`);
+    ).toBe(`${"x".repeat(86)}...`);
     const both = failedFile({ result: { state: "fail", errors: [{ message: "file" }] } }, [T()]);
     expect(both.failed).toBe(1);
     expect(both.diagnostics).toHaveLength(1);
@@ -1029,22 +995,52 @@ describe("testResults details", () => {
     expect(second.failed).toBe(2);
   });
 
-  it("each unhandled error is a T0001 without a location", () => {
+  it("each unhandled error is an unlocated T0001 `uncaught: <first line>` when it names no place", () => {
     const r = testResults(
       [],
       [{ message: "boom\nmore" }, {}, "plain\ntext", 42, null, { message: "y".repeat(95) }],
       CWD,
     );
     expect(r.diagnostics).toStrictEqual([
-      { kind: "diag", code: "T0001", message: "boom" },
-      { kind: "diag", code: "T0001", message: "unhandled error" },
-      { kind: "diag", code: "T0001", message: "plain" },
-      { kind: "diag", code: "T0001", message: "42" },
-      { kind: "diag", code: "T0001", message: "null" },
-      { kind: "diag", code: "T0001", message: `${"y".repeat(87)}...` },
+      { kind: "diag", code: "T0001", message: "uncaught: boom" },
+      { kind: "diag", code: "T0001", message: "uncaught: unhandled error" },
+      { kind: "diag", code: "T0001", message: "uncaught: plain" },
+      { kind: "diag", code: "T0001", message: "uncaught: 42" },
+      { kind: "diag", code: "T0001", message: "uncaught: null" },
+      { kind: "diag", code: "T0001", message: `uncaught: ${"y".repeat(76)}...` },
     ]);
     expect(r).toMatchObject({ tests: 0, failed: 0, skipped: 0, errors: 6 });
-    expect(testResults([], [{ message: "\u001b[31mred\u001b[0m" }], CWD).diagnostics[0]?.message).toBe("red");
+    expect(testResults([], [{ message: "\u001b[31mred\u001b[0m" }], CWD).diagnostics[0]?.message).toBe("uncaught: red");
+    expect(testResults([], [{ message: "" }], CWD).diagnostics[0]?.message).toBe("uncaught: error outside any test");
+    expect(testResults([], [{ message: "x", code: 7 }], CWD).diagnostics[0]?.message).toBe("uncaught: x");
+  });
+
+  it("an unhandled error with an app frame in its stack text is located there; VITEST_TEST_PATH is the fallback", () => {
+    const stack = [
+      "Error: late",
+      "    at f (/repo/node_modules/dep/i.js:1:2)",
+      "    at g (/repo/pkg/t.test.ts:7:11)",
+    ].join("\n");
+    const [located] = testResults([], [{ message: "late", stack }], CWD).diagnostics;
+    expect(located).toStrictEqual({
+      kind: "diag",
+      code: "T0001",
+      path: "t.test.ts",
+      line: 7,
+      col: 11,
+      message: "uncaught: late",
+    });
+    const [fallback] = testResults([], [{ message: "late", VITEST_TEST_PATH: "/repo/pkg/u.test.ts" }], CWD).diagnostics;
+    expect(fallback).toStrictEqual({
+      kind: "diag",
+      code: "T0001",
+      path: "u.test.ts",
+      line: 1,
+      col: 1,
+      message: "uncaught: late",
+    });
+    const [empty] = testResults([], [{ message: "late", VITEST_TEST_PATH: "" }], CWD).diagnostics;
+    expect(empty).toStrictEqual({ kind: "diag", code: "T0001", message: "uncaught: late" });
   });
 
   it("ignores non-record files and tolerates missing task lists", () => {

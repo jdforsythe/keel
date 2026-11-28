@@ -1,28 +1,19 @@
 import fs from "node:fs";
 import path from "node:path";
+import { isSourcePath } from "./isSourcePath.ts";
 
-const SKIP: ReadonlySet<string> = new Set([
-  "node_modules",
-  "dist",
-  "coverage",
-  "reports",
-  "test",
-  "tests",
-  "conformance",
-]);
-const CODE = /\.[cm]?[jt]sx?$/;
-const NOT_APP = /\.(?:test|spec)\.[cm]?[jt]sx?$|\.d\.ts$/;
-
-/** Root-relative (`/`-separated, sorted) app code files under `root`: no tests or test dirs, declarations, dot or build dirs. */
+/**
+ * Root-relative (`/`-separated, sorted) app code files under `root` (`isSourcePath`). A directory is walked only
+ * when a module directly inside it could be a source, so skipped trees such as `node_modules` are never read.
+ */
 export function listSources(root: string): string[] {
   const out: string[] = [];
   const walk = (dir: string): void => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (e.name.startsWith(".") || SKIP.has(e.name)) continue;
-      const p = path.join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (e.isFile() && CODE.test(e.name) && !NOT_APP.test(e.name))
-        out.push(path.relative(root, p).split(path.sep).join("/"));
+      const rel = path.relative(root, path.join(dir, e.name)).split(path.sep).join("/");
+      if (e.isDirectory()) {
+        if (isSourcePath(`${rel}/index.ts`)) walk(path.join(dir, e.name));
+      } else if (e.isFile() && isSourcePath(rel)) out.push(rel);
     }
   };
   if (fs.existsSync(root)) walk(root);

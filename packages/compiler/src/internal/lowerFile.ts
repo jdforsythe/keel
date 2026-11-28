@@ -1,4 +1,4 @@
-import { isSafeUrl } from "@keel/runtime-dom/url";
+import { isRefusedAttr, isSafeUrl } from "@keel/runtime-dom/url";
 import MagicString from "magic-string";
 import type { Function as FunctionNode } from "oxc-parser";
 import type {
@@ -16,6 +16,7 @@ import type { ElementInfo } from "./ElementInfo.ts";
 import type { FnInfo } from "./FnInfo.ts";
 import type { Lowered } from "./Lowered.ts";
 import { RAW_HTML } from "./RAW_HTML.ts";
+import { RAW_TEXT_TAGS } from "./RAW_TEXT_TAGS.ts";
 import type { Span } from "./Span.ts";
 import type { StyleRewrite } from "./StyleRewrite.ts";
 import { attrNameOf } from "./attrNameOf.ts";
@@ -26,16 +27,22 @@ import { cleanJsxText } from "./cleanJsxText.ts";
 import { componentAt } from "./componentAt.ts";
 import { componentFns } from "./componentFns.ts";
 import { decodeEntities } from "./decodeEntities.ts";
+import { elementValued } from "./elementValued.ts";
+import { endsRawText } from "./endsRawText.ts";
 import { escapeHtml } from "./escapeHtml.ts";
 import { exprOf } from "./exprOf.ts";
 import { intrinsicOf } from "./intrinsicOf.ts";
 import { isHtmlTag } from "./isHtmlTag.ts";
+import { isSlotCall } from "./isSlotCall.ts";
+import { literalIdOf } from "./literalIdOf.ts";
+import { literalTextOf } from "./literalTextOf.ts";
 import { lowerBound } from "./lowerBound.ts";
 import { patternNames } from "./patternNames.ts";
 import { propsNameOf } from "./propsNameOf.ts";
 import { shapeAt } from "./shapeAt.ts";
 import { staticValueOf } from "./staticValueOf.ts";
 import { tagNameOf } from "./tagNameOf.ts";
+import { uiBaseElements } from "./uiBaseElements.ts";
 
 /** Module the generated code imports the ops from (k.runtime). */
 const OPS_MODULE = "@keel/runtime-dom/ops";
@@ -72,7 +79,7 @@ type Item =
   | { kind: "dyn"; expr: Expression }
   | { kind: "el"; node: JSXElement }
   | { kind: "flow"; node: JSXElement }
-  | { kind: "node"; code: () => string };
+  | { kind: "node"; code: () => string; one?: true };
 
 type Template = { html: string; refs: string[]; ops: string[]; root: string; vars: Map<string, string> };
 
@@ -80,21 +87,6 @@ const q = (s: string): string => JSON.stringify(s);
 
 function unparen(e: Expression): Expression {
   return e.type === "ParenthesizedExpression" ? unparen(e.expression) : e;
-}
-
-/**
- * A call that renders a slot: `slots.<name>()`, `<props>.children()` (RFC 0008), or a `children` binding
- * (`children()`); optional calls too. It returns nodes, so it is inserted as a node, never bound as text (D31).
- */
-function isSlotCall(e: Expression): boolean {
-  if (e.type === "LogicalExpression" && e.operator === "??") return isSlotCall(unparen(e.left));
-  const x = e.type === "ChainExpression" ? e.expression : e;
-  if (x.type !== "CallExpression") return false;
-  const c = x.callee;
-  if (c.type === "Identifier") return c.name === "children";
-  if (c.type !== "MemberExpression" || c.computed) return false;
-  if (c.property.name === "children") return true;
-  return c.object.type === "Identifier" && c.object.name === "slots";
 }
 
 /**
@@ -106,12 +98,12 @@ function isSlotCall(e: Expression): boolean {
  * into `class` (D23). Every component runs in its own scope; a file exporting `uses` declares them in its
  * default-export component's scope (D26). An element with an event binding or a binding that reads client-writable
  * state, and each root element of a component calling `effect`, gets `data-k` in its template: islands (k.runtime,
- * rfc:0037). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
+ * rfc:0037); a bound k.ui base element with a literal `id` gets it as `data-k` (k.errors `data.at`). Only JSX ranges, `edits`, component parameters and bodies those need, intrinsic-only imports and
  * the generated header change; all other text is kept byte for byte.
  */
 export function lowerFile(
   a: Analysis,
-  elements: readonly ElementInfo[],
+  all: readonly ElementInfo[],
   initial: readonly Edit[],
   styles: ReadonlyMap<number, StyleRewrite> = new Map(),
 ): Lowered {
@@ -131,7 +123,27 @@ export function lowerFile(
   const ctxNames = ctxParams(a, fns, componentFnAt, ns, edits);
   componentScopes(a, fns, ns, edits, headerImports);
   moduleScope(a, ns, edits, headerImports);
+  const elements = all.filter((e) => !e.base);
+  /** k.ui base elements with a literal `id`, by JSX start: the id they are stamped with. */
+  const baseIds = new Map(all.flatMap((e): [number, string][] => (e.base ? [[e.start, e.id]] : [])));
   const info = new Map(elements.map((e) => [e.start, e]));
+  // k.errors `data.at`: a bound k.ui base element with a literal `id` carries it as its `data-k` stamp, as a bound
+  // template element carries its id; an `id` from an expression is never stamped. `stamp(id, Button)(props)` wraps
+  // both a JSX base element and a source call `Button({ id: "…", … })`.
+  const stampOpen = (id: string): string => {
+    headerImports.push(
+      `const ${ns}stamp = <A extends unknown[], N extends { hasAttribute?(k: string): boolean; setAttribute?(k: string, v: string): void }>(id: string, f: (...a: A) => N) => (...a: A): N => { const n = f(...a); if (n.hasAttribute?.("data-k")) n.setAttribute?.("data-k", id); return n; };`,
+    );
+    return `${ns}stamp(${q(id)}, `;
+  };
+  const uiBases = uiBaseElements(a);
+  for (const c of a.calls) {
+    if (c.callee.type !== "Identifier" || !uiBases.has(c.callee.name)) continue;
+    const id = literalIdOf(c.arguments[0]);
+    if (id === undefined) continue;
+    edits.push({ start: c.callee.start, end: c.callee.start, text: stampOpen(id) });
+    edits.push({ start: c.callee.end, end: c.callee.end, text: ")" });
+  }
   const templates: string[] = [];
   const bindings: BindingInfo[] = [];
   /** Element ids whose binding makes them part of an island (k.runtime): they get `data-k` in their template. */
@@ -246,13 +258,15 @@ export function lowerFile(
             pushText(escapeHtml(String(e.value)), String(e.value));
         } else if (e.type === "JSXElement" || e.type === "JSXFragment")
           items.push({ kind: "node", code: () => lowerNode(e) });
-        else if (isSlotCall(e)) items.push({ kind: "node", code: () => `(${code(e)}) ?? ""` });
-        else items.push({ kind: "dyn", expr: c.expression });
+        else if (isSlotCall(e, propsNameOf(componentAt(a, e.start))))
+          items.push({ kind: "node", code: () => `(${code(e)}) ?? ""` });
+        // rfc:0061: elements in an expression are E1403 and bind nothing (never a text binding of a node).
+        else if (elementValued(a, c.expression) === null) items.push({ kind: "dyn", expr: c.expression });
       } else if (isHtmlTag(tagNameOf(c.openingElement.name))) {
         const nests = parentTag === undefined || canNest(parentTag, tagNameOf(c.openingElement.name));
-        items.push(nests ? { kind: "el", node: c } : { kind: "node", code: () => lowerElementRoot(c) });
+        items.push(nests ? { kind: "el", node: c } : { kind: "node", code: () => lowerElementRoot(c), one: true });
       } else if (intrinsicOf(a, c) !== undefined) items.push({ kind: "flow", node: c });
-      else items.push({ kind: "node", code: () => lowerComponent(c) });
+      else items.push({ kind: "node", code: () => lowerComponent(c), one: true });
     }
     return items;
   }
@@ -275,15 +289,20 @@ export function lowerFile(
     return lowerNode(v);
   }
 
-  function emitElement(el: JSXElement, t: Template, isRoot: boolean): void {
+  function emitElement(el: JSXElement, t: Template, isRoot: boolean, inForeign = false): void {
     const me = info.get(el.start);
     const id = me?.id ?? `${a.idPrefix}.?`;
     const tag = tagNameOf(el.openingElement.name);
+    const foreign = inForeign || tag === "svg" || tag === "math";
+    // rfc:0058: `script`/`style` text is code or CSS. Only literal attributes and text are emitted; anything
+    // bound is E1002 (`ruleRawText`) and never lowered to an op.
+    const rawText = RAW_TEXT_TAGS.has(tag);
     const ref = (): string => elRef(t, id, isRoot);
     t.html += `<${tag}`;
     if (me === undefined || !me.explicit) t.html += ` id="${escapeHtml(id)}"`;
     const at = t.html.length;
     for (const at of el.openingElement.attributes) {
+      if (rawText && (at.type === "JSXSpreadAttribute" || staticValueOf(at.value) === undefined)) continue;
       if (at.type === "JSXSpreadAttribute") {
         const s = tmp("s");
         const k = tmp("k");
@@ -307,6 +326,7 @@ export function lowerFile(
       }
       const sv = staticValueOf(at.value);
       if (sv !== undefined) {
+        if (isRefusedAttr(tag, out)) continue;
         if (sv.bare) {
           t.html += ` ${out}=""`;
           continue;
@@ -324,15 +344,29 @@ export function lowerFile(
       record(id, kind, out, at.value);
     }
     t.html += ">";
-    if (!VOID.has(tag)) {
-      emitChildren(el.children, t, { id, tag, isRoot });
+    if (rawText) {
+      // Literal text only; data children are dropped (E1002). In HTML it is raw template text, which no parser
+      // decodes. In foreign content (SVG/MathML) a browser parses it as markup and the server keeps it raw, so it
+      // is set once as text node data instead: the serializer is its one escaping owner (backlog 0168).
+      const texts = el.children.map(literalTextOf);
+      const text = texts.every((x) => x !== null) ? texts.join("") : "";
+      if (foreign) {
+        if (text !== "") t.ops.push(`${ref()}.textContent = ${q(text)};`);
+      } else if (!endsRawText(tag, text)) t.html += text;
+      t.html += `</${tag}>`;
+    } else if (!VOID.has(tag)) {
+      emitChildren(el.children, t, { id, tag, isRoot, foreign });
       t.html += `</${tag}>`;
     }
     if (me !== undefined && (bound.has(id) || (isRoot && effectful(el.start))))
       t.html = `${t.html.slice(0, at)} data-k="${escapeHtml(id)}"${t.html.slice(at)}`;
   }
 
-  function emitChildren(children: JSXChild[], t: Template, parent: { id: string; tag: string; isRoot: boolean }): void {
+  function emitChildren(
+    children: JSXChild[],
+    t: Template,
+    parent: { id: string; tag: string; isRoot: boolean; foreign: boolean },
+  ): void {
     const { id: parentId, isRoot: parentIsRoot } = parent;
     let index = 0;
     let prevText = false;
@@ -360,12 +394,13 @@ export function lowerFile(
         record(parentId, "text", "#text", it.expr);
         prevText = true;
       } else if (it.kind === "el") {
-        emitElement(it.node, t, false);
+        emitElement(it.node, t, false, parent.foreign);
         prevText = false;
       } else {
-        t.html += "<!---->";
+        // A component (or nested element) slot is `<!--+-->`: at resume, one server element it claims (rfc:0064).
+        t.html += it.kind === "node" && it.one ? "<!--+-->" : "<!---->";
         const n = childRef(index);
-        t.ops.push(it.kind === "flow" ? `${lowerFlow(it.node, n)};` : `${n}.replaceWith(${it.code()});`);
+        t.ops.push(it.kind === "flow" ? `${lowerFlow(it.node, n)};` : `${ns}.slot(${n}, () => ${it.code()});`);
         prevText = false;
       }
       index++;
@@ -460,8 +495,10 @@ export function lowerFile(
       if (at?.value) record(owner(el.start), op, name, at.value);
     }
     switch (kind) {
-      case "If":
-        return `${ns}.cond(${anchor}, () => (${attrCode("when", "false")}), ${renderFn(el.children)})`;
+      case "If": {
+        const otherwise = attrOf(el, "fallback") === undefined ? "" : `, ${attrCode("fallback", "undefined")}`;
+        return `${ns}.cond(${anchor}, () => (${attrCode("when", "false")}), ${renderFn(el.children)}${otherwise})`;
+      }
       case "For": {
         const k = staticValueOf(attrOf(el, "key")?.value ?? null);
         const v = tmp("v");
@@ -514,7 +551,7 @@ export function lowerFile(
         stmts.push(`const ${an} = ${f}.appendChild(document.createComment("")); ${lowerFlow(it.node, an)};`);
       }
     }
-    return `(() => { const ${f} = document.createDocumentFragment(); ${stmts.join(" ")} return ${f}; })()`;
+    return `${ns}.frag((${f}) => { ${stmts.join(" ")} })`;
   }
 
   function lowerComponent(el: JSXElement): string {
@@ -547,8 +584,10 @@ export function lowerFile(
     const props = parts.length === 0 ? "{}" : `{ ${parts.join(", ")} }`;
     const f = componentFnAt(el.start);
     const ctx = f === undefined ? undefined : ctxNames.get(f.start);
-    const tail = ctx === undefined ? "" : `, undefined, ${ctx}`;
-    return `${tagNameOf(el.openingElement.name)}(${props}${tail})`;
+    const tail = ctx === undefined ? "" : `, ${ctx}`;
+    const tag = tagNameOf(el.openingElement.name);
+    const id = baseIds.get(el.start);
+    return `${id === undefined ? tag : `${stampOpen(id)}${tag})`}(${props}${tail})`;
   }
 
   function lowerNode(j: JSXElement | JSXFragment): string {
@@ -563,26 +602,37 @@ export function lowerFile(
     if (it.start === it.end) ms.appendLeft(it.start, it.render());
     else ms.overwrite(it.start, it.end, it.render());
   }
+  // A `@keel/runtime-dom` import is removed only when every binding is an intrinsic used solely as a JSX tag, which
+  // the lowering replaced; any other reference (a call, a value, a parameter or destructuring default) keeps it.
   for (const i of a.imports) {
     if (i.source.value !== "@keel/runtime-dom" || i.specifiers.length === 0) continue;
-    if (i.specifiers.every((s) => s.type === "ImportSpecifier" && a.intrinsics.has(s.local.name)))
-      ms.remove(i.start, i.end);
+    const tagsOnly = i.specifiers.every(
+      (s) => s.type === "ImportSpecifier" && a.intrinsics.has(s.local.name) && !a.identsByName.has(s.local.name),
+    );
+    if (tagsOnly) ms.remove(i.start, i.end);
   }
-  const body = ms.toString() + attachedExports(a);
-  const ops = body.includes(`${ns}.`);
-  if (!ops && headerImports.length === 0) return { code: body, bindings };
+  ms.append(attachedExports(a));
+  // The map from the lowered text to the source, so a frame's site names the source line (k.serverlog).
+  const mapped = (): Lowered => ({
+    code: ms.toString(),
+    map: ms.generateMap({ hires: true, source: a.path }).toString(),
+    bindings,
+  });
+  const ops = ms.toString().includes(`${ns}.`);
+  if (!ops && headerImports.length === 0) return mapped();
   const header = [
     ...(ops ? [`import * as ${ns} from ${q(OPS_MODULE)};`] : []),
     ...new Set(headerImports),
     ...templates.map((html, i) => `const ${ns}t${i} = ${ns}.template(${q(html)});`),
   ].join("\n");
-  return { code: `${header}\n${body}`, bindings };
+  ms.prepend(`${header}\n`);
+  return mapped();
 }
 
 /**
- * For each component function that renders a child component: the name of its `ctx` (third) parameter,
- * adding `<ns>props, <ns>slots, <ns>ctx` parameters as needed (D27). A function with a rest parameter or a
- * destructured third parameter passes no ctx.
+ * For each component function that renders a child component: the name of its `ctx` (second) parameter,
+ * adding `<ns>props, <ns>ctx` parameters as needed (D27). A function with a rest parameter or a
+ * destructured second parameter passes no ctx (E1407).
  */
 function ctxParams(
   a: Analysis,
@@ -601,9 +651,9 @@ function ctxParams(
     if (f === undefined || seen.has(f.start)) continue;
     seen.add(f.start);
     const ps = f.node.params;
-    const third = ps[2];
-    if (third !== undefined) {
-      const id = third.type === "AssignmentPattern" ? third.left : third;
+    const second = ps[1];
+    if (second !== undefined) {
+      const id = second.type === "AssignmentPattern" ? second.left : second;
       if (id.type === "Identifier") out.set(f.start, id.name);
       continue;
     }
@@ -615,7 +665,7 @@ function ctxParams(
       const from = f.node.typeParameters?.end ?? (f.node.type === "ArrowFunctionExpression" ? f.start : f.node.id?.end);
       const open = src.indexOf("(", from ?? f.start);
       if (open < 0 || open >= f.end) continue;
-      edits.push({ start: open + 1, end: open + 1, text: `${ns}props, ${ns}slots, ${name}` });
+      edits.push({ start: open + 1, end: open + 1, text: `${ns}props, ${name}` });
     } else if (
       ps.length === 1 &&
       f.node.type === "ArrowFunctionExpression" &&
@@ -624,10 +674,9 @@ function ctxParams(
       edits.push({
         start: first.start,
         end: first.end,
-        text: `(${src.slice(first.start, first.end)}, ${ns}slots, ${name})`,
+        text: `(${src.slice(first.start, first.end)}, ${name})`,
       });
-    } else
-      edits.push({ start: last.end, end: last.end, text: ps.length === 1 ? `, ${ns}slots, ${name}` : `, ${name}` });
+    } else edits.push({ start: last.end, end: last.end, text: `, ${name}` });
     out.set(f.start, name);
   }
   return out;
@@ -758,36 +807,68 @@ function importedAs(a: Analysis, source: string, imported: string): Set<string> 
   return out;
 }
 
+/** Whether `node` holds a call that runs when it is evaluated: one not inside a nested function or class body. */
+function callsWhenEvaluated(node: unknown): boolean {
+  if (typeof node !== "object" || node === null) return false;
+  if (Array.isArray(node)) return node.some(callsWhenEvaluated);
+  const type = "type" in node ? node.type : undefined;
+  if (type === "CallExpression" || type === "TaggedTemplateExpression") return true;
+  if (
+    type === "ArrowFunctionExpression" ||
+    type === "FunctionExpression" ||
+    type === "FunctionDeclaration" ||
+    type === "ClassExpression" ||
+    type === "ClassDeclaration"
+  )
+    return false;
+  return Object.values(node).some((v) => typeof v === "object" && v !== null && callsWhenEvaluated(v));
+}
+
+/** Whether `node` holds an `await` outside every nested function (a top-level await), which no arrow can wrap. */
+function awaitsWhenEvaluated(node: unknown): boolean {
+  if (typeof node !== "object" || node === null) return false;
+  if (Array.isArray(node)) return node.some(awaitsWhenEvaluated);
+  const type = "type" in node ? node.type : undefined;
+  if (type === "AwaitExpression" || (type === "ForOfStatement" && "await" in node && node.await === true)) return true;
+  if (type === "ArrowFunctionExpression" || type === "FunctionExpression" || type === "FunctionDeclaration")
+    return false;
+  return Object.values(node).some((v) => typeof v === "object" && v !== null && awaitsWhenEvaluated(v));
+}
+
 /**
- * Module-level reactive state (D30): a top-level `const x = store(...)` (k.store) or `signal`/`computed`/
- * `resource` (k.reactive) is created inside a root scope that lives as long as the module, since the runtime
- * rejects primitives outside any scope (E1203). An exported store under `modules/<id>/` without an explicit
- * id gets `{ id: "<id>.<export>" }` (k.store Ids: the compiler fills it from the export name).
+ * Module roots (k.reactive Module roots): each top-level `const`, `let` or `var` declarator whose initializer holds a
+ * call, and each top-level expression statement holding one, runs inside a root of its own that `moduleRoot`
+ * (`@keel/reactive/internal`) makes, so a maker called there (`store`, `chart`, `outbox`) finds that root as `owner()`.
+ * A statement holding a top-level `await` is left as written. An exported store under `modules/<id>/` without an
+ * explicit id gets `{ id: "<id>.<export>" }` (k.store Ids: the compiler fills it from the export name).
  */
 function moduleScope(a: Analysis, ns: string, edits: Edit[], headerImports: string[]): void {
   const stores = importedAs(a, "@keel/store", "store");
-  const reactive = new Set<string>();
-  for (const k of ["signal", "computed", "resource"])
-    for (const n of importedAs(a, REACTIVE_MODULE, k)) reactive.add(n);
-  if (stores.size === 0 && reactive.size === 0) return;
   const segs = a.path.replace(/\\/g, "/").split("/");
   const at = segs.indexOf("modules");
   const mod = at >= 0 && at < segs.length - 2 ? segs[at + 1] : undefined;
   let used = false;
+  const wrap = (start: number, end: number): void => {
+    used = true;
+    edits.push({ start, end: start, text: `${ns}moduleRoot(() => (` });
+    edits.push({ start: end, end, text: "))" });
+  };
   for (const st of a.program.body) {
+    if (st.type === "ExpressionStatement") {
+      if (callsWhenEvaluated(st.expression) && !awaitsWhenEvaluated(st.expression))
+        wrap(st.expression.start, st.expression.end);
+      continue;
+    }
     const exported = st.type === "ExportNamedDeclaration";
     const d = st.type === "ExportNamedDeclaration" ? st.declaration : st;
     if (d === null || d.type !== "VariableDeclaration") continue;
     for (const v of d.declarations) {
       const init = v.init;
-      if (init === null || init.type !== "CallExpression" || init.callee.type !== "Identifier") continue;
-      const callee = init.callee.name;
-      const isStore = stores.has(callee);
-      if (!isStore && !reactive.has(callee)) continue;
-      used = true;
-      edits.push({ start: init.start, end: init.start, text: `${ns}scoped(() => ` });
-      edits.push({ start: init.end, end: init.end, text: ")" });
-      if (!isStore || !exported || mod === undefined || v.id.type !== "Identifier") continue;
+      if (init === null || !callsWhenEvaluated(init) || awaitsWhenEvaluated(init)) continue;
+      wrap(init.start, init.end);
+      if (init.type !== "CallExpression" || init.callee.type !== "Identifier" || !stores.has(init.callee.name))
+        continue;
+      if (!exported || mod === undefined || v.id.type !== "Identifier") continue;
       const id = JSON.stringify(`${mod}.${v.id.name}`);
       const args = init.arguments;
       const second = args[1];
@@ -803,5 +884,5 @@ function moduleScope(a: Analysis, ns: string, edits: Edit[], headerImports: stri
     }
   }
   if (!used) return;
-  headerImports.push(...scopedHelper(ns));
+  headerImports.push(`import { moduleRoot as ${ns}moduleRoot } from ${JSON.stringify(`${REACTIVE_MODULE}/internal`)};`);
 }

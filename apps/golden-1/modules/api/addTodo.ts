@@ -1,8 +1,11 @@
 import { s } from "@keel/schema";
 import { type Store, transaction } from "@keel/store";
-import type { Board } from "../todos/Board.schema.ts";
+import type { Board } from "./Board.schema.ts";
 
-/** `api.addTodo` on `board` (`boardStores`): append an open todo to list `listId`; an unknown list or a duplicate id leaves the board unchanged. */
+/**
+ * `api.addTodo` on `board` (`boardStores`): append an open todo to list `listId`; an unknown list or a duplicate id
+ * leaves the board unchanged. A concurrent write rebases: a todo with a fresh id holds on any board.
+ */
 export const addTodo = (board: Store<Board>) =>
   transaction(
     board,
@@ -17,4 +20,5 @@ export const addTodo = (board: Store<Board>) =>
       state.todos.some((t) => t.id === p.id) || !state.lists.some((l) => l.id === p.listId)
         ? state
         : { ...state, todos: [...state.todos, { ...p, done: false }] },
+    { concurrent: "rebase" },
   );

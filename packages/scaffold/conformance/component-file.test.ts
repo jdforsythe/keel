@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Generators "`component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing)."
+// k.scaffold, Generators "`component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing)."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, esc, fresh, pascalName, read } from "./fixtures.ts";

@@ -1,0 +1,57 @@
+# k.values: Token values
+status: proposed
+
+`TokenSchema` (k.ui) takes a token value only in the form its group defines below. The forms are positive: what a form does not produce is refused. Each form is chosen so that a CSS tokenizer reads exactly the tokens it names and the property it reaches takes effect.
+
+**Characters.** Outside a quoted string a value holds only the ASCII characters its form names: letters, digits, `_`, `.`, `%`, `#`, `-`, `+`, `*`, `/`, `,`, `(`, `)` and single spaces between tokens, with none leading or trailing. A quoted string (`font` only) opens and closes with the same `"` or `'` and holds any code point but that quote, a backslash, a control character (U+0000 to U+001F, U+007F to U+009F) and a lone surrogate. So no value holds an escape, a newline, a form feed, a null or a comment opener.
+
+**Numbers and lengths.** `<n>` is digits with an optional `.` and digits (`0`, `1.5`; not `.5`), with no sign and no exponent. `<unit>` is one of `px`, `cm`, `mm`, `q`, `in`, `pt`, `pc`; `em`, `rem`, `ex`, `rex`, `cap`, `rcap`, `ch`, `rch`, `ic`, `ric`, `lh`, `rlh`; `vw`, `vh`, `vi`, `vb`, `vmin`, `vmax`, each also with the prefix `s`, `l` or `d` (`dvh`); `cqw`, `cqh`, `cqi`, `cqb`, `cqmin`, `cqmax`. `<length>` is `0` or `<n><unit>`; `<lp>` is a `<length>` or `<n>%`. `<env>` is `env(safe-area-inset-top)`, with `right`, `bottom` or `left` in place of `top`, optionally followed by `, <length>` inside the brackets. `<math>` is `calc(<sum>)`, `min(<sum>, <sum>)`, `max(<sum>, <sum>)` (two to four arguments) or `clamp(<sum>, <sum>, <sum>)`. A `<sum>` is terms joined by ` + ` or ` - `, each a length side, and a term is factors joined by ` * ` or ` / `, with exactly one length side per term and a `/` followed by a non-zero `<n>`. A factor is an `<lp>`, an `<n>`, an `<env>`, a `<math>` or a `(<sum>)`. Brackets nest at most four deep and a value holds at most 32 numbers, lengths and names; a function name (`calc`, `min`, `max`, `clamp`, `env`, `var`) is not one of them, the names inside it are. A `<math>` the browser computes below a property's range is clamped there by the browser, so it still takes effect.
+
+**Colors.** A `<color>` is opaque, one of:
+- `#` and 3 or 6 hex digits;
+- `rgb(<c> <c> <c>)`, each `<c>` an `<n>` from 0 to 255;
+- `hsl(<h> <p> <p>)`, `<h>` an `<n>`, bare or followed by `deg`, and each `<p>` an `<n>` from 0 to 100 followed by `%`;
+- `oklab(<l> <ab> <ab>)`, `<l>` an `<n>` from 0 to 1 or one from 0 to 100 followed by `%`, each `<ab>` an `<n>`, or `-` and an `<n>`, from -0.5 to 0.5;
+- `oklch(<l> <ch> <h>)`, `<ch>` an `<n>` from 0 to 0.5;
+- `color(display-p3 <u> <u> <u>)`, each `<u>` an `<n>` from 0 to 1.
+
+`<ref>` is `var(--k-color-<name>)`, the custom property (k.ui, k.looks Names) of a color token the same tokens hold; `<paint>` is a `<color>`, a `<ref>` or `currentColor`. An `<alpha>` is `#` and 4 or 8 hex digits, or one of the function forms with ` / <a>` before its `)`, `<a>` an `<n>` from 0 to 1 or one from 0 to 100 followed by `%`. So no named color, comma, `none`, `calc()` or relative color is a form.
+
+| group | a value is |
+| --- | --- |
+| `color` | `<color>`, or a `{ light, dark }` pair of them |
+| `overlay` | `{ value, over }`: `value` an `<alpha>` or a `{ light, dark }` pair of them, `over` a list of 1 to 8 distinct names of color tokens the tokens hold |
+| `space` | an `<lp>`, `auto`, an `<env>` or a `<math>` |
+| `size` | an `<lp>`, `auto`, `min-content`, `max-content`, `fit-content`, an `<env>` or a `<math>` |
+| `radius` | an `<lp>` or a `<math>` |
+| `font` | one to eight families joined by `, `: a quoted string, or one or more words joined by single spaces, each a letter or `_` then letters, digits, `_` and `-`, none of `inherit`, `initial`, `unset`, `revert`, `revert-layer` and `default` |
+| `fontSize` | a `<length>`, `<n>%` or a `<math>` |
+| `weight` | an integer from 1 to 1000, `normal` or `bold` |
+| `shadow` | `none`, or one to four shadows joined by `, `: an optional `inset `, then two to four lengths, the first two and the fourth `<length>` or `-` and a `<length>`, the third a `<length>`, then an optional ` <paint>` or ` <alpha>` |
+| `border` | `0`, `none`, or a width (`<length>`, `thin`, `medium`, `thick`), one of `solid`, `dashed`, `dotted`, `double`, and a `<paint>` |
+| `breakpoint` | `<n>` above 0 followed by `px`, `em` or `rem` |
+| `motion` | `<n>` followed by `ms` or `s` |
+
+A refused value fails `TokenSchema` with rule `format` at `<group>.<name>` (with `value` or `over` after it for an overlay, then `light` or `dark` for a pair; under `themes.<theme>.` in a theme): `tokens.ts` is E1807 and a library's shipped object is E1812 `<id>Tokens fails TokenSchema at <path>` (k.looks). So these are refused: `url(...)` and `image-set(...)`, which reach outside the stylesheet; a `var(...)` but a held color token's; `!important` and the CSS-wide keywords; a negative literal, which `padding`, `gap`, widths and durations drop; `none` and `%` for a width. A `space` token whose value is `auto` is in no group of `p`, `px`, `py` and `gap`, which ignore it (E1801 at the use, k.a11y-static Token names).
+
+**What check judges.** Contrast (k.a11y) takes a `fontSize` at its smallest: a `<length>` in `px`, `pt`, `rem` or `em` (16px to the `rem` and `em`) as written, a `clamp()` at its first argument when that is such a length, and any other value as normal text. Contrast and `base.focus` judge `<color>` and `<ref>` values; a `currentColor` border or shadow is not judged.
+
+**Stylesheet.** Each value a form admits gives a declaration the browser keeps and computes to a value other than the property's initial one, unless it is written as that value (`0`, `normal`). No part of the value forms ships in a client bundle: they run under Node, in `@keel/ui/tokens` and `@keel/ui/css` (k.check-time).
+
+**Overlays.** An overlay token is a color with alpha and the opaque colors it may sit on. `bg` and `fg` take an overlay's name as they take a color's (k.a11y-static Token names), and its custom property is `--k-overlay-<name>`. Contrast is judged on the overlay composited over each `over` color (k.themes Combinations); a color with alpha anywhere else but a `shadow` is refused. An `over` naming anything but a color token the same tokens hold (an overlay among them) fails `TokenSchema` at `overlay.<name>.over`, so `keel check` reports E1807 at the `over` key (k.themes Token errors) and judges no element; a backdrop an element's chain finds that `over` does not hold is E1817, from `keel check` only, at the opening quote of the overlay's literal (k.a11y-static Overlays), and the render check composites over the painted backdrop and reports no E1817.
+
+**Contrast.** Every `<color>` has one luminance, computed exactly: hex and `rgb()` are sRGB, `hsl()` becomes sRGB by CSS Color 4's `hslToRgb`, each linearised as WCAG 2 linearises; `oklab()`, `oklch()` (its hue in degrees) and `color(display-p3 ...)` (CSS Color 4's transfer function) become linear sRGB through CSS Color 4's matrices; the luminance is `0.2126 R + 0.7152 G + 0.0722 B`, clamped to 0 to 1. A color is inside sRGB, or display-p3, when each of its linear channels there is from 0 to 1 within 0.000001; one outside sRGB ships and is judged in the two forms k.gamut gives.
+
+**Conformance.**
+- `TokenSchema` refuses with rule `format` at that path each of `font: { a: '"Inter var, sans-serif' }`, `font: { a: '"a\fb"' }`, `font: { a: '"a\u0000b"' }`, `font: { a: '"a\ud800"' }`, `font: { a: '3M Sans' }`, `font: { a: 'inherit' }`, `color: { a: '"oops' }`, `color: { a: 'rgb(1,2,3' }`, `color: { a: 'red\\' }`, `color: { a: 'red' }`, `color: { a: '#12345' }`, `space: { a: '1px !important' }`, `space: { a: '-2rem' }`, `space: { a: 'calc(1px+2px)' }`, `space: { a: 'calc(1px * 2px)' }`, `space: { a: 'calc(1px / 0)' }`, `size: { a: 'url(x.png)' }`, `size: { a: 'none' }`, `border: { a: '1px solid var(--x)' }`, `border: { a: '10% solid #000000' }`, `fontSize: { a: '-1px' }`, `breakpoint: { a: '0px' }` and `motion: { a: '120' }`.
+- `TokenSchema` accepts `brandTokens`, `space: { a: 'clamp(8px, 2vw + 4px, 24px)' }`, `space: { a: 'env(safe-area-inset-top, 0)' }`, `size: { a: '100dvh' }`, `size: { a: 'min(44rem, 100% - 32px)' }`, `size: { a: '50cqi' }`, `font: { a: '"Inter, var", sans-serif' }`, `font: { a: '"3M Sans", serif' }`, `fontSize: { a: 'clamp(1rem, 0.9rem + 0.5vw, 1.25rem)' }`, `weight: { a: '650' }`, `shadow: { a: 'inset 0 -1px 2px #000000' }`, `border: { a: '1px solid currentColor' }`, `breakpoint: { a: '48em' }` and `motion: { a: '0.2s' }`.
+- `border: { a: '1px solid var(--k-color-text)' }` is accepted with a color token `text` and refused with rule `format` at `border.a` without one.
+- A shipped `acmeTokens` holding `font: { 'acme.f': '"Inter' }` is one E1812 with message `acmeTokens fails TokenSchema at font.acme.f`.
+- With `space: { a: 'auto' }`, `<Box p="a" />` is one E1801 at the literal and `<Box mx="a" />` is none.
+- With `fontSize: { big: 'clamp(24px, 3vw, 40px)' }` and color tokens `low` `#787878` and `bg` `#ffffff`, `<Box bg="bg" fontSize="big"><Text fg="low">x</Text></Box>` reports no E1804, and with `fontSize: { big: 'min(24px, 3vw)' }` it reports one.
+- In Chromium, the cases are generated from the forms (each unit; each keyword; each math function at two, three and four arguments; nesting at four and at five; 32 and 33 names; a family list at one and eight; inside and outside a string, each of `"`, `'`, `\`, each control character and a lone surrogate): every case `TokenSchema` accepts, set on an element through the property its group's props write, reads back from `style` as a non-empty value and gives a computed value other than the initial one unless written as it, and every generated case the forms do not produce is refused.
+- In Chromium, the CSS file compiled from `brandTokens` and from tokens holding one generated case per form, every group used by a style prop, parses as a `CSSStyleSheet` (`replaceSync`) with `cssRules.length` equal to the number of rules the compiler emitted, each rule holding every declaration it was emitted with.
+- `keel build`'s client JavaScript for a project with `brandTokens`, one scheme and no library holds none of the strings `safe-area-inset`, `cqmin`, `revert-layer` and `[aria-pressed="true"]`.
+- `TokenSchema` accepts as a color each of `rgb(184 66 13)`, `hsl(19deg 87% 39%)`, `oklab(0.54 0.12 0.1)`, `oklch(54% 0.16 40)` and `color(display-p3 0.67 0.3 0.2)`, each inside sRGB, and `color(display-p3 0 0 1)`, outside it, and refuses with rule `format` each of `rgb(184, 66, 13)`, `rgb(300 0 0)`, `oklch(54% 0.16 40 / 0.5)`, `white`, `oklch(none 0 0)` and `rgb(from #000 r g b)`.
+- `shadow: { a: '0 1px 2px rgb(0 0 0 / 0.2)' }` and `overlay: { scrim: { value: '#1a191e99', over: ['card'] } }` with a color token `card` are accepted; `overlay: { scrim: { value: '#1a191e', over: ['card'] } }`, one with `over: []`, and one with `over: ['nope']` are each refused with rule `format`, the last at `overlay.scrim.over`.
+- With color tokens `a` `oklch(0.72 0.14 45)` and `b` `#141317`, `<Text fg="a" bg="b">x</Text>` reports no E1804, and with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1 in light (sRGB)`, the ratio of its sRGB form `rgb(0 0 255)`, below the 2.59:1 of its P3 form.

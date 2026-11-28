@@ -12,9 +12,12 @@ function make() {
   invariant(counter, (st) => st.n < 10);
   return counter;
 }
-scope(() => {
-  made = { counter: make() };
-});
+scope(
+  () => {
+    made = { counter: make() };
+  },
+  { detached: true },
+);
 const counter = made?.counter;
 if (counter === undefined) throw new Error("test: scope did not run");
 

@@ -2,6 +2,7 @@
 // Seed 1337 (no random inputs)
 import { formatter } from "@keel/cli";
 import { Tally } from "@keel/std-report";
+import "@keel/std-report/tools";
 import { expect, test } from "vitest";
 
 test("A second `formatter('report.tally', ...)` throws E1053.", () => {

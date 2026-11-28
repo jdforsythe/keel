@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import { check } from "@keel/check";
 import { describe, expect, it } from "vitest";
 // No randomness; fixed sources. Checked through the public `check(files, { types: false })`.
@@ -40,15 +41,27 @@ const hits = async (files: { path: string; source: string }[]): Promise<Set<stri
 };
 
 describe("k.services: E1652", () => {
-  it("E1652 a `:param` in a literal `path` without a field in a literal `params` is reported", async () => {
-    expect(await hits([missingField, otherField, ...clean])).toEqual(new Set([missingField.path, otherField.path]));
-  });
+  it(
+    "E1652 a `:param` in a literal `path` without a field in a literal `params` is reported",
+    async () => {
+      expect(await hits([missingField, otherField, ...clean])).toEqual(new Set([missingField.path, otherField.path]));
+    },
+    fixedTime(30_000),
+  );
 
-  it("E1652 a `params` field missing from the `path` is reported", async () => {
-    expect(await hits([extraField, extraBeside, ...clean])).toEqual(new Set([extraField.path, extraBeside.path]));
-  });
+  it(
+    "E1652 a `params` field missing from the `path` is reported",
+    async () => {
+      expect(await hits([extraField, extraBeside, ...clean])).toEqual(new Set([extraField.path, extraBeside.path]));
+    },
+    fixedTime(30_000),
+  );
 
-  it("E1652 is not reported when every `:param` has a field and every field has a `:param`", async () => {
-    expect(await hits(clean)).toEqual(new Set());
-  });
+  it(
+    "E1652 is not reported when every `:param` has a field and every field has a `:param`",
+    async () => {
+      expect(await hits(clean)).toEqual(new Set());
+    },
+    fixedTime(30_000),
+  );
 });

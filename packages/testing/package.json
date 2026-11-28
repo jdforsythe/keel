@@ -1,20 +1,62 @@
 {
   "name": "@keel/testing",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./a11y": {
+      "types": "./src/a11y/index.ts",
+      "default": "./src/a11y/index.ts"
+    },
+    "./prove": {
+      "types": "./src/prove/index.ts",
+      "default": "./src/prove/index.ts"
+    },
+    "./setup": {
+      "types": "./src/projectArtifactsSetup.ts",
+      "default": "./src/projectArtifactsSetup.ts"
+    },
+    "./e2e": {
+      "types": "./src/e2e/index.ts",
+      "default": "./src/e2e/index.ts"
     }
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./a11y": {
+        "types": "./dist/src/a11y/index.d.ts",
+        "default": "./dist/src/a11y/index.js"
+      },
+      "./prove": {
+        "types": "./dist/src/prove/index.d.ts",
+        "default": "./dist/src/prove/index.js"
+      },
+      "./setup": {
+        "types": "./dist/src/projectArtifactsSetup.d.ts",
+        "default": "./dist/src/projectArtifactsSetup.js"
+      },
+      "./e2e": {
+        "types": "./dist/src/e2e/index.d.ts",
+        "default": "./dist/src/e2e/index.js"
+      }
+    }
+  },
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/check": "workspace:*",
@@ -26,9 +68,32 @@
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*",
-    "fast-check": "^3"
+    "axe-core": "4.14.0",
+    "esbuild": "^0.28.2",
+    "fast-check": "^3",
+    "oxc-parser": "^0.157.0"
   },
   "devDependencies": {
-    "@keel/tooling": "workspace:*"
+    "@keel/forms": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "playwright-core": "1.65.0",
+    "z3-solver": "5.3.3"
+  },
+  "peerDependencies": {
+    "z3-solver": "5.3.3",
+    "vitest": "^4.1.12",
+    "playwright-core": "1.65.0"
+  },
+  "peerDependenciesMeta": {
+    "z3-solver": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    },
+    "playwright-core": {
+      "optional": true
+    }
   }
 }

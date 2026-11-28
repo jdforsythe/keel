@@ -466,7 +466,7 @@ describe("evaluate and module (mutation)", () => {
     expect(() => evaluate("import x from 'toString'; export default x")).toThrow(/cannot require "toString"/);
   });
   it("reports the clipped id of a non-lowerCamel module", () => {
-    const def = { id: "A".repeat(40), deps: [], capabilities: [], public: { exports: [], routes: [] } };
+    const def = { id: "A".repeat(40), deps: [], capabilities: [], public: { exports: [] } };
     const msg = `id "${"A".repeat(30)}" is not lowerCamel`;
     expect(ModuleSchema.parse(def)).toEqual({
       ok: false,

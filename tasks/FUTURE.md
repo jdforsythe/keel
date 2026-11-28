@@ -1,0 +1,87 @@
+# Future features
+
+Ideas that come up outside the current plans. An idea is built at once only when the work in hand needs it; otherwise it waits here and the list is worked after the beta release, before 1.0 or after it. An idea taken up moves to `tasks/BACKLOG.md` with an id. Each line: the idea, where it came from, what it would need. A line that names a backlog id is also tracked there.
+
+## Routing and server
+- A caller token for cross-site clients: the server returns the caller token in a response header, the client keeps it and sends it in a request header, so a `client` deployable on a static host that is cross-site to its API keeps one caller. RFC 0087 D3. Needs a decision on where the client stores a token that `HttpOnly` withholds today; fits an auth stdlib module.
+- In-entry verbs for API routes (`{ path, GET, POST }`). RFC 0086 D2. Needs an answer to the circular initializer of ADR-0052.
+- Per-route document titles, a custom icon or extra head links, and serving all of `public/` in production. RFC 0078 Open questions; backlog 0305 (user decisions).
+- Params passed to `errorElement`. RFC 0079 Known limits. Waits for a k.router split.
+- A locale picked from `Accept-Language`. RFC 0079 Known limits. Needs request headers in loaders.
+- Invalid search values answered with 422 instead of defaults. Backlog 0275.
+- A cap on concurrent event streams. Backlog 0364.
+- A transport for channel `message` across replicas (saves cross by k.persist Watch). RFC 0081 and RFC 0085 Known limits; RFC 0223.
+- An optimistic client view with log entries replicated to clients. RFC 0081 Alternatives. Needs a generic apply endpoint and client rebase rules.
+- More conflict policies (`last-writer`, path-level `merge`, `first-writer`). RFC 0081 Alternatives. Needs a state diff per write.
+- Channel messages resumed for members that were disconnected. RFC 0081 Known limits.
+- Jobs declared at the route level (`routes.jobs`). RFC 0080 Alternatives.
+
+## Data and storage
+- Secrets through `ctx` for app-owned API tokens. RFC 0080 Known limits.
+- An append-only audit table past `logLimit`. RFC 0085 Alternatives. Needs a retention schema, since it keeps personal data.
+- Derived migrations for computed state changes. RFC 0085 Known limits.
+- Workflows sharded past one snapshot. RFC 0085 Known limits.
+- Encryption at rest in std.db. RFC 0085 D7.
+- Storage compare-and-set for jobs and ingest on several replicas. RFC 0080 and RFC 0070 Known limits; backlog 0370.
+- Locale-aware money input parsing (`12,50 €`). RFC 0079 Known limits.
+- Temporal extras: `PlainTime`, `inZone`, `addDuration`, `between`. RFC 0079 Alternatives.
+- Right-to-left locales. RFC 0079 Known limits. Needs a `dir` rule in k.ui.
+- Nested and parallel statechart states, with history. RFC 0082 Alternatives.
+- Collaborative text editing (a CRDT or a hierarchical model). RFC 0081 Alternatives.
+- A public replay function for a store log, so a test checks "log replayed from initial equals stored state" by value. Backlog 0621. A new API; the restart smoke checks the log structurally today.
+
+## UI
+- Virtual rows for tables. RFC 0084 D3; `aria-rowcount` and `aria-rowindex` are kept so it can be added.
+- Popup, menu and toast placement by anchor. RFC 0084 Known limits. Waits for CSS anchor positioning in every supported engine.
+- Widget patterns not shipped: grid, treegrid, tree, slider, radio group, menubar, submenus, date picker, Listbox range selection, manual tab activation, toast actions. RFC 0084 Known limits.
+- Several tables per route with their own query state. RFC 0084 Known limits.
+- Accent-folding typeahead and hover-pause on toasts. RFC 0084 Known limits.
+- App icons for the shells generated from the brand mark. RFC 0085 Known limits.
+- Label props that take a signal or a computed directly. Backlog 0604. A new API shape; a string or a getter works today.
+
+## Services
+- Retries, caching, auth with token refresh, and interceptors, as stdlib modules. k.services Not here.
+- `@keel/std-streams` (topics, replay by id, reconnect). RFC 0080 D5; live loaders and std.channels cover the present need.
+- A build-time timings reader (a `Server-Timing` header or a log record). Backlog 0930. The dev inspect reader is the 1.0 feature.
+
+## Tooling
+- Real browser sessions merged into multi-user groups. RFC 0081 Known limits. Needs server-side ordering.
+- State-space reduction and cross-store model checking. RFC 0082 Known limits.
+- Network faults past delay and the four listed (partial bodies, duplicate delivery). RFC 0082 Known limits.
+- Plan schemas for std.geo and the `session` capability. RFC 0082 Known limits.
+- Firefox in the browser gate. RFC 0083 Known limits.
+- A programmatic entry to start `keel dev` from a test. Backlog 0346.
+- `keel dev` flags and module replacement in place of a full reload. Backlog 0377, 0400.
+- E1111 reading `x-keel-pii` from the evaluated `routes.json` instead of its audited list of search-schema factories. Backlog 0603. A refactor of a rule that works.
+- vitest 5. Backlog 0293. 4.x carries no advisory; bump when 4.x stops getting fixes or a 5.x feature is wanted, in a run of its own.
+
+## Deploy and platforms
+- A `client` deployable served under a path prefix (a `base` option). RFC 0087 Known limits.
+- Several `client` deployables on one host, and a CDN cache in front of a `node` deployable. RFC 0087 Known limits.
+- Deploy files per static host (bucket policy, `_redirects`). RFC 0087 Alternatives.
+- Build settings per deployable (base image, registry, replica count), registry push, and deploy order in generated CI. RFC 0080 Known limits.
+- Signing, notarization and store upload for shell artifacts. RFC 0085 D4.
+- Windows CI builds and automated replay on iOS and macOS. RFC 0085 Known limits.
+- A Postgres service in generated compose. RFC 0085 D5.
+
+## Security
+- Extra CSP origins (a CDN, analytics). RFC 0083 Proposal.
+- A served or meta CSP for `client` and `static` deployables. RFC 0083 D6.
+- Sigstore or another third-party signer, and a CSP report service. RFC 0083 D3.
+- Redaction of copied or derived personal data. RFC 0083 and RFC 0073 Known limits; backlog 0257.
+- A secret per deployable, so one leak does not forge callers everywhere. Backlog 0353.
+- Envelope encryption under a key read from the environment, for a credential the app must present later (an OAuth refresh token, a pasted API key); today such a value is written only from a file under `unsafe/`.
+- A types mode for E1112, so the rule reads a payload field's schema and follows a value into a helper's parameter; it also ends E1112's report of a revealed value passed into a `s.secret` payload field (backlog 0627). Built only if an app needs it: a rule that reports differently by mode is harder to predict than either mode alone.
+- `Number.MAX_SAFE_INTEGER` and `Number.MIN_SAFE_INTEGER` in `prove`'s fragment, so a guard can name the edge instead of a schema `max`.
+- An app-chosen token prefix as a second `std` key of `@keel/std-tokens`; today every token starts `keel_`.
+- `prove` from any thread: Z3 in a child process that `prove` starts, so a runner on worker threads can prove; today a worker call is refused (E1721). Costs a process start and a serialised query per call.
+- A static rule for E1256: `keel check` reports a `tx` reached from a `*.server.ts` loader, guard or action whose transaction is bound to a module-level store, across imports (as `refreshView.ts` and `hydrate.ts` sit two files from the loader). Today the check is at run time only.
+- A rule-code range for Keel libraries (E9xxx, W9xxx), so a library's own check rules never collide with the kernel's or the stdlib's (RFC 0169's author; needed when the library format of RFC 0163 is built).
+- A sign-in that returns to a page on another origin: a typed peer page reference resolved against a declared public origin per peer, giving an absolute URL brand `ok`, `Link` and `navigate` take; only with an auth library step that carries the session across origins. Today a return target is a page of the `handle`'s own origin (E1592).
+- `$hmac-sha256$` digests in `@keel/std-tokens`. Backlog 0640. A new digest kind, once Keel has a path for an app key.
+- Components written for another framework (React, Vue) used inside a Keel page. Today only code that owns its own DOM mounts, through `Host`. A sceptical adopter with a design system in React asks this first; the cost is a second runtime on the page and guarantees that stop at its edge.
+- Two-way sockets. Channels are server event streams; a client sends through an action. Needed only if a realtime app kind (chat at scale, a shared cursor) shows the action round trip is too slow.
+- `keel tokens export`: a file a design tool imports (Figma variables, the design tokens format, others), generated from an app's `tokens.ts` with themes as modes, so a design starts from the app's real values and stays in step with it. After v1; the design mode of RFC 0253 and `keel tokens import` of RFC 0249 come first.
+- `@keel/std-motion`: a spring and physics helper over `frames(ctx, step)` for drag, momentum and gesture-following motion. RFC 0252 leaves these to host code; build it when an app kind (a mobile-first app, a board) shows the need.
+- List reorder animation for a signal-driven list (moving an item to its new place when the list's order changes). RFC 0252 scopes it out; sorting by navigation gets it from the platform's page transitions.
+- A check warning for `brandTokens.color.*` or `.space.*` read as a value in client code: it ignores the app's overrides, schemes and themes, and E1804 never judges it; the warning would point to a token name or `appearance(ctx)`. Its cost: an app on stock `brandTokens` is warned for values that are right, and the docs site and inspector must name tokens. Build it if a review finds an app shipping an unjudged colour this way.

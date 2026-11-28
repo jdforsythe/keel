@@ -1,5 +1,15 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+  - 'examples/*'
+  - 'libraries/*'
   - 'tooling'
   - 'evals'
+
+allowBuilds:
+  '@biomejs/biome': false
+  esbuild: false
+
+overrides:
+  '@stryker-mutator/core>minimatch': ^11.0.1
+  typed-rest-client>qs: ^6.16.1

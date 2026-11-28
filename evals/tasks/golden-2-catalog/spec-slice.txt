@@ -1,0 +1,47 @@
+std.headless std.options std.tables k.aria k.contract k.router k.testing std.messages std.i18n std.money std.temporal
+
+Key lines only. Full text: `pnpm spec <id>`.
+
+std.headless
+- import { Listbox, Combobox, Menu, Tabs, Dialog, Disclosure, Toaster } from '@keel/std-headless'; types Option, ToastItem
+- each widget renders parts with ids `<id>.<part>`; every string a person sees is a prop or a slot's output; values come in through functions and leave through callbacks
+- Dialog { id, title, level?, trigger, content: (close) => JSX, alert?: { description } }: parts trigger, dialog (alertdialog with alert), title, description; open focuses the first button, Escape closes and returns focus to the trigger
+- Disclosure { id, summary, children }: parts button (aria-expanded), panel
+- Toaster { id, items: () => ToastItem[], onDismiss(id), dismiss, duration? }: parts status, alert, toast.<item>, dismiss.<item>; a status item expires on ctx.clock (at least 5,000 ms)
+- keys (option, tab and toast ids) are 1 to 64 of [A-Za-z0-9_-], unique per widget, else E2801 at render
+
+std.options
+- Option<K> = { key, text, disabled? }; an option is highlighted through aria-activedescendant
+- Listbox { id, label, options, mode: 'single' | 'multiple', selected: () => K[], onChange(keys) }: parts list, option.<key>; focus highlights the first selected; Enter or Space selects in single mode
+- Combobox { id, label, text, onInput, options, onChange(key), empty? }: parts input, list, option.<key>, empty; the app filters options from text; ArrowDown opens at 0 or moves; Enter chooses
+- Menu { id, trigger, items, onSelect(key) }: parts trigger, menu, item.<key>; ArrowDown on the trigger opens at 0; Enter in the menu chooses; Escape returns focus to the trigger
+- Tabs { id, label, tabs, selected: () => K, onChange(key), panel: (key) => JSX }: parts list, tab.<key>, panel.<key>; arrows move and select; one tab in the tab order
+
+std.tables
+- import { columns, tableSearch, tablePage, applyQuery, DataTable, TableSearch } from '@keel/std-tables'
+- columns(rowSchema, { key, rowHeader?, show, sort?, search?, filter?, compare? }); a value column (an object) sorts only through compare
+- tableSearch(cols) is the route `search` schema: sort, dir, page, q and each filter column, all optional; E2852 for a .pii() search or filter column
+- applyQuery(cols, rows, search, { pageSize, locale }) -> { rows, total, page, pages }: pure; filters, sorts (ties by key), pages, clamps
+- DataTable { id, label, columns, search, href: (search) => Href, locale, page | rows + pageSize, text, cells?, selected?, onSelect?, actions?, empty?, styles? }: parts table, header.<col>, sort.<col>, row.<key> (aria-rowindex), cell.<key>.<col>, select.<key>, selectAll (mixed), pager, previous, next, status; focus moves to status when the focused pager link goes
+- TableSearch { id, label, search, href, delay? }: input `<id>.input`; replaces the history entry 300 ms after the last input (ctx.clock), q set, page dropped
+
+k.aria
+- Part styles: a @keel/std-* component takes styles={{ <part>: { <style props>, states: { selected | checked | expanded | highlighted: {...} } } }}; apps never import @keel/ui/aria (E1822)
+
+k.router
+- navigate(href, { replace? }) from '@keel/router' navigates the router rendering the caller; a push or replace that changes only the search keeps scroll
+- <contract>.href(id, params?, search?) (recipes.href('recipes.show', { locale, recipeId })) is the only way to an Href; it takes page ids of that contract
+- API entry (an entry of the contract with method, path and output, bound to a loader or an action, no component): the server answers JSON; its handler returns ok(value) for the entry's output (a write with nothing to say: output: s.object({}), ok({})); a page's action declares input and returns ok(href) / ok(null); output holds no s.secret (E1113); its guard, loader and action get bearer: Secret<string> | undefined from Authorization: Bearer; its query may require keys (422 keel.fields when it fails)
+
+k.contract
+- kitchen.contract.ts: contract('kitchen', { ..., 'kitchen.catalog': { method: 'GET', path: '/api/catalog/:locale', params: CatalogParams, query: CatalogSearch, output: CatalogResult } }) from '@keel/router/contract'; one id per method, <module>.<name> for an API entry; imports *.schema.ts files and packages only (E1514)
+- routes.ts: manifest(kitchen, { 'kitchen.catalog': { loader: loadCatalog } }) binds every entry and nothing else (E1515); loader(kitchen, 'kitchen.catalog', {}, fn) names its entry and is never annotated; a page binds component, loader, layout, title and its verbs
+- service({ contract: kitchen }) has a method per API entry named by the id after the module (api.catalog({ params, query }, ctx)); recipes.contract.ts holds the pages: 'recipes.catalog': { path: '/:locale/catalog', params: LocaleParams, search: CatalogSearch }
+
+k.testing
+- renderRoute(id, { routes, params, search?, ctx }) or renderRoute(id, { routes, url, ctx }); location() -> { entries, scrollY }
+- fire(id, { type: 'keydown', key, shift?, alt?, mod? }); find(id).state: focused, expanded, selected, checked ('mixed'), active (the aria-activedescendant id), sort
+- the render checks (axe-core, token contrast, a11y.json) run after the first render and after every fire; E1703 is a violation
+
+std.messages, std.i18n, std.money, std.temporal
+- every visible word through a message set; formatMessage(m, params, locale); formatMoney, formatDate(d, locale, 'long'), formatDuration(durationOf(ms), locale, 'short'), localeName(tag)

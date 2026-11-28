@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { clone, cond, list, template, text } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const UL = template("<ul><!----></ul>");
 const LI = template("<li></li>");
@@ -25,20 +26,24 @@ describe("home scope: no per-commit nodes", () => {
         (steps) => {
           const base = inspect().nodes.length;
           const items = rootSignal<{ id: number }[]>([]);
-          const dispose = mount(() => {
-            const ul = clone(UL);
-            list(
-              anchorOf(ul),
-              () => items.get(),
-              (i) => i.id,
-              (item) => {
-                const li = clone(LI);
-                text(li, () => String(item().id));
-                return li;
-              },
-            );
-            return ul;
-          }, document.createElement("div"));
+          const dispose = mount(
+            () => {
+              const ul = clone(UL);
+              list(
+                anchorOf(ul),
+                () => items.get(),
+                (i) => i.id,
+                (item) => {
+                  const li = clone(LI);
+                  text(li, () => String(item().id));
+                  return li;
+                },
+              );
+              return ul;
+            },
+            document.createElement("div"),
+            { ctx: testCtx },
+          );
           const empty = inspect().nodes.length;
           const perRow = (ks: readonly number[]): number => {
             items.set(ks.map((id) => ({ id })));
@@ -63,21 +68,25 @@ describe("home scope: units outlive their op's effect reruns", () => {
     const items = rootSignal<{ id: number }[]>([]);
     const label = rootSignal("none");
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const ul = clone(UL);
-      list(
-        anchorOf(ul),
-        () => items.get(),
-        (i) => i.id,
-        () => clone(LI),
-        () => {
-          const p = clone(P);
-          text(p, () => label.get());
-          return p;
-        },
-      );
-      return ul;
-    }, host);
+    const dispose = mount(
+      () => {
+        const ul = clone(UL);
+        list(
+          anchorOf(ul),
+          () => items.get(),
+          (i) => i.id,
+          () => clone(LI),
+          () => {
+            const p = clone(P);
+            text(p, () => label.get());
+            return p;
+          },
+        );
+        return ul;
+      },
+      host,
+      { ctx: testCtx },
+    );
     items.set([]);
     label.set("still none");
     expect(host.querySelector("p")?.textContent).toBe("still none");
@@ -89,22 +98,26 @@ describe("home scope: units outlive their op's effect reruns", () => {
     const label = rootSignal("a");
     let reads = 0;
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const ul = clone(UL);
-      cond(
-        anchorOf(ul),
-        () => on.get(),
-        () => {
-          const p = clone(P);
-          text(p, () => {
-            reads++;
-            return label.get();
-          });
-          return p;
-        },
-      );
-      return ul;
-    }, host);
+    const dispose = mount(
+      () => {
+        const ul = clone(UL);
+        cond(
+          anchorOf(ul),
+          () => on.get(),
+          () => {
+            const p = clone(P);
+            text(p, () => {
+              reads++;
+              return label.get();
+            });
+            return p;
+          },
+        );
+        return ul;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(reads).toBe(1);
     on.set(false);
     label.set("b");

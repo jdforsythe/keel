@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": ["KEEL_TEST_WORKERS"],
   "tasks": {
     "check": {
       "dependsOn": ["^build"],
@@ -7,11 +8,16 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**", "reports/tests/**"]
     },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
+    },
+    "coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": false
     },
     "mutate": {
       "dependsOn": ["build"],

@@ -1,6 +1,6 @@
 # RFC 0031: Check rules for endpoints, and malformed generated artifacts
 
-Status: accepted
+Status: implemented
 
 ## Problem
 k.services names E1651-E1653 but `@keel/check` ships no rule for them (backlog 0051, services PLAN D10), so they were explain-only. Separately, `generatedEdits` hashes `data` for a `.keel/*.json` that has `hash` but no `data`; `hashOf(undefined)` throws and `check()` crashes (backlog 0069).

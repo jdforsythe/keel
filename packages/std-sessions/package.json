@@ -1,0 +1,177 @@
+{
+  "name": "@keel/std-sessions",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./module": {
+      "types": "./module.ts",
+      "default": "./module.ts"
+    },
+    "./record": {
+      "types": "./src/record.ts",
+      "default": "./src/record.ts"
+    },
+    "./replay": {
+      "types": "./src/replay.ts",
+      "default": "./src/replay.ts"
+    },
+    "./minimize": {
+      "types": "./src/minimize.ts",
+      "default": "./src/minimize.ts"
+    },
+    "./commandJob": {
+      "types": "./src/commandJob.ts",
+      "default": "./src/commandJob.ts"
+    },
+    "./session": {
+      "types": "./src/session.ts",
+      "default": "./src/session.ts"
+    },
+    "./Session": {
+      "types": "./src/Session.schema.ts",
+      "default": "./src/Session.schema.ts"
+    },
+    "./redact": {
+      "types": "./src/redact.ts",
+      "default": "./src/redact.ts"
+    },
+    "./tools": {
+      "types": "./src/tools.ts",
+      "default": "./src/tools.ts"
+    },
+    "./routes": {
+      "types": "./src/routes.ts",
+      "default": "./src/routes.ts"
+    },
+    "./contract": {
+      "types": "./src/sessions.contract.ts",
+      "default": "./src/sessions.contract.ts"
+    },
+    "./action": {
+      "types": "./src/action/index.ts",
+      "default": "./src/action/index.ts"
+    },
+    "./group": {
+      "types": "./src/group/index.ts",
+      "default": "./src/group/index.ts"
+    },
+    "./monitor": {
+      "types": "./src/monitor/index.ts",
+      "default": "./src/monitor/index.ts"
+    }
+  },
+  "bin": {
+    "keel-session-action": "./dist/src/actionBin.js"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./module": {
+        "types": "./dist/module.d.ts",
+        "default": "./dist/module.js"
+      },
+      "./record": {
+        "types": "./dist/src/record.d.ts",
+        "default": "./dist/src/record.js"
+      },
+      "./replay": {
+        "types": "./dist/src/replay.d.ts",
+        "default": "./dist/src/replay.js"
+      },
+      "./minimize": {
+        "types": "./dist/src/minimize.d.ts",
+        "default": "./dist/src/minimize.js"
+      },
+      "./commandJob": {
+        "types": "./dist/src/commandJob.d.ts",
+        "default": "./dist/src/commandJob.js"
+      },
+      "./session": {
+        "types": "./dist/src/session.d.ts",
+        "default": "./dist/src/session.js"
+      },
+      "./Session": {
+        "types": "./dist/src/Session.schema.d.ts",
+        "default": "./dist/src/Session.schema.js"
+      },
+      "./redact": {
+        "types": "./dist/src/redact.d.ts",
+        "default": "./dist/src/redact.js"
+      },
+      "./tools": {
+        "types": "./dist/src/tools.d.ts",
+        "default": "./dist/src/tools.js"
+      },
+      "./routes": {
+        "types": "./dist/src/routes.d.ts",
+        "default": "./dist/src/routes.js"
+      },
+      "./contract": {
+        "types": "./dist/src/sessions.contract.d.ts",
+        "default": "./dist/src/sessions.contract.js"
+      },
+      "./action": {
+        "types": "./dist/src/action/index.d.ts",
+        "default": "./dist/src/action/index.js"
+      },
+      "./group": {
+        "types": "./dist/src/group/index.d.ts",
+        "default": "./dist/src/group/index.js"
+      },
+      "./monitor": {
+        "types": "./dist/src/monitor/index.d.ts",
+        "default": "./dist/src/monitor/index.js"
+      }
+    }
+  },
+  "files": ["dist", "docs"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test module.ts",
+    "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
+  },
+  "dependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "happy-dom": "^21",
+    "oxc-parser": "^0.157.0",
+    "tsx": "^4",
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12"
+  },
+  "peerDependencies": {
+    "@keel/testing": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@keel/testing": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/services": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  }
+}

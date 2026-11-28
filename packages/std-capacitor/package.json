@@ -1,0 +1,89 @@
+{
+  "name": "@keel/std-capacitor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./shellMount": {
+      "types": "./src/shellMount.ts",
+      "default": "./src/shellMount.ts"
+    },
+    "./package.json": "./package.json",
+    "./tools": {
+      "types": "./src/tools.ts",
+      "default": "./src/tools.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./shellMount": {
+        "types": "./dist/src/shellMount.d.ts",
+        "default": "./dist/src/shellMount.js"
+      },
+      "./package.json": "./package.json",
+      "./tools": {
+        "types": "./dist/src/tools.d.ts",
+        "default": "./dist/src/tools.js"
+      }
+    }
+  },
+  "files": ["dist", "android/src/main/", "android/build.gradle", "ios/Sources", "Package.swift", "docs"],
+  "capacitor": {
+    "android": {
+      "src": "android"
+    },
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test",
+    "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/preferences": "8.0.1",
+    "@keel/cli": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/router": "workspace:*"
+  },
+  "peerDependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2"
+  },
+  "peerDependenciesMeta": {
+    "@capacitor/android": {
+      "optional": true
+    },
+    "@capacitor/cli": {
+      "optional": true
+    },
+    "@capacitor/ios": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@keel/scaffold": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/services": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
+  }
+}

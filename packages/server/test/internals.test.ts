@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 // Unit and property tests (seed 1337) for the pure internals of the request flow.
-import type { RouteDef } from "@keel/router";
-import { compileRoutes, compileTable, needsBare } from "@keel/router/internal";
+import { type RouteTable, action, guard, loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
+import { compileRoutes, needsBare } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -14,8 +16,8 @@ import { escapeHtml } from "../src/internal/escapeHtml.ts";
 import { fieldSummary } from "../src/internal/fieldSummary.ts";
 import { nearestErrorElement } from "../src/internal/nearestErrorElement.ts";
 import { notFound } from "../src/internal/notFound.ts";
-import { publicError } from "../src/internal/publicError.ts";
 import { reqLine } from "../src/internal/reqLine.ts";
+import { seeOf } from "../src/internal/seeOf.ts";
 import { selectDeployable } from "../src/internal/selectDeployable.ts";
 import { stateJson } from "../src/internal/stateJson.ts";
 import { statusOf } from "../src/internal/statusOf.ts";
@@ -26,20 +28,28 @@ import { topology } from "../src/topology.ts";
 
 const SEED = 1337;
 const p = (): Node => document.createElement("p");
-const tableOf = (routes: Record<string, RouteDef>) => compileTable(compileRoutes(routes), routes);
-const loaderStub = { kind: "keel.loader" as const, output: s.object({}), run: () => Promise.resolve(ok({})) };
+const tableOf = (routes: RouteTable) => compileRoutes(routes).located;
 
 describe("selectDeployable", () => {
-  const table = tableOf({
-    "app.home": { path: "/", component: p },
-    "orders.show": { path: "/orders/:id", params: s.object({ id: s.string() }), component: p },
-    "shop.list": {
-      path: "/shop",
-      component: p,
-      actions: { POST: { kind: "keel.action", input: s.object({}), run: () => ok(null) } },
-    },
-    "blog.list": { path: "/blog", component: p, loader: loaderStub },
-  });
+  const app = contract("app", { "app.home": { path: "/" } });
+  const orders = contract("orders", { "orders.show": { path: "/orders/:id", params: s.object({ id: s.string() }) } });
+  const shop = contract("shop", { "shop.list": { path: "/shop" } });
+  const blog = contract("blog", { "blog.list": { path: "/blog" } });
+  const table = tableOf(
+    routeTable(
+      manifest(app, { "app.home": { component: p } }),
+      manifest(orders, { "orders.show": { component: p } }),
+      manifest(shop, {
+        "shop.list": { component: p, POST: action(shop, "shop.list", { input: s.object({}) }, () => ok(null)) },
+      }),
+      manifest(blog, {
+        "blog.list": {
+          component: p,
+          loader: loader(blog, "blog.list", { output: s.object({}) }, () => Promise.resolve(ok({}))),
+        },
+      }),
+    ),
+  );
   const mods = new Set(["app", "orders", "shop", "blog"]);
   const t = (def: Parameters<typeof topology>[0]) => topology(def);
 
@@ -71,7 +81,8 @@ describe("selectDeployable", () => {
     expect(() => selectDeployable(t({ w: { modules: ["shop"], adapter: "static" } }), table, mods, "w")).toThrow(
       "E1553 static deployable w: route shop.list has actions",
     );
-    const bare = tableOf({ "x.y": { path: "/y/:id", params: s.object({ id: s.string() }), component: p } });
+    const x = contract("x", { "x.y": { path: "/y/:id", params: s.object({ id: s.string() }) } });
+    const bare = tableOf(manifest(x, { "x.y": { component: p } }));
     expect(() => selectDeployable(t({ s: { modules: ["x"], adapter: "static" } }), bare, new Set(["x"]), "s")).toThrow(
       /^E1553 .* has params$/,
     );
@@ -86,11 +97,18 @@ describe("selectDeployable", () => {
 });
 
 describe("messages and fields", () => {
-  it("fieldSummary escapes and names the root path `form`", () => {
-    expect(
-      fieldSummary({ route: "a.b", method: "POST", values: {}, errors: { "": "Bad <x>", note: "Required" } }),
-    ).toBe(
-      '<div role="alert" data-k-fields="a.b"><ul><li data-field="form">form: Bad &lt;x&gt;</li><li data-field="note">note: Required</li></ul></div>',
+  it("fieldSummary escapes, names the root path `form`, and names a field by its control's label, else its path", () => {
+    const html =
+      '<form><label for="f.note">  Your <b>note</b> &amp; more </label><input id="f.note" name="note">' +
+      '<input id="f.age" name="age"><input name="bare"></form>';
+    const errors = { "": "Bad <x>", note: "Required", age: "Too low", bare: "Missing", gone: "Unknown" };
+    expect(fieldSummary({ route: "a.b", method: "POST", values: {}, errors }, html)).toBe(
+      '<div role="alert" class="k-summary" data-k-fields="a.b"><ul>' +
+        '<li data-field="form">form: Bad &lt;x&gt;</li>' +
+        '<li data-field="note"><a href="#f.note">Your note &amp; more</a>: Required</li>' +
+        '<li data-field="age"><a href="#f.age">age</a>: Too low</li>' +
+        '<li data-field="bare">bare: Missing</li>' +
+        '<li data-field="gone">gone: Unknown</li></ul></div>',
     );
   });
 
@@ -101,7 +119,7 @@ describe("messages and fields", () => {
     fd.append("b", "3");
     fd.append("f", new File(["x"], "pic.png"));
     fd.append("e", "");
-    expect(valuesOf(fd)).toEqual({ a: "1", b: ["2", "3"], f: "pic.png", e: "" });
+    expect(valuesOf(fd, s.object({}).node)).toEqual({ a: "1", b: ["2", "3"], f: "pic.png", e: "" });
   });
 });
 
@@ -142,18 +160,18 @@ describe("rendering helpers", () => {
   });
 
   it("documentHtml wraps in <main> once and shows the dev panel only when given", () => {
-    const d = documentHtml("<p>x</p>", { a: 1 }, null, null);
+    const d = documentHtml("<p>x</p>", { a: 1 }, null, null, "", "en", "n0");
     expect(d).toContain("<body><main><p>x</p></main><script");
     expect(d).not.toContain("data-k-dev");
-    expect(documentHtml('<main id="m">x</main>', {}, null, null)).not.toContain("<main><main");
-    expect(documentHtml("<mainx>", {}, null, null)).toContain("<main><mainx>");
-    expect(documentHtml("<MAIN>x</MAIN>", {}, null, null)).not.toContain("<main><MAIN>");
-    expect(documentHtml("x", {}, "E1554 <bad>", null)).toContain(
+    expect(documentHtml('<main id="m">x</main>', {}, null, null, "", "en", "n0")).not.toContain("<main><main");
+    expect(documentHtml("<mainx>", {}, null, null, "", "en", "n0")).toContain("<main><mainx>");
+    expect(documentHtml("<MAIN>x</MAIN>", {}, null, null, "", "en", "n0")).not.toContain("<main><MAIN>");
+    expect(documentHtml("x", {}, "E1554 <bad>", null, "", "en", "n0")).toContain(
       '<pre role="alert" data-k-dev="diag">E1554 &lt;bad&gt;</pre>',
     );
     expect(d).not.toContain('type="module"');
-    expect(documentHtml("x", {}, null, "/@keel/entry.ts")).toContain(
-      '<script type="module" src="/@keel/entry.ts"></script></body>',
+    expect(documentHtml("x", {}, null, "/@keel/entry.ts", "", "en", "n0")).toContain(
+      '<script type="module" src="/@keel/entry.ts" nonce="n0"></script></body>',
     );
     expect(d.startsWith('<!doctype html><html lang="en">')).toBe(true);
     expect(d.endsWith('<script type="application/json" id="k-state">{"a":1}</script></body></html>')).toBe(true);
@@ -169,6 +187,7 @@ describe("small pure helpers", () => {
           "keel.denied": 403,
           "keel.fields": 422,
           "keel.unexpected": 500,
+          "keel.unreachable": 502,
         };
         expect(statusOf(c)).toBe(Object.hasOwn(known, c) ? known[c] : 400);
       }),
@@ -192,19 +211,41 @@ describe("small pure helpers", () => {
   });
 
   it("needsBare and nearestErrorElement", () => {
-    const lvl = (id: string, extra: object) => ({ id, def: { component: p, ...extra } });
+    const c = contract("a", {
+      "a.a": { layout: true },
+      "a.b": { layout: true },
+      "a.c": { layout: true },
+      "a.d": { path: "/d" },
+      "a.g": { layout: true },
+      "a.h": { path: "/h" },
+      "a.e": { path: "/e" },
+    });
     const ee = () => p();
-    const chain = [lvl("a", {}), lvl("b", { loader: loaderStub }), lvl("c", { errorElement: ee }), lvl("d", {})];
+    const routes = manifest(c, {
+      "a.a": { component: p },
+      "a.b": {
+        component: p,
+        layout: "a.a",
+        loader: loader(c, "a.b", { output: s.object({}) }, () => Promise.resolve(ok({}))),
+      },
+      "a.c": { component: p, layout: "a.b", errorElement: ee },
+      "a.d": { component: p, layout: "a.c" },
+      "a.g": { component: p, guard: guard({ redirect: "a.e" }, () => Promise.resolve(ok(null))) },
+      "a.h": { component: p, layout: "a.g" },
+      "a.e": { component: p, errorElement: ee },
+    });
+    const chainOf = (id: string) => compileRoutes(routes).located.find((r) => r.id === id)?.chain ?? [];
+    const chain = chainOf("a.d");
     expect(needsBare(chain, 0)).toBe(false);
     expect(needsBare(chain, 1)).toBe(false);
     expect(needsBare(chain, 2)).toBe(true);
     expect(needsBare(chain, -1)).toBe(false);
-    expect(needsBare([lvl("a", { guard: "g" }), lvl("b", {})], 1)).toBe(true);
+    expect(needsBare(chainOf("a.h"), 1)).toBe(true);
     expect(nearestErrorElement(chain, 3)).toBe(2);
     expect(nearestErrorElement(chain, 99)).toBe(2);
     expect(nearestErrorElement(chain, 2)).toBe(2);
     expect(nearestErrorElement(chain, 1)).toBe(-1);
-    expect(nearestErrorElement([lvl("a", { errorElement: ee })], 0)).toBe(0);
+    expect(nearestErrorElement(chainOf("a.e"), 0)).toBe(0);
   });
 
   it("log lines, notFound, codedError, devMessageOf", () => {
@@ -222,6 +263,7 @@ describe("small pure helpers", () => {
     const d = { code: "E1554", message: "m" };
     expect(diagLine("compact", d)).toBe("E1554 m");
     expect(JSON.parse(diagLine("json", d))).toEqual({ kind: "diag", code: "E1554", message: "m", see: "k.server" });
+    expect(JSON.parse(diagLine("json", { code: "E1508", message: "loop" }))).toMatchObject({ see: "k.guards" });
     expect(notFound("/u")).toEqual({ code: "keel.notFound", message: "keel.notFound", data: { url: "/u" } });
     const e = codedError("E1", "msg");
     expect(e.message).toBe("E1 msg");
@@ -234,5 +276,33 @@ describe("small pure helpers", () => {
         { code: "keel.unexpected", message: "u2", data: {} },
       ]),
     ).toBe("u1");
+  });
+});
+
+describe("seeOf", () => {
+  it("maps a kernel code to the section owning its block (the kernel code blocks), else k.server", () => {
+    const cases: readonly (readonly [string, string])[] = [
+      ["E1000", "k.compiler"],
+      ["E1057", "k.cli"],
+      ["E1203", "k.reactive"],
+      ["E1499", "k.errors"],
+      ["E1500", "k.router"],
+      ["E1508", "k.guards"],
+      ["E1549", "k.router"],
+      ["E1550", "k.server"],
+      ["E1555", "k.server"],
+      ["E1558", "k.topology"],
+      ["E1601", "k.ctx"],
+      ["E1799", "k.check"],
+      ["E1800", "k.ui"],
+      ["E1899", "k.ui"],
+      ["E1903", "k.forms"],
+      ["E2001", "k.server"],
+      ["E0005", "k.server"],
+      ["E15081", "k.server"],
+      ["xE1508", "k.server"],
+      ["keel.unexpected", "k.server"],
+    ];
+    for (const [code, see] of cases) expect(seeOf(code)).toBe(see);
   });
 });

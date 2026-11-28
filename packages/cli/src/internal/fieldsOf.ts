@@ -1,7 +1,8 @@
 import type { Operation } from "../types/Operation.ts";
 import type { SchemaNode } from "./SchemaNode.ts";
 
-const unwrap = (n: SchemaNode): SchemaNode => (n.kind === "optional" || n.kind === "nullable" ? unwrap(n.inner) : n);
+const unwrap = (n: SchemaNode): SchemaNode =>
+  n.kind === "optional" || n.kind === "nullable" ? unwrap(n.inner) : n.kind === "format" ? unwrap(n.base) : n;
 
 /** Input fields of an operation with their unwrapped node (optional/nullable stripped). */
 export function fieldsOf(op: Operation): ReadonlyMap<string, SchemaNode> {

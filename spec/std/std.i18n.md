@@ -1,0 +1,42 @@
+# std.i18n: Locales
+status: implemented
+
+**Extension points.** Schema type registry (k.schema `s.register`): importing `@keel/std-i18n` registers `i18n.Locale`. Check rule registry (k.check `defineRule`): `@keel/std-i18n/tools`, which `keel check` imports for a module whose `deps` list the package (k.module), registers E2301.
+
+**API** (`@keel/std-i18n`; client-safe, no config).
+```ts
+import { formatNumber, plural, localeName } from '@keel/std-i18n'
+export const AppLocale = s.enum(['en-US', 'de-DE', 'ja-JP'], { pathDefault: 'en-US' })  // AppLocale.schema.ts
+formatNumber(1234.5, props.params.locale)                                  // de-DE: '1.234,5'
+plural(2, props.params.locale, { one: '# recipe', other: '# recipes' })    // en-US: '2 recipes'
+```
+- `Locale` is `s.enum(['de-DE', 'en-GB', 'en-US', 'es-ES', 'fr-FR', 'it-IT', 'ja-JP', 'ko-KR', 'nl-NL', 'pt-BR', 'zh-CN'])`, registered as `i18n.Locale`; `type Locale = s.infer<typeof Locale>`. Each tag is a left-to-right language whose CLDR data ships in every supported runtime, so no formatter falls back to the host's locale.
+- The locale is route data. An app declares the locales it serves once, as an `s.enum` of `Locale` tags in a `*.schema.ts` file, optionally with a `pathDefault` (k.prefix). A route that shows text for a person has the path `/:locale/...` and a params field `locale` of that enum, so a locale the app does not serve is a 404 (k.router). A component reads `props.params.locale` and passes it to children as a prop; a loader or action reads `params.locale`. A test pins it through `renderRoute` `params` or `render` `props`; a session replays it from the `nav` event's `params`.
+- Every `@keel/std-*` function that writes text for a person takes a `Locale` argument and reads no default, host locale or host time zone.
+- `formatNumber(n: number, locale: Locale): string` is `new Intl.NumberFormat(locale).format(n)`.
+- `PluralForms` is `` { other: string; zero?: string; one?: string; two?: string; few?: string; many?: string; readonly [exact: `=${number}`]: string } ``. An exact form's key is `=` and a non-negative safe integer in decimal digits, with no sign, point, exponent or leading zero (`'=0'`, `'=12'`); another `=` key is never selected. `plural(n: number, locale: Locale, forms: PluralForms): string` takes the exact form whose number is `n`, else the form `new Intl.PluralRules(locale).select(n)` names, else `other`, and replaces each `#` in it with `formatNumber(n, locale)`. It is the one plural path; std.messages uses it.
+- `localeName(locale: Locale): string` is the locale's name in its own language, `new Intl.DisplayNames([locale], { type: 'language', languageDisplay: 'standard' }).of(locale)`, the text of a locale switcher's link.
+- `collate(a: string, b: string, locale: Locale): number` is `new Intl.Collator(locale).compare(a, b)`, one collator per locale held across calls.
+- `numberParts(n: number | `${number}`, locale: Locale, currency?: string, display?: 'symbol' | 'narrowSymbol')` is `formatToParts(n)` of `new Intl.NumberFormat(locale)`, or of `new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: display })` when `currency` is given; a plain decimal string (`'-0.05'`) is formatted exactly, with no float.
+- `formatUnit(n: number, locale: Locale, unit: string, display: 'long' | 'short' | 'narrow'): string` is `new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: display }).format(n)`; `formatList(items: readonly string[], locale: Locale, type: 'conjunction' | 'disjunction' | 'unit', style: 'long' | 'short' | 'narrow'): string` is `new Intl.ListFormat(locale, { type, style }).format(items)`.
+- `formatDateTime(t: number, locale: Locale, options: Intl.DateTimeFormatOptions & { timeZone: string }): string` is `new Intl.DateTimeFormat(locale, options).format(t)`; the time zone is required.
+- `pluralCategories(locale: Locale): readonly string[]` is `new Intl.PluralRules(locale).resolvedOptions().pluralCategories`.
+- `numberParts`, `formatUnit` and `formatDateTime` raise a defect (k.defects) whose message begins with the function's name and `: ` for an input `Intl` refuses (a currency or unit it does not know, a `t` no `Date` holds, `dateStyle` or `timeStyle` beside a field such as `year`), for a `numberParts` string that is no plain decimal (`-?(0|[1-9][0-9]*)(\.[0-9]+)?`: no exponent, `+`, hex, white space, `_`, leading zero or bare point, so `''`, `'1e400'` and `'0x10'` throw), and for a `formatDateTime` `timeZone` that is no non-empty string, so the host's is never read.
+- No other `@keel/std-*` package constructs an `Intl` formatter E2301 reads: std.money, std.text, std.tables, std.temporal and std.messages format, compare and select plurals through these functions, as an app does (k.library).
+
+**Rules.** E2301, in a module whose `deps` list `@keel/std-i18n`: an `Intl` formatter constructed, or `toLocaleString`, `toLocaleDateString`, `toLocaleTimeString` or `localeCompare` called, with a locale argument. The message names the stdlib function to call: `formatNumber`, `formatMoney`, `formatDate`, `formatInstant`, `formatDuration`, `compareText`, `plural` or `localeName`. No fix: the function and its arguments depend on the value. Without a locale the same calls are E1758 (k.check). `Intl.ListFormat` and `Intl.Segmenter` are not reported.
+
+**Conformance.**
+- After importing `@keel/std-i18n`, `s.registry().get('i18n.Locale')` is `Locale`; importing it again does not throw.
+- `Locale.parse` accepts each of the 11 tags and rejects `en`, `de-de`, `en_US` and `fr-CA`, each with rule `enum`.
+- For every generated finite `n` and every `Locale` `l`, `formatNumber(n, l)` equals `new Intl.NumberFormat(l).format(n)`; `formatNumber(1234.5, l)` is `1,234.5` for `en-US`, `1.234,5` for `de-DE` and `1,234.5` for `ja-JP`.
+- `plural(n, 'en-US', { one: '# recipe', other: '# recipes' })` is `1 recipe` for 1 and `2 recipes` for 2; with the same forms, `ja-JP` gives `1 recipes` for 1 and `de-DE` gives `1.234 recipes` for 1234. For every generated `n` and `Locale` `l`, the result is the form `Intl.PluralRules` selects, else `other`, with `#` replaced.
+- `plural(n, l, { '=0': 'none', '=2': '# exactly', one: '# recipe', other: '# recipes' })` is `none` for 0 and `2 exactly` for 2 in every `Locale` `l`, and `1 recipe` for 1 in `en-US`; `{ '=01': 'x', '=1.0': 'y', other: '#' }` gives `1` for 1. For every generated `n`, `l` and forms with exact keys, the result is the exact form for `n` when there is one, else the result without the exact forms.
+- `localeName` is `English (United States)`, `Deutsch (Deutschland)` and `日本語 (日本)` for `en-US`, `de-DE` and `ja-JP`.
+- With `@keel/std-i18n` in a module's `deps`, `keel check` reports one E2301 each for `new Intl.NumberFormat('de-DE')` and `a.localeCompare(b, 'de-DE')` in its files and none for them in a module without it; `n.toLocaleString()` reports E1758 and no E2301.
+- With `process.env.TZ` and `process.env.LANG` changed, every export returns equal results for equal arguments.
+- The package root imports neither `@keel/check` nor `typescript`; `@keel/std-i18n/tools` exports the E2301 rule.
+- For every generated `a`, `b` and `Locale` `l`, `collate(a, b, l)` equals `new Intl.Collator(l).compare(a, b)`; for every generated finite `n`, the values of `numberParts(n, l)` joined equal `formatNumber(n, l)`.
+- `numberParts(1234567.5, 'de-DE')` joined is `1.234.567,5`; `numberParts('-0.05', 'en-US', 'EUR')` joined is `-€0.05`; `numberParts(1, 'en-US', 'USD', 'narrowSymbol')` holds the part `{ type: 'currency', value: '$' }`.
+- `formatUnit(90, 'en-US', 'minute', 'long')` is `90 minutes`; `formatList(['1 hr', '5 min'], 'en-US', 'unit', 'short')` is `1 hr, 5 min`; `formatDateTime(0, 'en-US', { timeZone: 'UTC', month: '2-digit', day: '2-digit' })` is `01/01`, and `12/31` with `timeZone: 'America/New_York'`; `pluralCategories('en-US')` is `['one', 'other']` and `pluralCategories('ja-JP')` `['other']`.
+- `numberParts` of `'1e400'`, `'0x10'`, `''`, `' 1 '`, `'1_000'`, `'.5'`, `'5.'` and `'01'`, `numberParts('1', 'en-US', 'US')`, `formatUnit(1, 'en-US', 'furlong', 'long')`, `formatDateTime` of `NaN` with `timeZone: 'UTC'`, of `0` with options `{}`, with `timeZone: ''` and with `{ timeZone: 'UTC', dateStyle: 'short', year: 'numeric' }`, each raise a defect whose message begins with the function's name; `numberParts('-0', 'en-US')` joined is `-0`.

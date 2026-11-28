@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`."
+// Spec: k.ledger, clause "An export tested only by examples is `example`; adding a passing 100-run property makes it `probabilistic`."
 // Seed: 1337.
 // Evidence comes from real runs: an example is a test body that actually executed its assertion; the property is the
 // harness's own `properties()` run, whose `{ seed, runs }` result feeds the ledger. No hand-written evidence.
@@ -31,7 +31,7 @@ const property = (runs: number, seed: number, fn: (n: number) => void): Evidence
   return { kind: "property", passed: !out.failed, runs: out.numRuns, seed };
 };
 
-describe("k.testing: rung promotion from real test runs", () => {
+describe("k.ledger: rung promotion from real test runs", () => {
   it("an export whose only passing run is an example is example", () => {
     const run = example(() => {
       const t = render(Button, { props: { label: "Save", disabled: false }, ctx: simCtx() });

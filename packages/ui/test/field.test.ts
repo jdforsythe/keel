@@ -5,6 +5,7 @@ import { scope, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Checkbox, Input, Select, TextArea } from "@keel/ui";
 import { describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const flush = async (): Promise<void> => {
   await Promise.resolve();
@@ -15,26 +16,29 @@ const flush = async (): Promise<void> => {
 const fakeField = (path: string) => {
   const bound: Element[] = [];
   const holder: { set?: (v: string | undefined) => void; field?: Field<unknown> } = {};
-  const sc = scope(() => {
-    const err = signal<string | undefined>(undefined);
-    holder.set = (v) => err.set(v);
-    holder.field = {
-      name: path,
-      id: `f:${path}`,
-      errorId: `f:${path}:error`,
-      value: () => undefined,
-      error: () => err.get(),
-      touched: () => false,
-      set: () => {},
-      blur: () => {},
-      bind: (el) => {
-        el.name = path;
-        if (el.id === "") el.id = `f:${path}`;
-        bound.push(el);
-        return () => {};
-      },
-    };
-  });
+  const sc = scope(
+    () => {
+      const err = signal<string | undefined>(undefined);
+      holder.set = (v) => err.set(v);
+      holder.field = {
+        name: path,
+        id: `f:${path}`,
+        errorId: `f:${path}:error`,
+        value: () => undefined,
+        error: () => err.get(),
+        touched: () => false,
+        set: () => {},
+        blur: () => {},
+        bind: (el) => {
+          el.name = path;
+          if (el.id === "") el.id = `f:${path}`;
+          bound.push(el);
+          return () => {};
+        },
+      };
+    },
+    { detached: true },
+  );
   const { field, set } = holder;
   if (field === undefined || set === undefined) throw new Error("fakeField");
   return { field, setError: set, bound, dispose: () => sc.dispose() };
@@ -53,7 +57,7 @@ describe("base controls given a field", () => {
       const f = fakeField("note.title");
       const host = document.createElement("div");
       document.body.append(host);
-      const dispose = mount(() => make(f.field), host);
+      const dispose = mount(() => make(f.field), host, { ctx: testCtx });
       const control = host.querySelector(tag);
       expect(f.bound).toEqual([control]);
       expect(control?.id).toBe("f:note.title");
@@ -78,7 +82,7 @@ describe("explicit id prop with a field (ui D26)", () => {
     const f = fakeField("note.title");
     const host = document.createElement("div");
     document.body.append(host);
-    const dispose = mount(() => Input({ label: "Title", id: "mine", field: f.field }), host);
+    const dispose = mount(() => Input({ label: "Title", id: "mine", field: f.field }), host, { ctx: testCtx });
     expect(host.querySelector("input")?.id).toBe("mine");
     expect(host.querySelector('label[for="mine"]')).not.toBeNull();
     dispose();

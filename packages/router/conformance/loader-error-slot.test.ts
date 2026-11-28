@@ -1,14 +1,14 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "A loader err renders the nearest errorElement in the chain; layouts above it stay rendered." Seed 1337.
+// Spec: k.router, clause "A loader err renders the nearest errorElement in the chain; layouts above it stay." Seed 1337.
 import { beforeEach, describe, expect, it } from "vitest";
-import { control, idOf, resetObservations, routes, settle, start } from "./fixtures.ts";
+import { appContract, control, idOf, resetObservations, settle, start } from "./fixtures.ts";
 
 describe("k.router loader errors", () => {
   beforeEach(resetObservations);
   it("a loader err renders the nearest errorElement in the chain; layouts above it stay rendered", async () => {
     const app = await start("/", { render: true });
     control.show = "err";
-    await app.router.navigate(routes.href("orders.show", { id: idOf("7") }, {}));
+    await app.router.navigate(appContract.href("app.ordersShow", { id: idOf("7") }, {}));
     await settle();
     const shown = app.host.querySelector('[data-error="orders.show"]');
     expect(shown?.getAttribute("data-code")).toBe("orders.locked");
@@ -23,7 +23,7 @@ describe("k.router loader errors", () => {
   });
   it("when the failing route has no errorElement, the nearest layout errorElement renders and layouts above it stay", async () => {
     const app = await start("/", { render: true });
-    await app.router.navigate(routes.href("orders.bare"));
+    await app.router.navigate(appContract.href("app.ordersBare"));
     await settle();
     const shown = app.host.querySelector('[data-error="orders.shell"]');
     expect(shown?.getAttribute("data-code")).toBe("orders.broken");
@@ -34,7 +34,7 @@ describe("k.router loader errors", () => {
   });
   it("a loader ok renders the route component and no errorElement (clean counterpart)", async () => {
     const app = await start("/", { render: true });
-    await app.router.navigate(routes.href("orders.show", { id: idOf("7") }, {}));
+    await app.router.navigate(appContract.href("app.ordersShow", { id: idOf("7") }, {}));
     await settle();
     expect(app.host.querySelector("[data-error]")).toBeNull();
     expect(app.host.querySelector('[data-page="orders.show"]')).not.toBeNull();

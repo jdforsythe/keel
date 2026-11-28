@@ -1,22 +1,26 @@
+import { clipMessage } from "@keel/schema/internal";
 import type { Analysis } from "./internal/Analysis.ts";
 import type { BindingInfo } from "./internal/BindingInfo.ts";
 import type { ElementInfo } from "./internal/ElementInfo.ts";
 import { analyze } from "./internal/analyze.ts";
 import { buildDeps } from "./internal/buildDeps.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
-import { clientOnly } from "./internal/clientOnly.ts";
+import { clientReach } from "./internal/clientReach.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
+import { fitChain } from "./internal/fitChain.ts";
 import { hashOf } from "./internal/hashOf.ts";
 import { internalFailure } from "./internal/internalFailure.ts";
 import { lowerFile } from "./internal/lowerFile.ts";
+import { miscasedImports } from "./internal/miscasedImports.ts";
 import { ruleAndJsx } from "./internal/rules/ruleAndJsx.ts";
 import { ruleControlFlow } from "./internal/rules/ruleControlFlow.ts";
 import { rulePropsDestructuring } from "./internal/rules/rulePropsDestructuring.ts";
 import { ruleRawHtml } from "./internal/rules/ruleRawHtml.ts";
-import { ruleServerImport } from "./internal/rules/ruleServerImport.ts";
+import { ruleTopLevelPropRead } from "./internal/rules/ruleTopLevelPropRead.ts";
 import { ruleUrlLiteral } from "./internal/rules/ruleUrlLiteral.ts";
+import { shortPath } from "./internal/shortPath.ts";
 import type { A11yEntry } from "./types/A11yEntry.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
 import type { CompileOptions } from "./types/CompileOptions.ts";
@@ -60,15 +64,22 @@ function duplicateIds(all: readonly { a: Analysis; elements: readonly ElementInf
 
 /** E1000 message: the parser's message on one line, `syntax error: ` first, under 90 chars. */
 function syntaxMessage(parser: string): string {
-  const text = `syntax error: ${parser.replace(/\s*\n\s*/g, " ").trim()}`;
-  return text.length > 89 ? `${text.slice(0, 86)}...` : text;
+  return clipMessage(`syntax error: ${parser}`, 89);
+}
+
+/** E1004 message (k.boundary Reach): the shortest chain from a client entry, else the file the import names. */
+function reachMessage(chain: string | undefined, file: string): string {
+  const head = "client code reaches server-only (";
+  if (chain !== undefined) return `${head}${fitChain(chain.split(" -> "), 89 - head.length - 1)})`;
+  const lead = "client code imports server-only ";
+  return `${lead}${shortPath(file, 89 - lead.length)}`;
 }
 
 /**
  * Compile Keel sources (k.compiler): lower JSX to k.runtime ops, run the compile-time rules, and derive
  * the `.keel/` artifacts. Pure and deterministic: equal inputs give byte-identical results; nothing is
  * read from or written to disk. `mode: "server"` currently emits the same client module (see PLAN D9).
- * `topology` exempts client-only deployables from E1004; `routes` is copied (sorted) into `routes.json`, and its
+ * `topology` places each module for E1004 (k.boundary Reach); E1010 names a miscased specifier (k.bundle); `routes` is copied (sorted) into `routes.json`, and its
  * path patterns scope E1501 for relative literals. A file that does not parse gets only E1000: no
  * elements, deps, or output. Anything thrown inside is rethrown as E1049 (`internalFailure`), never as an app code.
  */
@@ -85,7 +96,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
   const patterns = Object.values(options.routes ?? {}).flatMap((r) => (typeof r?.path === "string" ? [r.path] : []));
   const diagnostics: Diagnostic[] = [];
   const usages = new Map<string, StyleUsage>();
-  const done: { a: Analysis; elements: ElementInfo[]; bindings: BindingInfo[]; code: string }[] = [];
+  const done: { a: Analysis; elements: ElementInfo[]; bindings: BindingInfo[]; code: string; map: string }[] = [];
   for (const file of files) {
     const a = analyze(file);
     if (a.parseErrors.length > 0) {
@@ -97,23 +108,31 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
     diagnostics.push(
       ...ruleRawHtml(a),
       ...ruleUrlLiteral(a, patterns),
-      ...ruleServerImport(a, clientOnly(a.path, options.topology)),
       ...ruleAndJsx(a),
       ...ruleControlFlow(a),
+      ...ruleTopLevelPropRead(a),
       ...destructuring.diagnostics,
     );
     const elements = collectElements(a);
-    const styles = collectStyles(a);
+    const styles = collectStyles(a, options.looks);
+    diagnostics.push(...styles.diagnostics);
     for (const u of styles.usages) usages.set(canonicalJson(u), u);
-    const lowered = lowerFile(
-      a,
-      elements.filter((e) => !e.base),
-      destructuring.edits,
-      styles.rewrites,
-    );
-    done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });
+    const lowered = lowerFile(a, elements, [...destructuring.edits, ...styles.edits], styles.rewrites);
+    done.push({ a, elements, bindings: lowered.bindings, code: lowered.code, map: lowered.map });
   }
   diagnostics.push(...duplicateIds(done));
+  // E1004 (k.boundary Reach): a server-only import in client-reachable code, with the chain from a client entry.
+  const byPath = new Map(done.map((d) => [d.a.path, d.a]));
+  for (const h of clientReach([...byPath.values()], options.topology, options.resolve).hits) {
+    const a = byPath.get(h.path);
+    if (a !== undefined) diagnostics.push(diag(a, "E1004", h.start, reachMessage(h.chain, h.file), "k.compiler"));
+  }
+  // E1010 (k.bundle Names): a specifier naming a file of the project in a case other than its name on disk.
+  for (const m of miscasedImports([...byPath.values()])) {
+    const a = byPath.get(m.path);
+    const message = `${m.source} names ${m.disk} in another case; use the name on disk`;
+    if (a !== undefined) diagnostics.push(diag(a, "E1010", m.start, message, "k.bundle"));
+  }
 
   const ids: Record<string, IdEntry> = Object.create(null);
   const a11y: Record<string, A11yEntry> = Object.create(null);
@@ -146,6 +165,6 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
       "routes.json": hashOf(artifacts["routes.json"]),
       "styles.json": hashOf(artifacts["styles.json"]),
     },
-    outputs: done.map((d) => ({ path: d.a.path, code: d.code })),
+    outputs: done.map((d) => Object.defineProperty({ path: d.a.path, code: d.code }, "map", { value: d.map })),
   };
 }

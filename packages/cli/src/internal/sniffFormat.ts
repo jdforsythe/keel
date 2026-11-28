@@ -1,7 +1,6 @@
 import type { Mode } from "../types/Mode.ts";
 
-const MODES: readonly string[] = ["compact", "json", "pretty"];
-const isMode = (v: string | undefined): v is Mode => v !== undefined && MODES.includes(v);
+const isMode = (v: string | undefined): v is Mode => v === "compact" || v === "json" || v === "pretty";
 
 /** The `--format` value in argv when it is valid, so usage errors still render in the requested mode. */
 export function sniffFormat(argv: readonly string[]): Mode | undefined {

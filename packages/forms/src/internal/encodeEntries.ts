@@ -21,6 +21,9 @@ export function encodeEntries(node: Node, key: string, x: unknown, add: (key: st
     case "optional":
       encodeEntries(node.inner, key, x, add);
       break;
+    case "format":
+      encodeEntries(node.base, key, x, add);
+      break;
     case "nullable":
       if (x === null) add(key, "");
       else encodeEntries(node.inner, key, x, add);

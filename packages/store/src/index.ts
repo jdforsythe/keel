@@ -1,6 +1,10 @@
+export { givenPii } from "./givenPii.ts";
 export { invariant } from "./invariant.ts";
+export { isStore } from "./isStore.ts";
+export { isTransaction } from "./isTransaction.ts";
 export { isolate } from "./isolate.ts";
 export { store } from "./store.ts";
+export { snapshotKeys } from "./snapshotKeys.ts";
 export { stores } from "./stores.ts";
 export { transaction } from "./transaction.ts";
 export { tx } from "./tx.ts";

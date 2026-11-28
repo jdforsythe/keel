@@ -3,9 +3,12 @@
 // child components, `uses` scope, slot/children calls as nodes, module-level stores.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
+import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { describe, expect, it } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1 });
 
 const one = (path: string, source: string) => {
   const r = compile([{ path, source }]);
@@ -15,7 +18,7 @@ const one = (path: string, source: string) => {
 const host = (C: unknown, props: unknown = {}, ctx?: unknown): HTMLElement => {
   if (typeof C !== "function") throw new Error("no component");
   const el = document.createElement("div");
-  mount(() => C(props, undefined, ctx), el);
+  mount(() => C(props, ctx), el, { ctx: simCtx });
   return el;
 };
 
@@ -79,13 +82,10 @@ describe("topology and routes inputs", () => {
     { path: "src/shared.ts", source: `import { x } from "../modules/todos/x.server.ts";\nexport const y = x;\n` },
   ];
 
-  it("reports E1004 without a topology or for a static deployable", () => {
-    expect(compile(files).diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual([
-      "E1004 modules/todos/routes.ts",
-      "E1004 src/shared.ts",
-    ]);
+  it("reports E1004 without a topology, never for a routes.ts (its server-only imports are stubs in a browser build)", () => {
+    expect(compile(files).diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual(["E1004 src/shared.ts"]);
     const stat = compile(files, { topology: { web: { modules: ["todos"], adapter: "static" } } });
-    expect(stat.diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual(["E1004 modules/todos/routes.ts"]);
+    expect(stat.diagnostics.map((d) => `${d.code} ${d.path}`)).toEqual([]);
   });
 
   it("is per deployable: node-only routes.ts and files outside modules/ are legal (D40)", () => {
@@ -131,15 +131,15 @@ describe("topology and routes inputs", () => {
 });
 
 describe("generated component code", () => {
-  it("passes the enclosing component's ctx to child components as the third argument", () => {
+  it("passes the enclosing component's ctx to child components as the second argument", () => {
     const { r, code } = one(
       "C.tsx",
-      `function Child(props: object, slots: unknown, ctx: { name: string }) { return <p>{ctx.name}</p> }
-function Named(props: object, slots: unknown, c: { name: string }) { return <div><Child /></div> }
+      `function Child(props: object, ctx: { name: string }) { return <p>{ctx.name}</p> }
+function Named(props: object, c: { name: string }) { return <div><Child /></div> }
 export default function App() { return <section><Child /><Named /></section> }`,
     );
     expect(r.diagnostics).toEqual([]);
-    expect(code).toContain("Child({}, undefined, c)");
+    expect(code).toContain("Child({}, c)");
     expect(host(evaluate(code), {}, { name: "real" }).textContent).toBe("realreal");
   });
 
@@ -163,10 +163,13 @@ C.outside = () => tx(dec, {}).ok;`,
     expect(code).toMatch(/__kscoped\(\(\) => \{ for \(const __ku of uses\) __ku\.store\.uses\(\[__ku\]\);/);
     const C = evaluate(code);
     let outside: unknown;
-    scope(() => {
-      host(C);
-      outside = typeof C === "function" ? Reflect.get(C, "outside")() : undefined;
-    });
+    scope(
+      () => {
+        host(C);
+        outside = typeof C === "function" ? Reflect.get(C, "outside")() : undefined;
+      },
+      { detached: true },
+    );
     // undeclared inside the component (rejected before any write); a sibling scope stays unrestricted
     expect(typeof C === "function" ? Reflect.get(C, "seen") : undefined).toBe("store.undeclared");
     expect(outside).toBe(true);
@@ -186,7 +189,7 @@ export default function S() { S.seen.push(["root", owner()]); return <p><Leaf ta
     const sigs: { set(v: number): void }[] = [];
     Object.assign(S, { seen, runs, sigs });
     const el = document.createElement("div");
-    const dispose = mount(() => S({}, undefined, undefined), el);
+    const dispose = mount(() => S({}, simCtx), el, { ctx: simCtx });
     const [root, a, b] = seen.map(([, o]) => o);
     expect(seen.map(([t]) => t)).toEqual(["root", "a", "b"]);
     expect(new Set([root, a, b]).size).toBe(3);
@@ -199,7 +202,7 @@ export default function S() { S.seen.push(["root", owner()]); return <p><Leaf ta
     expect(runs).toEqual([]);
   });
 
-  it("inserts props.children() and slots calls as nodes, not text", () => {
+  it("inserts props.children() calls as nodes, not text", () => {
     const { code } = one(
       "W.tsx",
       `function Wrap(props: { children: () => Node }) { return <section>{props.children()}</section> }
@@ -231,6 +234,7 @@ export default function C() { return <div><Shell><b>x</b></Shell><Fb /><Fb>y</Fb
       "modules/todos/board.ts",
       `import { store } from "@keel/store";
 import { s } from "@keel/schema";
+
 export const board = store(s.object({ n: s.int() }), { n: 0 });
 export const named = store(s.object({ n: s.int() }), { n: 0 }, { id: "todos.other" });
 export default board;`,

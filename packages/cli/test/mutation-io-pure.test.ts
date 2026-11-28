@@ -1,6 +1,7 @@
-// Mutation-killing tests for the small pure helpers behind the binary and the stdio servers.
 import { describe, expect, it } from "vitest";
 import { mcp } from "../src/index.ts";
+// Mutation-killing tests for the small pure helpers behind the binary and the stdio servers.
+import { SHARED_FLAGS } from "../src/internal/SHARED_FLAGS.ts";
 import { codeFiles } from "../src/internal/codeFiles.ts";
 import { createFramer } from "../src/internal/createFramer.ts";
 import { frameLsp } from "../src/internal/frameLsp.ts";
@@ -375,7 +376,7 @@ describe("mcpHandle", () => {
     const want = (v: string) => ({
       jsonrpc: "2.0",
       id: 1,
-      result: { protocolVersion: v, capabilities: caps, serverInfo: info },
+      result: { protocolVersion: v, capabilities: caps, serverInfo: info, instructions: SHARED_FLAGS.text },
     });
     expect(await h('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"1999-01-01"}}')).toEqual(
       want("1999-01-01"),
@@ -438,7 +439,7 @@ describe("mcpCall", () => {
     expect(r.content).toEqual([
       {
         type: "text",
-        text: `E1051 unknown command "${"z".repeat(24)}"\n  see: k.cli\nfail ${"z".repeat(40)} 1 errors\n`,
+        text: `E1051 unknown command "${"z".repeat(24)}"\n  see: keel docs k.cli\nfail ${"z".repeat(40)} 1 errors\n`,
       },
     ]);
     expect(r.structuredContent.records[0]).toEqual({
@@ -450,7 +451,7 @@ describe("mcpCall", () => {
     for (const params of [undefined, null, 5, {}, { name: 5 }, []]) {
       const e = await mcpCall(params, io);
       expect(e.isError).toBe(true);
-      expect(e.content[0]?.text).toBe('E1051 unknown command ""\n  see: k.cli\nfail 1 errors\n');
+      expect(e.content[0]?.text).toBe('E1051 unknown command ""\n  see: keel docs k.cli\nfail 1 errors\n');
     }
   });
 
@@ -459,7 +460,14 @@ describe("mcpCall", () => {
     expect(r).toEqual({
       content: [{ type: "text", text: "ok check 1 files, 0 errors, 0 warnings\n" }],
       structuredContent: {
-        records: [{ kind: "summary", ok: true, name: "check", counts: { files: 1, errors: 0, warnings: 0 } }],
+        records: [
+          {
+            kind: "summary",
+            ok: true,
+            name: "check",
+            counts: { files: 1, refreshed: 0, errors: 0, warnings: 0, evaluated: 0, cached: 0 },
+          },
+        ],
       },
       isError: false,
     });
@@ -470,9 +478,20 @@ describe("mcpCall", () => {
     expect(pretty.content[0]?.text).toBe("check: passed (1 files, 0 errors, 0 warnings)\n");
     const bad = await mcpCall({ name: "check", arguments: { bogus: 1 } }, io);
     expect(bad.isError).toBe(true);
-    expect(bad.content[0]?.text).toBe('E1052 unknown argument "bogus"\n  see: k.cli\nfail check 1 errors\n');
+    expect(bad.content[0]?.text).toBe('E1052 unknown argument "bogus"\n  see: keel docs k.cli\nfail check 1 errors\n');
     const missingArgs = await mcpCall({ name: "check" }, io);
     expect(missingArgs.isError).toBe(false);
+  });
+
+  it("every tool takes the shared flags its inputSchema leaves out, and refuses a value their schemas refuse with E1052", async () => {
+    for (const args of [{ format: "json" }, { quiet: true }, { limit: 3 }, { verbose: true }]) {
+      expect((await mcpCall({ name: "check", arguments: args }, io)).isError, JSON.stringify(args)).toBe(false);
+    }
+    for (const args of [{ format: "xml" }, { quiet: "yes" }, { limit: 0 }, { limit: 1.5 }, { verbose: 1 }]) {
+      const r = await mcpCall({ name: "check", arguments: args }, io);
+      expect(r.isError, JSON.stringify(args)).toBe(true);
+      expect(r.content[0]?.text, JSON.stringify(args)).toMatch(/^E1052 /);
+    }
   });
 });
 
@@ -571,20 +590,69 @@ describe("kernelFormatters", () => {
     render(kind, "pretty", record),
   ];
 
+  it("renders a review finding, and a review trailer says listed", () => {
+    const f = {
+      kind: "review",
+      code: "R1053",
+      path: "modules/a/x.ts",
+      line: 4,
+      col: 9,
+      message: "module specifier computed at run time",
+      protection: "k.security",
+      opt: false,
+      danger: "critical",
+      novelty: "new",
+      loud: "fail",
+      id: "3f2a9c01d2e4",
+    };
+    expect(render("review", "compact", f)).toBe(
+      "R1053 modules/a/x.ts:4:9 critical new module specifier computed at run time",
+    );
+    expect(render("review", "pretty", { ...f, opt: true, reason: "r" })).toContain("opt-in");
+    const counts = { fail: 0, warn: 2, list: 14, accepted: 3 };
+    expect(render("summary", "compact", { kind: "summary", ok: true, name: "review", counts })).toBe(
+      "ok review 0 fail, 2 warn, 14 listed, 3 accepted",
+    );
+    expect(render("summary", "compact", { kind: "summary", ok: true, name: "x", counts: { list: 1 } })).toBe(
+      "ok x 1 list",
+    );
+  });
+
   it("registers the kernel and cli record kinds in order", () => {
     expect(kernelFormatters.map(([k]) => k)).toEqual([
       "diag",
       "summary",
       "req",
+      "review",
       "ledger",
+      "ledger.mutation",
+      "evidence",
       "a11y",
-      "spec.section",
-      "spec.cite",
+      "docs.entry",
+      "docs.area",
+      "docs.code",
+      "docs.term",
+      "docs.hit",
+      "docs.section",
+      "docs.skill",
+      "docs.cite",
       "explain.text",
       "inspect.store",
       "inspect.section",
       "scaffold.edit",
+      "scaffold.note",
     ]);
+  });
+
+  it("ledger.mutation: compact `<file> <score>% <n> survived`, one decimal, `stale` when not fresh", () => {
+    const r = { kind: "ledger.mutation", file: "packages/store/src/tx.ts", score: 91.25, survived: 3, fresh: true };
+    expect(all("ledger.mutation", r)).toEqual([
+      "packages/store/src/tx.ts 91.3% 3 survived",
+      "packages/store/src/tx.ts: 91.3% (3 survived)",
+    ]);
+    expect(render("ledger.mutation", "compact", { ...r, fresh: false })).toBe(
+      "packages/store/src/tx.ts 91.3% 3 survived stale",
+    );
   });
 
   it("inspect.section: compact and pretty clip the value's JSON at 120 chars", () => {
@@ -655,14 +723,52 @@ describe("kernelFormatters", () => {
     ).toBe('button "Save" b1 [checked expanded selected invalid]');
   });
 
-  it("spec.section is the text with trailing whitespace trimmed", () => {
-    const r = { kind: "spec.section", id: "k.cli", text: "  ## Title\n\nbody  \n\n" };
-    expect(all("spec.section", r)).toEqual(["  ## Title\n\nbody", "  ## Title\n\nbody"]);
+  it("docs.section and docs.skill are the text with one final newline dropped", () => {
+    const r = { kind: "docs.section", id: "k.cli", text: "  ## Title\n\nbody  \n\n" };
+    expect(all("docs.section", r)).toEqual(["  ## Title\n\nbody  \n", "  ## Title\n\nbody  \n"]);
+    expect(all("docs.skill", { kind: "docs.skill", id: "s", text: "x" })).toEqual(["x", "x"]);
   });
 
-  it("spec.cite", () => {
-    const r = { kind: "spec.cite", code: "E1", path: "spec/a.md", line: 12, text: "cites E1" };
-    expect(all("spec.cite", r)).toEqual(["spec/a.md:12 cites E1", "spec/a.md:12\n  cites E1"]);
+  it("docs.entry: ` not installed` when the package is absent, `: <holds>` when it holds text", () => {
+    const r = {
+      kind: "docs.entry",
+      id: "k.router",
+      title: "Routes",
+      package: "@keel/router",
+      installed: true,
+      holds: "",
+    };
+    expect(all("docs.entry", r)).toEqual(["k.router Routes @keel/router", "k.router         Routes (@keel/router)"]);
+    expect(all("docs.entry", { ...r, installed: false })).toEqual([
+      "k.router Routes @keel/router not installed",
+      "k.router         Routes (@keel/router, not installed)",
+    ]);
+    expect(all("docs.entry", { ...r, installed: false, holds: "the table" })).toEqual([
+      "k.router Routes @keel/router not installed: the table",
+      "k.router         Routes (@keel/router, not installed)\n  the table",
+    ]);
+  });
+
+  it("docs.area, docs.code, docs.term and docs.hit", () => {
+    const area = { kind: "docs.area", id: "data", title: "Durable storage", sections: 6 };
+    expect(all("docs.area", area)).toEqual([
+      "data Durable storage, 6 sections",
+      "data       Durable storage (6 sections)",
+    ]);
+    expect(all("docs.area", { ...area, sections: 1 })[0]).toBe("data Durable storage, 1 section");
+    const code = { kind: "docs.code", code: "E1551", ids: ["k.a", "k.b", "k.c", "k.d", "k.e"] };
+    expect(all("docs.code", code)).toEqual(["E1551 k.a k.b k.c +2", "E1551: k.a, k.b, k.c, k.d, k.e"]);
+    expect(all("docs.code", { ...code, ids: ["k.a"] })[0]).toBe("E1551 k.a");
+    const term = { kind: "docs.term", term: "identity mount", text: "the path", ids: ["k.mount"] };
+    expect(all("docs.term", term)).toEqual(["identity mount: the path", "identity mount\n  the path"]);
+    const hit = { kind: "docs.hit", name: "x", id: "k.testing", title: "Harness", package: "@keel/testing", count: 2 };
+    expect(all("docs.hit", hit)).toEqual(["k.testing Harness 2", "k.testing        Harness (2 spans)"]);
+    expect(all("docs.hit", { ...hit, count: 1 })[1]).toBe("k.testing        Harness (1 span)");
+  });
+
+  it("docs.cite", () => {
+    const r = { kind: "docs.cite", code: "E1", id: "k.a", line: 12, text: "cites E1" };
+    expect(all("docs.cite", r)).toEqual(["k.a:12 cites E1", "k.a:12\n  cites E1"]);
   });
 
   it("explain.text prefixes the code unless the text already names it", () => {

@@ -1,4 +1,5 @@
-import type { Level } from "@keel/router/internal";
+import type { DocHead, Level } from "@keel/router/internal";
+import { publicError } from "@keel/router/internal";
 import { err } from "@keel/schema";
 import type { Failure } from "./Failure.ts";
 import type { Handled } from "./Handled.ts";
@@ -7,8 +8,8 @@ import type { Req } from "./Req.ts";
 import { devMessageOf } from "./devMessageOf.ts";
 import { documentResponse } from "./documentResponse.ts";
 import { jsonResponse } from "./jsonResponse.ts";
-import { publicError } from "./publicError.ts";
 import { renderChain } from "./renderChain.ts";
+import { scrubbedError } from "./scrubbedError.ts";
 
 /**
  * Respond with a failure found before any loader ran (404, guard error): runtime requests get the `err`
@@ -21,8 +22,9 @@ export function bareError(
   chain: readonly Level[],
   params: Rec,
   failure: Failure,
+  head: DocHead = { title: null, lang: "en" },
 ): Handled {
-  const publicize = (e: Failure["error"]) => publicError(e, r.sv.mode);
+  const publicize = (e: Failure["error"]) => publicError(scrubbedError(e, r.rq), r.sv.mode);
   if (r.runtime) return { response: jsonResponse(status, err(publicize(failure.error))), route, diags: [] };
   const rendered = renderChain({
     chain,
@@ -31,11 +33,11 @@ export function bareError(
     data: [],
     props: () => ({}),
     failure,
-    prepend: "",
+    prepend: () => "",
     ctx: r.sv.ctx,
     publicize,
   });
   const dev = devMessageOf([failure.error, rendered.caught]);
   const code = rendered.caught === null ? status : 500;
-  return { response: documentResponse(r, code, rendered, {}, dev), route, diags: [] };
+  return { response: documentResponse(r, code, rendered, {}, dev, head), route, diags: [] };
 }

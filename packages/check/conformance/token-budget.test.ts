@@ -2,7 +2,7 @@
 // Golden app 1 does not exist as a public fixture; this uses 10 injected diagnostics instead (synthetic and real).
 import { check, format } from "@keel/check";
 import { expect, test } from "vitest";
-import { approxTokens, FIXTURES, synth } from "./support.ts";
+import { FIXTURES, approxTokens, synth } from "./support.ts";
 
 const FIX = "--- a/src/f.tsx\n+++ b/src/f.tsx\n@@ -1,1 +1,1 @@\n-  cart.items.push(item)\n+  tx.cart.addItem({ item })";
 

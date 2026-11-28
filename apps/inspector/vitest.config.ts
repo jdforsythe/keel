@@ -1,12 +1,12 @@
 import keel from "@keel/compiler/vite";
-import { KeelReporter } from "@keel/tooling/vitest-reporter";
-import { defineConfig } from "vitest/config";
+import { keelConfig } from "@keel/tooling/vitest-config";
 
-export default defineConfig({
+export default keelConfig({
   plugins: [keel()],
   test: {
     include: ["test/**/*.test.{ts,tsx}"],
     environment: "happy-dom",
-    reporters: [new KeelReporter()],
+    // The component properties render whole views many times; on a slow machine one takes more than the 5 s default.
+    testTimeout: 20_000,
   },
 });

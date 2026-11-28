@@ -27,7 +27,12 @@ describe("parseArgv", () => {
       const p = fails(argv);
       expect(p.command).toBe("keel");
       expect(p.diags).toStrictEqual([
-        { kind: "diag", code: "E1051", message: "no command given; see keel spec k.cli", see: "k.cli" },
+        {
+          kind: "diag",
+          code: "E1051",
+          message: "no command given; try check, test, build, dev, scaffold, or keel docs",
+          see: "k.cli",
+        },
       ]);
     }
     expect(fails(["--format=json"]).format).toBe("json");
@@ -56,7 +61,7 @@ describe("parseArgv", () => {
       paths: ["a.ts", "b.ts", "c.ts"],
       limit: 1,
     });
-    expect(okParse(["spec", "k.cli"]).input).toStrictEqual({ id: "k.cli" });
+    expect(okParse(["docs", "k.cli"]).input).toStrictEqual({ id: "k.cli" });
     expect(okParse(["check", "-"]).input).toStrictEqual({ paths: ["-"] });
   });
 
@@ -76,7 +81,7 @@ describe("parseArgv", () => {
     expect(msgs(["check", "-x"])).toEqual(["unknown flag -x"]);
     expect(msgs(["check", "-limit=3"])).toEqual(["unknown flag -limit"]);
     expect(msgs(["check", "--paths=a"])).toEqual(["unknown flag --paths"]);
-    expect(msgs(["spec", "--id=x"])).toEqual(["unknown flag --id"]);
+    expect(msgs(["docs", "--id=x"])).toEqual(["unknown flag --id"]);
     expect(msgs(["check", `--${"f".repeat(40)}`])).toEqual([`unknown flag --${"f".repeat(28)}`]);
     expect(fails(["check", "--bogus"]).command).toBe("check");
     expect(fails(["check", "--bogus"]).diags[0]).toStrictEqual({
@@ -98,7 +103,7 @@ describe("parseArgv", () => {
   });
 
   it("surplus bare words", () => {
-    expect(msgs(["spec", "a", "b"])).toEqual(['unexpected argument "b"']);
+    expect(msgs(["docs", "a", "b"])).toEqual(['unexpected argument "b"']);
     expect(msgs(["build", "z".repeat(30)])).toEqual([`unexpected argument "${"z".repeat(24)}"`]);
   });
 

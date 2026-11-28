@@ -1,9 +1,10 @@
-// Command behaviour beyond the conformance suite: unavailable commands, spec, explain, ledger, custom formatters.
+// Command behaviour beyond the conformance suite: unavailable commands, docs, explain, ledger, custom formatters.
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
-import { formatter, run } from "../src/index.ts";
+import { formatter } from "../src/index.ts";
 import { normalize } from "../src/internal/normalize.ts";
 import { render } from "../src/internal/render.ts";
+import { ledgerRun as run } from "./ledgerRun.ts";
 
 const CWD = "/work/app";
 const lines = (out: string): string[] => out.split("\n").filter((l) => l !== "");
@@ -17,23 +18,23 @@ describe("commands", () => {
     }
   });
 
-  it("spec: section, --for, --map, unknown id (E1052), no spec files (I1055)", async () => {
+  it("docs in the repo tree: section, --for, the map, unknown id (E1052), two forms (E1052)", async () => {
     const files = [
       { path: "spec/00-map.md", source: "# map\n| k.cli | cli |\n" },
       { path: "spec/kernel/k.cli.md", source: "# k.cli\nE1051 unknown command\n" },
     ];
-    expect((await run(["spec", "k.cli"], { cwd: CWD, files })).stdout).toBe(
-      "# k.cli\nE1051 unknown command\nok spec k.cli 8 tokens\n",
+    expect((await run(["docs", "k.cli"], { cwd: CWD, files })).stdout).toBe(
+      "# k.cli\nE1051 unknown command\nok docs k.cli\n",
     );
-    expect((await run(["spec", "--map"], { cwd: CWD, files })).stdout).toContain("# map");
-    expect((await run(["spec", "--for", "E1051"], { cwd: CWD, files })).stdout).toBe(
-      "spec/kernel/k.cli.md:2 E1051 unknown command\nok spec --for E1051 1 lines\n",
+    expect((await run(["docs"], { cwd: CWD, files })).stdout).toContain("# map");
+    expect((await run(["docs", "--for", "E1051"], { cwd: CWD, files })).stdout).toBe(
+      "k.cli:2 E1051 unknown command\nok docs --for E1051 1 lines\n",
     );
-    const bad = await run(["spec", "k.nope"], { cwd: CWD, files });
+    const bad = await run(["docs", "k.nope"], { cwd: CWD, files });
     expect(bad.code).toBe(2);
     expect(bad.stdout).toMatch(/^E1052 /);
-    expect(await run(["spec", "k.cli", "--map"], { cwd: CWD, files })).toMatchObject({ code: 2 });
-    expect((await run(["spec", "k.cli"], { cwd: CWD })).stdout).toMatch(/^I1055 /);
+    expect(await run(["docs", "k.cli", "--for", "E1"], { cwd: CWD, files })).toMatchObject({ code: 2 });
+    expect(await run(["spec", "k.cli"], { cwd: CWD, files })).toMatchObject({ code: 2 });
   });
 
   it("explain without a code is an empty result; --code is not an explain flag", async () => {
@@ -87,6 +88,7 @@ describe("commands", () => {
         source: JSON.stringify({
           version: 1,
           unsafe: 0,
+          hostElements: 0,
           exports: [{ pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "example" }],
         }),
       },
@@ -97,9 +99,9 @@ describe("commands", () => {
         "packages/a/src/bar.ts#bar none none",
         "packages/a/src/baz.ts#baz example property runs 100 packages/a/test/baz.test.ts",
         "packages/a/src/foo.ts#foo probabilistic property runs 100 seed 1337 packages/a/test/foo.test.ts",
-        "k.a#1 probabilistic property runs 200 seed 1337 packages/a/conformance/one.test.ts",
-        "k.a#2 none none",
-        "ok ledger 5 items, 3 verified, 1 unsafe, 0 warnings",
+        "k.a#2b191f7c probabilistic property runs 200 seed 1337 packages/a/conformance/one.test.ts",
+        "k.a#6752c6d5 none none",
+        "ok ledger 5 items, 3 verified, 1 unsafe, 0 warnings, 1 example, 2 probabilistic",
         "",
       ].join("\n"),
     );
@@ -123,5 +125,14 @@ describe("commands", () => {
     expect(render(rs, { ...o, mode: "pretty" })).toBe("o1: 3\n");
     expect(render(rs, { ...o, mode: "json" })).toBe('{"kind":"orders.report","id":"o1","total":3}\n');
     expect(normalize([{ kind: "orders.report", id: 1 }])[0]).toMatchObject({ code: "E1054" });
+  });
+});
+
+describe("keel with no command", () => {
+  it("names the commands to try and keeps usage exit 2", async () => {
+    const r = await run([], { cwd: CWD });
+    expect(r.code).toBe(2);
+    expect(r.stdout).toContain("E1051 no command given; try check, test, build, dev, scaffold, or keel docs");
+    expect(r.stdout).toContain("see: keel docs k.cli");
   });
 });

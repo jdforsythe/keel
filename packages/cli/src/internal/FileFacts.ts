@@ -1,5 +1,6 @@
 import type { NumRef } from "./NumRef.ts";
 import type { PropRun } from "./PropRun.ts";
+import type { TestCall } from "./TestCall.ts";
 import type { Use } from "./Use.ts";
 
 /**
@@ -12,6 +13,6 @@ export type FileFacts = {
   readonly consts: ReadonlyMap<string, NumRef>;
   readonly objects: ReadonlyMap<string, ReadonlyMap<string, NumRef>>;
   readonly helpers: ReadonlyMap<string, Use>;
-  readonly tests: readonly Use[];
+  readonly tests: readonly TestCall[];
   readonly global: PropRun;
 };

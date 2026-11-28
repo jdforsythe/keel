@@ -1,8 +1,8 @@
-// Properties of compileStyles: determinism, dedupe, order independence, injective class names. Seed 1337.
-import { defineTokens } from "@keel/ui";
 import type { StyleState } from "@keel/ui";
 import { compileStyles } from "@keel/ui/css";
 import type { StyleUsage } from "@keel/ui/css";
+// Properties of compileStyles: determinism, dedupe, order independence, injective class names. Seed 1337.
+import { defineTokens } from "@keel/ui/tokens";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -117,13 +117,32 @@ describe("compileStyles properties", () => {
     expect(at(".k-p-1{")).toBeLessThan(at("(min-width: 768px)"));
     expect(at("(min-width: 768px)")).toBeLessThan(at("(min-width: 1024px)"));
     expect(at("(min-width: 1024px)")).toBeLessThan(at(".k-hover-p-1:hover"));
-    expect(css).toContain("@media (prefers-color-scheme: dark){\n:root{--k-color-fg:#eee;--k-color-bg:#111}\n}");
+    expect(css).toContain(
+      '@media screen and (prefers-color-scheme: dark){\n:root:not([data-k-scheme="light"]){--k-color-fg:#eee;--k-color-bg:#111}\n}',
+    );
   });
 
   it("flex props imply display:flex", () => {
     const { css } = compileStyles({ tokens, usages: [{ props: { direction: "column", justify: "between" } }] });
     expect(css).toContain(".k-direction-column{display:flex;flex-direction:column}");
     expect(css).toContain(".k-justify-between{display:flex;justify-content:space-between}");
+  });
+
+  it("keeps [hidden] hidden over a flex rule, written once in the keel.base layer before the atomic rules", () => {
+    const { css } = compileStyles({
+      tokens,
+      usages: [{ props: { direction: "column" } }, { props: { align: "center" }, state: "hover" }],
+    });
+    expect(css.split("[hidden]{display:none!important}").length).toBe(2);
+    expect(css.indexOf("[hidden]{display:none!important}")).toBeLessThan(css.indexOf(".k-direction-column{"));
+    expect(css.indexOf("@layer keel.base{")).toBeLessThan(css.indexOf("[hidden]"));
+  });
+
+  it("sizes count padding and border: w and h are border-box", () => {
+    const { css } = compileStyles({ tokens, usages: [{ props: { w: "1", h: "2", p: "1" } }] });
+    expect(css).toContain("{box-sizing:border-box;width:var(--k-space-1)}");
+    expect(css).toContain("{box-sizing:border-box;height:var(--k-space-2)}");
+    expect(css).toMatch(/\.k-p-1[^{]*\{padding:var\(--k-space-1\)\}/);
   });
 
   it("rejects unknown tokens and breakpoints with E1801, unsafe values with E1807", () => {
@@ -138,7 +157,9 @@ describe("compileStyles properties", () => {
     expect(code(() => compileStyles({ tokens, usages: [{ props: { p: "16px" } }] }))).toBe("E1801");
     expect(code(() => compileStyles({ tokens, usages: [{ props: { direction: "diagonal" } }] }))).toBe("E1801");
     expect(code(() => compileStyles({ tokens, usages: [{ props: { p: "1" }, breakpoint: "xl" }] }))).toBe("E1801");
-    const bad = defineTokens({ space: { 1: "1px}body{color:red" } });
+    // A value outside its group's form (k.values) is refused by `defineTokens` and by `compileStyles` alike.
+    const bad = { space: { 1: "1px}body{color:red" } };
+    expect(code(() => defineTokens(bad))).toBe("E1807");
     expect(code(() => compileStyles({ tokens: bad, usages: [] }))).toBe("E1807");
   });
 });

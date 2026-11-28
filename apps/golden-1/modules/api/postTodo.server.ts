@@ -1,18 +1,26 @@
 import { action } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, keelError, ok } from "@keel/schema";
+import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
-import { ListParams } from "../todos/ListParams.schema.ts";
-import { TodoDraft } from "../todos/TodoDraft.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
-/** `POST /api/lists/:listId/todos`: add an open todo with a ctx-minted id; an unknown list is `keel.notFound`. */
+/**
+ * `POST /api/lists/:listId/todos`: add an open todo with a ctx-minted id, with the write's key and base; an unknown
+ * list is `keel.notFound`; a write queued under an owner other than `""` (golden-1 has no sign-in) is
+ * `offline.signin`.
+ */
 export const postTodo = action(
-  { input: TodoDraft, params: ListParams, stores: boardStores },
+  api,
+  "api.addTodo",
+  { stores: boardStores },
   (input, { params, caller, stores }, ctx) => {
     const { listId } = params;
-    if (!stores.board.get("lists").some((l) => l.id === listId))
-      return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
-    const r = tx(stores.addTodo, { ...input, id: ctx.random.id("Todo"), listId }, { meta: { caller } });
-    return r.ok ? ok(null) : err(r.error);
+    if (!stores.board.get("lists").some((l) => l.id === listId)) return err(keelError.notFound.make({}));
+    const { write, ...draft } = input;
+    const w = writeFor(write, "");
+    if (!w.ok) return err(w.error);
+    const r = tx(stores.addTodo, { ...draft, id: ctx.random.id("Todo"), listId }, { meta: { caller }, ...w.value });
+    return r.ok ? ok({}) : err(r.error);
   },
 );

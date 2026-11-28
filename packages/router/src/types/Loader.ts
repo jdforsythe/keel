@@ -1,26 +1,22 @@
 import type { Ctx } from "@keel/ctx";
-import type { KeelError, ObjectSchema, Result, Schema } from "@keel/schema";
+import type { KeelError, Result, Schema } from "@keel/schema";
+import type { Contract } from "../contract/types/Contract.ts";
+import type { LiveInput } from "./LiveInput.ts";
+import type { LoaderInput } from "./LoaderInput.ts";
+
+type Out<T> = Result<T, KeelError<string, unknown>>;
 
 /**
- * A route loader declared with `loader({ output, params?, search?, stores? }, fn)` (k.server). `run` is called by the
- * router or server with the absolute request `url`, the request's `caller` and its instance of the `stores` factory
- * (k.server Server state; `undefined` without one). `params`/`search` are the declared schemas (absent when omitted);
- * `manifest` requires them to be the route's own (E1507) and `P`/`S` to accept `Infer` of the route's schemas.
+ * A loader declared with `loader(contract, id, decl, fn)` for entry `Id` (k.contract Handlers). `output` is the API
+ * entry's or, on a page or layout, the declared one. `run` answers once; a live loader (`Live`, an `events: true`
+ * entry's async generator) also has `live`, every yield until it returns or `signal` aborts, and its `run` is the
+ * first yield (k.server); `live`'s `currentUser` is the server's (k.user), else one answering `user`.
  */
-export interface Loader<T, P = unknown, S = unknown, St = unknown> {
+export type Loader<Id extends string = string, T = unknown, Live extends boolean = boolean> = {
   readonly kind: "keel.loader";
-  readonly output: Schema<T>;
-  readonly params?: ObjectSchema<P>;
-  readonly search?: ObjectSchema<S>;
-  readonly stores?: (ctx: Ctx) => St;
-  run(
-    args: {
-      readonly params: P;
-      readonly search: S;
-      readonly url: string;
-      readonly caller: string;
-      readonly stores: St;
-    },
-    ctx: Ctx,
-  ): Promise<Result<T, KeelError<string, unknown>>>;
-}
+  readonly contract: Contract;
+  readonly id: Id;
+  readonly output: Schema<T, boolean>;
+  readonly stores?: (ctx: Ctx) => unknown;
+  run(args: LoaderInput, ctx: Ctx): Promise<Out<T>>;
+} & (Live extends true ? { live(args: LiveInput, ctx: Ctx): AsyncIterable<Out<T>> } : { readonly live?: undefined });

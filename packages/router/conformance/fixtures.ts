@@ -1,18 +1,21 @@
 // Shared fixtures for k.router conformance. Property seed: 1337.
 // ASSUMPTIONS (the spec names no router-instance API; a human should confirm or amend):
 //  - createRouter(routes, { ctx, history }) from @keel/router returns { navigate, route, dispose, App };
-//    route is a reactive computed read with route.get(); App is a no-prop root component for mount(App, el).
+//    route is a reactive computed read with route.get(); App is a no-prop root component for mount(App, el, { ctx }).
 //  - history is in-memory { push(url, key), replace(url, key), current(), onPop(fn(url, key?)) } (RFC 0041): each
 //    entry is stored as { url, key } and back()/forward() deliver fn(url, key); this file adds test-only
 //    back(), forward() and external(url) (a URL change from outside the router, delivered through onPop with no key).
-//  - loader/action/guard/manifest/Form/createRouter come from @keel/router; links come from routes.href (RFC 0041).
+//  - loader/action/guard/manifest/Form/createRouter come from @keel/router; links come from a contract's href (RFC 0157); the fixture is one contract, `app`, whose ids are `app.<name>`.
 //  - guards are values (guard({ redirect }, fn)), held by routes as `guard: <value>`.
 //  - components are (props) => Node; a layout receives { children } (RFC 0008: a thunk, a plain Node also tolerated);
 //    errorElement receives { error }; Form is called as a function with props and children (thunk or plain Node).
 import { createCtx } from "@keel/ctx";
 import { Form, type Href, action, createRouter, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { type Infer, err, ok, s } from "@keel/schema";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 export const SEED = 1337;
 export const RUNS = 100;
@@ -130,40 +133,64 @@ const OrderPage = (p: { params: Infer<typeof OrderParams>; search: unknown; data
   return el(
     "section",
     { "data-page": "orders.show" },
-    Form({ method: control.verb, action: routes.href("orders.show", p.params), children: () => [fields] }),
+    Form({ method: control.verb, action: appContract.href("app.ordersShow", p.params), children: () => [fields] }),
   );
 };
 
+// ---- the contract: one module, `app`, holding every route of the fixture (k.contract, RFC 0157)
+export const appContract = contract("app", {
+  "app.shell": { layout: true },
+  "app.ordersShell": { layout: true },
+  "app.guardedShell": { layout: true },
+  "app.home": { path: "/" },
+  "app.login": { path: "/login", search: LoginSearch },
+  "app.ordersList": { path: "/orders", search: ListSearch },
+  "app.ordersNew": { path: "/orders/new" },
+  "app.ordersBare": { path: "/orders/bare" },
+  "app.ordersShow": { path: "/orders/:id", params: OrderParams, search: ShowSearch },
+  "app.ordersLine": { path: "/orders/:id/lines/:line", params: LineParams },
+  "app.secretShow": { path: "/secret/:id", params: OrderParams },
+  "app.guardedPage": { path: "/guarded" },
+  "app.slowPage": { path: "/slow" },
+});
+
 // ---- loaders, actions, guards (server functions run in the browser for a client-only app)
 const load = (name: string) =>
-  loader({ output: Empty }, async () => {
+  loader(appContract, "app.ordersLine", { output: Empty }, async () => {
     bump(`loader:${name}`);
     return ok({});
   });
-const loadShell = loader({ output: Title }, async () => {
+const loadSecret = loader(appContract, "app.secretShow", { output: Empty }, async () => {
+  bump("loader:secret.show");
+  return ok({});
+});
+const loadGuarded = loader(appContract, "app.guardedPage", { output: Empty }, async () => {
+  bump("loader:guarded.page");
+  return ok({});
+});
+const loadShell = loader(appContract, "app.ordersShell", { output: Title }, async () => {
   bump("loader:orders.shell");
   return ok({ title: "shell" });
 });
-const loadShow = loader({ output: Title }, async () => {
+const loadShow = loader(appContract, "app.ordersShow", { output: Title }, async () => {
   bump("loader:orders.show");
   return control.show === "err" ? err(Locked.make({})) : ok({ title: "order" });
 });
-const loadBare = loader({ output: Empty }, async () => {
+const loadBare = loader(appContract, "app.ordersBare", { output: Empty }, async () => {
   bump("loader:orders.bare");
   return err(Broken.make({}));
 });
-const loadSlow = loader({ output: Empty }, async () => {
+const loadSlow = loader(appContract, "app.slowPage", { output: Empty }, async () => {
   bump("loader:slow.page");
   await control.hold;
   return ok({});
 });
 const act = (verb: Verb) =>
-  action({ input: OrderEdit }, async (input) => {
+  action(appContract, "app.ordersShow", { input: OrderEdit }, async (input) => {
     bump(`action:${verb}`);
     control.lastInput = input;
     if (control.outcome === "href") {
-      const to: Href = routes.href("orders.list");
-      return ok(to);
+      return ok(appContract.href("app.ordersList"));
     }
     return ok(null);
   });
@@ -180,54 +207,44 @@ const gInner = guard({ redirect: "app.login" }, async () => {
   return ok(null);
 });
 
-export const routes = manifest({
+export const routes = manifest(appContract, {
   "app.shell": { component: AppShell },
-  "orders.shell": {
+  "app.ordersShell": {
     component: OrdersShell,
     layout: "app.shell",
     loader: loadShell,
     errorElement: errorElement("orders.shell"),
   },
-  "guarded.shell": { component: GuardedShell, layout: "app.shell", guard: gOuter },
-  "app.home": { path: "/", component: page("app.home"), layout: "app.shell" },
-  "app.login": { path: "/login", search: LoginSearch, component: page("app.login"), layout: "app.shell" },
-  "orders.list": { path: "/orders", search: ListSearch, component: page("orders.list"), layout: "orders.shell" },
-  "orders.new": { path: "/orders/new", component: page("orders.new"), layout: "orders.shell" },
-  "orders.bare": { path: "/orders/bare", component: page("orders.bare"), layout: "orders.shell", loader: loadBare },
-  "orders.show": {
-    path: "/orders/:id",
-    params: OrderParams,
-    search: ShowSearch,
+  "app.guardedShell": { component: GuardedShell, layout: "app.shell", guard: gOuter },
+  "app.home": { component: page("app.home"), layout: "app.shell" },
+  "app.login": { component: page("app.login"), layout: "app.shell" },
+  "app.ordersList": { component: page("orders.list"), layout: "app.ordersShell" },
+  "app.ordersNew": { component: page("orders.new"), layout: "app.ordersShell" },
+  "app.ordersBare": { component: page("orders.bare"), layout: "app.ordersShell", loader: loadBare },
+  "app.ordersShow": {
     loader: loadShow,
-    actions: { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") },
     component: OrderPage,
-    layout: "orders.shell",
+    layout: "app.ordersShell",
     errorElement: errorElement("orders.show"),
+    POST: act("POST"),
+    PUT: act("PUT"),
+    PATCH: act("PATCH"),
+    DELETE: act("DELETE"),
   },
-  "orders.line": {
-    path: "/orders/:id/lines/:line",
-    params: LineParams,
+  "app.ordersLine": {
     loader: load("orders.line"),
     component: page("orders.line"),
-    layout: "orders.shell",
+    layout: "app.ordersShell",
     errorElement: errorElement("orders.line"),
   },
-  "secret.show": {
-    path: "/secret/:id",
-    params: OrderParams,
-    loader: load("secret.show"),
-    component: page("secret.show"),
-    layout: "app.shell",
-    guard: auth,
-  },
-  "guarded.page": {
-    path: "/guarded",
-    loader: load("guarded.page"),
+  "app.secretShow": { loader: loadSecret, component: page("secret.show"), layout: "app.shell", guard: auth },
+  "app.guardedPage": {
+    loader: loadGuarded,
     component: page("guarded.page"),
-    layout: "guarded.shell",
+    layout: "app.guardedShell",
     guard: gInner,
   },
-  "slow.page": { path: "/slow", loader: loadSlow, component: page("slow.page"), layout: "app.shell" },
+  "app.slowPage": { loader: loadSlow, component: page("slow.page"), layout: "app.shell" },
 });
 
 // ---- in-memory history
@@ -291,7 +308,7 @@ export async function start(at: string, opts: { render?: boolean } = {}): Promis
   const router = createRouter(routes, { ctx, history });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = opts.render === true ? mount(router.App, host) : () => {};
+  const unmount = opts.render === true ? mount(router.App, host, { ctx }) : () => {};
   await settle();
   return {
     router,
@@ -313,35 +330,39 @@ export async function submit(host: HTMLElement): Promise<void> {
 }
 
 // ---- Form probe: render one `<Form method action>` from a route component inside a router (E1505 is raised there).
-// The Href comes from `probeLinks`, a second manifest used only for links, so no component reads its own manifest
-// (TS7022); the router under test is `probeRoutes`.
+// The Href comes from `probeLinks`, a second contract used only for links; the router under test is `probeRoutes`.
 const probeKnob: { method: unknown; action: Href | null } = { method: "POST", action: null };
 const ProbeHome = (): Node =>
   Reflect.apply(Form, undefined, [{ method: probeKnob.method, action: probeKnob.action, children: () => [] }]);
-const probeAct = action({ input: OrderEdit }, async () => ok(null));
-export const probeRoutes = manifest({
-  "probe.home": { path: "/probe", component: ProbeHome },
-  "probe.show": { path: "/probe/:id", params: OrderParams, actions: { POST: probeAct }, component: page("probe.show") },
+const probeContract = contract("probe", {
+  "probe.home": { path: "/probe" },
+  "probe.show": { path: "/probe/:id", params: OrderParams },
 });
-export const probeLinks = manifest({
-  "link.show": { path: "/probe/:id", params: OrderParams, component: page("link.show") },
-  "link.ghost": { path: "/nowhere", component: page("link.ghost") },
+const probeAct = action(probeContract, "probe.show", { input: OrderEdit }, async () => ok(null));
+export const probeRoutes = manifest(probeContract, {
+  "probe.home": { component: ProbeHome },
+  "probe.show": { component: page("probe.show"), POST: probeAct },
+});
+export const probeLinks = contract("link", {
+  "link.show": { path: "/probe/:id", params: OrderParams },
+  "link.ghost": { path: "/nowhere" },
 });
 const codeOfThrown = (e: unknown): unknown => (typeof e === "object" && e !== null && "code" in e ? e.code : "no-code");
-/** The `code` of what rendering the Form inside the router threw (thrown out of mount, or shown by the router's error boundary), or null when it rendered. */
+/** The `code` of what rendering the Form inside the router threw (thrown out of mount, or shown by the router's error boundary, which shows the message in `mode: "dev"`), or null when it rendered. */
 export async function probeForm(method: unknown, href: Href): Promise<unknown> {
   probeKnob.method = method;
   probeKnob.action = href;
   const router = createRouter(probeRoutes, {
     ctx: createCtx({ mode: "sim", seed: SEED }),
     history: memoryHistory("/probe"),
+    mode: "dev",
   });
   const host = document.createElement("div");
   document.body.append(host);
   let unmount: () => void = () => {};
   let code: unknown = null;
   try {
-    unmount = mount(router.App, host);
+    unmount = mount(router.App, host, { ctx: simCtx });
     await settle();
   } catch (e) {
     code = codeOfThrown(e);

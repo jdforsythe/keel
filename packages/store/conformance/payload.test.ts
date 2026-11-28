@@ -1,6 +1,6 @@
 import { tx } from "@keel/store";
 import fc from "fast-check";
-// Spec: k.store API (typed transactions) + k.schema Result: invalid payload -> err schema.invalid. Seed 1337.
+// k.store API (typed transactions) + k.schema Result: invalid payload -> err schema.invalid. Seed 1337.
 import { describe, expect, it } from "vitest";
 import { makeCart, opts } from "./fixtures";
 

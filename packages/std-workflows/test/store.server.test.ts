@@ -1,0 +1,62 @@
+// std.workflows Store: `start` past `limit` instances not final fails `store.invariant`; a final instance is removed
+// by its forget job `keepMs` after the runner saw it, and `forget` leaves an instance that is not final. Seed 1337.
+import { ok } from "@keel/schema";
+import { commitStores, createApp, topology } from "@keel/server";
+import { tx } from "@keel/store";
+import { expect, test } from "vitest";
+import { workflow } from "../src/index.server.ts";
+import { jobsOf } from "./modules/api/jobs.server.ts";
+import { runnersOf } from "./modules/api/runners.server.ts";
+import { close, inRoot, nextId, pass, removalChart, settle, sim } from "./support.server.ts";
+
+const data = { n: 0, freed: 0, code: "" };
+
+test("`start` past `limit` instances not final fails `store.invariant`", async () => {
+  const ctx = sim();
+  const wf = inRoot(() => workflow(nextId("limited"), { chart: removalChart(), limit: 2 }));
+  const r = await commitStores(ctx, wf.stores, (S) => {
+    const codes = ["a", "b", "c"].map((id) => {
+      const t = tx(S.start, { id, data });
+      return t.ok ? "ok" : t.error.code;
+    });
+    expect(tx(S.events.hide, { id: "a", payload: {} }).ok).toBe(true);
+    expect(tx(S.events.expired, { id: "a", payload: {} }).ok).toBe(true);
+    const after = tx(S.start, { id: "c", data });
+    return ok([...codes, after.ok ? "ok" : after.error.code]);
+  });
+  expect(r).toEqual({ ok: true, value: ["ok", "ok", "store.invariant", "ok"] });
+});
+
+test("A final instance is forgotten `keepMs` after the runner saw it; `forget` leaves one that is not final", async () => {
+  const ctx = sim();
+  const wf = inRoot(() => workflow(nextId("kept"), { chart: removalChart(), keepMs: 10_000 }));
+  const jobs = jobsOf(wf);
+  const app = await createApp({
+    topology: topology({ web: { modules: ["api"], adapter: "node" } }),
+    ctx,
+    mode: "dev",
+    runners: { api: runnersOf(jobs, wf) },
+  });
+  const rows = async () => {
+    const r = await commitStores(ctx, wf.stores, (S) => ok(Object.keys(S.store.get("instances"))));
+    return r.ok ? r.value : [];
+  };
+  expect(
+    (
+      await commitStores(ctx, wf.stores, (S) => {
+        expect(tx(S.start, { id: "gone", data }).ok).toBe(true);
+        expect(tx(S.start, { id: "open", data }).ok).toBe(true);
+        expect(tx(S.forget, { id: "open" }).ok).toBe(true);
+        expect(tx(S.events.hide, { id: "gone", payload: {} }).ok).toBe(true);
+        expect(tx(S.events.expired, { id: "gone", payload: {} }).ok).toBe(true);
+        return ok(null);
+      })
+    ).ok,
+  ).toBe(true);
+  await settle();
+  await pass(ctx, 9000);
+  expect(await rows()).toEqual(["gone", "open"]);
+  await pass(ctx, 3000);
+  expect(await rows()).toEqual(["open"]);
+  await close(app);
+});

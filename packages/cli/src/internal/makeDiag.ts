@@ -1,3 +1,4 @@
+import { clipMessage } from "@keel/schema/internal";
 import type { Diag } from "./Diag.ts";
 
 type Loc = {
@@ -6,6 +7,7 @@ type Loc = {
   readonly col?: number | undefined;
   readonly fix?: string | undefined;
   readonly see?: string | undefined;
+  readonly detail?: string | undefined;
 };
 
 /** Build a diagnostic record, keeping absent optional fields absent (exact optional properties). */
@@ -16,8 +18,9 @@ export function makeDiag(code: string, message: string, loc: Loc = {}): Diag {
     ...(loc.path === undefined ? {} : { path: loc.path }),
     ...(loc.line === undefined ? {} : { line: loc.line }),
     ...(loc.col === undefined ? {} : { col: loc.col }),
-    message: message.length > 89 ? `${message.slice(0, 86)}...` : message,
+    message: clipMessage(message, 89),
     ...(loc.fix === undefined ? {} : { fix: loc.fix }),
     ...(loc.see === undefined ? {} : { see: loc.see }),
+    ...(loc.detail === undefined ? {} : { detail: loc.detail }),
   };
 }

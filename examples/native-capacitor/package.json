@@ -1,0 +1,38 @@
+{
+  "name": "native-capacitor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "keel build",
+    "check": "tsc --noEmit && biome check modules && keel check",
+    "dev": "keel dev",
+    "test": "keel test"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/preferences": "8.0.1",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/forms": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/std-capacitor": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2",
+    "@keel/cli": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "vite": "^8.3.6"
+  }
+}

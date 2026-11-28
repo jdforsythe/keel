@@ -1,15 +1,30 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754); S0003, S0006 live here. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding and no type predicate E1762 reports, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0020 (a `return`, `break` or `continue` leaving a `finally`, in every package's `src/` and `unsafe/`, k.errors E1452) and S0019 (E1762's unproven type predicate, in every package's `src/` through its tsconfig, k.identity) live here too; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs; S0021 (create-app's reach names a process or network API, k.create) is create-quiet.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
+import { Visitor } from "oxc-parser";
+import { parseSync } from "oxc-parser";
 import { check } from "../packages/check/src/index.ts";
+import { LIFTED_CODES } from "../packages/check/src/internal/LIFTED_CODES.ts";
+import { finallyExits } from "../packages/check/src/internal/finallyExits.ts";
+import { liftedRanges } from "../packages/check/src/internal/liftedRanges.ts";
+import { packagePredicates } from "../packages/check/src/internal/packagePredicates.ts";
+import { parseFile } from "../packages/check/src/internal/parseFile.ts";
+import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
+import { createQuiet } from "./create-quiet.mjs";
+import { hardTimes } from "./hard-times.mjs";
 import { parseArgs, run } from "./output.ts";
+import { untimedPropertyTests } from "./property-times.ts";
+import { rawTempDirs } from "./raw-temp-dirs.mjs";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
+import { stdEntryDiags } from "./std-entries.mjs";
+import { unseededProperties } from "./unseeded-properties.mjs";
 
 const args = parseArgs();
 const root = path.resolve(args.values.get("root") ?? path.join(import.meta.dirname, ".."));
 const deps = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "deps.json"), "utf8"));
 const order = deps.order;
 
+const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
 const CLOCK = /\bDate\.now\b|\bnew Date\(|\bMath\.random\b|\bperformance\.now\b/;
 
 /** Collect scan targets. */
@@ -21,10 +36,25 @@ function targets() {
       for (const d of ["src", "unsafe", "test", "conformance"]) dirs.push(path.join(pk, p, d));
   }
   dirs.push(path.join(root, "tooling"), path.join(root, "evals"));
-  const skip = [path.join(root, "tooling", "fixtures"), path.join(root, "evals", "results")];
+  const skip = [
+    path.join(root, "tooling", "fixtures"),
+    path.join(root, "evals", "results"),
+    path.join(root, "packages", "cli", "conformance", "unsafe", "review-fixtures"),
+  ];
   const set = new Set();
   for (const d of dirs) for (const f of walk(d, skip)) if (CODE_EXT.test(f)) set.add(f);
   return [...set].sort();
+}
+
+/** Every app's, example's and library's test files (S0015 only). */
+function appTests() {
+  const out = [];
+  for (const top of ["apps", "examples", "libraries"]) {
+    const dir = path.join(root, top);
+    if (!fs.existsSync(dir)) continue;
+    for (const f of walk(dir)) if (TEST_FILE.test(f)) out.push(f);
+  }
+  return out.sort();
 }
 
 const diags = [];
@@ -63,6 +93,26 @@ for (const file of files) {
     });
   }
 
+  // S0012: the stdlib reaches the kernel through public entries only (k.parity), but for the entries deps.json lists.
+  if (isPkg && pkg?.startsWith("std-") && (area === "src" || area === "unsafe")) {
+    const allowed = deps.internal?.[pkg] ?? [];
+    text.forEach((l, i) => {
+      const re = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\(\s*)['"](@keel\/([\w-]+)(?:\/[^'"]*)?)['"]/g;
+      for (let m = re.exec(l); m; m = re.exec(l)) {
+        const [, spec, target] = m;
+        if (!spec || !target || target.startsWith("std-") || !order.includes(target)) continue;
+        if (!spec.split("/").slice(2).includes("internal") || allowed.includes(spec)) continue;
+        add(
+          "S0012",
+          file,
+          i + 1,
+          m.index + 1,
+          `${pkg} may not import ${spec}: the stdlib holds no power a library lacks (k.parity)`,
+        );
+      }
+    });
+  }
+
   const inTest = isPkg && (area === "test" || area === "conformance");
   if (inTest) {
     code.forEach((l, i) => {
@@ -72,17 +122,222 @@ for (const file of files) {
   }
 }
 
-// S0001/S0002/S0004/S0005: one implementation, @keel/check. The S-code stays in the message as an alias.
+// S0015: a fast-check run with no seed (unseeded-properties.mjs).
+for (const file of [...files, ...appTests()]) {
+  const src = fs.readFileSync(file, "utf8");
+  if (!src.includes("fast-check")) continue;
+  for (const d of unseededProperties(src, file)) add("S0015", file, d.line, d.col, d.message);
+}
+
+// S0016: a hard-coded time in test code (hard-times.mjs): package tests and conformance, tooling's tests and smokes,
+// and every app's and example's test files (a library's tests run under its own vitest config, which scales nothing).
+// A conformance file's times are listed in hard-times-conformance.json
+// (path and text) until the conformance-writer moves each through testTime or fixedTime; a listed time no longer in
+// its file is an S0016 too, so the list only shrinks.
+const TEST_CODE = /^(?:packages\/[^/]+\/(?:test|conformance)|tooling\/(?:test|smoke)|(?:apps|examples)\/.+\/test)\//;
+const listFile = path.join(root, "tooling", "hard-times-conformance.json");
+const listed = fs.existsSync(listFile) ? JSON.parse(fs.readFileSync(listFile, "utf8")) : [];
+const unseen = new Map();
+for (const e of listed) {
+  const key = `${e.path}\t${e.text}`;
+  unseen.set(key, [...(unseen.get(key) ?? []), e]);
+}
+const appCode = ["apps", "examples"].flatMap((top) =>
+  walk(path.join(root, top)).filter((f) => CODE_EXT.test(f) && TEST_CODE.test(rel(root, f))),
+);
+for (const file of [
+  ...new Set([
+    ...files.filter((f) => TEST_CODE.test(rel(root, f))),
+    ...appTests().filter((f) => !rel(root, f).startsWith("libraries/")),
+    ...appCode,
+  ]),
+]) {
+  const r = rel(root, file);
+  const src = fs.readFileSync(file, "utf8");
+  for (const d of hardTimes(src, file)) {
+    const key = `${r}\t${d.text}`;
+    const left = unseen.get(key);
+    if (r.includes("/conformance/") && left !== undefined && left.length > 0) left.pop();
+    else add("S0016", file, d.line, d.col, d.message);
+  }
+}
+for (const e of [...unseen.values()].flat())
+  add(
+    "S0016",
+    path.join(root, e.path),
+    1,
+    1,
+    `${e.text} is listed in hard-times-conformance.json and no longer in the file`,
+  );
+
+// S0018: a raw `mkdtemp` in a package's, tooling's, app's or example's test files (raw-temp-dirs.mjs); the folder is
+// made with `tempDir` (test-tmp.ts). Conformance files are the conformance-writer's and are not judged.
+const TEST_FILES = /^(?:packages\/[^/]+\/test|tooling\/test|(?:apps|examples)\/.+\/test)\//;
+for (const file of new Set([...files, ...appCode].filter((f) => TEST_FILES.test(rel(root, f))))) {
+  const src = fs.readFileSync(file, "utf8");
+  if (!src.includes("mkdtemp")) continue;
+  for (const d of rawTempDirs(src, file)) add("S0018", file, d.line, d.col, d.message);
+}
+
+// S0017: a property case vitest's flat 5 s default bounds. keelConfig gives each test that runs `properties`,
+// `simulate` or fast-check's `assert` and declares no options a timeout from its runs (property-times.ts); an app's,
+// example's or library's folder whose vitest config is not keelConfig (a library on the library format, a stranger's
+// app) has no such transform, so each such test there states its own bound.
+const VITEST_CONFIG = /^vitest\.config\.[cm]?[jt]s$/;
+/** Whether the project folder `top/name` of a repository path runs its tests under keelConfig. */
+const keelConfigured = new Map();
+function underKeelConfig(dir) {
+  if (!keelConfigured.has(dir)) {
+    const configs = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => VITEST_CONFIG.test(n)) : [];
+    keelConfigured.set(
+      dir,
+      configs.some((n) => fs.readFileSync(path.join(dir, n), "utf8").includes("keelConfig")),
+    );
+  }
+  return keelConfigured.get(dir);
+}
+for (const file of appTests()) {
+  const project = /^(?:apps|examples|libraries)\/[^/]+/.exec(rel(root, file))?.[0];
+  if (project === undefined || underKeelConfig(path.join(root, project))) continue;
+  const src = fs.readFileSync(file, "utf8");
+  for (const t of untimedPropertyTests(src, (c) => parseSync(file, c).program)) {
+    const before = src.slice(0, t.at).split("\n");
+    add(
+      "S0017",
+      file,
+      before.length,
+      (before.at(-1)?.length ?? 0) + 1,
+      `a test of ${t.runs} property runs declares no timeout and ${project}'s vitest config is not keelConfig, so vitest's 5 s default bounds it; state { timeout } from its runs (300 ms a run)`,
+    );
+  }
+}
+
+/** Whether `packages/<name>/` of a repository path is a library (`"keel": "library"` in its `package.json`, k.library). */
+function inLibrary(p) {
+  const m = /^packages\/[^/]+\//.exec(p);
+  if (!m) return false;
+  const manifest = path.join(root, m[0], "package.json");
+  if (!fs.existsSync(manifest)) return false;
+  try {
+    return JSON.parse(fs.readFileSync(manifest, "utf8")).keel === "library";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * S0014 (k.unsafe): in a kernel package only E1757 of the lifted codes is enforced, so `unsafe/` holds type-system
+ * escapes; in a library's package the app's reading enforces every lifted code, so a finding of any of them counts.
+ * A type predicate E1762 reports inside the range (`predicates`, offsets from the S0019 pass) is an escape in either.
+ * An `unsafe(` call whose lifted range holds no such finding (or that has no range) escapes nothing checked.
+ */
+function s0014(file, predicates) {
+  const parsed = parseFile(file);
+  if (!parsed.ok) return;
+  const starts = [0];
+  for (let i = 0; i < file.source.length; i++) if (file.source[i] === "\n") starts.push(i + 1);
+  const at = (f) => (starts[f.line - 1] ?? 0) + f.col - 1;
+  const escapes = [
+    ...noUnsafeSyntax.check({ file, ast: parsed.program, artifacts: {}, project: [file] }).map(at),
+    ...predicates,
+  ];
+  if (file.source.includes("unsafe(") && inLibrary(file.path)) {
+    // The app's reading of the file, its `unsafe/` segments renamed so no lifted range drops a finding.
+    const seen = { path: file.path.replace(/(^|\/)unsafe\//g, "$1lifted/"), source: file.source };
+    for (const d of check([seen], { types: false }).diagnostics) if (LIFTED_CODES.has(d.code)) escapes.push(at(d));
+  }
+  const ranges = liftedRanges(file);
+  new Visitor({
+    CallExpression: (n) => {
+      if (n.callee.type !== "Identifier" || n.callee.name !== "unsafe") return;
+      const range = ranges.find(([a, b]) => a >= n.start && b <= n.end);
+      if (range !== undefined && escapes.some((at) => at >= range[0] && at < range[1])) return;
+      const line = starts.findLastIndex((st) => st <= n.start);
+      add(
+        "S0014",
+        path.join(root, file.path),
+        line + 1,
+        n.start - (starts[line] ?? 0) + 1,
+        "unsafe() call holds no cast, !, any, ts-suppression or unproven type predicate; make it ordinary code in src/",
+      );
+    },
+  }).visit(parsed.program);
+}
+
+// S0001/S0002/S0004/S0005: one implementation, @keel/check. The S-code stays in the message as an alias. E1760 and
+// E1761 (k.unsafe) keep their own codes.
 const ALIAS = { E1757: "S0004", E1754: "S0005" };
+const PASS = new Set(["E1756", "E1760", "E1761"]);
 const SRC = /^packages\/[^/]+\/src\//;
 const sources = files.map((f) => ({ path: rel(root, f), source: fs.readFileSync(f, "utf8") }));
+
+/** The 1-based line and column of offset `at` in `source`. */
+function lineColOf(source, at) {
+  const before = source.slice(0, at).split("\n");
+  return { line: before.length, col: (before.at(-1)?.length ?? 0) + 1 };
+}
+
+// S0020 (k.errors Rules E1452): a `return`, `break` or `continue` whose target lies outside the `finally` block
+// holding it, in every package's `src/` and `unsafe/`.
+const OWN = /^packages\/[^/]+\/(?:src|unsafe)\//;
+for (const f of sources) {
+  if (!OWN.test(f.path)) continue;
+  const parsed = parseFile(f);
+  if (!parsed.ok) continue;
+  for (const at of finallyExits(parsed.program)) {
+    const { line, col } = lineColOf(f.source, at);
+    add("S0020", path.join(root, f.path), line, col, "control leaves finally and drops its throw");
+  }
+}
+
+// S0019 (k.identity Rules E1762): a type predicate or assertion function whose body is none of the five proofs, in
+// every package's `src/`, read through the package's own tsconfig; a finding inside a lifted `unsafe(` range is not one.
+// The same judgement over `unsafe/` feeds S0014: a finding inside a lifted range is the escape that call holds.
+const TS_EXT = /\.(?:ts|tsx|mts|cts)$/;
+const OWN_FILE = /^packages\/([^/]+)\/(src|unsafe)\//;
+const byPackage = new Map();
+for (const f of sources) {
+  const m = OWN_FILE.exec(f.path);
+  if (!m?.[1] || !TS_EXT.test(f.path)) continue;
+  byPackage.set(m[1], [...(byPackage.get(m[1]) ?? []), f]);
+}
+/** Per file path (relative to the root), the offsets of E1762 findings inside a lifted `unsafe(` range. */
+const liftedPredicates = new Map();
+for (const [pkg, own] of byPackage) {
+  const tsconfig = path.join(root, "packages", pkg, "tsconfig.json");
+  if (!fs.existsSync(tsconfig)) continue;
+  const lifted = new Map(own.map((f) => [path.join(root, f.path), { file: f, ranges: liftedRanges(f) }]));
+  for (const d of packagePredicates(
+    tsconfig,
+    own.map((f) => path.join(root, f.path)),
+  )) {
+    const hit = lifted.get(d.file);
+    if (hit !== undefined && hit.ranges.length > 0) {
+      const starts = [0];
+      for (let i = 0; i < hit.file.source.length; i++) if (hit.file.source[i] === "\n") starts.push(i + 1);
+      const at = (starts[d.line - 1] ?? 0) + d.col - 1;
+      if (hit.ranges.some(([a, b]) => at >= a && at < b)) {
+        liftedPredicates.set(hit.file.path, [...(liftedPredicates.get(hit.file.path) ?? []), at]);
+        continue;
+      }
+    }
+    if (OWN_FILE.exec(path.relative(root, d.file).split(path.sep).join("/"))?.[2] === "src")
+      add("S0019", d.file, d.line, d.col, d.message);
+  }
+}
+for (const f of sources) if (f.path.startsWith("packages/")) s0014(f, liftedPredicates.get(f.path) ?? []);
+
 const result = check(sources, { types: false, root });
 for (const d of result.diagnostics) {
   const { fix: _fix, see: _see, ...rest } = d;
   const ok = (c) => d.code === c;
   let alias = ALIAS[d.code];
   if (ok("E1752") && SRC.test(d.path ?? "")) alias = d.message.startsWith("file ") ? "S0002" : "S0001";
-  if (ok("E1756") || alias) diags.push({ ...rest, message: alias ? `${alias} ${d.message}` : d.message });
+  if (PASS.has(d.code) || alias) diags.push({ ...rest, message: alias ? `${alias} ${d.message}` : d.message });
 }
+
+diags.push(...(await stdEntryDiags(root)).diags);
+if (fs.existsSync(path.join(root, "packages", "create-app", "src", "bin.ts")))
+  diags.push(...(await createQuiet(root)).diags);
 
 await run("structure-lint", () => ({ diags, counts: { files: files.length } }));

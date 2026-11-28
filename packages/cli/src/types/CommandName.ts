@@ -4,10 +4,16 @@ export type CommandName =
   | "test"
   | "build"
   | "dev"
-  | "spec"
+  | "docs"
   | "explain"
   | "inspect"
   | "render"
   | "scaffold"
   | "codemod"
-  | "ledger";
+  | "ledger"
+  | "tokens"
+  | "evidence"
+  | "review"
+  | "pack"
+  | "session"
+  | "report";

@@ -6,6 +6,7 @@ import path from "node:path";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const codeOf = (source: string, file = "modules/t/C.tsx"): string => {
@@ -54,7 +55,7 @@ describe("Match lowers with an explicit discriminant (D36)", () => {
 describe("the Vite plugin skips test code (D37)", () => {
   let root = "";
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-skip-"));
+    root = tempDir(".tmp-skip-", import.meta.dirname);
   });
   afterEach(() => {
     fs.rmSync(root, { recursive: true, force: true });
