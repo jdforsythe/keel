@@ -19,7 +19,7 @@ export class Secret<T> {
   readonly #inner: Node;
 
   private constructor(value: T, inner: Node, token: unknown) {
-    if (token !== TOKEN) defect("Secret made outside @keel/schema", "E1764");
+    if (token !== TOKEN) defect("Secret made outside @keel/schema", { code: "E1764" });
     this.#value = value;
     this.#inner = inner;
     records.secret.add(this);

@@ -40,7 +40,8 @@ export function workflow<
     const on = states[state]?.on;
     for (const e of events)
       if (on === undefined || finals.has(state) || !Object.hasOwn(on, e))
-        defect("a workflow step or wait needs a non-final state whose on has the event", "E2352", {
+        defect("a workflow step or wait needs a non-final state whose on has the event", {
+          code: "E2352",
           data: { workflow: id, part, state, event: e },
         });
   };
@@ -59,10 +60,11 @@ export function workflow<
       own("wait", state, [wait.event]);
       waits.set(state, wait);
     }
-  if (first === undefined) defect("the workflow chart has no states", "E2352", { data: { workflow: id } });
+  if (first === undefined) defect("the workflow chart has no states", { code: "E2352", data: { workflow: id } });
   for (const e of Object.keys(chart.events))
     if (e === "start" || e === "attempt" || e === "forget")
-      defect("a chart event takes the name of a workflow transaction; rename it", "E2355", {
+      defect("a chart event takes the name of a workflow transaction; rename it", {
+        code: "E2355",
         data: { workflow: id, event: e },
       });
   const events = new Map<string, Schema<unknown>>();

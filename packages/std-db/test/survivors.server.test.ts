@@ -123,7 +123,7 @@ describe("dbError and distinctKeys", () => {
   test("a coded defect's message starts with the code, and code is readable but not enumerable", () => {
     let e: unknown;
     try {
-      defect("text", "E2153");
+      defect("text", { code: "E2153" });
     } catch (thrown) {
       e = thrown;
     }

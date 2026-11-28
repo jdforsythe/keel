@@ -8,10 +8,10 @@ import { toParam } from "../src/internal/toParam.ts";
 const SEED = 1337;
 
 const THROWERS: Readonly<Record<string, (text: string) => never>> = {
-  E2453: (text) => defect(text, "E2453"),
-  E2454: (text) => defect(text, "E2454"),
-  E2455: (text) => defect(text, "E2455"),
-  E2457: (text) => defect(text, "E2457"),
+  E2453: (text) => defect(text, { code: "E2453" }),
+  E2454: (text) => defect(text, { code: "E2454" }),
+  E2455: (text) => defect(text, { code: "E2455" }),
+  E2457: (text) => defect(text, { code: "E2457" }),
 };
 
 /** The defect `THROWERS[code]` throws with `text`. */

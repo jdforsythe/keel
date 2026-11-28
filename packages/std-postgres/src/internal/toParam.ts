@@ -23,7 +23,8 @@ function kind(v: unknown): string {
 export function toParam(v: unknown, position: number): JsonValue {
   const seen = new Set<object>();
   const fail = (bad: unknown, why?: string): never => {
-    return defect("std.postgres: a parameter is not a JSON value", "E2457", {
+    return defect("std.postgres: a parameter is not a JSON value", {
+      code: "E2457",
       data: { position, kind: why ?? kind(bad) },
     });
   };

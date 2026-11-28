@@ -37,7 +37,7 @@ export function live<C extends Ctx, T, P, Q, M, E extends KeelError<string, unkn
   opts: { readonly read: (ctx: C, signal: AbortSignal) => Promise<Result<P, E>>; readonly hydrate: Transaction<T, P> },
 ): () => LiveStatus {
   const sc = owner();
-  if (sc === undefined) return defect("live() called outside any scope; wrap it in scope(fn)", "E1203");
+  if (sc === undefined) return defect("live() called outside any scope; wrap it in scope(fn)", { code: "E1203" });
   const fresh = signal(false);
   const denied = signal(false);
   let alive = true;

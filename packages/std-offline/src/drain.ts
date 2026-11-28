@@ -17,7 +17,7 @@ import { own } from "./internal/own.ts";
  */
 export async function drain(ctx: Ctx, o: Outbox<object>, opts: { readonly owner: string }): Promise<void> {
   const sc = owner();
-  if (sc === undefined) return defect("drain() outside a scope", "E1203");
+  if (sc === undefined) return defect("drain() outside a scope", { code: "E1203" });
   const c = configOf(o);
   sc.onDispose(observe(ctx, (e) => e.kind === "net" && e.online && void flush(ctx, c)));
   // The scope's end also drops the retry pending on this ctx, and any the post in flight would arm.

@@ -689,7 +689,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1458",
-    "err given a value that is no KeelError, or a KeelError object literal written by hand",
+    "err, or supervise as its failed, given a value that is no KeelError, or a KeelError object literal written by hand",
     "Make one with X.make of an s.error.",
     "\n```ts\nimport { err, type KeelError } from '@keel/schema'\ndeclare const Locked: { make(d: null): KeelError<'m.locked', null> }\nexport const f = () => err(Locked.make(null))```\n```ts\nimport { err, keelError } from '@keel/schema'\nexport const f = () => err(keelError.denied.make({}))```",
     "k.attempt",

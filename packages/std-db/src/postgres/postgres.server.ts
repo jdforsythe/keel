@@ -39,7 +39,7 @@ const field = (row: unknown, name: string): unknown =>
  */
 export async function postgres(url: URL, options: PostgresOptions = {}): Promise<DbStorage> {
   if (url.protocol !== "postgres:" && url.protocol !== "postgresql:")
-    return defect("KEEL_DATABASE_URL is not a postgres: or postgresql: URL", "E2153");
+    return defect("KEEL_DATABASE_URL is not a postgres: or postgresql: URL", { code: "E2153" });
   const pool: PgPool = options.clientFactory?.() ?? quietPool(url);
   let token = "";
   let ready = false;
@@ -51,7 +51,7 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
           if (options.clientFactory === undefined) {
             const xid = field((await c.query("select pg_current_xact_id()::text as x")).rows[0], "x");
             if (typeof xid !== "string" || !/^\d+$/.test(xid))
-              return defect("KEEL_DATABASE_URL: the Postgres database cannot be reached or set up", "E2153");
+              return defect("KEEL_DATABASE_URL: the Postgres database cannot be reached or set up", { code: "E2153" });
             token = xid;
           }
           await c.query("create table if not exists keel_kv (key text primary key, value text not null)");
@@ -68,7 +68,8 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
       },
     );
     if (!opened.ok)
-      return defect("KEEL_DATABASE_URL: the Postgres database cannot be reached or set up", "E2153", {
+      return defect("KEEL_DATABASE_URL: the Postgres database cannot be reached or set up", {
+        code: "E2153",
         cause: opened.error,
       });
     ready = true;

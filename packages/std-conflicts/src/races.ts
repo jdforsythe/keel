@@ -11,7 +11,8 @@ import { withFactory } from "./internal/withFactory.ts";
  * returns whose state schema accepts `snapshot.state` and which declares every logged transaction. Each rebased entry
  * (one holding `base`) is applied with its concurrent entries in both orders from the state at `base`: a failing order
  * against a holding one is an `invalid` race, two holding orders with different states an `order` race (an array of
- * objects with a string `id` compares as a set). An entry whose base state cannot be rebuilt is `unchecked`. Pure:
+ * objects with a string `id` compares as a set). An entry whose base state cannot be rebuilt, or whose transaction
+ * throws an `Error` no TypeError or RangeError, is `unchecked`; a defect passes on. Pure:
  * `snapshot` and every live store stay unchanged.
  */
 export function races(snapshot: Snapshot<unknown>, stores: StoresFactory): RaceReport {
