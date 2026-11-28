@@ -14,6 +14,7 @@ import {
   slowParallel,
   slowRunArgs,
   slowSetupScript,
+  slowBrowserDepsScript,
   slowShards,
   slowSteps,
   applyRewrites,
@@ -196,6 +197,21 @@ describe("step outputs and conditions", () => {
     const probe = steps.find((s) => s.id === "browser");
     expect(probe?.run).toContain("ci-shards.mjs --browser 2");
     expect(steps.filter((s) => s.if === "steps.browser.outputs.browser == 'true'").length).toBeGreaterThan(0);
+  });
+  it("runs the browser step as the user, its libraries installed as root only when a shard drives a browser", () => {
+    const { steps } = slowSteps(realSource, 1);
+    const install = steps.find((st) => /playwright-core install/.test(st.run));
+    expect(install?.run).toBe("pnpm exec playwright-core install chromium");
+    expect(install?.if).toBe("steps.browser.outputs.browser == 'true'");
+    const script = slowBrowserDepsScript([1, 2, 3]);
+    expect(script).toContain("for n in 1 2 3;");
+    expect(script).toContain("ci-shards.mjs --browser");
+    expect(script).toContain("install-deps chromium");
+    expect(script).toMatch(/if \[ -n "\$\{need:-\}" \]/);
+    const args = slowRunArgs({ name: "n", image: "i" });
+    expect(args.join(" ")).toContain("--security-opt seccomp=unconfined");
+    expect(args).not.toContain("--no-sandbox");
+    expect(args.slice(args.indexOf("--user"), args.indexOf("--user") + 2)).toEqual(["--user", SLOW.user]);
   });
   it("runs no step with sudo in the slow container: a sysctl is not set from inside it", () => {
     for (const shard of slowShards(realSource)) {

@@ -37,6 +37,7 @@ import {
   slowParallel,
   slowRunArgs,
   slowSetupScript,
+  slowBrowserDepsScript,
   slowShards,
   slowSteps,
   stepName,
@@ -655,6 +656,7 @@ async function runSlow() {
     let ok = await exec(name, prep, "pnpm version", "pnpm --version", {}, Date.now() + 600_000, i++);
     for (const step of first.install)
       ok = ok && (await exec(name, prep, step.name, step.run, step.env, Date.now() + 1_800_000, i++));
+    if (ok) dockerBounded(["exec", "-u", "0", name, "bash", "-c", slowBrowserDepsScript(shards)], SLOW.limits.pull);
     // The builds CI's check job leaves in the turbo cache, outside the shards' times.
     ok = ok && (await exec(name, prep, "pnpm build", "pnpm build", {}, Date.now() + 3_600_000, i++));
     prep.seconds = (performance.now() - t) / 1000;

@@ -177,6 +177,9 @@ function slowDecision(skip, only) {
   return { name: SLOW_JOB, decision: "run", rule };
 }
 
+/** The browser step as the user runs it: the system libraries were installed as root (`slowBrowserDepsScript`). */
+const SLOW_WITH_DEPS = { from: "playwright-core install --with-deps chromium", to: "playwright-core install chromium" };
+
 /** The container's name: `keel-gate-slow-<sha>`; a shard's own container adds `-<shard>`. */
 export const slowContainer = (short, shard) => `keel-gate-slow-${short}${shard === undefined ? "" : `-${shard}`}`;
 
@@ -216,6 +219,10 @@ export function slowRunArgs({ name, image, cpus = SLOW.cpus, memory = SLOW.memor
     // A runner is no root user and has an init that reaps orphans: as root, a file mode no longer stops a write, and
     // without an init a killed process stays a zombie that a test for "the process is gone" still sees.
     "--init",
+    // Chromium's user-namespace sandbox stays on, as on a runner after its sysctl; Docker's default seccomp profile
+    // refuses the clone it needs.
+    "--security-opt",
+    "seccomp=unconfined",
     "--user",
     SLOW.user,
     image,
@@ -236,6 +243,18 @@ export const slowSetupScript = [
   `chown -R ${SLOW.user}:${SLOW.user} ${SLOW.workdir}`,
   `[ "$(stat -c %U /pnpm-store)" = ${SLOW.user} ] || chown -R ${SLOW.user}:${SLOW.user} /pnpm-store`,
 ].join(" && ");
+
+/**
+ * Run as root in the prepared container after the install: Chromium's system libraries, only when a shard of the run
+ * has a test file that drives a browser (`ci-shards --browser`), so a run without one installs nothing. The browser
+ * itself is downloaded by the shard's own step, as the user, as on a runner.
+ */
+export const slowBrowserDepsScript = (shards) =>
+  [
+    `cd ${SLOW.workdir}`,
+    `for n in ${shards.join(" ")}; do node tooling/ci-shards.mjs --browser "$n" | grep -q '^browser=true$' && need=1; done`,
+    'if [ -n "${need:-}" ]; then node node_modules/playwright-core/cli.js install-deps chromium; fi',
+  ].join("\n");
 
 /** Host paths a `docker run` argument list mounts: `-v`/`--volume`/`--mount` with a source that is not a named volume. */
 export function bindMounts(args) {
@@ -261,7 +280,7 @@ export function slowSteps(source, shard) {
   const job = source.jobs["test-shard"];
   const own = expandSteps(source, "test-shard");
   // The job's rewrites, the one rule of what does not apply off a runner (the sysctl no-op), as the fast jobs have it.
-  const rewritten = applyRewrites(job, own, JOBS["test-shard"].rewrites ?? [], {}).steps;
+  const rewritten = applyRewrites(job, own, [...(JOBS["test-shard"].rewrites ?? []), SLOW_WITH_DEPS], {}).steps;
   const runs = rewritten.filter((s) => typeof s === "object" && s.run !== undefined);
   const ctx = { matrix: { shard }, workspace: SLOW.workdir, runnerOs: "Linux", runnerArch: "X64" };
   const answer = (s) => ({
