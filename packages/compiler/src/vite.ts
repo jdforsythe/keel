@@ -52,6 +52,7 @@ import { registersCapability } from "./internal/registersCapability.ts";
 import { rewriteLiftedReads } from "./internal/rewriteLiftedReads.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { shortPath } from "./internal/shortPath.ts";
+import { storesFileMark } from "./internal/storesFileMark.ts";
 import { stylesMiddleware } from "./internal/stylesMiddleware.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
@@ -1294,7 +1295,10 @@ export default function (): {
         .map((d) => `E1404 ${rel} duplicate element id "${d.id.slice(0, 30)}" (also in another module)`);
       const failures = [...entry.failures, ...dupes];
       if (failures.length > 0) throw new Error(failures.join("\n"));
-      return entry.output === undefined ? kept : { code: entry.output.code, map: null };
+      const out = entry.output === undefined ? kept : { code: entry.output.code, map: null };
+      // k.data Dev: under `keel dev` alone, each app file the server graph loads names itself as its top level begins.
+      if (command !== "serve" || !hasNode || options?.ssr !== true || process.env.KEEL_DEV_DIR === undefined) return out;
+      return { code: `${storesFileMark(id.split("?")[0] ?? id)}${out?.code ?? lifted ?? code}`, map: null };
     },
     watchChange(id, change) {
       const rel = relOf(id);

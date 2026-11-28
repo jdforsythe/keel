@@ -6,12 +6,12 @@ import { LOG_LIMIT } from "./internal/LOG_LIMIT.ts";
 import type { Row } from "./internal/Row.ts";
 import type { TxError } from "./internal/TxError.ts";
 import { baseSchema } from "./internal/baseSchema.ts";
-import { carriedIds } from "./internal/carriedIds.ts";
 import { conflict } from "./internal/conflict.ts";
 import { copy } from "./internal/copy.ts";
 import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
 import { declaredSources } from "./internal/declaredSources.ts";
+import { devLoad } from "./internal/devLoad.ts";
 import { freeze } from "./internal/freeze.ts";
 import { givenPiiOf } from "./internal/givenPiiOf.ts";
 import { holdsSecret } from "./internal/holdsSecret.ts";
@@ -66,9 +66,11 @@ export function store<T extends object>(
   const id = options?.id ?? `store.${++counter.next}`;
   secretGuard(id, schema);
   const registry = registryOf(owner());
-  // A carried id (`storesReload`) is taken over once: the earlier load's store leaves the module registry.
-  const carried = registry === registries.shared && carriedIds.delete(id);
-  if (registry.has(id) && !carried) throw new Error(`store ${id}: id already in use by a live store`);
+  const holder = registry.get(id);
+  // k.data Dev: a live id is taken over only from the store a dev load carried, by a store created at its file; the
+  // carried store then no longer holds the id, so a second one throws. Only module-registry stores are carried.
+  if (holder !== undefined && (devLoad.carried.get(id) !== holder || devLoad.origins.get(holder)?.file !== devLoad.file))
+    throw new Error(`store ${id}: id already in use by a live store`);
   const clock = options?.clock;
   const limit = options?.logLimit ?? LOG_LIMIT;
   if (!Number.isInteger(limit) || limit < 0)
@@ -409,6 +411,8 @@ export function store<T extends object>(
   };
   // signal() above already threw E1203 outside a scope, so an owner exists here.
   registry.set(id, self);
+  // Recorded only once the dev server module has called `storesReload` (k.data Dev): never in a build or a test.
+  if (devLoad.armed) devLoad.origins.set(self, { file: devLoad.file, scope: owner() });
   statePiiOf.set(self, () => statePii);
   storePayloads.set(self, payloads);
   owner()?.onDispose(() => {
