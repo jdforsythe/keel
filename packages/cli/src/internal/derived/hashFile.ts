@@ -13,9 +13,10 @@ const kept = new Map<string, { readonly key: string; readonly sha256: string }>(
  * The SHA-256 of a file's bytes, or undefined when it cannot be read. A regular file whose device, inode, size,
  * modification and status change times are those it had when this process last read it, whose status change time
  * was then at least two seconds old, gives that digest again without a read: a write, a rename over it or a time set
- * back (`cp -p`, `tar`, `utimes`) moves its status change time, which no process can set.
+ * back (`cp -p`, `tar`, `utimes`) moves its status change time, which no process can set. `now` is the clock in
+ * milliseconds the status change time is held against.
  */
-export function hashFile(file: string): string | undefined {
+export function hashFile(file: string, now: () => number = Date.now): string | undefined {
   let key: string | undefined;
   let settled = false;
   try {
@@ -28,7 +29,7 @@ export function hashFile(file: string): string | undefined {
       key = `${String(s.dev)}:${String(s.ino)}:${String(s.size)}:${String(s.mtimeNs)}:${String(s.ctimeNs)}`;
       const hit = kept.get(file);
       if (hit !== undefined && hit.key === key) return hit.sha256;
-      settled = s.ctimeNs < BigInt(Date.now()) * 1_000_000n - SETTLED_NS;
+      settled = s.ctimeNs < BigInt(Math.floor(now())) * 1_000_000n - SETTLED_NS;
     }
   } catch {
     key = undefined;

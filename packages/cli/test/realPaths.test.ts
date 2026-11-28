@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { realPaths } from "../src/internal/realPaths.ts";
 
 let root = "";
+let runs = 0;
 beforeEach(() => {
   root = tempDir(".tmp-realPaths-", import.meta.dirname);
 });
@@ -45,7 +46,9 @@ describe("realPaths", () => {
           },
         ),
         (ops) => {
-          const at = fs.mkdtempSync(path.join(root, "t-"));
+          runs += 1;
+          const at = path.join(root, `t${String(runs)}`);
+          fs.mkdirSync(at);
           for (const [name, kind, target] of ops) {
             const p = path.join(at, name);
             if (fs.existsSync(p) || !isDir(path.dirname(p))) continue;
