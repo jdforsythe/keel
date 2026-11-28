@@ -21,7 +21,6 @@ import { full } from "./internal/full.ts";
 import { hubOf } from "./internal/hubOf.ts";
 import { inbox } from "./internal/inbox.ts";
 import { join } from "./internal/join.ts";
-import { memberWithin } from "./internal/memberWithin.ts";
 import { paramsOf } from "./internal/paramsOf.ts";
 import { reread } from "./internal/reread.ts";
 import { storesIn } from "./internal/storesIn.ts";
@@ -180,10 +179,7 @@ export function channelRoute<P, M, S>(
             verdict(event, now.value === user);
           })();
         };
-    /**
-     * `event` after `member` and, when there is one to judge, the user check; a member check that fails, or that has
-     * not settled within 5,000 ms on `ctx.clock`, is a denial.
-     */
+    /** `event` after `member` and, when there is one to judge, the user check; a member check that fails is a denial. */
     const deliver = (event: Event, member: () => Promise<boolean> | boolean): Step => {
       if (out) return;
       // The wrapper object keeps a returned promise from being awaited by `supervise`: only a synchronous throw is taken.
@@ -193,7 +189,12 @@ export function channelRoute<P, M, S>(
       return typeof m === "boolean"
         ? judge(event, m)
         : (async (): Promise<void> => {
-            await judge(event, await memberWithin(ctx, m));
+            const isMember = await supervise(ctx, "channels.member", () => m, Rejected.make({}));
+            if (!isMember.ok) {
+              verdict(event, false);
+              return;
+            }
+            await judge(event, isMember.value);
           })();
     };
     const leave = join(ctx, hub, {

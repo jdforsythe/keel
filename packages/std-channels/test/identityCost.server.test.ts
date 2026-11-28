@@ -1,7 +1,8 @@
 // @vitest-environment node
 // What judging a stream's user again costs (std.channels Serve, k.user): with no identity source the stream is handed a
-// `fixed` `currentUser` and its deliveries run no judge, read no clock and set no timer; with one, a burst costs one
-// `identify` per stream per second of `ctx.clock`.
+// `fixed` `currentUser` and its deliveries run no judge, read no clock and set no timer of their own (the one timer a
+// save sets bounds the read its streams share); with one, a burst costs one `identify` per stream per second of
+// `ctx.clock`.
 import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { type CurrentUser, action, loader, manifest } from "@keel/router";
@@ -26,6 +27,8 @@ const c = contract("cost", {
 
 /** The 5,000 ms wait the stream's open makes for its storage `watch` (k.persist Watch): the sim storage has one. It is no identify's. */
 const WATCH_BOUND = 1;
+/** The 5,000 ms wait each save sets for the stored-snapshot read its streams share (std.channels Serve). */
+const SAVES = 40;
 
 /** Lets the stream's pending work run: `n` macrotask turns, each after the microtasks the last one queued. */
 const turns = async (n = 25): Promise<void> => {
@@ -128,7 +131,7 @@ async function rig(identify: (() => string) | undefined, open = true) {
 
 const kinds = (events: unknown[]): unknown[] => events.map((e) => Reflect.get(Object(e), "kind"));
 
-test("with no identity source, a stream's 40 deliveries over 4 s run no judge, read no clock and set no timer", async () => {
+test("with no identity source, a stream's 40 deliveries over 4 s run no judge, read no clock and set no timer but the save's read bound", async () => {
   const r = await rig(undefined);
   // The stream was handed a fixed `currentUser`, so its route chose, at open, the path with no judge on it.
   expect(r.given.currentUser?.fixed).toBe(true);
@@ -141,8 +144,8 @@ test("with no identity source, a stream's 40 deliveries over 4 s run no judge, r
   }
   await turns();
   expect(kinds(r.events)).toEqual(["reset", ...Array.from({ length: 40 }, () => "saved")]);
-  expect(r.bounds.n).toBe(WATCH_BOUND);
-  expect(r.clock.after).toBe(0);
+  expect(r.bounds.n).toBe(WATCH_BOUND + SAVES);
+  expect(r.clock.after).toBe(SAVES);
   expect(r.ctx.clock.next()).toBe(heartbeat);
   // The same saves with no stream open read the clock as often: the stream's deliveries read it not at all.
   const bare = await rig(undefined, false);
@@ -170,7 +173,7 @@ test("with an identity source, a burst of 40 saves over 4 s costs one `identify`
   expect(r.calls.stream - atOpen).toBe(4);
   // Each save is a request and runs `identify` as one.
   expect(r.calls.other).toBe(40);
-  expect(r.bounds.n).toBe(WATCH_BOUND + r.calls.stream + r.calls.other);
+  expect(r.bounds.n).toBe(WATCH_BOUND + SAVES + r.calls.stream + r.calls.other);
   expect(r.given.currentUser?.fixed).toBe(false);
   await r.close();
 });

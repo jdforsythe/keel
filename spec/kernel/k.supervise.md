@@ -29,7 +29,7 @@ if (!ran.ok) return again(ran.error.code)
 | Supervisor | `id` | Supervised | Bound on `ctx.clock` | After a throw or the bound |
 | --- | --- | --- | --- | --- |
 | std.jobs' runner | `jobs.run` | a job's `fn`, a workflow step's `run` among them (std.workflows) | the job's `timeoutMs`, then its `signal` aborts (`jobs.timeout`) | `err` `jobs.thrown`: the run counts an attempt, waits and runs again, or moves to `failed` with that code |
-| std.channels' route | `channels.member` | `member`, the re-read of `stores` before it, and `currentUser()` | 5,000 ms (std.channels); `identify`'s own 5,000 ms (k.user) | a denial: at open and at a delivery the stream gets `closed` `denied` and ends; at a publish, 403 |
+| std.channels' route | `channels.member` | `member` (synchronous), the re-read of `stores` before it, and `currentUser()` | 5,000 ms for a save's read (std.channels); `identify`'s own 5,000 ms (k.user) | a denial: at open and at a delivery the stream gets `closed` `denied` and ends; at a publish, 403 |
 | std.live | `live.read` | `read` | 30 s, then its `signal` aborts | a failed read: nothing is committed, `status()` is `connecting`, and the next read runs on the backoff std.live gives |
 | std.offline | `offline.storage` | one `ctx.storage` call | 10 s for a write (std.outbox) | the entry is `failed` with `offline.storage` (std.outbox) |
 
