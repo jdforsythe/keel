@@ -16,7 +16,8 @@ const own = (i: CacheInput): boolean =>
 
 /**
  * Whether every recorded input, read again at its path, has the same SHA-256 and every recorded probe, asked again,
- * gets the same answer (k.derived Derivation cache); modification times are never read. The project's
+ * gets the same answer (k.derived Derivation cache); an unchanged settled file's digest is the one `hashFile` kept,
+ * never one judged by its modification time alone. The project's
  * own inputs are read first, so an entry an edit made stale is told after those alone.
  */
 export function cacheHeld(inputs: readonly CacheInput[], probes: readonly CacheProbe[]): boolean {
