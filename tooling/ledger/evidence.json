@@ -1,5 +1,5 @@
 {
-  "commit": "3ecbd90f4e731acb05772b12868ea21874c5e52c",
+  "commit": "53f354e3807b1a2cddd0bbd5143d0e5b20edc195",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1188,7 +1188,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-27T23:44:04.335Z",
+  "generatedAt": "2026-11-28T00:34:32.573Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1425,7 +1425,7 @@
         "example": 1398,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 3,
+        "none": 4,
         "probabilistic": 263,
         "proven": 53
       },
@@ -1994,12 +1994,12 @@
             "example": 9,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 0,
+            "none": 1,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 9,
+          "status": "implemented",
+          "total": 10,
           "verified": 9
         },
         "k.inspect": {
@@ -3238,7 +3238,7 @@
           "verified": 9
         }
       },
-      "total": 1723,
+      "total": 1724,
       "verified": 1720
     },
     "evidenceByRung": {
@@ -3826,7 +3826,7 @@
       "total": 648,
       "verified": 588
     },
-    "items": 3051,
+    "items": 3052,
     "negativeTypes": 90,
     "unsafe": 33,
     "verified": 2988
@@ -4428,8 +4428,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 14,
-        "unitCases": 911,
-        "unitFiles": 135
+        "unitCases": 912,
+        "unitFiles": 136
       },
       "packages/compiler": {
         "conformanceCases": 187,
@@ -4442,7 +4442,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 777,
+        "unitCases": 778,
         "unitFiles": 105
       },
       "packages/create-app": {
@@ -5003,8 +5003,8 @@
       "proveFiles": 24,
       "simulateFiles": 32,
       "skipTodo": 26,
-      "unitCases": 7287,
-      "unitFiles": 1205
+      "unitCases": 7289,
+      "unitFiles": 1206
     }
   },
   "tool": {
