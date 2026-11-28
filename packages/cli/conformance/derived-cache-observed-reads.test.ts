@@ -3,14 +3,15 @@
 // Also states, k.compiler Build-time evaluation: "It reads through views (k.evaluator), by any name (`globalThis.process`, `global`, an alias, `createRequire`, `process.getBuiltinModule`); each module's `import.meta` is its own."
 // Seed 1337 (recorded); no random inputs. The household copy of derived-support.ts, built once and cloned per case; a file is written with its old modification time so only the bytes tell.
 // The `.json` name is built from the absolute path of the file (Node resolves no bare name to a sibling).
-// "Clause 30" is the clause of k.derived that reads `min.txt` with `readFileSync` and `process.env.LINE_MIN` (derived-cache-keyed-reads.test.ts); the env reads sit in the linked `@keel/std-text` `line`, the file reads in `modules/setup/gate.guard.ts`
-// (derived-cache-observed-support.ts), whose redirect `routes.json` holds. Each case is a miss when the read thing changes and a hit (`counts.cached` 1) when it does not.
+// "Clause 30" is the clause of k.derived that reads `min.txt` with `readFileSync` and `process.env.LINE_MIN` (derived-cache-keyed-reads.test.ts); the env and file reads sit in `modules/setup/gate.guard.ts`, a server-only file
+// (derived-cache-support.ts, derived-cache-observed-support.ts), whose redirect `routes.json` holds; RE-BASED for the env reads, which k.host refuses in the linked
+// `@keel/std-text` `line.ts` ("In a browser file E1759 reports a read of `process`"; a library's files are checked in the app). Each case is a miss when the read thing changes and a hit (`counts.cached` 1) when it does not.
 import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, test } from "vitest";
 import { join } from "node:path";
 import { REDIRECT, guardFile, putOld } from "./derived-cache-observed-support.ts";
-import { lineSurface } from "./derived-cache-support.ts";
-import { type Tree, brief, cloneTree, dropTree, editStdText, householdTree, keel, read } from "./derived-support.ts";
+import { readsMinEnv } from "./derived-cache-support.ts";
+import { type Tree, brief, cloneTree, dropTree, householdTree, keel, read } from "./derived-support.ts";
 
 const SLOW = fixedTime(600_000);
 
@@ -40,24 +41,26 @@ describe.each([
     "Number(process.getBuiltinModule('node:process').env.LINE_MIN ?? \"1\")",
   ],
 ])("k.derived: `line`'s default `min` read from %s", (_name, expr) => {
-  /** A copy whose `line` reads `expr`, after one `keel check` with `LINE_MIN=1`. */
-  const warm = (): Tree => {
+  /** A copy whose `setup.form` guard's redirect reads `expr`, after one `keel check` with `LINE_MIN=1`; also the `routes.json` that run left. */
+  const warm = (): { t: Tree; first: string } => {
     const t = copy();
-    editStdText(t, "min ?? 1", `min ?? ${expr}`, false);
-    const first = keel(t.dir, ["check"], lineMin(1));
-    expect(first.status, brief(first)).toBe(0);
-    expect(read(t.dir, ".keel/surface.json")).toContain(lineSurface(1));
-    return t;
+    readsMinEnv(t, expr);
+    const run = keel(t.dir, ["check"], lineMin(1));
+    expect(run.status, brief(run)).toBe(0);
+    const first = read(t.dir, ".keel/routes.json");
+    expect(first).toContain("members.signin");
+    return { t, first };
   };
 
   test(
     "a `keel check` with `LINE_MIN=2` after one with `LINE_MIN=1` has `counts.evaluated` 1",
     () => {
-      const t = warm();
+      const { t, first } = warm();
       const out = keel(t.dir, ["check"], lineMin(2));
       expect(out.counts.evaluated, brief(out)).toBe(1);
       expect(out.counts.cached, brief(out)).toBe(0);
-      expect(read(t.dir, ".keel/surface.json")).toContain(lineSurface(2));
+      expect(read(t.dir, ".keel/routes.json")).not.toBe(first);
+      expect(read(t.dir, ".keel/routes.json")).toContain("app.start");
     },
     SLOW,
   );
@@ -65,10 +68,11 @@ describe.each([
   test(
     "a `keel check` with `LINE_MIN=1` again is a hit: `counts.evaluated` 0 and `counts.cached` 1",
     () => {
-      const t = warm();
+      const { t, first } = warm();
       const out = keel(t.dir, ["check"], lineMin(1));
       expect(out.counts.evaluated, brief(out)).toBe(0);
       expect(out.counts.cached, brief(out)).toBe(1);
+      expect(read(t.dir, ".keel/routes.json")).toBe(first);
     },
     SLOW,
   );

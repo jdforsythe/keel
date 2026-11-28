@@ -64,9 +64,32 @@ export const gate = guard({ redirect: MIN_TEXT.trim() === "1" ? "members.signin"
   return at;
 }
 
-/** The linked copy's `line` reads its default `min` from `process.env.LINE_MIN` (1 when it is absent). */
-export function readsMinEnv(t: Tree): void {
-  editStdText(t, "min ?? 1", 'min ?? Number(process.env.LINE_MIN ?? "1")', false);
+/**
+ * The guard of `setup.form` (the `gate.guard.ts` of `readsMinFile`, a server-only file of a module only a `node` deployable lists) takes its redirect from `expr`,
+ * read at import time: `members.signin` while it is `1`, else `app.start`. A browser file may not read `process` (k.host, E1759), and since the linked
+ * `@keel/std-text` is a library whose files are checked in the app, its `line.ts` is one; a server-only file may.
+ */
+export function readsMinEnv(t: Tree, expr = 'process.env.LINE_MIN ?? "1"'): void {
+  put(
+    t.dir,
+    "modules/setup/gate.guard.ts",
+    `const MIN_TEXT = String(${expr});
+import { guard } from "@keel/router";
+import { err, keelError, ok } from "@keel/schema";
+
+export const gate = guard({ redirect: MIN_TEXT.trim() === "1" ? "members.signin" : "app.start" }, async ({ user }) =>
+  user === "" ? err(keelError.denied.make({}, "sign in first")) : ok(null),
+);
+`,
+  );
+  sub(t.dir, "modules/setup/routes.ts", 'import { signedIn } from "../members/signedIn.guard.ts";\n', "");
+  sub(
+    t.dir,
+    "modules/setup/routes.ts",
+    "import { getHousehold }",
+    'import { gate } from "./gate.guard.ts";\nimport { getHousehold }',
+  );
+  sub(t.dir, "modules/setup/routes.ts", "guard: signedIn,", "guard: gate,");
 }
 
 /** Writes `min.txt`, its modification time the old one so only its bytes tell. */
