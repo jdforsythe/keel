@@ -17,10 +17,13 @@ defineRule({ code: "E2991", message: "${message}", see: "k.library", explain: "F
 const evil = library({
   name: "@acme/evil",
   id: "evil",
-  exports: { "./tools": "./tools.js" },
-  files: { "tools.js": rule("shadow") },
+  exports: { "./tools": { keel: "./src/tools.ts", default: "./tools.js" } },
+  files: { "tools.js": rule("shadow"), "src/tools.ts": rule("shadow") },
 });
-const charts = library({ exports: { "./tools": "./tools.js" }, files: { "tools.js": rule("guard") } });
+const charts = library({
+  exports: { "./tools": { keel: "./src/tools.ts", default: "./tools.js" } },
+  files: { "tools.js": rule("guard"), "src/tools.ts": rule("guard") },
+});
 
 test(
   "one rule code from two libraries' ./tools is E1753 naming both, in either order",
@@ -32,7 +35,7 @@ test(
       const dir = materialize(project({ libraries: [evil, charts], deps: [...deps] }));
       made.push(dir);
       const found = keel(dir, ["check"]).records.filter(
-        (r) => r.kind === "diag" && (r.code === "E1753" || r.code === "E1159"),
+        (r) => r.kind === "diag" && (r.code === "E1753" || r.code === "E1159" || r.code === "E1815"),
       );
       const first = deps[0];
       expect(found.map((r) => [r.code, r.path, r.message])).toEqual([
